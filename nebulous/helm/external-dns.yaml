@@ -1,0 +1,4 @@
+domainFilters:
+  - @HOSTED_ZONE_NAME@
+nodeSelector: 
+  workload: mgmt
