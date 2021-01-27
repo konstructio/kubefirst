@@ -89,7 +89,6 @@ export TF_VAR_hosted_zone_id=$AWS_HOSTED_ZONE_ID
 export TF_VAR_gitlab_url=$GITLAB_URL
 export TF_VAR_email_domain=$EMAIL_DOMAIN
 export TF_VAR_region=$AWS_DEFAULT_REGION
-export TF_VAR_terraform_state_store_bucket_name=$BUCKET_NAME
 export TF_VAR_iam_user_arn=$IAM_USER_ARN
 
 if [[ "$AWS_DEFAULT_REGION" == "us-east-1" ]]; then

@@ -5,11 +5,6 @@ variable "region" {
 variable "aws_account_id" {
   type = string
 }
-
-variable "terraform_state_store_bucket_name" {
-  type = string
-}
-
 variable "gitlab_url" {
   type = string
 }
