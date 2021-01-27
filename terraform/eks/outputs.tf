@@ -31,7 +31,6 @@ output "preprod_vpc_default_sg" {
   value = module.vpc.default_security_group_id
 }
 
-## todo probably fix this [0]
 output "preprod_vpc_public_subnets" {
   value = module.vpc.public_subnets
 }

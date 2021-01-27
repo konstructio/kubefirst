@@ -260,7 +260,6 @@ resource "aws_iam_role" "k8s-preprod-worker-nodes-role-new" {
 EOT
 }
 
-# todo do we need this?
 resource "aws_iam_role_policy_attachment" "admin-policy-attach" {
   role       = aws_iam_role.k8s-preprod-worker-nodes-role-new.name
   policy_arn = var.k8s_admin

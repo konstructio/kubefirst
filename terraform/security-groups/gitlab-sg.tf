@@ -1,4 +1,3 @@
-# todo make this a module that accepts a map of options
 resource "aws_security_group" "gitlab_security_group" {
   name                   = "gitlab"
   description            = "gitlab"

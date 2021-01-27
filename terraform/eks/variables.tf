@@ -16,13 +16,7 @@ variable "map_roles" {
     groups   = list(string)
   }))
 
-  default = [ # todo need to remove this role
-    {
-      rolearn  = "arn:aws:iam::659548672500:role/KubernetesAdmin"
-      username = "admin"
-      groups   = ["system:masters"]
-    },
-  ]
+  default = []
 }
 
 variable "map_users" {
@@ -33,7 +27,6 @@ variable "map_users" {
     groups   = list(string)
   }))
 
-  # todo need to pass this user arn in from script execution
   default = []
 }
 
@@ -44,7 +37,6 @@ variable "k8s_admin" {
 
 variable "k8s_worker_node_policy_arns" {
   type = list(string)
-  # todo note - went from ECR ReadOnly to PowerUser -- default[0] and default[1] are REQUIRED by EKS, even though PowerUser should trump ReadOnly...
   default = ["arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy", "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly", "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser", "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy", "arn:aws:iam::aws:policy/AdministratorAccess"]
 }
 
