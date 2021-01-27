@@ -62,7 +62,7 @@ echo
 sleep 18 
 
 echo "executing source-profile.sh"
-source scripts/nebulous/source-profile.sh 
+source /scripts/nebulous/source-profile.sh 
 
 ssh-keygen -o -t rsa -b 4096 -C "${EMAIL_ADDRESS}" -f $HOME/.ssh/id_rsa -q -N "" > /dev/null
 
@@ -77,7 +77,7 @@ EMAIL_DOMAIN=$(echo $EMAIL_ADDRESS |  cut -d"@" -f2)
 BUCKET_NAME=kubefirst-demo-$(openssl rand -hex 15)
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
 IAM_USER_ARN=$(aws sts get-caller-identity | jq -r .Arn)
-GITLAB_URL_PREFIX=gl-kubefirst
+GITLAB_URL_PREFIX=gitlab-kubefirst-v1
 GITLAB_URL="${GITLAB_URL_PREFIX}.${HOSTED_ZONE_NAME}"
 GITLAB_BOT_ROOT_PASSWORD=$(openssl rand -hex 11)
 GITLAB_ROOT_USER=root
