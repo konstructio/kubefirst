@@ -76,6 +76,7 @@ HOSTED_ZONE_NAME=$(aws route53 get-hosted-zone --id "${AWS_HOSTED_ZONE_ID}" | jq
 EMAIL_DOMAIN=$(echo $EMAIL_ADDRESS |  cut -d"@" -f2)
 BUCKET_NAME=kubefirst-demo-$(openssl rand -hex 15)
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
+IAM_USER_ARN=$(aws sts get-caller-identity | jq -r .Arn)
 GITLAB_URL_PREFIX=gl-kubefirst
 GITLAB_URL="${GITLAB_URL_PREFIX}.${HOSTED_ZONE_NAME}"
 GITLAB_BOT_ROOT_PASSWORD=$(openssl rand -hex 11)
@@ -86,12 +87,11 @@ GITLAB_ROOT_USER=root
 export TF_VAR_aws_account_id=$AWS_ACCOUNT_ID
 export TF_VAR_hosted_zone_name=$HOSTED_ZONE_NAME
 export TF_VAR_hosted_zone_id=$AWS_HOSTED_ZONE_ID
-# todo need to clean this up `gitlab_hostname`?
-export TF_VAR_gitlab_hostname=$GITLAB_HOST_PREFIX
 export TF_VAR_gitlab_url=$GITLAB_URL
 export TF_VAR_email_domain=$EMAIL_DOMAIN
 export TF_VAR_region=$AWS_DEFAULT_REGION
 export TF_VAR_terraform_state_store_bucket_name=$BUCKET_NAME
+export TF_VAR_iam_user_arn=$IAM_USER_ARN
 
 
 S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f2 )

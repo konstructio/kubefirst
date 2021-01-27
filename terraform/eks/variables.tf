@@ -8,7 +8,6 @@ variable "map_accounts" {
 
   default = []
 }
-
 variable "map_roles" {
   description = "Additional IAM roles to add to the aws-auth configmap."
   type = list(object({
@@ -34,12 +33,8 @@ variable "map_users" {
     groups   = list(string)
   }))
 
- # todo need to pass this user arn in from script execution
-  default = [{
-    userarn  = "arn:aws:iam::659548672500:user/jedwards"
-    username = "admin"
-    groups   = ["system:masters"]
-    }]
+  # todo need to pass this user arn in from script execution
+  default = []
 }
 
 variable "k8s_admin" {
@@ -58,5 +53,8 @@ variable "cluster_name" {
 }
 
 variable "aws_account_id" {
+  type = string
+}
+variable "iam_user_arn" {
   type = string
 }

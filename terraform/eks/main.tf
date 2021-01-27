@@ -143,7 +143,11 @@ module "eks" {
     username = "system:node:{{EC2PrivateDNSName}}"
     groups   = ["system:bootstrappers", "system:nodes"]
   }])
-  map_users    = var.map_users
+  map_users    = concat(var.map_users, [{
+    userarn  = var.iam_user_arn
+    username = "admin"
+    groups   = ["system:masters"]
+  }])
   map_accounts = var.map_accounts
 }
 
@@ -156,7 +160,7 @@ resource "aws_eks_node_group" "preprod-nodes" {
   ami_type        = "AL2_x86_64"
   disk_size       = 50
 
-  labels          = {
+  labels = {
     "workload" = "preprod"
   }
 
@@ -181,7 +185,7 @@ resource "aws_eks_node_group" "mgmt-nodes" {
   ami_type        = "AL2_x86_64"
   disk_size       = 50
 
-  labels          = {
+  labels = {
     "workload" = "mgmt"
   }
 
@@ -205,7 +209,7 @@ resource "aws_eks_node_group" "production-nodes" {
   ami_type        = "AL2_x86_64"
   disk_size       = 50
 
-  labels          = {
+  labels = {
     "workload" = "production"
   }
 
@@ -223,7 +227,7 @@ resource "aws_eks_node_group" "production-nodes" {
 }
 
 resource "random_string" "random" {
-  length = 16
+  length  = 16
   special = false
 }
 
