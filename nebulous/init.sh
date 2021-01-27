@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+###
+# usage: ./scripts/nebulous/init.sh
+###
+
+set -e
+
 source ~/.profile
 
 # TODO BEFORE EXECUTIONS

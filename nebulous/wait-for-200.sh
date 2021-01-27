@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+###
+# usage: ./scripts/nebulous/wait-for-200.sh "https://gitlab-kubefirst.example.com"
+###
+
 set -e
 
 GITLAB_URL=$1

@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
-# ./scripts/nebulous/add-deploy-key.sh "YOUR_TOKEN" "YOUR_HOSTED_ZONE" "26"
-# "${GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN}" "${HOSTED_ZONE_NAME}" "${GITLAB_KUBEFIRST_GROUP_ID}"
+###
+# usage: ./scripts/nebulous/add-deploy-key.sh "-8kds3kl2-je" "gitlab-kubefirst.example.com" "1"
+###
+
+set -e
 
 GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN=$1
 GITLAB_URL=$2

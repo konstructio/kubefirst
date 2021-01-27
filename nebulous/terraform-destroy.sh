@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+###
+# usage: ./scripts/nebulous/terraform-destroy.sh
+###
+
+set -e
+
 # todo turn into variables
 aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name k8s-preprod $K8S_CLUSTER_NAME
 
