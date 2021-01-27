@@ -17,6 +17,8 @@
 *.env
 .env
 
+terraform/cypress/cypress/videos
+
 # Mono auto generated files
 mono_crash.*
 
