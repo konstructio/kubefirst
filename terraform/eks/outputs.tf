@@ -22,11 +22,6 @@ output "config_map_aws_auth" {
   value       = module.eks.config_map_aws_auth
 }
 
-output "region" {
-  description = "AWS region."
-  value       = var.region
-}
-
 output "preprod_vpc_default_sg" {
   value = module.vpc.default_security_group_id
 }
