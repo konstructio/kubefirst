@@ -66,7 +66,7 @@ source /scripts/nebulous/source-profile.sh
 
 ssh-keygen -o -t rsa -b 4096 -C "${EMAIL_ADDRESS}" -f $HOME/.ssh/id_rsa -q -N "" > /dev/null
 
-echo "copying ssh keys to terraform/terrafor-ssh-key*"
+echo "copying ssh keys to terraform/terraform-ssh-key*"
 cp ~/.ssh/id_rsa /terraform/terraform-ssh-key
 cp ~/.ssh/id_rsa.pub /terraform/terraform-ssh-key.pub
 sleep 2
@@ -92,7 +92,12 @@ export TF_VAR_region=$AWS_DEFAULT_REGION
 export TF_VAR_terraform_state_store_bucket_name=$BUCKET_NAME
 export TF_VAR_iam_user_arn=$IAM_USER_ARN
 
-S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f2 )
+if [[ "$AWS_DEFAULT_REGION" == "us-east-1" ]]; then
+  S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f1 )
+else
+  S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f3 | cut -d. -f1 )
+fi
+
 echo
 echo
 echo
