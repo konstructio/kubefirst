@@ -1,8 +1,8 @@
 terraform {
   backend "s3" {
-    bucket  = "kubefirst-demo-cd88dcf55d6bbc0ff960f871665c9e"
+    bucket  = "@S3_BUCKET_NAME@"
     key     = "terraform/tfstate.tf"
-    region  = "us-west-1"
+    region  = "@AWS_DEFAULT_REGION@"
     encrypt = true
   }
 }

@@ -9,7 +9,7 @@ set -e
 AWS_DEFAULT_REGION=$1
 K8S_CLUSTER_NAME=$2
 
-aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name k8s-preprod $K8S_CLUSTER_NAME
+aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $K8S_CLUSTER_NAME
 
 /scripts/nebulous/cleanup-cluster.sh
 
