@@ -92,7 +92,7 @@ export TF_VAR_region=$AWS_DEFAULT_REGION
 export TF_VAR_iam_user_arn=$IAM_USER_ARN
 
 if [[ "$AWS_DEFAULT_REGION" == "us-east-1" ]]; then
-  S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f1 )
+  S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f2 )
 else
   S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f3 | cut -d. -f1 )
 fi
