@@ -17,7 +17,6 @@ data "aws_ami_ids" "ubuntu" {
   }
 }
 
-# todo, need to use this and pass variables to user data
 data "template_file" "gitlab_install_script" {
   template = file("${path.module}/scripts/install_gitlab.sh")
   vars = {

@@ -2,11 +2,6 @@ terraform {
   required_version = ">= 0.12.0"
 }
 
-provider "aws" {
-  version = ">= 2.28.1"
-  region  = var.region
-}
-
 provider "random" {
   version = "~> 2.1"
 }
@@ -143,7 +138,11 @@ module "eks" {
     username = "system:node:{{EC2PrivateDNSName}}"
     groups   = ["system:bootstrappers", "system:nodes"]
   }])
-  map_users    = var.map_users
+  map_users = concat(var.map_users, [{
+    userarn  = var.iam_user_arn
+    username = "admin"
+    groups   = ["system:masters"]
+  }])
   map_accounts = var.map_accounts
 }
 
@@ -156,7 +155,7 @@ resource "aws_eks_node_group" "preprod-nodes" {
   ami_type        = "AL2_x86_64"
   disk_size       = 50
 
-  labels          = {
+  labels = {
     "workload" = "preprod"
   }
 
@@ -181,7 +180,7 @@ resource "aws_eks_node_group" "mgmt-nodes" {
   ami_type        = "AL2_x86_64"
   disk_size       = 50
 
-  labels          = {
+  labels = {
     "workload" = "mgmt"
   }
 
@@ -205,7 +204,7 @@ resource "aws_eks_node_group" "production-nodes" {
   ami_type        = "AL2_x86_64"
   disk_size       = 50
 
-  labels          = {
+  labels = {
     "workload" = "production"
   }
 
@@ -223,7 +222,7 @@ resource "aws_eks_node_group" "production-nodes" {
 }
 
 resource "random_string" "random" {
-  length = 16
+  length  = 16
   special = false
 }
 
@@ -256,7 +255,6 @@ resource "aws_iam_role" "k8s-preprod-worker-nodes-role-new" {
 EOT
 }
 
-# todo do we need this?
 resource "aws_iam_role_policy_attachment" "admin-policy-attach" {
   role       = aws_iam_role.k8s-preprod-worker-nodes-role-new.name
   policy_arn = var.k8s_admin

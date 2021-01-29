@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+###
+# usage: ./scripts/nebulous/source-profile.sh
+###
+
 set -e
 
 export NVM_DIR="$HOME/.nvm"

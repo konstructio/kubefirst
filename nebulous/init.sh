@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+###
+# usage: ./scripts/nebulous/init.sh
+###
+
+set -e
+
 source ~/.profile
 
 # TODO BEFORE EXECUTIONS
@@ -10,7 +16,7 @@ source ~/.profile
 # exit 0
 # echo
 # echo
-#* need to tokenize terraform-starter/main.tf
+#* need to tokenize terraform/main.tf
 # terraform {
 #   backend "s3" {
 #     bucket  = "@S3_BUCKET_NAME@"
@@ -56,13 +62,13 @@ echo
 sleep 18 
 
 echo "executing source-profile.sh"
-source scripts/nebulous/source-profile.sh 
+source /scripts/nebulous/source-profile.sh 
 
 ssh-keygen -o -t rsa -b 4096 -C "${EMAIL_ADDRESS}" -f $HOME/.ssh/id_rsa -q -N "" > /dev/null
 
-echo "copying ssh keys to terraform-starter/terrafor-ssh-key*"
-cp ~/.ssh/id_rsa /terraform-starter/terraform-ssh-key
-cp ~/.ssh/id_rsa.pub /terraform-starter/terraform-ssh-key.pub
+echo "copying ssh keys to terraform/terraform-ssh-key*"
+cp ~/.ssh/id_rsa /terraform/terraform-ssh-key
+cp ~/.ssh/id_rsa.pub /terraform/terraform-ssh-key.pub
 sleep 2
 
 # setup environment variables
@@ -70,37 +76,40 @@ HOSTED_ZONE_NAME=$(aws route53 get-hosted-zone --id "${AWS_HOSTED_ZONE_ID}" | jq
 EMAIL_DOMAIN=$(echo $EMAIL_ADDRESS |  cut -d"@" -f2)
 BUCKET_NAME=kubefirst-demo-$(openssl rand -hex 15)
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
-GITLAB_URL_PREFIX=gl-kubefirst
+IAM_USER_ARN=$(aws sts get-caller-identity | jq -r .Arn)
+GITLAB_URL_PREFIX=gitlab-kubefirst-v1
 GITLAB_URL="${GITLAB_URL_PREFIX}.${HOSTED_ZONE_NAME}"
 GITLAB_BOT_ROOT_PASSWORD=$(openssl rand -hex 11)
 GITLAB_ROOT_USER=root
-
 
 #* terraform separation: all these values should come from pre-determined env's
 export TF_VAR_aws_account_id=$AWS_ACCOUNT_ID
 export TF_VAR_hosted_zone_name=$HOSTED_ZONE_NAME
 export TF_VAR_hosted_zone_id=$AWS_HOSTED_ZONE_ID
-# todo need to clean this up `gitlab_hostname`?
-export TF_VAR_gitlab_hostname=$GITLAB_HOST_PREFIX
 export TF_VAR_gitlab_url=$GITLAB_URL
 export TF_VAR_email_domain=$EMAIL_DOMAIN
 export TF_VAR_region=$AWS_DEFAULT_REGION
-export TF_VAR_terraform_state_store_bucket_name=$BUCKET_NAME
+export TF_VAR_iam_user_arn=$IAM_USER_ARN
 
+if [[ "$AWS_DEFAULT_REGION" == "us-east-1" ]]; then
+  S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f1 )
+else
+  S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f3 | cut -d. -f1 )
+fi
 
-S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f2 )
 echo
 echo
 echo
-echo "your s3 bucket name is"
+echo "your s3 bucket name is:"
 echo $S3_BUCKET_NAME
+echo
 echo
 sleep 3
 
-sed -i "s|@S3_BUCKET_NAME@|${S3_BUCKET_NAME}|g" "/terraform-starter/main.tf"
-sed -i "s|@AWS_DEFAULT_REGION@|${AWS_DEFAULT_REGION}|g" "/terraform-starter/main.tf"
+sed -i "s|@S3_BUCKET_NAME@|${S3_BUCKET_NAME}|g" "/terraform/main.tf"
+sed -i "s|@AWS_DEFAULT_REGION@|${AWS_DEFAULT_REGION}|g" "/terraform/main.tf"
 
-cd terraform-starter
+cd terraform
 
 terraform init 
 

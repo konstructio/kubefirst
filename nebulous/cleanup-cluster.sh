@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+###
+# usage: ./scripts/nebulous/cleanup-cluster.sh
+###
+
+set -e
+
 echo
 echo "uninstalling the helm deployments"
 helm -n external-dns uninstall external-dns
@@ -17,15 +23,15 @@ sleep 8
 
 echo
 echo "deleting development metaphor resources"
-kubectl -n development delete service/metaphor deploy/metaphor ingress/metaphor secrets/metaphor-secrets
+kubectl -n development delete service/metaphor deploy/metaphor secrets/metaphor-secrets
 
 echo
 echo "deleting staging metaphor resources"
-kubectl -n staging delete service/metaphor deploy/metaphor ingress/metaphor secrets/metaphor-secrets
+kubectl -n staging delete service/metaphor deploy/metaphor secrets/metaphor-secrets
 
 echo
-echo "deleting staging metaphor resources"
-kubectl -n production delete service/metaphor deploy/metaphor ingress/metaphor secrets/metaphor-secrets
+echo "deleting production metaphor resources"
+kubectl -n production delete service/metaphor deploy/metaphor secrets/metaphor-secrets
 
 echo
 echo "deleting cluster namespaces"

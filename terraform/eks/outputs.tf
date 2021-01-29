@@ -2,7 +2,6 @@ output "cluster_endpoint" {
   description = "Endpoint for EKS control plane."
   value       = module.eks.cluster_endpoint
 }
-
 output "cluster_name" {
   description = "eks cluster name"
   value       = module.eks.cluster_id
@@ -23,16 +22,10 @@ output "config_map_aws_auth" {
   value       = module.eks.config_map_aws_auth
 }
 
-output "region" {
-  description = "AWS region."
-  value       = var.region
-}
-
 output "preprod_vpc_default_sg" {
   value = module.vpc.default_security_group_id
 }
 
-## todo probably fix this [0]
 output "preprod_vpc_public_subnets" {
   value = module.vpc.public_subnets
 }

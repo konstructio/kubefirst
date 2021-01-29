@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
     bucket  = "@S3_BUCKET_NAME@"
-    key    = "terraform/tfstate.tf"
+    key     = "terraform/tfstate.tf"
     region  = "@AWS_DEFAULT_REGION@"
     encrypt = true
   }
@@ -16,6 +16,7 @@ module "eks" {
 
   aws_account_id = var.aws_account_id
   cluster_name   = "k8s-preprod"
+  iam_user_arn   = var.iam_user_arn
 }
 
 data "aws_route53_zone" "hosted_zone" {
