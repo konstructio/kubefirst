@@ -4,8 +4,6 @@
 # usage: ./scripts/nebulous/cleanup-cluster.sh
 ###
 
-set -e
-
 echo
 echo "uninstalling the helm deployments"
 helm -n external-dns uninstall external-dns

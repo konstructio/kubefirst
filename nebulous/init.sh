@@ -219,6 +219,7 @@ curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
 echo "getting ~/kube/config for eks access"
 K8S_CLUSTER_NAME=$(terraform output -json | jq -r .cluster_name.value)
 aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $K8S_CLUSTER_NAME
+chmod 0600 ~/.kube/config
 
 echo
 echo "creating applications namespaces"

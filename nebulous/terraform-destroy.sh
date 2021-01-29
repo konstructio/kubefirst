@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 
 ###
-# usage: ./scripts/nebulous/terraform-destroy.sh "us-east-1" "k8s-preprod"
+# usage: ./scripts/nebulous/terraform-destroy.sh
 ###
 
 set -e
 
-AWS_DEFAULT_REGION=$1
-K8S_CLUSTER_NAME=$2
+K8S_CLUSTER_NAME=k8s-preprod
 
 aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $K8S_CLUSTER_NAME
+chmod 0600 ~/.kube/config
 
-# /scripts/nebulous/cleanup-cluster.sh
+/scripts/nebulous/cleanup-cluster.sh
 
 HOSTED_ZONE_NAME=$(aws route53 get-hosted-zone --id "${AWS_HOSTED_ZONE_ID}" | jq -r .HostedZone.Name | cut -d"." -f-3)
 EMAIL_DOMAIN=$(echo $EMAIL_ADDRESS |  cut -d"@" -f2)

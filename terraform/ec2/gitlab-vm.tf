@@ -1,9 +1,8 @@
 resource "aws_key_pair" "gitlab-public-key" {
   key_name   = "terraform-ssh-key"
-  public_key = file("~/.ssh/id_rsa.pub")
+  public_key = file("${path.root}/terraform-ssh-key.pub")
+  
 }
-
-
 
 data "aws_ami_ids" "ubuntu" {
   owners = ["099720109477"]
