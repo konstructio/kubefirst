@@ -1,5 +1,10 @@
+resource "random_string" "random" {
+  length  = 6
+  special = false
+}
+
 resource "aws_key_pair" "gitlab-public-key" {
-  key_name   = "terraform-ssh-key"
+  key_name   = "terraform-ssh-key-${random_string.random.result}"
   public_key = file("${path.root}/terraform-ssh-key.pub")
   
 }
