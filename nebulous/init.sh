@@ -97,6 +97,10 @@ else
   S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f3 | cut -d. -f1 )
 fi
 
+if [[ "$S3_BUCKET_NAME" == "" ]]; then
+  echo "error creating the s3 bucket! we can't go on, check your credentials, region, etc and try again"
+  exit 1
+fi
 echo
 echo
 echo
