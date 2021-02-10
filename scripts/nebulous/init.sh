@@ -72,7 +72,8 @@ cp ~/.ssh/id_rsa.pub /terraform/terraform-ssh-key.pub
 sleep 2
 
 # setup environment variables
-HOSTED_ZONE_NAME=$(aws route53 get-hosted-zone --id "${AWS_HOSTED_ZONE_ID}" | jq -r .HostedZone.Name | cut -d"." -f-3)
+HOSTED_ZONE_NAME=$(aws route53 get-hosted-zone --id "${AWS_HOSTED_ZONE_ID}" | jq -r .HostedZone.Name)
+HOSTED_ZONE_NAME=${HOSTED_ZONE_NAME%?}
 EMAIL_DOMAIN=$(echo $EMAIL_ADDRESS |  cut -d"@" -f2)
 BUCKET_NAME=kubefirst-demo-$(openssl rand -hex 15)
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
