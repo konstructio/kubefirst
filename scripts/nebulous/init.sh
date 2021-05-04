@@ -94,15 +94,15 @@ export TF_VAR_iam_user_arn=$IAM_USER_ARN
 
 HZ_LIVENESS_FAIL_COUNT=0
 HZ_IS_LIVE=0
-HZ_LIVENESS_URL=livenesstest.$HOSTED_ZONE_NAME.com
+HZ_LIVENESS_URL=livenesstest.$HOSTED_ZONE_NAME
 HZ_LIVENESS_JSON="{\"Comment\":\"CREATE sanity check record \",\"Changes\":[{\"Action\":\"CREATE\",\"ResourceRecordSet\":{\"Name\":\"$HZ_LIVENESS_URL\",\"Type\":\"A\",\"TTL\":300,\"ResourceRecords\":[{\"Value\":\"4.4.4.4\"}]}}]}"
 echo "Creating $HZ_LIVENESS_URL record for sanity check"
 HZ_RECORD_STATUS=$(aws route53 change-resource-record-sets --hosted-zone-id $AWS_HOSTED_ZONE_ID --change-batch "$HZ_LIVENESS_JSON" | jq -r .ChangeInfo.Status)
 
 while [[ $HZ_RECORD_STATUS == 'PENDING' && $HZ_LIVENESS_FAIL_COUNT -lt 8 && $HZ_IS_LIVE -eq 0 ]];
 do
-  nslookup $HZ_LIVENESS_URL > /dev/null
-  if [[ $? -eq 0 ]]; then
+  HZ_LOOKUP_RESULT=$(nslookup "$HZ_LIVENESS_URL" 8.8.8.8 | awk -F':' '/^Address: / { matched = 1 } matched { print $2}' | xargs)
+  if [[ "$HZ_LOOKUP_RESULT" ]]; then
     HZ_IS_LIVE=1
     echo "Sanity check passed"
   else
