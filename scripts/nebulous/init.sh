@@ -92,6 +92,34 @@ export TF_VAR_email_domain=$EMAIL_DOMAIN
 export TF_VAR_region=$AWS_DEFAULT_REGION
 export TF_VAR_iam_user_arn=$IAM_USER_ARN
 
+HZ_LIVENESS_FAIL_COUNT=0
+HZ_IS_LIVE=0
+HZ_LIVENESS_URL=livenesstest.$HOSTED_ZONE_NAME
+HZ_LIVENESS_JSON="{\"Comment\":\"CREATE sanity check record \",\"Changes\":[{\"Action\":\"CREATE\",\"ResourceRecordSet\":{\"Name\":\"$HZ_LIVENESS_URL\",\"Type\":\"A\",\"TTL\":300,\"ResourceRecords\":[{\"Value\":\"4.4.4.4\"}]}}]}"
+echo "Creating $HZ_LIVENESS_URL record for sanity check"
+HZ_RECORD_STATUS=$(aws route53 change-resource-record-sets --hosted-zone-id $AWS_HOSTED_ZONE_ID --change-batch "$HZ_LIVENESS_JSON" | jq -r .ChangeInfo.Status)
+
+while [[ $HZ_RECORD_STATUS == 'PENDING' && $HZ_LIVENESS_FAIL_COUNT -lt 8 && $HZ_IS_LIVE -eq 0 ]];
+do
+  HZ_LOOKUP_RESULT=$(nslookup "$HZ_LIVENESS_URL" 8.8.8.8 | awk -F':' '/^Address: / { matched = 1 } matched { print $2}' | xargs)
+  if [[ "$HZ_LOOKUP_RESULT" ]]; then
+    HZ_IS_LIVE=1
+    echo "Sanity check passed"
+  else
+    HZ_LIVENESS_FAIL_COUNT=$((HZ_LIVENESS_FAIL_COUNT+1))
+    echo "Sanity check url, $HZ_LIVENESS_URL, is not ready yet. Sleeping for 30 seconds"
+    sleep 30
+  fi
+done
+
+echo "Deleting $HZ_LIVENESS_URL record"
+aws route53 change-resource-record-sets --hosted-zone-id $AWS_HOSTED_ZONE_ID --change-batch "$( echo "${HZ_LIVENESS_JSON//CREATE/DELETE}" )" > /dev/null
+
+if [[ $HZ_IS_LIVE -eq 0 ]]; then
+  echo "Error creating an A record in the provided hosted zone! we can't go on, check your zone, credentials, region, etc and try again"
+  exit 1
+fi
+
 if [[ "$AWS_DEFAULT_REGION" == "us-east-1" ]]; then
   S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f2 )
 else
