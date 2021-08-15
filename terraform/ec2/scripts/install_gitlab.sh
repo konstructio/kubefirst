@@ -9,4 +9,4 @@ sudo apt-get install --assume-yes postfix
 ​
 curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.deb.sh | sudo bash
 
-sudo EXTERNAL_URL="https://${GITLAB_URL}" apt-get install gitlab-ce=13.12.9-ce.0
+sudo EXTERNAL_URL="https://${GITLAB_URL}" GITLAB_ROOT_PASSWORD="${GITLAB_BOT_ROOT_PASSWORD}" apt-get install gitlab-ce

@@ -24,8 +24,9 @@ data "aws_ami_ids" "ubuntu" {
 data "template_file" "gitlab_install_script" {
   template = file("${path.module}/scripts/install_gitlab.sh")
   vars = {
-    EMAIL_DOMAIN = var.email_domain
-    GITLAB_URL   = var.gitlab_url
+    EMAIL_DOMAIN             = var.email_domain
+    GITLAB_URL               = var.gitlab_url
+    GITLAB_BOT_ROOT_PASSWORD = var.gitlab_bot_root_password
   }
 }
 

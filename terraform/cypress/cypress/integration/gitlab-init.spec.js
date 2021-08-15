@@ -4,11 +4,11 @@ context('Window', () => {
   before(() => {
     cy.visit('/')
   })
-  it('establishes the root password', () => {
-    cy.get('#user_password').type(Cypress.env('gitlab_bot_password'))
-    cy.get('#user_password_confirmation')
-      .type(Cypress.env('gitlab_bot_password')).type('{enter}')
-  })
+  // it('establishes the root password', () => {
+  //   cy.get('#user_password').type(Cypress.env('gitlab_bot_password'))
+  //   cy.get('#user_password_confirmation')
+  //     .type(Cypress.env('gitlab_bot_password')).type('{enter}')
+  // })
 
   it('logs in with root user', () => {
     cy.get('#user_login')
@@ -19,7 +19,7 @@ context('Window', () => {
   })
   
   it('sets up a personal access token', () => {
-    cy.visit('/profile/personal_access_tokens')
+    cy.visit('/-/profile/personal_access_tokens')
     cy.get('#personal_access_token_name').type('kubefirst')
     cy.get('#personal_access_token_scopes_api').check() 
     cy.get('#personal_access_token_scopes_write_repository').check()

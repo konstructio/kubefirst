@@ -5,9 +5,15 @@ variable "region" {
 variable "aws_account_id" {
   type = string
 }
+
 variable "gitlab_url" {
   type = string
 }
+
+variable "gitlab_bot_root_password" {
+  type = string
+}
+
 variable "hosted_zone_name" {
   type = string
 }
