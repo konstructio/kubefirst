@@ -91,6 +91,7 @@ export TF_VAR_gitlab_url=$GITLAB_URL
 export TF_VAR_email_domain=$EMAIL_DOMAIN
 export TF_VAR_region=$AWS_DEFAULT_REGION
 export TF_VAR_iam_user_arn=$IAM_USER_ARN
+export TF_VAR_gitlab_bot_root_password=$GITLAB_BOT_ROOT_PASSWORD
 
 HZ_LIVENESS_FAIL_COUNT=0
 HZ_IS_LIVE=0

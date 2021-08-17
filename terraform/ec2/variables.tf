@@ -14,6 +14,10 @@ variable "region" {
   type = string
 }
 
+variable "gitlab_bot_root_password" {
+  type = string
+}
+
 variable "gitlab_url" {
   type = string
 }
@@ -21,6 +25,7 @@ variable "gitlab_url" {
 variable "email_domain" {
   type = string
 }
+
 variable "hosted_zone_id" {
   type = string
 }
