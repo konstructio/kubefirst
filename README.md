@@ -14,7 +14,7 @@ The Kubefirst Open Source Starter Plan repository
 
 # contributor guide
 
-The docs above are tailored to our end user experience. However things are a little different if you're contributing the nebulous itself. If you're **contributing** to nebulous, the docs below are for you.
+The docs above are tailored to our end user's experience. However things are a little different if you're contributing to nebulous itself. The docs that follow are intended only for source contributors.
 
 ### step 1 - setup nebulous.env
 
@@ -27,6 +27,7 @@ AWS_SECRET_ACCESS_KEY=YOUR_ADMIN_AWS_SECRET_ACCESS_KEY
 AWS_HOSTED_ZONE_ID=YOUR_AWS_HOSTED_ZONE_ID
 AWS_DEFAULT_REGION=YOUR_AWS_REGION
 EMAIL_ADDRESS=YOUR_EMAIL_ADDRESS
+GITLAB_BOT_ROOT_PASSWORD=YOUR_GITLAB_BOT_ROOT_PASSWORD
 EOF
 ```
 
@@ -35,7 +36,7 @@ EOF
 Come up with local tag name for your nebulous image. We'll use `foo` as our example local tag name in these docs. To build the `foo` tag of nebulous run the following from your local nebulous repo root directory.
 
 ```bash
-nebulous docker build . -t nebulous:foo
+docker build . -t nebulous:foo
 ```
 
 ### step 3 - running nebulous
@@ -43,5 +44,19 @@ nebulous docker build . -t nebulous:foo
 Once you have built the `nebulous:foo` image as shown above, you can kickoff the automated init script by running
 
 ```
-nebulous docker run --env-file=kubefirst.env -v $PWD/terraform:/terraform --entrypoint /scripts/nebulous/init.sh nebulous:foo
+docker run --env-file=kubefirst.env -v $PWD/terraform:/terraform --entrypoint /scripts/nebulous/init.sh nebulous:foo
+```
+
+### step 4 - teardown
+
+Once you have built the `nebulous:foo` image as shown above, you can kickoff the automated init script by running
+
+```
+docker run -it --env-file=kubefirst.env -v $PWD/terraform:/terraform --entrypoint /bin/sh nebulous:foo
+```
+
+and then in your interactice docker shell run
+
+```
+/scripts/nebulous/terraform-destroy.sh
 ```
