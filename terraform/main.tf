@@ -19,6 +19,10 @@ module "eks" {
   iam_user_arn   = var.iam_user_arn
 }
 
+module "dynamodb" {
+  source = "./dynamodb"
+}
+
 data "aws_route53_zone" "hosted_zone" {
   name = var.hosted_zone_name
 }
