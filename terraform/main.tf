@@ -7,6 +7,15 @@ terraform {
   }
 }
 
+# terraform {
+#   backend "s3" {
+#     bucket  = "@S3_BUCKET_NAME@"
+#     key     = "terraform/tfstate.tf"
+#     region  = "@AWS_DEFAULT_REGION@"
+#     encrypt = true
+#   }
+# }
+
 provider "aws" {
 
   region = var.region
@@ -19,8 +28,17 @@ module "eks" {
   iam_user_arn   = var.iam_user_arn
 }
 
+module "kms" {
+  aws_account_id = var.aws_account_id
+  source = "./kms"
+}
+
 module "dynamodb" {
   source = "./dynamodb"
+}
+
+module "s3" {
+  source = "./s3"
 }
 
 data "aws_route53_zone" "hosted_zone" {
