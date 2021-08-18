@@ -50,7 +50,7 @@ echo '     \/         \/     \/                     \/        '
 echo
 echo
 echo "      hi, welcome to the Kubefirst Open Source Starter Installation. the install time is about"
-echo "      25 - 30 min to provision your new aws infrastructure. while you're waiting"
+echo "      15 - 20 min to provision your new aws infrastructure. while you're waiting"
 echo "      we recommend checking out our docs to familiarize yourself with what's ahead"
 echo
 echo "      https://docs.kubefirst.com/starter"
@@ -59,7 +59,7 @@ echo
 echo
 echo
 
-sleep 18 
+sleep 12 
 
 echo "executing source-profile.sh"
 source /scripts/nebulous/source-profile.sh 
@@ -78,9 +78,8 @@ EMAIL_DOMAIN=$(echo $EMAIL_ADDRESS |  cut -d"@" -f2)
 BUCKET_NAME=kubefirst-demo-$(openssl rand -hex 15)
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
 IAM_USER_ARN=$(aws sts get-caller-identity | jq -r .Arn)
-GITLAB_URL_PREFIX=gitlab-kubefirst-v1
+GITLAB_URL_PREFIX=gitlab
 GITLAB_URL="${GITLAB_URL_PREFIX}.${HOSTED_ZONE_NAME}"
-GITLAB_BOT_ROOT_PASSWORD=$(openssl rand -hex 11)
 GITLAB_ROOT_USER=root
 
 #* terraform separation: all these values should come from pre-determined env's
