@@ -47,15 +47,23 @@ Once you have built the `nebulous:foo` image as shown above, you can kickoff the
 docker run --env-file=kubefirst.env -v $PWD/terraform:/terraform --entrypoint /scripts/nebulous/init.sh nebulous:foo
 ```
 
-### step 4 - teardown
+### step 4 - teardown (once you're ready to tear it all back down, obviously)
 
-Once you have built the `nebulous:foo` image as shown above, you can kickoff the automated init script by running
+There are a few things to note about teardown.
+
+Nebulous creates a VPC, some subnets, a gitlab server, a kubernetes cluster, some policies, roles, and a few other things (complete list in the teardown docs). Terraform knows about all of these things, and if you only created these resources, you'll be able to run teardown without thinking too hard.
+
+However, terraform is only able to destroy resources that are managed in terraform. It doesn't know about things you do manually. Anything you may have added through non-terraform operations must be manually removed before running the teardown script. 
+
+Let's consider, for example, a scenario where you manually `helm install`ed an app to your new cluster, and that app spins up a new load balancer in your VPC. If you don't remove that app and its load balancer before running destroy, you won't be able to complete the terraform destroy operation. This is because you can't remove a VPC that still has a live load balancer running in it.
+
+With that context in mind, once you've removed the manual things you may have added to this environment, you can kickoff the automated destroy script by running:
 
 ```
 docker run -it --env-file=kubefirst.env -v $PWD/terraform:/terraform --entrypoint /bin/sh nebulous:foo
 ```
 
-and then in your interactice docker shell run
+and then in your interactice docker shell you need to run:
 
 ```
 /scripts/nebulous/terraform-destroy.sh
