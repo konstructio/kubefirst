@@ -1,4 +1,4 @@
-FROM kubefirst/kubefirst-builder:0.1-ubuntu
+FROM kubefirst/kubefirst-builder:0.4-ubuntu
 
 ADD scripts/nebulous /scripts/nebulous
 ADD terraform /terraform
