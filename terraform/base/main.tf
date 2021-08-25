@@ -18,7 +18,7 @@ terraform {
 
 provider "aws" {
 
-  region = var.region
+  region = var.aws_region
 }
 module "eks" {
   source = "./eks"
@@ -48,7 +48,7 @@ data "aws_route53_zone" "hosted_zone" {
 module "ec2" {
   source = "./ec2"
 
-  region                   = var.region
+  aws_region               = var.aws_region
   vpc_default_sg_id        = module.eks.preprod_vpc_default_sg
   vpc_public_subnet        = module.eks.preprod_vpc_public_subnets[0]
   gitlab_sg_id             = module.security-groups.gitlab_sg_id

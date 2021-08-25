@@ -35,7 +35,7 @@ export TF_VAR_gitlab_bot_root_password=$GITLAB_BOT_ROOT_PASSWORD
 
 echo "tearing down all the infrastructure provisioned by nebulous"
 
-cd terraform
+cd /terraform
 
 terraform init
 

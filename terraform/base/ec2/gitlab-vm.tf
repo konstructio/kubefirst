@@ -33,7 +33,7 @@ data "template_file" "gitlab_install_script" {
 resource "aws_instance" "gitlab" {
   ami                         = data.aws_ami_ids.ubuntu.ids[0]
   associate_public_ip_address = true
-  availability_zone           = "${var.region}a"
+  availability_zone           = "${var.aws_region}a"
   disable_api_termination     = false
   ebs_optimized               = false
   instance_type               = "t3.large"

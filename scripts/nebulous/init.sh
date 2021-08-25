@@ -16,7 +16,8 @@ source ~/.profile
 # exit 0
 # echo
 # echo
-#* need to tokenize terraform/main.tf
+#* need to tokenize terraform/base/main.tf
+# todo need to move `key` to terraform/base/tfstate.tf
 # terraform {
 #   backend "s3" {
 #     bucket  = "@S3_BUCKET_NAME@"
@@ -69,9 +70,9 @@ if [ ! -f $HOME/.ssh/id_rsa ]
 then
     echo "creating ssh key pair"
     ssh-keygen -o -t rsa -b 4096 -C "${EMAIL_ADDRESS}" -f $HOME/.ssh/id_rsa -q -N "" > /dev/null
-    echo "copying ssh keys to terraform/terraform-ssh-key*"
-    cp ~/.ssh/id_rsa /terraform/terraform-ssh-key
-    cp ~/.ssh/id_rsa.pub /terraform/terraform-ssh-key.pub
+    echo "copying ssh keys to terraform/base/terraform-ssh-key*"
+    cp ~/.ssh/id_rsa /terraform/base/terraform-ssh-key
+    cp ~/.ssh/id_rsa.pub /terraform/base/terraform-ssh-key.pub
     sleep 2
 else
     echo "reusing existing ssh key pair"
@@ -103,11 +104,12 @@ GITLAB_ROOT_USER=root
 
 #* terraform separation: all these values should come from pre-determined env's
 export TF_VAR_aws_account_id=$AWS_ACCOUNT_ID
+export TF_VAR_aws_account_name=starter
+export TF_VAR_aws_region=$AWS_DEFAULT_REGION
 export TF_VAR_hosted_zone_name=$HOSTED_ZONE_NAME
 export TF_VAR_hosted_zone_id=$AWS_HOSTED_ZONE_ID
 export TF_VAR_gitlab_url=$GITLAB_URL
 export TF_VAR_email_domain=$EMAIL_DOMAIN
-export TF_VAR_region=$AWS_DEFAULT_REGION
 export TF_VAR_iam_user_arn=$IAM_USER_ARN
 export TF_VAR_gitlab_bot_root_password=$GITLAB_BOT_ROOT_PASSWORD
 
@@ -146,12 +148,12 @@ fi
 
 
 # detokenize terraform
-sed -i "s|@S3_BUCKET_NAME@|${S3_BUCKET_NAME}|g" "/terraform/main.tf"
-sed -i "s|@AWS_DEFAULT_REGION@|${AWS_DEFAULT_REGION}|g" "/terraform/main.tf"
+sed -i "s|@S3_BUCKET_NAME@|${S3_BUCKET_NAME}|g" "/terraform/base/main.tf"
+sed -i "s|@AWS_DEFAULT_REGION@|${AWS_DEFAULT_REGION}|g" "/terraform/base/main.tf"
 
 
 # apply terraform
-cd terraform
+cd /terraform/base
 if [ -z "$SKIP_TERRAFORM_APPLY" ]
 then
   echo "applying bootstrap terraform"
@@ -175,7 +177,7 @@ chmod 0600 ~/.kube/config
 
 # grab the vault unseal cluster keys, decode to json, parse the root_token
 export VAULT_TOKEN=$(kubectl -n vault get secret vault-unseal-keys -ojson | jq -r '.data."cluster-keys.json"' | base64 -d | jq -r .root_token)
-export VAULT_ADDR="vault.${HOSTED_ZONE_NAME}"
+export VAULT_ADDR="https://vault.${HOSTED_ZONE_NAME}"
 # kubectl create namespace kubefirst
 # kubectl create secret -n kubefirst generic kubefirst-secrets \
 #   --from-literal=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
@@ -190,7 +192,7 @@ export VAULT_ADDR="vault.${HOSTED_ZONE_NAME}"
 # TODO: add the above back in
 
 echo "applying vault terraform"
-cd vault
+cd /terraform/vault
 terraform init 
 terraform apply -auto-approve
 echo "vault terraform complete"
@@ -212,10 +214,10 @@ then
   export CYPRESS_BASE_URL="https://${GITLAB_URL}"
   export CYPRESS_gitlab_bot_username_before=$GITLAB_ROOT_USER
   export CYPRESS_gitlab_bot_password=$GITLAB_BOT_ROOT_PASSWORD
-  cd cypress
+  cd /terraform/cypress
   npm ci
   $(npm bin)/cypress run
-  cd .. 
+  cd /terraform
 
   export GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN=$(cat ./.gitlab-bot-access-token)
   export RUNNER_REGISTRATION_TOKEN=$(cat ./.gitlab-runner-registration-token)

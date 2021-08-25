@@ -1,20 +1,8 @@
-variable "vpc_default_sg_id" {
+variable "aws_region" {
   type = string
 }
 
-variable "vpc_public_subnet" {
-  type = string
-}
-
-variable "gitlab_sg_id" {
-  type = string
-}
-
-variable "region" {
-  type = string
-}
-
-variable "gitlab_bot_root_password" {
+variable "aws_account_id" {
   type = string
 }
 
@@ -22,10 +10,18 @@ variable "gitlab_url" {
   type = string
 }
 
+variable "gitlab_bot_root_password" {
+  type = string
+}
+
+variable "hosted_zone_name" {
+  type = string
+}
+
 variable "email_domain" {
   type = string
 }
 
-variable "hosted_zone_id" {
+variable "iam_user_arn" {
   type = string
 }
