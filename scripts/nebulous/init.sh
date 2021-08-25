@@ -64,18 +64,37 @@ sleep 12
 echo "executing source-profile.sh"
 source /scripts/nebulous/source-profile.sh 
 
-ssh-keygen -o -t rsa -b 4096 -C "${EMAIL_ADDRESS}" -f $HOME/.ssh/id_rsa -q -N "" > /dev/null
+# conditional configuration setup
+if [ ! -f $HOME/.ssh/id_rsa ]
+then
+    echo "creating ssh key pair"
+    ssh-keygen -o -t rsa -b 4096 -C "${EMAIL_ADDRESS}" -f $HOME/.ssh/id_rsa -q -N "" > /dev/null
+    echo "copying ssh keys to terraform/terraform-ssh-key*"
+    cp ~/.ssh/id_rsa /terraform/terraform-ssh-key
+    cp ~/.ssh/id_rsa.pub /terraform/terraform-ssh-key.pub
+    sleep 2
+else
+    echo "reusing existing ssh key pair"
+fi
 
-echo "copying ssh keys to terraform/terraform-ssh-key*"
-cp ~/.ssh/id_rsa /terraform/terraform-ssh-key
-cp ~/.ssh/id_rsa.pub /terraform/terraform-ssh-key.pub
-sleep 2
+if [ -z "$BUCKET_NAME" ]
+then
+    BUCKET_NAME=kubefirst-demo-$(openssl rand -hex 15)
+    if [[ "$AWS_DEFAULT_REGION" == "us-east-1" ]]; then
+      S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f2 )
+    else
+      S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f3 | cut -d. -f1 )
+    fi
+else
+    S3_BUCKET_NAME="${BUCKET_NAME}"
+    echo "reusing bucket name ${S3_BUCKET_NAME}"
+fi
+
 
 # setup environment variables
 HOSTED_ZONE_NAME=$(aws route53 get-hosted-zone --id "${AWS_HOSTED_ZONE_ID}" | jq -r .HostedZone.Name)
 HOSTED_ZONE_NAME=${HOSTED_ZONE_NAME%?}
 EMAIL_DOMAIN=$(echo $EMAIL_ADDRESS |  cut -d"@" -f2)
-BUCKET_NAME=kubefirst-demo-$(openssl rand -hex 15)
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
 IAM_USER_ARN=$(aws sts get-caller-identity | jq -r .Arn)
 GITLAB_URL_PREFIX=gitlab
@@ -92,161 +111,173 @@ export TF_VAR_region=$AWS_DEFAULT_REGION
 export TF_VAR_iam_user_arn=$IAM_USER_ARN
 export TF_VAR_gitlab_bot_root_password=$GITLAB_BOT_ROOT_PASSWORD
 
-HZ_LIVENESS_FAIL_COUNT=0
-HZ_IS_LIVE=0
-HZ_LIVENESS_URL=livenesstest.$HOSTED_ZONE_NAME
-HZ_LIVENESS_JSON="{\"Comment\":\"CREATE sanity check record \",\"Changes\":[{\"Action\":\"CREATE\",\"ResourceRecordSet\":{\"Name\":\"$HZ_LIVENESS_URL\",\"Type\":\"A\",\"TTL\":300,\"ResourceRecords\":[{\"Value\":\"4.4.4.4\"}]}}]}"
-echo "Creating $HZ_LIVENESS_URL record for sanity check"
-HZ_RECORD_STATUS=$(aws route53 change-resource-record-sets --hosted-zone-id $AWS_HOSTED_ZONE_ID --change-batch "$HZ_LIVENESS_JSON" | jq -r .ChangeInfo.Status)
 
-while [[ $HZ_RECORD_STATUS == 'PENDING' && $HZ_LIVENESS_FAIL_COUNT -lt 8 && $HZ_IS_LIVE -eq 0 ]];
-do
-  HZ_LOOKUP_RESULT=$(nslookup "$HZ_LIVENESS_URL" 8.8.8.8 | awk -F':' '/^Address: / { matched = 1 } matched { print $2}' | xargs)
-  if [[ "$HZ_LOOKUP_RESULT" ]]; then
-    HZ_IS_LIVE=1
-    echo "Sanity check passed"
-  else
-    HZ_LIVENESS_FAIL_COUNT=$((HZ_LIVENESS_FAIL_COUNT+1))
-    echo "Sanity check url, $HZ_LIVENESS_URL, is not ready yet. Sleeping for 30 seconds"
-    sleep 30
+# check for liveness of the hosted zone
+if [ -z "$SKIP_HZ_CHECK" ]
+then
+  HZ_LIVENESS_FAIL_COUNT=0
+  HZ_IS_LIVE=0
+  HZ_LIVENESS_URL=livenesstest.$HOSTED_ZONE_NAME
+  HZ_LIVENESS_JSON="{\"Comment\":\"CREATE sanity check record \",\"Changes\":[{\"Action\":\"CREATE\",\"ResourceRecordSet\":{\"Name\":\"$HZ_LIVENESS_URL\",\"Type\":\"A\",\"TTL\":300,\"ResourceRecords\":[{\"Value\":\"4.4.4.4\"}]}}]}"
+  echo "Creating $HZ_LIVENESS_URL record for sanity check"
+  HZ_RECORD_STATUS=$(aws route53 change-resource-record-sets --hosted-zone-id $AWS_HOSTED_ZONE_ID --change-batch "$HZ_LIVENESS_JSON" | jq -r .ChangeInfo.Status)
+
+  while [[ $HZ_RECORD_STATUS == 'PENDING' && $HZ_LIVENESS_FAIL_COUNT -lt 8 && $HZ_IS_LIVE -eq 0 ]];
+  do
+    HZ_LOOKUP_RESULT=$(nslookup "$HZ_LIVENESS_URL" 8.8.8.8 | awk -F':' '/^Address: / { matched = 1 } matched { print $2}' | xargs)
+    if [[ "$HZ_LOOKUP_RESULT" ]]; then
+      HZ_IS_LIVE=1
+      echo "Sanity check passed"
+    else
+      HZ_LIVENESS_FAIL_COUNT=$((HZ_LIVENESS_FAIL_COUNT+1))
+      echo "Sanity check url, $HZ_LIVENESS_URL, is not ready yet. Sleeping for 30 seconds"
+      sleep 30
+    fi
+  done
+
+  echo "Deleting $HZ_LIVENESS_URL record"
+  aws route53 change-resource-record-sets --hosted-zone-id $AWS_HOSTED_ZONE_ID --change-batch "$( echo "${HZ_LIVENESS_JSON//CREATE/DELETE}" )" > /dev/null
+
+  if [[ $HZ_IS_LIVE -eq 0 ]]; then
+    echo "Error creating an A record in the provided hosted zone! we can't go on, check your zone, credentials, region, etc and try again"
+    exit 1
   fi
-done
-
-echo "Deleting $HZ_LIVENESS_URL record"
-aws route53 change-resource-record-sets --hosted-zone-id $AWS_HOSTED_ZONE_ID --change-batch "$( echo "${HZ_LIVENESS_JSON//CREATE/DELETE}" )" > /dev/null
-
-if [[ $HZ_IS_LIVE -eq 0 ]]; then
-  echo "Error creating an A record in the provided hosted zone! we can't go on, check your zone, credentials, region, etc and try again"
-  exit 1
 fi
 
-if [[ "$AWS_DEFAULT_REGION" == "us-east-1" ]]; then
-  S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f2 )
-else
-  S3_BUCKET_NAME=$(aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f3 | cut -d. -f1 )
-fi
 
-if [[ "$S3_BUCKET_NAME" == "" ]]; then
-  echo "error creating the s3 bucket! we can't go on, check your credentials, region, etc and try again"
-  exit 1
-fi
-echo
-echo
-echo
-echo "your s3 bucket name is:"
-echo $S3_BUCKET_NAME
-echo
-echo
-sleep 3
-
+# detokenize terraform
 sed -i "s|@S3_BUCKET_NAME@|${S3_BUCKET_NAME}|g" "/terraform/main.tf"
 sed -i "s|@AWS_DEFAULT_REGION@|${AWS_DEFAULT_REGION}|g" "/terraform/main.tf"
 
+
+# apply terraform
 cd terraform
-
-terraform init 
-
-terraform apply -auto-approve
-
-echo
-echo "testing gitlab for connectivity"
-echo
-/scripts/nebulous/wait-for-200.sh "https://${GITLAB_URL}/help"
-echo
-echo "gitlab is ready, executing cypress"
-echo
+if [ -z "$SKIP_HZ_CHECK" ]
+then
+  echo "applying bootstrap terraform"
+  terraform init 
+  terraform apply -auto-approve
+  echo "bootstrap terraform complete"
+fi
 
 
-#! uncomment these lines
-export CYPRESS_BASE_URL="https://${GITLAB_URL}"
-export CYPRESS_gitlab_bot_username_before=$GITLAB_ROOT_USER
-export CYPRESS_gitlab_bot_password=$GITLAB_BOT_ROOT_PASSWORD
-cd cypress
-# ## remove any .skip references in cypress/cypress/integration/gitlab-init.spec.js
-npm ci
-$(npm bin)/cypress run
-cd .. 
-
-export GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN=$(cat ./.gitlab-bot-access-token)
-export RUNNER_REGISTRATION_TOKEN=$(cat ./.gitlab-runner-registration-token)
-
-echo
-echo "    IMPORTANT:"
-echo "      THIS IS THE ROOT PASSWORD FOR YOUR GITLAB INSTANCE"
-echo "      DO NOT LOSE THIS VALUE"
-echo
-echo "      username: root"
-echo "      password: ${CYPRESS_gitlab_bot_password}"
-echo
-echo "      GitLab URL: https://${GITLAB_URL}/kubefirst"
-echo
-echo
-echo
-echo "    hydrating your GitLab server's kubefirst group with CI/CD"
-echo "      variables, check it out -> https://$GITLAB_URL/groups/kubefirst/-/settings/ci_cd"
-echo
-echo
-sleep 18
-
-TF_OUTPUT=$(terraform output -json)
+#! TODO: something has to happen here to argo create the registry in gitops
 
 
-GITLAB_KUBEFIRST_GROUP_ID=$(curl -s --request POST --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" --header "Content-Type: application/json" \
-  --data "{\"path\": \"kubefirst\", \"name\": \"kubefirst\" }" \
-  "https://$GITLAB_URL/api/v4/groups" | jq -r .id)
+# grab the vault unseal cluster keys, decode to json, parse the root_token
+export VAULT_TOKEN=$(kubectl -n vault get secret vault-unseal-keys -ojson | jq -r '.data."cluster-keys.json"' | base64 -d | jq -r .root_token)
+kubectl create namespace kubefirst
+kubectl create secret -n kubefirst generic kubefirst-secrets \
+  --from-literal=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
+  --from-literal=AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
+  --from-literal=AWS_HOSTED_ZONE_ID=${AWS_HOSTED_ZONE_ID} \
+  --from-literal=AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION} \
+  --from-literal=EMAIL_ADDRESS=${EMAIL_ADDRESS} \
+  --from-literal=GITLAB_BOT_ROOT_PASSWORD=${GITLAB_BOT_ROOT_PASSWORD} \
+  --from-literal=VAULT_TOKEN=${VAULT_TOKEN} \
+  --from-literal=VAULT_ADDR=${VAULT_ADDR}
 
 
-curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
---request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
---form "key=ACM_CERTIFICATE_ARN" --form "value=$(echo $TF_OUTPUT | jq -r .acm_arn.value)"  > /dev/null
+if [ -z "$SKIP_GITLAB_RECONFIG" ]
+then
+  # reconfigure gitlab server
+  echo
+  echo "testing gitlab for connectivity"
+  echo
+  /scripts/nebulous/wait-for-200.sh "https://${GITLAB_URL}/help"
+  echo
+  echo "gitlab is ready, executing cypress"
+  echo
 
-curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
---request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
---form "key=ECR_REGISTRY_BASE_URL" --form "value=$(echo $TF_OUTPUT | jq -r .ecr_repo_arns.value.metaphor_repository_info.registry_url | cut -d/ -f1)" > /dev/null
+  export CYPRESS_BASE_URL="https://${GITLAB_URL}"
+  export CYPRESS_gitlab_bot_username_before=$GITLAB_ROOT_USER
+  export CYPRESS_gitlab_bot_password=$GITLAB_BOT_ROOT_PASSWORD
+  cd cypress
+  npm ci
+  $(npm bin)/cypress run
+  cd .. 
 
-curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
---request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
---form "key=AWS_ACCESS_KEY_ID" --form "value=$AWS_ACCESS_KEY_ID" > /dev/null
+  export GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN=$(cat ./.gitlab-bot-access-token)
+  export RUNNER_REGISTRATION_TOKEN=$(cat ./.gitlab-runner-registration-token)
 
-curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
---request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
---form "key=AWS_SECRET_ACCESS_KEY" --form "value=$AWS_SECRET_ACCESS_KEY" > /dev/null
+  echo
+  echo "    IMPORTANT:"
+  echo "      THIS IS THE ROOT PASSWORD FOR YOUR GITLAB INSTANCE"
+  echo "      DO NOT LOSE THIS VALUE"
+  echo
+  echo "      username: root"
+  echo "      password: ${CYPRESS_gitlab_bot_password}"
+  echo
+  echo "      GitLab URL: https://${GITLAB_URL}/kubefirst"
+  echo
+  echo
+  echo
+  echo "    hydrating your GitLab server's kubefirst group with CI/CD"
+  echo "      variables, check it out -> https://$GITLAB_URL/groups/kubefirst/-/settings/ci_cd"
+  echo
+  echo
+  sleep 18
 
-curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
---request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
---form "key=AWS_ACCOUNT_ID" --form "value=$(aws sts get-caller-identity | jq -r .Account)" > /dev/null
+  TF_OUTPUT=$(terraform output -json)
 
-curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
---request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
---form "key=GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" --form "value=$GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" > /dev/null
 
-curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
---request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
---form "key=GITLAB_BOT_SSH_PRIVATE_KEY" --form "value=$(cat ${HOME}/.ssh/id_rsa)" > /dev/null
+  GITLAB_KUBEFIRST_GROUP_ID=$(curl -s --request POST --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" --header "Content-Type: application/json" \
+    --data "{\"path\": \"kubefirst\", \"name\": \"kubefirst\" }" \
+    "https://$GITLAB_URL/api/v4/groups" | jq -r .id)
 
-curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
---request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
---form "key=GITLAB_BOT_SSH_PUBLIC_KEY" --form "value=$(cat ${HOME}/.ssh/id_rsa.pub)"  > /dev/null
 
-curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
---request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
---form "key=HOSTED_ZONE_NAME" --form "value=$HOSTED_ZONE_NAME"  > /dev/null
+  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
+  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
+  --form "key=ACM_CERTIFICATE_ARN" --form "value=$(echo $TF_OUTPUT | jq -r .acm_arn.value)"  > /dev/null
 
-curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
---request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
---form "key=GITLAB_KUBEFIRST_GROUP_ID" --form "value=$GITLAB_KUBEFIRST_GROUP_ID"  > /dev/null
+  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
+  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
+  --form "key=ECR_REGISTRY_BASE_URL" --form "value=$(echo $TF_OUTPUT | jq -r .ecr_repo_arns.value.metaphor_repository_info.registry_url | cut -d/ -f1)" > /dev/null
 
-curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
---request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
---form "key=AWS_DEFAULT_REGION" --form "value=$AWS_DEFAULT_REGION"  > /dev/null
+  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
+  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
+  --form "key=AWS_ACCESS_KEY_ID" --form "value=$AWS_ACCESS_KEY_ID" > /dev/null
 
-curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
---request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
---form "key=RUNNER_REGISTRATION_TOKEN" --form "value=$RUNNER_REGISTRATION_TOKEN"  > /dev/null
+  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
+  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
+  --form "key=AWS_SECRET_ACCESS_KEY" --form "value=$AWS_SECRET_ACCESS_KEY" > /dev/null
 
-curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
---request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
---form "key=GITLAB_BOT_ROOT_PASSWORD" --form "value=$GITLAB_BOT_ROOT_PASSWORD"  > /dev/null
+  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
+  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
+  --form "key=AWS_ACCOUNT_ID" --form "value=$(aws sts get-caller-identity | jq -r .Account)" > /dev/null
+
+  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
+  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
+  --form "key=GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" --form "value=$GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" > /dev/null
+
+  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
+  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
+  --form "key=GITLAB_BOT_SSH_PRIVATE_KEY" --form "value=$(cat ${HOME}/.ssh/id_rsa)" > /dev/null
+
+  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
+  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
+  --form "key=GITLAB_BOT_SSH_PUBLIC_KEY" --form "value=$(cat ${HOME}/.ssh/id_rsa.pub)"  > /dev/null
+
+  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
+  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
+  --form "key=HOSTED_ZONE_NAME" --form "value=$HOSTED_ZONE_NAME"  > /dev/null
+
+  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
+  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
+  --form "key=GITLAB_KUBEFIRST_GROUP_ID" --form "value=$GITLAB_KUBEFIRST_GROUP_ID"  > /dev/null
+
+  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
+  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
+  --form "key=AWS_DEFAULT_REGION" --form "value=$AWS_DEFAULT_REGION"  > /dev/null
+
+  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
+  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
+  --form "key=RUNNER_REGISTRATION_TOKEN" --form "value=$RUNNER_REGISTRATION_TOKEN"  > /dev/null
+
+  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
+  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
+  --form "key=GITLAB_BOT_ROOT_PASSWORD" --form "value=$GITLAB_BOT_ROOT_PASSWORD"  > /dev/null
+fi
 
 
 echo "getting ~/kube/config for eks access"
@@ -265,7 +296,7 @@ helm repo add bitnami https://charts.bitnami.com/bitnami > /dev/null
 helm repo update > /dev/null
 echo
 echo
-echo "modifying heelm values yamls"
+echo "modifying helm values yamls"
 echo
 echo "detokenizing values.yaml files"
 /scripts/ci-cd/detokenize.sh "@HOSTED_ZONE_NAME@" "${HOSTED_ZONE_NAME}" "/scripts/nebulous/helm"
@@ -311,7 +342,7 @@ echo "      4. commit to the master branch of metaphor and checkout your pipelin
 echo "         https://$GITLAB_URL/kubefirst/metaphor/-/pipelines"
 echo "           app url: metaphor-development.$HOSTED_ZONE_NAME"
 echo "      5. We created an S3 bucket to be the source of truth and state store of your kubefirst"
-echo "         starter plan, its name is $S3_BUCKET_NAMEE"
+echo "         starter plan, its name is $S3_BUCKET_NAME"
 echo
 echo
 echo
