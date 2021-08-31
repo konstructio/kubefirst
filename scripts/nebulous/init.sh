@@ -352,73 +352,40 @@ then
 fi
 
 
-
-# echo
-# echo "creating applications namespaces"
-# kubectl apply -f /scripts/nebulous/kubernetes/namespaces.yaml
-
-# echo
-# echo "adding helm repositories"
-# helm repo add gitlab https://charts.gitlab.io > /dev/null
-# helm repo add bitnami https://charts.bitnami.com/bitnami > /dev/null
-# helm repo update > /dev/null
-# echo
-# echo
-# echo "modifying helm values yamls"
-# echo
-# echo "detokenizing values.yaml files"
-# /scripts/ci-cd/detokenize.sh "@HOSTED_ZONE_NAME@" "${HOSTED_ZONE_NAME}" "/scripts/nebulous/helm"
-# /scripts/ci-cd/detokenize.sh "@GITLAB_URL@" "https://${GITLAB_URL}" "/scripts/nebulous/helm"
-# /scripts/ci-cd/detokenize.sh "@RUNNER_REGISTRATION_TOKEN@" "${RUNNER_REGISTRATION_TOKEN}" "/scripts/nebulous/helm"
-# echo
-# echo
-
-# echo "installing gitlab runners to build and deploy metaphor"
-# echo
-# helm -n gitlab-runner install gitlab-runner -f /scripts/nebulous/helm/gitlab-runner.yaml gitlab/gitlab-runner
-# kubectl -n gitlab-runner scale deployment/gitlab-runner-gitlab-runner --replicas=2
-# echo
-# echo
-# echo "installing external-dns for automatic DNS records"
-# echo
-# helm -n external-dns install external-dns -f /scripts/nebulous/helm/external-dns.yaml bitnami/external-dns
-# echo
-# echo
-
-# echo
-# echo
-# echo 
-# echo 
-# echo
-# echo
-# echo "    congratulations you've made it."
-# echo "    so what next? checkout our docs!"
-# echo "       https://docs.kubefirst.com/starter"
-# echo
-# echo
-# echo
-# echo "    tl;dr"
-# echo
-# echo "      1. visit your new GitLab instance at"
-# echo "           https://$GITLAB_URL/kubefirst"
-# echo "      2. sign in with:"
-# echo "           username: root"
-# echo "           password: $GITLAB_BOT_ROOT_PASSWORD"
-# echo "      3. import the metaphor project by repo url to your new kubefirst group in gitlab"
-# echo "           repo url: https://github.com/kubefirst/metaphor.git"
-# echo "      4. commit to the master branch of metaphor and checkout your pipelines"
-# echo "         https://$GITLAB_URL/kubefirst/metaphor/-/pipelines"
-# echo "           app url: metaphor-development.$HOSTED_ZONE_NAME"
-# echo "      5. We created an S3 bucket to be the source of truth and state store of your kubefirst"
-# echo "         starter plan, its name is $S3_BUCKET_NAME"
-# echo
-# echo
-# echo
-# echo
-# echo
-# echo
-# echo
-# echo
-# echo
-# echo
+echo
+echo
+echo 
+echo 
+echo
+echo
+echo "    congratulations you've made it."
+echo "    so what next? checkout our docs!"
+echo "       https://docs.kubefirst.com/starter"
+echo
+echo
+echo
+echo "    tl;dr"
+echo
+echo "      1. visit your new GitLab instance at"
+echo "           https://$GITLAB_URL/kubefirst"
+echo "      2. sign in with:"
+echo "           username: root"
+echo "           password: $GITLAB_BOT_ROOT_PASSWORD"
+echo "      3. import the metaphor project by repo url to your new kubefirst group in gitlab"
+echo "           repo url: https://github.com/kubefirst/metaphor.git"
+echo "      4. commit to the master branch of metaphor and checkout your pipelines"
+echo "         https://$GITLAB_URL/kubefirst/metaphor/-/pipelines"
+echo "           app url: metaphor-development.$HOSTED_ZONE_NAME"
+echo "      5. We created an S3 bucket to be the source of truth and state store of your kubefirst"
+echo "         starter plan, its name is $S3_BUCKET_NAME"
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo
 
