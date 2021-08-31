@@ -44,6 +44,8 @@ spec:
 # todos 
 - need to add `argocd app wait/sync` after each sync wave, potentially add kuttl tests
 - new builder / nebulous image with vault-cli (see `kubefirst-builder:spike`) in jobs and figure out whats missing or what was published
+- change gitlab group name to `kubefirst`
+- 
 
 
 # nebulous

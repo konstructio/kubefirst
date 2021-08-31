@@ -1,0 +1,23 @@
+version: 3
+automerge: true
+projects:
+  - dir: terraform/base
+    terraform_version: 0.13.5
+    autoplan:
+      enabled: true
+      when_modified: ["./**/*.tf", "*.tf*"]
+  - dir: terraform/gitlab
+    terraform_version: 0.13.5
+    autoplan:
+      enabled: true
+      when_modified: ["./**/*.tf", "*.tf*"]
+  - dir: terraform/keycloak
+    terraform_version: 0.13.5
+    autoplan:
+      enabled: true
+      when_modified: ["./**/*.tf", "*.tf*"]
+  - dir: terraform/vault
+    terraform_version: 0.13.5
+    autoplan:
+      enabled: true
+      when_modified: ["./**/*.tf", "*.tf*"]

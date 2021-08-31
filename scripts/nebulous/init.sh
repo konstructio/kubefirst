@@ -249,6 +249,20 @@ else
   echo "skipping keycloak terraform because SKIP_KEYCLOAK_APPLY is set"
 fi
 
+export GITLAB_BASE_URL=https://gitlab.starter.kubefirst.com
+export GITLAB_TOKEN=gQevK69TPXSos5cXYC7m
+# apply terraform
+if [ -z "$SKIP_GITLAB_APPLY" ]
+then
+  cd /terraform/gitlab
+  echo "applying gitlab terraform"
+  terraform init 
+  terraform apply -auto-approve
+  echo "gitlab terraform complete"
+else
+  echo "skipping gitlab terraform because SKIP_GITLAB_APPLY is set"
+fi
+
 #! gitlab
 if [ -z "$SKIP_GITLAB_RECONFIG" ]
 then
