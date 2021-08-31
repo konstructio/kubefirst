@@ -57,33 +57,6 @@ resource "keycloak_role" "developer_role" {
   composite_roles = data.keycloak_role.realm_developer_roles[*].id
 }
 
-# variable "vault_redirect_urls" {
-#   type = list(string)
-# }
-
-# resource "keycloak_openid_client" "vault" {
-#   realm_id  = keycloak_realm.kubefirst.id
-#   client_id = "vault"
-
-#   name                  = "vault"
-#   enabled               = true
-#   standard_flow_enabled = true
-
-#   access_type         = "CONFIDENTIAL"
-#   valid_redirect_uris = var.vault_redirect_urls
-
-#   login_theme = "keycloak"
-# }
-
-# output "keycloak_openid_client_id" {
-#   value = keycloak_openid_client.vault.client_id
-# }
-
-# output "keycloak_openid_client_secret" {
-#   value = keycloak_openid_client.vault.client_secret
-# }
-
-
 # developer roles
 variable "realm_developer_roles" {
   type = list(string)

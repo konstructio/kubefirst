@@ -15,14 +15,28 @@ resource "keycloak_openid_group_membership_protocol_mapper" "group_membership_ma
   claim_name = "groups"
 }
 
-variable "argocd_redirect_uris" {
+
+variable "argo_redirect_uris" {
   type = list(string)
-  default = [
-    "https://argocd.starter.kubefirst.com/auth/callback",
-    "https://argocd.starter.kubefirst.com/applications",
-  ]
 }
 
+module "argo" {
+  source = "./openid_client"
+
+  client_id         = "argo"
+  keycloak_realm_id = keycloak_realm.kubefirst.id
+  redirect_uris     = var.argo_redirect_uris
+  scope             = keycloak_openid_client_scope.group_scope.name
+}
+
+output "argo_openid_client" {
+  value = module.argo
+}
+
+
+variable "argocd_redirect_uris" {
+  type = list(string)
+}
 module "argocd" {
   source = "./openid_client"
 
@@ -36,44 +50,35 @@ output "argocd_openid_client" {
   value = module.argocd
 }
 
-
-variable "argo_redirect_uris" {
+variable "gitlab_redirect_uris" {
   type = list(string)
-  default = [
-    "https://argo.starter.kubefirst.com/argo/oauth2/callback"
-  ]
 }
 
-module "argo" {
+module "gitlab" {
   source = "./openid_client"
 
-  client_id         = "argo"
+  client_id         = "gitlab"
   keycloak_realm_id = keycloak_realm.kubefirst.id
-  redirect_uris     = var.argo_redirect_uris
+  redirect_uris     = var.gitlab_redirect_uris
   scope             = keycloak_openid_client_scope.group_scope.name
 }
 
-output "argo_openid_client" {
-  value = module.argo
+output "gitlab_openid_client" {
+  value = module.gitlab
 }
 
-
-variable "argo_redirect_uris" {
-  type = list(string)
-  default = [
-    "https://argo.starter.kubefirst.com/argo/oauth2/callback"
-  ]
-}
-
-module "argo" {
+module "vault" {
   source = "./openid_client"
 
-  client_id         = "argo"
+  client_id         = "vault"
   keycloak_realm_id = keycloak_realm.kubefirst.id
-  redirect_uris     = var.argo_redirect_uris
+  redirect_uris     = var.vault_redirect_uris
   scope             = keycloak_openid_client_scope.group_scope.name
 }
 
-output "argo_openid_client" {
-  value = module.argo
+output "vault_openid_client" {
+  value = module.vault
+}
+variable "vault_redirect_uris" {
+  type = list(string)
 }

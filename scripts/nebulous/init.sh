@@ -115,6 +115,11 @@ export TF_VAR_gitlab_bot_root_password=$GITLAB_BOT_ROOT_PASSWORD
 export TF_VAR_aws_access_key_id=$AWS_ACCESS_KEY_ID
 export TF_VAR_aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
 export TF_VAR_email_address=$EMAIL_ADDRESS
+export TF_VAR_vault_redirect_uris='["https://vault.starter.kubefirst.com/ui/vault/auth/oidc/oidc/callback","http://localhost:8200/ui/vault/auth/oidc/oidc/callback","http://localhost:8250/oidc/callback","https://vault.starter.kubefirst.com:8250/oidc/callback"]'
+export TF_VAR_argo_redirect_uris='["https://argo.starter.kubefirst.com/argo/oauth2/callback"]'
+export TF_VAR_argocd_redirect_uris='["https://argocd.starter.kubefirst.com/auth/callback","https://argocd.starter.kubefirst.com/applications"]'
+export TF_VAR_gitlab_redirect_uris='["https://gitlab.starter.kubefirst.com"]'
+
 
 
 # check for liveness of the hosted zone
