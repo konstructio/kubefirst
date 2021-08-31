@@ -112,6 +112,9 @@ export TF_VAR_gitlab_url=$GITLAB_URL
 export TF_VAR_email_domain=$EMAIL_DOMAIN
 export TF_VAR_iam_user_arn=$IAM_USER_ARN
 export TF_VAR_gitlab_bot_root_password=$GITLAB_BOT_ROOT_PASSWORD
+export TF_VAR_aws_access_key_id=$AWS_ACCESS_KEY_ID
+export TF_VAR_aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
+export TF_VAR_email_address=$EMAIL_ADDRESS
 
 
 # check for liveness of the hosted zone
@@ -172,12 +175,31 @@ chmod 0600 ~/.kube/config
 
 #! TODO: something has to happen here to argo create the registry in gitops
 # steps needed:
-# - 
+# - kubectl apply the argocd installation
+# - register the gitops repo with argocd
+# - register the registry directory 
+# - needs to be automated through 0 touch 
 
+cat << EOF > /terraform/.gitlab-runner-registration-token
+dsfgCTH4LxagoV_DByKa
+EOF
 
+cat << EOF > /terraform/.gitlab-bot-access-token
+mjaCn-1D7KgrM7cuex2N
+EOF
+
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#! everything beyond this point needs to be in a workflow or kubernetes job 
+
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # grab the vault unseal cluster keys, decode to json, parse the root_token
 export VAULT_TOKEN=$(kubectl -n vault get secret vault-unseal-keys -ojson | jq -r '.data."cluster-keys.json"' | base64 -d | jq -r .root_token)
 export VAULT_ADDR="https://vault.${HOSTED_ZONE_NAME}"
+export TF_VAR_vault_addr=$VAULT_ADDR
+export TF_VAR_vault_token=$VAULT_TOKEN
+export TF_VAR_gitlab_runner_token=$(cat /terraform/.gitlab-runner-registration-token) #! verify path
+# TODO: add secrets back in - update: do we need this now that we prioritize external secrets?
 # kubectl create namespace kubefirst
 # kubectl create secret -n kubefirst generic kubefirst-secrets \
 #   --from-literal=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
@@ -189,17 +211,40 @@ export VAULT_ADDR="https://vault.${HOSTED_ZONE_NAME}"
 #   --from-literal=VAULT_TOKEN=${VAULT_TOKEN} \
 #   --from-literal=VAULT_ADDR=${VAULT_ADDR}
 
-# TODO: add the above back in
 
-echo "applying vault terraform"
-cd /terraform/vault
+
+# apply terraform
+if [ -z "$SKIP_VAULT_APPLY" ]
+then
+  cd /terraform/vault
+  echo "applying vault terraform"
+  terraform init 
+  terraform apply -auto-approve
+  echo "vault terraform complete"
+else
+  echo "skipping vault terraform because SKIP_VAULT_APPLY is set"
+fi
+
+
+#! assumes keycloak has been registered, needed for terraform
+export KEYCLOAK_PASSWORD=$(kubectl -n keycloak get secret/keycloak  -ojson | jq -r '.data."admin-password"' | base64 -d)
+export KEYCLOAK_USER=gitlab-bot
+export KEYCLOAK_CLIENT_ID=admin-cli
+export KEYCLOAK_URL=https://keycloak.starter.kubefirst.com
+
+# apply terraform
+if [ -z "$SKIP_KEYCLOAK_APPLY" ]
+then
+cd /terraform/keycloak
+echo "applying keycloak terraform"
 terraform init 
 terraform apply -auto-approve
-echo "vault terraform complete"
+echo "keycloak terraform complete"
+else
+  echo "skipping keycloak terraform because SKIP_KEYCLOAK_APPLY is set"
+fi
 
-
-
-
+#! gitlab
 if [ -z "$SKIP_GITLAB_RECONFIG" ]
 then
   # reconfigure gitlab server

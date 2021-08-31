@@ -1,3 +1,4 @@
+# todo construct these values
 resource "aws_s3_bucket" "argo-artifact-bucket" {
   bucket = "kubefirst-starter-argo-artifacts"
   acl    = "private"
