@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitlab-runner
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gitlab-runner
+  project: default
+  source:
+    repoURL: 'https://charts.gitlab.io'
+    targetRevision: 0.29.0
+    helm:
+      parameters:
+        - name: rbac.create
+          value: 'true'
+      values: |-
+        gitlabUrl: https://gitlab.starter.kubefirst.com/
+        replicas: 2
+        concurrent: 10
+        hostNetwork: true
+        unregisterRunners: true
+        rbac:
+          create: true
+          clusterWideAccess: true
+        runners:
+          secret: gitlab-runner
+          privileged: true
+          config: |
+            [[runners]]
+              [runners.kubernetes]
+                image = "ubuntu:20.04"
+                privileged = true
+              [[runners.kubernetes.volumes.empty_dir]]
+                name = "docker-certs"
+                mount_path = "/certs/client"
+                medium = "Memory"
+    chart: gitlab-runner
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

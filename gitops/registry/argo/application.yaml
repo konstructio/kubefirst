@@ -1,0 +1,84 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.mgmt.kubefirst.com/kubefirst/gitops.git
+    path: components/argo
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k-add-argocd-permissions
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+    argocd.argoproj.io/hook: PostSync
+    # argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      containers:
+        # todo adjust node permissions to be adequate for geting a kubeconfig in terraform - manually adding in console
+      - name: argocd-permissions
+        image: kubefirst/kubefirst-builder:spike
+        # todo need to rename `kubefirst-admin` to `KubernetesAdmin`
+        # TMP_AWS_CREDS=$(aws sts assume-role --role-arn arn:aws:iam::126827061464:role/kubefirst-admin  --role-session-name starter-kubefirst --duration-seconds 900)
+        # export AWS_SESSION_TOKEN=$(echo $TMP_AWS_CREDS | jq -r .Credentials.SessionToken)
+        # export AWS_ACCESS_KEY_ID=$(echo $TMP_AWS_CREDS | jq -r .Credentials.AccessKeyId)
+        # export AWS_SECRET_ACCESS_KEY=$(echo $TMP_AWS_CREDS | jq -r .Credentials.SecretAccessKey)
+        command:
+        - /bin/bash
+        - -c
+        - |
+          aws eks update-kubeconfig --name k8s-preprod --region  us-east-1
+          kubectl -n argocd delete rolebinding argocd-admin --ignore-not-found=true
+          kubectl -n argocd create rolebinding argocd-admin --clusterrole=admin --serviceaccount=argocd:default
+        # todo remove this envFrom and assume role
+        envFrom:
+        - secretRef:
+            name: aws-creds
+      restartPolicy: Never
+  backoffLimit: 2
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k-add-argo-permissions
+  annotations:
+    argocd.argoproj.io/sync-wave: "8"
+spec:
+  template:
+    spec:
+      containers:
+      - name: argo-permissions
+        image: kubefirst/kubefirst-builder:spike
+        command:
+        - /bin/bash
+        - -c
+        - |
+          aws eks update-kubeconfig --name k8s-preprod --region  us-east-1
+          kubectl -n argo delete rolebinding argo-admin --ignore-not-found=true
+          kubectl -n argo create rolebinding argo-admin --clusterrole=admin --serviceaccount=argo:default
+        # todo remove this envFrom and assume role
+        envFrom:
+        - secretRef:
+            name: aws-creds
+      restartPolicy: Never
+  backoffLimit: 2

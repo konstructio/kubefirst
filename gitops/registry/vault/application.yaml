@@ -1,0 +1,134 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "9"
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault
+  project: default
+  source:
+    repoURL: 'https://helm.releases.hashicorp.com'
+    targetRevision: 0.14.0
+    helm:
+      parameters:
+        - name: server.route.host
+          value: vault.starter.kubefirst.com
+        - name: 'server.ingress.hosts[0].host'
+          value: vault.starter.kubefirst.com
+      values: |-
+        server:
+          image:
+            repository: "vault"
+            tag: "1.8.1"
+          affinity: ""
+          ha:
+            enabled: true
+            replicas: 3
+           
+            # config is a raw string of default configuration when using a Stateful
+            # deployment. Default is to use a Consul for its HA storage backend.
+            # This should be HCL.
+            
+            # Note: Configuration files are stored in ConfigMaps so sensitive data 
+            # such as passwords should be either mounted through extraSecretEnvironmentVars
+            # or through a Kube secret.  For more information see: 
+            # https://www.vaultproject.io/docs/platform/k8s/helm/run#protecting-sensitive-vault-configurations
+            config: |
+              ui = true
+        
+              listener "tcp" {
+                tls_disable = 1
+                address = "[::]:8200"
+                cluster_address = "[::]:8201"
+              }
+        
+              storage "dynamodb" {
+                ha_enabled = "true"
+                region = "us-east-1"
+                table = "vault-dynamodb-backend"
+              }
+        
+              seal "awskms" {
+                 region     = "us-east-1"
+                 kms_key_id = "02fe14de-44b3-483f-9a89-3a551768e75b"
+              }
+              service_registration "kubernetes" {}
+        
+          ui:
+            enabled: true
+            serviceType: "ClusterIP"
+            serviceNodePort: null
+            externalPort: 8200
+          ingress:
+            enabled: true
+            annotations:
+              kubernetes.io/ingress.class: nginx
+              cert-manager.io/cluster-issuer: "letsencrypt-prod"
+            path: /
+            host: vault.starter.kubefirst.com
+            tls:
+             - secretName: vault-tls
+               hosts:
+                 - vault.starter.kubefirst.com
+          # # # kubefirst 0.2 remove if this is still commented
+          # extraSecretEnvironmentVars:
+          #   - envName: AWS_SECRET_ACCESS_KEY
+          #     secretName: aws
+          #     secretKey: secret_access_key
+          #   - envName: AWS_ACCESS_KEY_ID
+          #     secretName: aws
+          #     secretKey: access_key_id
+        
+        injector:
+          # True if you want to enable vault agent injection.
+          enabled: true
+    chart: vault
+  syncPolicy:
+    # automated:
+    #   prune: true
+    #   selfHeal: true
+    # todo blue - mutating webhooks needs to be ignored in argocd
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: unseal-vault
+  annotations:
+    argocd.argoproj.io/sync-wave: "9"
+    # argocd.argoproj.io/hook: PostSync # don't PostSync, vault doesn't finish sync while waiting for pods to be running which requires this job
+    # argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      containers:
+        # todo adjust node permissions to be adequate for geting a kubeconfig in terraform - manually adding in console
+      - name: unseal-vault
+        image: kubefirst/kubefirst-builder:spike
+        # todo need to rename `kubefirst-admin` to `KubernetesAdmin`
+        # TMP_AWS_CREDS=$(aws sts assume-role --role-arn arn:aws:iam::126827061464:role/kubefirst-admin  --role-session-name starter-kubefirst --duration-seconds 900)
+        # export AWS_SESSION_TOKEN=$(echo $TMP_AWS_CREDS | jq -r .Credentials.SessionToken)
+        # export AWS_ACCESS_KEY_ID=$(echo $TMP_AWS_CREDS | jq -r .Credentials.AccessKeyId)
+        # export AWS_SECRET_ACCESS_KEY=$(echo $TMP_AWS_CREDS | jq -r .Credentials.SecretAccessKey)
+        command:
+        - /bin/bash
+        - -c
+        - |
+          sleep 30
+          aws eks update-kubeconfig --name k8s-preprod --region  us-east-1
+          kubectl -n vault exec vault-0 -- vault operator init -format=json > cluster-keys.json
+          kubectl -n vault create secret generic vault-unseal-keys --from-file=cluster-keys.json
+        # todo remove this envFrom and assume role
+        # todo remove this envFrom and assume role
+        envFrom:
+        - secretRef:
+            name: aws-creds
+      restartPolicy: Never
+  backoffLimit: 2
