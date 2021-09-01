@@ -8,24 +8,6 @@ set -e
 
 source ~/.profile
 
-#* need to tokenize terraform/base/main.tf
-# todo need to move `key` to terraform/base/tfstate.tf
-# terraform {
-#   backend "s3" {
-#     bucket  = "@S3_BUCKET_NAME@"
-#     key    = "terraform/tfstate.tf"
-#     region  = "@AWS_DEFAULT_REGION@"
-#     encrypt = true
-#   }
-# }
-
-#* need to tokenize /scripts/nebulous/helm/*
-# gitlabUrl: @GITLAB_URL@
-# runnerRegistrationToken: @RUNNER_REGISTRATION_TOKEN@
-# domainFilters:
-  # - @HOSTED_ZONE_NAME@
-
-
 echo
 echo
 echo
@@ -95,14 +77,15 @@ fi
 
 
 # setup environment variables
-HOSTED_ZONE_NAME=$(aws route53 get-hosted-zone --id "${AWS_HOSTED_ZONE_ID}" | jq -r .HostedZone.Name)
-HOSTED_ZONE_NAME=${HOSTED_ZONE_NAME%?}
-EMAIL_DOMAIN=$(echo $EMAIL_ADDRESS |  cut -d"@" -f2)
-AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
-IAM_USER_ARN=$(aws sts get-caller-identity | jq -r .Arn)
-GITLAB_URL_PREFIX=gitlab
-GITLAB_URL="${GITLAB_URL_PREFIX}.${HOSTED_ZONE_NAME}"
-GITLAB_ROOT_USER=root
+export HOSTED_ZONE_NAME=$(aws route53 get-hosted-zone --id "${AWS_HOSTED_ZONE_ID}" | jq -r .HostedZone.Name)
+export HOSTED_ZONE_NAME=${HOSTED_ZONE_NAME%?}
+export EMAIL_DOMAIN=$(echo $EMAIL_ADDRESS |  cut -d"@" -f2)
+export AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
+export IAM_USER_ARN=$(aws sts get-caller-identity | jq -r .Arn)
+export GITLAB_URL_PREFIX=gitlab
+export GITLAB_URL="${GITLAB_URL_PREFIX}.${HOSTED_ZONE_NAME}"
+export GITLAB_ROOT_USER=root
+export GITLAB_BASE_URL=https://gitlab.<AWS_HOSTED_ZONE_NAME>
 
 #* terraform separation: all these values should come from pre-determined env's
 export TF_VAR_aws_account_id=$AWS_ACCOUNT_ID
@@ -201,8 +184,14 @@ if [ -z "$SKIP_BASE_APPLY" ]
 then
   echo "applying bootstrap terraform"
   terraform init 
-  terraform apply -auto-approve
+  terraform refresh
+  #terraform apply -auto-approve
+  KMS_KEY_ID=$(terraform output -json | jq -r '.vault_unseal_kms_key.value')
+  echo "KMS_KEY_ID collected: $KMS_KEY_ID"
   echo "bootstrap terraform complete"
+  echo "replacing KMS_KEY_ID token with value ${KMS_KEY_ID}"
+  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<KMS_KEY_ID>|${KMS_KEY_ID}|g" {} +
+
 else
   echo "skipping bootstrap terraform because SKIP_BASE_APPLY is set"
 fi
@@ -233,12 +222,14 @@ then
   export CYPRESS_gitlab_bot_password=$GITLAB_BOT_ROOT_PASSWORD
   cd /gitops/terraform/cypress
   npm ci
-  $(npm bin)/cypress run
+# TODO: hack  
+#  $(npm bin)/cypress run
   cd /gitops/terraform
 
-  export GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN=$(cat ./.gitlab-bot-access-token)
   export RUNNER_REGISTRATION_TOKEN=$(cat ./.gitlab-runner-registration-token)
-
+  export GITLAB_TOKEN=$(cat ./.gitlab-bot-access-token)
+  export TF_ENV_gitlab_token=$GITLAB_TOKEN
+  
   echo
   echo "    IMPORTANT:"
   echo "      THIS IS THE ROOT PASSWORD FOR YOUR GITLAB INSTANCE"
@@ -260,11 +251,49 @@ then
 fi
 
 
-return 0
+# apply terraform
+if [ -z "$SKIP_GITLAB_APPLY" ]
+then
+  
+  cd /gitops/terraform/gitlab
+  echo "applying gitlab terraform"
+  terraform init 
+  terraform apply -auto-approve  #!* todo need to --> apply
+  echo "gitlab terraform complete"
 
+  mkdir -p /git
+  cd /git
+  
+  echo "cloning the new gitops repo to nebulous container"
+  git clone https://root:$GITLAB_TOKEN@gitlab.mgmt.kubefirst.com/kubefirst/gitops.git > /dev/null 2>&1;
+  
+  echo "copying constructed gitops repo content into cloned repository"
+  cp -a /gitops/. /git/gitops/
+  
+  echo "committing and pushing gitops repo to your new gitlab repository"
+  git add .
+  git commit -m "initial kubefirst commit"
+  git push
+  echo "gitops repo established"
 
+  echo "creating argocd in kubefirst cluster"
+  kubectl create namespace argocd
+  kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+  echo "argocd created"
+  
+  echo "connecting to argocd in background process"
+  kubectl -n argocd svc/argocd-server -n argocd 8080:443 &
+  echo "connection to argocd established"
 
-
+  echo "collecting argocd connection details"
+  export ARGOCD_AUTH_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+  export TF_VAR_argocd_auth_password=${ARGOCD_AUTH_PASSWORD}
+  export ARGOCD_AUTH_USERNAME=admin
+  export ARGOCD_INSECURE=true
+  export ARGOCD_SERVER=localhost:8080
+else
+  echo "skipping gitlab terraform because SKIP_GITLAB_APPLY is set"
+fi
 
 
 #! TODO: something has to happen here to argo create the registry in gitops
@@ -278,7 +307,17 @@ return 0
 # kubectl -n atlantis create configmap kubeconfig --from-file=config=kubeconfig_kubefirst
 # kubernetes clusters - could use secret in vault or configmap as our mount point
 # need detokenized gitops directory content for consumption
-
+# apply terraform
+if [ -z "$SKIP_ARGOCD_APPLY" ]
+then
+  cd /gitops/terraform/argocd
+  echo "applying argocd terraform"
+  terraform init 
+  terraform destroy -auto-approve #!* todo need to --> apply
+  echo "vault terraform complete"
+else
+  echo "skipping vault terraform because SKIP_VAULT_APPLY is set"
+fi
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -327,17 +366,15 @@ export KEYCLOAK_URL=https://keycloak.<AWS_HOSTED_ZONE_NAME>
 # apply terraform
 if [ -z "$SKIP_KEYCLOAK_APPLY" ]
 then
-cd /gitops/terraform/keycloak
-echo "applying keycloak terraform"
-terraform init 
-terraform destroy -auto-approve  #!* todo need to --> apply
-echo "keycloak terraform complete"
+  cd /gitops/terraform/keycloak
+  echo "applying keycloak terraform"
+  terraform init 
+  terraform destroy -auto-approve  #!* todo need to --> apply
+  echo "keycloak terraform complete"
 else
   echo "skipping keycloak terraform because SKIP_KEYCLOAK_APPLY is set"
 fi
 
-export GITLAB_BASE_URL=https://gitlab.<AWS_HOSTED_ZONE_NAME>
-export GITLAB_TOKEN=gQevK69TPXSos5cXYC7m
 
 # todo
 # curl --request POST \
@@ -354,17 +391,7 @@ export GITLAB_TOKEN=gQevK69TPXSos5cXYC7m
 # }'
 
 
-# apply terraform
-if [ -z "$SKIP_GITLAB_APPLY" ]
-then
-  cd /gitops/terraform/gitlab
-  echo "applying gitlab terraform"
-  terraform init 
-  terraform destroy -auto-approve  #!* todo need to --> apply
-  echo "gitlab terraform complete"
-else
-  echo "skipping gitlab terraform because SKIP_GITLAB_APPLY is set"
-fi
+
 
 
 
