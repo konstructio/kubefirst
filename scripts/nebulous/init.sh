@@ -224,11 +224,7 @@ then
   npm ci
 # TODO: hack  
 #  $(npm bin)/cypress run
-  cd /gitops/terraform
-
-  export RUNNER_REGISTRATION_TOKEN=$(cat ./.gitlab-runner-registration-token)
-  export GITLAB_TOKEN=$(cat ./.gitlab-bot-access-token)
-  export TF_ENV_gitlab_token=$GITLAB_TOKEN
+  
   
   echo
   echo "    IMPORTANT:"
@@ -247,9 +243,12 @@ then
   echo
   echo
   sleep 18
-
 fi
 
+cd /gitops/terraform/base
+export RUNNER_REGISTRATION_TOKEN=$(cat ./.gitlab-runner-registration-token)
+export GITLAB_TOKEN=$(cat ./.gitlab-bot-access-token)
+export TF_VAR_gitlab_token=$GITLAB_TOKEN
 
 # apply terraform
 if [ -z "$SKIP_GITLAB_APPLY" ]
