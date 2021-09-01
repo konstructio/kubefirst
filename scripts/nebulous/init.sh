@@ -128,9 +128,10 @@ export TF_VAR_keycloak_vault_oidc_client_secret=$TF_VAR_keycloak_vault_oidc_clie
 
 export VAULT_TOKEN="UNSET" # TODO: adjust this var when avail
 
+aws route53 test-dns-answer --hosted-zone-id $AWS_HOSTED_ZONE_ID --record-name "livenesstest.$HOSTED_ZONE_NAME" --record-type "A"
+
 # check for liveness of the hosted zone
-if [ -z "$SKIP_HZ_CHECK" ]
-then
+if [ -z "$SKIP_HZ_CHECK" ]; then
   HZ_LIVENESS_FAIL_COUNT=0
   HZ_IS_LIVE=0
   HZ_LIVENESS_URL=livenesstest.$HOSTED_ZONE_NAME
@@ -160,13 +161,14 @@ then
   fi
 fi
 
-if [ -z "$SKIP_DETOKENIZATION" ]
+if [ -z "$SKIP_DETOKENIZATION" ]; then
   # detokenize
   export LC_CTYPE=C; 
   export LANG=C;
   cd /gitops/
+
   echo "replacing AWS_HOSTED_ZONE_NAME token"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} +
+  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} 
   echo "replacing TF_STATE_BUCKET token"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<TF_STATE_BUCKET>|${TF_STATE_BUCKET}|g" {} +
   echo "replacing ARGO_ARTIFACT_BUCKET token"

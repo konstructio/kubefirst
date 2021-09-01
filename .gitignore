@@ -9,3 +9,4 @@ terraform-ssh-key.pub
 kubeconfig_*
 terraform/cypress/cypress/screenshots/
 terraform/cypress/cypress/videos/
+.DS_Store
