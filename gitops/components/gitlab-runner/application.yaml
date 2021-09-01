@@ -20,7 +20,7 @@ spec:
         - name: rbac.create
           value: 'true'
       values: |-
-        gitlabUrl: https://gitlab.<AWS_HOSTED_ZONE_NAME>/
+        gitlabUrl: https://gitlab.starter.kubefirst.com/
         replicas: 2
         concurrent: 10
         hostNetwork: true

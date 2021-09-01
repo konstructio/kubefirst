@@ -161,7 +161,7 @@ then
 fi
 
 if [ -z "$SKIP_DETOKENIZATION" ]
-# detokenize
+  # detokenize
   export LC_CTYPE=C; 
   export LANG=C;
   cd /gitops/
@@ -187,6 +187,8 @@ if [ -z "$SKIP_DETOKENIZATION" ]
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_DEFAULT_REGION>|${AWS_DEFAULT_REGION}|g" {} +
   echo "replacing EMAIL_ADDRESS token"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<EMAIL_ADDRESS>|${EMAIL_ADDRESS}|g" {} +
+else
+  echo "SKIP_DETOKENIZATION is set"
 fi
 
 # apply base terraform

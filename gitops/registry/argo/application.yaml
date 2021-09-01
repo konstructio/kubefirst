@@ -10,7 +10,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops.git
+    repoURL: https://gitlab.starter.kubefirst.com/kubefirst/gitops.git
     path: components/argo
     targetRevision: HEAD
   destination:
@@ -42,7 +42,7 @@ spec:
         - /bin/bash
         - -c
         - |
-          aws eks update-kubeconfig --name kubefirst --region <AWS_DEFAULT_REGION>
+          aws eks update-kubeconfig --name kubefirst --region us-east-1
           kubectl -n argocd delete rolebinding argocd-admin --ignore-not-found=true
           kubectl -n argocd create rolebinding argocd-admin --clusterrole=admin --serviceaccount=argocd:default
         # todo remove this envFrom and assume role
@@ -68,7 +68,7 @@ spec:
         - /bin/bash
         - -c
         - |
-          aws eks update-kubeconfig --name kubefirst --region  <AWS_DEFAULT_REGION>
+          aws eks update-kubeconfig --name kubefirst --region  us-east-1
           kubectl -n argo delete rolebinding argo-admin --ignore-not-found=true
           kubectl -n argo create rolebinding argo-admin --clusterrole=admin --serviceaccount=argo:default
         # todo remove this envFrom and assume role
