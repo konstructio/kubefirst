@@ -17,7 +17,7 @@ metadata:
   namespace: chartmuseum
 spec:
   rules:
-    - host: chartmuseum.starter.kubefirst.com
+    - host: chartmuseum.<AWS_HOSTED_ZONE_NAME>
       http:
         paths:
           - backend:
@@ -26,5 +26,5 @@ spec:
             path: /
   tls:
     - hosts:
-        - chartmuseum.starter.kubefirst.com
+        - chartmuseum.<AWS_HOSTED_ZONE_NAME>
       secretName: chartmuseum-tls

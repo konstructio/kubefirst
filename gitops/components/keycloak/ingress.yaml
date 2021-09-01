@@ -9,7 +9,7 @@ metadata:
   name: keycloak
 spec:
   rules:
-  - host: keycloak.starter.kubefirst.com
+  - host: keycloak.<AWS_HOSTED_ZONE_NAME>
     http:
       paths:
       - backend:
@@ -18,5 +18,5 @@ spec:
         path: /
   tls:
   - hosts:
-    - keycloak.starter.kubefirst.com
+    - keycloak.<AWS_HOSTED_ZONE_NAME>
     secretName: keycloak-tls

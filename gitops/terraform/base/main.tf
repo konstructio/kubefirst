@@ -1,9 +1,9 @@
 # todo remove hardcode
 terraform {
   backend "s3" {
-    bucket  = "k1-state-store-086f9d27715bf69624e84cda9a2801"
+    bucket  = "<TF_STATE_BUCKET>"
     key     = "terraform/tfstate.tf"
-    region  = "us-east-1"
+    region  = "<AWS_DEFAULT_REGION>"
     encrypt = true
   }
 }
@@ -12,7 +12,7 @@ terraform {
 #   backend "s3" {
 #     bucket  = "kubefirst-demo-aa26801359a3d171219f6752a867ac"
 #     key     = "terraform/tfstate.tf"
-#     region  = "us-east-1"
+#     region  = "<AWS_DEFAULT_REGION>"
 #     encrypt = true
 #   }
 # }

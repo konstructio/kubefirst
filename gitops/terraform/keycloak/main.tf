@@ -10,7 +10,7 @@ provider "keycloak" {
     # client_id     = "admin-cli"
     # username      = "gitlab-bot"
     # password      = "ATU6VaGr6A"
-    # url           = "https://keycloak.starter.kubefirst.com"
+    # url           = "https://keycloak.<AWS_HOSTED_ZONE_NAME>"
 }
 resource "keycloak_realm" "kubefirst" {
   realm   = "kubefirst"

@@ -10,7 +10,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://gitlab.starter.kubefirst.com/kubefirst/gitops.git
+    repoURL: https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops.git
     path: components/cert-issuers
     targetRevision: HEAD
   destination:

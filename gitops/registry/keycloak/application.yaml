@@ -10,7 +10,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://gitlab.starter.kubefirst.com/kubefirst/gitops.git
+    repoURL: https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops.git
     path: components/keycloak
     targetRevision: HEAD
   destination:
@@ -44,7 +44,7 @@ spec:
 #         - -c
 #         - |
 #           sleep 30
-#           aws eks update-kubeconfig --name kubefirst --region  us-east-1
+#           aws eks update-kubeconfig --name kubefirst --region  <AWS_DEFAULT_REGION>
 #           kubectl -n vault exec vault-0 -- vault operator init -format=json > cluster-keys.json
 #         # todo remove this envFrom and assume role
 #         # todo remove this envFrom and assume role

@@ -70,12 +70,16 @@ else
     echo "reusing existing ssh key pair"
 fi
 
-BUCKET_RAND=$(openssl rand -hex 15)
+if [ -z "$BUCKET_RAND" ]; then
+  SKIP_STATE_BUCKET_CREATION=true
+  BUCKET_RAND=$(openssl rand -hex 15)
+fi
 export ARGO_ARTIFACT_BUCKET=k1-argo-artifacts-$BUCKET_RAND
 export GITLAB_BACKUP_BUCKET=k1-gitlab-backup-$BUCKET_RAND
 export CHARTMUSEUM_BUCKET=k1-chartmuseum-$BUCKET_RAND
 
-if [ -z "$TF_STATE_BUCKET" ]
+
+if [ -z "$SKIP_STATE_BUCKET_CREATION" ]
 then
     export TF_STATE_BUCKET=k1-state-store-$BUCKET_RAND
     echo "creating bucket $TF_STATE_BUCKET"
@@ -189,8 +193,6 @@ if [ -z "$SKIP_DETOKENIZATION" ]; then
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_DEFAULT_REGION>|${AWS_DEFAULT_REGION}|g" {} +
   echo "replacing EMAIL_ADDRESS token"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<EMAIL_ADDRESS>|${EMAIL_ADDRESS}|g" {} +
-else
-  echo "SKIP_DETOKENIZATION is set"
 fi
 
 # apply base terraform
