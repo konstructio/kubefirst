@@ -79,10 +79,11 @@ if [ -z "$TF_STATE_BUCKET_NAME" ]
 then
     export TF_STATE_BUCKET_NAME=k1-state-store-$BUCKET_RAND
     echo "creating bucket $TF_STATE_BUCKET_NAME"
+    # TODO: --versioning-configuration Status=Enabled
     if [[ "$AWS_DEFAULT_REGION" == "us-east-1" ]]; then
-      aws s3api create-bucket --bucket $TF_STATE_BUCKET_NAME --region $AWS_DEFAULT_REGION --versioning-configuration Status=Enabled | jq -r .Location | cut -d/ -f2
+      aws s3api create-bucket --bucket $TF_STATE_BUCKET_NAME --region $AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f2
     else
-      aws s3api create-bucket --bucket $TF_STATE_BUCKET_NAME --region $AWS_DEFAULT_REGION --versioning-configuration Status=Enabled --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f3 | cut -d. -f1
+      aws s3api create-bucket --bucket $TF_STATE_BUCKET_NAME --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f3 | cut -d. -f1
     fi
 else
     echo "reusing bucket name ${TF_STATE_BUCKET_NAME}"
