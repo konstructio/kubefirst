@@ -85,7 +85,7 @@ export IAM_USER_ARN=$(aws sts get-caller-identity | jq -r .Arn)
 export GITLAB_URL_PREFIX=gitlab
 export GITLAB_URL="${GITLAB_URL_PREFIX}.${HOSTED_ZONE_NAME}"
 export GITLAB_ROOT_USER=root
-export GITLAB_BASE_URL=https://gitlab.<AWS_HOSTED_ZONE_NAME>
+export GITLAB_BASE_URL=https://gitlab.${AWS_HOSTED_ZONE_NAME}
 
 #* terraform separation: all these values should come from pre-determined env's
 export TF_VAR_aws_account_id=$AWS_ACCOUNT_ID
@@ -100,10 +100,10 @@ export TF_VAR_gitlab_bot_root_password=$GITLAB_BOT_ROOT_PASSWORD
 export TF_VAR_aws_access_key_id=$AWS_ACCESS_KEY_ID
 export TF_VAR_aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
 export TF_VAR_email_address=$EMAIL_ADDRESS
-export TF_VAR_vault_redirect_uris='["https://vault.<AWS_HOSTED_ZONE_NAME>/ui/vault/auth/oidc/oidc/callback","http://localhost:8200/ui/vault/auth/oidc/oidc/callback","http://localhost:8250/oidc/callback","https://vault.<AWS_HOSTED_ZONE_NAME>:8250/oidc/callback"]'
-export TF_VAR_argo_redirect_uris='["https://argo.<AWS_HOSTED_ZONE_NAME>/argo/oauth2/callback"]'
-export TF_VAR_argocd_redirect_uris='["https://argocd.<AWS_HOSTED_ZONE_NAME>/auth/callback","https://argocd.<AWS_HOSTED_ZONE_NAME>/applications"]'
-export TF_VAR_gitlab_redirect_uris='["https://gitlab.<AWS_HOSTED_ZONE_NAME>"]'
+export TF_VAR_vault_redirect_uris='["https://vault.${AWS_HOSTED_ZONE_NAME}/ui/vault/auth/oidc/oidc/callback","http://localhost:8200/ui/vault/auth/oidc/oidc/callback","http://localhost:8250/oidc/callback","https://vault.${AWS_HOSTED_ZONE_NAME}:8250/oidc/callback"]'
+export TF_VAR_argo_redirect_uris='["https://argo.${AWS_HOSTED_ZONE_NAME}/argo/oauth2/callback"]'
+export TF_VAR_argocd_redirect_uris='["https://argocd.${AWS_HOSTED_ZONE_NAME}/auth/callback","https://argocd.${AWS_HOSTED_ZONE_NAME}/applications"]'
+export TF_VAR_gitlab_redirect_uris='["https://gitlab.${AWS_HOSTED_ZONE_NAME}"]'
 
 export TF_VAR_argocd_auth_password=$ARGOCD_AUTH_PASSWORD
 export TF_VAR_atlantis_gitlab_token=$ATLANTIS_GITLAB_TOKEN
@@ -265,12 +265,13 @@ then
   cd /git
   
   echo "cloning the new gitops repo to nebulous container"
-  git clone https://root:$GITLAB_TOKEN@gitlab.mgmt.kubefirst.com/kubefirst/gitops.git > /dev/null 2>&1;
+  git clone https://root:$GITLAB_TOKEN@gitlab.${AWS_HOSTED_ZONE_NAME}/kubefirst/gitops.git > /dev/null 2>&1;
   
   echo "copying constructed gitops repo content into cloned repository"
   cp -a /gitops/. /git/gitops/
   
   echo "committing and pushing gitops repo to your new gitlab repository"
+  cd /git/gitops
   git add .
   git commit -m "initial kubefirst commit"
   git push
@@ -311,7 +312,7 @@ then
   export ARGOCD_INSECURE=true
   export ARGOCD_SERVER=localhost:8080
 
-  cd /gitops/terraform/argocd
+  cd /git/gitops/terraform/argocd
   echo "applying argocd terraform"
   terraform init 
   terraform apply -auto-approve
@@ -348,7 +349,7 @@ export TF_VAR_gitlab_runner_token=$(cat /gitops/terraform/.gitlab-runner-registr
 # apply terraform
 if [ -z "$SKIP_VAULT_APPLY" ]
 then
-  cd /gitops/terraform/vault
+  cd /git/gitops/terraform/vault
   echo "applying vault terraform"
   terraform init 
   terraform destroy -auto-approve #!* todo need to --> apply
@@ -367,7 +368,7 @@ export KEYCLOAK_URL=https://keycloak.<AWS_HOSTED_ZONE_NAME>
 # apply terraform
 if [ -z "$SKIP_KEYCLOAK_APPLY" ]
 then
-  cd /gitops/terraform/keycloak
+  cd /git/gitops/terraform/keycloak
   echo "applying keycloak terraform"
   terraform init 
   terraform destroy -auto-approve  #!* todo need to --> apply
