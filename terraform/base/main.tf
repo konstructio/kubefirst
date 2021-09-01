@@ -72,12 +72,6 @@ module "route53" {
   hosted_zone_id                   = data.aws_route53_zone.hosted_zone.zone_id
 }
 
-module "acm" {
-  source = "./acm"
-
-  hosted_zone_name = var.hosted_zone_name
-}
-
 module "ecr" {
   source = "./ecr"
 
