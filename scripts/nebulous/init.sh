@@ -162,16 +162,16 @@ fi
 
 # detokenize
 cd /gitops/
-find ./ -type f -exec sed -i -e "s/<TF_STATE_BUCKET>/${TF_STATE_BUCKET}/g" {} \;
-find ./ -type f -exec sed -i -e "s/<ARGO_ARTIFACT_BUCKET>/${ARGO_ARTIFACT_BUCKET}/g" {} \;
-find ./ -type f -exec sed -i -e "s/<GITLAB_BACKUP_BUCKET>/${GITLAB_BACKUP_BUCKET}/g" {} \;
-find ./ -type f -exec sed -i -e "s/<CHARTMUSEUM_BUCKET>/${CHARTMUSEUM_BUCKET}/g" {} \;
-find ./ -type f -exec sed -i -e "s/<AWS_ACCESS_KEY_ID>/${AWS_ACCESS_KEY_ID}/g" {} \;
-find ./ -type f -exec sed -i -e "s/<AWS_SECRET_ACCESS_KEY>/${AWS_SECRET_ACCESS_KEY}/g" {} \;
-find ./ -type f -exec sed -i -e "s/<AWS_HOSTED_ZONE_ID>/${AWS_HOSTED_ZONE_ID}/g" {} \;
-find ./ -type f -exec sed -i -e "s/<AWS_HOSTED_ZONE_NAME>/${AWS_HOSTED_ZONE_NAME}/g" {} \;
-find ./ -type f -exec sed -i -e "s/<AWS_DEFAULT_REGION>/${AWS_DEFAULT_REGION}/g" {} \;
-find ./ -type f -exec sed -i -e "s/<EMAIL_ADDRESS>/${EMAIL_ADDRESS}/g" {} \;
+find ./ -type f -exec sed -i '' -e "s|<TF_STATE_BUCKET>|${TF_STATE_BUCKET}|g" {} \;
+find ./ -type f -exec sed -i '' -e "s|<ARGO_ARTIFACT_BUCKET>|${ARGO_ARTIFACT_BUCKET}|g" {} \;
+find ./ -type f -exec sed -i '' -e "s|<GITLAB_BACKUP_BUCKET>|${GITLAB_BACKUP_BUCKET}|g" {} \;
+find ./ -type f -exec sed -i '' -e "s|<CHARTMUSEUM_BUCKET>|${CHARTMUSEUM_BUCKET}|g" {} \;
+find ./ -type f -exec sed -i '' -e "s|<AWS_ACCESS_KEY_ID>|${AWS_ACCESS_KEY_ID}|g" {} \;
+find ./ -type f -exec sed -i '' -e "s|<AWS_SECRET_ACCESS_KEY>|${AWS_SECRET_ACCESS_KEY}|g" {} \;
+find ./ -type f -exec sed -i '' -e "s|<AWS_HOSTED_ZONE_ID>|${AWS_HOSTED_ZONE_ID}|g" {} \;
+find ./ -type f -exec sed -i '' -e "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} \;
+find ./ -type f -exec sed -i '' -e "s|<AWS_DEFAULT_REGION>|${AWS_DEFAULT_REGION}|g" {} \;
+find ./ -type f -exec sed -i '' -e "s|<EMAIL_ADDRESS>|${EMAIL_ADDRESS}|g" {} \;
 
 
 # apply terraform
