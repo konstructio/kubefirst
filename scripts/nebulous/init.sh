@@ -77,7 +77,7 @@ export CHARTMUSEUM_BUCKET=k1-chartmuseum-$BUCKET_RAND
 
 if [ -z "$TF_STATE_BUCKET" ]
 then
-    export TF_STATE_BUCKET_NAME=k1-state-store-$BUCKET_RAND
+    export TF_STATE_BUCKET=k1-state-store-$BUCKET_RAND
     echo "creating bucket $TF_STATE_BUCKET"
     # TODO: --versioning-configuration Status=Enabled
     if [[ "$AWS_DEFAULT_REGION" == "us-east-1" ]]; then
