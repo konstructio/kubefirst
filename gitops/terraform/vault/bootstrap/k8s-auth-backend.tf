@@ -1,7 +1,7 @@
 data "terraform_remote_state" "eks" {
   backend = "s3"
   config = {
-    bucket = "<TF_STATE_BUCKET>"
+    bucket = "k1-state-store-086f9d27715bf69624e84cda9a2801"
     key    = "terraform/tfstate.tf"
     region = var.aws_region
   }
@@ -23,7 +23,7 @@ provider "kubernetes" {
 
 resource "vault_auth_backend" "k8s" {
   type = "kubernetes"
-  path = "kubernetes/${var.aws_account_name}-${var.aws_region}"
+  path = "kubernetes/kubefirst"
 }
 
 data "kubernetes_service_account" "external_secrets" {

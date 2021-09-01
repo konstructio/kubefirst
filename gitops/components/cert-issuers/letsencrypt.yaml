@@ -5,7 +5,7 @@ metadata:
 spec:
   acme:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: <EMAIL_ADDRESS>
+    email: devops+starter@kubefirst.com
     privateKeySecretRef:
       name: letsencrypt-staging
     solvers:
@@ -20,7 +20,7 @@ metadata:
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: <EMAIL_ADDRESS>
+    email: devops+starter@kubefirst.com
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:

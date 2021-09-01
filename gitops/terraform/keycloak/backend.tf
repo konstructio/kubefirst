@@ -1,8 +1,8 @@
 terraform {
   backend "s3" {
-    bucket  = "<TF_STATE_BUCKET>"
+    bucket  = "k1-state-store-086f9d27715bf69624e84cda9a2801"
     key     = "terraform/keycloak/tfstate.tf"
-    region  = "<AWS_DEFAULT_REGION>"
+    region  = "us-east-1"
     encrypt = true
   }
 }

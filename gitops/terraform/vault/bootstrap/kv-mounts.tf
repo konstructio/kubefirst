@@ -22,7 +22,7 @@ EOT
 #   name: test-secrets
 # spec:
 #   backendType: vault
-#   vaultMountPoint: kubernetes/starter-<AWS_DEFAULT_REGION>
+#   vaultMountPoint: kubernetes/starter-us-east-1
 #   vaultRole: external-secrets
 #   kvVersion: 2
 #   data:
@@ -107,44 +107,50 @@ resource "vault_generic_secret" "keycloak_secrets" {
 }
 EOT
 }
+
+
+
+
+
+
+
 resource "vault_generic_secret" "atlantis_secrets" {
   path = "${vault_mount.secret.path}/atlantis"
 
   data_json = <<EOT
 {
-  "ARGOCD_AUTH_PASSWORD": "SgBgjrLCVUNcqgMY",
+  "ARGOCD_AUTH_PASSWORD": "${var.argocd_auth_password}",
   "ARGOCD_AUTH_USERNAME": "admin",
   "ARGOCD_INSECURE": "false",
-  "ARGOCD_SERVER": "argocd.<AWS_HOSTED_ZONE_NAME>:443",
-  "ARGO_SERVER_URL": "argo.<AWS_HOSTED_ZONE_NAME>:443",
-  "ATLANTIS_GITLAB_HOSTNAME": "gitlab.<AWS_HOSTED_ZONE_NAME>",
-  "ATLANTIS_GITLAB_TOKEN": "gQevK69TPXSos5cXYC7m",
+  "ARGOCD_SERVER": "argocd.starter.kubefirst.com:443",
+  "ARGO_SERVER_URL": "argo.starter.kubefirst.com:443",
+  "ATLANTIS_GITLAB_HOSTNAME": "gitlab.starter.kubefirst.com",
+  "ATLANTIS_GITLAB_TOKEN": "${var.atlantis_gitlab_token}",
   "ATLANTIS_GITLAB_USER": "atlantis",
-  "ATLANTIS_GITLAB_WEBHOOK_SECRET": "c75e7d48b854a36e13fb1d76a6eb5aa750a5e83a3ec6a0093413ed71d3313622",
-  "AWS_ACCESS_KEY_ID": "",
-  "AWS_DEFAULT_REGION": "<AWS_DEFAULT_REGION>",
+  "ATLANTIS_GITLAB_WEBHOOK_SECRET": "${var.atlantis_gitlab_webhook_secret}",
+  "AWS_ACCESS_KEY_ID": "${var.aws_access_key_id}",
+  "AWS_DEFAULT_REGION": "us-east-1",
   "AWS_ROLE_TO_ASSUME": "arn:aws:iam::126827061464:role/KubernetesAdmin",
-  "AWS_SECRET_ACCESS_KEY": "",
+  "AWS_SECRET_ACCESS_KEY": "${var.aws_secret_access_key}",
   "AWS_SESSION_NAME": "GitHubAction",
-  "GITLAB_BASE_URL": "https://gitlab.<AWS_HOSTED_ZONE_NAME>",
-  "GITLAB_TOKEN": "gQevK69TPXSos5cXYC7m",
+  "GITLAB_BASE_URL": "https://gitlab.starter.kubefirst.com",
+  "GITLAB_TOKEN": "${var.gitlab_token}",
   "KEYCLOAK_CLIENT_ID": "admin-cli",
-  "KEYCLOAK_PASSWORD": "d74c272854380f77594afcba",
+  "KEYCLOAK_PASSWORD": "${var.keycloak_password}",
   "KEYCLOAK_REALM": "master",
-  "KEYCLOAK_URL": "https://keycloak.<AWS_HOSTED_ZONE_NAME>",
+  "KEYCLOAK_URL": "https://keycloak.starter.kubefirst.com",
   "KEYCLOAK_USER": "gitlab-bot",
   "KUBECONFIG": "/.kube/config",
-  "TF_VAR_aws_account_id": "126827061464",
-  "TF_VAR_aws_account_name": "starter",
-  "TF_VAR_aws_region": "<AWS_DEFAULT_REGION>",
-  "TF_VAR_keycloak_admin_password": "d74c272854380f77594afcba",
-  "TF_VAR_keycloak_vault_oidc_client_secret": "c949ef91-ff45-45be-a843-e1687c86c9bc",
-  "TF_VAR_vault_redirect_uris": "[\"https://vault.<AWS_HOSTED_ZONE_NAME>/ui/vault/auth/oidc/oidc/callback\",\"http://localhost:8200/ui/vault/auth/oidc/oidc/callback\",\"http://localhost:8250/oidc/callback\",\"https://vault.<AWS_HOSTED_ZONE_NAME>:8250/oidc/callback\"]",
-  "TF_VAR_argo_redirect_uris": "[\"https://argo.<AWS_HOSTED_ZONE_NAME>/argo/oauth2/callback\"]",
-  "TF_VAR_argocd_redirect_uris": "[\"https://argocd.<AWS_HOSTED_ZONE_NAME>/auth/callback\",\"https://argocd.<AWS_HOSTED_ZONE_NAME>/applications\"]",
-  "TF_VAR_gitlab_redirect_uris": "[\"https://gitlab.<AWS_HOSTED_ZONE_NAME>\"]",
-  "VAULT_ADDR": "https://vault.<AWS_HOSTED_ZONE_NAME>",
-  "VAULT_TOKEN": "s.8sufV5TDY9qcSLXJCwHqKBhP"
+  "TF_VAR_aws_account_id": "<AWS_ACCOUNT_ID>",
+  "TF_VAR_aws_region": "us-east-1",
+  "TF_VAR_keycloak_admin_password": "${var.keycloak_admin_password}",
+  "TF_VAR_keycloak_vault_oidc_client_secret": "${var.keycloak_vault_oidc_client_secret}",
+  "TF_VAR_vault_redirect_uris": "[\"https://vault.starter.kubefirst.com/ui/vault/auth/oidc/oidc/callback\",\"http://localhost:8200/ui/vault/auth/oidc/oidc/callback\",\"http://localhost:8250/oidc/callback\",\"https://vault.starter.kubefirst.com:8250/oidc/callback\"]",
+  "TF_VAR_argo_redirect_uris": "[\"https://argo.starter.kubefirst.com/argo/oauth2/callback\"]",
+  "TF_VAR_argocd_redirect_uris": "[\"https://argocd.starter.kubefirst.com/auth/callback\",\"https://argocd.starter.kubefirst.com/applications\"]",
+  "TF_VAR_gitlab_redirect_uris": "[\"https://gitlab.starter.kubefirst.com\"]",
+  "VAULT_ADDR": "https://vault.starter.kubefirst.com",
+  "VAULT_TOKEN": "${var.vault_token}"
 }
 EOT
 }

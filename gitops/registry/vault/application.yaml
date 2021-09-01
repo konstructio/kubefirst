@@ -18,9 +18,9 @@ spec:
     helm:
       parameters:
         - name: server.route.host
-          value: vault.<AWS_HOSTED_ZONE_NAME>
+          value: vault.starter.kubefirst.com
         - name: 'server.ingress.hosts[0].host'
-          value: vault.<AWS_HOSTED_ZONE_NAME>
+          value: vault.starter.kubefirst.com
       values: |-
         server:
           image:
@@ -50,12 +50,12 @@ spec:
         
               storage "dynamodb" {
                 ha_enabled = "true"
-                region = "<AWS_DEFAULT_REGION>"
+                region = "us-east-1"
                 table = "vault-dynamodb-backend"
               }
         
               seal "awskms" {
-                 region     = "<AWS_DEFAULT_REGION>"
+                 region     = "us-east-1"
                  kms_key_id = "<KMS_KEY_ID>"
               }
               service_registration "kubernetes" {}
@@ -71,11 +71,11 @@ spec:
               kubernetes.io/ingress.class: nginx
               cert-manager.io/cluster-issuer: "letsencrypt-prod"
             path: /
-            host: vault.<AWS_HOSTED_ZONE_NAME>
+            host: vault.starter.kubefirst.com
             tls:
              - secretName: vault-tls
                hosts:
-                 - vault.<AWS_HOSTED_ZONE_NAME>
+                 - vault.starter.kubefirst.com
         injector:
           enabled: true
     chart: vault
@@ -107,7 +107,7 @@ spec:
         - -c
         - |
           sleep 30
-          aws eks update-kubeconfig --name kubefirst --region <AWS_DEFAULT_REGION>
+          aws eks update-kubeconfig --name kubefirst --region us-east-1
           kubectl -n vault exec vault-0 -- vault operator init -format=json > cluster-keys.json
           kubectl -n vault create secret generic vault-unseal-keys --from-file=cluster-keys.json
         # todo remove this envFrom and assume role

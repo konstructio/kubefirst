@@ -1,8 +1,8 @@
 terraform {
   backend "s3" {
-    bucket  = "<TF_STATE_BUCKET>"
+    bucket  = "k1-state-store-086f9d27715bf69624e84cda9a2801"
     key     = "terraform/vault/tfstate.tf"
-    region  = "<AWS_DEFAULT_REGION>"
+    region  = "us-east-1"
     encrypt = true
   }
 }
@@ -10,17 +10,24 @@ terraform {
 module "bootstrap" {
   source = "./bootstrap"
 
-  aws_account_id           = var.aws_account_id
-  aws_region               = var.aws_region
-  aws_account_name         = var.aws_account_name
-  aws_secret_access_key    = var.aws_secret_access_key
-  vault_token              = var.vault_token
-  email_address            = var.email_address
-  vault_addr               = var.vault_addr
-  aws_access_key_id        = var.aws_access_key_id
-  gitlab_bot_root_password = var.gitlab_bot_root_password
-  hosted_zone_id = var.hosted_zone_id
-  gitlab_runner_token = var.gitlab_runner_token
+  aws_account_id                    = var.aws_account_id
+  aws_region                        = var.aws_region
+  aws_account_name                  = var.aws_account_name
+  aws_secret_access_key             = var.aws_secret_access_key
+  vault_token                       = var.vault_token
+  email_address                     = var.email_address
+  vault_addr                        = var.vault_addr
+  aws_access_key_id                 = var.aws_access_key_id
+  gitlab_bot_root_password          = var.gitlab_bot_root_password
+  hosted_zone_id                    = var.hosted_zone_id
+  gitlab_runner_token               = var.gitlab_runner_token
+  argocd_auth_password              = var.argocd_auth_password
+  atlantis_gitlab_token             = var.atlantis_gitlab_token
+  atlantis_gitlab_webhook_secret    = var.atlantis_gitlab_webhook_secret
+  gitlab_token                      = var.gitlab_token
+  keycloak_password                 = var.keycloak_password
+  keycloak_admin_password           = var.keycloak_admin_password
+  keycloak_vault_oidc_client_secret = var.keycloak_vault_oidc_client_secret
 }
 
 # todo leftover terraform needs evaluation

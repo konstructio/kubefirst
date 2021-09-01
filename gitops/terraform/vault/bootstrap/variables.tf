@@ -34,3 +34,28 @@ variable "hosted_zone_id" {
 variable "gitlab_runner_token" {
   type = string
 }
+
+variable "argocd_auth_password" {
+  type = string
+}
+variable "atlantis_gitlab_token" {
+  type = string
+}
+variable "atlantis_gitlab_webhook_secret" {
+  type = string
+}
+variable "gitlab_token" {
+  type = string
+}
+variable "keycloak_password" {
+  type = string
+}
+variable "keycloak_admin_password" {
+  type = string
+}
+variable "keycloak_vault_oidc_client_secret" {
+  type = string
+}
+variable "vault_token" {
+  type = string
+}
