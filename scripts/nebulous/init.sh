@@ -161,35 +161,91 @@ fi
 
 
 # detokenize
+export LC_CTYPE=C; export LANG=C;
 cd /gitops/
-find ./ -type f -exec sed -i '' -e "s|<TF_STATE_BUCKET>|${TF_STATE_BUCKET}|g" {} \;
-find ./ -type f -exec sed -i '' -e "s|<ARGO_ARTIFACT_BUCKET>|${ARGO_ARTIFACT_BUCKET}|g" {} \;
-find ./ -type f -exec sed -i '' -e "s|<GITLAB_BACKUP_BUCKET>|${GITLAB_BACKUP_BUCKET}|g" {} \;
-find ./ -type f -exec sed -i '' -e "s|<CHARTMUSEUM_BUCKET>|${CHARTMUSEUM_BUCKET}|g" {} \;
-find ./ -type f -exec sed -i '' -e "s|<AWS_ACCESS_KEY_ID>|${AWS_ACCESS_KEY_ID}|g" {} \;
-find ./ -type f -exec sed -i '' -e "s|<AWS_SECRET_ACCESS_KEY>|${AWS_SECRET_ACCESS_KEY}|g" {} \;
-find ./ -type f -exec sed -i '' -e "s|<AWS_HOSTED_ZONE_ID>|${AWS_HOSTED_ZONE_ID}|g" {} \;
-find ./ -type f -exec sed -i '' -e "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} \;
-find ./ -type f -exec sed -i '' -e "s|<AWS_DEFAULT_REGION>|${AWS_DEFAULT_REGION}|g" {} \;
-find ./ -type f -exec sed -i '' -e "s|<EMAIL_ADDRESS>|${EMAIL_ADDRESS}|g" {} \;
+find . -type f -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} +
+find . -type f -exec sed -i "s|<TF_STATE_BUCKET>|${TF_STATE_BUCKET}|g" {} +
+find . -type f -exec sed -i "s|<ARGO_ARTIFACT_BUCKET>|${ARGO_ARTIFACT_BUCKET}|g" {} +
+find . -type f -exec sed -i "s|<GITLAB_BACKUP_BUCKET>|${GITLAB_BACKUP_BUCKET}|g" {} +
+find . -type f -exec sed -i "s|<CHARTMUSEUM_BUCKET>|${CHARTMUSEUM_BUCKET}|g" {} +
+find . -type f -exec sed -i "s|<AWS_ACCESS_KEY_ID>|${AWS_ACCESS_KEY_ID}|g" {} +
+find . -type f -exec sed -i "s|<AWS_SECRET_ACCESS_KEY>|${AWS_SECRET_ACCESS_KEY}|g" {} +
+find . -type f -exec sed -i "s|<AWS_HOSTED_ZONE_ID>|${AWS_HOSTED_ZONE_ID}|g" {} +
+find . -type f -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} +
+find . -type f -exec sed -i "s|<AWS_DEFAULT_REGION>|${AWS_DEFAULT_REGION}|g" {} +
+find . -type f -exec sed -i "s|<EMAIL_ADDRESS>|${EMAIL_ADDRESS}|g" {} +
 
 
-# apply terraform
+# apply base terraform
 cd /gitops/terraform/base
-if [ -z "$SKIP_TERRAFORM_APPLY" ]
+if [ -z "$SKIP_BASE_APPLY" ]
 then
   echo "applying bootstrap terraform"
   terraform init 
-  terraform destroy -auto-approve #!* todo need to --> apply
+  terraform apply -auto-approve
   echo "bootstrap terraform complete"
 else
-  echo "skipping bootstrap terraform because SKIP_TERRAFORM_APPLY is set"
+  echo "skipping bootstrap terraform because SKIP_BASE_APPLY is set"
 fi
 
 echo "getting ~/kube/config for eks access"
 K8S_CLUSTER_NAME=$(terraform output -json | jq -r .cluster_name.value)
 aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $K8S_CLUSTER_NAME
 chmod 0600 ~/.kube/config
+
+
+
+
+
+#! gitlab
+if [ -z "$SKIP_GITLAB_RECONFIG" ]
+then
+  # reconfigure gitlab server
+  echo
+  echo "testing gitlab for connectivity"
+  echo
+  /scripts/nebulous/wait-for-200.sh "https://${GITLAB_URL}/help"
+  echo
+  echo "gitlab is ready, executing cypress"
+  echo
+
+  export CYPRESS_BASE_URL="https://${GITLAB_URL}"
+  export CYPRESS_gitlab_bot_username_before=$GITLAB_ROOT_USER
+  export CYPRESS_gitlab_bot_password=$GITLAB_BOT_ROOT_PASSWORD
+  cd /gitops/terraform/cypress
+  npm ci
+  $(npm bin)/cypress run
+  cd /gitops/terraform
+
+  export GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN=$(cat ./.gitlab-bot-access-token)
+  export RUNNER_REGISTRATION_TOKEN=$(cat ./.gitlab-runner-registration-token)
+
+  echo
+  echo "    IMPORTANT:"
+  echo "      THIS IS THE ROOT PASSWORD FOR YOUR GITLAB INSTANCE"
+  echo "      DO NOT LOSE THIS VALUE"
+  echo
+  echo "      username: root"
+  echo "      password: ${CYPRESS_gitlab_bot_password}"
+  echo
+  echo "      GitLab URL: https://${GITLAB_URL}/kubefirst"
+  echo
+  echo
+  echo
+  echo "    hydrating your GitLab server's kubefirst group with CI/CD"
+  echo "      variables, check it out -> https://$GITLAB_URL/groups/kubefirst/-/settings/ci_cd"
+  echo
+  echo
+  sleep 18
+
+fi
+
+
+
+
+
+
+
 
 
 #! TODO: something has to happen here to argo create the registry in gitops
@@ -291,107 +347,7 @@ else
   echo "skipping gitlab terraform because SKIP_GITLAB_APPLY is set"
 fi
 
-#! gitlab
-if [ -z "$SKIP_GITLAB_RECONFIG" ]
-then
-  # reconfigure gitlab server
-  echo
-  echo "testing gitlab for connectivity"
-  echo
-  /scripts/nebulous/wait-for-200.sh "https://${GITLAB_URL}/help"
-  echo
-  echo "gitlab is ready, executing cypress"
-  echo
 
-  export CYPRESS_BASE_URL="https://${GITLAB_URL}"
-  export CYPRESS_gitlab_bot_username_before=$GITLAB_ROOT_USER
-  export CYPRESS_gitlab_bot_password=$GITLAB_BOT_ROOT_PASSWORD
-  cd /gitops/terraform/cypress
-  npm ci
-  $(npm bin)/cypress run
-  cd /gitops/terraform
-
-  export GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN=$(cat ./.gitlab-bot-access-token)
-  export RUNNER_REGISTRATION_TOKEN=$(cat ./.gitlab-runner-registration-token)
-
-  echo
-  echo "    IMPORTANT:"
-  echo "      THIS IS THE ROOT PASSWORD FOR YOUR GITLAB INSTANCE"
-  echo "      DO NOT LOSE THIS VALUE"
-  echo
-  echo "      username: root"
-  echo "      password: ${CYPRESS_gitlab_bot_password}"
-  echo
-  echo "      GitLab URL: https://${GITLAB_URL}/kubefirst"
-  echo
-  echo
-  echo
-  echo "    hydrating your GitLab server's kubefirst group with CI/CD"
-  echo "      variables, check it out -> https://$GITLAB_URL/groups/kubefirst/-/settings/ci_cd"
-  echo
-  echo
-  sleep 18
-
-  TF_OUTPUT=$(terraform output -json)
-
-
-  GITLAB_KUBEFIRST_GROUP_ID=$(curl -s --request POST --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" --header "Content-Type: application/json" \
-    --data "{\"path\": \"kubefirst\", \"name\": \"kubefirst\" }" \
-    "https://$GITLAB_URL/api/v4/groups" | jq -r .id)
-
-
-  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
-  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
-  --form "key=ACM_CERTIFICATE_ARN" --form "value=$(echo $TF_OUTPUT | jq -r .acm_arn.value)"  > /dev/null
-
-  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
-  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
-  --form "key=ECR_REGISTRY_BASE_URL" --form "value=$(echo $TF_OUTPUT | jq -r .ecr_repo_arns.value.metaphor_repository_info.registry_url | cut -d/ -f1)" > /dev/null
-
-  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
-  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
-  --form "key=AWS_ACCESS_KEY_ID" --form "value=$AWS_ACCESS_KEY_ID" > /dev/null
-
-  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
-  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
-  --form "key=AWS_SECRET_ACCESS_KEY" --form "value=$AWS_SECRET_ACCESS_KEY" > /dev/null
-
-  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
-  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
-  --form "key=AWS_ACCOUNT_ID" --form "value=$(aws sts get-caller-identity | jq -r .Account)" > /dev/null
-
-  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
-  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
-  --form "key=GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" --form "value=$GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" > /dev/null
-
-  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
-  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
-  --form "key=GITLAB_BOT_SSH_PRIVATE_KEY" --form "value=$(cat ${HOME}/.ssh/id_rsa)" > /dev/null
-
-  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
-  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
-  --form "key=GITLAB_BOT_SSH_PUBLIC_KEY" --form "value=$(cat ${HOME}/.ssh/id_rsa.pub)"  > /dev/null
-
-  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
-  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
-  --form "key=HOSTED_ZONE_NAME" --form "value=$HOSTED_ZONE_NAME"  > /dev/null
-
-  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
-  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
-  --form "key=GITLAB_KUBEFIRST_GROUP_ID" --form "value=$GITLAB_KUBEFIRST_GROUP_ID"  > /dev/null
-
-  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
-  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
-  --form "key=AWS_DEFAULT_REGION" --form "value=$AWS_DEFAULT_REGION"  > /dev/null
-
-  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
-  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
-  --form "key=RUNNER_REGISTRATION_TOKEN" --form "value=$RUNNER_REGISTRATION_TOKEN"  > /dev/null
-
-  curl -s --header "PRIVATE-TOKEN: $GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN" \
-  --request POST "https://$GITLAB_URL/api/v4/groups/$GITLAB_KUBEFIRST_GROUP_ID/variables" \
-  --form "key=GITLAB_BOT_ROOT_PASSWORD" --form "value=$GITLAB_BOT_ROOT_PASSWORD"  > /dev/null
-fi
 
 
 echo
