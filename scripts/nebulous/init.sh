@@ -75,18 +75,18 @@ export ARGO_ARTIFACT_BUCKET=k1-argo-artifacts-$BUCKET_RAND
 export GITLAB_BACKUP_BUCKET=k1-gitlab-backup-$BUCKET_RAND
 export CHARTMUSEUM_BUCKET=k1-chartmuseum-$BUCKET_RAND
 
-if [ -z "$TF_STATE_BUCKET_NAME" ]
+if [ -z "$TF_STATE_BUCKET" ]
 then
     export TF_STATE_BUCKET_NAME=k1-state-store-$BUCKET_RAND
-    echo "creating bucket $TF_STATE_BUCKET_NAME"
+    echo "creating bucket $TF_STATE_BUCKET"
     # TODO: --versioning-configuration Status=Enabled
     if [[ "$AWS_DEFAULT_REGION" == "us-east-1" ]]; then
-      aws s3api create-bucket --bucket $TF_STATE_BUCKET_NAME --region $AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f2
+      aws s3api create-bucket --bucket $TF_STATE_BUCKET --region $AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f2
     else
-      aws s3api create-bucket --bucket $TF_STATE_BUCKET_NAME --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f3 | cut -d. -f1
+      aws s3api create-bucket --bucket $TF_STATE_BUCKET --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f3 | cut -d. -f1
     fi
 else
-    echo "reusing bucket name ${TF_STATE_BUCKET_NAME}"
+    echo "reusing bucket name ${TF_STATE_BUCKET}"
 fi
 
 
@@ -164,16 +164,27 @@ fi
 # detokenize
 export LC_CTYPE=C; export LANG=C;
 cd /gitops/
+echo "replacing AWS_HOSTED_ZONE_NAME token"
 find . -type f -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} +
+echo "replacing TF_STATE_BUCKET token"
 find . -type f -exec sed -i "s|<TF_STATE_BUCKET>|${TF_STATE_BUCKET}|g" {} +
+echo "replacing ARGO_ARTIFACT_BUCKET token"
 find . -type f -exec sed -i "s|<ARGO_ARTIFACT_BUCKET>|${ARGO_ARTIFACT_BUCKET}|g" {} +
+echo "replacing GITLAB_BACKUP_BUCKET token"
 find . -type f -exec sed -i "s|<GITLAB_BACKUP_BUCKET>|${GITLAB_BACKUP_BUCKET}|g" {} +
+echo "replacing CHARTMUSEUM_BUCKET token"
 find . -type f -exec sed -i "s|<CHARTMUSEUM_BUCKET>|${CHARTMUSEUM_BUCKET}|g" {} +
+echo "replacing AWS_ACCESS_KEY_ID token"
 find . -type f -exec sed -i "s|<AWS_ACCESS_KEY_ID>|${AWS_ACCESS_KEY_ID}|g" {} +
+echo "replacing AWS_SECRET_ACCESS_KEY token"
 find . -type f -exec sed -i "s|<AWS_SECRET_ACCESS_KEY>|${AWS_SECRET_ACCESS_KEY}|g" {} +
+echo "replacing AWS_HOSTED_ZONE_ID token"
 find . -type f -exec sed -i "s|<AWS_HOSTED_ZONE_ID>|${AWS_HOSTED_ZONE_ID}|g" {} +
+echo "replacing AWS_HOSTED_ZONE_NAME token"
 find . -type f -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} +
+echo "replacing AWS_DEFAULT_REGION token"
 find . -type f -exec sed -i "s|<AWS_DEFAULT_REGION>|${AWS_DEFAULT_REGION}|g" {} +
+echo "replacing EMAIL_ADDRESS token"
 find . -type f -exec sed -i "s|<EMAIL_ADDRESS>|${EMAIL_ADDRESS}|g" {} +
 
 
