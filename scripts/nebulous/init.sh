@@ -70,9 +70,14 @@ else
     echo "reusing existing ssh key pair"
 fi
 
+BUCKET_RAND=$(openssl rand -hex 15)
+export ARGO_ARTIFACT_BUCKET=k1-argo-artifacts-$BUCKET_RAND
+export GITLAB_BACKUP_BUCKET=k1-gitlab-backup-$BUCKET_RAND
+export CHARTMUSEUM_BUCKET=k1-chartmuseum-$BUCKET_RAND
+
 if [ -z "$TF_STATE_BUCKET_NAME" ]
 then
-    export TF_STATE_BUCKET_NAME=kubefirst-demo-$(openssl rand -hex 15)
+    export TF_STATE_BUCKET_NAME=k1-state-store-$BUCKET_RAND
     echo "creating bucket $TF_STATE_BUCKET_NAME"
     if [[ "$AWS_DEFAULT_REGION" == "us-east-1" ]]; then
       aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_DEFAULT_REGION --versioning-configuration Status=Enabled | jq -r .Location | cut -d/ -f2
@@ -107,10 +112,10 @@ export TF_VAR_gitlab_bot_root_password=$GITLAB_BOT_ROOT_PASSWORD
 export TF_VAR_aws_access_key_id=$AWS_ACCESS_KEY_ID
 export TF_VAR_aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
 export TF_VAR_email_address=$EMAIL_ADDRESS
-export TF_VAR_vault_redirect_uris='["https://vault.starter.kubefirst.com/ui/vault/auth/oidc/oidc/callback","http://localhost:8200/ui/vault/auth/oidc/oidc/callback","http://localhost:8250/oidc/callback","https://vault.starter.kubefirst.com:8250/oidc/callback"]'
-export TF_VAR_argo_redirect_uris='["https://argo.starter.kubefirst.com/argo/oauth2/callback"]'
-export TF_VAR_argocd_redirect_uris='["https://argocd.starter.kubefirst.com/auth/callback","https://argocd.starter.kubefirst.com/applications"]'
-export TF_VAR_gitlab_redirect_uris='["https://gitlab.starter.kubefirst.com"]'
+export TF_VAR_vault_redirect_uris='["https://vault.<AWS_HOSTED_ZONE_NAME>/ui/vault/auth/oidc/oidc/callback","http://localhost:8200/ui/vault/auth/oidc/oidc/callback","http://localhost:8250/oidc/callback","https://vault.<AWS_HOSTED_ZONE_NAME>:8250/oidc/callback"]'
+export TF_VAR_argo_redirect_uris='["https://argo.<AWS_HOSTED_ZONE_NAME>/argo/oauth2/callback"]'
+export TF_VAR_argocd_redirect_uris='["https://argocd.<AWS_HOSTED_ZONE_NAME>/auth/callback","https://argocd.<AWS_HOSTED_ZONE_NAME>/applications"]'
+export TF_VAR_gitlab_redirect_uris='["https://gitlab.<AWS_HOSTED_ZONE_NAME>"]'
 
 
 
@@ -152,8 +157,26 @@ sed -i "s|@S3_BUCKET_NAME@|${S3_BUCKET_NAME}|g" "/terraform/base/main.tf"
 sed -i "s|@AWS_DEFAULT_REGION@|${AWS_DEFAULT_REGION}|g" "/terraform/base/main.tf"
 
 
+
+# detokenize
+
+# notes:
+# in addition to the swapping of env vars from kubefirst.env, we also need these additional
+# vars that were generated on the fly to be swapped in:
+export ARGO_ARTIFACT_BUCKET=k1-argo-artifacts-$BUCKET_RAND
+export GITLAB_BACKUP_BUCKET=k1-gitlab-backup-$BUCKET_RAND
+export CHARTMUSEUM_BUCKET=k1-chartmuseum-$BUCKET_RAND
+TF_STATE_BUCKET
+
+cd /gitops/
+find ./ -type f -exec sed -i -e "s/<TF_STATE_BUCKET>/${TF_STATE_BUCKET}/g" {} \;
+find ./ -type f -exec sed -i -e "s/<ARGO_ARTIFACT_BUCKET>/${ARGO_ARTIFACT_BUCKET}/g" {} \;
+find ./ -type f -exec sed -i -e "s/<GITLAB_BACKUP_BUCKET>/${GITLAB_BACKUP_BUCKET}/g" {} \;
+find ./ -type f -exec sed -i -e "s/<CHARTMUSEUM_BUCKET>/${CHARTMUSEUM_BUCKET}/g" {} \;
+
+
 # apply terraform
-cd /terraform/base
+cd /gitops/terraform/base
 if [ -z "$SKIP_TERRAFORM_APPLY" ]
 then
   echo "applying bootstrap terraform"
@@ -178,18 +201,10 @@ chmod 0600 ~/.kube/config
 # - needs to be automated through 0 touch 
 
 # todo need to add the configmap content for atlantis to use a volume mount and have access to our 
-# kubectl -n atlantis create configmap kubeconfig --from-file=config=kubeconfig_k8s-preprod
+# kubectl -n atlantis create configmap kubeconfig --from-file=config=kubeconfig_kubefirst
 # kubernetes clusters - could use secret in vault or configmap as our mount point
 # need detokenized gitops directory content for consumption
 
-
-cat << EOF > /terraform/.gitlab-runner-registration-token
-dsfgCTH4LxagoV_DByKa
-EOF
-
-cat << EOF > /terraform/.gitlab-bot-access-token
-mjaCn-1D7KgrM7cuex2N
-EOF
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -219,7 +234,7 @@ export TF_VAR_gitlab_runner_token=$(cat /terraform/.gitlab-runner-registration-t
 # apply terraform
 if [ -z "$SKIP_VAULT_APPLY" ]
 then
-  cd /terraform/vault
+  cd /gitops/terraform/vault
   echo "applying vault terraform"
   terraform init 
   terraform destroy -auto-approve #!* todo need to --> apply
@@ -233,12 +248,12 @@ fi
 export KEYCLOAK_PASSWORD=$(kubectl -n keycloak get secret/keycloak  -ojson | jq -r '.data."admin-password"' | base64 -d)
 export KEYCLOAK_USER=gitlab-bot
 export KEYCLOAK_CLIENT_ID=admin-cli
-export KEYCLOAK_URL=https://keycloak.starter.kubefirst.com
+export KEYCLOAK_URL=https://keycloak.<AWS_HOSTED_ZONE_NAME>
 
 # apply terraform
 if [ -z "$SKIP_KEYCLOAK_APPLY" ]
 then
-cd /terraform/keycloak
+cd /gitops/terraform/keycloak
 echo "applying keycloak terraform"
 terraform init 
 terraform destroy -auto-approve  #!* todo need to --> apply
@@ -247,17 +262,17 @@ else
   echo "skipping keycloak terraform because SKIP_KEYCLOAK_APPLY is set"
 fi
 
-export GITLAB_BASE_URL=https://gitlab.starter.kubefirst.com
+export GITLAB_BASE_URL=https://gitlab.<AWS_HOSTED_ZONE_NAME>
 export GITLAB_TOKEN=gQevK69TPXSos5cXYC7m
 
 # todo
 # curl --request POST \
-# --url "https://gitlab.starter.kubefirst.com/api/v4/projects/6/hooks" \
+# --url "https://gitlab.<AWS_HOSTED_ZONE_NAME>/api/v4/projects/6/hooks" \
 # --header "content-type: application/json" \
 # --header "PRIVATE-TOKEN: gQevK69TPXSos5cXYC7m" \
 # --data '{
 #   "id": "6",
-#   "url": "https://atlantis.starter.kubefirst.com/events",
+#   "url": "https://atlantis.<AWS_HOSTED_ZONE_NAME>/events",
 #   "token": "c75e7d48b854a36e13fb1d76a6eb5aa750a5e83a3ec6a0093413ed71d3313622",
 #   "push_events": "true",
 #   "merge_requests_events": "true",
@@ -268,7 +283,7 @@ export GITLAB_TOKEN=gQevK69TPXSos5cXYC7m
 # apply terraform
 if [ -z "$SKIP_GITLAB_APPLY" ]
 then
-  cd /terraform/gitlab
+  cd /gitops/terraform/gitlab
   echo "applying gitlab terraform"
   terraform init 
   terraform destroy -auto-approve  #!* todo need to --> apply
@@ -292,10 +307,10 @@ then
   export CYPRESS_BASE_URL="https://${GITLAB_URL}"
   export CYPRESS_gitlab_bot_username_before=$GITLAB_ROOT_USER
   export CYPRESS_gitlab_bot_password=$GITLAB_BOT_ROOT_PASSWORD
-  cd /terraform/cypress
+  cd /gitops/terraform/cypress
   npm ci
   $(npm bin)/cypress run
-  cd /terraform
+  cd /gitops/terraform
 
   export GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN=$(cat ./.gitlab-bot-access-token)
   export RUNNER_REGISTRATION_TOKEN=$(cat ./.gitlab-runner-registration-token)
