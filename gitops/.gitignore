@@ -10,4 +10,3 @@ kubeconfig_*
 */cypress/screenshots/
 */cypress/videos/
 .DS_Store
-/git

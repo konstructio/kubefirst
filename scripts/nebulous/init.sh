@@ -245,9 +245,9 @@ then
   sleep 18
 fi
 
-cd /gitops/terraform/base
-export RUNNER_REGISTRATION_TOKEN=$(cat ./.gitlab-runner-registration-token)
-export GITLAB_TOKEN=$(cat ./.gitlab-bot-access-token)
+
+export RUNNER_REGISTRATION_TOKEN=$(cat /gitops/terraform/.gitlab-runner-registration-token)
+export GITLAB_TOKEN=$(cat /gitops/terraform/.gitlab-bot-access-token)
 export TF_VAR_gitlab_token=$GITLAB_TOKEN
 
 # apply terraform
