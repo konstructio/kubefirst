@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket  = "kubefirst-demo-dbb09532cff3c1057a58577e87bc35"
+    bucket  = "<TF_STATE_BUCKET>"
     key     = "terraform/gitlab/tfstate.tf"
     region  = "<AWS_DEFAULT_REGION>"
     encrypt = true

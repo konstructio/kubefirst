@@ -1,27 +1,27 @@
 # todo construct these values
 resource "aws_s3_bucket" "argo_artifact_bucket" {
-  bucket = "kubefirst-starter-argo-artifacts"
+  bucket = "<ARGO_ARTIFACT_BUCKET>"
   acl    = "private"
 
   tags = {
-    Name = "kubefirst-starter-argo-artifacts"
+    Name = "<ARGO_ARTIFACT_BUCKET>"
   }
 }
 
 resource "aws_s3_bucket" "gitlab_backup_bucket" {
-  bucket = "kubefirst-starter-gitlab-backup-bucket"
+  bucket = "<GITLAB_BACKUP_BUCKET>"
   acl    = "private"
 
   tags = {
-    Name = "kubefirst-starter-gitlab-backup-bucket"
+    Name = "<GITLAB_BACKUP_BUCKET>"
   }
 }
 
 resource "aws_s3_bucket" "chartmuseum_artifact_bucket" {
-  bucket = "kubefirst-starter-chartmuseum-artifact-bucket"
+  bucket = "<CHARTMUSEUM_BUCKET>"
   acl    = "private"
 
   tags = {
-    Name = "kubefirst-starter-chartmuseum-artifact-bucket"
+    Name = "<CHARTMUSEUM_BUCKET>"
   }
 }

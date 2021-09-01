@@ -1,10 +1,7 @@
-# todo discuss this file being a module... flat forever?
-# todo preprod_ === module. if we pull it up a layer, pass in the data object from remote state ? 1 var 
-#! todo fix
 data "terraform_remote_state" "eks" {
   backend = "s3"
   config = {
-    bucket = "kubefirst-demo-dbb09532cff3c1057a58577e87bc35"
+    bucket = "<TF_STATE_BUCKET>"
     key    = "terraform/tfstate.tf"
     region = var.aws_region
   }

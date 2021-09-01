@@ -130,18 +130,15 @@ path "sys/control-group/request" {
 }
 EOT
 }
-# Allow read / list access to preprod staging
-# path "secret/k8s-preprod/*" {
-#     capabilities = ["read", "list"]
-# }
 
 resource "vault_policy" "developer" {
   name = "developer"
 
   policy = <<EOT
-# Allow full access to preprod development
+# Allow full write access to developers, without delete
+# Obviously it's your vault now, feel free to change the rules
 path "secret/*" {
-    capabilities = ["create", "read", "update", "delete", "list"]
+    capabilities = ["create", "read", "update", "list"]
 }
 
 # List available secrets engines to retrieve accessor ID

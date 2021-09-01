@@ -31,4 +31,4 @@ data:
           args:
             - "token"
             - "-i"
-            - "kubefirst" # TODO: preprod
+            - "kubefirst"
