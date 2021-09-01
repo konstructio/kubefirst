@@ -9,6 +9,8 @@ docker run --env-file=kubefirst.env -v $PWD/terraform:/terraform -v $PWD/scripts
 - descriptions for all variables
 - move `/terraform/security-groups` to `/terraform/vpc/gitlab-sg.tf` ? its only one security group
 - update LICENSE
+- aws route53 test-dns-answer --hosted-zone-id $HOSTED_ZONE_ID --hosted-zone-id, --record-name, --record-type
+- 
 
 
 # nebulous
