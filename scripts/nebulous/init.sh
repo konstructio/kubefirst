@@ -171,27 +171,27 @@ if [ -z "$SKIP_DETOKENIZATION" ]; then
   export LANG=C;
   cd /gitops/
 
-  echo "replacing AWS_HOSTED_ZONE_NAME token"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} 
-  echo "replacing TF_STATE_BUCKET token"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<TF_STATE_BUCKET>|${TF_STATE_BUCKET}|g" {} +
-  echo "replacing ARGO_ARTIFACT_BUCKET token"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<ARGO_ARTIFACT_BUCKET>|${ARGO_ARTIFACT_BUCKET}|g" {} +
-  echo "replacing GITLAB_BACKUP_BUCKET token"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<GITLAB_BACKUP_BUCKET>|${GITLAB_BACKUP_BUCKET}|g" {} +
-  echo "replacing CHARTMUSEUM_BUCKET token"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<CHARTMUSEUM_BUCKET>|${CHARTMUSEUM_BUCKET}|g" {} +
-  echo "replacing AWS_ACCESS_KEY_ID token"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_ACCESS_KEY_ID>|${AWS_ACCESS_KEY_ID}|g" {} +
-  echo "replacing AWS_SECRET_ACCESS_KEY token"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_SECRET_ACCESS_KEY>|${AWS_SECRET_ACCESS_KEY}|g" {} +
-  echo "replacing AWS_HOSTED_ZONE_ID token"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_ID>|${AWS_HOSTED_ZONE_ID}|g" {} +
-  echo "replacing AWS_HOSTED_ZONE_NAME token"
+  echo "replacing AWS_HOSTED_ZONE_NAME token with value ${AWS_HOSTED_ZONE_NAME}"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} +
-  echo "replacing AWS_DEFAULT_REGION token"
+  echo "replacing TF_STATE_BUCKET token with value ${TF_STATE_BUCKET}"
+  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<TF_STATE_BUCKET>|${TF_STATE_BUCKET}|g" {} +
+  echo "replacing ARGO_ARTIFACT_BUCKET token with value ${ARGO_ARTIFACT_BUCKET}"
+  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<ARGO_ARTIFACT_BUCKET>|${ARGO_ARTIFACT_BUCKET}|g" {} +
+  echo "replacing GITLAB_BACKUP_BUCKET token with value ${GITLAB_BACKUP_BUCKET}"
+  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<GITLAB_BACKUP_BUCKET>|${GITLAB_BACKUP_BUCKET}|g" {} +
+  echo "replacing CHARTMUSEUM_BUCKET token with value ${CHARTMUSEUM_BUCKET}"
+  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<CHARTMUSEUM_BUCKET>|${CHARTMUSEUM_BUCKET}|g" {} +
+  echo "replacing AWS_ACCESS_KEY_ID token with value ${AWS_ACCESS_KEY_ID}"
+  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_ACCESS_KEY_ID>|${AWS_ACCESS_KEY_ID}|g" {} +
+  echo "replacing AWS_SECRET_ACCESS_KEY token with value ${AWS_SECRET_ACCESS_KEY}"
+  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_SECRET_ACCESS_KEY>|${AWS_SECRET_ACCESS_KEY}|g" {} +
+  echo "replacing AWS_HOSTED_ZONE_ID token with value ${AWS_HOSTED_ZONE_ID}"
+  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_ID>|${AWS_HOSTED_ZONE_ID}|g" {} +
+  echo "replacing AWS_HOSTED_ZONE_NAME token with value ${AWS_HOSTED_ZONE_NAME}"
+  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} +
+  echo "replacing AWS_DEFAULT_REGION token with value ${AWS_DEFAULT_REGION}"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_DEFAULT_REGION>|${AWS_DEFAULT_REGION}|g" {} +
-  echo "replacing EMAIL_ADDRESS token"
+  echo "replacing EMAIL_ADDRESS token with value ${EMAIL_ADDRESS}"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<EMAIL_ADDRESS>|${EMAIL_ADDRESS}|g" {} +
 fi
 
@@ -260,7 +260,7 @@ then
 fi
 
 
-
+return 0
 
 
 
