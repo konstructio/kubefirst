@@ -269,8 +269,14 @@ then
   echo "copying constructed gitops repo content into cloned repository"
   cp -a /gitops/. /git/gitops/
   
-  echo "committing and pushing gitops repo to your new gitlab repository"
+  
+
   cd /git/gitops
+  echo "configuring git client"
+  git config --global user.email "${EMAIL_ADDRESS}"
+  git config --global user.name "root"
+
+  echo "committing and pushing gitops repo to your new gitlab repository"  
   git add .
   git commit -m "initial kubefirst commit"
   git push
