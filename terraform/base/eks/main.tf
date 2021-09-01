@@ -124,7 +124,7 @@ module "eks" {
 
   tags = {
     Environment = "preprod"
-    ClusterName = "k8s-preprod"
+    ClusterName = "kubefirst"
   }
 
   vpc_id = module.vpc.vpc_id
@@ -134,7 +134,7 @@ module "eks" {
     username = "admin"
     groups   = ["system:masters"]
     }, {
-    rolearn  = aws_iam_role.k8s-preprod-worker-nodes-role-new.arn
+    rolearn  = aws_iam_role.kubefirst-worker-nodes-role-new.arn
     username = "system:node:{{EC2PrivateDNSName}}"
     groups   = ["system:bootstrappers", "system:nodes"]
   }])
@@ -150,7 +150,7 @@ module "eks" {
 resource "aws_eks_node_group" "preprod-nodes" {
   cluster_name    = local.cluster_name
   node_group_name = "preprod-nodes"
-  node_role_arn   = aws_iam_role.k8s-preprod-worker-nodes-role-new.arn
+  node_role_arn   = aws_iam_role.kubefirst-worker-nodes-role-new.arn
   subnet_ids      = module.vpc.private_subnets
   ami_type        = "AL2_x86_64"
   disk_size       = 50
@@ -175,7 +175,7 @@ resource "aws_eks_node_group" "preprod-nodes" {
 resource "aws_eks_node_group" "mgmt-nodes" {
   cluster_name    = local.cluster_name
   node_group_name = "mgmt-nodes"
-  node_role_arn   = aws_iam_role.k8s-preprod-worker-nodes-role-new.arn
+  node_role_arn   = aws_iam_role.kubefirst-worker-nodes-role-new.arn
   subnet_ids      = module.vpc.private_subnets
   ami_type        = "AL2_x86_64"
   disk_size       = 50
@@ -199,7 +199,7 @@ resource "aws_eks_node_group" "mgmt-nodes" {
 resource "aws_eks_node_group" "production-nodes" {
   cluster_name    = local.cluster_name
   node_group_name = "production-nodes"
-  node_role_arn   = aws_iam_role.k8s-preprod-worker-nodes-role-new.arn
+  node_role_arn   = aws_iam_role.kubefirst-worker-nodes-role-new.arn
   subnet_ids      = module.vpc.private_subnets
   ami_type        = "AL2_x86_64"
   disk_size       = 50
@@ -226,8 +226,8 @@ resource "random_string" "random" {
   special = false
 }
 
-resource "aws_iam_role" "k8s-preprod-worker-nodes-role-new" {
-  name = "k8s-preprod-worker-nodes-role-${random_string.random.result}"
+resource "aws_iam_role" "kubefirst-worker-nodes-role-new" {
+  name = "kubefirst-worker-nodes-role-${random_string.random.result}"
 
   assume_role_policy = <<EOT
 {
@@ -256,12 +256,12 @@ EOT
 }
 
 resource "aws_iam_role_policy_attachment" "admin-policy-attach" {
-  role       = aws_iam_role.k8s-preprod-worker-nodes-role-new.name
+  role       = aws_iam_role.kubefirst-worker-nodes-role-new.name
   policy_arn = var.k8s_admin
 }
 
 resource "aws_iam_role_policy_attachment" "worker-policy-attach" {
   count      = length(var.k8s_worker_node_policy_arns)
-  role       = aws_iam_role.k8s-preprod-worker-nodes-role-new.name
+  role       = aws_iam_role.kubefirst-worker-nodes-role-new.name
   policy_arn = var.k8s_worker_node_policy_arns[count.index]
 }

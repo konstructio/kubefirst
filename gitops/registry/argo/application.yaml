@@ -10,7 +10,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://gitlab.mgmt.kubefirst.com/kubefirst/gitops.git
+    repoURL: https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops.git
     path: components/argo
     targetRevision: HEAD
   destination:
@@ -37,7 +37,7 @@ spec:
       containers:
         # todo adjust node permissions to be adequate for geting a kubeconfig in terraform - manually adding in console
       - name: argocd-permissions
-        image: kubefirst/kubefirst-builder:spike
+        image: kubefirst/kubefirst-builder:spike # TODO: official versioned image
         # todo need to rename `kubefirst-admin` to `KubernetesAdmin`
         # TMP_AWS_CREDS=$(aws sts assume-role --role-arn arn:aws:iam::126827061464:role/kubefirst-admin  --role-session-name starter-kubefirst --duration-seconds 900)
         # export AWS_SESSION_TOKEN=$(echo $TMP_AWS_CREDS | jq -r .Credentials.SessionToken)
@@ -47,7 +47,7 @@ spec:
         - /bin/bash
         - -c
         - |
-          aws eks update-kubeconfig --name k8s-preprod --region  us-east-1
+          aws eks update-kubeconfig --name kubefirst --region <AWS_DEFAULT_REGION>
           kubectl -n argocd delete rolebinding argocd-admin --ignore-not-found=true
           kubectl -n argocd create rolebinding argocd-admin --clusterrole=admin --serviceaccount=argocd:default
         # todo remove this envFrom and assume role
@@ -73,7 +73,7 @@ spec:
         - /bin/bash
         - -c
         - |
-          aws eks update-kubeconfig --name k8s-preprod --region  us-east-1
+          aws eks update-kubeconfig --name kubefirst --region  <AWS_DEFAULT_REGION>
           kubectl -n argo delete rolebinding argo-admin --ignore-not-found=true
           kubectl -n argo create rolebinding argo-admin --clusterrole=admin --serviceaccount=argo:default
         # todo remove this envFrom and assume role

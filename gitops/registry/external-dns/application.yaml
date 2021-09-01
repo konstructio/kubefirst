@@ -20,7 +20,7 @@ spec:
       releaseName: external-dns
       values: |
         domainFilters:
-          - starter.kubefirst.com
+          - <AWS_HOSTED_ZONE_NAME>
   syncPolicy:
     automated:
       prune: true

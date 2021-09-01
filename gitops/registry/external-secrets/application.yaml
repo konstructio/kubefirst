@@ -15,9 +15,9 @@ spec:
     helm:
       values: |-
         env:
-          AWS_REGION: us-east-1
-          AWS_DEFAULT_REGION: us-east-1
-          VAULT_ADDR: https://vault.starter.kubefirst.com
+          AWS_REGION: <AWS_DEFAULT_REGION>
+          AWS_DEFAULT_REGION: <AWS_DEFAULT_REGION>
+          VAULT_ADDR: https://vault.<AWS_HOSTED_ZONE_NAME>
         serviceAccount:
           name: external-secrets
     chart: kubernetes-external-secrets

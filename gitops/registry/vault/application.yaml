@@ -18,9 +18,9 @@ spec:
     helm:
       parameters:
         - name: server.route.host
-          value: vault.starter.kubefirst.com
+          value: vault.<AWS_HOSTED_ZONE_NAME>
         - name: 'server.ingress.hosts[0].host'
-          value: vault.starter.kubefirst.com
+          value: vault.<AWS_HOSTED_ZONE_NAME>
       values: |-
         server:
           image:
@@ -50,13 +50,13 @@ spec:
         
               storage "dynamodb" {
                 ha_enabled = "true"
-                region = "us-east-1"
+                region = "<AWS_DEFAULT_REGION>"
                 table = "vault-dynamodb-backend"
               }
         
               seal "awskms" {
-                 region     = "us-east-1"
-                 kms_key_id = "02fe14de-44b3-483f-9a89-3a551768e75b"
+                 region     = "<AWS_DEFAULT_REGION>"
+                 kms_key_id = "<KMS_KEY_ID>"
               }
               service_registration "kubernetes" {}
         
@@ -71,11 +71,11 @@ spec:
               kubernetes.io/ingress.class: nginx
               cert-manager.io/cluster-issuer: "letsencrypt-prod"
             path: /
-            host: vault.starter.kubefirst.com
+            host: vault.<AWS_HOSTED_ZONE_NAME>
             tls:
              - secretName: vault-tls
                hosts:
-                 - vault.starter.kubefirst.com
+                 - vault.<AWS_HOSTED_ZONE_NAME>
           # # # kubefirst 0.2 remove if this is still commented
           # extraSecretEnvironmentVars:
           #   - envName: AWS_SECRET_ACCESS_KEY
@@ -111,7 +111,7 @@ spec:
       containers:
         # todo adjust node permissions to be adequate for geting a kubeconfig in terraform - manually adding in console
       - name: unseal-vault
-        image: kubefirst/kubefirst-builder:spike
+        image: kubefirst/kubefirst-builder:spike # TODO: official versioned image
         # todo need to rename `kubefirst-admin` to `KubernetesAdmin`
         # TMP_AWS_CREDS=$(aws sts assume-role --role-arn arn:aws:iam::126827061464:role/kubefirst-admin  --role-session-name starter-kubefirst --duration-seconds 900)
         # export AWS_SESSION_TOKEN=$(echo $TMP_AWS_CREDS | jq -r .Credentials.SessionToken)
@@ -122,10 +122,9 @@ spec:
         - -c
         - |
           sleep 30
-          aws eks update-kubeconfig --name k8s-preprod --region  us-east-1
+          aws eks update-kubeconfig --name kubefirst --region <AWS_DEFAULT_REGION>
           kubectl -n vault exec vault-0 -- vault operator init -format=json > cluster-keys.json
           kubectl -n vault create secret generic vault-unseal-keys --from-file=cluster-keys.json
-        # todo remove this envFrom and assume role
         # todo remove this envFrom and assume role
         envFrom:
         - secretRef:

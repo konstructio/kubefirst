@@ -3,7 +3,7 @@ terraform {
   backend "s3" {
     bucket  = "kubefirst-demo-dbb09532cff3c1057a58577e87bc35"
     key     = "terraform/tfstate.tf"
-    region  = "us-east-1"
+    region  = "<AWS_DEFAULT_REGION>"
     encrypt = true
   }
 }
@@ -12,7 +12,7 @@ terraform {
 #   backend "s3" {
 #     bucket  = "kubefirst-demo-aa26801359a3d171219f6752a867ac"
 #     key     = "terraform/tfstate.tf"
-#     region  = "us-east-1"
+#     region  = "<AWS_DEFAULT_REGION>"
 #     encrypt = true
 #   }
 # }
@@ -25,7 +25,7 @@ module "eks" {
   source = "./eks"
 
   aws_account_id = var.aws_account_id
-  cluster_name   = "k8s-preprod"
+  cluster_name   = "kubefirst"
   iam_user_arn   = var.iam_user_arn
 }
 

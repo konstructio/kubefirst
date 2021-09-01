@@ -18,7 +18,7 @@ spec:
           open:
             AUTH_ANONYMOUS_GET: true
             STORAGE: amazon
-            STORAGE_AMAZON_BUCKET: kubefirst-starter-chartmuseum-artifact-bucket
+            STORAGE_AMAZON_BUCKET: <AWS_CHART_BUCKET_NAME> # todo: provision
             STORAGE_AMAZON_PREFIX: kubefirst-charts
             STORAGE_AMAZON_REGION: us-east-1
             DISABLE_API: false

@@ -98,8 +98,8 @@ HOSTED_ZONE_NAME=${HOSTED_ZONE_NAME%?}
 EMAIL_DOMAIN=$(echo $EMAIL_ADDRESS |  cut -d"@" -f2)
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
 IAM_USER_ARN=$(aws sts get-caller-identity | jq -r .Arn)
-GITLAB_URL_PREFIX=gitlab
-GITLAB_URL="${GITLAB_URL_PREFIX}.${HOSTED_ZONE_NAME}"
+
+GITLAB_URL="gitlab.${HOSTED_ZONE_NAME}"
 GITLAB_ROOT_USER=root
 
 #* terraform separation: all these values should come from pre-determined env's

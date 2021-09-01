@@ -16,9 +16,9 @@ spec:
     helm:
       parameters:
         - name: ingress.host
-          value: atlantis.starter.kubefirst.com
+          value: atlantis.<AWS_HOSTED_ZONE_NAME>
         - name: orgWhitelist
-          value: gitlab.starter.kubefirst.com/kubefirst-starter/nebulous
+          value: gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops
       values: |-
         resources:
           limits:
@@ -44,17 +44,17 @@ spec:
             kubernetes.io/ingress.class: nginx
             cert-manager.io/cluster-issuer: "letsencrypt-prod"
           path: /
-          host: atlantis.starter.kubefirst.com
+          host: atlantis.<AWS_HOSTED_ZONE_NAME>
           tls:
            - secretName: atlantis-tls
              hosts:
-               - atlantis.starter.kubefirst.com
+               - atlantis.<AWS_HOSTED_ZONE_NAME>
         loadEnvFromSecrets:
           - atlantis-secrets
         repoConfig: |
           ---
           repos:
-          - id: gitlab.starter.kubefirst.com/kubefirst-starter/nebulous
+          - id: gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops
             workflow: default
             allowed_overrides: [apply_requirements]
             apply_requirements: [approved, mergeable]

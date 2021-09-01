@@ -6,7 +6,7 @@
 
 set -e
 
-K8S_CLUSTER_NAME=k8s-preprod
+K8S_CLUSTER_NAME=kubefirst
 
 aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $K8S_CLUSTER_NAME
 chmod 0600 ~/.kube/config
