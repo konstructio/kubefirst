@@ -23,9 +23,6 @@ variable "last_name" {
   type = string
 }
 
-
-
-
 variable "username" {
   type = string
 }
@@ -35,8 +32,6 @@ variable "realm_id" {
   default = "kubefirst"
 }
 
-
-
 variable "store_password" {
   type = bool
 }
@@ -44,13 +39,3 @@ variable "store_password" {
 output "username" {
   value = keycloak_user.user.username
 }
-
-# output "email" {
-#   value = keycloak_user.user.email
-# }
-
-# output "password" {
-#   value = random_string.user_password.result
-# }
-
-# todo make this a map ? 

@@ -14,6 +14,7 @@ resource "gitlab_group" "kubefirst" {
   request_access_enabled = false
   visibility_level       = "private"
 }
+
 module "metaphor" {
   depends_on = [
     gitlab_group.kubefirst
@@ -28,13 +29,13 @@ module "metaphor" {
   remove_source_branch_after_merge      = true
 }
 
-module "nebulous" {
+module "gitops" {
   depends_on = [
     gitlab_group.kubefirst
   ]
   source                                = "./templates/gitlab-repo"
   group_name                            = gitlab_group.kubefirst.id
-  repo_name                             = "nebulous"
+  repo_name                             = "gitops"
   create_ecr                            = true
   initialize_with_readme                = true
   only_allow_merge_if_pipeline_succeeds = false

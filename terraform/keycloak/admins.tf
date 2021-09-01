@@ -72,7 +72,6 @@ resource "vault_generic_secret" "admin_user_password" {
 EOT
 }
 
-#! the ids from users[count.index] not module
 resource "keycloak_group_memberships" "admin_members" {
   realm_id = keycloak_realm.kubefirst.id
   group_id = keycloak_group.admin_group.id
