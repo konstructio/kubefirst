@@ -176,7 +176,7 @@ find /terraform -type f -exec sed -i -e "s/<CHARTMUSEUM_BUCKET>/${CHARTMUSEUM_BU
 
 
 # apply terraform
-cd /terraform/base
+cd /gitops/terraform/base
 if [ -z "$SKIP_TERRAFORM_APPLY" ]
 then
   echo "applying bootstrap terraform"
@@ -234,7 +234,7 @@ export TF_VAR_gitlab_runner_token=$(cat /terraform/.gitlab-runner-registration-t
 # apply terraform
 if [ -z "$SKIP_VAULT_APPLY" ]
 then
-  cd /terraform/vault
+  cd /gitops/terraform/vault
   echo "applying vault terraform"
   terraform init 
   terraform destroy -auto-approve #!* todo need to --> apply
@@ -253,7 +253,7 @@ export KEYCLOAK_URL=https://keycloak.<AWS_HOSTED_ZONE_NAME>
 # apply terraform
 if [ -z "$SKIP_KEYCLOAK_APPLY" ]
 then
-cd /terraform/keycloak
+cd /gitops/terraform/keycloak
 echo "applying keycloak terraform"
 terraform init 
 terraform destroy -auto-approve  #!* todo need to --> apply
@@ -283,7 +283,7 @@ export GITLAB_TOKEN=gQevK69TPXSos5cXYC7m
 # apply terraform
 if [ -z "$SKIP_GITLAB_APPLY" ]
 then
-  cd /terraform/gitlab
+  cd /gitops/terraform/gitlab
   echo "applying gitlab terraform"
   terraform init 
   terraform destroy -auto-approve  #!* todo need to --> apply
@@ -307,10 +307,10 @@ then
   export CYPRESS_BASE_URL="https://${GITLAB_URL}"
   export CYPRESS_gitlab_bot_username_before=$GITLAB_ROOT_USER
   export CYPRESS_gitlab_bot_password=$GITLAB_BOT_ROOT_PASSWORD
-  cd /terraform/cypress
+  cd /gitops/terraform/cypress
   npm ci
   $(npm bin)/cypress run
-  cd /terraform
+  cd /gitops/terraform
 
   export GITLAB_ROOT_USER_PERSONAL_ACCESS_TOKEN=$(cat ./.gitlab-bot-access-token)
   export RUNNER_REGISTRATION_TOKEN=$(cat ./.gitlab-runner-registration-token)
