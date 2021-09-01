@@ -38,11 +38,6 @@ spec:
         # todo adjust node permissions to be adequate for geting a kubeconfig in terraform - manually adding in console
       - name: argocd-permissions
         image: kubefirst/kubefirst-builder:spike # TODO: official versioned image
-        # todo need to rename `kubefirst-admin` to `KubernetesAdmin`
-        # TMP_AWS_CREDS=$(aws sts assume-role --role-arn arn:aws:iam::126827061464:role/kubefirst-admin  --role-session-name starter-kubefirst --duration-seconds 900)
-        # export AWS_SESSION_TOKEN=$(echo $TMP_AWS_CREDS | jq -r .Credentials.SessionToken)
-        # export AWS_ACCESS_KEY_ID=$(echo $TMP_AWS_CREDS | jq -r .Credentials.AccessKeyId)
-        # export AWS_SECRET_ACCESS_KEY=$(echo $TMP_AWS_CREDS | jq -r .Credentials.SecretAccessKey)
         command:
         - /bin/bash
         - -c

@@ -8,6 +8,14 @@ set -e
 
 source ~/.profile
 
+# TODO BEFORE EXECUTIONS
+# echo
+# echo
+# echo "EXITING INTENTIONALLY"
+# echo "THIS SHOULD TOTALLY WORK"
+# exit 0
+# echo
+# echo
 #* need to tokenize terraform/base/main.tf
 # todo need to move `key` to terraform/base/tfstate.tf
 # terraform {
@@ -90,8 +98,8 @@ HOSTED_ZONE_NAME=${HOSTED_ZONE_NAME%?}
 EMAIL_DOMAIN=$(echo $EMAIL_ADDRESS |  cut -d"@" -f2)
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
 IAM_USER_ARN=$(aws sts get-caller-identity | jq -r .Arn)
-GITLAB_URL_PREFIX=gitlab
-GITLAB_URL="${GITLAB_URL_PREFIX}.${HOSTED_ZONE_NAME}"
+
+GITLAB_URL="gitlab.${HOSTED_ZONE_NAME}"
 GITLAB_ROOT_USER=root
 
 #* terraform separation: all these values should come from pre-determined env's
@@ -147,8 +155,8 @@ then
 fi
 
 
-# detokenize terraform - #! need to include every entrypoint gitlab, keycloak, vault, base
-sed -i "s|@S3_BUCKET_NAME@|${S3_BUCKET_NAME}|g" "/terraform/base/main.tf"
+# detokenize terraform
+sed -i "s|@S3_BUCKET_NAME@|${TF_STATE_BUCKET_NAME}|g" "/terraform/base/main.tf"
 sed -i "s|@AWS_DEFAULT_REGION@|${AWS_DEFAULT_REGION}|g" "/terraform/base/main.tf"
 
 
@@ -158,7 +166,7 @@ if [ -z "$SKIP_TERRAFORM_APPLY" ]
 then
   echo "applying bootstrap terraform"
   terraform init 
-  terraform destroy -auto-approve #!* todo need to --> apply
+  terraform apply -auto-approve
   echo "bootstrap terraform complete"
 else
   echo "skipping bootstrap terraform because SKIP_TERRAFORM_APPLY is set"
@@ -176,12 +184,6 @@ chmod 0600 ~/.kube/config
 # - register the gitops repo with argocd
 # - register the registry directory 
 # - needs to be automated through 0 touch 
-
-# todo need to add the configmap content for atlantis to use a volume mount and have access to our 
-# kubectl -n atlantis create configmap kubeconfig --from-file=config=kubeconfig_k8s-preprod
-# kubernetes clusters - could use secret in vault or configmap as our mount point
-# need detokenized gitops directory content for consumption
-
 
 cat << EOF > /terraform/.gitlab-runner-registration-token
 dsfgCTH4LxagoV_DByKa
@@ -222,7 +224,7 @@ then
   cd /terraform/vault
   echo "applying vault terraform"
   terraform init 
-  terraform destroy -auto-approve #!* todo need to --> apply
+  terraform apply -auto-approve
   echo "vault terraform complete"
 else
   echo "skipping vault terraform because SKIP_VAULT_APPLY is set"
@@ -241,7 +243,7 @@ then
 cd /terraform/keycloak
 echo "applying keycloak terraform"
 terraform init 
-terraform destroy -auto-approve  #!* todo need to --> apply
+terraform apply -auto-approve
 echo "keycloak terraform complete"
 else
   echo "skipping keycloak terraform because SKIP_KEYCLOAK_APPLY is set"
@@ -249,29 +251,13 @@ fi
 
 export GITLAB_BASE_URL=https://gitlab.starter.kubefirst.com
 export GITLAB_TOKEN=gQevK69TPXSos5cXYC7m
-
-# todo
-# curl --request POST \
-# --url "https://gitlab.starter.kubefirst.com/api/v4/projects/6/hooks" \
-# --header "content-type: application/json" \
-# --header "PRIVATE-TOKEN: gQevK69TPXSos5cXYC7m" \
-# --data '{
-#   "id": "6",
-#   "url": "https://atlantis.starter.kubefirst.com/events",
-#   "token": "c75e7d48b854a36e13fb1d76a6eb5aa750a5e83a3ec6a0093413ed71d3313622",
-#   "push_events": "true",
-#   "merge_requests_events": "true",
-#   "enable_ssl_verification": "true"
-# }'
-
-
 # apply terraform
 if [ -z "$SKIP_GITLAB_APPLY" ]
 then
   cd /terraform/gitlab
   echo "applying gitlab terraform"
   terraform init 
-  terraform destroy -auto-approve  #!* todo need to --> apply
+  terraform apply -auto-approve
   echo "gitlab terraform complete"
 else
   echo "skipping gitlab terraform because SKIP_GITLAB_APPLY is set"
@@ -405,7 +391,7 @@ echo "      4. commit to the master branch of metaphor and checkout your pipelin
 echo "         https://$GITLAB_URL/kubefirst/metaphor/-/pipelines"
 echo "           app url: metaphor-development.$HOSTED_ZONE_NAME"
 echo "      5. We created an S3 bucket to be the source of truth and state store of your kubefirst"
-echo "         starter plan, its name is $S3_BUCKET_NAME"
+echo "         starter plan, its name is $TF_STATE_BUCKET_NAME"
 echo
 echo
 echo
@@ -416,3 +402,4 @@ echo
 echo
 echo
 echo
+

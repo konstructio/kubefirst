@@ -76,17 +76,7 @@ spec:
              - secretName: vault-tls
                hosts:
                  - vault.<AWS_HOSTED_ZONE_NAME>
-          # # # kubefirst 0.2 remove if this is still commented
-          # extraSecretEnvironmentVars:
-          #   - envName: AWS_SECRET_ACCESS_KEY
-          #     secretName: aws
-          #     secretKey: secret_access_key
-          #   - envName: AWS_ACCESS_KEY_ID
-          #     secretName: aws
-          #     secretKey: access_key_id
-        
         injector:
-          # True if you want to enable vault agent injection.
           enabled: true
     chart: vault
   syncPolicy:
