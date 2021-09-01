@@ -117,17 +117,15 @@ export TF_VAR_argo_redirect_uris='["https://argo.<AWS_HOSTED_ZONE_NAME>/argo/oau
 export TF_VAR_argocd_redirect_uris='["https://argocd.<AWS_HOSTED_ZONE_NAME>/auth/callback","https://argocd.<AWS_HOSTED_ZONE_NAME>/applications"]'
 export TF_VAR_gitlab_redirect_uris='["https://gitlab.<AWS_HOSTED_ZONE_NAME>"]'
 
-# deal with these:
-ARGOCD_AUTH_PASSWORD
-ATLANTIS_GITLAB_TOKEN
-ATLANTIS_GITLAB_WEBHOOK_SECRET
-AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY
-GITLAB_TOKEN
-KEYCLOAK_PASSWORD
-TF_VAR_keycloak_admin_password
-TF_VAR_keycloak_vault_oidc_client_secret
-VAULT_TOKEN
+export TF_VAR_argocd_auth_password=$ARGOCD_AUTH_PASSWORD
+export TF_VAR_atlantis_gitlab_token=$ATLANTIS_GITLAB_TOKEN
+export TF_VAR_atlantis_gitlab_webhook_secret=$ATLANTIS_GITLAB_WEBHOOK_SECRET
+export TF_VAR_gitlab_token=$GITLAB_TOKEN
+export TF_VAR_keycloak_password=$KEYCLOAK_PASSWORD
+export TF_VAR_keycloak_admin_password=$TF_VAR_keycloak_admin_password
+export TF_VAR_keycloak_vault_oidc_client_secret=$TF_VAR_keycloak_vault_oidc_client_secret
+
+export VAULT_TOKEN="UNSET" # TODO: adjust this var when avail
 
 # check for liveness of the hosted zone
 if [ -z "$SKIP_HZ_CHECK" ]
@@ -162,12 +160,6 @@ then
 fi
 
 
-# detokenize terraform - #! need to include every entrypoint gitlab, keycloak, vault, base
-sed -i "s|@S3_BUCKET_NAME@|${S3_BUCKET_NAME}|g" "/terraform/base/main.tf"
-sed -i "s|@AWS_DEFAULT_REGION@|${AWS_DEFAULT_REGION}|g" "/terraform/base/main.tf"
-
-
-
 # detokenize
 cd /gitops/
 find ./ -type f -exec sed -i -e "s/<TF_STATE_BUCKET>/${TF_STATE_BUCKET}/g" {} \;
@@ -180,7 +172,6 @@ find ./ -type f -exec sed -i -e "s/<AWS_HOSTED_ZONE_ID>/${AWS_HOSTED_ZONE_ID}/g"
 find ./ -type f -exec sed -i -e "s/<AWS_HOSTED_ZONE_NAME>/${AWS_HOSTED_ZONE_NAME}/g" {} \;
 find ./ -type f -exec sed -i -e "s/<AWS_DEFAULT_REGION>/${AWS_DEFAULT_REGION}/g" {} \;
 find ./ -type f -exec sed -i -e "s/<EMAIL_ADDRESS>/${EMAIL_ADDRESS}/g" {} \;
-
 
 
 # apply terraform
