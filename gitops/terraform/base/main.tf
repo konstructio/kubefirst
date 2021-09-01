@@ -1,4 +1,3 @@
-# todo remove hardcode
 terraform {
   backend "s3" {
     bucket  = "<TF_STATE_BUCKET>"
@@ -63,4 +62,8 @@ module "security_groups" {
   source = "./security-groups"
 
   kubefirst_vpc_id = module.eks.kubefirst_vpc_id
+}
+
+output "vault_unseal_kms_key" {
+  value = module.kms.vault_unseal_kms_key
 }
