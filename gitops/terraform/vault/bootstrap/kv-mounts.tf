@@ -143,6 +143,7 @@ resource "vault_generic_secret" "atlantis_secrets" {
   "KUBECONFIG": "/.kube/config",
   "TF_VAR_aws_account_id": "<AWS_ACCOUNT_ID>",
   "TF_VAR_aws_region": "<AWS_DEFAULT_REGION>",
+  "TF_VAR_gitlab_token": "${var.gitlab_token}",
   "TF_VAR_keycloak_admin_password": "${var.keycloak_admin_password}",
   "TF_VAR_keycloak_vault_oidc_client_secret": "${var.keycloak_vault_oidc_client_secret}",
   "TF_VAR_vault_redirect_uris": "[\"https://vault.<AWS_HOSTED_ZONE_NAME>/ui/vault/auth/oidc/oidc/callback\",\"http://localhost:8200/ui/vault/auth/oidc/oidc/callback\",\"http://localhost:8250/oidc/callback\",\"https://vault.<AWS_HOSTED_ZONE_NAME>:8250/oidc/callback\"]",
