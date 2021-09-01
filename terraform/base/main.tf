@@ -62,18 +62,8 @@ module "ec2" {
 module "security-groups" {
   source = "./security-groups"
 
-  preprod_vpc_id = module.eks.preprod_vpc_id
+  kubefirst_vpc_id = module.eks.kubefirst_vpc_id
 }
-
-module "route53" {
-  source = "./route53"
-
-  route53_acm_verification_records = module.acm.acm_validation_records
-  hosted_zone_id                   = data.aws_route53_zone.hosted_zone.zone_id
-}
-
 module "ecr" {
   source = "./ecr"
-
-  aws_account_id = var.aws_account_id
 }

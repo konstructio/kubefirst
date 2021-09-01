@@ -1,7 +1,7 @@
 resource "aws_security_group" "gitlab_security_group" {
   name                   = "gitlab"
   description            = "gitlab"
-  vpc_id                 = var.preprod_vpc_id
+  vpc_id                 = var.kubefirst_vpc_id
   revoke_rules_on_delete = true
   tags = {
     Name = "gitlab"

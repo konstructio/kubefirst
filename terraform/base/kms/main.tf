@@ -2,7 +2,7 @@ variable "aws_account_id" {
   type = string
 }
 
-resource "aws_kms_key" "vault-unseal" {
+resource "aws_kms_key" "vault_unseal" {
   description              = "KMS key for auto unsealing Hashicorp Vault"
   customer_master_key_spec = "SYMMETRIC_DEFAULT"
   key_usage                = "ENCRYPT_DECRYPT"
@@ -90,9 +90,9 @@ EOT
 
 resource "aws_kms_alias" "vault_unseal" {
   name          = "alias/vault_unseal"
-  target_key_id = aws_kms_key.vault-unseal.key_id
+  target_key_id = aws_kms_key.vault_unseal.key_id
 }
 
-output "vault-unseal-kms-key" {
-  value = aws_kms_key.vault-unseal.key_id
+output "vault_unseal-kms-key" {
+  value = aws_kms_key.vault_unseal.key_id
 }

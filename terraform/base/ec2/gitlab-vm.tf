@@ -3,7 +3,7 @@ resource "random_string" "random" {
   special = false
 }
 
-resource "aws_key_pair" "gitlab-public-key" {
+resource "aws_key_pair" "gitlab_public_key" {
   key_name   = "terraform-ssh-key-${random_string.random.result}"
   public_key = file("${path.root}/terraform-ssh-key.pub")
   
@@ -39,7 +39,7 @@ resource "aws_instance" "gitlab" {
   instance_type               = "t3.large"
   ipv6_address_count          = 0
   ipv6_addresses              = []
-  key_name                    = aws_key_pair.gitlab-public-key.key_name
+  key_name                    = aws_key_pair.gitlab_public_key.key_name
   monitoring                  = false
   source_dest_check           = true
   subnet_id                   = var.vpc_public_subnet

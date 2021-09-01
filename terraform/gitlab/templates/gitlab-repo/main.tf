@@ -16,7 +16,7 @@ resource "gitlab_project" "repo" {
   remove_source_branch_after_merge                 = var.remove_source_branch_after_merge
 }
 
-resource "aws_ecr_repository" "ecr-repo" {
+resource "aws_ecr_repository" "ecr_repo" {
   count                = var.create_ecr != true ? 0 : 1
   name                 = var.repo_name
   image_tag_mutability = "IMMUTABLE"
@@ -24,44 +24,4 @@ resource "aws_ecr_repository" "ecr-repo" {
   image_scanning_configuration {
     scan_on_push = true
   }
-}
-
-resource "aws_ecr_repository_policy" "ecr-policy" {
-  count      = var.create_ecr != true ? 0 : 1
-  repository = aws_ecr_repository.ecr-repo[count.index].name
-
-  policy = <<EOF
-{
-    "Version": "2008-10-17",
-    "Statement": [
-        {
-            "Sid": "ecr pull policy for downstream aws accounts",
-            "Effect": "Allow",
-            "Principal": {
-              "AWS": [
-                "arn:aws:iam::${var.aws_account_id}:root"
-              ]
-            },
-            "Action": [
-                "ecr:GetDownloadUrlForLayer",
-                "ecr:BatchGetImage"
-            ]
-        }
-    ]
-}
-EOF
-}
-
-resource "gitlab_deploy_key" "deploy-key" {
-  depends_on = [gitlab_project.repo]
-  count      = var.create_deploy_key != true ? 0 : 1
-  project    = "kubefirst/${var.repo_name}"
-  title      = "kubefirst ${var.group_name} deploy-key"
-  can_push   = true
-  key        = file("${path.root}/terraform-ssh-key.pub")
-}
-
-
-output "gitlab_deploy_keys" {
-  value = gitlab_deploy_key.deploy-key
 }

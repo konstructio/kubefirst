@@ -46,6 +46,8 @@ spec:
 - new builder / nebulous image with vault-cli (see `kubefirst-builder:spike`) in jobs and figure out whats missing or what was published
 - change gitlab group name to `kubefirst`
 - search for `preprod` 
+- kubefirst_worker_nodes_role address whether assume role is still needed
+- descriptions for all variables
 
 
 # nebulous

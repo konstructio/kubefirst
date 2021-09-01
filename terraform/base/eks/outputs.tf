@@ -30,6 +30,6 @@ output "preprod_vpc_public_subnets" {
   value = module.vpc.public_subnets
 }
 
-output "preprod_vpc_id" {
+output "kubefirst_vpc_id" {
   value = module.vpc.vpc_id
 }
