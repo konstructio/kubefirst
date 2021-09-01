@@ -23,7 +23,7 @@ provider "kubernetes" {
 
 resource "vault_auth_backend" "k8s" {
   type = "kubernetes"
-  path = "kubernetes/${var.aws_account_name}-${var.aws_region}"
+  path = "kubernetes/kubefirst"
 }
 
 data "kubernetes_service_account" "external_secrets" {

@@ -117,7 +117,17 @@ export TF_VAR_argo_redirect_uris='["https://argo.<AWS_HOSTED_ZONE_NAME>/argo/oau
 export TF_VAR_argocd_redirect_uris='["https://argocd.<AWS_HOSTED_ZONE_NAME>/auth/callback","https://argocd.<AWS_HOSTED_ZONE_NAME>/applications"]'
 export TF_VAR_gitlab_redirect_uris='["https://gitlab.<AWS_HOSTED_ZONE_NAME>"]'
 
-
+# deal with these:
+ARGOCD_AUTH_PASSWORD
+ATLANTIS_GITLAB_TOKEN
+ATLANTIS_GITLAB_WEBHOOK_SECRET
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+GITLAB_TOKEN
+KEYCLOAK_PASSWORD
+TF_VAR_keycloak_admin_password
+TF_VAR_keycloak_vault_oidc_client_secret
+VAULT_TOKEN
 
 # check for liveness of the hosted zone
 if [ -z "$SKIP_HZ_CHECK" ]
@@ -159,20 +169,18 @@ sed -i "s|@AWS_DEFAULT_REGION@|${AWS_DEFAULT_REGION}|g" "/terraform/base/main.tf
 
 
 # detokenize
-
-# notes:
-# in addition to the swapping of env vars from kubefirst.env, we also need these additional
-# vars that were generated on the fly to be swapped in:
-export ARGO_ARTIFACT_BUCKET=k1-argo-artifacts-$BUCKET_RAND
-export GITLAB_BACKUP_BUCKET=k1-gitlab-backup-$BUCKET_RAND
-export CHARTMUSEUM_BUCKET=k1-chartmuseum-$BUCKET_RAND
-TF_STATE_BUCKET
-
 cd /gitops/
 find ./ -type f -exec sed -i -e "s/<TF_STATE_BUCKET>/${TF_STATE_BUCKET}/g" {} \;
 find ./ -type f -exec sed -i -e "s/<ARGO_ARTIFACT_BUCKET>/${ARGO_ARTIFACT_BUCKET}/g" {} \;
 find ./ -type f -exec sed -i -e "s/<GITLAB_BACKUP_BUCKET>/${GITLAB_BACKUP_BUCKET}/g" {} \;
 find ./ -type f -exec sed -i -e "s/<CHARTMUSEUM_BUCKET>/${CHARTMUSEUM_BUCKET}/g" {} \;
+find ./ -type f -exec sed -i -e "s/<AWS_ACCESS_KEY_ID>/${AWS_ACCESS_KEY_ID}/g" {} \;
+find ./ -type f -exec sed -i -e "s/<AWS_SECRET_ACCESS_KEY>/${AWS_SECRET_ACCESS_KEY}/g" {} \;
+find ./ -type f -exec sed -i -e "s/<AWS_HOSTED_ZONE_ID>/${AWS_HOSTED_ZONE_ID}/g" {} \;
+find ./ -type f -exec sed -i -e "s/<AWS_HOSTED_ZONE_NAME>/${AWS_HOSTED_ZONE_NAME}/g" {} \;
+find ./ -type f -exec sed -i -e "s/<AWS_DEFAULT_REGION>/${AWS_DEFAULT_REGION}/g" {} \;
+find ./ -type f -exec sed -i -e "s/<EMAIL_ADDRESS>/${EMAIL_ADDRESS}/g" {} \;
+
 
 
 # apply terraform
