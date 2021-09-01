@@ -62,9 +62,9 @@ if [ ! -f $HOME/.ssh/id_rsa ]
 then
     echo "creating ssh key pair"
     ssh-keygen -o -t rsa -b 4096 -C "${EMAIL_ADDRESS}" -f $HOME/.ssh/id_rsa -q -N "" > /dev/null
-    echo "copying ssh keys to terraform/base/terraform-ssh-key*"
-    cp ~/.ssh/id_rsa /terraform/base/terraform-ssh-key
-    cp ~/.ssh/id_rsa.pub /terraform/base/terraform-ssh-key.pub
+    echo "copying ssh keys to /gitops/terraform/base/terraform-ssh-key*"
+    cp ~/.ssh/id_rsa /gitops/terraform/base/terraform-ssh-key
+    cp ~/.ssh/id_rsa.pub /gitops/terraform/base/terraform-ssh-key.pub
     sleep 2
 else
     echo "reusing existing ssh key pair"
@@ -271,7 +271,7 @@ export VAULT_TOKEN=$(kubectl -n vault get secret vault-unseal-keys -ojson | jq -
 export VAULT_ADDR="https://vault.${HOSTED_ZONE_NAME}"
 export TF_VAR_vault_addr=$VAULT_ADDR
 export TF_VAR_vault_token=$VAULT_TOKEN
-export TF_VAR_gitlab_runner_token=$(cat /terraform/.gitlab-runner-registration-token) #! verify path
+export TF_VAR_gitlab_runner_token=$(cat /gitops/terraform/.gitlab-runner-registration-token) #! verify path
 # TODO: add secrets back in - update: do we need this now that we prioritize external secrets?
 # kubectl create namespace kubefirst
 # kubectl create secret -n kubefirst generic kubefirst-secrets \
