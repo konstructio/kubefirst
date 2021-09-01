@@ -168,11 +168,11 @@ export GITLAB_BACKUP_BUCKET=k1-gitlab-backup-$BUCKET_RAND
 export CHARTMUSEUM_BUCKET=k1-chartmuseum-$BUCKET_RAND
 TF_STATE_BUCKET
 
-
-find /terraform -type f -exec sed -i -e "s/<TF_STATE_BUCKET>/${TF_STATE_BUCKET}/g" {} \;
-find /terraform -type f -exec sed -i -e "s/<ARGO_ARTIFACT_BUCKET>/${ARGO_ARTIFACT_BUCKET}/g" {} \;
-find /terraform -type f -exec sed -i -e "s/<GITLAB_BACKUP_BUCKET>/${GITLAB_BACKUP_BUCKET}/g" {} \;
-find /terraform -type f -exec sed -i -e "s/<CHARTMUSEUM_BUCKET>/${CHARTMUSEUM_BUCKET}/g" {} \;
+cd /gitops/
+find ./ -type f -exec sed -i -e "s/<TF_STATE_BUCKET>/${TF_STATE_BUCKET}/g" {} \;
+find ./ -type f -exec sed -i -e "s/<ARGO_ARTIFACT_BUCKET>/${ARGO_ARTIFACT_BUCKET}/g" {} \;
+find ./ -type f -exec sed -i -e "s/<GITLAB_BACKUP_BUCKET>/${GITLAB_BACKUP_BUCKET}/g" {} \;
+find ./ -type f -exec sed -i -e "s/<CHARTMUSEUM_BUCKET>/${CHARTMUSEUM_BUCKET}/g" {} \;
 
 
 # apply terraform
