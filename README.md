@@ -41,11 +41,14 @@ spec:
 
 ```
 
-# todos 
+# todos to discuss before next execution
 - need to add `argocd app wait/sync` after each sync wave, potentially add kuttl tests
 - new builder / nebulous image with vault-cli (see `kubefirst-builder:spike`) in jobs and figure out whats missing or what was published
 - change gitlab group name to `kubefirst`
-- 
+- search for `preprod` 
+- kubefirst_worker_nodes_role address whether assume role is still needed
+- descriptions for all variables
+- move `/terraform/security-groups` to `/terraform/vpc/gitlab-sg.tf` ? its only one security group
 
 
 # nebulous

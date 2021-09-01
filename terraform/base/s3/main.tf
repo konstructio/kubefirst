@@ -1,5 +1,5 @@
 # todo construct these values
-resource "aws_s3_bucket" "argo-artifact-bucket" {
+resource "aws_s3_bucket" "argo_artifact_bucket" {
   bucket = "kubefirst-starter-argo-artifacts"
   acl    = "private"
 
@@ -8,7 +8,7 @@ resource "aws_s3_bucket" "argo-artifact-bucket" {
   }
 }
 
-resource "aws_s3_bucket" "gitlab-backup-bucket" {
+resource "aws_s3_bucket" "gitlab_backup_bucket" {
   bucket = "kubefirst-starter-gitlab-backup-bucket"
   acl    = "private"
 
@@ -17,7 +17,7 @@ resource "aws_s3_bucket" "gitlab-backup-bucket" {
   }
 }
 
-resource "aws_s3_bucket" "chartmuseum-artifact-bucket" {
+resource "aws_s3_bucket" "chartmuseum_artifact_bucket" {
   bucket = "kubefirst-starter-chartmuseum-artifact-bucket"
   acl    = "private"
 

@@ -51,8 +51,3 @@ variable "initialize_with_readme" {
   type        = bool
   default     = true
 }
-
-variable "aws_account_id" {
-  description = "the aws account id"
-  type        = string
-}

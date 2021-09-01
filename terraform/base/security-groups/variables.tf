@@ -1,4 +1,4 @@
-variable "preprod_vpc_id" {
+variable "kubefirst_vpc_id" {
   type = string
 }
 
