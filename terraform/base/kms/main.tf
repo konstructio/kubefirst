@@ -93,6 +93,6 @@ resource "aws_kms_alias" "vault_unseal" {
   target_key_id = aws_kms_key.vault_unseal.key_id
 }
 
-output "vault_unseal-kms-key" {
+output "vault_unseal_kms_key" {
   value = aws_kms_key.vault_unseal.key_id
 }

@@ -49,6 +49,7 @@ spec:
 - kubefirst_worker_nodes_role address whether assume role is still needed
 - descriptions for all variables
 - move `/terraform/security-groups` to `/terraform/vpc/gitlab-sg.tf` ? its only one security group
+- update LICENSE
 
 
 # nebulous
