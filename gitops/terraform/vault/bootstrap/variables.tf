@@ -1,15 +1,12 @@
 variable "aws_account_id" {
   type = string
 }
-
 variable "aws_region" {
   type = string
 }
-
 variable "aws_account_name" {
   type = string
 }
-
 variable "aws_secret_access_key" {
   type = string
 }
@@ -34,7 +31,6 @@ variable "hosted_zone_id" {
 variable "gitlab_runner_token" {
   type = string
 }
-
 variable "argocd_auth_password" {
   type = string
 }
@@ -54,8 +50,5 @@ variable "keycloak_admin_password" {
   type = string
 }
 variable "keycloak_vault_oidc_client_secret" {
-  type = string
-}
-variable "vault_token" {
   type = string
 }

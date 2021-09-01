@@ -7,6 +7,6 @@ node_modules
 terraform-ssh-key
 terraform-ssh-key.pub
 kubeconfig_*
-terraform/cypress/cypress/screenshots/
-terraform/cypress/cypress/videos/
+*/cypress/screenshots/
+*/cypress/videos/
 .DS_Store
