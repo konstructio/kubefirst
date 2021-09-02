@@ -116,7 +116,6 @@ export TF_VAR_keycloak_vault_oidc_client_secret=$TF_VAR_keycloak_vault_oidc_clie
 
 export VAULT_TOKEN="UNSET" # TODO: adjust this var when avail
 
-aws route53 test-dns-answer --hosted-zone-id $AWS_HOSTED_ZONE_ID --record-name "livenesstest.$HOSTED_ZONE_NAME" --record-type "A"
 
 # check for liveness of the hosted zone
 if [ -z "$SKIP_HZ_CHECK" ]; then
@@ -129,6 +128,10 @@ if [ -z "$SKIP_HZ_CHECK" ]; then
 
   while [[ $HZ_RECORD_STATUS == 'PENDING' && $HZ_LIVENESS_FAIL_COUNT -lt 8 && $HZ_IS_LIVE -eq 0 ]];
   do
+    echo "new way"
+    aws route53 test-dns-answer --hosted-zone-id $AWS_HOSTED_ZONE_ID --record-name "livenesstest.$HOSTED_ZONE_NAME" --record-type "A"
+
+    echo "old way"  
     HZ_LOOKUP_RESULT=$(nslookup "$HZ_LIVENESS_URL" 8.8.8.8 | awk -F':' '/^Address: / { matched = 1 } matched { print $2}' | xargs)
     if [[ "$HZ_LOOKUP_RESULT" ]]; then
       HZ_IS_LIVE=1
@@ -155,27 +158,27 @@ if [ -z "$SKIP_DETOKENIZATION" ]; then
   export LANG=C;
   cd /gitops/
 
-  echo "replacing AWS_HOSTED_ZONE_NAME token with value ${AWS_HOSTED_ZONE_NAME}"
+  echo "replacing AWS_HOSTED_ZONE_NAME token with value ${AWS_HOSTED_ZONE_NAME} (1 of 11)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} +
-  echo "replacing TF_STATE_BUCKET token with value ${TF_STATE_BUCKET}"
+  echo "replacing TF_STATE_BUCKET token with value ${TF_STATE_BUCKET} (2 of 11)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<TF_STATE_BUCKET>|${TF_STATE_BUCKET}|g" {} +
-  echo "replacing ARGO_ARTIFACT_BUCKET token with value ${ARGO_ARTIFACT_BUCKET}"
+  echo "replacing ARGO_ARTIFACT_BUCKET token with value ${ARGO_ARTIFACT_BUCKET} (3 of 11)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<ARGO_ARTIFACT_BUCKET>|${ARGO_ARTIFACT_BUCKET}|g" {} +
-  echo "replacing GITLAB_BACKUP_BUCKET token with value ${GITLAB_BACKUP_BUCKET}"
+  echo "replacing GITLAB_BACKUP_BUCKET token with value ${GITLAB_BACKUP_BUCKET} (4 of 11)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<GITLAB_BACKUP_BUCKET>|${GITLAB_BACKUP_BUCKET}|g" {} +
-  echo "replacing CHARTMUSEUM_BUCKET token with value ${CHARTMUSEUM_BUCKET}"
+  echo "replacing CHARTMUSEUM_BUCKET token with value ${CHARTMUSEUM_BUCKET} (5 of 11)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<CHARTMUSEUM_BUCKET>|${CHARTMUSEUM_BUCKET}|g" {} +
-  echo "replacing AWS_ACCESS_KEY_ID token with value ${AWS_ACCESS_KEY_ID}"
+  echo "replacing AWS_ACCESS_KEY_ID token with value ${AWS_ACCESS_KEY_ID} (6 of 11)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_ACCESS_KEY_ID>|${AWS_ACCESS_KEY_ID}|g" {} +
-  echo "replacing AWS_SECRET_ACCESS_KEY token with value ${AWS_SECRET_ACCESS_KEY}"
+  echo "replacing AWS_SECRET_ACCESS_KEY token with value ${AWS_SECRET_ACCESS_KEY} (7 of 11)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_SECRET_ACCESS_KEY>|${AWS_SECRET_ACCESS_KEY}|g" {} +
-  echo "replacing AWS_HOSTED_ZONE_ID token with value ${AWS_HOSTED_ZONE_ID}"
+  echo "replacing AWS_HOSTED_ZONE_ID token with value ${AWS_HOSTED_ZONE_ID} (8 of 11)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_ID>|${AWS_HOSTED_ZONE_ID}|g" {} +
-  echo "replacing AWS_HOSTED_ZONE_NAME token with value ${AWS_HOSTED_ZONE_NAME}"
+  echo "replacing AWS_HOSTED_ZONE_NAME token with value ${AWS_HOSTED_ZONE_NAME} (9 of 11)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} +
-  echo "replacing AWS_DEFAULT_REGION token with value ${AWS_DEFAULT_REGION}"
+  echo "replacing AWS_DEFAULT_REGION token with value ${AWS_DEFAULT_REGION} (10 of 11)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_DEFAULT_REGION>|${AWS_DEFAULT_REGION}|g" {} +
-  echo "replacing EMAIL_ADDRESS token with value ${EMAIL_ADDRESS}"
+  echo "replacing EMAIL_ADDRESS token with value ${EMAIL_ADDRESS} (11 of 11)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<EMAIL_ADDRESS>|${EMAIL_ADDRESS}|g" {} +
 fi
 
