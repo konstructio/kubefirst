@@ -53,9 +53,11 @@ else
 fi
 
 if [ -z "$BUCKET_RAND" ]; then
-  export SKIP_STATE_BUCKET_CREATION=true
-else
+  echo "establishing bucket suffix"
   export BUCKET_RAND=(openssl rand -hex 3)
+else
+  echo "BUCKET_RAND seeded with $BUCKET_RAND"
+  export SKIP_STATE_BUCKET_CREATION=true
 fi
 export ARGO_ARTIFACT_BUCKET=k1-argo-artifacts-$BUCKET_RAND
 export GITLAB_BACKUP_BUCKET=k1-gitlab-backup-$BUCKET_RAND
