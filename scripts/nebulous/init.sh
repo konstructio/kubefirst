@@ -184,8 +184,8 @@ if [ -z "$SKIP_BASE_APPLY" ]
 then
   echo "applying bootstrap terraform"
   terraform init 
-  terraform refresh
-  #terraform apply -auto-approve
+  terraform apply -auto-approve # TODO: hack
+
   KMS_KEY_ID=$(terraform output -json | jq -r '.vault_unseal_kms_key.value')
   echo "KMS_KEY_ID collected: $KMS_KEY_ID"
   echo "bootstrap terraform complete"
@@ -222,8 +222,8 @@ then
   export CYPRESS_gitlab_bot_password=$GITLAB_BOT_ROOT_PASSWORD
   cd /gitops/terraform/cypress
   npm ci
-# TODO: hack  
-#  $(npm bin)/cypress run
+
+  $(npm bin)/cypress run
   
   
   echo
@@ -257,7 +257,7 @@ then
   cd /gitops/terraform/gitlab
   echo "applying gitlab terraform"
   terraform init 
-  terraform apply -auto-approve  #!* todo need to --> apply
+  terraform apply -auto-approve
   echo "gitlab terraform complete"
 
   mkdir -p /git
@@ -275,6 +275,7 @@ then
   echo "configuring git client"
   git config --global user.email "${EMAIL_ADDRESS}"
   git config --global user.name "root"
+  git config --global init.defaultBranch main
 
   echo "committing and pushing gitops repo to your new gitlab repository"  
   git add .
@@ -320,7 +321,7 @@ then
   cd /git/gitops/terraform/argocd
   echo "applying argocd terraform"
   terraform init 
-  terraform apply -auto-approve
+  terraform apply -auto-approve # TODO: hack
   echo "argocd terraform complete"
 else
   echo "skipping argocd terraform because SKIP_ARGOCD_APPLY is set"
@@ -357,7 +358,7 @@ then
   cd /git/gitops/terraform/vault
   echo "applying vault terraform"
   terraform init 
-  terraform destroy -auto-approve #!* todo need to --> apply
+  terraform apply -auto-approve # TODO: hack
   echo "vault terraform complete"
 else
   echo "skipping vault terraform because SKIP_VAULT_APPLY is set"
@@ -376,7 +377,7 @@ then
   cd /git/gitops/terraform/keycloak
   echo "applying keycloak terraform"
   terraform init 
-  terraform destroy -auto-approve  #!* todo need to --> apply
+  terraform apply -auto-approve  # TODO: hack
   echo "keycloak terraform complete"
 else
   echo "skipping keycloak terraform because SKIP_KEYCLOAK_APPLY is set"
