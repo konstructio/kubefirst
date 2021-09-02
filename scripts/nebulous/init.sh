@@ -54,6 +54,7 @@ fi
 
 if [ -z "$BUCKET_RAND" ]; then
   SKIP_STATE_BUCKET_CREATION=true
+else
   BUCKET_RAND=$(openssl rand -hex 3)
 fi
 export ARGO_ARTIFACT_BUCKET=k1-argo-artifacts-$BUCKET_RAND
