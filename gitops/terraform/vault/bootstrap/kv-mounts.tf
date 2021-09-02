@@ -13,22 +13,6 @@ resource "vault_generic_secret" "test_secret" {
 }
 EOT
 }
-#! the following is example yaml to use the above generic secret
-# todo use argo to verify this
-
-# apiVersion: "kubernetes-client.io/v1"
-# kind: ExternalSecret
-# metadata:
-#   name: test-secrets
-# spec:
-#   backendType: vault
-#   vaultMountPoint: kubernetes/starter-<AWS_DEFAULT_REGION>
-#   vaultRole: external-secrets
-#   kvVersion: 2
-#   data:
-#   - name: TEST
-#     key: secret/data/test
-#     property: TEST
 
 
 resource "vault_generic_secret" "kubefirst_secrets" {
