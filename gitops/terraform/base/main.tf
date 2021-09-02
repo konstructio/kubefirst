@@ -7,14 +7,6 @@ terraform {
   }
 }
 
-# terraform {
-#   backend "s3" {
-#     bucket  = "kubefirst-demo-aa26801359a3d171219f6752a867ac"
-#     key     = "terraform/tfstate.tf"
-#     region  = "<AWS_DEFAULT_REGION>"
-#     encrypt = true
-#   }
-# }
 
 provider "aws" {
 
