@@ -9,5 +9,5 @@ module "argocd_repos" {
 
 module "argocd_manifests" {
   source = "./manifests"
-  depends_on module.argocd_repos
+  depends_on = [module.argocd_repos]
 }
