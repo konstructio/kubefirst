@@ -4,13 +4,13 @@ variable "gitlab_token" {
 
 #* private git repos
 resource "argocd_repository_credentials" "private" {
-  url      = "https://gitlab.<AWS_HOSTED_ZONE_ID>"
+  url      = "https://gitlab.<AWS_HOSTED_ZONE_NAME>"
   username = "argocd"
   password = var.gitlab_token
 }
 
 resource "argocd_repository" "kubefirst_argocd" {
-  repo = "https://gitlab.<AWS_HOSTED_ZONE_ID>/kubefirst/gitops.git"
+  repo = "https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops.git"
   type = "git"
   depends_on = [argocd_repository_credentials.private]
 }
@@ -71,7 +71,7 @@ resource "argocd_repository" "kube2iam" {
 }
 
 resource "argocd_repository" "kubefirst-charts" {
-  repo     = "https://chartmuseum.<AWS_HOSTED_ZONE_ID>"
+  repo     = "https://chartmuseum.<AWS_HOSTED_ZONE_NAME>"
   type     = "helm"
   name     = "kubefirst-charts"
   # username = data.vault_generic_secret.chartmuseum_secrets.data["basic-auth-user"]
