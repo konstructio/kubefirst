@@ -34,7 +34,7 @@ echo
 echo
 echo
 
-sleep 12 
+sleep 12
 
 echo "executing source-profile.sh"
 source /scripts/nebulous/source-profile.sh 
@@ -90,10 +90,10 @@ export GITLAB_URL_PREFIX=gitlab
 export GITLAB_URL="${GITLAB_URL_PREFIX}.${HOSTED_ZONE_NAME}"
 export GITLAB_ROOT_USER=root
 export GITLAB_BASE_URL=https://gitlab.${AWS_HOSTED_ZONE_NAME}
+export K8S_CLUSTER_NAME=kubefirst
 
 #* terraform separation: all these values should come from pre-determined env's
 export TF_VAR_aws_account_id=$AWS_ACCOUNT_ID
-export TF_VAR_aws_account_name=starter
 export TF_VAR_aws_region=$AWS_DEFAULT_REGION
 export TF_VAR_hosted_zone_name=$HOSTED_ZONE_NAME
 export TF_VAR_hosted_zone_id=$AWS_HOSTED_ZONE_ID
@@ -161,28 +161,30 @@ if [ -z "$SKIP_DETOKENIZATION" ]; then
   export LANG=C;
   cd /gitops/
 
-  echo "replacing AWS_HOSTED_ZONE_NAME token with value ${AWS_HOSTED_ZONE_NAME} (1 of 11)"
+  echo "replacing AWS_HOSTED_ZONE_NAME token with value ${AWS_HOSTED_ZONE_NAME} (1 of 12)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} +
-  echo "replacing TF_STATE_BUCKET token with value ${TF_STATE_BUCKET} (2 of 11)"
+  echo "replacing TF_STATE_BUCKET token with value ${TF_STATE_BUCKET} (2 of 12)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<TF_STATE_BUCKET>|${TF_STATE_BUCKET}|g" {} +
-  echo "replacing ARGO_ARTIFACT_BUCKET token with value ${ARGO_ARTIFACT_BUCKET} (3 of 11)"
+  echo "replacing ARGO_ARTIFACT_BUCKET token with value ${ARGO_ARTIFACT_BUCKET} (3 of 12)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<ARGO_ARTIFACT_BUCKET>|${ARGO_ARTIFACT_BUCKET}|g" {} +
-  echo "replacing GITLAB_BACKUP_BUCKET token with value ${GITLAB_BACKUP_BUCKET} (4 of 11)"
+  echo "replacing GITLAB_BACKUP_BUCKET token with value ${GITLAB_BACKUP_BUCKET} (4 of 12)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<GITLAB_BACKUP_BUCKET>|${GITLAB_BACKUP_BUCKET}|g" {} +
-  echo "replacing CHARTMUSEUM_BUCKET token with value ${CHARTMUSEUM_BUCKET} (5 of 11)"
+  echo "replacing CHARTMUSEUM_BUCKET token with value ${CHARTMUSEUM_BUCKET} (5 of 12)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<CHARTMUSEUM_BUCKET>|${CHARTMUSEUM_BUCKET}|g" {} +
-  echo "replacing AWS_ACCESS_KEY_ID token with value ${AWS_ACCESS_KEY_ID} (6 of 11)"
+  echo "replacing AWS_ACCESS_KEY_ID token with value ${AWS_ACCESS_KEY_ID} (6 of 12)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_ACCESS_KEY_ID>|${AWS_ACCESS_KEY_ID}|g" {} +
-  echo "replacing AWS_SECRET_ACCESS_KEY token with value ${AWS_SECRET_ACCESS_KEY} (7 of 11)"
+  echo "replacing AWS_SECRET_ACCESS_KEY token with value ${AWS_SECRET_ACCESS_KEY} (7 of 12)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_SECRET_ACCESS_KEY>|${AWS_SECRET_ACCESS_KEY}|g" {} +
-  echo "replacing AWS_HOSTED_ZONE_ID token with value ${AWS_HOSTED_ZONE_ID} (8 of 11)"
+  echo "replacing AWS_HOSTED_ZONE_ID token with value ${AWS_HOSTED_ZONE_ID} (8 of 12)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_ID>|${AWS_HOSTED_ZONE_ID}|g" {} +
-  echo "replacing AWS_HOSTED_ZONE_NAME token with value ${AWS_HOSTED_ZONE_NAME} (9 of 11)"
+  echo "replacing AWS_HOSTED_ZONE_NAME token with value ${AWS_HOSTED_ZONE_NAME} (9 of 12)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} +
-  echo "replacing AWS_DEFAULT_REGION token with value ${AWS_DEFAULT_REGION} (10 of 11)"
+  echo "replacing AWS_DEFAULT_REGION token with value ${AWS_DEFAULT_REGION} (10 of 12)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_DEFAULT_REGION>|${AWS_DEFAULT_REGION}|g" {} +
-  echo "replacing EMAIL_ADDRESS token with value ${EMAIL_ADDRESS} (11 of 11)"
+  echo "replacing EMAIL_ADDRESS token with value ${EMAIL_ADDRESS} (11 of 12)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<EMAIL_ADDRESS>|${EMAIL_ADDRESS}|g" {} +
+  echo "replacing AWS_ACCOUNT_ID token with value ${AWS_ACCOUNT_ID} (12 of 12)"
+  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_ACCOUNT_ID>|${AWS_ACCOUNT_ID}|g" {} +
 fi
 
 # apply base terraform
@@ -191,21 +193,24 @@ if [ -z "$SKIP_BASE_APPLY" ]
 then
   echo "applying bootstrap terraform"
   terraform init 
-  terraform apply -auto-approve # TODO: hack
+  terraform apply -auto-approve
+  # terraform destroy -auto-approve; exit 1; # hack
 
   KMS_KEY_ID=$(terraform output -json | jq -r '.vault_unseal_kms_key.value')
   echo "KMS_KEY_ID collected: $KMS_KEY_ID"
   echo "bootstrap terraform complete"
   echo "replacing KMS_KEY_ID token with value ${KMS_KEY_ID}"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<KMS_KEY_ID>|${KMS_KEY_ID}|g" {} +
+  
+  cd /gitops
+  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<KMS_KEY_ID>|${KMS_KEY_ID}|g" {} + 
 
 else
   echo "skipping bootstrap terraform because SKIP_BASE_APPLY is set"
 fi
 
 echo "getting ~/kube/config for eks access"
-K8S_CLUSTER_NAME=$(terraform output -json | jq -r .cluster_name.value)
 aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $K8S_CLUSTER_NAME
+cat ~/.kube/config
 chmod 0600 ~/.kube/config
 
 
@@ -265,29 +270,30 @@ then
   echo "applying gitlab terraform"
   terraform init 
   terraform apply -auto-approve
+  # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "gitlab terraform complete"
-
+  # HEY CONTRIBUTOR!!! this deletes your gitops repo, delete your apps in argocd first if you're tearing down the house.
+  
+  
   mkdir -p /git
   cd /git
   
-  echo "cloning the new gitops repo to nebulous container"
-  git clone https://root:$GITLAB_TOKEN@gitlab.${AWS_HOSTED_ZONE_NAME}/kubefirst/gitops.git > /dev/null 2>&1;
-  
-  echo "copying constructed gitops repo content into cloned repository"
+  echo "copying constructed gitops repo content into /git/gitops directory"
   cp -a /gitops/. /git/gitops/
   
-  
-
   cd /git/gitops
-  echo "configuring git client"
-  git config --global user.email "${EMAIL_ADDRESS}"
-  git config --global user.name "root"
-  git config --global init.defaultBranch main
 
-  echo "committing and pushing gitops repo to your new gitlab repository"  
+  echo "configuring git client"
+  git config --global user.name "root"
+  git config --global user.email "${EMAIL_ADDRESS}"
+
+
+  echo "initing repo, committing, and pushing to the new gitlab origin"
+  git init --initial-branch=main
+  git remote add origin https://root:$GITLAB_TOKEN@gitlab.${AWS_HOSTED_ZONE_NAME}/kubefirst/gitops.git > /dev/null
   git add .
   git commit -m "initial kubefirst commit"
-  git push
+  git push -u origin main 
   echo "gitops repo established"
 
 else
@@ -307,15 +313,18 @@ fi
 # kubernetes clusters - could use secret in vault or configmap as our mount point
 # need detokenized gitops directory content for consumption
 # apply terraform
-if [ -z "$SKIP_ARGOCD_APPLY" ]
-then
+# if [ -z "$SKIP_ARGOCD_APPLY" ]
+# then
+
   echo "creating argocd in kubefirst cluster"
-  kubectl create namespace argocd
+  kubectl create namespace argocd --dry-run -oyaml | kubectl apply -f -
+  kubectl create secret -n argocd generic aws-creds --from-literal=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} --from-literal=AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} --dry-run -oyaml | kubectl apply -f -
+  # kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f - # TODO: kubernetes 1.19 and above
   kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
   echo "argocd created"
   
   echo "connecting to argocd in background process"
-  kubectl -n argocd svc/argocd-server -n argocd 8080:443 &
+  kubectl -n argocd port-forward svc/argocd-server -n argocd 8080:443 &
   echo "connection to argocd established"
 
   echo "collecting argocd connection details"
@@ -328,18 +337,29 @@ then
   cd /git/gitops/terraform/argocd
   echo "applying argocd terraform"
   terraform init 
-  terraform apply -auto-approve # TODO: hack
+  terraform apply -target module.argocd_repos -auto-approve
+  terraform apply -target module.argocd_registry -auto-approve
+  # terraform destroy -target module.argocd_registry -target module.argocd_repos -auto-approve; exit 1 # TODO: hack
   echo "argocd terraform complete"
-else
-  echo "skipping argocd terraform because SKIP_ARGOCD_APPLY is set"
-fi
 
-# --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# else
+#   echo "skipping argocd terraform because SKIP_ARGOCD_APPLY is set"
+#   echo "connecting to argocd in background process"
+#   kubectl -n argocd port-forward svc/argocd-server -n argocd 8080:443 &
+#   echo "connection to argocd established"
+#   export ARGOCD_AUTH_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+#   export TF_VAR_argocd_auth_password=${ARGOCD_AUTH_PASSWORD}
+#   export ARGOCD_AUTH_USERNAME=admin
+#   export ARGOCD_INSECURE=true
+#   export ARGOCD_SERVER=localhost:8080
+# fi
 
-#! everything beyond this point needs to be in a workflow or kubernetes job 
+echo "password: $ARGOCD_AUTH_PASSWORD"
+argocd login --help
+argocd login localhost:8080 --insecure --username admin --password "${ARGOCD_AUTH_PASSWORD}"
+sleep 60
+argocd app wait vault
 
-# --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# grab the vault unseal cluster keys, decode to json, parse the root_token
 export VAULT_TOKEN=$(kubectl -n vault get secret vault-unseal-keys -ojson | jq -r '.data."cluster-keys.json"' | base64 -d | jq -r .root_token)
 export VAULT_ADDR="https://vault.${HOSTED_ZONE_NAME}"
 export TF_VAR_vault_addr=$VAULT_ADDR
@@ -358,6 +378,7 @@ export TF_VAR_gitlab_runner_token=$(cat /gitops/terraform/.gitlab-runner-registr
 #   --from-literal=VAULT_ADDR=${VAULT_ADDR}
 
 
+/scripts/nebulous/wait-for-200.sh "https://vault.${AWS_HOSTED_ZONE_NAME}/ui/vault/auth?with=token"
 
 # apply terraform
 if [ -z "$SKIP_VAULT_APPLY" ]
@@ -365,18 +386,41 @@ then
   cd /git/gitops/terraform/vault
   echo "applying vault terraform"
   terraform init 
-  terraform apply -auto-approve # TODO: hack
+  terraform apply -auto-approve
+  # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "vault terraform complete"
+
+  echo "waiting 30 seconds after terraform apply"
+  sleep 10
+  echo "waiting 20 more seconds after terraform apply"
+  sleep 10
+  echo "waiting 10 more seconds after terraform apply"
+  sleep 10
+  
 else
   echo "skipping vault terraform because SKIP_VAULT_APPLY is set"
 fi
 
 
+argocd app sync gitlab-runner-components
+argocd app wait gitlab-runner-components
+argocd app wait gitlab-runner
+
+argocd app sync chartmuseum-components
+argocd app wait chartmuseum-components
+argocd app wait chartmuseum
+
+argocd app sync keycloak-components
+argocd app wait keycloak-components
+argocd app wait keycloak
+
+#/scripts/nebulous/wait-for-200.sh "https://keycloak.${AWS_HOSTED_ZONE_NAME}/auth"
+
 #! assumes keycloak has been registered, needed for terraform
 export KEYCLOAK_PASSWORD=$(kubectl -n keycloak get secret/keycloak  -ojson | jq -r '.data."admin-password"' | base64 -d)
 export KEYCLOAK_USER=gitlab-bot
 export KEYCLOAK_CLIENT_ID=admin-cli
-export KEYCLOAK_URL=https://keycloak.<AWS_HOSTED_ZONE_NAME>
+export KEYCLOAK_URL=https://keycloak.${AWS_HOSTED_ZONE_NAME}
 
 # apply terraform
 if [ -z "$SKIP_KEYCLOAK_APPLY" ]
@@ -384,7 +428,7 @@ then
   cd /git/gitops/terraform/keycloak
   echo "applying keycloak terraform"
   terraform init 
-  terraform apply -auto-approve  # TODO: hack
+  terraform apply -auto-approve
   echo "keycloak terraform complete"
 else
   echo "skipping keycloak terraform because SKIP_KEYCLOAK_APPLY is set"

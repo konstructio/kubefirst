@@ -4,9 +4,7 @@ variable "aws_account_id" {
 variable "aws_region" {
   type = string
 }
-variable "aws_account_name" {
-  type = string
-}
+
 variable "aws_secret_access_key" {
   type = string
 }
@@ -50,5 +48,8 @@ variable "keycloak_admin_password" {
   type = string
 }
 variable "keycloak_vault_oidc_client_secret" {
+  type = string
+}
+variable "iam_user_arn" {
   type = string
 }

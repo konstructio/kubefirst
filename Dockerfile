@@ -1,4 +1,4 @@
-FROM kubefirst/kubefirst-builder:0.4-ubuntu
+FROM kubefirst/chubbo:0.1
 
 ADD scripts/nebulous /scripts/nebulous
 ADD gitops /gitops

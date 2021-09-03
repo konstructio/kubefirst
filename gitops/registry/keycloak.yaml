@@ -44,7 +44,7 @@ spec:
 #         - -c
 #         - |
 #           sleep 30
-#           aws eks update-kubeconfig --name kubefirst --region  <AWS_DEFAULT_REGION>
+#           aws eks update-kubeconfig --name kubefirst --region <AWS_DEFAULT_REGION>
 #           kubectl -n vault exec vault-0 -- vault operator init -format=json > cluster-keys.json
 #         # todo remove this envFrom and assume role
 #         # todo remove this envFrom and assume role

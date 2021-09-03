@@ -12,7 +12,6 @@ module "bootstrap" {
 
   aws_account_id                    = var.aws_account_id
   aws_region                        = var.aws_region
-  aws_account_name                  = var.aws_account_name
   aws_secret_access_key             = var.aws_secret_access_key
   vault_token                       = var.vault_token
   email_address                     = var.email_address
@@ -28,13 +27,5 @@ module "bootstrap" {
   keycloak_password                 = var.keycloak_password
   keycloak_admin_password           = var.keycloak_admin_password
   keycloak_vault_oidc_client_secret = var.keycloak_vault_oidc_client_secret
+  iam_user_arn                      = var.iam_user_arn
 }
-
-# todo leftover terraform needs evaluation
-# module "leftover" {
-#   source = "./leftover"
-
-#   aws_account_id = var.aws_account_id
-#   aws_region = var.aws_region
-#   aws_account_name = var.aws_account_name
-# }

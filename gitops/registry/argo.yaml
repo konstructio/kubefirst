@@ -68,7 +68,7 @@ spec:
         - /bin/bash
         - -c
         - |
-          aws eks update-kubeconfig --name kubefirst --region  <AWS_DEFAULT_REGION>
+          aws eks update-kubeconfig --name kubefirst --region <AWS_DEFAULT_REGION>
           kubectl -n argo delete rolebinding argo-admin --ignore-not-found=true
           kubectl -n argo create rolebinding argo-admin --clusterrole=admin --serviceaccount=argo:default
         # todo remove this envFrom and assume role
@@ -77,3 +77,4 @@ spec:
             name: aws-creds
       restartPolicy: Never
   backoffLimit: 2
+    

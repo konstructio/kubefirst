@@ -18,9 +18,9 @@ spec:
           open:
             AUTH_ANONYMOUS_GET: true
             STORAGE: amazon
-            STORAGE_AMAZON_BUCKET: <AWS_CHART_BUCKET_NAME> # todo: provision
+            STORAGE_AMAZON_BUCKET: <CHARTMUSEUM_BUCKET>
             STORAGE_AMAZON_PREFIX: kubefirst-charts
-            STORAGE_AMAZON_REGION: us-east-1
+            STORAGE_AMAZON_REGION: <AWS_DEFAULT_REGION>
             DISABLE_API: false
           existingSecret: chartmuseum-secrets
     chart: chartmuseum

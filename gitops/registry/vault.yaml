@@ -80,9 +80,9 @@ spec:
           enabled: true
     chart: vault
   syncPolicy:
-    # automated:
-    #   prune: true
-    #   selfHeal: true
+    automated:
+      prune: true
+      selfHeal: true
     # todo blue - mutating webhooks needs to be ignored in argocd
     syncOptions:
       - CreateNamespace=true

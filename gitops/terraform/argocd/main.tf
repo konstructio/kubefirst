@@ -7,7 +7,10 @@ module "argocd_repos" {
   gitlab_token = var.gitlab_token
 }
 
-module "argocd_manifests" {
-  source = "./manifests"
-#  depends_on = [module.argocd_repos]
+module "argocd_internal_repos" {
+  source = "./internal-repos"
+}
+
+module "argocd_registry" {
+  source = "./registry"
 }
