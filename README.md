@@ -34,16 +34,54 @@ The docs above are tailored to our end user's experience. However things are a l
 
 ### step 1 - setup nebulous.env
 
-This step is actually no different than the guidance to our end users, you need to set up a `kubefirst.env` in the nebulous repo's root directory. You can create the file template by running this from your terminal, editing with your values for these 5 settings.
+For a first run, this step is no different than the guidance to our end users, you need to set up a `kubefirst.env` in the nebulous repo's root directory. You can create the file template by running this from your terminal, editing with your values with the normal settings.
+
+For subsequent executions, especially while debugging, it's sometimes helpful to use some additional environment variables that allow you to control the flow of execution. See the notes in each section for details on controlling your debugging.
+
+In addition to the flow controls, you'll also find some hack comments by the various terraform apply commands. This allows you to change apply commands to exiting deploy commands. This can also be valuable when you need a mulligan on a particular section.
 
 ```
 cat << EOF > kubefirst.env
+###############################
+# Note: Operational Flow Controls - uncomment the items below 
+# when you want to skip over various sections. Leaving them
+# all commented like they are here will execute everything.
+# 
+#
+# SKIP_HZ_CHECK=true
+# SKIP_DETOKENIZATION=true
+# SKIP_BASE_APPLY=true
+# SKIP_GITLAB_RECONFIG=true
+# SKIP_GITLAB_APPLY=true
+# SKIP_VAULT_APPLY=true
+# SKIP_KEYCLOAK_APPLY=true
+
+
+###############################
+# Note: Bucket Reuse - when you successfully get past base terraform
+# apply, take the random suffix that was generated, apply it to the 
+# next line, and start reusing the bucket for subsequent iterations.
+# if you don't set this value on subsequent runs, it will keep 
+# generating new buckets for you. You can find this value in the 
+# nebulous execution output. (be sure to uncomment when setting)
+# 
+# BUCKET_RAND=abc123
+
+###############################
+# AWS Account Information
 AWS_ACCESS_KEY_ID=YOUR_ADMIN_AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY=YOUR_ADMIN_AWS_SECRET_ACCESS_KEY
 AWS_HOSTED_ZONE_ID=YOUR_AWS_HOSTED_ZONE_ID
 AWS_DEFAULT_REGION=YOUR_AWS_REGION
-EMAIL_ADDRESS=YOUR_EMAIL_ADDRESS
-GITLAB_BOT_ROOT_PASSWORD=YOUR_GITLAB_BOT_ROOT_PASSWORD
+
+###############################
+# Logistics
+EMAIL_ADDRESS=EMAIL_ADDRESS=YOUR_EMAIL_ADDRESS
+
+###############################
+# Gitlab
+GITLAB_BOT_ROOT_PASSWORD=$omePasswordOnlyYouKn0w!
+
 EOF
 ```
 
@@ -57,10 +95,10 @@ docker build . -t nebulous:foo
 
 ### step 3 - running nebulous
 
-Once you have built the `nebulous:foo` image as shown above, you can kickoff the automated init script by running
+Once you have built the `nebulous:foo` image as shown above, you can kickoff the automated init script by running the following. The difference between this guidance and the end user guidance is that this mounts the scripts and git directories to your localhost volume so you can negotiate changes to either space.
 
 ```
-docker run --env-file=kubefirst.env -v $PWD/terraform:/terraform --entrypoint /scripts/nebulous/init.sh nebulous:foo
+docker run -it --env-file=kubefirst.env -v $PWD/gitops:/gitops -v $PWD/scripts:/scripts -v $PWD/git:/git --entrypoint /scripts/nebulous/init.sh nebulous:foo
 ```
 
 ### step 4 - teardown
