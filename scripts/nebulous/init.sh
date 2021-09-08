@@ -124,7 +124,7 @@ export VAULT_TOKEN="UNSET" # TODO: adjust this var when avail
 if [ -z "$SKIP_HZ_CHECK" ]; then
   HZ_LIVENESS_FAIL_COUNT=0
   HZ_IS_LIVE=0
-  HZ_LIVENESS_URL=livenesstest.$HOSTED_ZONE_NAME
+  HZ_LIVENESS_URL=livenesstest.$AWS_HOSTED_ZONE_NAME
   HZ_LIVENESS_JSON="{\"Comment\":\"CREATE sanity check record \",\"Changes\":[{\"Action\":\"CREATE\",\"ResourceRecordSet\":{\"Name\":\"$HZ_LIVENESS_URL\",\"Type\":\"A\",\"TTL\":300,\"ResourceRecords\":[{\"Value\":\"4.4.4.4\"}]}}]}"
   echo "Creating $HZ_LIVENESS_URL record for sanity check"
   HZ_RECORD_STATUS=$(aws route53 change-resource-record-sets --hosted-zone-id $AWS_HOSTED_ZONE_ID --change-batch "$HZ_LIVENESS_JSON" | jq -r .ChangeInfo.Status)
@@ -132,7 +132,7 @@ if [ -z "$SKIP_HZ_CHECK" ]; then
   while [[ $HZ_RECORD_STATUS == 'PENDING' && $HZ_LIVENESS_FAIL_COUNT -lt 8 && $HZ_IS_LIVE -eq 0 ]];
   do
     echo "new way"
-    aws route53 test-dns-answer --hosted-zone-id $AWS_HOSTED_ZONE_ID --record-name "livenesstest.$HOSTED_ZONE_NAME" --record-type "A"
+    aws route53 test-dns-answer --hosted-zone-id $AWS_HOSTED_ZONE_ID --record-name "livenesstest.$AWS_HOSTED_ZONE_NAME" --record-type "A"
 
     echo "old way"  
     HZ_LOOKUP_RESULT=$(nslookup "$HZ_LIVENESS_URL" 8.8.8.8 | awk -F':' '/^Address: / { matched = 1 } matched { print $2}' | xargs)
@@ -359,7 +359,7 @@ sleep 60
 argocd app wait vault
 
 export VAULT_TOKEN=$(kubectl -n vault get secret vault-unseal-keys -ojson | jq -r '.data."cluster-keys.json"' | base64 -d | jq -r .root_token)
-export VAULT_ADDR="https://vault.${HOSTED_ZONE_NAME}"
+export VAULT_ADDR="https://vault.${AWS_HOSTED_ZONE_NAME}"
 export TF_VAR_vault_addr=$VAULT_ADDR
 export TF_VAR_vault_token=$VAULT_TOKEN
 export TF_VAR_gitlab_runner_token=$(cat /gitops/terraform/.gitlab-runner-registration-token) #! verify path
@@ -474,7 +474,7 @@ echo "           username: root"
 echo "           password: $GITLAB_BOT_ROOT_PASSWORD"
 echo "      3. commit to the main branch of metaphor and checkout your pipelines"
 echo "         https://$GITLAB_URL/kubefirst/metaphor/-/pipelines"
-echo "           app url: metaphor-development.$HOSTED_ZONE_NAME"
+echo "           app url: metaphor-development.$AWS_HOSTED_ZONE_NAME"
 echo "      4. We created an S3 bucket to be the source of truth and state store of your kubefirst"
 echo "         starter plan, its name is $S3_BUCKET_NAME"
 echo
