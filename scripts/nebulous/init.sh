@@ -187,8 +187,8 @@ if [ -z "$SKIP_BASE_APPLY" ]
 then
   echo "applying bootstrap terraform"
   terraform init 
-  # terraform apply -auto-approve
-  terraform destroy -auto-approve; exit 1; # hack
+  terraform apply -auto-approve
+  # terraform destroy -auto-approve; exit 1; # hack
 
   KMS_KEY_ID=$(terraform output -json | jq -r '.vault_unseal_kms_key.value')
   echo "KMS_KEY_ID collected: $KMS_KEY_ID"
@@ -264,8 +264,8 @@ then
   cd /gitops/terraform/gitlab
   echo "applying gitlab terraform"
   terraform init 
-  # terraform apply -auto-approve
-  terraform destroy -auto-approve; exit 1 # TODO: hack
+  terraform apply -auto-approve
+  # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "gitlab terraform complete"
   # HEY CONTRIBUTOR!!! this deletes your gitops repo, delete your apps in argocd first if you're tearing down the house.
   
@@ -335,9 +335,9 @@ fi
   cd /git/gitops/terraform/argocd
   echo "applying argocd terraform"
   terraform init 
-  # terraform apply -target module.argocd_repos -auto-approve
-  # terraform apply -target module.argocd_registry -auto-approve
-  terraform destroy -target module.argocd_registry -target module.argocd_repos -auto-approve; exit 1 # TODO: hack
+  terraform apply -target module.argocd_repos -auto-approve
+  terraform apply -target module.argocd_registry -auto-approve
+  # terraform destroy -target module.argocd_registry -target module.argocd_repos -auto-approve; exit 1 # TODO: hack
   echo "argocd terraform complete"
 
 # else
@@ -355,14 +355,14 @@ fi
 echo "password: $ARGOCD_AUTH_PASSWORD"
 argocd login --help
 argocd login localhost:8080 --insecure --username admin --password "${ARGOCD_AUTH_PASSWORD}"
-# echo "sleeping 120 seconds before checking vault status"
-# sleep 30
-# echo "sleeping 90 more seconds before checking vault status"
-# sleep 30
-# echo "sleeping 60 more seconds before checking vault status"
-# sleep 30
-# echo "sleeping 30 more seconds before checking vault status"
-# sleep 30
+echo "sleeping 120 seconds before checking vault status"
+sleep 30
+echo "sleeping 90 more seconds before checking vault status"
+sleep 30
+echo "sleeping 60 more seconds before checking vault status"
+sleep 30
+echo "sleeping 30 more seconds before checking vault status"
+sleep 30
 argocd app wait vault
 
 export VAULT_TOKEN=$(kubectl -n vault get secret vault-unseal-keys -ojson | jq -r '.data."cluster-keys.json"' | base64 -d | jq -r .root_token)
