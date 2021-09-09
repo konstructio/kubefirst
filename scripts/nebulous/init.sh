@@ -104,20 +104,16 @@ export TF_VAR_gitlab_bot_root_password=$GITLAB_BOT_ROOT_PASSWORD
 export TF_VAR_aws_access_key_id=$AWS_ACCESS_KEY_ID
 export TF_VAR_aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
 export TF_VAR_email_address=$EMAIL_ADDRESS
-export TF_VAR_vault_redirect_uris='["https://vault.${AWS_HOSTED_ZONE_NAME}/ui/vault/auth/oidc/oidc/callback","http://localhost:8200/ui/vault/auth/oidc/oidc/callback","http://localhost:8250/oidc/callback","https://vault.${AWS_HOSTED_ZONE_NAME}:8250/oidc/callback"]'
-export TF_VAR_argo_redirect_uris='["https://argo.${AWS_HOSTED_ZONE_NAME}/argo/oauth2/callback"]'
-export TF_VAR_argocd_redirect_uris='["https://argocd.${AWS_HOSTED_ZONE_NAME}/auth/callback","https://argocd.${AWS_HOSTED_ZONE_NAME}/applications"]'
-export TF_VAR_gitlab_redirect_uris='["https://gitlab.${AWS_HOSTED_ZONE_NAME}"]'
+export TF_VAR_vault_redirect_uris="[\"https://vault.${AWS_HOSTED_ZONE_NAME}/ui/vault/auth/oidc/oidc/callback\",\"http://localhost:8200/ui/vault/auth/oidc/oidc/callback\",\"http://localhost:8250/oidc/callback\",\"https://vault.${AWS_HOSTED_ZONE_NAME}:8250/oidc/callback\"]"
+export TF_VAR_argo_redirect_uris="[\"https://argo.${AWS_HOSTED_ZONE_NAME}/argo/oauth2/callback\"]"
+export TF_VAR_argocd_redirect_uris="[\"https://argocd.${AWS_HOSTED_ZONE_NAME}/auth/callback\",\"https://argocd.${AWS_HOSTED_ZONE_NAME}/applications\"]"
+export TF_VAR_gitlab_redirect_uris="[\"https://gitlab.${AWS_HOSTED_ZONE_NAME}\"]"
 
-export TF_VAR_argocd_auth_password=$ARGOCD_AUTH_PASSWORD
-export TF_VAR_atlantis_gitlab_token=$ATLANTIS_GITLAB_TOKEN
-export TF_VAR_atlantis_gitlab_webhook_secret=$ATLANTIS_GITLAB_WEBHOOK_SECRET
-export TF_VAR_gitlab_token=$GITLAB_TOKEN
-export TF_VAR_keycloak_password=$KEYCLOAK_PASSWORD
-export TF_VAR_keycloak_admin_password=$TF_VAR_keycloak_admin_password
+
+export TF_VAR_keycloak_password=""
+export TF_VAR_atlantis_gitlab_webhook_secret=$ATLANTIS_GITLAB_WEBHOOK_SECRET #TODO: created empty - wire it in
+export TF_VAR_keycloak_admin_password=""
 export TF_VAR_keycloak_vault_oidc_client_secret=$TF_VAR_keycloak_vault_oidc_client_secret
-
-export VAULT_TOKEN="UNSET" # TODO: adjust this var when avail
 
 
 # check for liveness of the hosted zone
@@ -161,6 +157,8 @@ if [ -z "$SKIP_DETOKENIZATION" ]; then
   export LANG=C;
   cd /gitops/
 
+  # NOTE: this section represents values that need not be secrets and can be directly hardcoded in the 
+  # clients' gitops repos. DO NOT handle secrets in this fashion
   echo "replacing TF_STATE_BUCKET token with value ${TF_STATE_BUCKET} (1 of 11)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<TF_STATE_BUCKET>|${TF_STATE_BUCKET}|g" {} +
   echo "replacing ARGO_ARTIFACT_BUCKET token with value ${ARGO_ARTIFACT_BUCKET} (2 of 11)"
@@ -171,8 +169,6 @@ if [ -z "$SKIP_DETOKENIZATION" ]; then
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<CHARTMUSEUM_BUCKET>|${CHARTMUSEUM_BUCKET}|g" {} +
   echo "replacing AWS_ACCESS_KEY_ID token with value ${AWS_ACCESS_KEY_ID} (5 of 11)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_ACCESS_KEY_ID>|${AWS_ACCESS_KEY_ID}|g" {} +
-  echo "replacing AWS_SECRET_ACCESS_KEY token with value ${AWS_SECRET_ACCESS_KEY} (6 of 11)"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_SECRET_ACCESS_KEY>|${AWS_SECRET_ACCESS_KEY}|g" {} +
   echo "replacing AWS_HOSTED_ZONE_ID token with value ${AWS_HOSTED_ZONE_ID} (7 of 11)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_ID>|${AWS_HOSTED_ZONE_ID}|g" {} +
   echo "replacing AWS_HOSTED_ZONE_NAME token with value ${AWS_HOSTED_ZONE_NAME} (8 of 11)"
@@ -191,8 +187,8 @@ if [ -z "$SKIP_BASE_APPLY" ]
 then
   echo "applying bootstrap terraform"
   terraform init 
-  terraform apply -auto-approve
-  # terraform destroy -auto-approve; exit 1; # hack
+  # terraform apply -auto-approve
+  terraform destroy -auto-approve; exit 1; # hack
 
   KMS_KEY_ID=$(terraform output -json | jq -r '.vault_unseal_kms_key.value')
   echo "KMS_KEY_ID collected: $KMS_KEY_ID"
@@ -259,6 +255,7 @@ fi
 export RUNNER_REGISTRATION_TOKEN=$(cat /gitops/terraform/.gitlab-runner-registration-token)
 export GITLAB_TOKEN=$(cat /gitops/terraform/.gitlab-bot-access-token)
 export TF_VAR_gitlab_token=$GITLAB_TOKEN
+export TF_VAR_atlantis_gitlab_token=$GITLAB_TOKEN
 
 # apply terraform
 if [ -z "$SKIP_GITLAB_APPLY" ]
@@ -267,8 +264,8 @@ then
   cd /gitops/terraform/gitlab
   echo "applying gitlab terraform"
   terraform init 
-  terraform apply -auto-approve
-  # terraform destroy -auto-approve; exit 1 # TODO: hack
+  # terraform apply -auto-approve
+  terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "gitlab terraform complete"
   # HEY CONTRIBUTOR!!! this deletes your gitops repo, delete your apps in argocd first if you're tearing down the house.
   
@@ -321,6 +318,9 @@ fi
   kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
   echo "argocd created"
   
+  echo "sleeping 20 seconds after argocd creation"
+  sleep 20
+
   echo "connecting to argocd in background process"
   kubectl -n argocd port-forward svc/argocd-server -n argocd 8080:443 &
   echo "connection to argocd established"
@@ -335,9 +335,9 @@ fi
   cd /git/gitops/terraform/argocd
   echo "applying argocd terraform"
   terraform init 
-  terraform apply -target module.argocd_repos -auto-approve
-  terraform apply -target module.argocd_registry -auto-approve
-  # terraform destroy -target module.argocd_registry -target module.argocd_repos -auto-approve; exit 1 # TODO: hack
+  # terraform apply -target module.argocd_repos -auto-approve
+  # terraform apply -target module.argocd_registry -auto-approve
+  terraform destroy -target module.argocd_registry -target module.argocd_repos -auto-approve; exit 1 # TODO: hack
   echo "argocd terraform complete"
 
 # else
@@ -355,25 +355,21 @@ fi
 echo "password: $ARGOCD_AUTH_PASSWORD"
 argocd login --help
 argocd login localhost:8080 --insecure --username admin --password "${ARGOCD_AUTH_PASSWORD}"
-sleep 60
+# echo "sleeping 120 seconds before checking vault status"
+# sleep 30
+# echo "sleeping 90 more seconds before checking vault status"
+# sleep 30
+# echo "sleeping 60 more seconds before checking vault status"
+# sleep 30
+# echo "sleeping 30 more seconds before checking vault status"
+# sleep 30
 argocd app wait vault
 
 export VAULT_TOKEN=$(kubectl -n vault get secret vault-unseal-keys -ojson | jq -r '.data."cluster-keys.json"' | base64 -d | jq -r .root_token)
 export VAULT_ADDR="https://vault.${AWS_HOSTED_ZONE_NAME}"
 export TF_VAR_vault_addr=$VAULT_ADDR
 export TF_VAR_vault_token=$VAULT_TOKEN
-export TF_VAR_gitlab_runner_token=$(cat /gitops/terraform/.gitlab-runner-registration-token) #! verify path
-# TODO: add secrets back in - update: do we need this now that we prioritize external secrets?
-# kubectl create namespace kubefirst
-# kubectl create secret -n kubefirst generic kubefirst-secrets \
-#   --from-literal=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
-#   --from-literal=AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
-#   --from-literal=AWS_HOSTED_ZONE_ID=${AWS_HOSTED_ZONE_ID} \
-#   --from-literal=AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION} \
-#   --from-literal=EMAIL_ADDRESS=${EMAIL_ADDRESS} \
-#   --from-literal=GITLAB_BOT_ROOT_PASSWORD=${GITLAB_BOT_ROOT_PASSWORD} \
-#   --from-literal=VAULT_TOKEN=${VAULT_TOKEN} \
-#   --from-literal=VAULT_ADDR=${VAULT_ADDR}
+export TF_VAR_gitlab_runner_token=$(cat /gitops/terraform/.gitlab-runner-registration-token)
 
 
 /scripts/nebulous/wait-for-200.sh "https://vault.${AWS_HOSTED_ZONE_NAME}/ui/vault/auth?with=token"
@@ -384,8 +380,8 @@ then
   cd /git/gitops/terraform/vault
   echo "applying vault terraform"
   terraform init 
-  terraform apply -auto-approve
-  # terraform destroy -auto-approve; exit 1 # TODO: hack
+  # terraform apply -auto-approve
+  terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "vault terraform complete"
 
   echo "waiting 30 seconds after terraform apply"

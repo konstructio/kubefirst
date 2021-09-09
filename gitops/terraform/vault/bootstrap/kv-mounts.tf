@@ -125,23 +125,41 @@ resource "vault_generic_secret" "atlantis_secrets" {
   "KEYCLOAK_URL": "https://keycloak.<AWS_HOSTED_ZONE_NAME>",
   "KEYCLOAK_USER": "gitlab-bot",
   "KUBECONFIG": "/.kube/config",
+  "TF_VAR_argo_redirect_uris": "[\"https://argo.<AWS_HOSTED_ZONE_NAME>/argo/oauth2/callback\"]",
+  "TF_VAR_argocd_auth_password": "${var.argocd_auth_password}",
+  "TF_VAR_argocd_redirect_uris": "[\"https://argocd.<AWS_HOSTED_ZONE_NAME>/auth/callback\",\"https://argocd.<AWS_HOSTED_ZONE_NAME>/applications\"]",
+  "TF_VAR_atlantis_gitlab_token": "${var.atlantis_gitlab_token}",
+  "TF_VAR_atlantis_gitlab_webhook_secret": "${var.atlantis_gitlab_webhook_secret}",
+  "TF_VAR_aws_access_key_id": "${var.aws_access_key_id}",
   "TF_VAR_aws_account_id": "<AWS_ACCOUNT_ID>",
+  "TF_VAR_aws_secret_access_key": "${var.aws_secret_access_key}",
   "TF_VAR_aws_region": "<AWS_DEFAULT_REGION>",
+  "TF_VAR_email_address": "${var.email_address}",
   "TF_VAR_gitlab_bot_root_password": "${var.gitlab_token}",
+  "TF_VAR_gitlab_redirect_uris": "[\"https://gitlab.<AWS_HOSTED_ZONE_NAME>\"]",
+  "TF_VAR_gitlab_runner_token": "${var.gitlab_runner_token}",
   "TF_VAR_gitlab_token": "${var.gitlab_token}",
   "TF_VAR_gitlab_url": "https://gitlab.<AWS_HOSTED_ZONE_NAME>",
+  "TF_VAR_hosted_zone_id": "${var.hosted_zone_id}",
   "TF_VAR_iam_user_arn": "${var.iam_user_arn}",
   "TF_VAR_keycloak_admin_password": "${var.keycloak_admin_password}",
+  "TF_VAR_keycloak_password": "${var.keycloak_password}",
   "TF_VAR_keycloak_vault_oidc_client_secret": "${var.keycloak_vault_oidc_client_secret}",
+  "TF_VAR_vault_addr": "${var.vault_addr}",
   "TF_VAR_vault_redirect_uris": "[\"https://vault.<AWS_HOSTED_ZONE_NAME>/ui/vault/auth/oidc/oidc/callback\",\"http://localhost:8200/ui/vault/auth/oidc/oidc/callback\",\"http://localhost:8250/oidc/callback\",\"https://vault.<AWS_HOSTED_ZONE_NAME>:8250/oidc/callback\"]",
-  "TF_VAR_argo_redirect_uris": "[\"https://argo.<AWS_HOSTED_ZONE_NAME>/argo/oauth2/callback\"]",
-  "TF_VAR_argocd_redirect_uris": "[\"https://argocd.<AWS_HOSTED_ZONE_NAME>/auth/callback\",\"https://argocd.<AWS_HOSTED_ZONE_NAME>/applications\"]",
-  "TF_VAR_gitlab_redirect_uris": "[\"https://gitlab.<AWS_HOSTED_ZONE_NAME>\"]",
+  "TF_VAR_vault_token": "${var.TF_VAR_vault_token}",
   "VAULT_ADDR": "https://vault.<AWS_HOSTED_ZONE_NAME>",
   "VAULT_TOKEN": "${var.vault_token}"
 }
 EOT
 }
+
+
+
+
+
+  
+  
 
 resource "vault_mount" "users" {
   path        = "users"
