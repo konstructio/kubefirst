@@ -110,7 +110,7 @@ resource "vault_generic_secret" "atlantis_secrets" {
   "ARGO_SERVER_URL": "argo.<AWS_HOSTED_ZONE_NAME>:443",
   "ATLANTIS_GITLAB_HOSTNAME": "gitlab.<AWS_HOSTED_ZONE_NAME>",
   "ATLANTIS_GITLAB_TOKEN": "${var.atlantis_gitlab_token}",
-  "ATLANTIS_GITLAB_USER": "atlantis",
+  "ATLANTIS_GITLAB_USER": "kubefirst",
   "ATLANTIS_GITLAB_WEBHOOK_SECRET": "${var.atlantis_gitlab_webhook_secret}",
   "AWS_ACCESS_KEY_ID": "${var.aws_access_key_id}",
   "AWS_DEFAULT_REGION": "<AWS_DEFAULT_REGION>",
