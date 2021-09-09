@@ -267,8 +267,6 @@ then
   terraform apply -auto-approve
   # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "gitlab terraform complete"
-  # HEY CONTRIBUTOR!!! this deletes your gitops repo, delete your apps in argocd first if you're tearing down the house.
-  
   
   mkdir -p /git
   cd /git
@@ -296,64 +294,39 @@ else
 fi
 
 
-#! TODO: something has to happen here to argo create the registry in gitops
-# steps needed:
-# - kubectl apply the argocd installation
-# - register the gitops repo with argocd
-# - register the registry directory 
-# - needs to be automated through 0 touch 
 
-# todo need to add the configmap content for atlantis to use a volume mount and have access to our 
-# kubectl -n atlantis create configmap kubeconfig --from-file=config=kubeconfig_kubefirst
-# kubernetes clusters - could use secret in vault or configmap as our mount point
-# need detokenized gitops directory content for consumption
-# apply terraform
-# if [ -z "$SKIP_ARGOCD_APPLY" ]
-# then
+echo "creating argocd in kubefirst cluster"
+kubectl create namespace argocd --dry-run -oyaml | kubectl apply -f -
+kubectl create secret -n argocd generic aws-creds --from-literal=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} --from-literal=AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} --dry-run -oyaml | kubectl apply -f -
+# kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f - # TODO: kubernetes 1.19 and above
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+echo "argocd created"
 
-  echo "creating argocd in kubefirst cluster"
-  kubectl create namespace argocd --dry-run -oyaml | kubectl apply -f -
-  kubectl create secret -n argocd generic aws-creds --from-literal=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} --from-literal=AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} --dry-run -oyaml | kubectl apply -f -
-  # kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f - # TODO: kubernetes 1.19 and above
-  kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-  echo "argocd created"
-  
-  echo "sleeping 20 seconds after argocd creation"
-  sleep 20
+echo "sleeping 20 seconds after argocd creation"
+sleep 20
 
-  echo "connecting to argocd in background process"
-  kubectl -n argocd port-forward svc/argocd-server -n argocd 8080:443 &
-  echo "connection to argocd established"
+echo "connecting to argocd in background process"
+kubectl -n argocd port-forward svc/argocd-server -n argocd 8080:443 &
+echo "connection to argocd established"
 
-  echo "collecting argocd connection details"
-  export ARGOCD_AUTH_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
-  export TF_VAR_argocd_auth_password=${ARGOCD_AUTH_PASSWORD}
-  export ARGOCD_AUTH_USERNAME=admin
-  export ARGOCD_INSECURE=true
-  export ARGOCD_SERVER=localhost:8080
+echo "collecting argocd connection details"
+export ARGOCD_AUTH_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+export TF_VAR_argocd_auth_password=${ARGOCD_AUTH_PASSWORD}
+export ARGOCD_AUTH_USERNAME=admin
+export ARGOCD_INSECURE=true
+export ARGOCD_SERVER=localhost:8080
 
-  cd /git/gitops/terraform/argocd
-  echo "applying argocd terraform"
-  terraform init 
-  terraform apply -target module.argocd_repos -auto-approve
-  terraform apply -target module.argocd_registry -auto-approve
-  # terraform destroy -target module.argocd_registry -target module.argocd_repos -auto-approve; exit 1 # TODO: hack
-  echo "argocd terraform complete"
+cd /git/gitops/terraform/argocd
+echo "applying argocd terraform"
+terraform init 
+terraform apply -target module.argocd_repos -auto-approve
+terraform apply -target module.argocd_registry -auto-approve
+# terraform destroy -target module.argocd_registry -target module.argocd_repos -auto-approve; exit 1 # TODO: hack
+echo "argocd terraform complete"
 
-# else
-#   echo "skipping argocd terraform because SKIP_ARGOCD_APPLY is set"
-#   echo "connecting to argocd in background process"
-#   kubectl -n argocd port-forward svc/argocd-server -n argocd 8080:443 &
-#   echo "connection to argocd established"
-#   export ARGOCD_AUTH_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
-#   export TF_VAR_argocd_auth_password=${ARGOCD_AUTH_PASSWORD}
-#   export ARGOCD_AUTH_USERNAME=admin
-#   export ARGOCD_INSECURE=true
-#   export ARGOCD_SERVER=localhost:8080
-# fi
+
 
 echo "password: $ARGOCD_AUTH_PASSWORD"
-argocd login --help
 argocd login localhost:8080 --insecure --username admin --password "${ARGOCD_AUTH_PASSWORD}"
 echo "sleeping 120 seconds before checking vault status"
 sleep 30
@@ -380,8 +353,8 @@ then
   cd /git/gitops/terraform/vault
   echo "applying vault terraform"
   terraform init 
-  # terraform apply -auto-approve
-  terraform destroy -auto-approve; exit 1 # TODO: hack
+  terraform apply -auto-approve
+  # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "vault terraform complete"
 
   echo "waiting 30 seconds after terraform apply"
@@ -408,7 +381,11 @@ argocd app sync keycloak-components
 argocd app wait keycloak-components
 argocd app wait keycloak
 
-#/scripts/nebulous/wait-for-200.sh "https://keycloak.${AWS_HOSTED_ZONE_NAME}/auth"
+argocd app sync atlantis-components
+argocd app wait atlantis-components
+argocd app wait atlantis
+
+/scripts/nebulous/wait-for-200.sh "https://keycloak.${AWS_HOSTED_ZONE_NAME}/auth/"
 
 #! assumes keycloak has been registered, needed for terraform
 export KEYCLOAK_PASSWORD=$(kubectl -n keycloak get secret/keycloak  -ojson | jq -r '.data."admin-password"' | base64 -d)
@@ -424,24 +401,18 @@ then
   terraform init 
   terraform apply -auto-approve
   echo "keycloak terraform complete"
+
+  echo "updating vault with keycloak password"
+  cd /gitops/terraform/base
+  export TF_ENV_keycloak_password=$KEYCLOAK_PASSWORD
+  echo "reapplying base terraform to sync secrets"
+  terraform init 
+  terraform apply -auto-approve
+  echo "base terraform complete"
 else
   echo "skipping keycloak terraform because SKIP_KEYCLOAK_APPLY is set"
 fi
 
-
-# todo
-# curl --request POST \
-# --url "https://gitlab.<AWS_HOSTED_ZONE_NAME>/api/v4/projects/6/hooks" \
-# --header "content-type: application/json" \
-# --header "PRIVATE-TOKEN: gQevK69TPXSos5cXYC7m" \
-# --data '{
-#   "id": "6",
-#   "url": "https://atlantis.<AWS_HOSTED_ZONE_NAME>/events",
-#   "token": "c75e7d48b854a36e13fb1d76a6eb5aa750a5e83a3ec6a0093413ed71d3313622",
-#   "push_events": "true",
-#   "merge_requests_events": "true",
-#   "enable_ssl_verification": "true"
-# }'
 
 
 
