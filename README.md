@@ -95,10 +95,19 @@ docker build . -t nebulous:foo
 
 ### step 3 - running nebulous
 
-Once you have built the `nebulous:foo` image as shown above, you can kickoff the automated init script by running the following. The difference between this guidance and the end user guidance is that this mounts the scripts and git directories to your localhost volume so you can negotiate changes to either space.
+Once you have built the `nebulous:foo` image as shown above, you can kickoff the automated init script by running the following. The difference between this guidance and the end user guidance is that this mounts the `gitops`, `scripts`, and `git` directories to your localhost volume so you can negotiate changes to the runtime environment on the fly.
 
+This is how you run the container with the volume mounts. Run this from your nebuloud directory:
 ```
 docker run -it --env-file=kubefirst.env -v $PWD/gitops:/gitops -v $PWD/scripts:/scripts -v $PWD/git:/git --entrypoint /scripts/nebulous/init.sh nebulous:foo
+```
+
+If you find yourself iterating a lot, a `k1` alias is a little nice :rocket:
+```
+k1() {
+  echo "don't forget to breathe"
+  docker run -it --env-file=kubefirst.env -v $PWD/gitops:/gitops -v $PWD/scripts:/scripts -v $PWD/git:/git --entrypoint /scripts/nebulous/init.sh nebulous:foo  
+}
 ```
 
 ### step 4 - teardown
