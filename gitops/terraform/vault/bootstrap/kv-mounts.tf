@@ -135,6 +135,7 @@ resource "vault_generic_secret" "atlantis_secrets" {
   "TF_VAR_aws_secret_access_key": "${var.aws_secret_access_key}",
   "TF_VAR_aws_region": "<AWS_DEFAULT_REGION>",
   "TF_VAR_email_address": "${var.email_address}",
+  "TF_VAR_email_domain": "${var.email_domain}",
   "TF_VAR_gitlab_bot_root_password": "${var.gitlab_token}",
   "TF_VAR_gitlab_redirect_uris": "[\"https://gitlab.<AWS_HOSTED_ZONE_NAME>\"]",
   "TF_VAR_gitlab_runner_token": "${var.gitlab_runner_token}",
