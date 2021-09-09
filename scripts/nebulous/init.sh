@@ -159,25 +159,25 @@ if [ -z "$SKIP_DETOKENIZATION" ]; then
 
   # NOTE: this section represents values that need not be secrets and can be directly hardcoded in the 
   # clients' gitops repos. DO NOT handle secrets in this fashion
-  echo "replacing TF_STATE_BUCKET token with value ${TF_STATE_BUCKET} (1 of 11)"
+  echo "replacing TF_STATE_BUCKET token with value ${TF_STATE_BUCKET} (1 of 10)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<TF_STATE_BUCKET>|${TF_STATE_BUCKET}|g" {} +
-  echo "replacing ARGO_ARTIFACT_BUCKET token with value ${ARGO_ARTIFACT_BUCKET} (2 of 11)"
+  echo "replacing ARGO_ARTIFACT_BUCKET token with value ${ARGO_ARTIFACT_BUCKET} (2 of 10)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<ARGO_ARTIFACT_BUCKET>|${ARGO_ARTIFACT_BUCKET}|g" {} +
-  echo "replacing GITLAB_BACKUP_BUCKET token with value ${GITLAB_BACKUP_BUCKET} (3 of 11)"
+  echo "replacing GITLAB_BACKUP_BUCKET token with value ${GITLAB_BACKUP_BUCKET} (3 of 10)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<GITLAB_BACKUP_BUCKET>|${GITLAB_BACKUP_BUCKET}|g" {} +
-  echo "replacing CHARTMUSEUM_BUCKET token with value ${CHARTMUSEUM_BUCKET} (4 of 11)"
+  echo "replacing CHARTMUSEUM_BUCKET token with value ${CHARTMUSEUM_BUCKET} (4 of 10)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<CHARTMUSEUM_BUCKET>|${CHARTMUSEUM_BUCKET}|g" {} +
-  echo "replacing AWS_ACCESS_KEY_ID token with value ${AWS_ACCESS_KEY_ID} (5 of 11)"
+  echo "replacing AWS_ACCESS_KEY_ID token with value ${AWS_ACCESS_KEY_ID} (5 of 10)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_ACCESS_KEY_ID>|${AWS_ACCESS_KEY_ID}|g" {} +
-  echo "replacing AWS_HOSTED_ZONE_ID token with value ${AWS_HOSTED_ZONE_ID} (7 of 11)"
+  echo "replacing AWS_HOSTED_ZONE_ID token with value ${AWS_HOSTED_ZONE_ID} (6 of 10)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_ID>|${AWS_HOSTED_ZONE_ID}|g" {} +
-  echo "replacing AWS_HOSTED_ZONE_NAME token with value ${AWS_HOSTED_ZONE_NAME} (8 of 11)"
+  echo "replacing AWS_HOSTED_ZONE_NAME token with value ${AWS_HOSTED_ZONE_NAME} (7 of 10)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} +
-  echo "replacing AWS_DEFAULT_REGION token with value ${AWS_DEFAULT_REGION} (9 of 11)"
+  echo "replacing AWS_DEFAULT_REGION token with value ${AWS_DEFAULT_REGION} (8 of 10)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_DEFAULT_REGION>|${AWS_DEFAULT_REGION}|g" {} +
-  echo "replacing EMAIL_ADDRESS token with value ${EMAIL_ADDRESS} (10 of 11)"
+  echo "replacing EMAIL_ADDRESS token with value ${EMAIL_ADDRESS} (9 of 10)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<EMAIL_ADDRESS>|${EMAIL_ADDRESS}|g" {} +
-  echo "replacing AWS_ACCOUNT_ID token with value ${AWS_ACCOUNT_ID} (11 of 11)"
+  echo "replacing AWS_ACCOUNT_ID token with value ${AWS_ACCOUNT_ID} (10 of 10)"
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_ACCOUNT_ID>|${AWS_ACCOUNT_ID}|g" {} +
 fi
 
