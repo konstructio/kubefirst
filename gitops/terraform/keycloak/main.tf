@@ -6,12 +6,8 @@ terraform {
     }
   }
 }
-provider "keycloak" {
-    # client_id     = "admin-cli"
-    # username      = "gitlab-bot"
-    # password      = "ATU6VaGr6A"
-    # url           = "https://keycloak.<AWS_HOSTED_ZONE_NAME>"
-}
+provider "keycloak" {}
+
 resource "keycloak_realm" "kubefirst" {
   realm   = "kubefirst"
   enabled = true
