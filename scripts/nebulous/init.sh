@@ -355,7 +355,13 @@ then
   # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "vault terraform complete"
 
-  echo "waiting 90 seconds after terraform apply"
+  echo "waiting 180 seconds after terraform apply"
+  sleep 30
+  echo "waiting 150 more seconds after terraform apply"
+  sleep 30
+  echo "waiting 120 more seconds after terraform apply"
+  sleep 30
+  echo "waiting 90 more seconds after terraform apply"
   sleep 30
   echo "waiting 60 more seconds after terraform apply"
   sleep 30

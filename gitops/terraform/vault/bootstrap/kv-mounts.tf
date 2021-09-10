@@ -4,41 +4,11 @@ resource "vault_mount" "secret" {
   description = "the default vault kv v2 backend"
 }
 
-resource "vault_generic_secret" "test_secret" {
-  path = "${vault_mount.secret.path}/test"
-
-  data_json = <<EOT
-{
-  "TEST": "PASSED"
-}
-EOT
-}
-
-
-resource "vault_generic_secret" "kubefirst_secrets" {
-  path = "${vault_mount.secret.path}/kubefirst-init"
-
-  data_json = <<EOT
-{
-  "AWS_ACCESS_KEY_ID" : "${var.aws_access_key_id}",
-  "AWS_SECRET_ACCESS_KEY" : "${var.aws_secret_access_key}",
-  "AWS_HOSTED_ZONE_ID" : "${var.hosted_zone_id}",
-  "AWS_ACCOUNT_ID" : "${var.aws_account_id}",
-  "AWS_DEFAULT_REGION" : "${var.aws_region}",
-  "EMAIL_ADDRESS" : "${var.email_address}",
-  "VAULT_ADDR": "${var.vault_addr}",
-  "VAULT_TOKEN" : "${var.vault_token}",
-  "GITLAB_BOT_ROOT_PASSWORD" : "${var.gitlab_bot_root_password}" 
-}
-EOT
-}
-
 resource "random_password" "chartmuseum_user_password" {
   length           = 16
   special          = true
   override_special = "!@"
 }
-
 
 resource "vault_generic_secret" "chartmuseum_secrets" {
   path = "${vault_mount.secret.path}/chartmuseum"
@@ -91,10 +61,6 @@ resource "vault_generic_secret" "keycloak_secrets" {
 }
 EOT
 }
-
-
-
-
 
 
 
@@ -155,13 +121,6 @@ resource "vault_generic_secret" "atlantis_secrets" {
 }
 EOT
 }
-
-
-
-
-
-  
-  
 
 resource "vault_mount" "users" {
   path        = "users"
