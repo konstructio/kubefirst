@@ -52,3 +52,9 @@ variable "keycloak_vault_oidc_client_secret" {
 variable "iam_user_arn" {
   type = string
 }
+variable "email_domain" {
+  type = string
+}
+variable "hosted_zone_name" {
+  type = string
+}

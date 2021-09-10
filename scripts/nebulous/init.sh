@@ -155,7 +155,11 @@ if [ -z "$SKIP_DETOKENIZATION" ]; then
   # detokenize
   export LC_CTYPE=C; 
   export LANG=C;
-  cd /gitops/
+  echo "copying constructed gitops repo content into /git/gitops directory"
+  mkdir -p /git
+  cd /git
+  cp -a /gitops/. /git/gitops/
+  cd /git/gitops/
 
   # NOTE: this section represents values that need not be secrets and can be directly hardcoded in the 
   # clients' gitops repos. DO NOT handle secrets in this fashion
@@ -182,7 +186,7 @@ if [ -z "$SKIP_DETOKENIZATION" ]; then
 fi
 
 # apply base terraform
-cd /gitops/terraform/base
+cd /git/gitops/terraform/base
 if [ -z "$SKIP_BASE_APPLY" ]
 then
   echo "applying bootstrap terraform"
@@ -195,7 +199,7 @@ then
   echo "bootstrap terraform complete"
   echo "replacing KMS_KEY_ID token with value ${KMS_KEY_ID}"
   
-  cd /gitops
+  cd /git/gitops
   find . -type f -not -path '*/cypress/*' -exec sed -i "s|<KMS_KEY_ID>|${KMS_KEY_ID}|g" {} + 
 
 else
@@ -226,7 +230,7 @@ then
   export CYPRESS_BASE_URL="https://${GITLAB_URL}"
   export CYPRESS_gitlab_bot_username_before=$GITLAB_ROOT_USER
   export CYPRESS_gitlab_bot_password=$GITLAB_BOT_ROOT_PASSWORD
-  cd /gitops/terraform/cypress
+  cd /git/gitops/terraform/cypress
   npm ci
 
   $(npm bin)/cypress run
@@ -252,8 +256,8 @@ then
 fi
 
 
-export RUNNER_REGISTRATION_TOKEN=$(cat /gitops/terraform/.gitlab-runner-registration-token)
-export GITLAB_TOKEN=$(cat /gitops/terraform/.gitlab-bot-access-token)
+export RUNNER_REGISTRATION_TOKEN=$(cat /git/gitops/terraform/.gitlab-runner-registration-token)
+export GITLAB_TOKEN=$(cat /git/gitops/terraform/.gitlab-bot-access-token)
 export TF_VAR_gitlab_token=$GITLAB_TOKEN
 export TF_VAR_atlantis_gitlab_token=$GITLAB_TOKEN
 
@@ -261,18 +265,12 @@ export TF_VAR_atlantis_gitlab_token=$GITLAB_TOKEN
 if [ -z "$SKIP_GITLAB_APPLY" ]
 then
   
-  cd /gitops/terraform/gitlab
+  cd /git/gitops/terraform/gitlab
   echo "applying gitlab terraform"
   terraform init 
   terraform apply -auto-approve
   # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "gitlab terraform complete"
-  
-  mkdir -p /git
-  cd /git
-  
-  echo "copying constructed gitops repo content into /git/gitops directory"
-  cp -a /gitops/. /git/gitops/
   
   cd /git/gitops
 
@@ -342,7 +340,7 @@ export VAULT_TOKEN=$(kubectl -n vault get secret vault-unseal-keys -ojson | jq -
 export VAULT_ADDR="https://vault.${AWS_HOSTED_ZONE_NAME}"
 export TF_VAR_vault_addr=$VAULT_ADDR
 export TF_VAR_vault_token=$VAULT_TOKEN
-export TF_VAR_gitlab_runner_token=$(cat /gitops/terraform/.gitlab-runner-registration-token)
+export TF_VAR_gitlab_runner_token=$(cat /git/gitops/terraform/.gitlab-runner-registration-token)
 
 
 /scripts/nebulous/wait-for-200.sh "https://vault.${AWS_HOSTED_ZONE_NAME}/ui/vault/auth?with=token"
@@ -403,12 +401,17 @@ then
   echo "keycloak terraform complete"
 
   echo "updating vault with keycloak password"
-  cd /gitops/terraform/base
-  export TF_ENV_keycloak_password=$KEYCLOAK_PASSWORD
-  echo "reapplying base terraform to sync secrets"
-  terraform init 
+  cd /git/gitops/terraform/vault
+  echo "reapplying vault terraform to sync secrets"
+  export TF_VAR_keycloak_password=$KEYCLOAK_PASSWORD
+  echo "TF_VAR_keycloak_password is $TF_VAR_keycloak_password"
+  terraform init
   terraform apply -auto-approve
-  echo "base terraform complete"
+  echo "vault terraform complete"
+
+  echo "kicking over atlantis pod to pickup latest secrets"
+  kubectl -n atlantis delete pod atlantis-0
+  echo "atlantis pod has been recycled"   
 else
   echo "skipping keycloak terraform because SKIP_KEYCLOAK_APPLY is set"
 fi
