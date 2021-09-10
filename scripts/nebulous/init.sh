@@ -355,12 +355,12 @@ then
   # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "vault terraform complete"
 
-  echo "waiting 30 seconds after terraform apply"
-  sleep 10
-  echo "waiting 20 more seconds after terraform apply"
-  sleep 10
-  echo "waiting 10 more seconds after terraform apply"
-  sleep 10
+  echo "waiting 90 seconds after terraform apply"
+  sleep 30
+  echo "waiting 60 more seconds after terraform apply"
+  sleep 30
+  echo "waiting 30 more seconds after terraform apply"
+  sleep 30
   
 else
   echo "skipping vault terraform because SKIP_VAULT_APPLY is set"
