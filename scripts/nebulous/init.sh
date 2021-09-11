@@ -60,6 +60,8 @@ else
   SKIP_STATE_BUCKET_CREATION="true"
 fi
 
+
+export TF_STATE_BUCKET=k1-state-store-$BUCKET_RAND
 export ARGO_ARTIFACT_BUCKET=k1-argo-artifacts-$BUCKET_RAND
 export GITLAB_BACKUP_BUCKET=k1-gitlab-backup-$BUCKET_RAND
 export CHARTMUSEUM_BUCKET=k1-chartmuseum-$BUCKET_RAND
@@ -67,7 +69,6 @@ export CHARTMUSEUM_BUCKET=k1-chartmuseum-$BUCKET_RAND
 
 if [ -z "$SKIP_STATE_BUCKET_CREATION" ]
 then
-    export TF_STATE_BUCKET=k1-state-store-$BUCKET_RAND
     echo "creating bucket $TF_STATE_BUCKET"
     # TODO: --versioning-configuration Status=Enabled
     if [[ "$AWS_DEFAULT_REGION" == "us-east-1" ]]; then
@@ -75,14 +76,15 @@ then
     else
       aws s3api create-bucket --bucket $TF_STATE_BUCKET --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION | jq -r .Location | cut -d/ -f3 | cut -d. -f1
     fi
+    echo "enabling bucket versioning"
+    aws s3api put-bucket-versioning --bucket $TF_STATE_BUCKET --region $AWS_DEFAULT_REGION --versioning-configuration Status=Enabled
 else
     echo "reusing bucket name ${TF_STATE_BUCKET}"
 fi
 
 
 # setup environment variables
-export AWS_HOSTED_ZONE_NAME=$(aws route53 get-hosted-zone --id "${AWS_HOSTED_ZONE_ID}" | jq -r .HostedZone.Name)
-export AWS_HOSTED_ZONE_NAME=${AWS_HOSTED_ZONE_NAME%?}
+export AWS_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name | jq --arg name "${AWS_HOSTED_ZONE_NAME}." -r '.HostedZones | .[] | select(.Name=="\($name)") | .Id')
 export EMAIL_DOMAIN=$(echo $EMAIL_ADDRESS |  cut -d"@" -f2)
 export AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
 export IAM_USER_ARN=$(aws sts get-caller-identity | jq -r .Arn)
@@ -164,25 +166,25 @@ if [ -z "$SKIP_DETOKENIZATION" ]; then
   # NOTE: this section represents values that need not be secrets and can be directly hardcoded in the 
   # clients' gitops repos. DO NOT handle secrets in this fashion
   echo "replacing TF_STATE_BUCKET token with value ${TF_STATE_BUCKET} (1 of 10)"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<TF_STATE_BUCKET>|${TF_STATE_BUCKET}|g" {} +
+  find . \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s|<TF_STATE_BUCKET>|${TF_STATE_BUCKET}|g"
   echo "replacing ARGO_ARTIFACT_BUCKET token with value ${ARGO_ARTIFACT_BUCKET} (2 of 10)"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<ARGO_ARTIFACT_BUCKET>|${ARGO_ARTIFACT_BUCKET}|g" {} +
+  find . \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s|<ARGO_ARTIFACT_BUCKET>|${ARGO_ARTIFACT_BUCKET}|g"
   echo "replacing GITLAB_BACKUP_BUCKET token with value ${GITLAB_BACKUP_BUCKET} (3 of 10)"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<GITLAB_BACKUP_BUCKET>|${GITLAB_BACKUP_BUCKET}|g" {} +
+  find . \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s|<GITLAB_BACKUP_BUCKET>|${GITLAB_BACKUP_BUCKET}|g"
   echo "replacing CHARTMUSEUM_BUCKET token with value ${CHARTMUSEUM_BUCKET} (4 of 10)"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<CHARTMUSEUM_BUCKET>|${CHARTMUSEUM_BUCKET}|g" {} +
+  find . \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s|<CHARTMUSEUM_BUCKET>|${CHARTMUSEUM_BUCKET}|g"
   echo "replacing AWS_ACCESS_KEY_ID token with value ${AWS_ACCESS_KEY_ID} (5 of 10)"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_ACCESS_KEY_ID>|${AWS_ACCESS_KEY_ID}|g" {} +
+  find . \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s|<AWS_ACCESS_KEY_ID>|${AWS_ACCESS_KEY_ID}|g"
   echo "replacing AWS_HOSTED_ZONE_ID token with value ${AWS_HOSTED_ZONE_ID} (6 of 10)"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_ID>|${AWS_HOSTED_ZONE_ID}|g" {} +
+  find . \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s|<AWS_HOSTED_ZONE_ID>|${AWS_HOSTED_ZONE_ID}|g"
   echo "replacing AWS_HOSTED_ZONE_NAME token with value ${AWS_HOSTED_ZONE_NAME} (7 of 10)"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g" {} +
+  find . \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s|<AWS_HOSTED_ZONE_NAME>|${AWS_HOSTED_ZONE_NAME}|g"
   echo "replacing AWS_DEFAULT_REGION token with value ${AWS_DEFAULT_REGION} (8 of 10)"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_DEFAULT_REGION>|${AWS_DEFAULT_REGION}|g" {} +
+  find . \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s|<AWS_DEFAULT_REGION>|${AWS_DEFAULT_REGION}|g"
   echo "replacing EMAIL_ADDRESS token with value ${EMAIL_ADDRESS} (9 of 10)"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<EMAIL_ADDRESS>|${EMAIL_ADDRESS}|g" {} +
+  find . \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s|<EMAIL_ADDRESS>|${EMAIL_ADDRESS}|g"
   echo "replacing AWS_ACCOUNT_ID token with value ${AWS_ACCOUNT_ID} (10 of 10)"
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<AWS_ACCOUNT_ID>|${AWS_ACCOUNT_ID}|g" {} +
+  find . \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s|<AWS_ACCOUNT_ID>|${AWS_ACCOUNT_ID}|g"
 fi
 
 # apply base terraform
