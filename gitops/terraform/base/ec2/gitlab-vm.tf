@@ -45,6 +45,11 @@ resource "aws_instance" "gitlab" {
   subnet_id                   = var.vpc_public_subnet
   tenancy                     = "default" # warning: replace if compliance requirements dictate non-shared resources
   user_data                   = data.template_file.gitlab_install_script.rendered
+  lifecycle {
+    ignore_changes = [
+      user_data
+    ]
+  }
   volume_tags = {
     "Name" = "gitlab"
   }

@@ -376,19 +376,28 @@ fi
 
 # the following comnmand is a bit fickle as the vault dns propagates, 
 # a retry attempts to make this a bit more fault tolerant to that
+echo "argocd app sync of gitlab-runner"
 for i in 1 2 3 4 5; do argocd app sync gitlab-runner-components && break || sleep 60; done # TODO: change vault config to internal svc
+echo "argocd app sync of chartmuseum"
+for i in 1 2 3 4 5; do argocd app sync argocd app sync chartmuseum-components && break || sleep 60; done # TODO: change vault config to internal svc
+echo "argocd app sync of keycloak"
+for i in 1 2 3 4 5; do argocd app sync keycloak-components && break || sleep 60; done # TODO: change vault config to internal svc
+echo "argocd app sync of atlantis"
+for i in 1 2 3 4 5; do argocd app sync atlantis-components && break || sleep 60; done # TODO: change vault config to internal svc
+
+echo "awaiting successful sync of gitlab-runner"
 argocd app wait gitlab-runner-components
 argocd app wait gitlab-runner
 
-argocd app sync chartmuseum-components
+echo "awaiting successful sync of chartmuseum"
 argocd app wait chartmuseum-components
 argocd app wait chartmuseum
 
-argocd app sync keycloak-components
+echo "awaiting successful sync of keycloak"
 argocd app wait keycloak-components
 argocd app wait keycloak
 
-argocd app sync atlantis-components
+echo "awaiting successful sync of atlantis"
 argocd app wait atlantis-components
 argocd app wait atlantis
 
