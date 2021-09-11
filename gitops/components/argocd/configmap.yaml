@@ -11,4 +11,3 @@ data:
       ignoreDifferences: |
         jsonPointers:
         - /webhooks
-# TODO: this needs to be part of the automation that allows argocd to manage argocd

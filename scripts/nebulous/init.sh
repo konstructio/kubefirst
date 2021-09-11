@@ -355,25 +355,26 @@ then
   # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "vault terraform complete"
 
-  echo "waiting 180 seconds after terraform apply"
+  echo "waiting 180 seconds after vault terraform apply"
   sleep 30
-  echo "waiting 150 more seconds after terraform apply"
+  echo "waiting 150 more seconds after vault terraform apply"
   sleep 30
-  echo "waiting 120 more seconds after terraform apply"
+  echo "waiting 120 more seconds after vault terraform apply"
   sleep 30
-  echo "waiting 90 more seconds after terraform apply"
+  echo "waiting 90 more seconds after vault terraform apply"
   sleep 30
-  echo "waiting 60 more seconds after terraform apply"
+  echo "waiting 60 more seconds after vault terraform apply"
   sleep 30
-  echo "waiting 30 more seconds after terraform apply"
+  echo "waiting 30 more seconds after vault terraform apply"
   sleep 30
   
 else
   echo "skipping vault terraform because SKIP_VAULT_APPLY is set"
 fi
 
-
-argocd app sync gitlab-runner-components
+# the following comnmand is a bit fickle as the vault dns propagates, 
+# a retry attempts to make this a bit more fault tolerant to that
+for i in 1 2 3 4 5; do argocd app sync gitlab-runner-components && break || sleep 60; done # TODO: change vault config to internal svc
 argocd app wait gitlab-runner-components
 argocd app wait gitlab-runner
 
