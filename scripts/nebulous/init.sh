@@ -129,10 +129,7 @@ if [ -z "$SKIP_HZ_CHECK" ]; then
 
   while [[ $HZ_RECORD_STATUS == 'PENDING' && $HZ_LIVENESS_FAIL_COUNT -lt 8 && $HZ_IS_LIVE -eq 0 ]];
   do
-    echo "new way"
-    aws route53 test-dns-answer --hosted-zone-id $AWS_HOSTED_ZONE_ID --record-name "livenesstest.$AWS_HOSTED_ZONE_NAME" --record-type "A"
-
-    echo "old way"  
+    echo "checking hosted zone configuration with validation of livenesstest.$AWS_HOSTED_ZONE_NAME"  
     HZ_LOOKUP_RESULT=$(nslookup "$HZ_LIVENESS_URL" 8.8.8.8 | awk -F':' '/^Address: / { matched = 1 } matched { print $2}' | xargs)
     if [[ "$HZ_LOOKUP_RESULT" ]]; then
       HZ_IS_LIVE=1
