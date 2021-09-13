@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cwft-docker
+spec:
+  entrypoint: docker-build
+  templates:
+  - name: docker-build
+    inputs:
+      artifacts:
+      - name: repo-source
+        path: /src
+      parameters: 
+      - name: appDir
+      - name: appName
+      - name: awsRegion
+        value: "{{workflow.parameters.awsRegion}}"
+        default: <AWS_DEFAULT_REGION>
+      - name: buildImage
+        value: "{{workflow.parameters.buildImage}}"
+        default: kubefirst/chubbo:0.1
+      - name: ciCommitSha
+      - name: containerRegistryUrl
+        value: "{{workflow.parameters.containerRegistryUrl}}"
+        default: <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_DEFAULT_REGION>.amazonaws.com
+    container:
+      image:  "{{inputs.parameters.buildImage}}"
+      command: [bash, -c]
+      workingDir: "{{inputs.parameters.appDir}}"
+      # todo need to add auth to trivy ( or put it behind a vpn.. )
+      args:
+        - until docker ps; do sleep 3; done; 
+          docker build -t "{{inputs.parameters.containerRegistryUrl}}/{{inputs.parameters.appName}}:{{inputs.parameters.ciCommitSha}}" .;
+          aws ecr get-login-password --region {{inputs.parameters.awsRegion}} | docker login --username AWS --password-stdin {{inputs.parameters.containerRegistryUrl}};
+          docker push "{{inputs.parameters.containerRegistryUrl}}/{{inputs.parameters.appName}}:{{inputs.parameters.ciCommitSha}}";
+      envFrom:
+      - secretRef:
+          name: ci-secrets
+      env:
+      - name: DOCKER_HOST
+        value: "tcp://localhost:2375"
+    sidecars:
+    - name: dind
+      image: docker:19.03.13-dind
+      env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+      securityContext:
+        privileged: true
+      mirrorVolumeMounts: true
