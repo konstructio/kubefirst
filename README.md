@@ -1,23 +1,12 @@
-docker run --env-file=kubefirst.env -v $PWD/terraform:/terraform -v $PWD/scripts:/scripts --entrypoint /scripts/nebulous/init.sh nebulous:foo
-
-# todos to discuss before next execution
-- need to add `argocd app wait/sync` after each sync wave, potentially add kuttl tests
-- new builder / nebulous image with vault-cli (see `kubefirst-builder:spike`) in jobs and figure out whats missing or what was published
-- change gitlab group name to `kubefirst`
-- search for `preprod` 
-- kubefirst_worker_nodes_role address whether assume role is still needed
-- descriptions for all variables
-- move `/terraform/security-groups` to `/terraform/vpc/gitlab-sg.tf` ? its only one security group
-- update LICENSE
-- aws route53 test-dns-answer --hosted-zone-id $HOSTED_ZONE_ID --hosted-zone-id, --record-name, --record-type
-- gitops argocd - it's presently scripted
-- 
-
-
 # nebulous
 The Kubefirst Open Source Starter Plan repository
 
-![images/starter.png](images/starter.png)
+![images/nebulous-arch.png](images/nebulous-arch.png)
+
+# tl;dr:
+- step 1: establish a new aws account with a single hosted zone that's receiving traffic from your dns registrar
+- step 2: add your 6 configuration values to kubefirst.env and run the nebulous container
+- step 3: get a fully-functioning application delivery ecosystem, complete with kubernetes, gitops, vault, terraform, atlantis, gitlab, gitlab-runner, keycloak, and a sample app that demonstrates how it all works.
 
 # docs
 - [introduction](https://docs.kubefirst.com/starter/)
@@ -121,5 +110,5 @@ docker run -it --env-file=kubefirst.env -v $PWD/terraform:/terraform --entrypoin
 and then in your interactice docker shell run
 
 ```
-/scripts/nebulous/terraform-destroy.sh
+/scripts/nebulous/destroy.sh
 ```
