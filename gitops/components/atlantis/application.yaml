@@ -1,0 +1,69 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: atlantis
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "15"
+spec:
+  project: default
+  source:
+    repoURL: 'https://runatlantis.github.io/helm-charts'
+    chart: atlantis
+    targetRevision: 3.12.11
+    helm:
+      parameters:
+        - name: ingress.host
+          value: atlantis.<AWS_HOSTED_ZONE_NAME>
+        - name: orgWhitelist
+          value: gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops
+      values: |-
+        resources:
+          limits:
+            cpu: 400m
+            memory: 1Gi
+          requests:
+            cpu: 400m
+            memory: 1Gi
+        extraVolumes:
+          - name: kubeconfig
+            configMap:
+              name: kubeconfig
+              items:
+                - key: config
+                  path: config
+        extraVolumeMounts:
+          - name: kubeconfig
+            mountPath: /.kube
+        ingress:
+          enabled: true
+          annotations:
+            # kubernetes.io/tls-acme: "true"
+            kubernetes.io/ingress.class: nginx
+            cert-manager.io/cluster-issuer: "letsencrypt-prod"
+          path: /
+          host: atlantis.<AWS_HOSTED_ZONE_NAME>
+          tls:
+           - secretName: atlantis-tls
+             hosts:
+               - atlantis.<AWS_HOSTED_ZONE_NAME>
+        loadEnvFromSecrets:
+          - atlantis-secrets
+        repoConfig: |
+          ---
+          repos:
+          - id: gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops
+            workflow: default
+            allowed_overrides: [apply_requirements]
+            apply_requirements: [approved, mergeable]
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: atlantis
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

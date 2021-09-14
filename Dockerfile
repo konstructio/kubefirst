@@ -1,7 +1,7 @@
-FROM kubefirst/kubefirst-builder:0.1-ubuntu
+FROM kubefirst/chubbo:0.1
 
 ADD scripts/nebulous /scripts/nebulous
-ADD terraform /terraform
+ADD gitops /gitops
 
 RUN apt-get update
 RUN apt-get install dnsutils -y

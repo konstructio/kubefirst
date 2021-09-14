@@ -1,0 +1,30 @@
+
+# todo try the native helm chart ingress now that we're 1.20+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"   
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    kubernetes.io/ingress.class: nginx
+  labels:
+    app.kubernetes.io/instance: chartmuseum
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: chartmuseum
+    app.kubernetes.io/version: 0.13.1
+    helm.sh/chart: chartmuseum-3.1.0
+  name: chartmuseum
+  namespace: chartmuseum
+spec:
+  rules:
+    - host: chartmuseum.<AWS_HOSTED_ZONE_NAME>
+      http:
+        paths:
+          - backend:
+              serviceName: chartmuseum
+              servicePort: 8080
+            path: /
+  tls:
+    - hosts:
+        - chartmuseum.<AWS_HOSTED_ZONE_NAME>
+      secretName: chartmuseum-tls

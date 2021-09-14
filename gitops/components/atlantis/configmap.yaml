@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubeconfig
+data:
+  config: |
+    apiVersion: v1
+    preferences: {}
+    kind: Config
+
+    clusters:
+    - cluster:
+        server: https://5A4DAC055CFB9B7FC78E2B38B9E1777B.gr7.us-east-1.eks.amazonaws.com
+        certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN5RENDQWJDZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1EZ3hOekF4TkRReU4xb1hEVE14TURneE5UQXhORFF5TjFvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTThzCmRHZUZuQmF2aTZRYkYyR2Z3UHlYUmhHUU5SQUMrTnpnVU1TUTgrejVkaHBwZU42YUM1S3dDa2Z3K2M4WUExSVQKS3JNRklpWHZqR2FKRFBCUFJocFN0Wm9SMVJPV3pkcDhsQ24wYncweWtaaUJ0WU1rbGd1YnJ2THZaa0xPZEJ2Mgphc2xTNWFNMGYxWWt1OEhuOHZUdmlmdDc0VUlSMWQ3V3JDV25HUXhkQjdtSjcySVZsRU1uRjcvdFZDOVhVRWJSCnFWUGtLZC93bzlFSUFEV3VjczdwVDBBeDJhWi9JbzhmTHJMUDVrV1ZxeWJLY2FMZFlPQUo2ZUtzZjFmTW8xNjYKRnVSdC93WXJIRGVyTWI0ZVdraC80RkFNd21KdFVMTjVMVFpOMDNzZkM4akdNcytCQ3UrMEo2QnVEeGZKb2FBTgp3dU1lYld1SThnTkIwOXluU2tzQ0F3RUFBYU1qTUNFd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFMZ0pqMVNOd3AxT1BUM2Y3eFVESzk4UWFIQloKSzhLc3dXTE5GTEdzckZYckFtdUZvQjFuandLbW5jTjlGVXY0cC9tRFJTS0xzaEt0cEt4dFBCaUlKQWxNcm9rMQpMSWU0Mmt2dWNNczBDRnVUclplWUVIRFhVWWFnaENHbHdkZE8ra3I5a2NCL2ZUSUpZcHJKdzVTdHVqeWQweGFhCjZ1bVlNVDB0ZDNVbXJBTlhQY1ExUTF6TVpCMGloajhCSmpJRDRValJMLy9pdzRSWUl2UEF6OEtXeSt6RDRONSsKUEZLdDl4NkhyV282dFg2aEg3Yms0c2ZsRkhlM3BzbklFUXVkZWpBNnBzN1d4b3ErWjJJM1c5R25PMTZKSVRmVAp1OURMZjRGQlNSSk9kQ1NveHlFVjZnS2hXMHBZWHpWVjUrb0ZiUjNjWCtpbDRHblBSSWxhY2VOcFdNaz0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      name: eks_kubefirst
+
+    contexts:
+    - context:
+        cluster: eks_kubefirst
+        user: eks_kubefirst
+      name: eks_kubefirst
+
+    current-context: eks_kubefirst
+
+    users:
+    - name: eks_kubefirst
+      user:
+        exec:
+          apiVersion: client.authentication.k8s.io/v1alpha1
+          command: aws-iam-authenticator
+          args:
+            - "token"
+            - "-i"
+            - "kubefirst"

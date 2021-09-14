@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: keycloak
+  project: default
+  source:
+    repoURL: 'https://charts.bitnami.com/bitnami'
+    targetRevision: 2.4.8
+    helm:
+      values: |-
+        auth:
+          adminUser: gitlab-bot
+        proxyAddressForwarding: true
+        extraEnvVars:
+          - name: PROXY_ADDRESS_FORWARDING
+            value: 'true'
+    chart: keycloak
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
