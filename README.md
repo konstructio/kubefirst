@@ -1,21 +1,5 @@
-docker run --env-file=kubefirst.env -v $PWD/terraform:/terraform -v $PWD/scripts:/scripts --entrypoint /scripts/nebulous/init.sh nebulous:foo
-
-# todos to discuss before next execution
-- need to add `argocd app wait/sync` after each sync wave, potentially add kuttl tests
-- new builder / nebulous image with vault-cli (see `kubefirst-builder:spike`) in jobs and figure out whats missing or what was published
-- change gitlab group name to `kubefirst`
-- search for `preprod` 
-- kubefirst_worker_nodes_role address whether assume role is still needed
-- descriptions for all variables
-- move `/terraform/security-groups` to `/terraform/vpc/gitlab-sg.tf` ? its only one security group
-- update LICENSE
-- aws route53 test-dns-answer --hosted-zone-id $HOSTED_ZONE_ID --hosted-zone-id, --record-name, --record-type
-- gitops argocd - it's presently scripted
-- 
-
-
 # nebulous
-The Kubefirst Open Source Starter Plan repository
+The Kubefirst Open Source Platform Generator
 
 ![images/starter.png](images/starter.png)
 
@@ -129,5 +113,5 @@ docker run -it --env-file=kubefirst.env -v $PWD/terraform:/terraform --entrypoin
 and then in your interactice docker shell you need to run:
 
 ```
-/scripts/nebulous/terraform-destroy.sh
+/scripts/nebulous/destroy.sh
 ```
