@@ -13,8 +13,6 @@ spec:
     repoURL: https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops.git
     path: components/argo
     targetRevision: HEAD
-    directory:
-      recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: argo
