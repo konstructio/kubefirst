@@ -1,0 +1,190 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cwft-helm
+spec:
+  entrypoint: helm-publish-chart
+  templates:
+  - name: helm-publish-chart
+    inputs:
+      artifacts:
+      - name: repo-source
+        path: /src
+      parameters: 
+      - name: appDir
+      - name: buildImage
+        value: "{{workflow.parameters.buildImage}}"
+        default: kubefirst/chubbo:0.1
+      - name: chartDir
+      - name: chartRepoName
+        value: "{{workflow.parameters.chartRepoName}}"
+        default: kubefirst
+      - name: chartRepoUrl
+        value: "{{workflow.parameters.chartRepoUrl}}"
+        default: https://chartmuseum.<AWS_HOSTED_ZONE_NAME>
+    container:
+      image: "{{inputs.parameters.buildImage}}"
+      command: [bash, -c]
+      workingDir: "{{inputs.parameters.appDir}}"
+      args:
+      - helm repo add {{inputs.parameters.chartRepoName}} {{inputs.parameters.chartRepoUrl}} --username $BASIC_AUTH_USER --password $BASIC_AUTH_PASS;
+        helm push {{inputs.parameters.chartDir}} {{inputs.parameters.chartRepoName}};
+      envFrom:
+      - secretRef:
+          name: ci-secrets
+
+  - name: helm-set-chart-version
+    inputs:
+      artifacts:
+      - name: repo-source
+        path: /src
+      parameters: 
+      - name: chartFilepath
+      - name: chartVersion
+      - name: appName
+    container:
+      image:  node:14.16-buster
+      command: [sh, -c]
+      workingDir: "/src/{{inputs.parameters.appName}}"
+      args:
+        - npm i -g js-yaml;
+          node /scripts/update-chart-version.js "{{inputs.parameters.chartFilepath}}" "{{inputs.parameters.chartVersion}}";
+      env:
+      - name: NODE_PATH
+        value: /usr/local/lib/node_modules
+      volumeMounts:
+      - name: scripts
+        mountPath: /scripts
+    outputs:
+      artifacts:
+      - name: repo-source
+        path: /src
+    volumes:
+      - name: scripts
+        configMap:
+          name: nodejs-scripts
+          defaultMode: 0777
+
+  - name: helm-set-chart-versions
+    inputs:
+      artifacts:
+      - name: repo-source
+        path: /src
+      parameters: 
+      - name: appDir
+      - name: buildImage
+        value: "{{workflow.parameters.buildImage}}"
+        default: kubefirst/chubbo:0.1
+      - name: chartDir
+      - name: chartVersion
+      - name: ciCommitSha
+    script:
+      image: "{{inputs.parameters.buildImage}}"
+      command: [bash]
+      workingDir: "{{inputs.parameters.appDir}}"
+      source: |
+        set -e
+        NEW_CHART_VERSION={{inputs.parameters.chartVersion}}
+        echo "setting ./{{inputs.parameters.chartDir}}/Chart.yaml to version: ${NEW_CHART_VERSION}"
+        sed -i "s/version:.*/version: ${NEW_CHART_VERSION}/g" {{inputs.parameters.appDir}}/{{inputs.parameters.chartDir}}/Chart.yaml
+        echo "setting {{inputs.parameters.chartDir}}/Chart.yaml to appVersion: {{inputs.parameters.ciCommitSha}}"
+        sed -i "s/appVersion:.*/appVersion: {{inputs.parameters.ciCommitSha}}/g" {{inputs.parameters.appDir}}/{{inputs.parameters.chartDir}}/Chart.yaml
+        echo "adjusted chart:"
+        cat {{inputs.parameters.appDir}}/{{inputs.parameters.chartDir}}/Chart.yaml
+    outputs:
+      artifacts:
+      - name: repo-source
+        path: /src
+
+  - name: helm-get-chart-release-from-version
+    inputs:
+      parameters:
+      - name: buildImage
+      - name: chartVersion
+    script:
+      image: "{{inputs.parameters.buildImage}}"
+      command: [python3]
+      source: |
+        print("{{inputs.parameters.chartVersion}}".split("-rc")[0])
+
+
+  - name: helm-get-chart-version
+    inputs:
+      artifacts:
+      - name: repo-source
+        path: /src
+      parameters:
+        - name: appDir
+        - name: buildImage
+          value: "{{workflow.parameters.buildImage}}"
+          default: kubefirst/chubbo:0.1
+        - name: chartDir
+    script:
+      image: "{{inputs.parameters.buildImage}}"
+      workingDir: "{{inputs.parameters.appDir}}"
+      command: [python3]
+      source: |
+        import yaml, semver
+        with open('./{{inputs.parameters.chartDir}}/Chart.yaml') as f:
+            chart_yaml = yaml.load(f, Loader=yaml.FullLoader)
+            print(chart_yaml['version'])
+
+  - name: helm-set-environment-version
+    inputs:
+      artifacts:
+      - name: repo-source
+        path: /src
+      parameters: 
+      - name: buildImage
+        value: "{{workflow.parameters.buildImage}}"
+        default: kubefirst/chubbo:0.1
+      - name: fullChartPath
+      - name: chartVersion
+      - name: environment
+    script:
+      image: "{{inputs.parameters.buildImage}}"
+      command: [bash]
+      workingDir: "/src/gitops"
+      source: |
+        set -e
+        NEW_CHART_VERSION={{inputs.parameters.chartVersion}}
+        echo "setting wrapper Chart.yaml to version: ${NEW_CHART_VERSION}"
+        sed -i "s/  version:.*/  version: ${NEW_CHART_VERSION}/g" "{{inputs.parameters.fullChartPath}}"
+        echo "updated {{inputs.parameters.environment}} wrapper chart version to ${NEW_CHART_VERSION}" 
+    outputs:
+      artifacts:
+      - name: repo-source
+        path: /src
+
+  - name: helm-increment-chart-patch
+    inputs:
+      artifacts:
+      - name: repo-source
+        path: /src
+      parameters: 
+      - name: appDir
+      - name: buildImage
+        value: "{{workflow.parameters.buildImage}}"
+        default: kubefirst/chubbo:0.1
+      - name: chartDir
+      - name: chartVersion
+    # version bumps the patch verison of the helm chart version
+    script:
+      image: "{{inputs.parameters.buildImage}}"
+      command: [python3]
+      workingDir: "{{inputs.parameters.appDir}}"
+      source: |
+        import yaml, semver
+        with open('./{{inputs.parameters.chartDir}}/Chart.yaml') as f:
+            chart_yaml = yaml.load(f, Loader=yaml.FullLoader)    
+            chart_version = semver.parse('{{inputs.parameters.chartVersion}}')
+            next_chart_version = '{}.{}.{}'.format(chart_version['major'],chart_version['minor'],chart_version['patch']+1)
+            chart_yaml['version'] = next_chart_version
+        with open('./{{inputs.parameters.chartDir}}/Chart.yaml', 'w') as f:
+            yaml.dump(chart_yaml, f)
+        print('prepared next release in {{inputs.parameters.chartDir}} with bumped chart version after releasing {}'.format(next_chart_version))
+    outputs:
+      artifacts:
+      - name: repo-source
+        path: /src
+

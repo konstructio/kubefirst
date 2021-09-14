@@ -1,10 +1,3 @@
-resource "vault_mount" "secret" {
-  path        = "secret"
-  type        = "kv-v2"
-  description = "the default vault kv v2 backend"
-}
-
-<<<<<<< HEAD
 resource "random_password" "chartmuseum_user_password" {
   length           = 16
   special          = true
@@ -23,6 +16,7 @@ resource "vault_generic_secret" "chartmuseum_secrets" {
 }
 EOT
 }
+
 resource "vault_generic_secret" "gitlab_runner_secrets" {
   path = "${vault_mount.secret.path}/gitlab-runner"
 
@@ -63,6 +57,20 @@ resource "vault_generic_secret" "keycloak_secrets" {
 EOT
 }
 
+resource "vault_generic_secret" "ci_secrets" {
+  path = "${vault_mount.secret.path}/ci-secrets"
+
+  data_json = <<EOT
+{
+  "AWS_ACCESS_KEY_ID" : "${var.aws_access_key_id}",
+  "AWS_SECRET_ACCESS_KEY" : "${var.aws_secret_access_key}",
+  "BASIC_AUTH_USER" : "admin",
+  "BASIC_AUTH_PASS" : "${random_password.chartmuseum_user_password.result}",
+  "USERNAME" : "kubefirst",
+  "PERSONAL_ACCESS_TOKEN" : "${var.gitlab_token}"
+}
+EOT
+}
 
 
 resource "vault_generic_secret" "atlantis_secrets" {
@@ -123,15 +131,3 @@ resource "vault_generic_secret" "atlantis_secrets" {
 EOT
 }
 
-=======
->>>>>>> vault
-resource "vault_mount" "users" {
-  path        = "users"
-  type        = "kv-v2"
-  description = "kv v2 backend"
-}
-<<<<<<< HEAD
-=======
-
-
->>>>>>> vault

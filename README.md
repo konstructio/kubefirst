@@ -1,7 +1,12 @@
 # nebulous
 The Kubefirst Open Source Platform Generator
 
-![images/starter.png](images/starter.png)
+![images/nebulous-arch.png](images/nebulous-arch.png)
+
+# tl;dr:
+- step 1: establish a new aws account with a single hosted zone that's receiving traffic from your dns registrar
+- step 2: add your 6 configuration values to kubefirst.env and run the nebulous container
+- step 3: get a fully-functioning application delivery ecosystem, complete with kubernetes, gitops, vault, terraform, atlantis, gitlab, gitlab-runner, keycloak, and a sample app that demonstrates how it all works.
 
 # docs
 - [introduction](https://docs.kubefirst.com/starter/)
@@ -114,4 +119,8 @@ and then in your interactice docker shell you need to run:
 
 ```
 /scripts/nebulous/destroy.sh
+<<<<<<< HEAD
 ```
+=======
+```
+>>>>>>> vault

@@ -5,7 +5,10 @@ node_modules
 .gitlab-runner-registration-token
 .vscode
 terraform-ssh-key
+<<<<<<< HEAD
 kubeconfig_*
+=======
+>>>>>>> vault
 */cypress/screenshots/
 */cypress/videos/
 .DS_Store
