@@ -1,11 +1,8 @@
-<<<<<<< HEAD
-=======
 # from source: https://github.com/argoproj/argo-workflows/releases/download/v3.1.11/install.yaml
 # Adjustments:
 # Added gitlab-runner service account to cluster role binding
 # Added content to workflow-controller-configmap
 
->>>>>>> vault
 # This is an auto-generated file. DO NOT EDIT
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -175,49 +172,6 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-<<<<<<< HEAD
-  name: workflowtasksets.argoproj.io
-spec:
-  group: argoproj.io
-  names:
-    kind: WorkflowTaskSet
-    listKind: WorkflowTaskSetList
-    plural: workflowtasksets
-    shortNames:
-    - wfts
-    singular: workflowtaskset
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            type: string
-          kind:
-            type: string
-          metadata:
-            type: object
-          spec:
-            type: object
-            x-kubernetes-map-type: atomic
-            x-kubernetes-preserve-unknown-fields: true
-          status:
-            type: object
-            x-kubernetes-map-type: atomic
-            x-kubernetes-preserve-unknown-fields: true
-        required:
-        - metadata
-        - spec
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-=======
->>>>>>> vault
   name: workflowtemplates.argoproj.io
 spec:
   group: argoproj.io
@@ -301,11 +255,6 @@ rules:
   - cronworkflows/finalizers
   - clusterworkflowtemplates
   - clusterworkflowtemplates/finalizers
-<<<<<<< HEAD
-  - workflowtasksets
-  - workflowtasksets/finalizers
-=======
->>>>>>> vault
   verbs:
   - create
   - delete
@@ -409,13 +358,7 @@ rules:
   - argoproj.io
   resources:
   - workflows
-<<<<<<< HEAD
-  - workflows/finalizersfinalizersz
-  - workflowtasksets
-  - workflowtasksets/finalizers
-=======
   - workflows/finalizers
->>>>>>> vault
   verbs:
   - get
   - list
@@ -572,19 +515,14 @@ subjects:
 - kind: ServiceAccount
   name: argo-server
   namespace: argo
-<<<<<<< HEAD
-=======
 - kind: ServiceAccount
   name: default
   namespace: gitlab
->>>>>>> vault
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
-<<<<<<< HEAD
-=======
 data:
   artifactRepository: |
     s3:
@@ -603,7 +541,6 @@ data:
       secretKeySecret:
         name: ci-secrets
         key: AWS_SECRET_ACCESS_KEY
->>>>>>> vault
 ---
 apiVersion: v1
 kind: Service
@@ -648,11 +585,7 @@ spec:
       containers:
       - args:
         - server
-<<<<<<< HEAD
-        image: quay.io/argoproj/argocli:latest
-=======
         image: docker.io/argoproj/argocli:v3.1.11
->>>>>>> vault
         name: argo-server
         ports:
         - containerPort: 2746
@@ -698,11 +631,7 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-<<<<<<< HEAD
-        - quay.io/argoproj/argoexec:latest
-=======
         - argoproj/argoexec:v3.1.11
->>>>>>> vault
         command:
         - workflow-controller
         env:
@@ -711,11 +640,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-<<<<<<< HEAD
-        image: quay.io/argoproj/workflow-controller:latest
-=======
         image: docker.io/argoproj/workflow-controller:v3.1.11
->>>>>>> vault
         livenessProbe:
           failureThreshold: 3
           httpGet:
@@ -740,8 +665,4 @@ spec:
         kubernetes.io/os: linux
       securityContext:
         runAsNonRoot: true
-<<<<<<< HEAD
       serviceAccountName: argo
-=======
-      serviceAccountName: argo
->>>>>>> vault

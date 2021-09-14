@@ -376,11 +376,7 @@ fi
 echo "argocd app sync of gitlab-runner"
 for i in 1 2 3 4 5; do argocd app sync gitlab-runner-components && break || sleep 60; done # TODO: change vault config to internal svc
 echo "argocd app sync of chartmuseum"
-<<<<<<< HEAD
-for i in 1 2 3 4 5; do argocd app sync argocd app sync chartmuseum-components && break || sleep 60; done # TODO: change vault config to internal svc
-=======
 for i in 1 2 3 4 5; do argocd app sync chartmuseum-components && break || sleep 60; done # TODO: change vault config to internal svc
->>>>>>> vault
 echo "argocd app sync of keycloak"
 for i in 1 2 3 4 5; do argocd app sync keycloak-components && break || sleep 60; done # TODO: change vault config to internal svc
 echo "argocd app sync of atlantis"

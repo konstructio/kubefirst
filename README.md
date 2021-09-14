@@ -119,8 +119,4 @@ and then in your interactice docker shell you need to run:
 
 ```
 /scripts/nebulous/destroy.sh
-<<<<<<< HEAD
 ```
-=======
-```
->>>>>>> vault
