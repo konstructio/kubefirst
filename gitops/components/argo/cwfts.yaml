@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops.git
-    path: gitops/components/argo/cwfts
+    path: components/argo/cwfts
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
