@@ -517,7 +517,7 @@ subjects:
   namespace: argo
 - kind: ServiceAccount
   name: default
-  namespace: gitlab
+  namespace: gitlab-runner
 ---
 apiVersion: v1
 kind: ConfigMap
