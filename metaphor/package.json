@@ -1,0 +1,49 @@
+{
+  "name": "metaphor",
+  "version": "1.31.0",
+  "description": "A sample application for learning kubernetes",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "nodemon",
+    "build": "tsc",
+    "start": "npm run watch",
+    "start:built": "node dist/server.js",
+    "old-lint": "tsc --noEmit && eslint \"**/*.{js,ts}\" --quiet --fix",
+    "lint": "tslint -p tsconfig.json",
+    "lint-fix": "npm run lint -- --fix"
+  },
+  "keywords": [
+    "typescript",
+    "node",
+    "kubernetes"
+  ],
+  "author": "Kubefirst",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "compression": "^1.7.4",
+    "errorhandler": "^1.5.1",
+    "express": "^4.17.1",
+    "jaeger-client": "^3.17.1",
+    "opentracing": "^0.14.4",
+    "pg": "^7.14.0",
+    "pug": "^3.0.0",
+    "tslint": "^6.1.3",
+    "winston": "^3.3.3"
+  },
+  "devDependencies": {
+    "@types/body-parser": "^1.17.1",
+    "@types/compression": "^1.0.1",
+    "@types/errorhandler": "0.0.32",
+    "@types/eslint": "^6.1.3",
+    "@types/express": "^4.17.2",
+    "@types/node": "^12.12.12",
+    "@typescript-eslint/eslint-plugin": "^2.8.0",
+    "@typescript-eslint/parser": "^2.8.0",
+    "eslint": "^6.7.1",
+    "nodemon": "^2.0.1",
+    "ts-node": "^8.5.2",
+    "typescript": "^3.7.2"
+  }
+}
