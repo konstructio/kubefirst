@@ -9,7 +9,7 @@ spec:
     - name: appName
       value: "{{workflow.parameters.appName}}"
     - name: awsRegion
-      value: us-east-2
+      value: <AWS_DEFAULT_REGION>
     - name: branch
       value: "{{workflow.parameters.branch}}"
     - name: chartDir
@@ -18,7 +18,7 @@ spec:
       value: "{{workflow.parameters.ciCommitSha}}"
     - name: environment
       value: "{{workflow.parameters.environment}}"
-    - name: fullChartPath # todo make this better? or good enough?
+    - name: fullChartPath
       value: "components/{{workflow.parameters.environment}}/{{workflow.parameters.appName}}/Chart.yaml"
     - name: gitRepoUrl
       value: "{{workflow.parameters.gitRepoUrl}}"

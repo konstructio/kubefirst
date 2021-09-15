@@ -3,4 +3,4 @@ appVersion: 8c5fd0ea4e0523c953b317fc5fe9fa89dac9688f
 description: A Helm chart for Kubernetes
 name: metaphor
 type: application
-version: 0.3.22
+version: 0.1.0

@@ -82,7 +82,7 @@ spec:
           - name: chartDir
             value: "{{workflow.parameters.chartDir}}"
           - name: chartVersion
-            value: "{{steps.get-initial-chart-version.outputs.result}}-rc+{{workflow.parameters.shortSha}}"
+            value: "{{steps.get-initial-chart-version.outputs.result}}-rc.{{workflow.parameters.shortSha}}"
           - name: ciCommitSha
             value: "{{workflow.parameters.ciCommitSha}}"
 

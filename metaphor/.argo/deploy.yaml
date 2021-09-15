@@ -8,7 +8,7 @@ spec:
       value: /src/{{workflow.parameters.appName}}
     - name: awsRegion
       value: "{{workflow.parameters.awsRegion}}"
-      default: us-east-2 # todo figure out where this belongs
+      default: <AWS_DEFAULT_REGION>
     - name: chartDir
       value: charts/{{workflow.parameters.appName}}
     - name: ciCommitSha
@@ -17,7 +17,7 @@ spec:
       value: "{{workflow.parameters.branch}}"
     - name: environment
       value: "{{workflow.parameters.environment}}"
-    - name: fullChartPath # todo make this better? or good enough?
+    - name: fullChartPath
       value: "components/{{workflow.parameters.environment}}/{{workflow.parameters.appName}}/Chart.yaml"
     - name: gitRepoUrl
       value: "{{workflow.parameters.gitRepoUrl}}"
@@ -68,7 +68,7 @@ spec:
           - name: fullChartPath
             value: "{{workflow.parameters.fullChartPath}}"
           - name: chartVersion
-            value: "{{steps.get-initial-chart-version.outputs.result}}-rc+{{workflow.parameters.shortSha}}"
+            value: "{{steps.get-initial-chart-version.outputs.result}}-rc.{{workflow.parameters.shortSha}}"
           - name: environment
             value: "{{workflow.parameters.environment}}"
           
@@ -85,5 +85,5 @@ spec:
           - name: appDir
             value: "/src/gitops"
           - name: commitMessage
-            value: setting {{workflow.parameters.appName}} {{workflow.parameters.environment}} to chart version {{steps.get-initial-chart-version.outputs.result}}-rc+{{workflow.parameters.shortSha}}
+            value: setting {{workflow.parameters.appName}} {{workflow.parameters.environment}} to chart version {{steps.get-initial-chart-version.outputs.result}}-rc.{{workflow.parameters.shortSha}}
               

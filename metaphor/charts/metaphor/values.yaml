@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: 126827061464.dkr.ecr.us-east-1.amazonaws.com/metaphor
+  repository: <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_DEFAULT_REGION>.amazonaws.com/metaphor
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -41,13 +41,13 @@ ingress:
     # Change to "letsencrypt-staging" while testing adjustments, change to "letsencrypt-prod" after confirming LE certificate was issued
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: metaphor-development-east.preprod.kubefirst.com
+    - host: metaphor-development.<AWS_HOSTED_ZONE_NAME>
       paths:
         - /
   tls:
    - secretName: metaphor-tls
      hosts:
-       - metaphor-development-east.preprod.kubefirst.com
+       - metaphor-development.<AWS_HOSTED_ZONE_NAME>
 
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -67,5 +67,5 @@ tolerations: []
 
 affinity: {}
 
-vaultMountPoint: mgmt-us-east-2
-vaultSecretPath: mgmt/aws/us-east-2/development/metaphor
+vaultMountPoint: kubefirst
+vaultSecretPath: development/metaphor

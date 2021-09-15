@@ -1,5 +1,5 @@
 variables:
-  ARGO_SERVER: 'argo.starter.kubefirst.com:443'
+  ARGO_SERVER: 'argo.<AWS_HOSTED_ZONE_NAME>:443'
   ARGO_HTTP1: 'true'  
   ARGO_SECURE: 'true'
   ARGO_NAMESPACE: argo
@@ -55,9 +55,8 @@ publish:
   only:
     - main
   script:
+    - echo "commit sha $CI_COMMIT_SHA"
     - |
-      export ARGO_TOKEN=$(argo auth token)
-      echo "commit sha $CI_COMMIT_SHA"
       argo submit .argo/publish.yaml \
         --generate-name="${CI_PROJECT_NAME}-publish-${CI_COMMIT_SHORT_SHA}" \
         -p appName="${CI_PROJECT_NAME}" \
