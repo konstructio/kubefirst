@@ -1,0 +1,9 @@
+apiVersion: v2
+dependencies:
+- name: metaphor
+  repository: https://chartmuseum.starter.kubefirst.com
+  version: 0.1.0
+description: metaphor instance
+name: metaphor-development
+type: application
+version: 1.0.0

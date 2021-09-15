@@ -1,0 +1,16 @@
+metaphor:
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - host: metaphor-production.starter.kubefirst.com
+        paths:
+          - /
+    tls:
+    - secretName: metaphor-tls
+      hosts:
+        - metaphor-production.starter.kubefirst.com
+  vaultMountPoint: kubefirst
+  vaultSecretPath: metaphor/production
