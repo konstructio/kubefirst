@@ -40,7 +40,7 @@ echo "executing source-profile.sh"
 source /scripts/nebulous/source-profile.sh 
 
 # conditional configuration setup
-if [ ! -f $HOME/.ssh/id_rsa ]
+if [ ! -f /gitops/terraform/base/terraform-ssh-key ]
 then
     echo "creating ssh key pair"
     ssh-keygen -o -t rsa -b 4096 -C "${EMAIL_ADDRESS}" -f $HOME/.ssh/id_rsa -q -N "" > /dev/null
@@ -158,7 +158,8 @@ if [ -z "$SKIP_DETOKENIZATION" ]; then
   mkdir -p /git
   cd /git
   cp -a /gitops/. /git/gitops/
-  cd /git/gitops/
+  cp -a /metaphor/. /git/metaphor/
+  cd /git/
 
   # NOTE: this section represents values that need not be secrets and can be directly hardcoded in the 
   # clients' gitops repos. DO NOT handle secrets in this fashion
@@ -272,15 +273,28 @@ then
   echo "gitlab terraform complete"
   
   cd /git/gitops
-
+  
   echo "configuring git client"
-  git config --global user.name "root"
+  git config --global user.name "Administrator"
   git config --global user.email "${EMAIL_ADDRESS}"
 
-
-  echo "initing repo, committing, and pushing to the new gitlab origin"
+  echo "initing gitops repo, committing, and pushing to the new gitlab origin"
   git init --initial-branch=main
   git remote add origin https://root:$GITLAB_TOKEN@gitlab.${AWS_HOSTED_ZONE_NAME}/kubefirst/gitops.git > /dev/null
+  git add .
+  git commit -m "initial kubefirst commit"
+  git push -u origin main 
+  echo "gitops repo established"
+
+  cd /git/metaphor
+
+  echo "configuring git client"
+  git config --global user.name "Administrator"
+  git config --global user.email "${EMAIL_ADDRESS}"
+  
+  echo "initing metaphor repo, committing, and pushing to the new gitlab origin"
+  git init --initial-branch=main
+  git remote add origin https://root:$GITLAB_TOKEN@gitlab.${AWS_HOSTED_ZONE_NAME}/kubefirst/metaphor.git > /dev/null
   git add .
   git commit -m "initial kubefirst commit"
   git push -u origin main 
@@ -381,6 +395,8 @@ echo "argocd app sync of keycloak"
 for i in 1 2 3 4 5; do argocd app sync keycloak-components && break || sleep 60; done # TODO: change vault config to internal svc
 echo "argocd app sync of atlantis"
 for i in 1 2 3 4 5; do argocd app sync atlantis-components && break || sleep 60; done # TODO: change vault config to internal svc
+echo "argocd app sync of argo"
+for i in 1 2 3 4 5; do argocd app sync atlantis-components && break || sleep 60; done # TODO: change vault config to internal svc
 
 echo "awaiting successful sync of gitlab-runner"
 argocd app wait gitlab-runner-components
@@ -397,6 +413,9 @@ argocd app wait keycloak
 echo "awaiting successful sync of atlantis"
 argocd app wait atlantis-components
 argocd app wait atlantis
+
+echo "awaiting successful sync of argo"
+argocd app wait argo
 
 /scripts/nebulous/wait-for-200.sh "https://keycloak.${AWS_HOSTED_ZONE_NAME}/auth/"
 
@@ -444,13 +463,12 @@ echo
 echo 
 echo
 echo
-echo "    congratulations you've made it."
-echo "    so what next? checkout our docs!"
-echo "       https://docs.kubefirst.com"
+echo "    congratulations, you've made it through the nebulous provisioning process."
+echo "    we spent 26 months working all night and weekend for free to get you to this message."
 echo
+echo "    we would LOOOOOOVE a github star if you made it this far and think we earned it."
+echo "    the star is in the top-right corner of this page: https://github.com/kubefirst/nebulous"
 echo
-echo
-echo "    tl;dr"
 echo
 echo "      1. visit your new GitLab instance at"
 echo "           https://$GITLAB_URL/kubefirst"
@@ -460,8 +478,6 @@ echo "           password: $GITLAB_BOT_ROOT_PASSWORD"
 echo "      3. commit to the main branch of metaphor and checkout your pipelines"
 echo "         https://$GITLAB_URL/kubefirst/metaphor/-/pipelines"
 echo "           app url: metaphor-development.$AWS_HOSTED_ZONE_NAME"
-echo "      4. We created an S3 bucket to be the source of truth and state store of your kubefirst"
-echo "         starter plan, its name is $S3_BUCKET_NAME"
 echo
 echo
 echo

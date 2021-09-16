@@ -29,7 +29,7 @@ For subsequent executions, especially while debugging, it's sometimes helpful to
 
 In addition to the flow controls, you'll also find some hack comments by the various terraform apply commands. This allows you to change apply commands to exiting deploy commands. This can also be valuable when you need a mulligan on a particular section.
 
-```
+```bash
 cat << EOF > kubefirst.env
 ###############################
 # Note: Operational Flow Controls - uncomment the items below 
@@ -88,7 +88,7 @@ Once you have built the `nebulous:foo` image as shown above, you can kickoff the
 
 This is how you run the container with the volume mounts. Run this from your nebulous directory:
 ```
-docker run -it --env-file=kubefirst.env -v $PWD/gitops:/gitops -v $PWD/scripts:/scripts -v $PWD/git:/git --entrypoint /scripts/nebulous/init.sh nebulous:foo
+docker run -it --env-file=kubefirst.env -v $PWD/gitops:/gitops -v $PWD/metaphor:/metaphor -v $PWD/scripts:/scripts -v $PWD/git:/git --entrypoint /scripts/nebulous/init.sh nebulous:foo
 ```
 
 If you find yourself iterating a lot, a `k1` alias is convenient, this one is for an image tagged `nebulous:foo`, adjust the last word accordingly.

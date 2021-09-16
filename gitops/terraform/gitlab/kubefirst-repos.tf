@@ -23,8 +23,7 @@ module "metaphor" {
   group_name                            = gitlab_group.kubefirst.id
   repo_name                             = "metaphor"
   create_ecr                            = true
-  initialize_with_readme                = true
-  import_url                            = "https://github.com/kubefirst/metaphor"
+  initialize_with_readme                = false
   only_allow_merge_if_pipeline_succeeds = false
   remove_source_branch_after_merge      = true
 }
