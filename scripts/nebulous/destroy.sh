@@ -72,13 +72,21 @@ then
   terraform destroy -target module.argocd_registry -target module.argocd_repos -auto-approve
   echo "argocd terraform destroy complete"
 
-  echo "waiting 120 seconds for app destruction"
+  echo "waiting 240 seconds for app registration destruction"
   sleep 30
-  echo "waiting 90 more seconds for app destruction"
+  echo "waiting 210 more seconds for app registration destruction"
   sleep 30
-  echo "waiting 60 more seconds for app destruction"
+  echo "waiting 180 more seconds for app registration destruction"
   sleep 30
-  echo "waiting 30 more seconds for app destruction"
+  echo "waiting 150 more seconds for app registration destruction"
+  sleep 30
+  echo "waiting 120 more seconds for app registration destruction"
+  sleep 30
+  echo "waiting 90 more seconds for app registration destruction"
+  sleep 30
+  echo "waiting 60 more seconds for app registration destruction"
+  sleep 30
+  echo "waiting 30 more seconds for app registration destruction"
   sleep 30
 fi
 
