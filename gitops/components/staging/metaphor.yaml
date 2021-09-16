@@ -10,7 +10,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://gitlab.starter.kubefirst.com/kubefirst/gitops
+    repoURL: https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops
     path: components/staging/metaphor
     targetRevision: HEAD
     helm:

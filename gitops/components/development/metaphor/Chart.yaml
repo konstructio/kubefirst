@@ -1,7 +1,7 @@
 apiVersion: v2
 dependencies:
 - name: metaphor
-  repository: https://chartmuseum.starter.kubefirst.com
+  repository: https://chartmuseum.<AWS_HOSTED_ZONE_NAME>
   version: 0.1.0
 description: metaphor instance
 name: metaphor-development

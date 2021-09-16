@@ -155,5 +155,5 @@ spec:
           - name: commitMessage
             value: "[CI SKIP] setting {{workflow.parameters.appName}} {{workflow.parameters.environment}} to chart version {{steps.get-initial-chart-version.outputs.result}}"
           - name: repoPath
-            value: gitlab.starter.kubefirst.com/kubefirst/{{workflow.parameters.appName}}
+            value: gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/{{workflow.parameters.appName}}
 
