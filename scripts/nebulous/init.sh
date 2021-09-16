@@ -298,7 +298,7 @@ then
   git add .
   git commit -m "initial kubefirst commit"
   git push -u origin main 
-  echo "gitops repo established"
+  echo "metaphor repo established"
 
 else
   echo "skipping gitlab terraform because SKIP_GITLAB_APPLY is set"
@@ -388,15 +388,15 @@ fi
 # the following comnmand is a bit fickle as the vault dns propagates, 
 # a retry attempts to make this a bit more fault tolerant to that
 echo "argocd app sync of gitlab-runner"
-for i in 1 2 3 4 5; do argocd app sync gitlab-runner-components && break || sleep 60; done # TODO: change vault config to internal svc
+for i in 1 2 3 4 5; do argocd app sync gitlab-runner-components && break || echo "sync of gitlab-runner failed, sleeping for 60s before retry" sleep 60; done
 echo "argocd app sync of chartmuseum"
-for i in 1 2 3 4 5; do argocd app sync chartmuseum-components && break || sleep 60; done # TODO: change vault config to internal svc
+for i in 1 2 3 4 5; do argocd app sync chartmuseum-components && break || echo "sync of chartmuseum failed, sleeping for 60s before retry" sleep 60; done
 echo "argocd app sync of keycloak"
-for i in 1 2 3 4 5; do argocd app sync keycloak-components && break || sleep 60; done # TODO: change vault config to internal svc
+for i in 1 2 3 4 5; do argocd app sync keycloak-components && break || echo "sync of keycloak failed, sleeping for 60s before retry" sleep 60; done
 echo "argocd app sync of atlantis"
-for i in 1 2 3 4 5; do argocd app sync atlantis-components && break || sleep 60; done # TODO: change vault config to internal svc
+for i in 1 2 3 4 5; do argocd app sync atlantis-components && break || echo "sync of atlantis failed, sleeping for 60s before retry" sleep 60; done
 echo "argocd app sync of argo"
-for i in 1 2 3 4 5; do argocd app sync atlantis-components && break || sleep 60; done # TODO: change vault config to internal svc
+for i in 1 2 3 4 5; do argocd app sync argo && break || echo "sync of argo failed, sleeping for 60s before retry" sleep 60; done
 
 echo "awaiting successful sync of gitlab-runner"
 argocd app wait gitlab-runner-components
