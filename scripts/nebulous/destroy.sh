@@ -32,22 +32,26 @@ echo
 
 sleep 12
 
+echo "establishing kubectl config"
 K8S_CLUSTER_NAME=kubefirst
 aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $K8S_CLUSTER_NAME
 chmod 0600 ~/.kube/config
 
+echo "pulling secrets from secret/atlantis"
 export VAULT_TOKEN=$(kubectl -n vault get secret vault-unseal-keys -ojson | jq -r '.data."cluster-keys.json"' | base64 -d | jq -r .root_token)
 export VAULT_ADDR="https://vault.${AWS_HOSTED_ZONE_NAME}"
-
 vault login $VAULT_TOKEN
-
-echo "pulling secrets from secret/atlantis"
 $(echo $(vault kv get -format=json secret/atlantis | jq -r .data.data) | jq -r 'keys[] as $k | "export \($k)=\(.[$k])"')
+
+echo "forcefully destroying argo, gitlab, and chartmuseum buckets (leaving state store in tact)"
+aws s3 rb s3://k1-argo-artifacts-$BUCKET_RAND --force
+aws s3 rb s3://k1-gitlab-backup-$BUCKET_RAND --force
+aws s3 rb s3://k1-chartmuseum-$BUCKET_RAND --force
 
 if [ -z "$SKIP_VAULT_APPLY" ]
 then
   echo "##############################################################"
-  echo "SECRETS IF NEEDED AFTER VAULT IS DESTROYED:"
+  echo "# SECRETS, IF NEEDED, AFTER VAULT IS DESTROYED:"
   echo ""
   echo $(vault kv get -format=json secret/atlantis | jq -r .data.data) | jq -r 'keys[] as $k | "export \($k)=\(.[$k])"'
   echo "##############################################################"
