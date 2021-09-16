@@ -24,9 +24,10 @@ echo '     \/         \/     \/                     \/        '
 
 echo
 echo
-echo "      hi, welcome to the kubefirst/nebulous installation. the install time is about"
-echo "      15 - 20 min to provision your new infrastructure. while you're waiting"
-echo "      we recommend checking out our docs to familiarize yourself with what's ahead"
+echo "      welcome to the kubefirst/nebulous installation. the install time is about"
+echo "      40 mins to provision your new infrastructure. most of this time is waiting"
+echo "      on infra to provision and dns to propagate. while you're waiting check out"
+echo "      our docs to familiarize yourself with what's ahead."
 echo
 echo "      https://docs.kubefirst.com"
 echo
