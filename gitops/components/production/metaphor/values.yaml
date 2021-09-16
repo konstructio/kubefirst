@@ -13,4 +13,4 @@ metaphor:
       hosts:
         - metaphor-production.<AWS_HOSTED_ZONE_NAME>
   vaultMountPoint: kubefirst
-  vaultSecretPath: metaphor/production
+  vaultSecretPath: production/metaphor

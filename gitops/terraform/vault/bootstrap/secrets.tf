@@ -131,3 +131,38 @@ resource "vault_generic_secret" "atlantis_secrets" {
 EOT
 }
 
+resource "vault_generic_secret" "development_metaphor" {
+  path = "${vault_mount.secret.path}/development/metaphor"
+  # note: these secrets are not actually sensitive. 
+  # do not hardcode passwords in git under normal circumstances.
+  data_json = <<EOT
+{
+  "SECRET_ONE" : "development secret 1",
+  "SECRET_TWO" : "development secret 2"
+}
+EOT
+}
+
+resource "vault_generic_secret" "staging_metaphor" {
+  path = "${vault_mount.secret.path}/staging/metaphor"
+  # note: these secrets are not actually sensitive. 
+  # do not hardcode passwords in git under normal circumstances.
+  data_json = <<EOT
+{
+  "SECRET_ONE" : "staging secret 1",
+  "SECRET_TWO" : "staging secret 2"
+}
+EOT
+}
+
+resource "vault_generic_secret" "production_metaphor" {
+  path = "${vault_mount.secret.path}/production/metaphor"
+  # note: these secrets are not actually sensitive. 
+  # do not hardcode passwords in git under normal circumstances.
+  data_json = <<EOT
+{
+  "SECRET_ONE" : "production secret 1",
+  "SECRET_TWO" : "production secret 2"
+}
+EOT
+}
