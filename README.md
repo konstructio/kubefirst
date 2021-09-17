@@ -95,7 +95,7 @@ If you find yourself iterating a lot, a `k1` alias is convenient, this one is fo
 ```
 k1() {
   echo "don't forget to breathe"
-  docker run -it --env-file=kubefirst.env -v $PWD/gitops:/gitops -v $PWD/scripts:/scripts -v $PWD/git:/git --entrypoint /scripts/nebulous/init.sh nebulous:foo  
+  docker run -it --env-file=kubefirst.env -v $PWD/gitops:/gitops  -v $PWD/metaphor:/metaphor -v $PWD/scripts:/scripts -v $PWD/git:/git --entrypoint /scripts/nebulous/init.sh nebulous:foo  
 }
 ```
 
@@ -110,13 +110,6 @@ However, terraform is only able to destroy resources that are managed in terrafo
 Let's consider, for example, a scenario where you manually `helm install`ed an app to your new cluster, and that app spins up a new load balancer in your VPC. If you don't remove that app and its load balancer before running destroy, you won't be able to complete the terraform destroy operation. This is because you can't remove a VPC that still has a live load balancer running in it.
 
 With that context in mind, once you've removed the manual things you may have added to this environment, you can kickoff the automated destroy script by running:
-
 ```
-docker run -it --env-file=kubefirst.env -v $PWD/terraform:/terraform --entrypoint /bin/sh nebulous:foo
-```
-
-and then in your interactice docker shell you need to run:
-
-```
-/scripts/nebulous/destroy.sh
+docker run -it --env-file=kubefirst.env -v $PWD/gitops:/gitops -v $PWD/metaphor:/metaphor -v $PWD/scripts:/scripts -v $PWD/git:/git --entrypoint /scripts/nebulous/destroy.sh  nebulous:foo  
 ```
