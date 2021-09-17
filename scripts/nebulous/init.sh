@@ -190,10 +190,17 @@ fi
 cd /git/gitops/terraform/base
 if [ -z "$SKIP_BASE_APPLY" ]
 then
+  echo '___.                            __                              _____                     '
+  echo '\_ |__ _____    ______ ____   _/  |_  _______________________ _/ ____\___________  _____  '
+  echo ' | __ \\__  \  /  ___// __ \  \   __\/ __ \_  __ \_  __ \__  \\   __\/  _ \_  __ \/     \ '
+  echo ' | \_\ \/ __ \_\___ \\  ___/   |  | \  ___/|  | \/|  | \// __ \|  | (  <_> )  | \/  Y Y  \'
+  echo ' |___  (____  /____  >\___  >  |__|  \___  >__|   |__|  (____  /__|  \____/|__|  |__|_|  /'
+  echo '     \/     \/     \/     \/             \/                  \/                        \/ '
+
   echo "applying bootstrap terraform"
   terraform init 
-  terraform apply -auto-approve
-  # terraform destroy -auto-approve; exit 1; # hack
+  # terraform apply -auto-approve
+  terraform destroy -auto-approve; exit 1; # hack
 
   KMS_KEY_ID=$(terraform output -json | jq -r '.vault_unseal_kms_key.value')
   echo "KMS_KEY_ID collected: $KMS_KEY_ID"
@@ -219,6 +226,13 @@ chmod 0600 ~/.kube/config
 #! gitlab
 if [ -z "$SKIP_GITLAB_RECONFIG" ]
 then
+  echo '        .__  __  .__        ___.                                         _____.__        '
+  echo '   ____ |__|/  |_|  | _____ \_ |__   _______   ____   ____  ____   _____/ ____\__| ____  '
+  echo '  / ___\|  \   __\  | \__  \ | __ \  \_  __ \_/ __ \_/ ___\/  _ \ /    \   __\|  |/ ___\ '
+  echo ' / /_/  >  ||  | |  |__/ __ \| \_\ \  |  | \/\  ___/\  \__(  <_> )   |  \  |  |  / /_/  >'
+  echo ' \___  /|__||__| |____(____  /___  /  |__|    \___  >\___  >____/|___|  /__|  |__\___  / '
+  echo '/_____/                    \/    \/               \/     \/           \/        /_____/  '
+
   # reconfigure gitlab server
   echo
   echo "testing gitlab for connectivity"
@@ -265,7 +279,13 @@ export TF_VAR_atlantis_gitlab_token=$GITLAB_TOKEN
 # apply terraform
 if [ -z "$SKIP_GITLAB_APPLY" ]
 then
-  
+  echo '        .__  __  .__        ___.       __                              _____                     '
+  echo '   ____ |__|/  |_|  | _____ \_ |__   _/  |_  _______________________ _/ ____\___________  _____  '
+  echo '  / ___\|  \   __\  | \__  \ | __ \  \   __\/ __ \_  __ \_  __ \__  \\   __\/  _ \_  __ \/     \ '
+  echo ' / /_/  >  ||  | |  |__/ __ \| \_\ \  |  | \  ___/|  | \/|  | \// __ \|  | (  <_> )  | \/  Y Y  \'
+  echo ' \___  /|__||__| |____(____  /___  /  |__|  \___  >__|   |__|  (____  /__|  \____/|__|  |__|_|  /'
+  echo '/_____/                    \/    \/             \/                  \/                        \/ '
+
   cd /git/gitops/terraform/gitlab
   echo "applying gitlab terraform"
   terraform init 
@@ -305,7 +325,12 @@ else
   echo "skipping gitlab terraform because SKIP_GITLAB_APPLY is set"
 fi
 
-
+echo '                                        .___'
+echo '_____ _______  ____   ____     ____   __| _/'
+echo '\__  \\_  __ \/ ___\ /  _ \  _/ ___\ / __ | '
+echo ' / __ \|  | \/ /_/  >  <_> ) \  \___/ /_/ | '
+echo '(____  /__|  \___  / \____/   \___  >____ | '
+echo '     \/     /_____/               \/     \/ '
 
 echo "creating argocd in kubefirst cluster"
 kubectl create namespace argocd --dry-run -oyaml | kubectl apply -f -
@@ -362,6 +387,13 @@ export TF_VAR_gitlab_runner_token=$(cat /git/gitops/terraform/.gitlab-runner-reg
 # apply terraform
 if [ -z "$SKIP_VAULT_APPLY" ]
 then
+  echo '                    .__   __      __                              _____                     '
+  echo '___  _______   __ __|  |_/  |_  _/  |_  _______________________ _/ ____\___________  _____  '
+  echo '\  \/ /\__  \ |  |  \  |\   __\ \   __\/ __ \_  __ \_  __ \__  \\   __\/  _ \_  __ \/     \ '
+  echo ' \   /  / __ \|  |  /  |_|  |    |  | \  ___/|  | \/|  | \// __ \|  | (  <_> )  | \/  Y Y  \'
+  echo '  \_/  (____  /____/|____/__|    |__|  \___  >__|   |__|  (____  /__|  \____/|__|  |__|_|  /'
+  echo '            \/                             \/                  \/                        \/ '
+
   cd /git/gitops/terraform/vault
   echo "applying vault terraform"
   terraform init 
@@ -429,6 +461,13 @@ export KEYCLOAK_URL=https://keycloak.${AWS_HOSTED_ZONE_NAME}
 # apply terraform
 if [ -z "$SKIP_KEYCLOAK_APPLY" ]
 then
+  echo ' __                       .__                __       __                              _____                     '
+  echo '|  | __ ____ ___.__. ____ |  |   _________  |  | __ _/  |_  _______________________ _/ ____\___________  _____  '
+  echo '|  |/ // __ <   |  |/ ___\|  |  /  _ \__  \ |  |/ / \   __\/ __ \_  __ \_  __ \__  \\   __\/  _ \_  __ \/     \ '
+  echo '|    <\  ___/\___  \  \___|  |_(  <_> ) __ \|    <   |  | \  ___/|  | \/|  | \// __ \|  | (  <_> )  | \/  Y Y  \'
+  echo '|__|_ \\___  > ____|\___  >____/\____(____  /__|_ \  |__|  \___  >__|   |__|  (____  /__|  \____/|__|  |__|_|  /'
+  echo '     \/    \/\/         \/                \/     \/            \/                  \/                        \/ '
+
   cd /git/gitops/terraform/keycloak
   echo "applying keycloak terraform"
   terraform init 
@@ -479,13 +518,5 @@ echo "           password: $GITLAB_BOT_ROOT_PASSWORD"
 echo "      3. commit to the main branch of metaphor and checkout your pipelines"
 echo "         https://$GITLAB_URL/kubefirst/metaphor/-/pipelines"
 echo "           app url: metaphor-development.$AWS_HOSTED_ZONE_NAME"
-echo
-echo
-echo
-echo
-echo
-echo
-echo
-echo
 echo
 echo
