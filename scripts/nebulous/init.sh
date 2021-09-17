@@ -199,8 +199,8 @@ then
 
   echo "applying bootstrap terraform"
   terraform init 
-  # terraform apply -auto-approve
-  terraform destroy -auto-approve; exit 1; # hack
+  terraform apply -auto-approve
+  # terraform destroy -auto-approve; exit 1; # hack
 
   KMS_KEY_ID=$(terraform output -json | jq -r '.vault_unseal_kms_key.value')
   echo "KMS_KEY_ID collected: $KMS_KEY_ID"
