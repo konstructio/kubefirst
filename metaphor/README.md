@@ -1,4 +1,4 @@
-![](images/metaphor.png)
+![](logo.png)
 
 `metaphor` is an example application which serves as a demonstration space for how your applications hook into your infrastructure and tooling.
 
