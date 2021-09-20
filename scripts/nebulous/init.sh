@@ -321,6 +321,10 @@ then
   git push -u origin main 
   echo "metaphor repo established"
 
+  echo "updating kubefirst group image"
+  export KUBEFIRST_GROUP_ID=$(curl -s --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" "https://gitlab.${AWS_HOSTED_ZONE_NAME}/api/v4/groups" | jq -r '.[] | select(.name == "kubefirst").id')
+  curl --request PUT --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" "https://gitlab.${AWS_HOSTED_ZONE_NAME}/api/v4/groups/${KUBEFIRST_GROUP_ID}" --form "avatar=@/images/kubefirst.png"
+  echo "group image update complete"
 else
   echo "skipping gitlab terraform because SKIP_GITLAB_APPLY is set"
 fi
