@@ -46,9 +46,6 @@ variable "keycloak_password" {
 variable "keycloak_admin_password" {
   type = string
 }
-variable "keycloak_vault_oidc_client_secret" {
-  type = string
-}
 variable "iam_user_arn" {
   type = string
 }

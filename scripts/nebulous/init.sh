@@ -108,7 +108,7 @@ export TF_VAR_aws_access_key_id=$AWS_ACCESS_KEY_ID
 export TF_VAR_aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
 export TF_VAR_email_address=$EMAIL_ADDRESS
 export TF_VAR_vault_redirect_uris="[\"https://vault.${AWS_HOSTED_ZONE_NAME}/ui/vault/auth/oidc/oidc/callback\",\"http://localhost:8200/ui/vault/auth/oidc/oidc/callback\",\"http://localhost:8250/oidc/callback\",\"https://vault.${AWS_HOSTED_ZONE_NAME}:8250/oidc/callback\"]"
-export TF_VAR_argo_redirect_uris="[\"https://argo.${AWS_HOSTED_ZONE_NAME}/argo/oauth2/callback\"]"
+export TF_VAR_argo_redirect_uris="[\"https://argo.${AWS_HOSTED_ZONE_NAME}/oauth2/callback\"]"
 export TF_VAR_argocd_redirect_uris="[\"https://argocd.${AWS_HOSTED_ZONE_NAME}/auth/callback\",\"https://argocd.${AWS_HOSTED_ZONE_NAME}/applications\"]"
 export TF_VAR_gitlab_redirect_uris="[\"https://gitlab.${AWS_HOSTED_ZONE_NAME}\"]"
 
@@ -190,12 +190,13 @@ fi
 cd /git/gitops/terraform/base
 if [ -z "$SKIP_BASE_APPLY" ]
 then
-  echo '___.                            __                              _____                     '
-  echo '\_ |__ _____    ______ ____   _/  |_  _______________________ _/ ____\___________  _____  '
-  echo ' | __ \\__  \  /  ___// __ \  \   __\/ __ \_  __ \_  __ \__  \\   __\/  _ \_  __ \/     \ '
-  echo ' | \_\ \/ __ \_\___ \\  ___/   |  | \  ___/|  | \/|  | \// __ \|  | (  <_> )  | \/  Y Y  \'
-  echo ' |___  (____  /____  >\___  >  |__|  \___  >__|   |__|  (____  /__|  \____/|__|  |__|_|  /'
-  echo '     \/     \/     \/     \/             \/                  \/                        \/ '
+  echo
+  echo '########################################'
+  echo '#'
+  echo '#          BASE TERRAFORM'
+  echo '#'
+  echo '########################################'
+  echo
 
   echo "applying bootstrap terraform"
   terraform init 
@@ -226,12 +227,13 @@ chmod 0600 ~/.kube/config
 #! gitlab
 if [ -z "$SKIP_GITLAB_RECONFIG" ]
 then
-  echo '        .__  __  .__        ___.                                         _____.__        '
-  echo '   ____ |__|/  |_|  | _____ \_ |__   _______   ____   ____  ____   _____/ ____\__| ____  '
-  echo '  / ___\|  \   __\  | \__  \ | __ \  \_  __ \_/ __ \_/ ___\/  _ \ /    \   __\|  |/ ___\ '
-  echo ' / /_/  >  ||  | |  |__/ __ \| \_\ \  |  | \/\  ___/\  \__(  <_> )   |  \  |  |  / /_/  >'
-  echo ' \___  /|__||__| |____(____  /___  /  |__|    \___  >\___  >____/|___|  /__|  |__\___  / '
-  echo '/_____/                    \/    \/               \/     \/           \/        /_____/  '
+  echo
+  echo '########################################'
+  echo '#'
+  echo '#          GITLAB RECONFIG'
+  echo '#'
+  echo '########################################'
+  echo
 
   # reconfigure gitlab server
   echo
@@ -279,12 +281,13 @@ export TF_VAR_atlantis_gitlab_token=$GITLAB_TOKEN
 # apply terraform
 if [ -z "$SKIP_GITLAB_APPLY" ]
 then
-  echo '        .__  __  .__        ___.       __                              _____                     '
-  echo '   ____ |__|/  |_|  | _____ \_ |__   _/  |_  _______________________ _/ ____\___________  _____  '
-  echo '  / ___\|  \   __\  | \__  \ | __ \  \   __\/ __ \_  __ \_  __ \__  \\   __\/  _ \_  __ \/     \ '
-  echo ' / /_/  >  ||  | |  |__/ __ \| \_\ \  |  | \  ___/|  | \/|  | \// __ \|  | (  <_> )  | \/  Y Y  \'
-  echo ' \___  /|__||__| |____(____  /___  /  |__|  \___  >__|   |__|  (____  /__|  \____/|__|  |__|_|  /'
-  echo '/_____/                    \/    \/             \/                  \/                        \/ '
+  echo
+  echo '########################################'
+  echo '#'
+  echo '#          GITLAB RECONFIG'
+  echo '#'
+  echo '########################################'
+  echo
 
   cd /git/gitops/terraform/gitlab
   echo "applying gitlab terraform"
@@ -329,12 +332,13 @@ else
   echo "skipping gitlab terraform because SKIP_GITLAB_APPLY is set"
 fi
 
-echo '                                        .___'
-echo '_____ _______  ____   ____     ____   __| _/'
-echo '\__  \\_  __ \/ ___\ /  _ \  _/ ___\ / __ | '
-echo ' / __ \|  | \/ /_/  >  <_> ) \  \___/ /_/ | '
-echo '(____  /__|  \___  / \____/   \___  >____ | '
-echo '     \/     /_____/               \/     \/ '
+  echo
+  echo '########################################'
+  echo '#'
+  echo '#          ARGOCD TERRAFORM'
+  echo '#'
+  echo '########################################'
+  echo
 
 echo "creating argocd in kubefirst cluster"
 kubectl create namespace argocd --dry-run -oyaml | kubectl apply -f -
@@ -343,8 +347,18 @@ kubectl create secret -n argocd generic aws-creds --from-literal=AWS_ACCESS_KEY_
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 echo "argocd created"
 
-echo "sleeping 20 seconds after argocd creation"
-sleep 20
+echo "sleeping 60 seconds after argocd creation"
+sleep 10
+echo "sleeping 50 more seconds"
+sleep 10
+echo "sleeping 40 more seconds"
+sleep 10
+echo "sleeping 30 more seconds"
+sleep 10
+echo "sleeping 20 more seconds"
+sleep 10
+echo "sleeping 10 more seconds"
+sleep 10
 
 echo "connecting to argocd in background process"
 kubectl -n argocd port-forward svc/argocd-server -n argocd 8080:443 &
@@ -391,17 +405,18 @@ export TF_VAR_gitlab_runner_token=$(cat /git/gitops/terraform/.gitlab-runner-reg
 # apply terraform
 if [ -z "$SKIP_VAULT_APPLY" ]
 then
-  echo '                    .__   __      __                              _____                     '
-  echo '___  _______   __ __|  |_/  |_  _/  |_  _______________________ _/ ____\___________  _____  '
-  echo '\  \/ /\__  \ |  |  \  |\   __\ \   __\/ __ \_  __ \_  __ \__  \\   __\/  _ \_  __ \/     \ '
-  echo ' \   /  / __ \|  |  /  |_|  |    |  | \  ___/|  | \/|  | \// __ \|  | (  <_> )  | \/  Y Y  \'
-  echo '  \_/  (____  /____/|____/__|    |__|  \___  >__|   |__|  (____  /__|  \____/|__|  |__|_|  /'
-  echo '            \/                             \/                  \/                        \/ '
+  echo
+  echo '########################################'
+  echo '#'
+  echo '#          VAULT TERRAFORM'
+  echo '#'
+  echo '########################################'
+  echo
 
   cd /git/gitops/terraform/vault
   echo "applying vault terraform"
   terraform init 
-  terraform apply -auto-approve
+  terraform apply -target module.bootstrap -auto-approve
   # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "vault terraform complete"
 
@@ -424,20 +439,33 @@ fi
 
 # the following comnmand is a bit fickle as the vault dns propagates, 
 # a retry attempts to make this a bit more fault tolerant to that
+echo "argocd app sync of argo workflows"
+for i in 1 2 3 4 5; do argocd app sync argo && break || echo "sync of argo did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of gitlab-runner"
-for i in 1 2 3 4 5; do argocd app sync gitlab-runner-components && break || echo "sync of gitlab-runner failed, sleeping for 60s before retry" && sleep 60; done
+for i in 1 2 3 4 5; do argocd app sync gitlab-runner-components && break || echo "sync of gitlab-runner did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of chartmuseum"
-for i in 1 2 3 4 5; do argocd app sync chartmuseum-components && break || echo "sync of chartmuseum failed, sleeping for 60s before retry" && sleep 60; done
+for i in 1 2 3 4 5; do argocd app sync chartmuseum-components && break || echo "sync of chartmuseum did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of keycloak"
-for i in 1 2 3 4 5; do argocd app sync keycloak-components && break || echo "sync of keycloak failed, sleeping for 60s before retry" && sleep 60; done
+for i in 1 2 3 4 5; do argocd app sync keycloak-components && break || echo "sync of keycloak did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of atlantis"
-for i in 1 2 3 4 5; do argocd app sync atlantis-components && break || echo "sync of atlantis failed, sleeping for 60s before retry" && sleep 60; done
+for i in 1 2 3 4 5; do argocd app sync atlantis-components && break || echo "sync of atlantis did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of argo"
-for i in 1 2 3 4 5; do argocd app sync argo && break || echo "sync of argo failed, sleeping for 60s before retry" && sleep 60; done
+for i in 1 2 3 4 5; do argocd app sync argo && break || echo "sync of argo did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 
 echo "awaiting successful sync of gitlab-runner"
 argocd app wait gitlab-runner-components
 argocd app wait gitlab-runner
+
+echo "configuring git client"
+cd /git/metaphor
+git config --global user.name "Administrator"
+git config --global user.email "${EMAIL_ADDRESS}"
+
+echo "triggering metaphor delivery pipeline"
+git pull origin main --rebase
+git commit --allow-empty -m "kubefirst trigger pipeline"
+git push -u origin main 
+echo "metaphor delivery pipeline invoked"
 
 echo "awaiting successful sync of chartmuseum"
 argocd app wait chartmuseum-components
@@ -465,12 +493,13 @@ export KEYCLOAK_URL=https://keycloak.${AWS_HOSTED_ZONE_NAME}
 # apply terraform
 if [ -z "$SKIP_KEYCLOAK_APPLY" ]
 then
-  echo ' __                       .__                __       __                              _____                     '
-  echo '|  | __ ____ ___.__. ____ |  |   _________  |  | __ _/  |_  _______________________ _/ ____\___________  _____  '
-  echo '|  |/ // __ <   |  |/ ___\|  |  /  _ \__  \ |  |/ / \   __\/ __ \_  __ \_  __ \__  \\   __\/  _ \_  __ \/     \ '
-  echo '|    <\  ___/\___  \  \___|  |_(  <_> ) __ \|    <   |  | \  ___/|  | \/|  | \// __ \|  | (  <_> )  | \/  Y Y  \'
-  echo '|__|_ \\___  > ____|\___  >____/\____(____  /__|_ \  |__|  \___  >__|   |__|  (____  /__|  \____/|__|  |__|_|  /'
-  echo '     \/    \/\/         \/                \/     \/            \/                  \/                        \/ '
+  echo
+  echo '########################################'
+  echo '#'
+  echo '#          KEYCLOAK TERRAFORM'
+  echo '#'
+  echo '########################################'
+  echo
 
   cd /git/gitops/terraform/keycloak
   echo "applying keycloak terraform"
@@ -484,18 +513,70 @@ then
   export TF_VAR_keycloak_password=$KEYCLOAK_PASSWORD
   echo "TF_VAR_keycloak_password is $TF_VAR_keycloak_password"
   terraform init
-  terraform apply -auto-approve
+  terraform apply -auto-approve # hack
   echo "vault terraform complete"
 
   echo "kicking over atlantis pod to pickup latest secrets"
   kubectl -n atlantis delete pod atlantis-0
-  echo "atlantis pod has been recycled"   
+  echo "atlantis pod has been recycled"  
+
 else
   echo "skipping keycloak terraform because SKIP_KEYCLOAK_APPLY is set"
 fi
 
 
+if [ -z "$SKIP_OIDC_PATCHING" ]
+then
+  echo
+  echo '########################################'
+  echo '#'
+  echo '#            OIDC PATCHING'
+  echo '#'
+  echo '########################################'
+  echo
+  
+  echo "pulling secrets from secret/admin/oidc-clients/argocd"
+  export VAULT_TOKEN=$(kubectl -n vault get secret vault-unseal-keys -ojson | jq -r '.data."cluster-keys.json"' | base64 -d | jq -r .root_token)
+  export VAULT_ADDR="https://vault.${AWS_HOSTED_ZONE_NAME}"
+  vault login $VAULT_TOKEN
+  $(echo $(vault kv get -format=json secret/admin/oidc-clients/argocd | jq -r .data.data) | jq -r 'keys[] as $k | "export \($k)=\(.[$k])"')
+  
+  echo "adding keycloak configs to argocd configmap"
+  kubectl -n argocd patch secret argocd-secret -p "{\"stringData\": {\"oidc.keycloak.clientSecret\": \"${ARGOCD_CLIENT_SECRET}\"}}"
+  
+  echo "configuring git client"
+  cd "/git/gitops"
+  git config --global user.name "Administrator"
+  git config --global user.email "${EMAIL_ADDRESS}"
+  git pull origin main --rebase
+  
+  echo "adding oidc config to argocd gitops registry"
+  cat << EOF >> /git/gitops/components/argocd/configmap.yaml
+  
+  url: https://argocd.${AWS_HOSTED_ZONE_NAME}
+  oidc.config: |
+    name: Keycloak
+    issuer: https://keycloak.${AWS_HOSTED_ZONE_NAME}/auth/realms/kubefirst
+    clientID: argocd
+    clientSecret: \$oidc.keycloak.clientSecret
+    requestedScopes: ["openid", "profile", "email", "groups"]
 
+EOF
+
+  git add .
+  git commit -m "updated oidc config for argocd"
+  git push -u origin main
+  echo "pushed to gitops origin"
+  argocd app get argocd --hard-refresh
+
+
+  cd /git/gitops/terraform/vault
+  echo "applying vault terraform"
+  terraform init 
+  terraform apply -auto-approve
+  # terraform destroy -auto-approve; exit 1 # TODO: hack
+  echo "vault terraform complete"
+fi
 
 
 

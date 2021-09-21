@@ -28,6 +28,11 @@ module "bootstrap" {
   gitlab_token                      = var.gitlab_token
   keycloak_password                 = var.keycloak_password
   keycloak_admin_password           = var.keycloak_admin_password
-  keycloak_vault_oidc_client_secret = var.keycloak_vault_oidc_client_secret
   iam_user_arn                      = var.iam_user_arn
+}
+
+module "oidc" {
+  source = "./oidc"
+
+  vault_redirect_uris = var.vault_redirect_uris
 }

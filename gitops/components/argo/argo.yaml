@@ -2,6 +2,8 @@
 # Adjustments:
 # Added gitlab-runner service account to cluster role binding
 # Added content to workflow-controller-configmap
+# Adjusted/Added 3 argo service accounts: argo-admin, argo-server, argo-developer
+# Adjusted args in server startup in deployment
 
 # This is an auto-generated file. DO NOT EDIT
 apiVersion: apiextensions.k8s.io/v1
@@ -213,7 +215,41 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  name: argo-admin
+  annotations:
+    # The rule is an expression used to determine if this service account 
+    # should be used. 
+    # * `groups` - an array of the OIDC groups
+    # * `iss` - the issuer ("argo-server")
+    # * `sub` - the subject (typically the username)
+    # Must evaluate to a boolean. 
+    # If you want an account to be the default to use, this rule can be "true".
+    # Details of the expression language are available in
+    # https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md.
+    workflows.argoproj.io/rbac-rule: "'/kubefirst/admins' in groups"
+    # The precedence is used to determine which service account to use whe
+    # Precedence is an integer. It may be negative. If omitted, it defaults to "0".
+    # Numerically higher values have higher precedence (not lower, which maybe 
+    # counter-intuitive to you).
+    # If two rules match and have the same precedence, then which one used will 
+    # be arbitrary.
+    workflows.argoproj.io/rbac-rule-precedence: "1"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
   name: argo-server
+  annotations:
+    workflows.argoproj.io/rbac-rule: "true"
+    workflows.argoproj.io/rbac-rule-precedence: "2"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argo-developer
+  annotations:
+    workflows.argoproj.io/rbac-rule: "'/kubefirst/developers' in groups"
+    workflows.argoproj.io/rbac-rule-precedence: "0"    
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -523,6 +559,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
+
 data:
   artifactRepository: |
     s3:
@@ -541,6 +578,31 @@ data:
       secretKeySecret:
         name: ci-secrets
         key: AWS_SECRET_ACCESS_KEY
+  sso: |
+    issuer: https://keycloak.<AWS_HOSTED_ZONE_NAME>/auth/realms/kubefirst
+    clientId:
+      name: argo-secrets
+      key: keycloak-client-id
+    clientSecret:
+      name: argo-secrets
+      key: keycloak-client-secret
+    # This is the redirect URL supplied to the provider (required). It must
+    # be in the form <argo-server-root-url>/oauth2/callback. It must be
+    # browser-accessible.
+    redirectUrl: https://argo.<AWS_HOSTED_ZONE_NAME>/oauth2/callback
+    # Additional scopes to request. Typically needed for SSO RBAC. >= v2.12
+    scopes:
+      - groups
+      - email
+    # RBAC Config. >= v2.12
+    rbac:
+      enabled: true
+
+
+
+
+
+
 ---
 apiVersion: v1
 kind: Service
@@ -585,6 +647,11 @@ spec:
       containers:
       - args:
         - server
+        - --secure
+        - --auth-mode
+        - sso
+        - --auth-mode
+        - client
         image: docker.io/argoproj/argocli:v3.1.11
         name: argo-server
         ports:

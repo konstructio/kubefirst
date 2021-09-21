@@ -121,7 +121,6 @@ resource "vault_generic_secret" "atlantis_secrets" {
   "TF_VAR_iam_user_arn": "${var.iam_user_arn}",
   "TF_VAR_keycloak_admin_password": "${var.keycloak_admin_password}",
   "TF_VAR_keycloak_password": "${var.keycloak_password}",
-  "TF_VAR_keycloak_vault_oidc_client_secret": "${var.keycloak_vault_oidc_client_secret}",
   "TF_VAR_vault_addr": "${var.vault_addr}",
   "TF_VAR_vault_redirect_uris": "[\"https://vault.<AWS_HOSTED_ZONE_NAME>/ui/vault/auth/oidc/oidc/callback\",\"http://localhost:8200/ui/vault/auth/oidc/oidc/callback\",\"http://localhost:8250/oidc/callback\",\"https://vault.<AWS_HOSTED_ZONE_NAME>:8250/oidc/callback\"]",
   "TF_VAR_vault_token": "${var.vault_token}",

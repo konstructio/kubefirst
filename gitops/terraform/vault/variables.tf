@@ -50,9 +50,6 @@ variable "keycloak_password" {
 variable "keycloak_admin_password" {
   type = string
 }
-variable "keycloak_vault_oidc_client_secret" {
-  type = string
-}
 
 variable "iam_user_arn" {
   type = string
@@ -62,4 +59,8 @@ variable "email_domain" {
 }
 variable "hosted_zone_name" {
   type = string
+}
+
+variable "vault_redirect_uris" {
+  type = list(string)
 }
