@@ -444,9 +444,8 @@ if [ -z "$SKIP_SSH_STORAGE" ]
 then
   echo "writing ssh key to secret/ssh"
   vault login -no-print $VAULT_TOKEN
-  vault write secret/data/ssh \
-    terraform_ssh_key=@/git/gitops/terraform/base/terraform-ssh-key \
-    terraform_ssh_key_pub=@/git/gitops/terraform/base/terraform-ssh-key.pub
+  vault kv put secret/ssh terraform_ssh_key="$(cat /git/gitops/terraform/base/terraform-ssh-key | base64)"
+  vault kv put secret/ssh terraform_ssh_key_pub="$(cat /git/gitops/terraform/base/terraform-ssh-key.pub | base64)"
 fi
 
 # the following comnmand is a bit fickle as the vault dns propagates, 
