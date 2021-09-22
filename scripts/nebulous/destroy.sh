@@ -59,7 +59,7 @@ then
   cd /git/gitops/terraform/vault
   echo "destroying vault terraform"
   terraform init
-  terraform destroy -auto-approve;
+  terraform destroy -target module.bootstrap -auto-approve
   echo "vault terraform destroy complete"
 fi
 
