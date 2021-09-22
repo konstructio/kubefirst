@@ -43,16 +43,18 @@ export VAULT_ADDR="https://vault.${AWS_HOSTED_ZONE_NAME}"
 vault login $VAULT_TOKEN
 $(echo $(vault kv get -format=json secret/atlantis | jq -r .data.data) | jq -r 'keys[] as $k | "export \($k)=\(.[$k])"')
 
-echo "forcefully destroying argo, gitlab, and chartmuseum buckets (leaving state store intact)"
-aws s3 rb s3://k1-argo-artifacts-$BUCKET_RAND --force
-aws s3 rb s3://k1-gitlab-backup-$BUCKET_RAND --force
-aws s3 rb s3://k1-chartmuseum-$BUCKET_RAND --force
-
 if [ -z "$SKIP_VAULT_APPLY" ]
 then
+  echo "forcefully destroying argo, gitlab, and chartmuseum buckets (leaving state store intact)"
+  aws s3 rb s3://k1-argo-artifacts-$BUCKET_RAND --force
+  aws s3 rb s3://k1-gitlab-backup-$BUCKET_RAND --force
+  aws s3 rb s3://k1-chartmuseum-$BUCKET_RAND --force
+
   echo "##############################################################"
-  echo "# SECRETS, IF NEEDED, AFTER VAULT IS DESTROYED:"
-  echo ""
+  echo "#"
+  echo "# RETAIN SECRETS!! MAY BE NEEDED AFTER VAULT IS DESTROYED:"
+  echo "# (you can safely discard after destroy is complete)"
+  echo "#"
   echo $(vault kv get -format=json secret/atlantis | jq -r .data.data) | jq -r 'keys[] as $k | "export \($k)=\(.[$k])"'
   echo "##############################################################"
   
