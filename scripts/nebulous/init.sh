@@ -381,7 +381,7 @@ echo "argocd terraform complete"
 
 
 
-echo "password: $ARGOCD_AUTH_PASSWORD"
+echo "ARGOCD_AUTH_PASSWORD: $ARGOCD_AUTH_PASSWORD"
 argocd login localhost:8080 --insecure --username admin --password "${ARGOCD_AUTH_PASSWORD}"
 echo "sleeping 120 seconds before checking vault status"
 sleep 30
@@ -398,7 +398,6 @@ export VAULT_ADDR="https://vault.${AWS_HOSTED_ZONE_NAME}"
 export TF_VAR_vault_addr=$VAULT_ADDR
 export TF_VAR_vault_token=$VAULT_TOKEN
 export TF_VAR_gitlab_runner_token=$(cat /git/gitops/terraform/.gitlab-runner-registration-token)
-
 
 /scripts/nebulous/wait-for-200.sh "https://vault.${AWS_HOSTED_ZONE_NAME}/ui/vault/auth?with=token"
 
@@ -435,6 +434,15 @@ then
   
 else
   echo "skipping vault terraform because SKIP_VAULT_APPLY is set"
+fi
+
+if [ -z "$SKIP_SSH_STORAGE" ]
+then
+  echo "writing ssh key to secret/ssh"
+  vault login -no-print $VAULT_TOKEN
+  vault write secret/ssh \
+    terraform_ssh_key=@/git/gitops/terraform/base/terraform-ssh-key | base64) \
+    terraform_ssh_key_pub=@/git/gitops/terraform/base/terraform-ssh-key.pub | base64)
 fi
 
 # the following comnmand is a bit fickle as the vault dns propagates, 
