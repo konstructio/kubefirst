@@ -441,8 +441,8 @@ then
   echo "writing ssh key to secret/ssh"
   vault login -no-print $VAULT_TOKEN
   vault write secret/ssh \
-    terraform_ssh_key=@/git/gitops/terraform/base/terraform-ssh-key | base64) \
-    terraform_ssh_key_pub=@/git/gitops/terraform/base/terraform-ssh-key.pub | base64)
+    terraform_ssh_key=@/git/gitops/terraform/base/terraform-ssh-key \
+    terraform_ssh_key_pub=@/git/gitops/terraform/base/terraform-ssh-key.pub
 fi
 
 # the following comnmand is a bit fickle as the vault dns propagates, 
