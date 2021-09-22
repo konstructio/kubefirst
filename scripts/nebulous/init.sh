@@ -55,12 +55,16 @@ fi
 
 if [ -z "$BUCKET_RAND" ]; then
   BUCKET_RAND=$(openssl rand -hex 3)
-  echo "established new bucket suffix ${BUCKET_RAND}"
+  echo
+  echo "############################################################"
+  echo "established BUCKET_RAND suffix: ${BUCKET_RAND}"
+  echo "set this in your kubefirst.env file for restarts/teardown"
+  echo "############################################################"
+  echo
 else
   echo "BUCKET_RAND seeded with specified value $BUCKET_RAND, skipping state bucket creation"
   SKIP_STATE_BUCKET_CREATION="true"
 fi
-
 
 export TF_STATE_BUCKET=k1-state-store-$BUCKET_RAND
 export ARGO_ARTIFACT_BUCKET=k1-argo-artifacts-$BUCKET_RAND
