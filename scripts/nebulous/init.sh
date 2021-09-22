@@ -444,7 +444,7 @@ if [ -z "$SKIP_SSH_STORAGE" ]
 then
   echo "writing ssh key to secret/ssh"
   vault login -no-print $VAULT_TOKEN
-  vault write secret/ssh \
+  vault write secret/data/ssh \
     terraform_ssh_key=@/git/gitops/terraform/base/terraform-ssh-key \
     terraform_ssh_key_pub=@/git/gitops/terraform/base/terraform-ssh-key.pub
 fi
