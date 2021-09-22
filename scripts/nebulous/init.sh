@@ -444,8 +444,8 @@ if [ -z "$SKIP_SSH_STORAGE" ]
 then
   echo "writing ssh key to secret/ssh"
   vault login -no-print $VAULT_TOKEN
-  vault kv put secret/ssh terraform_ssh_key="$(cat /git/gitops/terraform/base/terraform-ssh-key | base64)"
-  vault kv put secret/ssh terraform_ssh_key_pub="$(cat /git/gitops/terraform/base/terraform-ssh-key.pub | base64)"
+  vault kv put secret/ssh/terraform_ssh_key terraform_ssh_key_base64="$(cat /git/gitops/terraform/base/terraform-ssh-key | base64)"
+  vault kv put secret/ssh/terraform_ssh_key_pub terraform_ssh_key_pub_base64="$(cat /git/gitops/terraform/base/terraform-ssh-key.pub | base64)"
 fi
 
 # the following comnmand is a bit fickle as the vault dns propagates, 
@@ -463,16 +463,6 @@ echo "awaiting successful sync of gitlab-runner"
 argocd app wait gitlab-runner-components
 argocd app wait gitlab-runner
 
-echo "configuring git client"
-cd /git/metaphor
-git config --global user.name "Administrator"
-git config --global user.email "${EMAIL_ADDRESS}"
-
-echo "triggering metaphor delivery pipeline"
-git pull origin main --rebase
-git commit --allow-empty -m "kubefirst trigger pipeline"
-git push -u origin main 
-echo "metaphor delivery pipeline invoked"
 
 echo "awaiting successful sync of chartmuseum"
 argocd app wait chartmuseum-components
@@ -535,6 +525,19 @@ else
 fi
 
 
+echo "configuring git client"
+cd /git/metaphor
+git config --global user.name "Administrator"
+git config --global user.email "${EMAIL_ADDRESS}"
+
+echo "triggering metaphor delivery pipeline"
+cd /git/metaphor
+git pull origin main --rebase
+git commit --allow-empty -m "kubefirst trigger pipeline"
+git push -u origin main 
+echo "metaphor delivery pipeline invoked"
+
+
 if [ -z "$SKIP_OIDC_PATCHING" ]
 then
   echo
@@ -587,6 +590,7 @@ EOF
   # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "vault terraform complete"
 fi
+
 
 
 
