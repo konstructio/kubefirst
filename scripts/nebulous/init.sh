@@ -417,7 +417,7 @@ then
   echo "applying vault terraform"
   terraform init 
   terraform apply -target module.bootstrap -auto-approve
-  # terraform destroy -auto-approve; exit 1 # TODO: hack
+  # terraform destroy -target module.bootstrap -auto-approve; exit 1 # TODO: hack
   echo "vault terraform complete"
 
   echo "waiting 180 seconds after vault terraform apply"
