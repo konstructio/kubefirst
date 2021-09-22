@@ -580,7 +580,7 @@ EOF
   git commit -m "updated oidc config for argocd"
   git push -u origin main
   echo "pushed to gitops origin"
-  argocd app get argocd --hard-refresh
+  # argocd app get argocd --hard-refresh
 
 
   cd /git/gitops/terraform/vault
