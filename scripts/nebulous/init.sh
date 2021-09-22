@@ -439,8 +439,6 @@ fi
 
 # the following comnmand is a bit fickle as the vault dns propagates, 
 # a retry attempts to make this a bit more fault tolerant to that
-echo "argocd app sync of argo workflows"
-for i in 1 2 3 4 5; do argocd app sync argo && break || echo "sync of argo did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of gitlab-runner"
 for i in 1 2 3 4 5; do argocd app sync gitlab-runner-components && break || echo "sync of gitlab-runner did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of chartmuseum"
@@ -449,8 +447,6 @@ echo "argocd app sync of keycloak"
 for i in 1 2 3 4 5; do argocd app sync keycloak-components && break || echo "sync of keycloak did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of atlantis"
 for i in 1 2 3 4 5; do argocd app sync atlantis-components && break || echo "sync of atlantis did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
-echo "argocd app sync of argo"
-for i in 1 2 3 4 5; do argocd app sync argo && break || echo "sync of argo did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 
 echo "awaiting successful sync of gitlab-runner"
 argocd app wait gitlab-runner-components
@@ -479,9 +475,6 @@ echo "awaiting successful sync of atlantis"
 argocd app wait atlantis-components
 argocd app wait atlantis
 
-echo "awaiting successful sync of argo"
-argocd app wait argo
-
 /scripts/nebulous/wait-for-200.sh "https://keycloak.${AWS_HOSTED_ZONE_NAME}/auth/"
 
 #! assumes keycloak has been registered, needed for terraform
@@ -489,6 +482,7 @@ export KEYCLOAK_PASSWORD=$(kubectl -n keycloak get secret/keycloak  -ojson | jq 
 export KEYCLOAK_USER=gitlab-bot
 export KEYCLOAK_CLIENT_ID=admin-cli
 export KEYCLOAK_URL=https://keycloak.${AWS_HOSTED_ZONE_NAME}
+echo "collect keycloak password $KEYCLOAK_PASSWORD"
 
 # apply terraform
 if [ -z "$SKIP_KEYCLOAK_APPLY" ]
@@ -513,12 +507,17 @@ then
   export TF_VAR_keycloak_password=$KEYCLOAK_PASSWORD
   echo "TF_VAR_keycloak_password is $TF_VAR_keycloak_password"
   terraform init
-  terraform apply -auto-approve # hack
+  terraform apply -auto-approve
   echo "vault terraform complete"
 
   echo "kicking over atlantis pod to pickup latest secrets"
   kubectl -n atlantis delete pod atlantis-0
   echo "atlantis pod has been recycled"  
+
+  echo "argocd app sync of argo workflows after keycloak secrets exist"
+  for i in 1 2 3 4 5; do argocd app sync argo && break || echo "sync of argo did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
+  echo "awaiting successful sync of argo"
+  argocd app wait argo
 
 else
   echo "skipping keycloak terraform because SKIP_KEYCLOAK_APPLY is set"
@@ -589,7 +588,7 @@ echo
 echo
 echo
 echo "    congratulations, you've made it through the nebulous provisioning process."
-echo "    we spent 26 months working all night and weekend for free to get you to this message."
+echo "    we spent a lot of nights and weekend for over 2 years to get you to this message."
 echo
 echo "    we would LOOOOOOVE a github star if you made it this far and think we earned it."
 echo "    the star is in the top-right corner of this page: https://github.com/kubefirst/nebulous"
