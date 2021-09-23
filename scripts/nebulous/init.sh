@@ -537,6 +537,20 @@ git commit --allow-empty -m "kubefirst trigger pipeline"
 git push -u origin main 
 echo "metaphor delivery pipeline invoked"
 
+echo "triggering gitops pull request to test atlantis workflows"
+cd /git/gitops
+git pull origin main --rebase
+git checkout -b "atlantis-test"
+echo "" >> /git/gitops/terraform/argocd/main.tf
+echo "" >> /git/gitops/terraform/base/main.tf
+echo "" >> /git/gitops/terraform/gitlab/kubefirst-repos.tf
+echo "" >> /git/gitops/terraform/keycloak/main.tf
+echo "" >> /git/gitops/terraform/vault/main.tf
+git add .
+git commit -m "initial merge request commit to test atlantis"
+git push -u origin atlantis-test -o merge_request.create
+echo "gitops pull request created"
+
 
 if [ -z "$SKIP_OIDC_PATCHING" ]
 then

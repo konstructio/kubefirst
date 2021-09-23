@@ -5,14 +5,14 @@ variable "developer_users" {
     last_name = string
   }))
   default = [{
-    username = "kuber"
-    first_name = "Kate"
-    last_name = "Uber"
+    username = "dev1"
+    first_name = "Developer"
+    last_name = "One"
   },
   {
-    username = "podman"
-    first_name = "Phippy"
-    last_name = "Odman"
+    username = "dev2"
+    first_name = "Developer"
+    last_name = "Two"
   }]
 }
 

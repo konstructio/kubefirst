@@ -9,14 +9,14 @@ variable "admin_users" {
     last_name = string
   }))
   default = [{
-    username = "jdietz"
-    first_name = "John"
-    last_name = "Dietz"
+    username = "admin1"
+    first_name = "Admin"
+    last_name = "One"
   },
   {
-    username = "jedwards"
-    first_name = "Phippy"
-    last_name = "Odman"
+    username = "admin2"
+    first_name = "Admin"
+    last_name = "Two"
   }]
 }
 resource "random_string" "admin_user_password" {
