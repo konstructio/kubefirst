@@ -265,9 +265,6 @@ then
   echo
   echo
   echo
-  echo "    hydrating your GitLab server's kubefirst group with CI/CD"
-  echo "      variables, check it out -> https://$GITLAB_URL/groups/kubefirst/-/settings/ci_cd"
-  echo
   echo
   sleep 18
 fi
