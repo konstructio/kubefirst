@@ -1,7 +1,3 @@
-# todo update
-# 1. create a new module for an admin user
-# 2. add the new username output to the list ouptut `all_admins`
-
 variable "admin_users" {
   type = list(object({
     username = string
@@ -58,7 +54,6 @@ resource "keycloak_user" "admin_user" {
 }
 
 
-# todo: review region addition with kubefirst team
 resource "vault_generic_secret" "admin_user_password" {
   count = length(var.admin_users)
   path  = "users/${keycloak_user.admin_user[count.index].username}"

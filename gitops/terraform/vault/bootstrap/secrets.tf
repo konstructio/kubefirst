@@ -100,7 +100,7 @@ resource "vault_generic_secret" "atlantis_secrets" {
   "KEYCLOAK_URL": "https://keycloak.<AWS_HOSTED_ZONE_NAME>",
   "KEYCLOAK_USER": "gitlab-bot",
   "KUBECONFIG": "/.kube/config",
-  "TF_VAR_argo_redirect_uris": "[\"https://argo.<AWS_HOSTED_ZONE_NAME>/argo/oauth2/callback\"]",
+  "TF_VAR_argo_redirect_uris": "[\"https://argo.<AWS_HOSTED_ZONE_NAME>/oauth2/callback\"]",
   "TF_VAR_argocd_auth_password": "${var.argocd_auth_password}",
   "TF_VAR_argocd_redirect_uris": "[\"https://argocd.<AWS_HOSTED_ZONE_NAME>/auth/callback\",\"https://argocd.<AWS_HOSTED_ZONE_NAME>/applications\"]",
   "TF_VAR_atlantis_gitlab_token": "${var.atlantis_gitlab_token}",

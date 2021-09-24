@@ -4,7 +4,14 @@
 
 `metaphor` is deployed to all of your environments just like your other applications will be. This means that when you make changes to your ci/cd, you can test it out using an application that works just like your applications do.
 
+The deployed instances of `metaphor` are available at:
+
+- https://metaphor-development.<AWS_HOSTED_ZONE_NAME>
+- https://metaphor-staging.<AWS_HOSTED_ZONE_NAME>
+- https://metaphor-production.<AWS_HOSTED_ZONE_NAME>
+
 `metaphor` currently demonstrates the following capabilities:
+
 - building a docker container
 - publishing a docker container to ecr
 - publishing a prerelease helm chart

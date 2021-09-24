@@ -53,3 +53,7 @@ In addition to infrastructure terraform, the `gitops` repository also contains c
 
 ## engineering onboarding
 
+Your kubefirst platform comes with some terraform in place for managing [admins](./terraform/keycloak/admins.tf) and [developers](./terraform/keycloak/developers.tf). At the top of these two files, you'll find a list of sample admins and developers. Replace this list with the list of actual users you want added to the admin and developer groups and open a pull request. The pull request will show you the user changes in the terraform plan. When approved, have atlantis apply the plan with an `atlantis apply` comment in the pull request.
+
+Your new users will have temporary passwords generated for them and stored in Vault in the `/users` secret store.
+

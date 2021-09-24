@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-###
-# usage: ./scripts/nebulous/init.sh
-###
-
 set -e
 
 source ~/.profile
@@ -336,13 +332,13 @@ else
   echo "skipping gitlab terraform because SKIP_GITLAB_APPLY is set"
 fi
 
-  echo
-  echo '########################################'
-  echo '#'
-  echo '#          ARGOCD TERRAFORM'
-  echo '#'
-  echo '########################################'
-  echo
+echo
+echo '########################################'
+echo '#'
+echo '#          ARGOCD TERRAFORM'
+echo '#'
+echo '########################################'
+echo
 
 echo "creating argocd in kubefirst cluster"
 kubectl create namespace argocd --dry-run -oyaml | kubectl apply -f -
@@ -515,15 +511,15 @@ then
   kubectl -n atlantis delete pod atlantis-0
   echo "atlantis pod has been recycled"  
 
-  echo "argocd app sync of argo workflows after keycloak secrets exist"
-  for i in 1 2 3 4 5; do argocd app sync argo && break || echo "sync of argo did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
-  echo "awaiting successful sync of argo"
-  argocd app wait argo
-
+  echo "argocd app sync of argo-components after keycloak secrets exist"
+  for i in 1 2 3 4 5; do argocd app sync argo-components && break || echo "sync of argo did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
+  echo "awaiting successful sync of argo-components"
+  argocd app wait argo-components
+  echo "sync and wait of argo-components and argo is complete"
+  
 else
   echo "skipping keycloak terraform because SKIP_KEYCLOAK_APPLY is set"
 fi
-
 
 echo "configuring git client"
 cd /git/metaphor
@@ -540,15 +536,16 @@ echo "metaphor delivery pipeline invoked"
 echo "triggering gitops pull request to test atlantis workflows"
 cd /git/gitops
 git pull origin main --rebase
-git checkout -b "atlantis-test"
+SUFFIX=$RANDOM
+git checkout -b "atlantis-test-${SUFFIX}"
 echo "" >> /git/gitops/terraform/argocd/main.tf
 echo "" >> /git/gitops/terraform/base/main.tf
 echo "" >> /git/gitops/terraform/gitlab/kubefirst-repos.tf
 echo "" >> /git/gitops/terraform/keycloak/main.tf
 echo "" >> /git/gitops/terraform/vault/main.tf
 git add .
-git commit -m "initial merge request commit to test atlantis"
-git push -u origin atlantis-test -o merge_request.create
+git commit -m "test the atlantis workflow"
+git push -u origin atlantis-test-${SUFFIX} -o merge_request.create
 echo "gitops pull request created"
 
 
@@ -575,6 +572,7 @@ then
   cd "/git/gitops"
   git config --global user.name "Administrator"
   git config --global user.email "${EMAIL_ADDRESS}"
+  git checkout main
   git pull origin main --rebase
   
   echo "adding oidc config to argocd gitops registry"
@@ -589,7 +587,7 @@ then
     requestedScopes: ["openid", "profile", "email", "groups"]
 
 EOF
-
+  
   git add .
   git commit -m "updated oidc config for argocd"
   git push -u origin main
@@ -606,30 +604,175 @@ EOF
 fi
 
 
-
-
-
-
 echo
 echo
 echo 
 echo 
 echo
 echo
-echo "    congratulations, you've made it through the nebulous provisioning process."
-echo "    we spent a lot of nights and weekend for over 2 years to get you to this message."
 echo
-echo "    we would LOOOOOOVE a github star if you made it this far and think we earned it."
-echo "    the star is in the top-right corner of this page: https://github.com/kubefirst/nebulous"
-echo
-echo
-echo "      1. visit your new GitLab instance at"
-echo "           https://$GITLAB_URL/kubefirst"
-echo "      2. sign in with:"
-echo "           username: root"
-echo "           password: $GITLAB_BOT_ROOT_PASSWORD"
-echo "      3. commit to the main branch of metaphor and checkout your pipelines"
-echo "         https://$GITLAB_URL/kubefirst/metaphor/-/pipelines"
-echo "           app url: metaphor-development.$AWS_HOSTED_ZONE_NAME"
+echo "#############################################################################################"
+echo "#"
+echo "#      !!!! !!! !!! !!! KEEP EVERYTHING PRINTED FROM THIS LINE DOWN !!!! !!! !!! !!!"
+echo "#"
+echo "#############################################################################################"
+sleep 5
 echo
 echo
+echo "|--------------------------------------------------------"
+echo "| GitLab"
+echo "| https://gitlab.${AWS_HOSTED_ZONE_NAME}"
+echo "| username: root"
+echo "| password: ${GITLAB_BOT_ROOT_PASSWORD}"
+echo "| Repos:"
+echo "| https://gitlab.${AWS_HOSTED_ZONE_NAME}/kubefirst/gitops"
+echo "| https://gitlab.${AWS_HOSTED_ZONE_NAME}/kubefirst/metaphor"
+echo "| * keycloak oidc established"
+echo "|--------------------------------------------------------"
+sleep 1
+echo ""
+echo ""
+echo "|--------------------------------------------------------"
+echo "| Vault"
+echo "| https://vault.${AWS_HOSTED_ZONE_NAME}"
+echo "| method: token"
+echo "| token: ${VAULT_TOKEN}"
+echo "| * keycloak sso enabled"
+echo "|--------------------------------------------------------"
+sleep 1
+echo ""
+echo ""
+echo "|--------------------------------------------------------"
+echo "| Argo CD"
+echo "| https://argocd.${AWS_HOSTED_ZONE_NAME}"
+echo "| username: admin"
+echo "| password: ${ARGOCD_AUTH_PASSWORD}"
+echo "| * keycloak sso enabled"
+echo "|--------------------------------------------------------"
+sleep 1
+echo ""
+echo ""
+echo "|--------------------------------------------------------"
+echo "| Argo Workflows"
+echo "| https://argo.${AWS_HOSTED_ZONE_NAME}"
+echo "| sso credentials only"
+echo "| * keycloak sso enabled"
+echo "|--------------------------------------------------------"
+sleep 1
+echo ""
+echo ""
+echo "|--------------------------------------------------------"
+echo "| Keycloak"
+echo "| https://keycloak.${AWS_HOSTED_ZONE_NAME}"
+echo "| username: gitlab-bot"
+echo "| password: ${KEYCLOAK_PASSWORD}"
+echo "| * keycloak sso enabled"
+echo "|--------------------------------------------------------"
+sleep 1
+echo ""
+echo ""
+echo "|--------------------------------------------------------"
+echo "| Atlantis"
+echo "| https://atlantis.${AWS_HOSTED_ZONE_NAME}"
+echo "|--------------------------------------------------------"
+sleep 1
+echo ""
+echo ""
+echo "|--------------------------------------------------------"
+echo "| Chart Museum"
+echo "| https://chartmuseum.${AWS_HOSTED_ZONE_NAME}"
+echo "| see vault for credentials"
+echo "|--------------------------------------------------------"
+sleep 1
+echo ""
+echo ""
+echo "|--------------------------------------------------------"
+echo "| Metaphor"
+echo "| Development: https://XXX.${AWS_HOSTED_ZONE_NAME}"
+echo "| Staging: https://XXX.${AWS_HOSTED_ZONE_NAME}"
+echo "| Production: https://XXX.${AWS_HOSTED_ZONE_NAME}"
+echo "|--------------------------------------------------------"
+sleep 1
+echo ""
+echo ""
+echo "|--------------------------------------------------------"
+echo "| Kubernetes backend utilities"
+echo "|--------------------------------------------------------"
+echo "| Nginx Ingress Controller | ingress-nginx namespace    |"
+echo "| Cert Manager             | cert-manager namespace     |"
+echo "| Certificate Issuers      | clusterwide                |"
+echo "| External Secrets         | external-secrets namespace |"
+echo "| GitLab Runner            | gitlab-runner namespace    |"
+echo "|--------------------------------------------------------"
+sleep 2
+echo ""
+echo ""
+echo ""
+echo ""
+echo ""
+echo "WARNING: Test your connection to Kubernetes, GitLab, and Vault BEFORE CLOSING THIS WINDOW. Connection details follow."
+echo "Docs to install the tools mentioned: https://docs.kubefirst.com/tooling/tooling-overview/"
+echo ""
+echo ""
+echo ""
+echo ""
+echo ""
+echo "#####################################################"
+echo "# GITLAB"
+echo ""
+echo "To connect to your GitLab visit: https://gitlab.${AWS_HOSTED_ZONE_NAME}"
+echo "username: root"
+echo "password: ${GITLAB_BOT_ROOT_PASSWORD}"
+echo ""
+echo "Once logged into GitLab, visit:"
+echo "- the gitops repo: https://gitlab.${AWS_HOSTED_ZONE_NAME}/kubefirst/gitops"
+echo "- the metaphor repo: https://gitlab.${AWS_HOSTED_ZONE_NAME}/kubefirst/metaphor"
+echo ""
+echo ""
+echo "#####################################################"
+echo "KUBERNETES"
+echo ""
+echo "To connect to your kubernetes cluster, install the aws cli and run the following in your terminal:"
+echo "export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}"
+echo "export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}"
+echo "export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}"
+echo "aws eks update-kubeconfig --name kubefirst"
+echo ""
+echo "To test your new connection, install kubectl and run a few kubectl commands in your terminal:"
+echo "kubectl config use-context kubefirst"
+echo "kubectl get nodes -owide"
+echo "kubectl get namespaces"
+echo ""
+echo ""
+echo "#####################################################"
+echo "VAULT"
+echo ""
+echo "To login to Vault visit https://vault.${AWS_HOSTED_ZONE_NAME}"
+echo "Method: Token"
+echo "Token: ${VAULT_TOKEN}"
+echo ""
+echo "Once you're logged into Vault confirm you can navigate to your infrastructure secrets in Vault at path:"
+echo "secret/atlantis"
+echo ""
+echo ""
+echo "#####################################################"
+echo "MISC"
+echo ""
+echo "Your BUCKET_RAND value is: ${BUCKET_RAND}. You'll need this value if you decide to run teardown."
+echo ""
+echo ""
+echo ""
+echo ""
+echo "Once you've stored this output and tested the above connections,"
+echo "you can continue exploring the kubefirst platform from our docs:"
+echo "https://docs.kubefirst.com/kubefirst/getting-started/"
+echo ""
+echo ""
+echo ""
+echo ""
+echo "We poured our hearts into this project for 2 years to get you to this message."
+echo "We would LOOOOOOVE a github star if you think we earned it."
+echo "Top-right corner of this page: https://github.com/kubefirst/nebulous"
+echo "Thanks so much crew."
+echo ""
+echo "- The Kubefirst Team"

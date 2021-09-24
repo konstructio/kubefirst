@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: argo
+  name: argo-components
   namespace: argocd
   finalizers:
   - resources-finalizer.argocd.argoproj.io
@@ -77,4 +77,3 @@ spec:
             name: aws-creds
       restartPolicy: Never
   backoffLimit: 2
-    

@@ -43,7 +43,6 @@ resource "keycloak_user" "developer_user" {
   }
 }
 
-# todo: review region addition with kubefirst team
 resource "vault_generic_secret" "developer_user_password" {
   count = length(var.developer_users)
   path  = "users/${keycloak_user.developer_user[count.index].username}"
