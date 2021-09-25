@@ -44,8 +44,8 @@ resource "keycloak_user" "admin_user" {
   enabled  = true
 
   email      = "${var.admin_users[count.index].username}@${var.email_domain}"
-  first_name = var.developer_users[count.index].first_name
-  last_name  = var.developer_users[count.index].last_name
+  first_name = var.admin_users[count.index].first_name
+  last_name  = var.admin_users[count.index].last_name
 
   initial_password {
     value     = random_string.admin_user_password[count.index].result

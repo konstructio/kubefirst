@@ -9,11 +9,12 @@ The Kubefirst Open Source Platform Generator
 - step 3: get a fully-functioning application delivery ecosystem, complete with kubernetes, gitops, vault, terraform, atlantis, gitlab, gitlab-runner, keycloak, and a sample app that demonstrates how it all works.
 
 # docs
-- [introduction](https://docs.kubefirst.com/starter/)
-- [installation](https://docs.kubefirst.com/starter/nebulous/)
-- [getting familiar](https://docs.kubefirst.com/starter/getting-familiar/)
-- [teardown](https://docs.kubefirst.com/starter/teardown/)
-- [faq](https://docs.kubefirst.com/starter/faq/)
+- [introduction](https://docs.kubefirst.com/)
+- [installation](https://docs.kubefirst.com/nebulous/install/)
+- [getting familiar](https://docs.kubefirst.com/kubefirst/getting-started/)
+- [teardown](https://docs.kubefirst.com/nebulous/teardown/)
+- [faq](https://docs.kubefirst.com/nebulous/faq/)
+- [contact](https://docs.kubefirst.com/contact/)
 
 ---
 
