@@ -1,5 +1,5 @@
 # nebulous
-The Kubefirst Open Source Platform Generator
+The Kubefirst Open Source Platform
 
 ![images/nebulous-arch.png](images/nebulous-arch.png)
 
