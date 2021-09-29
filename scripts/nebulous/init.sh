@@ -288,8 +288,8 @@ then
 
   cd /git/gitops/terraform/gitlab
   echo "applying gitlab terraform"
-  #! terraform init 
-  #! terraform apply -auto-approve
+  terraform init 
+  terraform apply -auto-approve
   # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "gitlab terraform complete"
   
