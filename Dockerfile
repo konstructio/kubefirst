@@ -56,6 +56,10 @@ RUN apt-get update \
     zip \
  && rm -rf /var/lib/apt/lists/*
 
+RUN add-apt-repository ppa:git-core/ppa -y \
+  && apt-get update \
+  && apt-get install git -y
+
 RUN pip3 install pyyaml semver --upgrade
 
 # install docker
@@ -87,7 +91,7 @@ ADD https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}
 RUN chmod +x /usr/local/bin/kubectl
 
 # install  hashicorp terraform
-ENV TF_VERSION 0.13.4
+ENV TF_VERSION 0.13.5
 RUN curl -LO https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip \
   && unzip terraform_${TF_VERSION}_linux_amd64.zip \
   && chmod +x terraform \
@@ -115,8 +119,8 @@ RUN ARGOCD_VERSION=$(curl --silent "https://api.github.com/repos/argoproj/argo-c
 && argocd version --short --client
 
 # install argo
-RUN ARGO_VERSION="v2.12.7" \
-&& curl -sLO https://github.com/argoproj/argo/releases/download/$ARGO_VERSION/argo-linux-amd64.gz \
+RUN ARGO_VERSION="v3.1.11" \
+&& curl -sLO https://github.com/argoproj/argo-workflows/releases/download/$ARGO_VERSION/argo-linux-amd64.gz \
 && gunzip argo-linux-amd64.gz \
 && chmod +x argo-linux-amd64 \
 && mv ./argo-linux-amd64 /usr/local/bin/argo \
