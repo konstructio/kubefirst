@@ -288,8 +288,8 @@ then
 
   cd /git/gitops/terraform/gitlab
   echo "applying gitlab terraform"
-  terraform init 
-  terraform apply -auto-approve
+  #! terraform init 
+  #! terraform apply -auto-approve
   # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "gitlab terraform complete"
   
@@ -468,6 +468,9 @@ argocd app wait keycloak
 echo "awaiting successful sync of atlantis"
 argocd app wait atlantis-components
 argocd app wait atlantis
+
+echo "awaiting successful sync of argo"
+argocd app wait argo
 
 /scripts/nebulous/wait-for-200.sh "https://keycloak.${AWS_HOSTED_ZONE_NAME}/auth/"
 
