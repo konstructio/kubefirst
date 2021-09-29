@@ -2,8 +2,8 @@ name: publish
 
 on:
   push:
-    tags:
-      - '*'
+    branches:
+      - nebulous-init-ci
 
 jobs:
   docker:
@@ -24,4 +24,4 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: kubefirst/kubefirst-builder:${{ github.ref }}
+          tags: kubefirst/nebulous:0.0.1 # ${{ github.ref }}
