@@ -24,4 +24,4 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: kubefirst/kubefirst-builder:${{ github.ref }}
+          tags: kubefirst/nebulous:${{ github.ref }}
