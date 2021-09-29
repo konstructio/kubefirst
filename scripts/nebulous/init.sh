@@ -469,9 +469,6 @@ echo "awaiting successful sync of atlantis"
 argocd app wait atlantis-components
 argocd app wait atlantis
 
-echo "awaiting successful sync of argo"
-argocd app wait argo
-
 /scripts/nebulous/wait-for-200.sh "https://keycloak.${AWS_HOSTED_ZONE_NAME}/auth/"
 
 #! assumes keycloak has been registered, needed for terraform
