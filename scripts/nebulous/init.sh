@@ -37,7 +37,7 @@ echo "executing source-profile.sh"
 source /scripts/nebulous/source-profile.sh 
 
 # conditional configuration setup
-if [ ! -f /gitops/terraform/base/terraform-ssh-key ]
+if [ ! -f /git/gitops/terraform/base/terraform-ssh-key ]
 then
     echo "creating ssh key pair"
     ssh-keygen -o -t rsa -b 4096 -C "${EMAIL_ADDRESS}" -f $HOME/.ssh/id_rsa -q -N "" > /dev/null
