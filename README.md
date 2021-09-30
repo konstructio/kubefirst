@@ -33,46 +33,44 @@ In addition to the flow controls, you'll also find some hack comments by the var
 ```bash
 cat << EOF > kubefirst.env
 ###############################
-# Note: Operational Flow Controls - uncomment the items below 
-# when you want to skip over various sections. Leaving them
-# all commented like they are here will execute everything.
-# 
-#
-# SKIP_HZ_CHECK=true
-# SKIP_DETOKENIZATION=true
-# SKIP_BASE_APPLY=true
-# SKIP_GITLAB_RECONFIG=true
-# SKIP_GITLAB_APPLY=true
-# SKIP_VAULT_APPLY=true
-# SKIP_KEYCLOAK_APPLY=true
+# Access settings
+# The AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are your credentials to 
+# log into your AWS account, you can often find these in `~/.aws/credentials`
+# The AWS_DEFAULT_REGION is the aws region that your new infrastructure will provision in - 
+# The AWS_HOSTED_ZONE_NAME is the domain name associated with your prerequesite hosted zone in route53 - it should look similar to `yourdomain.com` with no `www.` prefix and no `.` suffix
 
-
-###############################
-# Note: Bucket Reuse - when you successfully get past base terraform
-# apply, take the random suffix that was generated, apply it to the 
-# next line, and start reusing the bucket for subsequent iterations.
-# if you don't set this value on subsequent runs, it will keep 
-# generating new buckets for you. You can find this value in the 
-# nebulous execution output. (be sure to uncomment when setting)
-# 
-# BUCKET_RAND=abc123
-
-###############################
-# AWS Account Information
 AWS_ACCESS_KEY_ID=YOUR_ADMIN_AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY=YOUR_ADMIN_AWS_SECRET_ACCESS_KEY
 AWS_HOSTED_ZONE_NAME=yourdomain.com
-AWS_DEFAULT_REGION=YOUR_AWS_REGION
+AWS_DEFAULT_REGION=us-east-2
+
 
 ###############################
-# Logistics
-EMAIL_ADDRESS=EMAIL_ADDRESS=YOUR_EMAIL_ADDRESS
+# Users:
+# The BUCKET_RAND needs to be set and uncommented before destroy, see the teardown 
+# docs for details.
+# 
+# Contributors: 
+# The BUCKET_RAND has implications on bucket reuse when iterating
+# once you successfully get past base terraform apply, 
+# take the random suffix that was generated, apply it to the 
+# next line, and start reusing the bucket for subsequent runs.
+# if you don't set this value on subsequent runs, it will keep 
+# generating new buckets for you. You can find this value in the 
+# nebulous execution output.
 
-###############################
-# Gitlab
-GITLAB_BOT_ROOT_PASSWORD=$omePasswordOnlyYouKn0w!
+# BUCKET_RAND=abc123
 
+
+###################
+# Admin settings
+# The EMAIL_ADDRESS is used for the ssh key that's generated and for certificate expiration notifications
+# The GITLAB_BOT_ROOT_PASSWORD is the password to use for the gitlab root user, change this to a value only you know
+
+EMAIL_ADDRESS=YOUR_EMAIL_ADDRESS@yourdomain.com
+GITLAB_BOT_ROOT_PASSWORD=123456ABCDEF!
 EOF
+```
 ```
 
 ### step 2 - build nebulous locally
