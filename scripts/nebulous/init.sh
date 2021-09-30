@@ -281,7 +281,7 @@ then
   echo
   echo '########################################'
   echo '#'
-  echo '#          GITLAB RECONFIG'
+  echo '#          GITLAB TERRAFORM'
   echo '#'
   echo '########################################'
   echo
