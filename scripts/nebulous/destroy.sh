@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 ###
 # usage: ./scripts/nebulous/destroy.sh
 ###
