@@ -134,4 +134,4 @@ ADD images /images
 RUN apt-get update
 RUN apt-get install dnsutils -y
 
-CMD [ "/scripts/nebulous/init.sh" ]
+CMD [ "/bin/bash" ]
