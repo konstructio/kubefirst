@@ -42,7 +42,7 @@ spec:
             name: ci-secrets
             key: PERSONAL_ACCESS_TOKEN
     container:
-      image: golang:1.9.2
+      image: golang:latest
       command: ["/bin/sh", "-c"]
       args: 
       - ls -la /src && 
@@ -71,7 +71,7 @@ spec:
           default: gitlab-bot
     container:
       workingDir: "{{inputs.parameters.appDir}}"
-      image: golang:1.9.2
+      image: golang:latest
       command: ["/bin/sh", "-c"]
       # todo is this remote set-url good enough?
       args: 
@@ -96,7 +96,7 @@ spec:
       parameters: 
       - name: appDir
     script:
-      image: golang:1.9.2
+      image: golang:latest
       workingDir: "{{inputs.parameters.appDir}}"
       command: [bash]
       source: |
