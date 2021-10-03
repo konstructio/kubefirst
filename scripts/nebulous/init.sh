@@ -416,7 +416,15 @@ then
   # terraform destroy -target module.bootstrap -auto-approve; exit 1 # TODO: hack
   echo "vault terraform complete"
 
-  echo "waiting 180 seconds after vault terraform apply"
+  echo "waiting 300 seconds after vault terraform apply"
+  sleep 30
+  echo "waiting 270 more seconds after vault terraform apply"
+  sleep 30
+  echo "waiting 240 more seconds after vault terraform apply"
+  sleep 30
+  echo "waiting 210 more seconds after vault terraform apply"
+  sleep 30
+  echo "waiting 180 more seconds after vault terraform apply"
   sleep 30
   echo "waiting 150 more seconds after vault terraform apply"
   sleep 30
