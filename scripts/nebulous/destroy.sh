@@ -42,7 +42,7 @@ export VAULT_ADDR="https://vault.${AWS_HOSTED_ZONE_NAME}"
 vault login $VAULT_TOKEN
 $(echo $(vault kv get -format=json secret/atlantis | jq -r .data.data) | jq -r 'keys[] as $k | "export \($k)=\(.[$k])"')
 
-if [ -z "$SKIP_VAULT_APPLY" ]
+if [ -z "$SKIP_ARGOCD_APPLY" ]
 then
   echo "forcefully destroying argo, gitlab, and chartmuseum buckets (leaving state store intact)"
   aws s3 rb s3://k1-argo-artifacts-$BUCKET_RAND --force
@@ -57,16 +57,6 @@ then
   echo $(vault kv get -format=json secret/atlantis | jq -r .data.data) | jq -r 'keys[] as $k | "export \($k)=\(.[$k])"'
   echo "##############################################################"
   
-  cd /git/gitops/terraform/vault
-  echo "destroying vault terraform"
-  terraform init
-  terraform destroy -target module.bootstrap -auto-approve
-  echo "vault terraform destroy complete"
-fi
-
-
-if [ -z "$SKIP_ARGOCD_APPLY" ]
-then
   cd /git/gitops/terraform/argocd
   echo "destroying argocd terraform"
   terraform init 
