@@ -508,9 +508,13 @@ then
   kubectl -n atlantis delete pod atlantis-0
   echo "atlantis pod has been recycled"  
 
+  echo "kicking over argo-server pod"
+  kubectl -n argo delete pod $(kubectl -n argo get pods --selector=app=argo-server --no-headers -o custom-columns=":metadata.name")
+  
   echo "argocd app sync of argo-components after keycloak secrets exist"
   for i in 1 2 3 4 5 6 7 8; do argocd app sync argo-components && break || echo "sync of argo did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
   echo "awaiting successful sync of argo-components"
+
   argocd app wait argo-components
   echo "sync and wait of argo-components and argo is complete"
   
@@ -685,9 +689,9 @@ echo ""
 echo ""
 echo "|--------------------------------------------------------"
 echo "| Metaphor"
-echo "| Development: https://XXX.${AWS_HOSTED_ZONE_NAME}"
-echo "| Staging: https://XXX.${AWS_HOSTED_ZONE_NAME}"
-echo "| Production: https://XXX.${AWS_HOSTED_ZONE_NAME}"
+echo "| Development: https://metaphor-development.${AWS_HOSTED_ZONE_NAME}"
+echo "| Staging: https://metaphor-staging.${AWS_HOSTED_ZONE_NAME}"
+echo "| Production: https://metaphor-production.${AWS_HOSTED_ZONE_NAME}"
 echo "|--------------------------------------------------------"
 sleep 1
 echo ""
