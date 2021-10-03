@@ -444,13 +444,13 @@ fi
 # the following comnmand is a bit fickle as the vault dns propagates, 
 # a retry attempts to make this a bit more fault tolerant to that
 echo "argocd app sync of gitlab-runner"
-for i in 1 2 3 4 5; do argocd app sync gitlab-runner-components && break || echo "sync of gitlab-runner did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
+for i in 1 2 3 4 5 6 7 8; do argocd app sync gitlab-runner-components && break || echo "sync of gitlab-runner did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of chartmuseum"
-for i in 1 2 3 4 5; do argocd app sync chartmuseum-components && break || echo "sync of chartmuseum did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
+for i in 1 2 3 4 5 6 7 8; do argocd app sync chartmuseum-components && break || echo "sync of chartmuseum did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of keycloak"
-for i in 1 2 3 4 5; do argocd app sync keycloak-components && break || echo "sync of keycloak did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
+for i in 1 2 3 4 5 6 7 8; do argocd app sync keycloak-components && break || echo "sync of keycloak did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of atlantis"
-for i in 1 2 3 4 5; do argocd app sync atlantis-components && break || echo "sync of atlantis did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
+for i in 1 2 3 4 5 6 7 8; do argocd app sync atlantis-components && break || echo "sync of atlantis did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 
 echo "awaiting successful sync of gitlab-runner"
 argocd app wait gitlab-runner-components
