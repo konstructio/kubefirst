@@ -130,6 +130,11 @@ ADD scripts/nebulous /scripts/nebulous
 ADD gitops /gitops
 ADD metaphor /metaphor
 ADD images /images
+ADD tests /tests
+
+WORKDIR /tests/cypress/
+RUN npm ci
+WORKDIR /scripts
 
 RUN apt-get update
 RUN apt-get install dnsutils -y

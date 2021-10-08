@@ -241,18 +241,7 @@ then
   echo
   /scripts/nebulous/wait-for-200.sh "https://${GITLAB_URL}/help"
   echo
-  echo "gitlab is ready, executing cypress"
-  echo
-
-  export CYPRESS_BASE_URL="https://${GITLAB_URL}"
-  export CYPRESS_gitlab_bot_username_before=$GITLAB_ROOT_USER
-  export CYPRESS_gitlab_bot_password=$GITLAB_BOT_ROOT_PASSWORD
-  cd /git/gitops/terraform/cypress
-  npm ci
-
-  $(npm bin)/cypress run
-  
-  
+  echo "gitlab is ready"
   echo
   echo "    IMPORTANT:"
   echo "      THIS IS THE ROOT PASSWORD FOR YOUR GITLAB INSTANCE"
@@ -266,12 +255,25 @@ then
   echo
   echo
   echo
-  sleep 18
+  sleep 10
+
+  echo "executing cypress test gitlab-init.spec.js"
+  echo
+
+  export CYPRESS_BASE_URL="https://${GITLAB_URL}"
+  export CYPRESS_gitlab_bot_username_before=$GITLAB_ROOT_USER
+  export CYPRESS_gitlab_bot_password=$GITLAB_BOT_ROOT_PASSWORD
+  export CYPRESS_AWS_HOSTED_ZONE_NAME=$AWS_HOSTED_ZONE_NAME
+  cd /git/tests/cypress
+  npm ci
+
+  $(npm bin)/cypress run --spec '/git/tests/cypress/cypress/integration/gitlab-init.spec.js'
+  
 fi
 
 
-export RUNNER_REGISTRATION_TOKEN=$(cat /git/gitops/terraform/.gitlab-runner-registration-token)
-export GITLAB_TOKEN=$(cat /git/gitops/terraform/.gitlab-bot-access-token)
+export RUNNER_REGISTRATION_TOKEN=$(cat /git/tests/.gitlab-runner-registration-token)
+export GITLAB_TOKEN=$(cat /git/tests/.gitlab-bot-access-token)
 export TF_VAR_gitlab_token=$GITLAB_TOKEN
 export TF_VAR_atlantis_gitlab_token=$GITLAB_TOKEN
 
