@@ -580,7 +580,7 @@ data:
         key: AWS_SECRET_ACCESS_KEY
   sso: |
     # TODO: might need a route added
-    issuer: https://gitlab.<AWS_HOSTED_ZONE_NAME>/
+    issuer: https://gitlab.<AWS_HOSTED_ZONE_NAME>
     clientId:
       name: argo-secrets
       key: client-id
@@ -598,12 +598,6 @@ data:
     # RBAC Config. >= v2.12
     rbac:
       enabled: true
-
-
-
-
-
-
 ---
 apiVersion: v1
 kind: Service
