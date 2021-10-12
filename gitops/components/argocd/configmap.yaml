@@ -7,7 +7,7 @@ metadata:
   name: argocd-rbac-cm
 data:
   policy.csv: |
-    g, /kubefirst/admins, role:admin
+    g, admins, role:admin
   policy.default: role:readonly
 ---
 apiVersion: v1

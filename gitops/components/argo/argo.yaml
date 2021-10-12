@@ -579,13 +579,14 @@ data:
         name: ci-secrets
         key: AWS_SECRET_ACCESS_KEY
   sso: |
-    issuer: https://keycloak.<AWS_HOSTED_ZONE_NAME>/auth/realms/kubefirst
+    # TODO: might need a route added
+    issuer: https://gitlab.<AWS_HOSTED_ZONE_NAME>/
     clientId:
       name: argo-secrets
-      key: keycloak-client-id
+      key: client-id
     clientSecret:
       name: argo-secrets
-      key: keycloak-client-secret
+      key: client-secret
     # This is the redirect URL supplied to the provider (required). It must
     # be in the form <argo-server-root-url>/oauth2/callback. It must be
     # browser-accessible.

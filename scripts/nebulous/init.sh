@@ -455,8 +455,6 @@ echo "argocd app sync of gitlab-runner"
 for i in 1 2 3 4 5 6 7 8; do argocd app sync gitlab-runner-components && break || echo "sync of gitlab-runner did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of chartmuseum"
 for i in 1 2 3 4 5 6 7 8; do argocd app sync chartmuseum-components && break || echo "sync of chartmuseum did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
-echo "argocd app sync of keycloak"
-for i in 1 2 3 4 5 6 7 8; do argocd app sync keycloak-components && break || echo "sync of keycloak did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of atlantis"
 for i in 1 2 3 4 5 6 7 8; do argocd app sync atlantis-components && break || echo "sync of atlantis did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 
@@ -464,71 +462,25 @@ echo "awaiting successful sync of gitlab-runner"
 argocd app wait gitlab-runner-components
 argocd app wait gitlab-runner
 
-
 echo "awaiting successful sync of chartmuseum"
 argocd app wait chartmuseum-components
 argocd app wait chartmuseum
-
-echo "awaiting successful sync of keycloak"
-argocd app wait keycloak-components
-argocd app wait keycloak
 
 echo "awaiting successful sync of atlantis"
 argocd app wait atlantis-components
 argocd app wait atlantis
 
-/scripts/nebulous/wait-for-200.sh "https://keycloak.${AWS_HOSTED_ZONE_NAME}/auth/"
+echo "kicking over argo-server pod"
+kubectl -n argo delete pod $(kubectl -n argo get pods --selector=app=argo-server --no-headers -o custom-columns=":metadata.name")
 
-#! assumes keycloak has been registered, needed for terraform
-export KEYCLOAK_PASSWORD=$(kubectl -n keycloak get secret/keycloak  -ojson | jq -r '.data."admin-password"' | base64 -d)
-export KEYCLOAK_USER=gitlab-bot
-export KEYCLOAK_CLIENT_ID=admin-cli
-export KEYCLOAK_URL=https://keycloak.${AWS_HOSTED_ZONE_NAME}
-echo "collect keycloak password $KEYCLOAK_PASSWORD"
+echo "argocd app sync of argo-components"
+for i in 1 2 3 4 5 6 7 8; do argocd app sync argo-components && break || echo "sync of argo did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
+echo "awaiting successful sync of argo-components"
 
-# apply terraform
-if [ -z "$SKIP_KEYCLOAK_APPLY" ]
-then
-  echo
-  echo '########################################'
-  echo '#'
-  echo '#          KEYCLOAK TERRAFORM'
-  echo '#'
-  echo '########################################'
-  echo
+argocd app wait argo-components
+echo "sync and wait of argo-components and argo is complete"
 
-  cd /git/gitops/terraform/keycloak
-  echo "applying keycloak terraform"
-  terraform init 
-  terraform apply -auto-approve
-  echo "keycloak terraform complete"
 
-  echo "updating vault with keycloak password"
-  cd /git/gitops/terraform/vault
-  echo "reapplying vault terraform to sync secrets"
-  export TF_VAR_keycloak_password=$KEYCLOAK_PASSWORD
-  echo "TF_VAR_keycloak_password is $TF_VAR_keycloak_password"
-  terraform init
-  terraform apply -auto-approve
-  echo "vault terraform complete"
-
-  echo "kicking over atlantis pod to pickup latest secrets"
-  kubectl -n atlantis delete pod atlantis-0
-  echo "atlantis pod has been recycled"  
-
-  echo "kicking over argo-server pod"
-  kubectl -n argo delete pod $(kubectl -n argo get pods --selector=app=argo-server --no-headers -o custom-columns=":metadata.name")
-  
-  echo "argocd app sync of argo-components after keycloak secrets exist"
-  for i in 1 2 3 4 5 6 7 8; do argocd app sync argo-components && break || echo "sync of argo did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
-  echo "awaiting successful sync of argo-components"
-
-  argocd app wait argo-components
-  echo "sync and wait of argo-components and argo is complete"
-  
-else
-  echo "skipping keycloak terraform because SKIP_KEYCLOAK_APPLY is set"
-fi
 
 echo "configuring git client"
 cd /git/metaphor
@@ -550,7 +502,6 @@ git checkout -b "atlantis-test-${SUFFIX}"
 echo "" >> /git/gitops/terraform/argocd/main.tf
 echo "" >> /git/gitops/terraform/base/main.tf
 echo "" >> /git/gitops/terraform/gitlab/kubefirst-repos.tf
-echo "" >> /git/gitops/terraform/keycloak/main.tf
 echo "" >> /git/gitops/terraform/vault/main.tf
 git add .
 git commit -m "test the atlantis workflow"
@@ -568,14 +519,65 @@ then
   echo '########################################'
   echo
   
-  echo "pulling secrets from secret/admin/oidc-clients/argocd"
-  export VAULT_TOKEN=$(kubectl -n vault get secret vault-unseal-keys -ojson | jq -r '.data."cluster-keys.json"' | base64 -d | jq -r .root_token)
-  export VAULT_ADDR="https://vault.${AWS_HOSTED_ZONE_NAME}"
-  vault login $VAULT_TOKEN
-  $(echo $(vault kv get -format=json secret/admin/oidc-clients/argocd | jq -r .data.data) | jq -r 'keys[] as $k | "export \($k)=\(.[$k])"')
-  
-  echo "adding keycloak configs to argocd configmap"
-  kubectl -n argocd patch secret argocd-secret -p "{\"stringData\": {\"oidc.keycloak.clientSecret\": \"${ARGOCD_CLIENT_SECRET}\"}}"
+  echo "creating gitlab oidc backend for vault"
+  APP_NAME=vault
+  export VAULT_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${MANAGED_ZONE_NAME}:8250/oidc/callback http://localhost:8250/oidc/callback https://${APP_NAME}.${MANAGED_ZONE_NAME}/ui/vault/auth/oidc/oidc/callback http://localhost:8200/ui/vault/auth/oidc/oidc/callback&scopes=read_user email" "https://gitlab.${MANAGED_ZONE_NAME}/api/v4/applications")  ​
+  export VAULT_APP_ID=$(echo $VAULT_APP_DETAILS | jq -r ".application_id")
+  export VAULT_APP_SECRET=$(echo $VAULT_APP_DETAILS | jq -r ".secret")
+  echo "backend created, storing secret in vault at secret/admin/oidc/${APP_NAME}"
+  curl \
+      -H "X-Vault-Token: ${VAULT_TOKEN}" \
+      -H "Content-Type: application/json" \
+      -X POST \
+      -d "{\"data\": ${VAULT_APP_DETAILS}}" \
+      https://vault.${MANAGED_ZONE_NAME}/v1/secret/data/admin/oidc/${APP_NAME} 
+​
+​
+  echo "creating gitlab oidc backend for argo"
+  APP_NAME=argo
+  export ARGO_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${MANAGED_ZONE_NAME}&scopes=read_user email" "https://gitlab.${MANAGED_ZONE_NAME}/api/v4/applications")
+  export ARGO_APP_ID=$(echo $ARGO_APP_DETAILS | jq -r ".application_id")
+  export ARGO_APP_SECRET=$(echo $ARGO_APP_DETAILS | jq -r ".secret")
+  echo "backend created, storing secret in vault at secret/admin/oidc/${APP_NAME}"
+  curl \
+      -H "X-Vault-Token: ${VAULT_TOKEN}" \
+      -H "Content-Type: application/json" \
+      -X POST \
+      -d "{\"data\": ${ARGO_APP_DETAILS}}" \
+      https://vault.${MANAGED_ZONE_NAME}/v1/secret/data/admin/oidc/${APP_NAME} 
+​
+  echo "creating gitlab oidc backend for argocd"
+  APP_NAME=argocd
+  export ARGOCD_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${MANAGED_ZONE_NAME}/applications&scopes=read_user email" "https://gitlab.${MANAGED_ZONE_NAME}/api/v4/applications")
+  export ARGOCD_APP_ID=$(echo $ARGOCD_APP_DETAILS | jq -r ".application_id")
+  export ARGOCD_APP_SECRET=$(echo $ARGOCD_APP_DETAILS | jq -r ".secret")
+  echo "backend created, storing secret in vault at secret/admin/oidc/${APP_NAME}"
+  curl \
+      -H "X-Vault-Token: ${VAULT_TOKEN}" \
+      -H "Content-Type: application/json" \
+      -X POST \
+      -d "{\"data\": ${ARGOCD_APP_DETAILS}}" \
+      https://vault.${MANAGED_ZONE_NAME}/v1/secret/data/admin/oidc/${APP_NAME} 
+
+
+  echo "creating gitlab oidc backend for gitlab itself"
+  APP_NAME=gitlab
+  export GITLAB_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${MANAGED_ZONE_NAME}&scopes=read_user email" "https://gitlab.${MANAGED_ZONE_NAME}/api/v4/applications")
+  export GITLAB_APP_ID=$(echo $GITLAB_APP_DETAILS | jq -r ".application_id")
+  export GITLAB_APP_SECRET=$(echo $GITLAB_APP_DETAILS | jq -r ".secret")
+  echo "backend created, storing secret in vault at secret/admin/oidc/${APP_NAME}"
+  curl \
+      -H "X-Vault-Token: ${VAULT_TOKEN}" \
+      -H "Content-Type: application/json" \
+      -X POST \
+      -d "{\"data\": ${GITLAB_APP_DETAILS}}" \
+      https://vault.${MANAGED_ZONE_NAME}/v1/secret/data/admin/oidc/${APP_NAME} 
+
+
+
+  echo "adding oidc configs to argocd configmap"
+  kubectl -n argocd patch secret argocd-secret -p "{\"stringData\": {\"oidc.gitlab.clientSecret\": \"${ARGOCD_APP_SECRET}\"}}"
+
   
   echo "configuring git client"
   cd "/git/gitops"
@@ -585,14 +587,15 @@ then
   git pull origin main --rebase
   
   echo "adding oidc config to argocd gitops registry"
+  # TODO: issuer may need a route added, may also need diff scopes
   cat << EOF >> /git/gitops/components/argocd/configmap.yaml
   
   url: https://argocd.${AWS_HOSTED_ZONE_NAME}
   oidc.config: |
-    name: Keycloak
-    issuer: https://keycloak.${AWS_HOSTED_ZONE_NAME}/auth/realms/kubefirst
-    clientID: argocd
-    clientSecret: \$oidc.keycloak.clientSecret
+    name: Gitlab
+    issuer: https://gitlab.${AWS_HOSTED_ZONE_NAME}
+    clientID: ${ARGOCD_APP_ID}
+    clientSecret: \$oidc.gitlab.clientSecret
     requestedScopes: ["openid", "profile", "email", "groups"]
 
 EOF
