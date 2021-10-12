@@ -31,6 +31,18 @@ echo
 
 sleep 12
 
+if [ -z "$BUCKET_RAND" ]
+then
+  echo
+  echo '########################################'
+  echo '#                ERROR                 #'
+  echo '########################################'
+  echo
+  echo 'you cannot run nebulous destroy without first setting your BUCKET_RAND value in your kubefirst.env file.'
+  echo 'please set and uncomment your BUCKET_RAND value in kubefirst.env and run the destroy operation again.'
+  exit 1;
+fi
+
 echo "establishing kubectl config"
 K8S_CLUSTER_NAME=kubefirst
 aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $K8S_CLUSTER_NAME
