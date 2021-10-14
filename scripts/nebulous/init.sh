@@ -344,18 +344,18 @@ kubectl create secret -n argocd generic aws-creds --from-literal=AWS_ACCESS_KEY_
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 echo "argocd created"
 
-# echo "sleeping 60 seconds after argocd creation"
-# sleep 10
-# echo "sleeping 50 more seconds"
-# sleep 10
-# echo "sleeping 40 more seconds"
-# sleep 10
-# echo "sleeping 30 more seconds"
-# sleep 10
-# echo "sleeping 20 more seconds"
-# sleep 10
-# echo "sleeping 10 more seconds"
-# sleep 10
+echo "sleeping 60 seconds after argocd creation"
+sleep 10
+echo "sleeping 50 more seconds"
+sleep 10
+echo "sleeping 40 more seconds"
+sleep 10
+echo "sleeping 30 more seconds"
+sleep 10
+echo "sleeping 20 more seconds"
+sleep 10
+echo "sleeping 10 more seconds"
+sleep 10
 
 echo "connecting to argocd in background process"
 kubectl -n argocd port-forward svc/argocd-server -n argocd 8080:443 &
@@ -380,14 +380,14 @@ echo "argocd terraform complete"
 
 echo "ARGOCD_AUTH_PASSWORD: $ARGOCD_AUTH_PASSWORD"
 argocd login localhost:8080 --insecure --username admin --password "${ARGOCD_AUTH_PASSWORD}"
-# echo "sleeping 120 seconds before checking vault status"
-# sleep 30
-# echo "sleeping 90 more seconds before checking vault status"
-# sleep 30
-# echo "sleeping 60 more seconds before checking vault status"
-# sleep 30
-# echo "sleeping 30 more seconds before checking vault status"
-# sleep 30
+echo "sleeping 120 seconds before checking vault status"
+sleep 30
+echo "sleeping 90 more seconds before checking vault status"
+sleep 30
+echo "sleeping 60 more seconds before checking vault status"
+sleep 30
+echo "sleeping 30 more seconds before checking vault status"
+sleep 30
 argocd app wait vault
 
 export VAULT_TOKEN=$(kubectl -n vault get secret vault-unseal-keys -ojson | jq -r '.data."cluster-keys.json"' | base64 -d | jq -r .root_token)
@@ -416,26 +416,26 @@ then
   # terraform destroy -target module.bootstrap -auto-approve; exit 1 # TODO: hack
   echo "vault terraform complete"
 
-  # echo "waiting 300 seconds after vault terraform apply"
-  # sleep 30
-  # echo "waiting 270 more seconds after vault terraform apply"
-  # sleep 30
-  # echo "waiting 240 more seconds after vault terraform apply"
-  # sleep 30
-  # echo "waiting 210 more seconds after vault terraform apply"
-  # sleep 30
-  # echo "waiting 180 more seconds after vault terraform apply"
-  # sleep 30
-  # echo "waiting 150 more seconds after vault terraform apply"
-  # sleep 30
-  # echo "waiting 120 more seconds after vault terraform apply"
-  # sleep 30
-  # echo "waiting 90 more seconds after vault terraform apply"
-  # sleep 30
-  # echo "waiting 60 more seconds after vault terraform apply"
-  # sleep 30
-  # echo "waiting 30 more seconds after vault terraform apply"
-  # sleep 30
+  echo "waiting 300 seconds after vault terraform apply"
+  sleep 30
+  echo "waiting 270 more seconds after vault terraform apply"
+  sleep 30
+  echo "waiting 240 more seconds after vault terraform apply"
+  sleep 30
+  echo "waiting 210 more seconds after vault terraform apply"
+  sleep 30
+  echo "waiting 180 more seconds after vault terraform apply"
+  sleep 30
+  echo "waiting 150 more seconds after vault terraform apply"
+  sleep 30
+  echo "waiting 120 more seconds after vault terraform apply"
+  sleep 30
+  echo "waiting 90 more seconds after vault terraform apply"
+  sleep 30
+  echo "waiting 60 more seconds after vault terraform apply"
+  sleep 30
+  echo "waiting 30 more seconds after vault terraform apply"
+  sleep 30
 
 else
   echo "skipping vault terraform because SKIP_VAULT_APPLY is set"
