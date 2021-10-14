@@ -117,6 +117,7 @@ module "vpc" {
 }
 
 module "eks" {
+  version         = "17.20.0"
   source          = "terraform-aws-modules/eks/aws"
   cluster_name    = local.cluster_name
   cluster_version = "1.20"
@@ -147,7 +148,7 @@ module "eks" {
 
 
 resource "aws_eks_node_group" "preprod_nodes" {
-  cluster_name    = local.cluster_name
+  cluster_name    = module.eks.cluster_id
   node_group_name = "preprod-nodes"
   node_role_arn   = aws_iam_role.kubefirst_worker_nodes_role.arn
   subnet_ids      = module.vpc.private_subnets
@@ -172,7 +173,7 @@ resource "aws_eks_node_group" "preprod_nodes" {
 }
 
 resource "aws_eks_node_group" "mgmt_nodes" {
-  cluster_name    = local.cluster_name
+  cluster_name    = module.eks.cluster_id
   node_group_name = "mgmt-nodes"
   node_role_arn   = aws_iam_role.kubefirst_worker_nodes_role.arn
   subnet_ids      = module.vpc.private_subnets
@@ -196,7 +197,7 @@ resource "aws_eks_node_group" "mgmt_nodes" {
   ]
 }
 resource "aws_eks_node_group" "production_nodes" {
-  cluster_name    = local.cluster_name
+  cluster_name    = module.eks.cluster_id
   node_group_name = "production-nodes"
   node_role_arn   = aws_iam_role.kubefirst_worker_nodes_role.arn
   subnet_ids      = module.vpc.private_subnets
