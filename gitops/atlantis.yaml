@@ -16,7 +16,7 @@ projects:
     autoplan:
       enabled: true
       when_modified: ["./**/*.tf", "*.tf*"]
-  - dir: terraform/keycloak
+  - dir: terraform/users
     terraform_version: 0.13.5
     autoplan:
       enabled: true

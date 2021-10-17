@@ -483,7 +483,7 @@ then
 
   echo "creating gitlab oidc backend for vault"
   APP_NAME=vault
-  export VAULT_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}:8250/oidc/callback http://localhost:8250/oidc/callback https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}/ui/vault/auth/oidc/oidc/callback http://localhost:8200/ui/vault/auth/oidc/oidc/callback&scopes=read_user email" "https://gitlab.${AWS_HOSTED_ZONE_NAME}/api/v4/applications")
+  export VAULT_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}:8250/oidc/callback http://localhost:8250/oidc/callback https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}/ui/vault/auth/oidc/oidc/callback http://localhost:8200/ui/vault/auth/oidc/oidc/callback&scopes=read_user email openid" "https://gitlab.${AWS_HOSTED_ZONE_NAME}/api/v4/applications")
   export VAULT_APP_ID=$(echo $VAULT_APP_DETAILS | jq -r ".application_id")
   export VAULT_APP_SECRET=$(echo $VAULT_APP_DETAILS | jq -r ".secret")
   echo "backend created, storing secret in vault at secret/admin/oidc/${APP_NAME}"
@@ -496,7 +496,7 @@ then
 
   echo "creating gitlab oidc backend for argo"
   APP_NAME=argo
-  export ARGO_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}&scopes=read_user email" "https://gitlab.${AWS_HOSTED_ZONE_NAME}/api/v4/applications")
+  export ARGO_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}/oauth2/callback&scopes=read_user email openid" "https://gitlab.${AWS_HOSTED_ZONE_NAME}/api/v4/applications")
   export ARGO_APP_ID=$(echo $ARGO_APP_DETAILS | jq -r ".application_id")
   export ARGO_APP_SECRET=$(echo $ARGO_APP_DETAILS | jq -r ".secret")
   echo "backend created, storing secret in vault at secret/admin/oidc/${APP_NAME}"
@@ -509,7 +509,7 @@ then
 
   echo "creating gitlab oidc backend for argocd"
   APP_NAME=argocd
-  export ARGOCD_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}/applications&scopes=read_user email" "https://gitlab.${AWS_HOSTED_ZONE_NAME}/api/v4/applications")
+  export ARGOCD_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}/auth/callback&scopes=email openid" "https://gitlab.${AWS_HOSTED_ZONE_NAME}/api/v4/applications")
   export ARGOCD_APP_ID=$(echo $ARGOCD_APP_DETAILS | jq -r ".application_id")
   export ARGOCD_APP_SECRET=$(echo $ARGOCD_APP_DETAILS | jq -r ".secret")
   echo "backend created, storing secret in vault at secret/admin/oidc/${APP_NAME}"
@@ -522,7 +522,7 @@ then
 
   echo "creating gitlab oidc backend for gitlab itself"
   APP_NAME=gitlab
-  export GITLAB_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}&scopes=read_user email" "https://gitlab.${AWS_HOSTED_ZONE_NAME}/api/v4/applications")
+  export GITLAB_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}&scopes=read_user email openid" "https://gitlab.${AWS_HOSTED_ZONE_NAME}/api/v4/applications")
   export GITLAB_APP_ID=$(echo $GITLAB_APP_DETAILS | jq -r ".application_id")
   export GITLAB_APP_SECRET=$(echo $GITLAB_APP_DETAILS | jq -r ".secret")
   echo "backend created, storing secret in vault at secret/admin/oidc/${APP_NAME}"
@@ -554,7 +554,7 @@ then
     issuer: https://gitlab.${AWS_HOSTED_ZONE_NAME}
     clientID: ${ARGOCD_APP_ID}
     clientSecret: \$oidc.gitlab.clientSecret
-    requestedScopes: ["openid", "profile", "email", "groups"]
+    requestedScopes: ["openid", "email"]
 
 EOF
 

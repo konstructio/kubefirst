@@ -22,7 +22,12 @@ resource "vault_jwt_auth_backend_role" "admin" {
   token_policies  = ["admin"]
   user_claim      = "sub"
   role_type       = "oidc"
-  bound_audiences = [data.vault_generic_secret.vault_oidc_secrets.data["application_id"]]
+  #bound_audiences = [data.vault_generic_secret.vault_oidc_secrets.data["application_id"]]
+  oidc_scopes = ["openid"]
+  bound_claims = {
+    groups = "admins"
+  }
+
   allowed_redirect_uris = var.vault_redirect_uris
 }
 
@@ -32,6 +37,10 @@ resource "vault_jwt_auth_backend_role" "developer" {
   token_policies  = ["developer"]
   user_claim      = "sub"
   role_type       = "oidc"
-  bound_audiences = [data.vault_generic_secret.vault_oidc_secrets.data["application_id"]]
+  #bound_audiences = [data.vault_generic_secret.vault_oidc_secrets.data["application_id"]]
+  oidc_scopes = ["openid"]
+  bound_claims = {
+    groups = "developer"
+  }
   allowed_redirect_uris = var.vault_redirect_uris
 }

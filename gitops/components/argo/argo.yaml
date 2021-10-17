@@ -226,7 +226,7 @@ metadata:
     # If you want an account to be the default to use, this rule can be "true".
     # Details of the expression language are available in
     # https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md.
-    workflows.argoproj.io/rbac-rule: "'/kubefirst/admins' in groups"
+    workflows.argoproj.io/rbac-rule: "'admins' in groups"
     # The precedence is used to determine which service account to use whe
     # Precedence is an integer. It may be negative. If omitted, it defaults to "0".
     # Numerically higher values have higher precedence (not lower, which maybe 
@@ -248,7 +248,7 @@ kind: ServiceAccount
 metadata:
   name: argo-developer
   annotations:
-    workflows.argoproj.io/rbac-rule: "'/kubefirst/developers' in groups"
+    workflows.argoproj.io/rbac-rule: "'developers' in groups"
     workflows.argoproj.io/rbac-rule-precedence: "0"    
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -593,8 +593,8 @@ data:
     redirectUrl: https://argo.<AWS_HOSTED_ZONE_NAME>/oauth2/callback
     # Additional scopes to request. Typically needed for SSO RBAC. >= v2.12
     scopes:
-      - groups
       - email
+      - openid
     # RBAC Config. >= v2.12
     rbac:
       enabled: true
