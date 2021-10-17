@@ -37,7 +37,7 @@ cat << EOF > kubefirst.env
 # The AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are your credentials to 
 # log into your AWS account, you can often find these in `~/.aws/credentials`
 # The AWS_DEFAULT_REGION is the aws region that your new infrastructure will provision in - 
-# The AWS_HOSTED_ZONE_NAME is the domain name associated with your prerequesite hosted zone in route53 - it should look similar to `yourdomain.com` with no `www.` prefix and no `.` suffix
+# The AWS_HOSTED_ZONE_NAME is the domain name associated with your prerequesite hosted zone in route53 - it should look similar to yourdomain.com with no www. prefix and no . suffix
 
 AWS_ACCESS_KEY_ID=YOUR_ADMIN_AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY=YOUR_ADMIN_AWS_SECRET_ACCESS_KEY
@@ -70,7 +70,6 @@ AWS_DEFAULT_REGION=us-east-2
 EMAIL_ADDRESS=YOUR_EMAIL_ADDRESS@yourdomain.com
 GITLAB_BOT_ROOT_PASSWORD=123456ABCDEF!
 EOF
-```
 ```
 
 ### step 2 - build nebulous locally
