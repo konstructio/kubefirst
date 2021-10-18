@@ -2,7 +2,7 @@ data "terraform_remote_state" "eks" {
   backend = "s3"
   config = {
     bucket = "<TF_STATE_BUCKET>"
-    key    = "terraform/tfstate.tf"
+    key    = "terraform/base/tfstate.tf"
     region = var.aws_region
   }
 }
