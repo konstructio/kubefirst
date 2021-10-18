@@ -470,6 +470,24 @@ echo "awaiting successful sync of atlantis"
 argocd app wait atlantis-components
 argocd app wait atlantis
 
+if [ -z "$SKIP_USERS_APPLY" ]
+then
+  echo
+  echo '########################################'
+  echo '#'
+  echo '#               USERS'
+  echo '#'
+  echo '########################################'
+  echo
+  
+  cd /git/gitops/terraform/users
+  echo "applying users terraform"
+  terraform init
+  terraform apply -auto-approve
+  # terraform destroy -auto-approve; exit 1 # TODO: hack
+  echo "users terraform complete"
+  sleep 10
+fi
 
 if [ -z "$SKIP_OIDC_PATCHING" ]
 then
