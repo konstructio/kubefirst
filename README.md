@@ -20,10 +20,6 @@ The Kubefirst Open Source Platform
 - [faq](https://docs.kubefirst.com/nebulous/faq/)
 - [contact](https://docs.kubefirst.com/contact/)
 
-## after install
-
-<iframe width="784" height="441" src="https://www.youtube.com/embed/p3S8SAouKRo" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-
 ---
 
 # contributor guide
