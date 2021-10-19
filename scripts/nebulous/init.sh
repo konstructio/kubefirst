@@ -34,7 +34,7 @@ echo
 sleep 12
 
 echo "executing source-profile.sh"
-source /scripts/nebulous/source-profile.sh 
+source /scripts/nebulous/source-profile.sh
 
 # conditional configuration setup
 if [ ! -f /git/gitops/terraform/base/terraform-ssh-key ]
@@ -130,7 +130,7 @@ if [ -z "$SKIP_HZ_CHECK" ]; then
 
   while [[ $HZ_RECORD_STATUS == 'PENDING' && $HZ_LIVENESS_FAIL_COUNT -lt 8 && $HZ_IS_LIVE -eq 0 ]];
   do
-    echo "checking hosted zone configuration with validation of livenesstest.$AWS_HOSTED_ZONE_NAME"  
+    echo "checking hosted zone configuration with validation of livenesstest.$AWS_HOSTED_ZONE_NAME"
     HZ_LOOKUP_RESULT=$(nslookup "$HZ_LIVENESS_URL" 8.8.8.8 | awk -F':' '/^Address: / { matched = 1 } matched { print $2}' | xargs)
     if [[ "$HZ_LOOKUP_RESULT" ]]; then
       HZ_IS_LIVE=1
@@ -153,7 +153,7 @@ fi
 
 if [ -z "$SKIP_DETOKENIZATION" ]; then
   # detokenize
-  export LC_CTYPE=C; 
+  export LC_CTYPE=C;
   export LANG=C;
   echo "copying constructed gitops repo content into /git/gitops directory"
   mkdir -p /git
@@ -162,7 +162,7 @@ if [ -z "$SKIP_DETOKENIZATION" ]; then
   cp -a /metaphor/. /git/metaphor/
   cd /git/
 
-  # NOTE: this section represents values that need not be secrets and can be directly hardcoded in the 
+  # NOTE: this section represents values that need not be secrets and can be directly hardcoded in the
   # clients' gitops repos. DO NOT handle secrets in this fashion
   echo "replacing TF_STATE_BUCKET token with value ${TF_STATE_BUCKET} (1 of 10)"
   find . \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s|<TF_STATE_BUCKET>|${TF_STATE_BUCKET}|g"
@@ -199,7 +199,7 @@ then
   echo
 
   echo "applying bootstrap terraform"
-  terraform init 
+  terraform init
   terraform apply -auto-approve
   # terraform destroy -auto-approve; exit 1; # hack
 
@@ -207,9 +207,9 @@ then
   echo "KMS_KEY_ID collected: $KMS_KEY_ID"
   echo "bootstrap terraform complete"
   echo "replacing KMS_KEY_ID token with value ${KMS_KEY_ID}"
-  
+
   cd /git/gitops
-  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<KMS_KEY_ID>|${KMS_KEY_ID}|g" {} + 
+  find . -type f -not -path '*/cypress/*' -exec sed -i "s|<KMS_KEY_ID>|${KMS_KEY_ID}|g" {} +
 
 else
   echo "skipping bootstrap terraform because SKIP_BASE_APPLY is set"
@@ -251,8 +251,8 @@ then
   npm ci
 
   $(npm bin)/cypress run
-  
-  
+
+
   echo
   echo "    IMPORTANT:"
   echo "      THIS IS THE ROOT PASSWORD FOR YOUR GITLAB INSTANCE"
@@ -288,13 +288,13 @@ then
 
   cd /git/gitops/terraform/gitlab
   echo "applying gitlab terraform"
-  terraform init 
+  terraform init
   terraform apply -auto-approve
   # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "gitlab terraform complete"
-  
+
   cd /git/gitops
-  
+
   echo "configuring git client"
   git config --global user.name "Administrator"
   git config --global user.email "${EMAIL_ADDRESS}"
@@ -304,7 +304,7 @@ then
   git remote add origin https://root:$GITLAB_TOKEN@gitlab.${AWS_HOSTED_ZONE_NAME}/kubefirst/gitops.git > /dev/null
   git add .
   git commit -m "initial kubefirst commit"
-  git push -u origin main 
+  git push -u origin main
   echo "gitops repo established"
 
   cd /git/metaphor
@@ -312,13 +312,13 @@ then
   echo "configuring git client"
   git config --global user.name "Administrator"
   git config --global user.email "${EMAIL_ADDRESS}"
-  
+
   echo "initing metaphor repo, committing, and pushing to the new gitlab origin"
   git init --initial-branch=main
   git remote add origin https://root:$GITLAB_TOKEN@gitlab.${AWS_HOSTED_ZONE_NAME}/kubefirst/metaphor.git > /dev/null
   git add .
   git commit -m "initial kubefirst commit"
-  git push -u origin main 
+  git push -u origin main
   echo "metaphor repo established"
 
   echo "updating kubefirst group image"
@@ -370,7 +370,7 @@ export ARGOCD_SERVER=localhost:8080
 
 cd /git/gitops/terraform/argocd
 echo "applying argocd terraform"
-terraform init 
+terraform init
 terraform apply -target module.argocd_repos -auto-approve
 terraform apply -target module.argocd_registry -auto-approve
 # terraform destroy -target module.argocd_registry -target module.argocd_repos -auto-approve; exit 1 # TODO: hack
@@ -411,7 +411,7 @@ then
 
   cd /git/gitops/terraform/vault
   echo "applying vault terraform"
-  terraform init 
+  terraform init
   terraform apply -target module.bootstrap -auto-approve
   # terraform destroy -target module.bootstrap -auto-approve; exit 1 # TODO: hack
   echo "vault terraform complete"
@@ -436,7 +436,7 @@ then
   sleep 30
   echo "waiting 30 more seconds after vault terraform apply"
   sleep 30
-  
+
 else
   echo "skipping vault terraform because SKIP_VAULT_APPLY is set"
 fi
@@ -449,14 +449,12 @@ then
   vault kv put secret/ssh/terraform_ssh_key_pub terraform_ssh_key_pub_base64="$(cat /git/gitops/terraform/base/terraform-ssh-key.pub | base64)"
 fi
 
-# the following comnmand is a bit fickle as the vault dns propagates, 
+# the following comnmand is a bit fickle as the vault dns propagates,
 # a retry attempts to make this a bit more fault tolerant to that
 echo "argocd app sync of gitlab-runner"
 for i in 1 2 3 4 5 6 7 8; do argocd app sync gitlab-runner-components && break || echo "sync of gitlab-runner did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of chartmuseum"
 for i in 1 2 3 4 5 6 7 8; do argocd app sync chartmuseum-components && break || echo "sync of chartmuseum did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
-echo "argocd app sync of keycloak"
-for i in 1 2 3 4 5 6 7 8; do argocd app sync keycloak-components && break || echo "sync of keycloak did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of atlantis"
 for i in 1 2 3 4 5 6 7 8; do argocd app sync atlantis-components && break || echo "sync of atlantis did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 
@@ -464,99 +462,32 @@ echo "awaiting successful sync of gitlab-runner"
 argocd app wait gitlab-runner-components
 argocd app wait gitlab-runner
 
-
 echo "awaiting successful sync of chartmuseum"
 argocd app wait chartmuseum-components
 argocd app wait chartmuseum
-
-echo "awaiting successful sync of keycloak"
-argocd app wait keycloak-components
-argocd app wait keycloak
 
 echo "awaiting successful sync of atlantis"
 argocd app wait atlantis-components
 argocd app wait atlantis
 
-/scripts/nebulous/wait-for-200.sh "https://keycloak.${AWS_HOSTED_ZONE_NAME}/auth/"
-
-#! assumes keycloak has been registered, needed for terraform
-export KEYCLOAK_PASSWORD=$(kubectl -n keycloak get secret/keycloak  -ojson | jq -r '.data."admin-password"' | base64 -d)
-export KEYCLOAK_USER=gitlab-bot
-export KEYCLOAK_CLIENT_ID=admin-cli
-export KEYCLOAK_URL=https://keycloak.${AWS_HOSTED_ZONE_NAME}
-echo "collect keycloak password $KEYCLOAK_PASSWORD"
-
-# apply terraform
-if [ -z "$SKIP_KEYCLOAK_APPLY" ]
+if [ -z "$SKIP_USERS_APPLY" ]
 then
   echo
   echo '########################################'
   echo '#'
-  echo '#          KEYCLOAK TERRAFORM'
+  echo '#               USERS'
   echo '#'
   echo '########################################'
   echo
-
-  cd /git/gitops/terraform/keycloak
-  echo "applying keycloak terraform"
-  terraform init 
-  terraform apply -auto-approve
-  echo "keycloak terraform complete"
-
-  echo "updating vault with keycloak password"
-  cd /git/gitops/terraform/vault
-  echo "reapplying vault terraform to sync secrets"
-  export TF_VAR_keycloak_password=$KEYCLOAK_PASSWORD
-  echo "TF_VAR_keycloak_password is $TF_VAR_keycloak_password"
+  
+  cd /git/gitops/terraform/users
+  echo "applying users terraform"
   terraform init
   terraform apply -auto-approve
-  echo "vault terraform complete"
-
-  echo "kicking over atlantis pod to pickup latest secrets"
-  kubectl -n atlantis delete pod atlantis-0
-  echo "atlantis pod has been recycled"  
-
-  echo "kicking over argo-server pod"
-  kubectl -n argo delete pod $(kubectl -n argo get pods --selector=app=argo-server --no-headers -o custom-columns=":metadata.name")
-  
-  echo "argocd app sync of argo-components after keycloak secrets exist"
-  for i in 1 2 3 4 5 6 7 8; do argocd app sync argo-components && break || echo "sync of argo did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
-  echo "awaiting successful sync of argo-components"
-
-  argocd app wait argo-components
-  echo "sync and wait of argo-components and argo is complete"
-  
-else
-  echo "skipping keycloak terraform because SKIP_KEYCLOAK_APPLY is set"
+  # terraform destroy -auto-approve; exit 1 # TODO: hack
+  echo "users terraform complete"
+  sleep 10
 fi
-
-echo "configuring git client"
-cd /git/metaphor
-git config --global user.name "Administrator"
-git config --global user.email "${EMAIL_ADDRESS}"
-
-echo "triggering metaphor delivery pipeline"
-cd /git/metaphor
-git pull origin main --rebase
-git commit --allow-empty -m "kubefirst trigger pipeline"
-git push -u origin main 
-echo "metaphor delivery pipeline invoked"
-
-echo "triggering gitops pull request to test atlantis workflows"
-cd /git/gitops
-git pull origin main --rebase
-SUFFIX=$RANDOM
-git checkout -b "atlantis-test-${SUFFIX}"
-echo "" >> /git/gitops/terraform/argocd/main.tf
-echo "" >> /git/gitops/terraform/base/main.tf
-echo "" >> /git/gitops/terraform/gitlab/kubefirst-repos.tf
-echo "" >> /git/gitops/terraform/keycloak/main.tf
-echo "" >> /git/gitops/terraform/vault/main.tf
-git add .
-git commit -m "test the atlantis workflow"
-git push -u origin atlantis-test-${SUFFIX} -o merge_request.create
-echo "gitops pull request created"
-
 
 if [ -z "$SKIP_OIDC_PATCHING" ]
 then
@@ -567,36 +498,84 @@ then
   echo '#'
   echo '########################################'
   echo
-  
-  echo "pulling secrets from secret/admin/oidc-clients/argocd"
-  export VAULT_TOKEN=$(kubectl -n vault get secret vault-unseal-keys -ojson | jq -r '.data."cluster-keys.json"' | base64 -d | jq -r .root_token)
-  export VAULT_ADDR="https://vault.${AWS_HOSTED_ZONE_NAME}"
-  vault login $VAULT_TOKEN
-  $(echo $(vault kv get -format=json secret/admin/oidc-clients/argocd | jq -r .data.data) | jq -r 'keys[] as $k | "export \($k)=\(.[$k])"')
-  
-  echo "adding keycloak configs to argocd configmap"
-  kubectl -n argocd patch secret argocd-secret -p "{\"stringData\": {\"oidc.keycloak.clientSecret\": \"${ARGOCD_CLIENT_SECRET}\"}}"
-  
+
+  echo "creating gitlab oidc backend for vault"
+  APP_NAME=vault
+  export VAULT_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}:8250/oidc/callback http://localhost:8250/oidc/callback https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}/ui/vault/auth/oidc/oidc/callback http://localhost:8200/ui/vault/auth/oidc/oidc/callback&scopes=read_user email openid" "https://gitlab.${AWS_HOSTED_ZONE_NAME}/api/v4/applications")
+  export VAULT_APP_ID=$(echo $VAULT_APP_DETAILS | jq -r ".application_id")
+  export VAULT_APP_SECRET=$(echo $VAULT_APP_DETAILS | jq -r ".secret")
+  echo "backend created, storing secret in vault at secret/admin/oidc/${APP_NAME}"
+  curl \
+      -H "X-Vault-Token: ${VAULT_TOKEN}" \
+      -H "Content-Type: application/json" \
+      -X POST \
+      -d "{\"data\": ${VAULT_APP_DETAILS}}" \
+      https://vault.${AWS_HOSTED_ZONE_NAME}/v1/secret/data/admin/oidc/${APP_NAME}
+
+  echo "creating gitlab oidc backend for argo"
+  APP_NAME=argo
+  export ARGO_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}/oauth2/callback&scopes=read_user email openid" "https://gitlab.${AWS_HOSTED_ZONE_NAME}/api/v4/applications")
+  export ARGO_APP_ID=$(echo $ARGO_APP_DETAILS | jq -r ".application_id")
+  export ARGO_APP_SECRET=$(echo $ARGO_APP_DETAILS | jq -r ".secret")
+  echo "backend created, storing secret in vault at secret/admin/oidc/${APP_NAME}"
+  curl \
+      -H "X-Vault-Token: ${VAULT_TOKEN}" \
+      -H "Content-Type: application/json" \
+      -X POST \
+      -d "{\"data\": ${ARGO_APP_DETAILS}}" \
+      https://vault.${AWS_HOSTED_ZONE_NAME}/v1/secret/data/admin/oidc/${APP_NAME}
+
+  echo "creating gitlab oidc backend for argocd"
+  APP_NAME=argocd
+  export ARGOCD_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}/auth/callback&scopes=email openid" "https://gitlab.${AWS_HOSTED_ZONE_NAME}/api/v4/applications")
+  export ARGOCD_APP_ID=$(echo $ARGOCD_APP_DETAILS | jq -r ".application_id")
+  export ARGOCD_APP_SECRET=$(echo $ARGOCD_APP_DETAILS | jq -r ".secret")
+  echo "backend created, storing secret in vault at secret/admin/oidc/${APP_NAME}"
+  curl \
+      -H "X-Vault-Token: ${VAULT_TOKEN}" \
+      -H "Content-Type: application/json" \
+      -X POST \
+      -d "{\"data\": ${ARGOCD_APP_DETAILS}}" \
+      https://vault.${AWS_HOSTED_ZONE_NAME}/v1/secret/data/admin/oidc/${APP_NAME}
+
+  echo "creating gitlab oidc backend for gitlab itself"
+  APP_NAME=gitlab
+  export GITLAB_APP_DETAILS=$(curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data "name=${APP_NAME}&redirect_uri=https://${APP_NAME}.${AWS_HOSTED_ZONE_NAME}&scopes=read_user email openid" "https://gitlab.${AWS_HOSTED_ZONE_NAME}/api/v4/applications")
+  export GITLAB_APP_ID=$(echo $GITLAB_APP_DETAILS | jq -r ".application_id")
+  export GITLAB_APP_SECRET=$(echo $GITLAB_APP_DETAILS | jq -r ".secret")
+  echo "backend created, storing secret in vault at secret/admin/oidc/${APP_NAME}"
+  curl \
+      -H "X-Vault-Token: ${VAULT_TOKEN}" \
+      -H "Content-Type: application/json" \
+      -X POST \
+      -d "{\"data\": ${GITLAB_APP_DETAILS}}" \
+      https://vault.${AWS_HOSTED_ZONE_NAME}/v1/secret/data/admin/oidc/${APP_NAME}
+
+  echo "adding oidc configs to argocd configmap"
+  kubectl -n argocd patch secret argocd-secret -p "{\"stringData\": {\"oidc.gitlab.clientSecret\": \"${ARGOCD_APP_SECRET}\"}}"
+
+
   echo "configuring git client"
   cd "/git/gitops"
   git config --global user.name "Administrator"
   git config --global user.email "${EMAIL_ADDRESS}"
   git checkout main
   git pull origin main --rebase
-  
+
   echo "adding oidc config to argocd gitops registry"
+  # TODO: issuer may need a route added, may also need diff scopes
   cat << EOF >> /git/gitops/components/argocd/configmap.yaml
-  
+
   url: https://argocd.${AWS_HOSTED_ZONE_NAME}
   oidc.config: |
-    name: Keycloak
-    issuer: https://keycloak.${AWS_HOSTED_ZONE_NAME}/auth/realms/kubefirst
-    clientID: argocd
-    clientSecret: \$oidc.keycloak.clientSecret
-    requestedScopes: ["openid", "profile", "email", "groups"]
+    name: Gitlab
+    issuer: https://gitlab.${AWS_HOSTED_ZONE_NAME}
+    clientID: ${ARGOCD_APP_ID}
+    clientSecret: \$oidc.gitlab.clientSecret
+    requestedScopes: ["openid", "email"]
 
 EOF
-  
+
   git add .
   git commit -m "updated oidc config for argocd"
   git push -u origin main
@@ -606,17 +585,58 @@ EOF
 
   cd /git/gitops/terraform/vault
   echo "applying vault terraform"
-  terraform init 
+  terraform init
   terraform apply -auto-approve
   # terraform destroy -auto-approve; exit 1 # TODO: hack
   echo "vault terraform complete"
 fi
 
 
+
+echo "kicking over argo-server pod"
+kubectl -n argo delete pod $(kubectl -n argo get pods --selector=app=argo-server --no-headers -o custom-columns=":metadata.name")
+
+echo "argocd app sync of argo-components"
+for i in 1 2 3 4 5 6 7 8; do argocd app sync argo-components && break || echo "sync of argo did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
+echo "awaiting successful sync of argo-components"
+
+argocd app wait argo-components
+echo "sync and wait of argo-components and argo is complete"
+
+echo "configuring git client"
+cd /git/metaphor
+git config --global user.name "Administrator"
+git config --global user.email "${EMAIL_ADDRESS}"
+
+echo "triggering metaphor delivery pipeline"
+cd /git/metaphor
+git pull origin main --rebase
+git commit --allow-empty -m "kubefirst trigger pipeline"
+git push -u origin main
+echo "metaphor delivery pipeline invoked"
+
+echo "triggering gitops pull request to test atlantis workflows"
+cd /git/gitops
+git pull origin main --rebase
+SUFFIX=$RANDOM
+git checkout -b "atlantis-test-${SUFFIX}"
+echo "" >> /git/gitops/terraform/argocd/main.tf
+echo "" >> /git/gitops/terraform/base/main.tf
+echo "" >> /git/gitops/terraform/gitlab/kubefirst-repos.tf
+echo "" >> /git/gitops/terraform/vault/main.tf
+git add .
+git commit -m "test the atlantis workflow"
+git push -u origin atlantis-test-${SUFFIX} -o merge_request.create
+echo "gitops pull request created"
+
+
+
+
+
 echo
 echo
-echo 
-echo 
+echo
+echo
 echo
 echo
 echo
@@ -782,7 +802,7 @@ echo ""
 echo "Once you've stored this output and tested the above connections,"
 echo "you should continue exploring the kubefirst platform from our docs:"
 echo ""
-echo "https://docs.kubefirst.com/kubefirst/getting-started/        <--- seriously."    
+echo "https://docs.kubefirst.com/kubefirst/getting-started/        <--- seriously."
 echo ""
 echo ""
 echo ""
