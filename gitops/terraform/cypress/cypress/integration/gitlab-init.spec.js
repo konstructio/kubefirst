@@ -29,8 +29,9 @@ context('Window', () => {
 
   it('gets the runner registration token', () => {
     cy.visit('/admin/runners')
+    cy.get('#__BVID__21__BV_toggle_ > [data-testid=chevron-down-icon]').click()
     cy.get('[data-testid=eye-icon] > use').click()
-    cy.get('[data-testid=registration-token] > span').then(elem => {
+    cy.get('[data-testid=token-value] > .gl-button-text').then(elem => {
       // elem is the underlying Javascript object targeted by the .get() command.
       const token = Cypress.$(elem).text();
       cy.writeFile('../.gitlab-runner-registration-token', token.trim())
