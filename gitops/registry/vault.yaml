@@ -14,7 +14,7 @@ spec:
   project: default
   source:
     repoURL: 'https://helm.releases.hashicorp.com'
-    targetRevision: 0.14.0
+    targetRevision: 0.18.0
     helm:
       parameters:
         - name: server.route.host
@@ -25,7 +25,7 @@ spec:
         server:
           image:
             repository: "vault"
-            tag: "1.8.1"
+            tag: "1.9.2"
           affinity: ""
           ha:
             enabled: true

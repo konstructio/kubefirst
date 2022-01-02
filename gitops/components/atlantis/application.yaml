@@ -12,7 +12,7 @@ spec:
   source:
     repoURL: 'https://runatlantis.github.io/helm-charts'
     chart: atlantis
-    targetRevision: 3.12.11
+    targetRevision: 3.15.0
     helm:
       parameters:
         - name: ingress.host

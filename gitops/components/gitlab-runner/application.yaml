@@ -14,7 +14,7 @@ spec:
   project: default
   source:
     repoURL: 'https://charts.gitlab.io'
-    targetRevision: 0.29.0
+    targetRevision: 0.36.0
     helm:
       parameters:
         - name: rbac.create
