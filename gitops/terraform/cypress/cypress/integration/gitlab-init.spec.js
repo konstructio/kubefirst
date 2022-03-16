@@ -29,7 +29,7 @@ context('Window', () => {
 
   it('gets the runner registration token', () => {
     cy.visit('/admin/runners')
-    cy.get('#__BVID__24__BV_toggle_ > [data-testid=chevron-down-icon]').click()
+    cy.get('#__BVID__33__BV_toggle_ > [data-testid=chevron-down-icon]').click()
     cy.get('[data-testid=eye-icon] > use').click()
     cy.get('[data-testid=token-value] > .gl-button-text').then(elem => {
       // elem is the underlying Javascript object targeted by the .get() command.
