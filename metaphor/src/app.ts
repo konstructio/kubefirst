@@ -47,15 +47,7 @@ app.get("/", function(req, res) {
 
 app.get("/performance", async (req, res) => {
   const sleepTime = Math.floor(Math.random() * 2 * 1000);
-
-  fs.readFile("test.txt", "utf8", function(err, data) {
-    if (err) {
-      logger.info("error", err);
-    }
-    logger.info("info", data);
-  });
   await delay(sleepTime);
-
   res.send({ hello: "world", sleepTime });
 });
 
