@@ -14,11 +14,11 @@ The Kubefirst Open Source Platform
 
 ## docs
 - [introduction](https://docs.kubefirst.com/)
-- [installation](https://docs.kubefirst.com/nebulous/install/)
-- [getting familiar](https://docs.kubefirst.com/kubefirst/getting-started/)
-- [teardown](https://docs.kubefirst.com/nebulous/teardown/)
-- [faq](https://docs.kubefirst.com/nebulous/faq/)
-- [contact](https://docs.kubefirst.com/contact/)
+- [installation](https://docs.kubefirst.com/nebulous/install.html)
+- [getting familiar](https://docs.kubefirst.com/kubefirst/getting-started.html)
+- [teardown](https://docs.kubefirst.com/nebulous/teardown.html)
+- [faq](https://docs.kubefirst.com/nebulous/faq.html)
+- [contact](https://docs.kubefirst.com/contact.html)
 
 ---
 
