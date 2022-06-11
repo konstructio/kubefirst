@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: eso-kubernetes-external-secrets-auth
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: 'system:auth-delegator'
+subjects:
+  - kind: ServiceAccount
+    name: external-secrets
+    namespace: external-secrets-operator
