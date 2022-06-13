@@ -338,6 +338,8 @@ echo '########################################'
 echo
 
 echo "creating argocd in kubefirst cluster"
+kubectl create namespace external-secrets-operator --dry-run=true -o yaml | kubectl apply -f -
+kubectl create namespace argo --dry-run=true -o yaml | kubectl apply -f -
 kubectl create namespace argocd --dry-run -oyaml | kubectl apply -f -
 kubectl create secret -n argocd generic aws-creds --from-literal=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} --from-literal=AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} --dry-run -oyaml | kubectl apply -f -
 # kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f - # TODO: kubernetes 1.19 and above
@@ -451,12 +453,17 @@ fi
 
 # the following comnmand is a bit fickle as the vault dns propagates,
 # a retry attempts to make this a bit more fault tolerant to that
+echo "argocd app sync of external-secrets-store"
+for i in 1 2 3 4 5 6 7 8; do argocd app sync external-secrets-store && break || echo "sync of external-secrets-store did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of gitlab-runner"
 for i in 1 2 3 4 5 6 7 8; do argocd app sync gitlab-runner-components && break || echo "sync of gitlab-runner did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of chartmuseum"
 for i in 1 2 3 4 5 6 7 8; do argocd app sync chartmuseum-components && break || echo "sync of chartmuseum did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
 echo "argocd app sync of atlantis"
 for i in 1 2 3 4 5 6 7 8; do argocd app sync atlantis-components && break || echo "sync of atlantis did not complete successfully. this is often due to delays in dns propagation. sleeping for 60s before retry" && sleep 60; done
+
+echo "awaiting successful sync of external-secrets-store"
+argocd app wait external-secrets-store
 
 echo "awaiting successful sync of gitlab-runner"
 argocd app wait gitlab-runner-components
@@ -730,7 +737,7 @@ echo ""
 echo ""
 echo ""
 echo "WARNING: Test your connection to Kubernetes, GitLab, and Vault BEFORE CLOSING THIS WINDOW. Connection details follow."
-echo "Docs to install the tools mentioned: https://docs.kubefirst.com/tooling/tooling-overview/"
+echo "Docs to install the tools mentioned: https://docs.kubefirst.com/tooling/tooling-overview.html"
 echo ""
 echo ""
 echo ""

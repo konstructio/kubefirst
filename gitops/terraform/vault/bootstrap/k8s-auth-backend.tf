@@ -29,14 +29,14 @@ resource "vault_auth_backend" "k8s" {
 data "kubernetes_service_account" "external_secrets" {
   metadata {
     name = "external-secrets"
-    namespace = "external-secrets"
+    namespace = "external-secrets-operator"
   }
 }
 
 data "kubernetes_secret" "external_secrets_token_secret" {
   metadata {
     name = data.kubernetes_service_account.external_secrets.default_secret_name
-    namespace = "external-secrets"
+    namespace = "external-secrets-operator"
   }
 }
 

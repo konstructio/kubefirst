@@ -6,7 +6,7 @@ metadata:
   finalizers:
   - resources-finalizer.argocd.argoproj.io
   annotations:
-    argocd.argoproj.io/sync-wave: "9"
+    argocd.argoproj.io/sync-wave: "6"
 spec:
   destination:
     server: https://kubernetes.default.svc
@@ -92,7 +92,7 @@ kind: Job
 metadata:
   name: unseal-vault
   annotations:
-    argocd.argoproj.io/sync-wave: "9"
+    argocd.argoproj.io/sync-wave: "6"
     # argocd.argoproj.io/hook: PostSync # don't PostSync, vault doesn't finish sync while waiting for pods to be running which requires this job
     # argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:

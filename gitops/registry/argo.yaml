@@ -28,7 +28,7 @@ kind: Job
 metadata:
   name: k-add-argocd-permissions
   annotations:
-    argocd.argoproj.io/sync-wave: "7"
+    argocd.argoproj.io/sync-wave: "8"
     argocd.argoproj.io/hook: PostSync
     # argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:
@@ -57,7 +57,7 @@ kind: Job
 metadata:
   name: k-add-argo-permissions
   annotations:
-    argocd.argoproj.io/sync-wave: "8"
+    argocd.argoproj.io/sync-wave: "9"
 spec:
   template:
     spec:
