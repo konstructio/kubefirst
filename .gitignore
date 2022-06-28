@@ -1,13 +1,3 @@
-*.env
-node_modules
-.terraform
-.gitlab-bot-access-token
-.gitlab-runner-registration-token
-.vscode
-terraform-ssh-key
-terraform-ssh-key.pub
-kubeconfig_*
-*/cypress/screenshots/
-*/cypress/videos/
-.DS_Store
-/git
+bin
+.vscode/settings.json
+log
