@@ -7,7 +7,7 @@ package cmd
 import (
 	"log"
 	"github.com/spf13/cobra"
-	"gitlab.kubefirst.io/kubefirst/flare/pkg/flare"
+	"github.com/kubefirst/nebulous/pkg/flare"
 )
 
 // infoCmd represents the info command

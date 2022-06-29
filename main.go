@@ -5,7 +5,7 @@ Copyright © 2022 Kubefirst Inc. devops@kubefirst.com
 package main
 
 import (
-	"gitlab.kubefirst.io/kubefirst/flare/cmd"
+	"github.com/kubefirst/nebulous/cmd"
 	"log"
 	"os"
 	"time"

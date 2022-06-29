@@ -1,4 +1,4 @@
-module gitlab.kubefirst.io/kubefirst/flare
+module github.com/kubefirst/nebulous
 
 go 1.17
 
