@@ -1,4 +1,4 @@
-package cmd
+ package cmd
 
 import (
 	"fmt"
@@ -9,6 +9,8 @@ import (
 var home, kubectlClientPath, kubeconfigPath,localOs,localArchitecture,terraformPath,helmClientPath string
 var dryrunMode bool
 
+//Should this be loaded from somewhere?
+var installerEmail = "kubefirst-bot@kubefirst.com"
 //setGlobals for all common used properties
 func setGlobals() {
 	tmphome, err := os.UserHomeDir()
