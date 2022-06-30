@@ -621,7 +621,7 @@ func awaitGitlab() {
 }
 
 func init() {
-	nebulousCmd.AddCommand(createCmd)
+	rootCmd.AddCommand(createCmd)
 
 	// createCmd.Flags().String("tf-entrypoint", "", "the entrypoint to execute the terraform from")
 	// createCmd.MarkFlagRequired("tf-entrypoint")

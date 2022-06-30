@@ -109,7 +109,7 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	nebulousCmd.AddCommand(destroyCmd)
+	rootCmd.AddCommand(destroyCmd)
 
 	destroyCmd.Flags().Bool("skip-gitlab-terraform", false, "whether to skip the terraform destroy against gitlab - note: if you already deleted registry it doesnt exist")
 

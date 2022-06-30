@@ -185,7 +185,7 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	nebulousCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(initCmd)
 
 	initCmd.Flags().String("hosted-zone-name", "", "the domain to provision the kubefirst platofrm in")
 	initCmd.MarkFlagRequired("hosted-zone-name")
