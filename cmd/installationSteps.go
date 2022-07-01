@@ -7,6 +7,14 @@ import (
 	"strings"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"os/exec"
+	"syscall"
+	"time"
+
+	"net/url"
+	"net/http"
+	"encoding/json"
 )
 
 func applyBaseTerraform(cmd *cobra.Command,directory string){
@@ -46,5 +54,80 @@ func applyBaseTerraform(cmd *cobra.Command,directory string){
 		detokenize(fmt.Sprintf("%s/.kubefirst/gitops", home))
 	} else {
 		log.Println("Skipping: ApplyBaseTerraform")
+	}
+}
+
+
+func applyGitlabTerraform(directory string){
+	if !viper.GetBool("create.terraformapplied.gitlab") {
+		log.Println("Executing applyGitlabTerraform")
+		// Prepare for terraform gitlab execution
+		os.Setenv("GITLAB_TOKEN", viper.GetString("gitlab.token"))
+		os.Setenv("GITLAB_BASE_URL", fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname")))
+
+		directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)
+		err := os.Chdir(directory)
+		if err != nil {
+			fmt.Println("error changing dir")
+		}
+		execShellReturnStrings(terraformPath, "init")
+		execShellReturnStrings(terraformPath, "apply", "-auto-approve")
+		viper.Set("create.terraformapplied.gitlab", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("Skipping: applyGitlabTerraform")
+	}
+}
+
+func configureSoftserveAndPush(){
+	configureAndPushFlag := viper.GetBool("create.softserve.configure")
+	if configureAndPushFlag != true {
+		log.Println("Executing configureSoftserveAndPush")
+		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")
+		kPortForward.Stdout = os.Stdout
+		kPortForward.Stderr = os.Stderr
+		err := kPortForward.Start()
+		defer kPortForward.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			fmt.Println("failed to call kPortForward.Run(): ", err)
+		}
+		time.Sleep(10 * time.Second)
+
+		configureSoftServe()
+		pushGitopsToSoftServe()
+		viper.Set("create.softserve.configure", true)
+		viper.WriteConfig()
+		time.Sleep(10 * time.Second)
+	} else {
+		log.Println("Skipping: configureSoftserveAndPush")
+	}
+}
+
+func gitlabKeyUpload(){
+	// upload ssh public key
+	if !viper.GetBool("gitlab.keyuploaded") {
+		log.Println("Executing gitlabKeyUpload")
+		log.Println("uploading ssh public key to gitlab")
+		gitlabToken := viper.GetString("gitlab.token")
+		data := url.Values{
+			"title": {"kubefirst"},
+			"key":   {viper.GetString("botpublickey")},
+		}
+
+		gitlabUrlBase := fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname"))
+
+		resp, err := http.PostForm(gitlabUrlBase+"/api/v4/user/keys?private_token="+gitlabToken, data)
+		if err != nil {
+			log.Fatal(err)
+		}
+		var res map[string]interface{}
+		json.NewDecoder(resp.Body).Decode(&res)
+		fmt.Println(res)
+		fmt.Println("ssh public key uploaded to gitlab")
+		viper.Set("gitlab.keyuploaded", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("Skipping: gitlabKeyUpload")
+		log.Println("ssh public key already uploaded to gitlab")
 	}
 }

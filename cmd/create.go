@@ -13,11 +13,9 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 
 	b64 "encoding/base64"
@@ -58,34 +56,16 @@ to quickly create a Cobra application.`,
 
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", home)
 
-		
-		
-		configureAndPushFlag := viper.GetBool("create.softserve.configure")
+				
 
 		applyBaseTerraform(cmd,directory)
 
 		createSoftServe(kubeconfigPath)
-
-		if configureAndPushFlag != true {
-			kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")
-			kPortForward.Stdout = os.Stdout
-			kPortForward.Stderr = os.Stderr
-			err := kPortForward.Start()
-			defer kPortForward.Process.Signal(syscall.SIGTERM)
-			if err != nil {
-				fmt.Println("failed to call kPortForward.Run(): ", err)
-			}
-			time.Sleep(10 * time.Second)
-
-			configureSoftServe()
-			pushGitopsToSoftServe()
-			viper.Set("create.softserve.configure", true)
-			viper.WriteConfig()
-		}
-
-		time.Sleep(10 * time.Second)
+		
+		configureSoftserveAndPush()		
 
 		helmInstallArgocd(home, kubeconfigPath)
+
 		awaitGitlab()
 
 		fmt.Println("discovering gitlab toolbox pod")
@@ -152,60 +132,9 @@ to quickly create a Cobra application.`,
 			fmt.Println("gitlabRunnerRegistrationToken", gitlabRunnerRegistrationToken)
 		}
 
-		if !viper.GetBool("create.terraformapplied.gitlab") {
-			// Prepare for terraform gitlab execution
-			os.Setenv("GITLAB_TOKEN", viper.GetString("gitlab.token"))
-			os.Setenv("GITLAB_BASE_URL", fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname")))
-
-			directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)
-			err = os.Chdir(directory)
-			if err != nil {
-				fmt.Println("error changing dir")
-			}
-
-			tfInitCmd := exec.Command(terraformPath, "init")
-			tfInitCmd.Stdout = os.Stdout
-			tfInitCmd.Stderr = os.Stderr
-			err = tfInitCmd.Run()
-			if err != nil {
-				fmt.Println("failed to call tfInitCmd.Run(): ", err)
-			}
-
-			tfApplyCmd := exec.Command(terraformPath, "apply", "-auto-approve")
-			tfApplyCmd.Stdout = os.Stdout
-			tfApplyCmd.Stderr = os.Stderr
-			err = tfApplyCmd.Run()
-			if err != nil {
-				fmt.Println("failed to call tfApplyCmd.Run(): ", err)
-			}
-
-			viper.Set("create.terraformapplied.gitlab", true)
-			viper.WriteConfig()
-		}
-
-		// upload ssh public key
-		if !viper.GetBool("gitlab.keyuploaded") {
-			fmt.Println("uploading ssh public key to gitlab")
-			data := url.Values{
-				"title": {"kubefirst"},
-				"key":   {viper.GetString("botpublickey")},
-			}
-
-			gitlabUrlBase := fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname"))
-
-			resp, err := http.PostForm(gitlabUrlBase+"/api/v4/user/keys?private_token="+gitlabToken, data)
-			if err != nil {
-				log.Fatal(err)
-			}
-			var res map[string]interface{}
-			json.NewDecoder(resp.Body).Decode(&res)
-			fmt.Println(res)
-			fmt.Println("ssh public key uploaded to gitlab")
-			viper.Set("gitlab.keyuploaded", true)
-			viper.WriteConfig()
-		} else {
-			fmt.Println("ssh public key already uploaded to gitlab")
-		}
+		applyGitlabTerraform(directory)
+		
+		gitlabKeyUpload()
 
 		pushGitopsToGitLab()
 		changeRegistryToGitLab()
