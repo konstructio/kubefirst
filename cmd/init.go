@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"path"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
@@ -894,11 +895,11 @@ func extractTarGz(gzipStream io.Reader) {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.Mkdir(header.Name, 0755); err != nil {
+			if err := os.Mkdir(path.Clean(header.Name), 0755); err != nil {
 				log.Println("extractTarGz: Mkdir() failed: %s", err.Error())
 			}
 		case tar.TypeReg:
-			outFile, err := os.Create(header.Name)
+			outFile, err := os.Create(path.Clean(header.Name))
 			if err != nil {
 				log.Println("extractTarGz: Create() failed: %s", err.Error())
 			}
