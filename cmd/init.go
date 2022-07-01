@@ -21,7 +21,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"path"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
@@ -888,31 +887,33 @@ func extractTarGz(gzipStream io.Reader) {
 		if err == io.EOF {
 			break
 		}
-
 		if err != nil {
 			log.Println("extractTarGz: Next() failed: %s", err.Error())
 		}
+		p, _ := filepath.Abs(header.Name)
+		if !strings.Contains(p, "..") {
+		
+			switch header.Typeflag {
+				case tar.TypeDir:
+					if err := os.Mkdir(header.Name, 0755); err != nil {
+						log.Println("extractTarGz: Mkdir() failed: %s", err.Error())
+					}
+				case tar.TypeReg:
+					outFile, err := os.Create(header.Name)
+					if err != nil {
+						log.Println("extractTarGz: Create() failed: %s", err.Error())
+					}
+					if _, err := io.Copy(outFile, tarReader); err != nil {
+						log.Println("extractTarGz: Copy() failed: %s", err.Error())
+					}
+					outFile.Close()
 
-		switch header.Typeflag {
-		case tar.TypeDir:
-			if err := os.Mkdir(path.Clean(header.Name), 0755); err != nil {
-				log.Println("extractTarGz: Mkdir() failed: %s", err.Error())
+				default:
+					log.Println(
+						"extractTarGz: uknown type: %s in %s",
+						header.Typeflag,
+						header.Name)
 			}
-		case tar.TypeReg:
-			outFile, err := os.Create(path.Clean(header.Name))
-			if err != nil {
-				log.Println("extractTarGz: Create() failed: %s", err.Error())
-			}
-			if _, err := io.Copy(outFile, tarReader); err != nil {
-				log.Println("extractTarGz: Copy() failed: %s", err.Error())
-			}
-			outFile.Close()
-
-		default:
-			log.Println(
-				"extractTarGz: uknown type: %s in %s",
-				header.Typeflag,
-				header.Name)
 		}
 
 	}
