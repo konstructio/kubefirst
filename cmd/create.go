@@ -25,7 +25,6 @@ import (
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/google/uuid"
 	vault "github.com/hashicorp/vault/api"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -55,87 +54,14 @@ to quickly create a Cobra application.`,
 		flare.SendTelemetry(metricDomain, metricName)
 
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", home)
-
-				
-
 		applyBaseTerraform(cmd,directory)
-
 		createSoftServe(kubeconfigPath)
-		
 		configureSoftserveAndPush()		
-
 		helmInstallArgocd(home, kubeconfigPath)
-
 		awaitGitlab()
-
-		fmt.Println("discovering gitlab toolbox pod")
-
-		var outb, errb bytes.Buffer
-		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "get", "pod", "-lapp=toolbox", "-o", "jsonpath='{.items[0].metadata.name}'")
-		k.Stdout = &outb
-		k.Stderr = &errb
-		err := k.Run()
-		if err != nil {
-			fmt.Println("failed to call k.Run() to get gitlab pod: ", err)
-		}
-		gitlabPodName := outb.String()
-		gitlabPodName = strings.Replace(gitlabPodName, "'", "", -1)
-		fmt.Println("gitlab pod", gitlabPodName)
-
-		gitlabToken := viper.GetString("gitlab.token")
-		if gitlabToken == "" {
-
-			fmt.Println("getting gitlab personal access token")
-
-			id := uuid.New()
-			gitlabToken = id.String()[:20]
-
-			k = exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "exec", gitlabPodName, "--", "gitlab-rails", "runner", fmt.Sprintf("token = User.find_by_username('root').personal_access_tokens.create(scopes: [:write_registry, :write_repository, :api], name: 'Automation token'); token.set_token('%s'); token.save!", gitlabToken))
-			k.Stdout = os.Stdout
-			k.Stderr = os.Stderr
-			err = k.Run()
-			if err != nil {
-				fmt.Println("failed to call k.Run() to set gitlab token: ", err)
-			}
-
-			viper.Set("gitlab.token", gitlabToken)
-			viper.WriteConfig()
-
-			fmt.Println("gitlabToken", gitlabToken)
-		}
-
-		gitlabRunnerToken := viper.GetString("gitlab.runnertoken")
-		if gitlabRunnerToken == "" {
-
-			fmt.Println("getting gitlab runner token")
-
-			var tokenOut, tokenErr bytes.Buffer
-			k = exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "get", "secret", "gitlab-gitlab-runner-secret", "-o", "jsonpath='{.data.runner-registration-token}'")
-			k.Stdout = &tokenOut
-			k.Stderr = &tokenErr
-			err = k.Run()
-			if err != nil {
-				fmt.Println("failed to call k.Run() to get gitlabRunnerRegistrationToken: ", err)
-			}
-			encodedToken := tokenOut.String()
-			fmt.Println(encodedToken)
-			encodedToken = strings.Replace(encodedToken, "'", "", -1)
-			fmt.Println(encodedToken)
-			gitlabRunnerRegistrationTokenBytes, err := base64.StdEncoding.DecodeString(encodedToken)
-			gitlabRunnerRegistrationToken := string(gitlabRunnerRegistrationTokenBytes)
-			fmt.Println(gitlabRunnerRegistrationToken)
-			if err != nil {
-				panic(err)
-			}
-			viper.Set("gitlab.runnertoken", gitlabRunnerRegistrationToken)
-			viper.WriteConfig()
-			fmt.Println("gitlabRunnerRegistrationToken", gitlabRunnerRegistrationToken)
-		}
-
+		produceGitlabTokens()
 		applyGitlabTerraform(directory)
-		
 		gitlabKeyUpload()
-
 		pushGitopsToGitLab()
 		changeRegistryToGitLab()
 		configureVault()
