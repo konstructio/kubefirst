@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"bytes"
 	"os/exec"
 	"github.com/spf13/cobra"
@@ -50,5 +51,6 @@ func execShellReturnStrings(command string, args ...string) (string, string, err
 	k.Stdout = &outb
 	k.Stderr = &errb
 	err := k.Run()
+	log.Println("Error executing command: %v", err)
 	return outb.String(), errb.String(), err
 }

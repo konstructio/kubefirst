@@ -58,68 +58,13 @@ to quickly create a Cobra application.`,
 
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", home)
 
-		applyBase := viper.GetBool("create.terraformapplied.base")
-		createSoftServeFlag := viper.GetBool("create.softserve.create")
+		
+		
 		configureAndPushFlag := viper.GetBool("create.softserve.configure")
 
-		if applyBase != true {
+		applyBaseTerraform(cmd,directory)
 
-			terraformAction := "apply"
-
-			os.Setenv("TF_VAR_aws_account_id", viper.GetString("aws.accountid"))
-			os.Setenv("TF_VAR_aws_region", viper.GetString("aws.region"))
-			os.Setenv("TF_VAR_hosted_zone_name", viper.GetString("aws.domainname"))
-
-			err := os.Chdir(directory)
-			if err != nil {
-				fmt.Println("error changing dir")
-			}
-
-			viperDestoryFlag := viper.GetBool("terraform.destroy")
-			cmdDestroyFlag, _ := cmd.Flags().GetBool("destroy")
-
-			if viperDestoryFlag == true || cmdDestroyFlag == true {
-				terraformAction = "destroy"
-			}
-
-			fmt.Println("terraform action: ", terraformAction, "destroyFlag: ", viperDestoryFlag)
-			tfInitCmd := exec.Command(terraformPath, "init")
-			tfInitCmd.Stdout = os.Stdout
-			tfInitCmd.Stderr = os.Stderr
-			err = tfInitCmd.Run()
-			if err != nil {
-				fmt.Println("failed to call tfInitCmd.Run(): ", err)
-			}
-			tfApplyCmd := exec.Command(terraformPath, fmt.Sprintf("%s", terraformAction), "-auto-approve")
-			tfApplyCmd.Stdout = os.Stdout
-			tfApplyCmd.Stderr = os.Stderr
-			err = tfApplyCmd.Run()
-			if err != nil {
-				fmt.Println("failed to call tfApplyCmd.Run(): ", err)
-				panic("tfApplyCmd.Run() failed")
-			}
-			keyIdBytes, err := exec.Command(terraformPath, "output", "vault_unseal_kms_key").Output()
-			if err != nil {
-				fmt.Println("failed to call tfOutputCmd.Run(): ", err)
-			}
-			keyId := strings.TrimSpace(string(keyIdBytes))
-
-			fmt.Println("keyid is:", keyId)
-			viper.Set("vault.kmskeyid", keyId)
-			viper.Set("create.terraformapplied.base", true)
-			viper.WriteConfig()
-
-			detokenize(fmt.Sprintf("%s/.kubefirst/gitops", home))
-
-		}
-		if createSoftServeFlag != true {
-			createSoftServe(kubeconfigPath)
-			viper.Set("create.softserve.create", true)
-			viper.WriteConfig()
-			fmt.Println("waiting for soft-serve installation to complete...")
-			time.Sleep(60 * time.Second)
-
-		}
+		createSoftServe(kubeconfigPath)
 
 		if configureAndPushFlag != true {
 			kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")

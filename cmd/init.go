@@ -918,21 +918,33 @@ func extractTarGz(gzipStream io.Reader) {
 }
 
 func createSoftServe(kubeconfigPath string) {
+	createSoftServeFlag := viper.GetBool("create.softserve.create")
+	
+	if createSoftServeFlag != true {
+		log.Println("Executing createSoftServe")
+		toolsDir := fmt.Sprintf("%s/.kubefirst/tools", home)
 
-	toolsDir := fmt.Sprintf("%s/.kubefirst/tools", home)
+		err := os.Mkdir(toolsDir, 0777)
+		if err != nil {
+			log.Println("error creating directory %s", toolsDir, err)
+		}
 
-	err := os.Mkdir(toolsDir, 0777)
-	if err != nil {
-		log.Println("error creating directory %s", toolsDir, err)
+		// create soft-serve stateful set
+		softServePath := fmt.Sprintf("%s/.kubefirst/gitops/components/soft-serve/manifests.yaml", home)
+		softServeApplyOut, softServeApplyErr,errSoftServeApply := execShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "apply", "-f", softServePath, "--wait")
+		log.Printf("Result:\n\t%s\n\t%s\n",softServeApplyOut,softServeApplyErr)	
+		if errSoftServeApply != nil {
+			log.Println("failed to call kubectlCreateSoftServeCmd.Run(): %v", err)
+		}	
+
+		viper.Set("create.softserve.create", true)
+		viper.WriteConfig()
+		fmt.Println("waiting for soft-serve installation to complete...")
+		time.Sleep(60 * time.Second)
+	} else {
+		log.Println("Skipping: createSoftServe")
 	}
 
-	// create soft-serve stateful set
-	softServePath := fmt.Sprintf("%s/.kubefirst/gitops/components/soft-serve/manifests.yaml", home)
-	softServeApplyOut, softServeApplyErr,errSoftServeApply := execShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "apply", "-f", softServePath, "--wait")
-	log.Printf("Result:\n\t%s\n\t%s\n",softServeApplyOut,softServeApplyErr)	
-	if errSoftServeApply != nil {
-		log.Println("failed to call kubectlCreateSoftServeCmd.Run(): %v", err)
-	}	
 }
 
 func helmInstallArgocd(home string, kubeconfigPath string) {
