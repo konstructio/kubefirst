@@ -25,6 +25,10 @@ func applyBaseTerraform(cmd *cobra.Command,directory string){
 	applyBase := viper.GetBool("create.terraformapplied.base")
 	if applyBase != true {
 		log.Println("Executing ApplyBaseTerraform")
+		if dryrunMode {
+			log.Printf("[#99] Dry-run mode, applyBaseTerraform skipped.")
+			return
+		}		
 		terraformAction := "apply"
 
 		os.Setenv("TF_VAR_aws_account_id", viper.GetString("aws.accountid"))
@@ -65,6 +69,10 @@ func applyBaseTerraform(cmd *cobra.Command,directory string){
 func applyGitlabTerraform(directory string){
 	if !viper.GetBool("create.terraformapplied.gitlab") {
 		log.Println("Executing applyGitlabTerraform")
+		if dryrunMode {
+			log.Printf("[#99] Dry-run mode, applyGitlabTerraform skipped.")
+			return
+		}		
 		// Prepare for terraform gitlab execution
 		os.Setenv("GITLAB_TOKEN", viper.GetString("gitlab.token"))
 		os.Setenv("GITLAB_BASE_URL", fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname")))
@@ -87,6 +95,10 @@ func configureSoftserveAndPush(){
 	configureAndPushFlag := viper.GetBool("create.softserve.configure")
 	if configureAndPushFlag != true {
 		log.Println("Executing configureSoftserveAndPush")
+		if dryrunMode {
+			log.Printf("[#99] Dry-run mode, configureSoftserveAndPush skipped.")
+			return
+		}		
 		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")
 		kPortForward.Stdout = os.Stdout
 		kPortForward.Stderr = os.Stderr
@@ -108,9 +120,13 @@ func configureSoftserveAndPush(){
 }
 
 func gitlabKeyUpload(){
-	// upload ssh public key
+	// upload ssh public key	
 	if !viper.GetBool("gitlab.keyuploaded") {
 		log.Println("Executing gitlabKeyUpload")
+		if dryrunMode {
+			log.Printf("[#99] Dry-run mode, gitlabKeyUpload skipped.")
+			return
+		}		
 		log.Println("uploading ssh public key to gitlab")
 		gitlabToken := viper.GetString("gitlab.token")
 		data := url.Values{
@@ -139,9 +155,11 @@ func gitlabKeyUpload(){
 
 func produceGitlabTokens(){
 	//TODO: Should this step be skipped if already executed?
-	
-	log.Println("discovering gitlab toolbox pod")
-
+	log.Println("discovering gitlab toolbox pod")	
+	if dryrunMode {
+		log.Printf("[#99] Dry-run mode, produceGitlabTokens skipped.")
+		return
+	}
 	var outb, errb bytes.Buffer
 	k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "get", "pod", "-lapp=toolbox", "-o", "jsonpath='{.items[0].metadata.name}'")
 	k.Stdout = &outb

@@ -583,6 +583,12 @@ func pushGitopsToSoftServe() {
 }
 
 func pushGitopsToGitLab() {
+	if dryrunMode {
+		log.Printf("[#99] Dry-run mode, pushGitopsToGitLab skipped.")
+		return
+	}
+	  
+	//TODO: should this step to be skipped if already executed?
 	domain := viper.GetString("aws.domainname")
 
 	detokenize(fmt.Sprintf("%s/.kubefirst/gitops", home))
@@ -920,10 +926,13 @@ func extractTarGz(gzipStream io.Reader) {
 }
 
 func createSoftServe(kubeconfigPath string) {
-	createSoftServeFlag := viper.GetBool("create.softserve.create")
-	
+	createSoftServeFlag := viper.GetBool("create.softserve.create")	
 	if createSoftServeFlag != true {
 		log.Println("Executing createSoftServe")
+		if dryrunMode {
+			log.Printf("[#99] Dry-run mode, createSoftServe skipped.")
+			return
+		}
 		toolsDir := fmt.Sprintf("%s/.kubefirst/tools", home)
 
 		err := os.Mkdir(toolsDir, 0777)
@@ -950,9 +959,12 @@ func createSoftServe(kubeconfigPath string) {
 }
 
 func helmInstallArgocd(home string, kubeconfigPath string) {
-
 	argocdCreated := viper.GetBool("create.argocd.helm")
 	if !argocdCreated {
+		if dryrunMode {
+			log.Printf("[#99] Dry-run mode, helmInstallArgocd skipped.")
+			return
+		}
 		helmClientPath := fmt.Sprintf("%s/.kubefirst/tools/helm", home)
 
 		// ! commenting out until a clean execution is necessary // create namespace

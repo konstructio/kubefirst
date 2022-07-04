@@ -51,7 +51,12 @@ to quickly create a Cobra application.`,
 		metricName := "kubefirst.mgmt_cluster_install.started"
 		metricDomain := viper.GetString("aws.domainname")
 
-		flare.SendTelemetry(metricDomain, metricName)
+		if !dryrunMode {
+			flare.SendTelemetry(metricDomain, metricName)
+		} else {
+			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
+		}
+		
 
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", home)
 		applyBaseTerraform(cmd,directory)
@@ -68,13 +73,21 @@ to quickly create a Cobra application.`,
 		addGitlabOidcApplications()
 		hydrateGitlabMetaphorRepo()
 		metricName = "kubefirst.mgmt_cluster_install.completed"
-
-		flare.SendTelemetry(metricDomain, metricName)
+		
+		if !dryrunMode {
+			flare.SendTelemetry(metricDomain, metricName)
+		} else {
+			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
+		}
 	},
 }
 
 func hydrateGitlabMetaphorRepo() {
-
+	//TODO: Should this be skipped if already executed?
+	if dryrunMode {
+		log.Printf("[#99] Dry-run mode, hydrateGitlabMetaphorRepo skipped.")
+		return
+	}
 	metaphorTemplateDir := fmt.Sprintf("%s/.kubefirst/metaphor", home)
 
 	url := "https://github.com/kubefirst/metaphor-template"
@@ -123,6 +136,10 @@ func hydrateGitlabMetaphorRepo() {
 
 func changeRegistryToGitLab() {
 	if !viper.GetBool("gitlab.registry") {
+		if dryrunMode {
+			log.Printf("[#99] Dry-run mode, changeRegistryToGitLab skipped.")
+			return
+		}
 
 		type ArgocdGitCreds struct {
 			PersonalAccessToken string
@@ -220,10 +237,17 @@ func changeRegistryToGitLab() {
 
 		viper.Set("gitlab.registry", true)
 		viper.WriteConfig()
+	} else {
+		log.Println("Skipping: changeRegistryToGitLab")
 	}
 }
 
 func addGitlabOidcApplications() {
+	//TODO: Should this skipped if already executed. 
+	if dryrunMode {
+		log.Printf("[#99] Dry-run mode, addGitlabOidcApplications skipped.")
+		return
+	}
 	domain := viper.GetString("aws.domainname")
 	git, err := gitlab.NewClient(
 		viper.GetString("gitlab.token"),
@@ -313,7 +337,10 @@ func addVaultSecret(secretPath string, secretData map[string]interface{}) {
 
 func configureVault() {
 	if !viper.GetBool("create.terraformapplied.vault") {
-
+		if dryrunMode {
+			log.Printf("[#99] Dry-run mode, configureVault skipped.")
+			return
+		}
 		// ```
 		// NOTE: the terraform here produces unnecessary $var.varname vars in the atlantis secret for nonsensitive values
 		// the following atlantis secrets shouldn't have vars in the gitops source code for the atlantis secret, they
@@ -396,11 +423,16 @@ func configureVault() {
 
 		viper.Set("create.terraformapplied.vault", true)
 		viper.WriteConfig()
+	} else {
+		log.Println("Skipping: configureVault")
 	}
 }
 
 func awaitGitlab() {
-
+	if dryrunMode {
+		log.Printf("[#99] Dry-run mode, awaitGitlab skipped.")
+		return
+	}
 	log.Println("awaitGitlab called")
 	max := 200
 	for i := 0; i < max; i++ {
@@ -428,5 +460,6 @@ func init() {
 	// createCmd.MarkFlagRequired("tf-entrypoint")
 	// todo make this an optional switch and check for it or viper
 	createCmd.Flags().Bool("destroy", false, "destroy resources")
+	createCmd.PersistentFlags().BoolVarP(&dryrunMode, "dry-run", "s", false, "set to dry-run mode, no changes done on cloud provider selected")
 
 }
