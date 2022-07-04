@@ -36,6 +36,12 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+
+const trackerStage20 = "0 - Apply Base"
+const trackerStage21 = "1 - Temporary SCM Install"
+const trackerStage22 = "2 - Argo/Final SCM Install"
+const trackerStage23 = "3 - Final Setup"
+
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
@@ -47,6 +53,15 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		flare.SetupProgress(4)
+		Trackers = make(map[string]*flare.ActionTracker)
+		Trackers[trackerStage20] = &flare.ActionTracker{flare.CreateTracker(trackerStage20, int64(1))}
+		Trackers[trackerStage21] = &flare.ActionTracker{flare.CreateTracker(trackerStage21, int64(2))}
+		Trackers[trackerStage22] = &flare.ActionTracker{flare.CreateTracker(trackerStage22, int64(7))}
+		Trackers[trackerStage23] = &flare.ActionTracker{flare.CreateTracker(trackerStage23, int64(3))}
+
+		infoCmd.Run(cmd, args)
 
 		metricName := "kubefirst.mgmt_cluster_install.started"
 		metricDomain := viper.GetString("aws.domainname")
@@ -60,18 +75,31 @@ to quickly create a Cobra application.`,
 
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", home)
 		applyBaseTerraform(cmd,directory)
+		Trackers[trackerStage20].Tracker.Increment(int64(1))		
 		createSoftServe(kubeconfigPath)
+		Trackers[trackerStage21].Tracker.Increment(int64(1))	
 		configureSoftserveAndPush()		
+		Trackers[trackerStage21].Tracker.Increment(int64(1))	
 		helmInstallArgocd(home, kubeconfigPath)
+		Trackers[trackerStage22].Tracker.Increment(int64(1))
 		awaitGitlab()
+		Trackers[trackerStage22].Tracker.Increment(int64(1))
 		produceGitlabTokens()
+		Trackers[trackerStage22].Tracker.Increment(int64(1))
 		applyGitlabTerraform(directory)
+		Trackers[trackerStage22].Tracker.Increment(int64(1))
 		gitlabKeyUpload()
+		Trackers[trackerStage22].Tracker.Increment(int64(1))
 		pushGitopsToGitLab()
+		Trackers[trackerStage22].Tracker.Increment(int64(1))
 		changeRegistryToGitLab()
+		Trackers[trackerStage22].Tracker.Increment(int64(1))
 		configureVault()
+		Trackers[trackerStage23].Tracker.Increment(int64(1))
 		addGitlabOidcApplications()
+		Trackers[trackerStage23].Tracker.Increment(int64(1))
 		hydrateGitlabMetaphorRepo()
+		Trackers[trackerStage23].Tracker.Increment(int64(1))
 		metricName = "kubefirst.mgmt_cluster_install.completed"
 		
 		if !dryrunMode {
@@ -79,6 +107,7 @@ to quickly create a Cobra application.`,
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
+		time.Sleep(time.Millisecond * 100)
 	},
 }
 
