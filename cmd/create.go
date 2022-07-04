@@ -13,11 +13,9 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 
 	b64 "encoding/base64"
@@ -27,7 +25,6 @@ import (
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/google/uuid"
 	vault "github.com/hashicorp/vault/api"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -54,227 +51,43 @@ to quickly create a Cobra application.`,
 		metricName := "kubefirst.mgmt_cluster_install.started"
 		metricDomain := viper.GetString("aws.domainname")
 
-		flare.SendTelemetry(metricDomain, metricName)
+		if !dryrunMode {
+			flare.SendTelemetry(metricDomain, metricName)
+		} else {
+			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
+		}
+		
 
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", home)
-
-		applyBase := viper.GetBool("create.terraformapplied.base")
-		createSoftServeFlag := viper.GetBool("create.softserve.create")
-		configureAndPushFlag := viper.GetBool("create.softserve.configure")
-
-		if applyBase != true {
-
-			terraformAction := "apply"
-
-			os.Setenv("TF_VAR_aws_account_id", viper.GetString("aws.accountid"))
-			os.Setenv("TF_VAR_aws_region", viper.GetString("aws.region"))
-			os.Setenv("TF_VAR_hosted_zone_name", viper.GetString("aws.domainname"))
-
-			err := os.Chdir(directory)
-			if err != nil {
-				fmt.Println("error changing dir")
-			}
-
-			viperDestoryFlag := viper.GetBool("terraform.destroy")
-			cmdDestroyFlag, _ := cmd.Flags().GetBool("destroy")
-
-			if viperDestoryFlag == true || cmdDestroyFlag == true {
-				terraformAction = "destroy"
-			}
-
-			fmt.Println("terraform action: ", terraformAction, "destroyFlag: ", viperDestoryFlag)
-			tfInitCmd := exec.Command(terraformPath, "init")
-			tfInitCmd.Stdout = os.Stdout
-			tfInitCmd.Stderr = os.Stderr
-			err = tfInitCmd.Run()
-			if err != nil {
-				fmt.Println("failed to call tfInitCmd.Run(): ", err)
-			}
-			tfApplyCmd := exec.Command(terraformPath, fmt.Sprintf("%s", terraformAction), "-auto-approve")
-			tfApplyCmd.Stdout = os.Stdout
-			tfApplyCmd.Stderr = os.Stderr
-			err = tfApplyCmd.Run()
-			if err != nil {
-				fmt.Println("failed to call tfApplyCmd.Run(): ", err)
-				panic("tfApplyCmd.Run() failed")
-			}
-			keyIdBytes, err := exec.Command(terraformPath, "output", "vault_unseal_kms_key").Output()
-			if err != nil {
-				fmt.Println("failed to call tfOutputCmd.Run(): ", err)
-			}
-			keyId := strings.TrimSpace(string(keyIdBytes))
-
-			fmt.Println("keyid is:", keyId)
-			viper.Set("vault.kmskeyid", keyId)
-			viper.Set("create.terraformapplied.base", true)
-			viper.WriteConfig()
-
-			detokenize(fmt.Sprintf("%s/.kubefirst/gitops", home))
-
-		}
-		if createSoftServeFlag != true {
-			createSoftServe(kubeconfigPath)
-			viper.Set("create.softserve.create", true)
-			viper.WriteConfig()
-			fmt.Println("waiting for soft-serve installation to complete...")
-			time.Sleep(60 * time.Second)
-
-		}
-
-		if configureAndPushFlag != true {
-			kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")
-			kPortForward.Stdout = os.Stdout
-			kPortForward.Stderr = os.Stderr
-			err := kPortForward.Start()
-			defer kPortForward.Process.Signal(syscall.SIGTERM)
-			if err != nil {
-				fmt.Println("failed to call kPortForward.Run(): ", err)
-			}
-			time.Sleep(10 * time.Second)
-
-			configureSoftServe()
-			pushGitopsToSoftServe()
-			viper.Set("create.softserve.configure", true)
-			viper.WriteConfig()
-		}
-
-		time.Sleep(10 * time.Second)
-
+		applyBaseTerraform(cmd,directory)
+		createSoftServe(kubeconfigPath)
+		configureSoftserveAndPush()		
 		helmInstallArgocd(home, kubeconfigPath)
 		awaitGitlab()
-
-		fmt.Println("discovering gitlab toolbox pod")
-
-		var outb, errb bytes.Buffer
-		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "get", "pod", "-lapp=toolbox", "-o", "jsonpath='{.items[0].metadata.name}'")
-		k.Stdout = &outb
-		k.Stderr = &errb
-		err := k.Run()
-		if err != nil {
-			fmt.Println("failed to call k.Run() to get gitlab pod: ", err)
-		}
-		gitlabPodName := outb.String()
-		gitlabPodName = strings.Replace(gitlabPodName, "'", "", -1)
-		fmt.Println("gitlab pod", gitlabPodName)
-
-		gitlabToken := viper.GetString("gitlab.token")
-		if gitlabToken == "" {
-
-			fmt.Println("getting gitlab personal access token")
-
-			id := uuid.New()
-			gitlabToken = id.String()[:20]
-
-			k = exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "exec", gitlabPodName, "--", "gitlab-rails", "runner", fmt.Sprintf("token = User.find_by_username('root').personal_access_tokens.create(scopes: [:write_registry, :write_repository, :api], name: 'Automation token'); token.set_token('%s'); token.save!", gitlabToken))
-			k.Stdout = os.Stdout
-			k.Stderr = os.Stderr
-			err = k.Run()
-			if err != nil {
-				fmt.Println("failed to call k.Run() to set gitlab token: ", err)
-			}
-
-			viper.Set("gitlab.token", gitlabToken)
-			viper.WriteConfig()
-
-			fmt.Println("gitlabToken", gitlabToken)
-		}
-
-		gitlabRunnerToken := viper.GetString("gitlab.runnertoken")
-		if gitlabRunnerToken == "" {
-
-			fmt.Println("getting gitlab runner token")
-
-			var tokenOut, tokenErr bytes.Buffer
-			k = exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "get", "secret", "gitlab-gitlab-runner-secret", "-o", "jsonpath='{.data.runner-registration-token}'")
-			k.Stdout = &tokenOut
-			k.Stderr = &tokenErr
-			err = k.Run()
-			if err != nil {
-				fmt.Println("failed to call k.Run() to get gitlabRunnerRegistrationToken: ", err)
-			}
-			encodedToken := tokenOut.String()
-			fmt.Println(encodedToken)
-			encodedToken = strings.Replace(encodedToken, "'", "", -1)
-			fmt.Println(encodedToken)
-			gitlabRunnerRegistrationTokenBytes, err := base64.StdEncoding.DecodeString(encodedToken)
-			gitlabRunnerRegistrationToken := string(gitlabRunnerRegistrationTokenBytes)
-			fmt.Println(gitlabRunnerRegistrationToken)
-			if err != nil {
-				panic(err)
-			}
-			viper.Set("gitlab.runnertoken", gitlabRunnerRegistrationToken)
-			viper.WriteConfig()
-			fmt.Println("gitlabRunnerRegistrationToken", gitlabRunnerRegistrationToken)
-		}
-
-		if !viper.GetBool("create.terraformapplied.gitlab") {
-			// Prepare for terraform gitlab execution
-			os.Setenv("GITLAB_TOKEN", viper.GetString("gitlab.token"))
-			os.Setenv("GITLAB_BASE_URL", fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname")))
-
-			directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)
-			err = os.Chdir(directory)
-			if err != nil {
-				fmt.Println("error changing dir")
-			}
-
-			tfInitCmd := exec.Command(terraformPath, "init")
-			tfInitCmd.Stdout = os.Stdout
-			tfInitCmd.Stderr = os.Stderr
-			err = tfInitCmd.Run()
-			if err != nil {
-				fmt.Println("failed to call tfInitCmd.Run(): ", err)
-			}
-
-			tfApplyCmd := exec.Command(terraformPath, "apply", "-auto-approve")
-			tfApplyCmd.Stdout = os.Stdout
-			tfApplyCmd.Stderr = os.Stderr
-			err = tfApplyCmd.Run()
-			if err != nil {
-				fmt.Println("failed to call tfApplyCmd.Run(): ", err)
-			}
-
-			viper.Set("create.terraformapplied.gitlab", true)
-			viper.WriteConfig()
-		}
-
-		// upload ssh public key
-		if !viper.GetBool("gitlab.keyuploaded") {
-			fmt.Println("uploading ssh public key to gitlab")
-			data := url.Values{
-				"title": {"kubefirst"},
-				"key":   {viper.GetString("botpublickey")},
-			}
-
-			gitlabUrlBase := fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname"))
-
-			resp, err := http.PostForm(gitlabUrlBase+"/api/v4/user/keys?private_token="+gitlabToken, data)
-			if err != nil {
-				log.Fatal(err)
-			}
-			var res map[string]interface{}
-			json.NewDecoder(resp.Body).Decode(&res)
-			fmt.Println(res)
-			fmt.Println("ssh public key uploaded to gitlab")
-			viper.Set("gitlab.keyuploaded", true)
-			viper.WriteConfig()
-		} else {
-			fmt.Println("ssh public key already uploaded to gitlab")
-		}
-
+		produceGitlabTokens()
+		applyGitlabTerraform(directory)
+		gitlabKeyUpload()
 		pushGitopsToGitLab()
 		changeRegistryToGitLab()
 		configureVault()
 		addGitlabOidcApplications()
 		hydrateGitlabMetaphorRepo()
 		metricName = "kubefirst.mgmt_cluster_install.completed"
-
-		flare.SendTelemetry(metricDomain, metricName)
+		
+		if !dryrunMode {
+			flare.SendTelemetry(metricDomain, metricName)
+		} else {
+			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
+		}
 	},
 }
 
 func hydrateGitlabMetaphorRepo() {
-
+	//TODO: Should this be skipped if already executed?
+	if dryrunMode {
+		log.Printf("[#99] Dry-run mode, hydrateGitlabMetaphorRepo skipped.")
+		return
+	}
 	metaphorTemplateDir := fmt.Sprintf("%s/.kubefirst/metaphor", home)
 
 	url := "https://github.com/kubefirst/metaphor-template"
@@ -290,7 +103,7 @@ func hydrateGitlabMetaphorRepo() {
 
 	// todo make global
 	domainName := fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname"))
-	fmt.Println("git remote add origin", domainName)
+	log.Println("git remote add origin", domainName)
 	_, err = metaphorTemplateRepo.CreateRemote(&gitConfig.RemoteConfig{
 		Name: "gitlab",
 		URLs: []string{fmt.Sprintf("%s/kubefirst/metaphor.git", domainName)},
@@ -298,7 +111,7 @@ func hydrateGitlabMetaphorRepo() {
 
 	w, _ := metaphorTemplateRepo.Worktree()
 
-	fmt.Println("Committing new changes...")
+	log.Println("Committing new changes...")
 	w.Add(".")
 	w.Commit("setting new remote upstream to gitlab", &git.CommitOptions{
 		Author: &object.Signature{
@@ -316,13 +129,17 @@ func hydrateGitlabMetaphorRepo() {
 		},
 	})
 	if err != nil {
-		fmt.Println("error pushing to remote", err)
+		log.Println("error pushing to remote", err)
 	}
 
 }
 
 func changeRegistryToGitLab() {
 	if !viper.GetBool("gitlab.registry") {
+		if dryrunMode {
+			log.Printf("[#99] Dry-run mode, changeRegistryToGitLab skipped.")
+			return
+		}
 
 		type ArgocdGitCreds struct {
 			PersonalAccessToken string
@@ -369,7 +186,7 @@ func changeRegistryToGitLab() {
 		if err := c.Execute(&secrets, creds); err != nil {
 			log.Panic(err)
 		}
-		fmt.Println(secrets.String())
+		log.Println(secrets.String())
 
 		ba := []byte(secrets.String())
 		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
@@ -400,7 +217,7 @@ func changeRegistryToGitLab() {
 		if err := c.Execute(&repoSecrets, creds); err != nil {
 			log.Panic(err)
 		}
-		fmt.Println(repoSecrets.String())
+		log.Println(repoSecrets.String())
 
 		ba = []byte(repoSecrets.String())
 		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
@@ -415,15 +232,22 @@ func changeRegistryToGitLab() {
 		k.Stderr = os.Stderr
 		err = k.Run()
 		if err != nil {
-			fmt.Println("failed to call k.Run() to apply argocd patch to adopt gitlab: ", err)
+			log.Println("failed to call k.Run() to apply argocd patch to adopt gitlab: ", err)
 		}
 
 		viper.Set("gitlab.registry", true)
 		viper.WriteConfig()
+	} else {
+		log.Println("Skipping: changeRegistryToGitLab")
 	}
 }
 
 func addGitlabOidcApplications() {
+	//TODO: Should this skipped if already executed. 
+	if dryrunMode {
+		log.Printf("[#99] Dry-run mode, addGitlabOidcApplications skipped.")
+		return
+	}
 	domain := viper.GetString("aws.domainname")
 	git, err := gitlab.NewClient(
 		viper.GetString("gitlab.token"),
@@ -440,7 +264,7 @@ func addGitlabOidcApplications() {
 	cb["vault"] = fmt.Sprintf("https://vault.%s:8250/oidc/callback http://localhost:8250/oidc/callback https://vault.%s/ui/vault/auth/oidc/oidc/callback http://localhost:8200/ui/vault/auth/oidc/oidc/callback", domain, domain)
 
 	for _, app := range apps {
-		fmt.Println("checking to see if", app, "oidc application needs to be created in gitlab")
+		log.Println("checking to see if", app, "oidc application needs to be created in gitlab")
 		appId := viper.GetString(fmt.Sprintf("gitlab.oidc.%s.applicationid", app))
 		if appId == "" {
 
@@ -468,7 +292,7 @@ func addGitlabOidcApplications() {
 				}
 			}
 			if created {
-				fmt.Println("created gitlab oidc application with applicationid", createdApp.ApplicationID)
+				log.Println("created gitlab oidc application with applicationid", createdApp.ApplicationID)
 				viper.Set(fmt.Sprintf("gitlab.oidc.%s.applicationid", app), createdApp.ApplicationID)
 				viper.Set(fmt.Sprintf("gitlab.oidc.%s.secret", app), createdApp.Secret)
 
@@ -489,7 +313,7 @@ func addGitlabOidcApplications() {
 }
 
 func addVaultSecret(secretPath string, secretData map[string]interface{}) {
-	fmt.Println("vault called")
+	log.Println("vault called")
 
 	config := vault.DefaultConfig()
 
@@ -497,7 +321,7 @@ func addVaultSecret(secretPath string, secretData map[string]interface{}) {
 
 	client, err := vault.NewClient(config)
 	if err != nil {
-		fmt.Println("unable to initialize Vault client: ", err)
+		log.Println("unable to initialize Vault client: ", err)
 	}
 
 	client.SetToken(viper.GetString("vault.token"))
@@ -505,15 +329,18 @@ func addVaultSecret(secretPath string, secretData map[string]interface{}) {
 	// Writing a secret
 	_, err = client.Logical().Write(secretPath, secretData)
 	if err != nil {
-		fmt.Println("unable to write secret: ", err)
+		log.Println("unable to write secret: ", err)
 	} else {
-		fmt.Println("secret written successfully.")
+		log.Println("secret written successfully.")
 	}
 }
 
 func configureVault() {
 	if !viper.GetBool("create.terraformapplied.vault") {
-
+		if dryrunMode {
+			log.Printf("[#99] Dry-run mode, configureVault skipped.")
+			return
+		}
 		// ```
 		// NOTE: the terraform here produces unnecessary $var.varname vars in the atlantis secret for nonsensitive values
 		// the following atlantis secrets shouldn't have vars in the gitops source code for the atlantis secret, they
@@ -527,32 +354,33 @@ func configureVault() {
 		// ```
 		// ... obviously keep the sensitive values bound to vars
 
+		//TODO replace this command: 
 		var outb, errb bytes.Buffer
 		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "get", "secret", "vault-unseal-keys", "-o", "jsonpath='{.data.cluster-keys\\.json}'")
 		k.Stdout = &outb
 		k.Stderr = &errb
 		err := k.Run()
 		if err != nil {
-			fmt.Println("failed to call k.Run() to get gitlab pod: ", err)
+			log.Println("failed to call k.Run() to get gitlab pod: ", err)
 		}
 		vaultKeysEncoded := outb.String()
 		vaultKeysEncoded = strings.Replace(vaultKeysEncoded, "'", "", -1)
-		fmt.Println("vault keys", vaultKeysEncoded)
+		log.Println("vault keys", vaultKeysEncoded)
 
 		vaultKeysBytes, err := base64.StdEncoding.DecodeString(vaultKeysEncoded)
-		fmt.Println(vaultKeysBytes)
+		log.Println(vaultKeysBytes)
 		if err != nil {
 			panic(err)
 		}
 		vaultKeys := string(vaultKeysBytes)
-		fmt.Println(vaultKeys)
+		log.Println(vaultKeys)
 
 		var dat map[string]interface{}
 		if err := json.Unmarshal([]byte(vaultKeys), &dat); err != nil {
 			panic(err)
 		}
 		vaultToken := dat["root_token"].(string)
-		fmt.Println(vaultToken)
+		log.Println(vaultToken)
 		viper.Set("vault.token", vaultToken)
 		viper.WriteConfig()
 
@@ -574,7 +402,7 @@ func configureVault() {
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/vault", home)
 		err = os.Chdir(directory)
 		if err != nil {
-			fmt.Println("error changing dir")
+			log.Println("error changing dir")
 		}
 
 		tfInitCmd := exec.Command(terraformPath, "init")
@@ -582,7 +410,7 @@ func configureVault() {
 		tfInitCmd.Stderr = os.Stderr
 		err = tfInitCmd.Run()
 		if err != nil {
-			fmt.Println("failed to call vault terraform init: ", err)
+			log.Println("failed to call vault terraform init: ", err)
 		}
 
 		tfApplyCmd := exec.Command(terraformPath, "apply", "-target", "module.bootstrap", "-auto-approve")
@@ -590,17 +418,22 @@ func configureVault() {
 		tfApplyCmd.Stderr = os.Stderr
 		err = tfApplyCmd.Run()
 		if err != nil {
-			fmt.Println("failed to call vault terraform apply: ", err)
+			log.Println("failed to call vault terraform apply: ", err)
 		}
 
 		viper.Set("create.terraformapplied.vault", true)
 		viper.WriteConfig()
+	} else {
+		log.Println("Skipping: configureVault")
 	}
 }
 
 func awaitGitlab() {
-
-	fmt.Println("awaitGitlab called")
+	if dryrunMode {
+		log.Printf("[#99] Dry-run mode, awaitGitlab skipped.")
+		return
+	}
+	log.Println("awaitGitlab called")
 	max := 200
 	for i := 0; i < max; i++ {
 
@@ -610,11 +443,11 @@ func awaitGitlab() {
 
 		resp, _ := http.Get(fmt.Sprintf("https://gitlab.%s", hostedZoneName))
 		if resp != nil && resp.StatusCode == 200 {
-			fmt.Println("gitlab host resolved, 30 second grace period required...")
+			log.Println("gitlab host resolved, 30 second grace period required...")
 			time.Sleep(time.Second * 30)
 			i = max
 		} else {
-			fmt.Println("gitlab host not resolved, sleeping 10s")
+			log.Println("gitlab host not resolved, sleeping 10s")
 			time.Sleep(time.Second * 10)
 		}
 	}
@@ -627,5 +460,6 @@ func init() {
 	// createCmd.MarkFlagRequired("tf-entrypoint")
 	// todo make this an optional switch and check for it or viper
 	createCmd.Flags().Bool("destroy", false, "destroy resources")
+	createCmd.PersistentFlags().BoolVarP(&dryrunMode, "dry-run", "s", false, "set to dry-run mode, no changes done on cloud provider selected")
 
 }

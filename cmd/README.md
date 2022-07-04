@@ -32,3 +32,15 @@ General overview of the code, to help shuffling parts around.
 |cfgFile|String| .flare config file|
 |NebolousVersion|String|CLI version|
 
+
+# Commands Available
+
+| Command | Short Description | Long Description|
+|:---|:---|:---|
+|checktools|Present, needs review.|Present, needs review.|
+|clean|Missing Text|Missing Text|
+|create|Missing Text|Missing Text|
+|destroy|Missing Text|Missing Text|
+|info|Present, needs review.|Present, needs review.|
+|init|Missing Text|Missing Text|
+|version|Present, needs review.|Present, needs review.|

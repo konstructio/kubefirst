@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 
@@ -27,7 +28,7 @@ to quickly create a Cobra application.`,
 		// todo this needs to be removed when we are no longer in the starter account
 		os.Setenv("AWS_PROFILE", "starter")
 
-		fmt.Println("\n\nTODO -- need to setup and argocd delete against registry and wait?\n\n")
+		log.Println("\n\nTODO -- need to setup and argocd delete against registry and wait?\n\n")
 		// kubeconfig := os.Getenv("HOME") + "/.kube/config"
 		// config, err := argocdclientset.BuildConfigFromFlags("", kubeconfig)
 		// argocdclientset, err := argocdclientset.NewForConfig(config)
@@ -51,7 +52,7 @@ to quickly create a Cobra application.`,
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)
 		err := os.Chdir(directory)
 		if err != nil {
-			fmt.Println("error changing dir: ", directory)
+			log.Println("error changing dir: ", directory)
 		}
 
 		os.Setenv("GITLAB_BASE_URL", fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname")))
@@ -62,7 +63,7 @@ to quickly create a Cobra application.`,
 			tfInitGitlabCmd.Stderr = os.Stderr
 			err = tfInitGitlabCmd.Run()
 			if err != nil {
-				fmt.Println("failed to call terraform init gitlab: ", err)
+				log.Println("failed to call terraform init gitlab: ", err)
 				panic("failed to terraform init gitlab")
 			}
 
@@ -71,7 +72,7 @@ to quickly create a Cobra application.`,
 			tfDestroyGitlabCmd.Stderr = os.Stderr
 			err = tfDestroyGitlabCmd.Run()
 			if err != nil {
-				fmt.Println("failed to call terraform destroy gitlab: ", err)
+				log.Println("failed to call terraform destroy gitlab: ", err)
 				panic("failed to terraform destroy gitlab")
 			}
 
@@ -83,7 +84,7 @@ to quickly create a Cobra application.`,
 		directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", home)
 		err = os.Chdir(directory)
 		if err != nil {
-			fmt.Println("error changing dir: ", directory)
+			log.Println("error changing dir: ", directory)
 		}
 
 		tfInitBaseCmd := exec.Command(terraformPath, "init")
@@ -91,7 +92,7 @@ to quickly create a Cobra application.`,
 		tfInitBaseCmd.Stderr = os.Stderr
 		err = tfInitBaseCmd.Run()
 		if err != nil {
-			fmt.Println("failed to call terraform init base: ", err)
+			log.Println("failed to call terraform init base: ", err)
 		}
 
 		tfDestroyBaseCmd := exec.Command(terraformPath, "destroy", "-auto-approve")
@@ -99,7 +100,7 @@ to quickly create a Cobra application.`,
 		tfDestroyBaseCmd.Stderr = os.Stderr
 		err = tfDestroyBaseCmd.Run()
 		if err != nil {
-			fmt.Println("failed to call terraform destroy base: ", err)
+			log.Println("failed to call terraform destroy base: ", err)
 			panic("failed to terraform destroy base")
 		}
 

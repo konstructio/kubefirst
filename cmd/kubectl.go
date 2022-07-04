@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 )
@@ -25,7 +26,7 @@ var gitlabPodsClient coreV1Types.PodInterface
 func getPodNameByLabel(gitlabPodsClient coreV1Types.PodInterface, label string) string {
 	pods, err := gitlabPodsClient.List(context.TODO(), metaV1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", label)})
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	gitlabToolboxPodName = pods.Items[0].Name
@@ -35,7 +36,7 @@ func getPodNameByLabel(gitlabPodsClient coreV1Types.PodInterface, label string) 
 
 func getVaultRootToken(vaultSecretClient coreV1Types.SecretInterface) string {
 	name := "vault-unseal-keys"
-	fmt.Printf("Reading secret %s\n", name)
+	log.Printf("Reading secret %s\n", name)
 	secret, err := vaultSecretClient.Get(context.TODO(), name, metaV1.GetOptions{})
 
 	if err != nil {
@@ -56,7 +57,7 @@ func getVaultRootToken(vaultSecretClient coreV1Types.SecretInterface) string {
 func getSecretValue(k8sClient coreV1Types.SecretInterface, secretName, key string) string {
 	secret, err := k8sClient.Get(context.TODO(), secretName, metaV1.GetOptions{})
 	if err != nil {
-		fmt.Println(fmt.Sprintf("error getting key: %s from secret: %s", key, secretName), err)
+		log.Println(fmt.Sprintf("error getting key: %s from secret: %s", key, secretName), err)
 	}
 	return string(secret.Data[key])
 }

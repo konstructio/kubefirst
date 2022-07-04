@@ -15,8 +15,8 @@ func init() {
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version number for flare",
-	Long:  `All software has versions. This is flare's`,
+	Short: "Print the version number for kubefirst-cli",
+	Long:  `All software has versions. This is kubefirst's`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Printf("flare-cli golang utility version: v%s", NebolousVersion)
 		

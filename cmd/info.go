@@ -5,7 +5,7 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"log"
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/kubefirst/nebulous/pkg/flare"
 )
@@ -18,16 +18,17 @@ var infoCmd = &cobra.Command{
 	and cli version runnig and its current state. Tool recommended for troubleshooting 
 	installations`,
 	Run: func(cmd *cobra.Command, args []string) {		
-		log.Printf("flare-cli golang utility version: v%s", NebolousVersion)
-		log.Printf("OS type: %s", localOs)
-		log.Printf("Arch: %s", localArchitecture)
-		log.Printf("$HOME folder: %s", home)
-		log.Printf("kubectl used: %s", kubectlClientPath)
-		log.Printf("terraform used: %s", terraformPath)
-		log.Printf("Kubeconfig in use: %s", kubeconfigPath)
-		flare.CheckFlareFile(home)
-		flare.CheckKubefirstDir(home)	
-		flare.CheckEnvironment()	
+		fmt.Printf("flare-cli golang utility version: v%s \n", NebolousVersion)
+		fmt.Printf("OS type: %s\n", localOs)
+		fmt.Printf("Arch: %s\n", localArchitecture)
+		fmt.Printf("$HOME folder: %s\n", home)
+		fmt.Printf("kubectl used: %s\n", kubectlClientPath)
+		fmt.Printf("terraform used: %s\n", terraformPath)
+		fmt.Printf("Kubeconfig in use: %s\n", kubeconfigPath)
+		flare.CheckFlareFile(home,true)
+		flare.CheckKubefirstDir(home,true)	
+		flare.CheckEnvironment(true)	
+		fmt.Printf("----------- \n")
 	},
 }
 

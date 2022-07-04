@@ -2,8 +2,8 @@ package flare
 
 import (
 	"context"
-	"fmt"
 
+	"log"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
 	"github.com/aws/aws-sdk-go/aws"
@@ -13,7 +13,7 @@ func DescribeCluster() {
 
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
-		fmt.Println("failed to load configuration, error:", err)
+		log.Println("failed to load configuration, error:", err)
 	}
 	// https://aws.github.io/aws-sdk-go-v2/docs/making-requests/#overriding-configuration
 	eksClient := eks.NewFromConfig(cfg, func(o *eks.Options) {
@@ -24,8 +24,8 @@ func DescribeCluster() {
 		Name: aws.String("kubefirst"),
 	})
 	if err != nil {
-		fmt.Println("error describing cluster", err)
+		log.Println("error describing cluster", err)
 	}
 	// todo base64 encoded data : *cluster.Cluster.CertificateAuthority.Data,
-	fmt.Println("cluster:", *cluster.Cluster.Arn, *cluster.Cluster.Endpoint)
+	log.Println("cluster:", *cluster.Cluster.Arn, *cluster.Cluster.Endpoint)
 }
