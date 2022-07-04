@@ -90,7 +90,7 @@ func hydrateGitlabMetaphorRepo() {
 
 	// todo make global
 	domainName := fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname"))
-	fmt.Println("git remote add origin", domainName)
+	log.Println("git remote add origin", domainName)
 	_, err = metaphorTemplateRepo.CreateRemote(&gitConfig.RemoteConfig{
 		Name: "gitlab",
 		URLs: []string{fmt.Sprintf("%s/kubefirst/metaphor.git", domainName)},
@@ -98,7 +98,7 @@ func hydrateGitlabMetaphorRepo() {
 
 	w, _ := metaphorTemplateRepo.Worktree()
 
-	fmt.Println("Committing new changes...")
+	log.Println("Committing new changes...")
 	w.Add(".")
 	w.Commit("setting new remote upstream to gitlab", &git.CommitOptions{
 		Author: &object.Signature{
@@ -116,7 +116,7 @@ func hydrateGitlabMetaphorRepo() {
 		},
 	})
 	if err != nil {
-		fmt.Println("error pushing to remote", err)
+		log.Println("error pushing to remote", err)
 	}
 
 }
@@ -169,7 +169,7 @@ func changeRegistryToGitLab() {
 		if err := c.Execute(&secrets, creds); err != nil {
 			log.Panic(err)
 		}
-		fmt.Println(secrets.String())
+		log.Println(secrets.String())
 
 		ba := []byte(secrets.String())
 		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
@@ -200,7 +200,7 @@ func changeRegistryToGitLab() {
 		if err := c.Execute(&repoSecrets, creds); err != nil {
 			log.Panic(err)
 		}
-		fmt.Println(repoSecrets.String())
+		log.Println(repoSecrets.String())
 
 		ba = []byte(repoSecrets.String())
 		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
@@ -215,7 +215,7 @@ func changeRegistryToGitLab() {
 		k.Stderr = os.Stderr
 		err = k.Run()
 		if err != nil {
-			fmt.Println("failed to call k.Run() to apply argocd patch to adopt gitlab: ", err)
+			log.Println("failed to call k.Run() to apply argocd patch to adopt gitlab: ", err)
 		}
 
 		viper.Set("gitlab.registry", true)
@@ -240,7 +240,7 @@ func addGitlabOidcApplications() {
 	cb["vault"] = fmt.Sprintf("https://vault.%s:8250/oidc/callback http://localhost:8250/oidc/callback https://vault.%s/ui/vault/auth/oidc/oidc/callback http://localhost:8200/ui/vault/auth/oidc/oidc/callback", domain, domain)
 
 	for _, app := range apps {
-		fmt.Println("checking to see if", app, "oidc application needs to be created in gitlab")
+		log.Println("checking to see if", app, "oidc application needs to be created in gitlab")
 		appId := viper.GetString(fmt.Sprintf("gitlab.oidc.%s.applicationid", app))
 		if appId == "" {
 
@@ -268,7 +268,7 @@ func addGitlabOidcApplications() {
 				}
 			}
 			if created {
-				fmt.Println("created gitlab oidc application with applicationid", createdApp.ApplicationID)
+				log.Println("created gitlab oidc application with applicationid", createdApp.ApplicationID)
 				viper.Set(fmt.Sprintf("gitlab.oidc.%s.applicationid", app), createdApp.ApplicationID)
 				viper.Set(fmt.Sprintf("gitlab.oidc.%s.secret", app), createdApp.Secret)
 
@@ -289,7 +289,7 @@ func addGitlabOidcApplications() {
 }
 
 func addVaultSecret(secretPath string, secretData map[string]interface{}) {
-	fmt.Println("vault called")
+	log.Println("vault called")
 
 	config := vault.DefaultConfig()
 
@@ -297,7 +297,7 @@ func addVaultSecret(secretPath string, secretData map[string]interface{}) {
 
 	client, err := vault.NewClient(config)
 	if err != nil {
-		fmt.Println("unable to initialize Vault client: ", err)
+		log.Println("unable to initialize Vault client: ", err)
 	}
 
 	client.SetToken(viper.GetString("vault.token"))
@@ -305,9 +305,9 @@ func addVaultSecret(secretPath string, secretData map[string]interface{}) {
 	// Writing a secret
 	_, err = client.Logical().Write(secretPath, secretData)
 	if err != nil {
-		fmt.Println("unable to write secret: ", err)
+		log.Println("unable to write secret: ", err)
 	} else {
-		fmt.Println("secret written successfully.")
+		log.Println("secret written successfully.")
 	}
 }
 
@@ -327,32 +327,33 @@ func configureVault() {
 		// ```
 		// ... obviously keep the sensitive values bound to vars
 
+		//TODO replace this command: 
 		var outb, errb bytes.Buffer
 		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "get", "secret", "vault-unseal-keys", "-o", "jsonpath='{.data.cluster-keys\\.json}'")
 		k.Stdout = &outb
 		k.Stderr = &errb
 		err := k.Run()
 		if err != nil {
-			fmt.Println("failed to call k.Run() to get gitlab pod: ", err)
+			log.Println("failed to call k.Run() to get gitlab pod: ", err)
 		}
 		vaultKeysEncoded := outb.String()
 		vaultKeysEncoded = strings.Replace(vaultKeysEncoded, "'", "", -1)
-		fmt.Println("vault keys", vaultKeysEncoded)
+		log.Println("vault keys", vaultKeysEncoded)
 
 		vaultKeysBytes, err := base64.StdEncoding.DecodeString(vaultKeysEncoded)
-		fmt.Println(vaultKeysBytes)
+		log.Println(vaultKeysBytes)
 		if err != nil {
 			panic(err)
 		}
 		vaultKeys := string(vaultKeysBytes)
-		fmt.Println(vaultKeys)
+		log.Println(vaultKeys)
 
 		var dat map[string]interface{}
 		if err := json.Unmarshal([]byte(vaultKeys), &dat); err != nil {
 			panic(err)
 		}
 		vaultToken := dat["root_token"].(string)
-		fmt.Println(vaultToken)
+		log.Println(vaultToken)
 		viper.Set("vault.token", vaultToken)
 		viper.WriteConfig()
 
@@ -374,7 +375,7 @@ func configureVault() {
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/vault", home)
 		err = os.Chdir(directory)
 		if err != nil {
-			fmt.Println("error changing dir")
+			log.Println("error changing dir")
 		}
 
 		tfInitCmd := exec.Command(terraformPath, "init")
@@ -382,7 +383,7 @@ func configureVault() {
 		tfInitCmd.Stderr = os.Stderr
 		err = tfInitCmd.Run()
 		if err != nil {
-			fmt.Println("failed to call vault terraform init: ", err)
+			log.Println("failed to call vault terraform init: ", err)
 		}
 
 		tfApplyCmd := exec.Command(terraformPath, "apply", "-target", "module.bootstrap", "-auto-approve")
@@ -390,7 +391,7 @@ func configureVault() {
 		tfApplyCmd.Stderr = os.Stderr
 		err = tfApplyCmd.Run()
 		if err != nil {
-			fmt.Println("failed to call vault terraform apply: ", err)
+			log.Println("failed to call vault terraform apply: ", err)
 		}
 
 		viper.Set("create.terraformapplied.vault", true)
@@ -400,7 +401,7 @@ func configureVault() {
 
 func awaitGitlab() {
 
-	fmt.Println("awaitGitlab called")
+	log.Println("awaitGitlab called")
 	max := 200
 	for i := 0; i < max; i++ {
 
@@ -410,11 +411,11 @@ func awaitGitlab() {
 
 		resp, _ := http.Get(fmt.Sprintf("https://gitlab.%s", hostedZoneName))
 		if resp != nil && resp.StatusCode == 200 {
-			fmt.Println("gitlab host resolved, 30 second grace period required...")
+			log.Println("gitlab host resolved, 30 second grace period required...")
 			time.Sleep(time.Second * 30)
 			i = max
 		} else {
-			fmt.Println("gitlab host not resolved, sleeping 10s")
+			log.Println("gitlab host not resolved, sleeping 10s")
 			time.Sleep(time.Second * 10)
 		}
 	}

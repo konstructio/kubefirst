@@ -2,6 +2,7 @@
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"runtime"
 )
@@ -16,7 +17,7 @@ func setGlobals() {
 	tmphome, err := os.UserHomeDir()
 	home = tmphome
 	if(err != nil){
-		fmt.Printf("Error Defining home - %s", err)
+		log.Printf("Error Defining home - %s", err)
 		os.Exit(1)
 	}
 	localOs = runtime.GOOS

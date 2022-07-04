@@ -164,9 +164,9 @@ to quickly create a Cobra application.`,
 		bucketRand()
 		log.Println("bucketRand() complete\n\n")
 
-		fmt.Println("calling detokenize() ")
+		log.Println("calling detokenize() ")
 		detokenize(fmt.Sprintf("%s/.kubefirst/gitops", home))
-		fmt.Println("detokenize() complete\n\n")
+		log.Println("detokenize() complete\n\n")
 		Trackers[trackerStage8].Tracker.Increment(int64(1))
 
 		// modConfigYaml()
@@ -941,7 +941,7 @@ func createSoftServe(kubeconfigPath string) {
 
 		viper.Set("create.softserve.create", true)
 		viper.WriteConfig()
-		fmt.Println("waiting for soft-serve installation to complete...")
+		log.Println("waiting for soft-serve installation to complete...")
 		time.Sleep(60 * time.Second)
 	} else {
 		log.Println("Skipping: createSoftServe")

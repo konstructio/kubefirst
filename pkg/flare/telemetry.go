@@ -2,6 +2,7 @@ package flare
 
 import (
 	"fmt"
+	"log"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -18,7 +19,7 @@ func SendTelemetry(domain, metricName string) {
 	req, err := http.NewRequest(method, url, payload)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -27,10 +28,10 @@ func SendTelemetry(domain, metricName string) {
 
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Println("error")
+		log.Println("error")
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 
-	fmt.Println(string(body))
+	log.Println(string(body))
 }
