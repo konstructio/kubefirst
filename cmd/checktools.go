@@ -51,6 +51,8 @@ func execShellReturnStrings(command string, args ...string) (string, string, err
 	k.Stdout = &outb
 	k.Stderr = &errb
 	err := k.Run()
-	log.Println("Error executing command: %v", err)
+	if err != nil {
+		log.Println("Error executing command: %v", err)
+	}
 	return outb.String(), errb.String(), err
 }
