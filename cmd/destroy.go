@@ -28,7 +28,7 @@ to quickly create a Cobra application.`,
 		// todo this needs to be removed when we are no longer in the starter account
 		os.Setenv("AWS_PROFILE", "starter")
 
-		log.Println("\n\nTODO -- need to setup and argocd delete against registry and wait?\n\n")
+		log.Println("TODO -- need to setup and argocd delete against registry and wait?")
 		// kubeconfig := os.Getenv("HOME") + "/.kube/config"
 		// config, err := argocdclientset.BuildConfigFromFlags("", kubeconfig)
 		// argocdclientset, err := argocdclientset.NewForConfig(config)
@@ -63,8 +63,7 @@ to quickly create a Cobra application.`,
 			tfInitGitlabCmd.Stderr = os.Stderr
 			err = tfInitGitlabCmd.Run()
 			if err != nil {
-				log.Println("failed to call terraform init gitlab: ", err)
-				panic("failed to terraform init gitlab")
+				log.Panicf("failed to call terraform init gitlab: ", err)
 			}
 
 			tfDestroyGitlabCmd := exec.Command(terraformPath, "destroy", "-auto-approve")
@@ -72,8 +71,7 @@ to quickly create a Cobra application.`,
 			tfDestroyGitlabCmd.Stderr = os.Stderr
 			err = tfDestroyGitlabCmd.Run()
 			if err != nil {
-				log.Println("failed to call terraform destroy gitlab: ", err)
-				panic("failed to terraform destroy gitlab")
+				log.Panicf("failed to call terraform destroy gitlab: ", err)
 			}
 
 			viper.Set("destroy.terraformdestroy.gitlab", true)

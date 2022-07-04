@@ -952,6 +952,7 @@ func createSoftServe(kubeconfigPath string) {
 		viper.WriteConfig()
 		log.Println("waiting for soft-serve installation to complete...")
 		time.Sleep(60 * time.Second)
+		//TODO: Update mechanism of waiting
 	} else {
 		log.Println("Skipping: createSoftServe")
 	}

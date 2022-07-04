@@ -17,8 +17,7 @@ func setGlobals() {
 	tmphome, err := os.UserHomeDir()
 	home = tmphome
 	if(err != nil){
-		log.Printf("Error Defining home - %s", err)
-		os.Exit(1)
+		log.Panicf("Error Defining home - %s", err)
 	}
 	localOs = runtime.GOOS
 	localArchitecture = runtime.GOARCH

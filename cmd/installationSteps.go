@@ -37,7 +37,7 @@ func applyBaseTerraform(cmd *cobra.Command,directory string){
 
 		err := os.Chdir(directory)
 		if err != nil {
-			log.Println("error changing dir")
+			log.Panicf("error changing dir")
 		}
 
 		viperDestoryFlag := viper.GetBool("terraform.destroy")
@@ -52,7 +52,7 @@ func applyBaseTerraform(cmd *cobra.Command,directory string){
 		execShellReturnStrings(terraformPath, fmt.Sprintf("%s", terraformAction), "-auto-approve")
 		keyOut, _, errKey := execShellReturnStrings(terraformPath, "output", "vault_unseal_kms_key")
 		if errKey != nil {
-			log.Println("failed to call tfOutputCmd.Run(): ", err)
+			log.Panicf("failed to call tfOutputCmd.Run(): ", err)
 		}
 		keyId := strings.TrimSpace(keyOut)
 		log.Println("keyid is:", keyId)
