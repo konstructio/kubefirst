@@ -77,6 +77,15 @@ to quickly create a Cobra application.`,
 		Trackers[trackerStage23].Tracker.Increment(int64(1))
 		hydrateGitlabMetaphorRepo()
 		Trackers[trackerStage23].Tracker.Increment(int64(1))
+		
+		token := getArgocdAuthToken()
+		syncArgocdApplication("argo-components", token)
+		syncArgocdApplication("gitlab-runner-components", token)
+		syncArgocdApplication("gitlab-runner", token)
+		syncArgocdApplication("atlantis-components", token)
+		syncArgocdApplication("chartmuseum-components", token)
+
+
 		metricName = "kubefirst.mgmt_cluster_install.completed"
 		
 		if !dryrunMode {

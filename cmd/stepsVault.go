@@ -34,55 +34,49 @@ func configureVault() {
 		// ```
 		// ... obviously keep the sensitive values bound to vars
 
-		//TODO replace this command: 
-		var outb, errb bytes.Buffer
-		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "get", "secret", "vault-unseal-keys", "-o", "jsonpath='{.data.cluster-keys\\.json}'")
-		k.Stdout = &outb
-		k.Stderr = &errb
-		err := k.Run()
+		config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		if err != nil {
-			log.Println("failed to call k.Run() to get gitlab pod: ", err)
+			log.Panicf("error: getting config %s", err)
 		}
-		vaultKeysEncoded := outb.String()
-		vaultKeysEncoded = strings.Replace(vaultKeysEncoded, "'", "", -1)
-		log.Println("vault keys", vaultKeysEncoded)
-
-		vaultKeysBytes, err := base64.StdEncoding.DecodeString(vaultKeysEncoded)
-		log.Println(vaultKeysBytes)
+		clientset, err := kubernetes.NewForConfig(config)
 		if err != nil {
-			panic(err)
+			log.Panicf("error: getting config &s", err)
 		}
-		vaultKeys := string(vaultKeysBytes)
-		log.Println(vaultKeys)
 
-		var dat map[string]interface{}
-		if err := json.Unmarshal([]byte(vaultKeys), &dat); err != nil {
-			panic(err)
-		}
-		vaultToken := dat["root_token"].(string)
-		log.Println(vaultToken)
+		vaultSecretClient = clientset.CoreV1().Secrets("vault")
+		vaultToken := kubefirst.GetVaultRootToken(vaultSecretClient)
+
 		viper.Set("vault.token", vaultToken)
 		viper.WriteConfig()
 
+		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
+		kPortForward.Stdout = os.Stdout
+		kPortForward.Stderr = os.Stderr
+		err = kPortForward.Start()
+		defer kPortForward.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			log.Panicf("error: failed to port-forward to vault namespce svc/vault %s", err)
+		}
+
 		// Prepare for terraform vault execution
-		os.Setenv("VAULT_ADDR", fmt.Sprintf("https://vault.%s", viper.GetString("aws.domainname")))
+		os.Setenv("VAULT_ADDR", "http://localhost:8200")
 		os.Setenv("VAULT_TOKEN", vaultToken)
 
-		os.Setenv("TF_VAR_vault_addr", fmt.Sprintf("https://vault.%s", viper.GetString("aws.domainname")))
+		os.Setenv("TF_VAR_vault_addr", fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename")))
 		os.Setenv("TF_VAR_aws_account_id", viper.GetString("aws.accountid"))
 		os.Setenv("TF_VAR_aws_region", viper.GetString("aws.region"))
 		os.Setenv("TF_VAR_email_address", viper.GetString("adminemail"))
 		os.Setenv("TF_VAR_gitlab_runner_token", viper.GetString("gitlab.runnertoken"))
 		os.Setenv("TF_VAR_gitlab_token", viper.GetString("gitlab.token"))
 		os.Setenv("TF_VAR_hosted_zone_id", viper.GetString("aws.domainid"))
-		os.Setenv("TF_VAR_hosted_zone_name", viper.GetString("aws.domainname"))
-		os.Setenv("TF_VAR_vault_token", viper.GetString("aws.domainname"))
+		os.Setenv("TF_VAR_hosted_zone_name", viper.GetString("aws.hostedzonename"))
+		os.Setenv("TF_VAR_vault_token", viper.GetString("aws.hostedzonename"))
 		os.Setenv("TF_VAR_vault_redirect_uris", "[\"will-be-patched-later\"]")
 
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/vault", home)
 		err = os.Chdir(directory)
 		if err != nil {
-			log.Println("error changing dir")
+			log.Panicf("error: could not change directory to " + directory)
 		}
 
 		tfInitCmd := exec.Command(terraformPath, "init")
@@ -90,7 +84,7 @@ func configureVault() {
 		tfInitCmd.Stderr = os.Stderr
 		err = tfInitCmd.Run()
 		if err != nil {
-			log.Println("failed to call vault terraform init: ", err)
+			log.Panicf("error: terraform init failed %s", err)
 		}
 
 		tfApplyCmd := exec.Command(terraformPath, "apply", "-target", "module.bootstrap", "-auto-approve")
@@ -98,7 +92,7 @@ func configureVault() {
 		tfApplyCmd.Stderr = os.Stderr
 		err = tfApplyCmd.Run()
 		if err != nil {
-			log.Println("failed to call vault terraform apply: ", err)
+			log.Panicf("error: terraform apply failed %s", err)
 		}
 
 		viper.Set("create.terraformapplied.vault", true)
@@ -114,7 +108,7 @@ func addGitlabOidcApplications() {
 		log.Printf("[#99] Dry-run mode, addGitlabOidcApplications skipped.")
 		return
 	}
-	domain := viper.GetString("aws.domainname")
+	domain := viper.GetString("aws.hostedzonename")
 	git, err := gitlab.NewClient(
 		viper.GetString("gitlab.token"),
 		gitlab.WithBaseURL(fmt.Sprintf("https://gitlab.%s/api/v4", domain)),
@@ -148,7 +142,7 @@ func addGitlabOidcApplications() {
 			// List all applications
 			existingApps, _, err := git.Applications.ListApplications(&gitlab.ListApplicationsOptions{})
 			if err != nil {
-				log.Fatal(err)
+				log.Panicf("error: could not list applications from gitlab")
 			}
 
 			created := false
@@ -172,31 +166,27 @@ func addGitlabOidcApplications() {
 				addVaultSecret(secretPath, secretData)
 				viper.WriteConfig()
 			} else {
-				log.Panic("could not create gitlab iodc application", app)
+				log.Panicf("could not create gitlab oidc application %s", app)
 			}
 		}
 	}
 }
 
 func addVaultSecret(secretPath string, secretData map[string]interface{}) {
-	log.Println("vault called")
-
 	config := vault.DefaultConfig()
-
-	config.Address = fmt.Sprintf("https://vault.%s", viper.GetString("aws.domainname"))
+	config.Address = fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename"))
 
 	client, err := vault.NewClient(config)
 	if err != nil {
-		log.Println("unable to initialize Vault client: ", err)
+		log.Panicf("unable to initialize vault client %s", err)
 	}
 
 	client.SetToken(viper.GetString("vault.token"))
 
-	// Writing a secret
 	_, err = client.Logical().Write(secretPath, secretData)
 	if err != nil {
-		log.Println("unable to write secret: ", err)
+		log.Panicf("unable to write secret vault secret %s - error: %s", secretPath, err)
 	} else {
-		log.Println("secret written successfully.")
+		log.Println("secret successfully written to path: ", secretPath)
 	}
 }

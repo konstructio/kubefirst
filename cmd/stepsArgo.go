@@ -32,21 +32,18 @@ import (
 )
 
 func helmInstallArgocd(home string, kubeconfigPath string) {
-	argocdCreated := viper.GetBool("create.argocd.helm")
-	if !argocdCreated {
+	if !viper.GetBool("create.argocd.helm") {
 		if dryrunMode {
 			log.Printf("[#99] Dry-run mode, helmInstallArgocd skipped.")
 			return
 		}
-		helmClientPath := fmt.Sprintf("%s/.kubefirst/tools/helm", home)
-
 		// ! commenting out until a clean execution is necessary // create namespace
 		helmRepoAddArgocd := exec.Command(helmClientPath, "--kubeconfig", kubeconfigPath, "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
 		helmRepoAddArgocd.Stdout = os.Stdout
 		helmRepoAddArgocd.Stderr = os.Stderr
 		err := helmRepoAddArgocd.Run()
 		if err != nil {
-			log.Println("failed to call helmRepoAddArgocd.Run(): %v", err)
+			log.Panicf("error: could not run helm repo add %s", err)
 		}
 
 		helmRepoUpdate := exec.Command(helmClientPath, "--kubeconfig", kubeconfigPath, "repo", "update")
@@ -54,36 +51,34 @@ func helmInstallArgocd(home string, kubeconfigPath string) {
 		helmRepoUpdate.Stderr = os.Stderr
 		err = helmRepoUpdate.Run()
 		if err != nil {
-			log.Println("failed to call helmRepoUpdate.Run(): %v", err)
+			log.Panicf("error: could not helm repo update %s", err)
 		}
 
-		helmInstallArgocdOut, helmInstallArgocdErr,errHelmInstallArgocd := execShellReturnStrings(helmClientPath, "--kubeconfig", kubeconfigPath, "upgrade", "--install", "argocd", "--namespace", "argocd", "--create-namespace", "--wait", "--values", fmt.Sprintf("%s/.kubefirst/argocd-init-values.yaml", home), "argo/argo-cd")
-		log.Printf("Result:\n\t%s\n\t%s\n",helmInstallArgocdOut,helmInstallArgocdErr)	
-		if errHelmInstallArgocd != nil {
-			log.Println("failed to call helmInstallArgocdCmd.Run(): %v", err)
+		helmInstallArgocdCmd := exec.Command(helmClientPath, "--kubeconfig", kubeconfigPath, "upgrade", "--install", "argocd", "--namespace", "argocd", "--create-namespace", "--wait", "--values", fmt.Sprintf("%s/.kubefirst/argocd-init-values.yaml", home), "argo/argo-cd")
+		helmInstallArgocdCmd.Stdout = os.Stdout
+		helmInstallArgocdCmd.Stderr = os.Stderr
+		err = helmInstallArgocdCmd.Run()
+		if err != nil {
+			log.Panicf("error: could not helm install argocd command %s", err)
 		}
 
 		viper.Set("create.argocd.helm", true)
 		err = viper.WriteConfig()
 		if err != nil {
-			log.Println(err)
+			log.Panicf("error: could not write to viper config")
 		}
 	}
 }
 
 func awaitGitlab() {
+	log.Println("awaitGitlab called")
 	if dryrunMode {
 		log.Printf("[#99] Dry-run mode, awaitGitlab skipped.")
 		return
-	}
-	log.Println("awaitGitlab called")
+	}	
 	max := 200
 	for i := 0; i < max; i++ {
-
-		// todo should this be aws.hostedzonedname since we're sticking to an
-		// todo aws: and gcp: figure their nomenclature is more familar
-		hostedZoneName := viper.GetString("aws.domainname")
-
+		hostedZoneName := viper.GetString("aws.hostedzonename")
 		resp, _ := http.Get(fmt.Sprintf("https://gitlab.%s", hostedZoneName))
 		if resp != nil && resp.StatusCode == 200 {
 			log.Println("gitlab host resolved, 30 second grace period required...")
@@ -308,20 +303,19 @@ func changeRegistryToGitLab() {
 		}
 
 		pat := b64.StdEncoding.EncodeToString([]byte(viper.GetString("gitlab.token")))
-		url := b64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("https://gitlab.%s/kubefirst/", viper.GetString("aws.domainname"))))
-		fullurl := b64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.domainname"))))
+		url := b64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("https://gitlab.%s/kubefirst/", viper.GetString("aws.hostedzonename"))))
+		fullurl := b64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename"))))
 
 		creds := ArgocdGitCreds{PersonalAccessToken: pat, URL: url, FullURL: fullurl}
 
 		var argocdRepositoryAccessTokenSecret *v1.Secret
-		kubeconfig := home + "/.kubefirst/gitops/terraform/base/kubeconfig_kubefirst"
-		config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+		config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		if err != nil {
-			panic(err.Error())
+			log.Panicf("error getting client from kubeconfig")
 		}
 		clientset, err := kubernetes.NewForConfig(config)
 		if err != nil {
-			panic(err.Error())
+			log.Panicf("error getting kubeconfig for clientset")
 		}
 		argocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
@@ -344,16 +338,15 @@ func changeRegistryToGitLab() {
       type: Opaque
     `)
 		if err := c.Execute(&secrets, creds); err != nil {
-			log.Panic(err)
+			log.Panicf("error executing golang template for git repository credentials template %s", err)
 		}
-		log.Println(secrets.String())
 
 		ba := []byte(secrets.String())
 		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
 
 		_, err = argocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
 		if err != nil {
-			panic(err)
+			log.Panicf("error creating argocd repository credentials template secret %s", err)
 		}
 
 		var repoSecrets bytes.Buffer
@@ -375,16 +368,15 @@ func changeRegistryToGitLab() {
       type: Opaque
     `)
 		if err := c.Execute(&repoSecrets, creds); err != nil {
-			log.Panic(err)
+			log.Panicf("error executing golang template for gitops repository template %s", err)
 		}
-		log.Println(repoSecrets.String())
 
 		ba = []byte(repoSecrets.String())
 		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
 
 		_, err = argocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
 		if err != nil {
-			panic(err)
+			log.Panicf("error creating argocd repository connection secret %s", err)
 		}
 
 		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/.kubefirst/gitops/components/gitlab/argocd-adopts-gitlab.yaml", home))
@@ -392,12 +384,90 @@ func changeRegistryToGitLab() {
 		k.Stderr = os.Stderr
 		err = k.Run()
 		if err != nil {
-			log.Println("failed to call k.Run() to apply argocd patch to adopt gitlab: ", err)
+			log.Panicf("failed to call execute kubectl apply of argocd patch to adopt gitlab: %s", err)
 		}
 
 		viper.Set("gitlab.registry", true)
 		viper.WriteConfig()
 	} else {
 		log.Println("Skipping: changeRegistryToGitLab")
+	}
+}
+
+func getArgocdAuthToken() string {
+	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
+	kPortForward.Stdout = os.Stdout
+	kPortForward.Stderr = os.Stderr
+	err := kPortForward.Start()
+	defer kPortForward.Process.Signal(syscall.SIGTERM)
+	if err != nil {
+		log.Panicf("error: failed to port-forward to argocd %s", err)
+	}
+
+	url := "https://localhost:8080/api/v1/session"
+
+	payload := strings.NewReader(fmt.Sprintf("{\n\t\"username\":\"admin\",\"password\":\"%s\"\n}", viper.GetString("argocd.admin.password")))
+
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	req, err := http.NewRequest("POST", url, payload)
+	if err != nil {
+		log.Fatal("error getting auth token from argocd ", err)
+	}
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			// N.B.: when used in production, also check for redirect loops
+			return nil
+		},
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Fatal("error requesting auth token from argocd")
+	}
+
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal("error sending POST request to get argocd auth token :", err)
+	}
+
+	var dat map[string]interface{}
+
+	if err := json.Unmarshal(body, &dat); err != nil {
+		log.Panicf("error unmarshalling  %s", err)
+	}
+	token := dat["token"]
+	viper.Set("argocd.admin.apitoken", token)
+	viper.WriteConfig()
+
+	return token.(string)
+
+}
+
+func syncArgocdApplication(applicationName, argocdAuthToken string) {
+	if dryrunMode {
+		log.Printf("[#99] Dry-run mode, syncArgocdApplication skipped.")
+		return
+	}
+	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
+	kPortForward.Stdout = os.Stdout
+	kPortForward.Stderr = os.Stderr
+	err := kPortForward.Start()
+	defer kPortForward.Process.Signal(syscall.SIGTERM)
+	if err != nil {
+		log.Panicf("error: failed to port-forward to argocd %s", err))
+	}
+
+	// todo need to replace this with a curl wrapper and see if it WORKS
+
+	url := fmt.Sprintf("https://localhost:8080/api/v1/applications/%s/sync", applicationName)
+
+	argoCdAppSync := exec.Command("curl", "-k", "-L", "-X", "POST", url, "-H", fmt.Sprintf("Authorization: Bearer %s", argocdAuthToken))
+	argoCdAppSync.Stdout = os.Stdout
+	argoCdAppSync.Stderr = os.Stderr
+	err = argoCdAppSync.Run()
+	if err != nil {
+		log.Panicf("error: curl appSync failed failed %s", err))
 	}
 }

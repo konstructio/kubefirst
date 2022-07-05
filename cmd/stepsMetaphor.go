@@ -13,52 +13,63 @@ import (
 
 func hydrateGitlabMetaphorRepo() {
 	//TODO: Should this be skipped if already executed?
-	if dryrunMode {
-		log.Printf("[#99] Dry-run mode, hydrateGitlabMetaphorRepo skipped.")
-		return
-	}
-	metaphorTemplateDir := fmt.Sprintf("%s/.kubefirst/metaphor", home)
+	if !viper.GetBool("create.gitlabmetaphor.cloned") {
+		if dryrunMode {
+			log.Printf("[#99] Dry-run mode, hydrateGitlabMetaphorRepo skipped.")
+			return
+		}
 
-	url := "https://github.com/kubefirst/metaphor-template"
+		metaphorTemplateDir := fmt.Sprintf("%s/.kubefirst/metaphor", home)
 
-	metaphorTemplateRepo, err := git.PlainClone(metaphorTemplateDir, false, &git.CloneOptions{
-		URL: url,
-	})
-	if err != nil {
-		panic("error cloning metaphor-template repo")
-	}
+		url := "https://github.com/kubefirst/metaphor-template"
 
-	detokenize(metaphorTemplateDir)
+		metaphorTemplateRepo, err := git.PlainClone(metaphorTemplateDir, false, &git.CloneOptions{
+			URL: url,
+		})
+		if err != nil {
+			log.Panicf("error cloning metaphor-template repo")
+		}
+		viper.Set("create.gitlabmetaphor.cloned", true)
 
-	// todo make global
-	domainName := fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname"))
-	log.Println("git remote add origin", domainName)
-	_, err = metaphorTemplateRepo.CreateRemote(&gitConfig.RemoteConfig{
-		Name: "gitlab",
-		URLs: []string{fmt.Sprintf("%s/kubefirst/metaphor.git", domainName)},
-	})
+		detokenize(metaphorTemplateDir)
 
-	w, _ := metaphorTemplateRepo.Worktree()
+		viper.Set("create.gitlabmetaphor.detokenized", true)
 
-	log.Println("Committing new changes...")
-	w.Add(".")
-	w.Commit("setting new remote upstream to gitlab", &git.CommitOptions{
-		Author: &object.Signature{
-			Name:  "kubefirst-bot",
-			Email: installerEmail,
-			When:  time.Now(),
-		},
-	})
+		// todo make global
+		gitlabURL := fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename"))
+		log.Println("git remote add origin", gitlabURL)
+		_, err = metaphorTemplateRepo.CreateRemote(&gitConfig.RemoteConfig{
+			Name: "gitlab",
+			URLs: []string{fmt.Sprintf("%s/kubefirst/metaphor.git", gitlabURL)},
+		})
 
-	err = metaphorTemplateRepo.Push(&git.PushOptions{
-		RemoteName: "gitlab",
-		Auth: &gitHttp.BasicAuth{
-			Username: "root",
-			Password: viper.GetString("gitlab.token"),
-		},
-	})
-	if err != nil {
-		log.Println("error pushing to remote", err)
+		w, _ := metaphorTemplateRepo.Worktree()
+
+		log.Println("Committing detokenized metaphor content")
+		w.Add(".")
+		w.Commit("setting new remote upstream to gitlab", &git.CommitOptions{
+			Author: &object.Signature{
+				Name:  "kubefirst-bot",
+				Email: "kubefirst-bot@kubefirst.com",
+				When:  time.Now(),
+			},
+		})
+
+		err = metaphorTemplateRepo.Push(&git.PushOptions{
+			RemoteName: "gitlab",
+			Auth: &gitHttp.BasicAuth{
+				Username: "root",
+				Password: viper.GetString("gitlab.token"),
+			},
+		})
+		if err != nil {
+			log.Panicf("error pushing detokenized metaphor repository to remote at" + gitlabURL)
+		}
+
+		viper.Set("create.gitlabmetaphor.pushed", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("Skipping: hydrateGitlabMetaphorRepo")
 	}
 
 }
