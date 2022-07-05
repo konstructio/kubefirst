@@ -229,17 +229,17 @@ func pushGitopsToGitLab() {
 	}
 	  
 	//TODO: should this step to be skipped if already executed?
-	domain := viper.GetString("aws.domainname")
+	domain := viper.GetString("aws.hostedzonename")
 
 	detokenize(fmt.Sprintf("%s/.kubefirst/gitops", home))
 	directory := fmt.Sprintf("%s/.kubefirst/gitops", home)
 
 	repo, err := git.PlainOpen(directory)
 	if err != nil {
-		log.Println("error opening the directory ", directory, err)
+		log.Panicf("error opening the directory ", directory, err)
 	}
 
-	//upstream := fmt.Sprintf("ssh://gitlab.%s:22:kubefirst/gitops", viper.GetString("aws.domainname"))
+	//upstream := fmt.Sprintf("ssh://gitlab.%s:22:kubefirst/gitops", viper.GetString("aws.hostedzonename"))
 	// upstream := "git@gitlab.kube1st.com:kubefirst/gitops.git"
 	upstream := fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", domain)
 	log.Println("git remote add gitlab at url", upstream)
@@ -262,12 +262,12 @@ func pushGitopsToGitLab() {
 	_, err = w.Commit("setting new remote upstream to gitlab", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
-			Email: installerEmail,
+			Email: "kubefirst-bot@kubefirst.com",
 			When:  time.Now(),
 		},
 	})
 	if err != nil {
-		log.Println("error committing changes", err)
+		log.Panicf("error committing changes", err)
 	}
 
 	log.Println("setting auth...")
@@ -284,7 +284,7 @@ func pushGitopsToGitLab() {
 		Auth:       auth,
 	})
 	if err != nil {
-		log.Println("error pushing to remote", err)
+		log.Panicf("error pushing to remote", err)
 	}
 
 }

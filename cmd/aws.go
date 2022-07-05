@@ -77,13 +77,12 @@ func bucketRand() {
 func getAccountInfo() {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
-		log.Println("failed to load configuration, error:", err)
+		log.Panicf("failed to load configuration, error: %s", err)
 	}
-	// https://aws.github.io/aws-sdk-go-v2/docs/making-requests/#overriding-configuration
 	stsClient := sts.NewFromConfig(cfg)
 	iamCaller, err := stsClient.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
 	if err != nil {
-		log.Println("oh no error on call", err)
+		log.Panicf("error: could not get caller identity %s", err)
 	}
 
 	viper.Set("aws.accountid", *iamCaller.Account)
@@ -238,7 +237,7 @@ func getDNSInfo(hostedZoneName string) string {
 		if *zone.Name == fmt.Sprintf(`%s%s`, hostedZoneName, ".") {
 			zoneId = returnHostedZoneId(*zone.Id)
 			log.Printf(`found entry for user submitted domain %s, using hosted zone id %s`, hostedZoneName, zoneId)
-			viper.Set("aws.domainname", hostedZoneName)
+			viper.Set("aws.hostedzonename", hostedZoneName)
 			viper.Set("aws.domainid", zoneId)
 			viper.WriteConfig()
 		}

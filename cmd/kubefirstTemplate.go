@@ -38,12 +38,11 @@ func pushGitopsToSoftServe() {
 
 	directory := fmt.Sprintf("%s/.kubefirst/gitops", home)
 
-	// // Clone the given repository to the given directory
-	log.Println("open %s git repo", directory)
+	log.Println("open git repo", directory)
 
 	repo, err := git.PlainOpen(directory)
 	if err != nil {
-		log.Println("error opening the directory ", directory, err)
+		log.Panicf("error opening the directory ", directory, err)
 	}
 
 	log.Println("git remote add origin ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops")
@@ -52,8 +51,7 @@ func pushGitopsToSoftServe() {
 		URLs: []string{"ssh://127.0.0.1:8022/gitops"},
 	})
 	if err != nil {
-		log.Println("Error creating remote repo:", err)
-		os.Exit(1)
+		log.Panicf("Error creating remote repo: %s", err)
 	}
 	w, _ := repo.Worktree()
 
@@ -62,7 +60,7 @@ func pushGitopsToSoftServe() {
 	w.Commit("setting new remote upstream to soft-serve", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
-			Email: installerEmail,
+			Email: "kubefirst-bot@kubefirst.com",
 			When:  time.Now(),
 		},
 	})
@@ -76,7 +74,7 @@ func pushGitopsToSoftServe() {
 		Auth:       auth,
 	})
 	if err != nil {
-		log.Println("error pushing to remote", err)
+		log.Panicf("error pushing to remote", err)
 	}
 
 }
@@ -120,14 +118,14 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents := ""
 
 		if gitlabConfigured {
-			newContents = strings.Replace(string(read), "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.domainname")), -1)
+			newContents = strings.Replace(string(read), "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename")), -1)
 		} else {
 			newContents = strings.Replace(string(read), "https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops.git", "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", -1)
 		}
 
 		botPublicKey := viper.GetString("botpublickey")
 		domainId := viper.GetString("aws.domainid")
-		domainName := viper.GetString("aws.domainname")
+		hostedzonename := viper.GetString("aws.hostedzonename")
 		bucketStateStore := viper.GetString("bucket.state-store.name")
 		bucketArgoArtifacts := viper.GetString("bucket.argo-artifacts.name")
 		bucketGitlabBackup := viper.GetString("bucket.gitlab-backup.name")
@@ -143,7 +141,7 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<GITLAB_BACKUP_BUCKET>", bucketGitlabBackup, -1)
 		newContents = strings.Replace(newContents, "<CHARTMUSEUM_BUCKET>", bucketChartmuseum, -1)
 		newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_ID>", domainId, -1)
-		newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_NAME>", domainName, -1)
+		newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_NAME>", hostedzonename, -1)
 		newContents = strings.Replace(newContents, "<AWS_DEFAULT_REGION>", region, -1)
 		newContents = strings.Replace(newContents, "<EMAIL_ADDRESS>", adminEmail, -1)
 		newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
@@ -152,7 +150,7 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		}
 
 		if viper.GetBool("create.terraformapplied.gitlab") {
-			newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_NAME>", domainName, -1)
+			newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_NAME>", hostedzonename, -1)
 			newContents = strings.Replace(newContents, "<AWS_DEFAULT_REGION>", region, -1)
 			newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
 		}
