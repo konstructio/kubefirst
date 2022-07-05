@@ -111,14 +111,10 @@ github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.6 h1:eeXdGVtXEe+2Jc49+/v
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.6/go.mod h1:FwpAKI+FBPIELJIdmQzlLtRe8LQSOreMcM2wBsPMvvc=
 github.com/aws/aws-sdk-go-v2/internal/ini v1.3.12 h1:j0VqrjtgsY1Bx27tD0ysay36/K4kFMWRp9K3ieO9nLU=
 github.com/aws/aws-sdk-go-v2/internal/ini v1.3.12/go.mod h1:00c7+ALdPh4YeEUPXJzyU0Yy01nPGOq2+9rUaz05z9g=
-github.com/aws/aws-sdk-go-v2/service/ecr v1.17.6 h1:R9FxvsuknGAoKDJ1YRKwbgkTbedZZ++R7BwscG/6vRk=
-github.com/aws/aws-sdk-go-v2/service/ecr v1.17.6/go.mod h1:+eCLloB5OdOr47npoEKlHGphSa72k44lXebO8I9LpKk=
 github.com/aws/aws-sdk-go-v2/service/eks v1.21.1 h1:CYRfUZNq2krWxqLE1ntvy40uVT/I6X1PniNHrE/W3ps=
 github.com/aws/aws-sdk-go-v2/service/eks v1.21.1/go.mod h1:kLodo8S0UEoVEd3mHTKtGnAhCT2uvCUM/Jjfr3og1yI=
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.5 h1:gRW1ZisKc93EWEORNJRvy/ZydF3o6xLSveJHdi1Oa0U=
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.5/go.mod h1:ZbkttHXaVn3bBo/wpJbQGiiIWR90eTBUVBrEHUEQlho=
-github.com/aws/aws-sdk-go-v2/service/kms v1.17.3 h1:M9bIvNNpbtvDTlZC5I38Kn2yuinJZ/9L+AM2Qom23zI=
-github.com/aws/aws-sdk-go-v2/service/kms v1.17.3/go.mod h1:EKkrWWXwWYf8x3Nrm6Oix3zZP9NRBHqxw5buFGVBHA0=
 github.com/aws/aws-sdk-go-v2/service/route53 v1.20.5 h1:Vex6D07/CmahT0LIaiRk+j9xyVAsvQxBa8iv38p3Ajc=
 github.com/aws/aws-sdk-go-v2/service/route53 v1.20.5/go.mod h1:QZWV7sxHUg/qsPJcAtAI9JyLPKZ78weHmdILmYMCqEE=
 github.com/aws/aws-sdk-go-v2/service/sso v1.11.5 h1:TfJ/zuOYvHnxkvohSwAF3Ppn9KT/SrGZuOZHTPy8Guw=
@@ -1124,9 +1120,8 @@ honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc/go.mod h1:rf3lG4BRIbNafJWh
 honnef.co/go/tools v0.0.1-2019.2.3/go.mod h1:a3bituU0lyd329TUQxRnasdCoJDkEUEAqEt0JzvZhAg=
 honnef.co/go/tools v0.0.1-2020.1.3/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
 honnef.co/go/tools v0.0.1-2020.1.4/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
+k8s.io/api v0.22.1 h1:ISu3tD/jRhYfSW8jI/Q1e+lRxkR7w9UwQEZ7FgslrwY=
 k8s.io/api v0.22.1/go.mod h1:bh13rkTp3F1XEaLGykbyRD2QaTTzPm0e/BMd8ptFONY=
-k8s.io/api v0.24.2 h1:g518dPU/L7VRLxWfcadQn2OnsiGWVOadTLpdnqgY2OI=
-k8s.io/api v0.24.2/go.mod h1:AHqbSkTm6YrQ0ObxjO3Pmp/ubFF/KuM7jU+3khoBsOg=
 k8s.io/apimachinery v0.22.1 h1:DTARnyzmdHMz7bFWFDDm22AM4pLWTQECMpRTFu2d2OM=
 k8s.io/apimachinery v0.22.1/go.mod h1:O3oNtNadZdeOMxHFVxOreoznohCpy0z6mocxbZr7oJ0=
 k8s.io/client-go v0.22.1 h1:jW0ZSHi8wW260FvcXHkIa0NLxFBQszTlhiAVsU5mopw=
