@@ -26,7 +26,7 @@ var gitlabPodsClient coreV1Types.PodInterface
 func getPodNameByLabel(gitlabPodsClient coreV1Types.PodInterface, label string) string {
 	pods, err := gitlabPodsClient.List(context.TODO(), metaV1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", label)})
 	if err != nil {
-		log.Println(err)
+		fmt.Println(err)
 	}
 
 	gitlabToolboxPodName = pods.Items[0].Name

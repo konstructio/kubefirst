@@ -166,22 +166,20 @@ func testHostedZoneLiveness(hostedZoneName, hostedZoneId string) {
 		log.Println(ips)
 
 		if err != nil {
-			// tracker.Message = fmt.Sprintln("dns test", count, "of", 25)
-			fmt.Fprintf(os.Stderr, "Could not get record name %s - waiting 10 seconds and trying again: %v\n", route53RecordName, err)
+			log.Println(fmt.Sprintf("Could not get record name %s - waiting 10 seconds and trying again: \nerror: %s", route53RecordName, err))
 			time.Sleep(10 * time.Second)
 		} else {
 			for _, ip := range ips {
 				// todo check ip against route53RecordValue in some capacity so we can pivot the value for testing
-				log.Printf("%s. in TXT record value: %s\n", route53RecordName, ip)
+				log.Println(fmt.Sprintf("%s. in TXT record value: %s\n", route53RecordName, ip))
 				//tracker.MarkAsDone()
 				count = 26
 			}
 		}
 		if count == 25 {
-			log.Println("unable to resolve hosted zone dns record. please check your domain registrar")
 			//tracker.MarkAsErrored()
 			//pw.Stop()
-			os.Exit(1)
+			log.Panicf("unable to resolve hosted zone dns record. please check your domain registrar")
 		}
 	}
 	// todo delete route53 record
@@ -210,9 +208,9 @@ func testHostedZoneLiveness(hostedZoneName, hostedZoneId string) {
 	// 	HostedZoneId: aws.String(hostedZoneId),
 	// })
 	// if err != nil {
-	// 	fmt.Println("error deleting route 53 record after liveness test")
+	// 	log.Println("error deleting route 53 record after liveness test")
 	// }
-	// fmt.Println("record deletion status is ", *&recordDelete.ChangeInfo.Status)
+	// log.Println("record deletion status is ", *&recordDelete.ChangeInfo.Status)
 
 }
 
