@@ -18,6 +18,8 @@ const trackerStage20 = "0 - Apply Base"
 const trackerStage21 = "1 - Temporary SCM Install"
 const trackerStage22 = "2 - Argo/Final SCM Install"
 const trackerStage23 = "3 - Final Setup"
+var skipVault bool
+var skipGitlab bool
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -63,38 +65,40 @@ to quickly create a Cobra application.`,
 		produceGitlabTokens()
 		Trackers[trackerStage22].Tracker.Increment(int64(1))
 		
+		if !skipGitlab {			
+			applyGitlabTerraform(directory)
+			Trackers[trackerStage22].Tracker.Increment(int64(1))
+			gitlabKeyUpload()
+			Trackers[trackerStage22].Tracker.Increment(int64(1))
+		}
 		
-		applyGitlabTerraform(directory)
-		Trackers[trackerStage22].Tracker.Increment(int64(1))
-		gitlabKeyUpload()
-		Trackers[trackerStage22].Tracker.Increment(int64(1))
-		
-		configureVault()
-		Trackers[trackerStage23].Tracker.Increment(int64(1))
+		if !skipVault || !skipGitlab {
+			configureVault()
+			Trackers[trackerStage23].Tracker.Increment(int64(1))
 
 
-		addGitlabOidcApplications()
-		Trackers[trackerStage23].Tracker.Increment(int64(1))
-		awaitGitlab()
-		Trackers[trackerStage22].Tracker.Increment(int64(1))
-		
-		pushGitopsToGitLab()
-		Trackers[trackerStage22].Tracker.Increment(int64(1))
-		changeRegistryToGitLab()
-		Trackers[trackerStage22].Tracker.Increment(int64(1))
-		
-		
-		
-		hydrateGitlabMetaphorRepo()
-		Trackers[trackerStage23].Tracker.Increment(int64(1))
-		
-		token := getArgocdAuthToken()
-		syncArgocdApplication("argo-components", token)
-		syncArgocdApplication("gitlab-runner-components", token)
-		syncArgocdApplication("gitlab-runner", token)
-		syncArgocdApplication("atlantis-components", token)
-		syncArgocdApplication("chartmuseum-components", token)
-
+			addGitlabOidcApplications()
+			Trackers[trackerStage23].Tracker.Increment(int64(1))
+			awaitGitlab()
+			Trackers[trackerStage22].Tracker.Increment(int64(1))
+			
+			pushGitopsToGitLab()
+			Trackers[trackerStage22].Tracker.Increment(int64(1))
+			changeRegistryToGitLab()
+			Trackers[trackerStage22].Tracker.Increment(int64(1))
+			
+			
+			
+			hydrateGitlabMetaphorRepo()
+			Trackers[trackerStage23].Tracker.Increment(int64(1))
+			
+			token := getArgocdAuthToken()
+			syncArgocdApplication("argo-components", token)
+			syncArgocdApplication("gitlab-runner-components", token)
+			syncArgocdApplication("gitlab-runner", token)
+			syncArgocdApplication("atlantis-components", token)
+			syncArgocdApplication("chartmuseum-components", token)
+		}
 
 		metricName = "kubefirst.mgmt_cluster_install.completed"
 		
@@ -123,5 +127,7 @@ func init() {
 	// todo make this an optional switch and check for it or viper
 	createCmd.Flags().Bool("destroy", false, "destroy resources")
 	createCmd.PersistentFlags().BoolVarP(&dryrunMode, "dry-run", "s", false, "set to dry-run mode, no changes done on cloud provider selected")
+	createCmd.PersistentFlags().BoolVar(&skipVault, "skip-vault", false, "Skip post-git lab install and vault setup")
+	createCmd.PersistentFlags().BoolVar(&skipGitlab, "skip-gitlab", false, "Skip git lab install and vault setup")
 
 }

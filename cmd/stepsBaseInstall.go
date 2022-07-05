@@ -49,3 +49,29 @@ func applyBaseTerraform(cmd *cobra.Command,directory string){
 		log.Println("Skipping: ApplyBaseTerraform")
 	}
 }
+
+func destroyBaseTerraform(){
+	if !skipBaseTerraform {
+		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", home)
+		err := os.Chdir(directory)
+		if err != nil {
+			log.Panicf("error: could not change directory to " + directory)
+		}
+
+		os.Setenv("TF_VAR_aws_account_id", viper.GetString("aws.accountid"))
+		os.Setenv("TF_VAR_aws_region", viper.GetString("aws.region"))
+		os.Setenv("TF_VAR_hosted_zone_name", viper.GetString("aws.hostedzonename"))
+
+		_, _, errInit := execShellReturnStrings(terraformPath, "init")
+		if errInit != nil {
+			log.Panicf("failed to terraform init base %s", err)
+		}
+
+		_, _, errDestroy := execShellReturnStrings(terraformPath, "destroy", "-auto-approve")
+		if errDestroy != nil {
+			log.Panicf("failed to terraform destroy base %s", err)
+		}
+		viper.Set("destroy.terraformdestroy.base", true)
+		viper.WriteConfig()
+	}
+}
