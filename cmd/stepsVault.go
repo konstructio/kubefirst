@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"github.com/spf13/viper"
 	"os/exec"
-	"encoding/json"
-	"bytes"
-	"encoding/base64"
+	"syscall"
 	gitlab "github.com/xanzy/go-gitlab"
 	vault "github.com/hashicorp/vault/api"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"github.com/kubefirst/nebulous/pkg/kubefirst"
 )
 
 

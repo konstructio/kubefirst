@@ -6,17 +6,15 @@ import (
 	"os"
 	"strings"
 	"github.com/spf13/viper"
-
+	"syscall"
 	"os/exec"
 	"time"
-
+	"crypto/tls"
 	"net/url"
 	"net/http"
 	"encoding/json"
-
-	"github.com/google/uuid"
+	"io/ioutil"
 	"bytes"
-	"encoding/base64"
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -93,6 +91,14 @@ func awaitGitlab() {
 
 func produceGitlabTokens(){
 	//TODO: Should this step be skipped if already executed?
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	if err != nil {
+		panic(err.Error())
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
 	log.Println("discovering gitlab toolbox pod")	
 	if dryrunMode {
 		log.Printf("[#99] Dry-run mode, produceGitlabTokens skipped.")
@@ -164,7 +170,7 @@ func applyGitlabTerraform(directory string){
 		directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)
 		err := os.Chdir(directory)
 		if err != nil {
-			log.panic("error: could not change directory to " + directory)
+			log.Panic("error: could not change directory to " + directory)
 		}
 		_,_,errInit := execShellReturnStrings(terraformPath, "init")
 		if errInit != nil {

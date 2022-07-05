@@ -125,7 +125,7 @@ func configureSoftServe() {
 		Auth:       auth,
 	})
 	if err != nil {
-		llog.Panicf("error pushing to remote", err)
+		log.Panicf("error pushing to remote", err)
 	}
 
 }
