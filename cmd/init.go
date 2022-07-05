@@ -206,7 +206,7 @@ func createSshKeyPair() {
 		viper.Set("botPrivateKey", privateKey)
 		err := viper.WriteConfig()
 		if err != nil {
-			log.Println(err)
+			log.Panicf("error: could not write to viper config")
 		}
 	}
 	publicKey = viper.GetString("botpublickey")
@@ -249,12 +249,9 @@ configs:
         %s
 `, strings.ReplaceAll(privateKey, "\n", "\n        ")))
 
-	// fmt.Println("argo init vals:\n", string(argocdInitValuesYaml))
-
 	err := ioutil.WriteFile(fmt.Sprintf("%s/.kubefirst/argocd-init-values.yaml", home), argocdInitValuesYaml, 0644)
 	if err != nil {
-		log.Println("received an error while writing the argocd-init-values.yaml file", err.Error())
-		panic("error: argocd-init-values.yaml" + err.Error())
+		log.Panicf("error: could not write argocd-init-values.yaml %s", err)
 	}
 }
 

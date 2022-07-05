@@ -456,7 +456,7 @@ func syncArgocdApplication(applicationName, argocdAuthToken string) {
 	err := kPortForward.Start()
 	defer kPortForward.Process.Signal(syscall.SIGTERM)
 	if err != nil {
-		log.Panicf("error: failed to port-forward to argocd %s", err))
+		log.Panicf("error: failed to port-forward to argocd %s", err)
 	}
 
 	// todo need to replace this with a curl wrapper and see if it WORKS
@@ -468,6 +468,6 @@ func syncArgocdApplication(applicationName, argocdAuthToken string) {
 	argoCdAppSync.Stderr = os.Stderr
 	err = argoCdAppSync.Run()
 	if err != nil {
-		log.Panicf("error: curl appSync failed failed %s", err))
+		log.Panicf("error: curl appSync failed failed %s", err)
 	}
 }

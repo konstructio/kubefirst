@@ -22,17 +22,16 @@ func cloneGitOpsRepo() {
 	url := "https://github.com/kubefirst/gitops-template"
 	directory := fmt.Sprintf("%s/.kubefirst/gitops", home)
 
-	// Clone the given repository to the given directory
 	log.Println("git clone", url, directory)
 
 	_, err := git.PlainClone(directory, false, &git.CloneOptions{
 		URL: url,
 	})
 	if err != nil {
-		log.Println(err)
+		log.Panicf("reror cloning gitops-template repository from github %s", err)
 	}
 
-	println("downloaded gitops repo from template to directory", home, "/.kubefirst/gitops")
+	log.Println("downloaded gitops repo from template to directory", home, "/.kubefirst/gitops")
 }
 
 func pushGitopsToSoftServe() {

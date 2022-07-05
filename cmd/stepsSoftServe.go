@@ -16,8 +16,7 @@ import (
 )
 
 func createSoftServe(kubeconfigPath string) {
-	createSoftServeFlag := viper.GetBool("create.softserve.create")	
-	if createSoftServeFlag != true {
+	if !viper.GetBool("create.softserve.create") {
 		log.Println("Executing createSoftServe")
 		if dryrunMode {
 			log.Printf("[#99] Dry-run mode, createSoftServe skipped.")
@@ -35,7 +34,7 @@ func createSoftServe(kubeconfigPath string) {
 		softServeApplyOut, softServeApplyErr,errSoftServeApply := execShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "apply", "-f", softServePath, "--wait")
 		log.Printf("Result:\n\t%s\n\t%s\n",softServeApplyOut,softServeApplyErr)	
 		if errSoftServeApply != nil {
-			log.Println("failed to call kubectlCreateSoftServeCmd.Run(): %v", err)
+			log.Panicf("failed to call kubectlCreateSoftServeCmd.Run(): %v", err)
 		}	
 
 		viper.Set("create.softserve.create", true)
@@ -78,13 +77,9 @@ func configureSoftserveAndPush(){
 }
 
 func configureSoftServe() {
-	// todo clone repo
-	// todo manipulate config.yaml
-	// todo git add / commit / push
 	url := "ssh://127.0.0.1:8022/config"
 	directory := fmt.Sprintf("%s/.kubefirst/config", home)
 
-	// Clone the given repository to the given directory
 	log.Println("git clone", url, directory)
 
 	auth, _ := publicKey()
@@ -96,12 +91,12 @@ func configureSoftServe() {
 		Auth: auth,
 	})
 	if err != nil {
-		log.Println("error!, ", err)
+		log.Panicf("error cloning config repository from soft serve")
 	}
 
 	file, err := ioutil.ReadFile(fmt.Sprintf("%s/config.yaml", directory))
 	if err != nil {
-		log.Println("error reading file", err)
+		log.Panicf("error reading config.yaml file %s", err)
 	}
 
 	newFile := strings.Replace(string(file), "allow-keyless: false", "allow-keyless: true", -1)
@@ -130,7 +125,7 @@ func configureSoftServe() {
 		Auth:       auth,
 	})
 	if err != nil {
-		log.Println("error pushing to remote", err)
+		llog.Panicf("error pushing to remote", err)
 	}
 
 }
