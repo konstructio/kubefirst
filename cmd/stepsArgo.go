@@ -397,6 +397,10 @@ func changeRegistryToGitLab() {
 }
 
 func getArgocdAuthToken() string {
+	if dryrunMode {
+		log.Printf("[#99] Dry-run mode, getArgocdAuthToken skipped.")
+		return "nothing"
+	  }
 	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
 	kPortForward.Stdout = os.Stdout
 	kPortForward.Stderr = os.Stderr
