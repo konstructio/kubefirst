@@ -62,42 +62,42 @@ to quickly create a Cobra application.`,
 		helmInstallArgocd(home, kubeconfigPath)
 		Trackers[trackerStage22].Tracker.Increment(int64(1))
 
-		produceGitlabTokens()
-		Trackers[trackerStage22].Tracker.Increment(int64(1))
-		
-		if !skipGitlab {			
+		if !skipGitlab {
+			//TODO: Confirm if we need to waitgit lab to be ready
+			// OR something, too fast the secret will not be there.
+			awaitGitlab()	
+			produceGitlabTokens()
+			Trackers[trackerStage22].Tracker.Increment(int64(1))				
 			applyGitlabTerraform(directory)
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
 			gitlabKeyUpload()
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
-		}
 		
-		if !skipVault || !skipGitlab {
-			configureVault()
-			Trackers[trackerStage23].Tracker.Increment(int64(1))
-
-
-			addGitlabOidcApplications()
-			Trackers[trackerStage23].Tracker.Increment(int64(1))
-			awaitGitlab()
-			Trackers[trackerStage22].Tracker.Increment(int64(1))
-			
-			pushGitopsToGitLab()
-			Trackers[trackerStage22].Tracker.Increment(int64(1))
-			changeRegistryToGitLab()
-			Trackers[trackerStage22].Tracker.Increment(int64(1))
-			
-			
-			
-			hydrateGitlabMetaphorRepo()
-			Trackers[trackerStage23].Tracker.Increment(int64(1))
-			
-			token := getArgocdAuthToken()
-			syncArgocdApplication("argo-components", token)
-			syncArgocdApplication("gitlab-runner-components", token)
-			syncArgocdApplication("gitlab-runner", token)
-			syncArgocdApplication("atlantis-components", token)
-			syncArgocdApplication("chartmuseum-components", token)
+			if !skipVault {
+				configureVault()
+				Trackers[trackerStage23].Tracker.Increment(int64(1))
+				addGitlabOidcApplications()
+				Trackers[trackerStage23].Tracker.Increment(int64(1))
+				awaitGitlab()
+				Trackers[trackerStage22].Tracker.Increment(int64(1))
+				
+				pushGitopsToGitLab()
+				Trackers[trackerStage22].Tracker.Increment(int64(1))
+				changeRegistryToGitLab()
+				Trackers[trackerStage22].Tracker.Increment(int64(1))
+				
+				
+				
+				hydrateGitlabMetaphorRepo()
+				Trackers[trackerStage23].Tracker.Increment(int64(1))
+				
+				token := getArgocdAuthToken()
+				syncArgocdApplication("argo-components", token)
+				syncArgocdApplication("gitlab-runner-components", token)
+				syncArgocdApplication("gitlab-runner", token)
+				syncArgocdApplication("atlantis-components", token)
+				syncArgocdApplication("chartmuseum-components", token)
+			}
 		}
 
 		metricName = "kubefirst.mgmt_cluster_install.completed"

@@ -23,19 +23,19 @@ func applyBaseTerraform(cmd *cobra.Command,directory string){
 
 		err := os.Chdir(directory)
 		if err != nil {
-			log.Panicf("error, directory does not exist - did you `kubefirst init`?: %s \nerror: %s", directory, err)
+			log.Panicf("error, directory does not exist - did you `kubefirst init`?: %s \nerror: %v", directory, err)
 		}
 		_,_,errInit := execShellReturnStrings(terraformPath, "init")
 		if errInit != nil {
-			panic(fmt.Sprintf("error: terraform init failed %s", err))
+			panic(fmt.Sprintf("error: terraform init failed %v", err))
 		}
 		_,_,errApply := execShellReturnStrings(terraformPath,"apply", "-auto-approve")
 		if errApply != nil {
-			panic(fmt.Sprintf("error: terraform init failed %s", err))
+			panic(fmt.Sprintf("error: terraform init failed %v", err))
 		}
 		keyOut, _, errKey := execShellReturnStrings(terraformPath, "output", "vault_unseal_kms_key")
 		if errKey != nil {
-			log.Panicf("error: terraform apply failed %s", err)
+			log.Panicf("error: terraform apply failed %v", err)
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 		keyIdNoSpace :=  strings.TrimSpace(keyOut)
@@ -64,12 +64,12 @@ func destroyBaseTerraform(){
 
 		_, _, errInit := execShellReturnStrings(terraformPath, "init")
 		if errInit != nil {
-			log.Panicf("failed to terraform init base %s", err)
+			log.Panicf("failed to terraform init base %v", err)
 		}
 
 		_, _, errDestroy := execShellReturnStrings(terraformPath, "destroy", "-auto-approve")
 		if errDestroy != nil {
-			log.Panicf("failed to terraform destroy base %s", err)
+			log.Panicf("failed to terraform destroy base %v", err)
 		}
 		viper.Set("destroy.terraformdestroy.base", true)
 		viper.WriteConfig()
