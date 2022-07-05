@@ -98,66 +98,53 @@ func produceGitlabTokens(){
 		log.Printf("[#99] Dry-run mode, produceGitlabTokens skipped.")
 		return
 	}
-	var outb, errb bytes.Buffer
-	k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "get", "pod", "-lapp=toolbox", "-o", "jsonpath='{.items[0].metadata.name}'")
-	k.Stdout = &outb
-	k.Stderr = &errb
-	err := k.Run()
-	if err != nil {
-		log.Println("failed to call k.Run() to get gitlab pod: ", err)
+	time.Sleep(30 * time.Second)
+	argocdSecretClient = clientset.CoreV1().Secrets("argocd")
+
+	argocdPassword := getSecretValue(argocdSecretClient, "argocd-initial-admin-secret", "password")
+
+	viper.Set("argocd.admin.password", argocdPassword)
+	viper.WriteConfig()
+
+	log.Println("discovering gitlab toolbox pod")
+
+	gitlabPodsClient = clientset.CoreV1().Pods("gitlab")
+	gitlabPodName := getPodNameByLabel(gitlabPodsClient, "toolbox")
+
+	gitlabSecretClient = clientset.CoreV1().Secrets("gitlab")
+	secrets, err := gitlabSecretClient.List(context.TODO(), metaV1.ListOptions{})
+
+	var gitlabRootPasswordSecretName string
+
+	for _, secret := range secrets.Items {
+		if strings.Contains(secret.Name, "initial-root-password") {
+			gitlabRootPasswordSecretName = secret.Name
+			log.Println("gitlab initial root password secret name: ", gitlabRootPasswordSecretName)
+		}
 	}
-	gitlabPodName := outb.String()
-	gitlabPodName = strings.Replace(gitlabPodName, "'", "", -1)
-	log.Println("gitlab pod", gitlabPodName)
+	gitlabRootPassword := getSecretValue(gitlabSecretClient, gitlabRootPasswordSecretName, "password")
+
+	viper.Set("gitlab.podname", gitlabPodName)
+	viper.Set("gitlab.root.password", gitlabRootPassword)
+	viper.WriteConfig()
 
 	gitlabToken := viper.GetString("gitlab.token")
+
 	if gitlabToken == "" {
 
-		log.Println("getting gitlab personal access token")
+		log.Println("generating gitlab personal access token")
+		gitlabGeneratePersonalAccessToken(gitlabPodName)
 
-		id := uuid.New()
-		gitlabToken = id.String()[:20]
-
-		k = exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "exec", gitlabPodName, "--", "gitlab-rails", "runner", fmt.Sprintf("token = User.find_by_username('root').personal_access_tokens.create(scopes: [:write_registry, :write_repository, :api], name: 'Automation token'); token.set_token('%s'); token.save!", gitlabToken))
-		k.Stdout = os.Stdout
-		k.Stderr = os.Stderr
-		err = k.Run()
-		if err != nil {
-			log.Println("failed to call k.Run() to set gitlab token: ", err)
-		}
-
-		viper.Set("gitlab.token", gitlabToken)
-		viper.WriteConfig()
-
-		log.Println("gitlabToken", gitlabToken)
 	}
 
 	gitlabRunnerToken := viper.GetString("gitlab.runnertoken")
+
 	if gitlabRunnerToken == "" {
 
 		log.Println("getting gitlab runner token")
-
-		var tokenOut, tokenErr bytes.Buffer
-		k = exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "get", "secret", "gitlab-gitlab-runner-secret", "-o", "jsonpath='{.data.runner-registration-token}'")
-		k.Stdout = &tokenOut
-		k.Stderr = &tokenErr
-		err = k.Run()
-		if err != nil {
-			log.Println("failed to call k.Run() to get gitlabRunnerRegistrationToken: ", err)
-		}
-		encodedToken := tokenOut.String()
-		log.Println(encodedToken)
-		encodedToken = strings.Replace(encodedToken, "'", "", -1)
-		log.Println(encodedToken)
-		gitlabRunnerRegistrationTokenBytes, err := base64.StdEncoding.DecodeString(encodedToken)
-		gitlabRunnerRegistrationToken := string(gitlabRunnerRegistrationTokenBytes)
-		log.Println(gitlabRunnerRegistrationToken)
-		if err != nil {
-			panic(err)
-		}
+		gitlabRunnerRegistrationToken := getSecretValue(gitlabSecretClient, "gitlab-gitlab-runner-secret", "runner-registration-token")
 		viper.Set("gitlab.runnertoken", gitlabRunnerRegistrationToken)
 		viper.WriteConfig()
-		log.Println("gitlabRunnerRegistrationToken", gitlabRunnerRegistrationToken)
 	}
 
 }
@@ -171,15 +158,23 @@ func applyGitlabTerraform(directory string){
 		}		
 		// Prepare for terraform gitlab execution
 		os.Setenv("GITLAB_TOKEN", viper.GetString("gitlab.token"))
-		os.Setenv("GITLAB_BASE_URL", fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname")))
+		os.Setenv("GITLAB_BASE_URL", "http://localhost:8888")
+
 
 		directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)
 		err := os.Chdir(directory)
 		if err != nil {
-			log.Println("error changing dir")
+			log.panic("error: could not change directory to " + directory)
 		}
-		execShellReturnStrings(terraformPath, "init")
-		execShellReturnStrings(terraformPath, "apply", "-auto-approve")
+		_,_,errInit := execShellReturnStrings(terraformPath, "init")
+		if errInit != nil {
+			panic(fmt.Sprintf("error: terraform init for gitlab failed %s", err))
+		}
+		_,_,errApply := execShellReturnStrings(terraformPath, "apply", "-auto-approve")
+		if errApply != nil {
+			panic(fmt.Sprintf("error: terraform apply for gitlab failed %s", err))
+		}
+		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 		viper.Set("create.terraformapplied.gitlab", true)
 		viper.WriteConfig()
 	} else {
@@ -193,6 +188,7 @@ func gitlabKeyUpload(){
 	// upload ssh public key	
 	if !viper.GetBool("gitlab.keyuploaded") {
 		log.Println("Executing gitlabKeyUpload")
+		log.Println("uploading ssh public key for gitlab user")
 		if dryrunMode {
 			log.Printf("[#99] Dry-run mode, gitlabKeyUpload skipped.")
 			return

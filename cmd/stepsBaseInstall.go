@@ -17,32 +17,29 @@ func applyBaseTerraform(cmd *cobra.Command,directory string){
 			log.Printf("[#99] Dry-run mode, applyBaseTerraform skipped.")
 			return
 		}		
-		terraformAction := "apply"
-
 		os.Setenv("TF_VAR_aws_account_id", viper.GetString("aws.accountid"))
 		os.Setenv("TF_VAR_aws_region", viper.GetString("aws.region"))
-		os.Setenv("TF_VAR_hosted_zone_name", viper.GetString("aws.domainname"))
+		os.Setenv("TF_VAR_hosted_zone_name", viper.GetString("aws.hostedzonename"))
 
 		err := os.Chdir(directory)
 		if err != nil {
-			log.Panicf("error changing dir")
+			log.Panicf("error, directory does not exist - did you `kubefirst init`?: %s \nerror: %s", directory, err)
 		}
-
-		viperDestoryFlag := viper.GetBool("terraform.destroy")
-		cmdDestroyFlag, _ := cmd.Flags().GetBool("destroy")
-
-		if viperDestoryFlag == true || cmdDestroyFlag == true {
-			terraformAction = "destroy"
+		_,_,errInit := execShellReturnStrings(terraformPath, "init")
+		if errInit != nil {
+			panic(fmt.Sprintf("error: terraform init failed %s", err))
 		}
-
-		log.Println("terraform action: ", terraformAction, "destroyFlag: ", viperDestoryFlag)
-		execShellReturnStrings(terraformPath, "init")
-		execShellReturnStrings(terraformPath, fmt.Sprintf("%s", terraformAction), "-auto-approve")
+		_,_,errApply := execShellReturnStrings(terraformPath,"apply", "-auto-approve")
+		if errApply != nil {
+			panic(fmt.Sprintf("error: terraform init failed %s", err))
+		}
 		keyOut, _, errKey := execShellReturnStrings(terraformPath, "output", "vault_unseal_kms_key")
 		if errKey != nil {
-			log.Panicf("failed to call tfOutputCmd.Run(): ", err)
+			log.Panicf("error: terraform apply failed %s", err)
 		}
-		keyId := strings.TrimSpace(keyOut)
+		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
+		keyIdNoSpace :=  strings.TrimSpace(keyOut)
+		keyId := keyIdNoSpace[1 : len(keyIdNoSpace)-1]
 		log.Println("keyid is:", keyId)
 		viper.Set("vault.kmskeyid", keyId)
 		viper.Set("create.terraformapplied.base", true)

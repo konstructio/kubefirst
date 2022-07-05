@@ -62,15 +62,15 @@ func configureSoftserveAndPush(){
 		err := kPortForward.Start()
 		defer kPortForward.Process.Signal(syscall.SIGTERM)
 		if err != nil {
-			log.Println("failed to call kPortForward.Run(): ", err)
+			log.Panicf("error: failed to port-forward to soft-serve %s", err)
 		}
-		time.Sleep(10 * time.Second)
+		time.Sleep(20 * time.Second)
 
 		configureSoftServe()
 		pushGitopsToSoftServe()
 		viper.Set("create.softserve.configure", true)
 		viper.WriteConfig()
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 	} else {
 		log.Println("Skipping: configureSoftserveAndPush")
 	}

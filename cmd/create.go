@@ -59,22 +59,32 @@ to quickly create a Cobra application.`,
 		Trackers[trackerStage21].Tracker.Increment(int64(1))	
 		helmInstallArgocd(home, kubeconfigPath)
 		Trackers[trackerStage22].Tracker.Increment(int64(1))
-		awaitGitlab()
-		Trackers[trackerStage22].Tracker.Increment(int64(1))
+
 		produceGitlabTokens()
 		Trackers[trackerStage22].Tracker.Increment(int64(1))
+		
+		
 		applyGitlabTerraform(directory)
 		Trackers[trackerStage22].Tracker.Increment(int64(1))
 		gitlabKeyUpload()
 		Trackers[trackerStage22].Tracker.Increment(int64(1))
+		
+		configureVault()
+		Trackers[trackerStage23].Tracker.Increment(int64(1))
+
+
+		addGitlabOidcApplications()
+		Trackers[trackerStage23].Tracker.Increment(int64(1))
+		awaitGitlab()
+		Trackers[trackerStage22].Tracker.Increment(int64(1))
+		
 		pushGitopsToGitLab()
 		Trackers[trackerStage22].Tracker.Increment(int64(1))
 		changeRegistryToGitLab()
 		Trackers[trackerStage22].Tracker.Increment(int64(1))
-		configureVault()
-		Trackers[trackerStage23].Tracker.Increment(int64(1))
-		addGitlabOidcApplications()
-		Trackers[trackerStage23].Tracker.Increment(int64(1))
+		
+		
+		
 		hydrateGitlabMetaphorRepo()
 		Trackers[trackerStage23].Tracker.Increment(int64(1))
 		

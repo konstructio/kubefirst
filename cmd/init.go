@@ -55,33 +55,26 @@ to quickly create a Cobra application.`,
 		Trackers[trackerStage8] = &flare.ActionTracker{flare.CreateTracker(trackerStage8, int64(1))}
 		Trackers[trackerStage9] = &flare.ActionTracker{flare.CreateTracker(trackerStage9, int64(1))}
 		infoCmd.Run(cmd, args)
+		hostedZoneName, _ := cmd.Flags().GetString("hosted-zone-name")
 		metricName := "kubefirst.init.started"
-		metricDomain := "kubefirst.com"
+		metricDomain := hostedZoneName
 		if !dryrunMode {
 			flare.SendTelemetry(metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
 
-		// todo hack
-		awsProfileSet := os.Getenv("AWS_PROFILE")
-
-		if awsProfileSet == "" {
-			log.Println("\nhack: !!!!! PLEASE SET AWS PROFILE !!!!!\n\nexport AWS_PROFILE=starter\n")
-			os.Exit(1)
-		}
-
+		
 		// todo need to check flags and create config
 
 		// hosted zone name:
 		// name of the hosted zone to be used for the kubefirst install
 		// if suffixed with a dot (eg. kubefirst.com.), the dot will be stripped
-		hostedZoneName, _ := cmd.Flags().GetString("hosted-zone-name")
 		if strings.HasSuffix(hostedZoneName, ".") {
 			hostedZoneName = hostedZoneName[:len(hostedZoneName)-1]
 		}
 		log.Println("hostedZoneName:", hostedZoneName)
-		viper.Set("aws.domainname", hostedZoneName)
+		viper.Set("aws.hostedzonename", hostedZoneName)
 		viper.WriteConfig()
 		// admin email
 		// used for letsencrypt notifications and the gitlab root account
@@ -104,44 +97,40 @@ to quickly create a Cobra application.`,
 		Trackers[trackerStage1].Tracker.Increment(int64(1))
 		//trackProgress(1, false)
 		// todo: this doesn't default to testing the dns check
-		if !viper.GetBool("init.hostedzonecheck.enabled") {
+		skipHostedZoneCheck := viper.GetBool("init.hostedzonecheck.enabled")
+		if !skipHostedZoneCheck {
 			log.Println("skipping hosted zone check")
 		} else {
 			testHostedZoneLiveness(hostedZoneName, hostedZoneId)
 		}
 		Trackers[trackerStage2].Tracker.Increment(int64(1))
-		// todo generate ssh key --> ~/.kubefirst/ssh-key .pub
-
-		//! step 1
-		// todo rm -rf ~/.kubefirst
-		// todo make sure - k -n soft-serve port-forward svc/soft-serve 8022:22
 
 		log.Println("calling createSshKeyPair() ")
 		createSshKeyPair()
-		log.Println("createSshKeyPair() complete\n\n")
+		log.Println("createSshKeyPair() complete")
 		Trackers[trackerStage3].Tracker.Increment(int64(1))
 
-		log.Println("calling cloneGitOpsRepo() function\n")
+		log.Println("calling cloneGitOpsRepo()")
 		cloneGitOpsRepo()
-		log.Println("cloneGitOpsRepo() complete\n\n")
+		log.Println("cloneGitOpsRepo() complete")
 		Trackers[trackerStage4].Tracker.Increment(int64(1))
 
-		log.Println("calling download() ")
+		log.Println("calling download()")
 		download()
-		log.Println("download() complete\n\n")
+		log.Println("download() complete")
 
-		log.Println("calling getAccountInfo() function\n")
+		log.Println("calling getAccountInfo()")
 		getAccountInfo()
-		log.Println("getAccountInfo() complete\n\n")
+		log.Println("getAccountInfo() complete")
 		Trackers[trackerStage6].Tracker.Increment(int64(1))
 
-		log.Println("calling bucketRand() function\n")
+		log.Println("calling bucketRand()")
 		bucketRand()
-		log.Println("bucketRand() complete\n\n")
+		log.Println("bucketRand() complete")
 
-		log.Println("calling detokenize() ")
+		log.Println("calling detokenize()")
 		detokenize(fmt.Sprintf("%s/.kubefirst/gitops", home))
-		log.Println("detokenize() complete\n\n")
+		log.Println("detokenize() complete")
 		Trackers[trackerStage8].Tracker.Increment(int64(1))
 
 		// modConfigYaml()
@@ -170,7 +159,7 @@ func init() {
 	initCmd.MarkFlagRequired("cloud")
 	initCmd.Flags().String("region", "", "the region to provision the cloud resources in")
 	initCmd.MarkFlagRequired("region")
-	initCmd.Flags().Bool("clean", false, "delete any local  kubefirst content ~/.kubefirst, ~/.flare")
+	initCmd.Flags().Bool("clean", false, "delete any local kubefirst content ~/.kubefirst, ~/.flare")
 
 	log.SetPrefix("LOG: ")
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
@@ -179,21 +168,6 @@ func init() {
 	log.Println("init started")
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
