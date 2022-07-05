@@ -48,7 +48,7 @@ to quickly create a Cobra application.`,
 
 		skipGitlabTerraform, _ := cmd.Flags().GetBool("skip-gitlab-terraform")
 		//! terraform destroy gitlab
-		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)
+		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", homeFolder)
 		err := os.Chdir(directory)
 		if err != nil {
 			fmt.Println("error changing dir: ", directory)
@@ -80,7 +80,7 @@ to quickly create a Cobra application.`,
 		}
 
 		//! terraform destroy base
-		directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", home)
+		directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", homeFolder)
 		err = os.Chdir(directory)
 		if err != nil {
 			fmt.Println("error changing dir: ", directory)
