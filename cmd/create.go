@@ -1,7 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
@@ -29,10 +25,10 @@ import (
 	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/uuid"
 	vault "github.com/hashicorp/vault/api"
+	"github.com/kubefirst/nebulous/pkg/flare"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	gitlab "github.com/xanzy/go-gitlab"
-	"github.com/kubefirst/nebulous/pkg/flare"
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -56,14 +52,13 @@ to quickly create a Cobra application.`,
 
 		flare.SendTelemetry(metricDomain, metricName)
 
-		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", home)
+		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", homeFolder)
 
 		applyBase := viper.GetBool("create.terraformapplied.base")
 		createSoftServeFlag := viper.GetBool("create.softserve.create")
 		configureAndPushFlag := viper.GetBool("create.softserve.configure")
 
 		if applyBase != true {
-
 			terraformAction := "apply"
 
 			os.Setenv("TF_VAR_aws_account_id", viper.GetString("aws.accountid"))
@@ -75,14 +70,14 @@ to quickly create a Cobra application.`,
 				fmt.Println("error changing dir")
 			}
 
-			viperDestoryFlag := viper.GetBool("terraform.destroy")
+			viperDestroyFlag := viper.GetBool("terraform.destroy")
 			cmdDestroyFlag, _ := cmd.Flags().GetBool("destroy")
 
-			if viperDestoryFlag == true || cmdDestroyFlag == true {
+			if viperDestroyFlag == true || cmdDestroyFlag == true {
 				terraformAction = "destroy"
 			}
 
-			fmt.Println("terraform action: ", terraformAction, "destroyFlag: ", viperDestoryFlag)
+			fmt.Println("terraform action: ", terraformAction, "destroyFlag: ", viperDestroyFlag)
 			tfInitCmd := exec.Command(terraformPath, "init")
 			tfInitCmd.Stdout = os.Stdout
 			tfInitCmd.Stderr = os.Stderr
@@ -107,18 +102,24 @@ to quickly create a Cobra application.`,
 			fmt.Println("keyid is:", keyId)
 			viper.Set("vault.kmskeyid", keyId)
 			viper.Set("create.terraformapplied.base", true)
-			viper.WriteConfig()
+			err = viper.WriteConfig()
+			if err != nil {
+				log.Panic(err)
+			}
 
-			detokenize(fmt.Sprintf("%s/.kubefirst/gitops", home))
+			detokenize(fmt.Sprintf("%s/.kubefirst/gitops", homeFolder))
 
 		}
+
 		if createSoftServeFlag != true {
 			createSoftServe(kubeconfigPath)
 			viper.Set("create.softserve.create", true)
-			viper.WriteConfig()
+			err := viper.WriteConfig()
+			if err != nil {
+				log.Panic(err)
+			}
 			fmt.Println("waiting for soft-serve installation to complete...")
 			time.Sleep(60 * time.Second)
-
 		}
 
 		if configureAndPushFlag != true {
@@ -140,7 +141,7 @@ to quickly create a Cobra application.`,
 
 		time.Sleep(10 * time.Second)
 
-		helmInstallArgocd(home, kubeconfigPath)
+		helmInstallArgocd(homeFolder, kubeconfigPath)
 		awaitGitlab()
 
 		fmt.Println("discovering gitlab toolbox pod")
@@ -212,7 +213,7 @@ to quickly create a Cobra application.`,
 			os.Setenv("GITLAB_TOKEN", viper.GetString("gitlab.token"))
 			os.Setenv("GITLAB_BASE_URL", fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname")))
 
-			directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)
+			directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", homeFolder)
 			err = os.Chdir(directory)
 			if err != nil {
 				fmt.Println("error changing dir")
@@ -275,7 +276,7 @@ to quickly create a Cobra application.`,
 
 func hydrateGitlabMetaphorRepo() {
 
-	metaphorTemplateDir := fmt.Sprintf("%s/.kubefirst/metaphor", home)
+	metaphorTemplateDir := fmt.Sprintf("%s/.kubefirst/metaphor", homeFolder)
 
 	url := "https://github.com/kubefirst/metaphor-template"
 
@@ -337,7 +338,7 @@ func changeRegistryToGitLab() {
 		creds := ArgocdGitCreds{PersonalAccessToken: pat, URL: url, FullURL: fullurl}
 
 		var argocdRepositoryAccessTokenSecret *v1.Secret
-		kubeconfig := home + "/.kubefirst/gitops/terraform/base/kubeconfig_kubefirst"
+		kubeconfig := homeFolder + "/.kubefirst/gitops/terraform/base/kubeconfig_kubefirst"
 		config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 		if err != nil {
 			panic(err.Error())
@@ -410,7 +411,7 @@ func changeRegistryToGitLab() {
 			panic(err)
 		}
 
-		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/.kubefirst/gitops/components/gitlab/argocd-adopts-gitlab.yaml", home))
+		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/.kubefirst/gitops/components/gitlab/argocd-adopts-gitlab.yaml", homeFolder))
 		k.Stdout = os.Stdout
 		k.Stderr = os.Stderr
 		err = k.Run()
@@ -571,7 +572,7 @@ func configureVault() {
 		os.Setenv("TF_VAR_vault_token", viper.GetString("aws.domainname"))
 		os.Setenv("TF_VAR_vault_redirect_uris", "[\"will-be-patched-later\"]")
 
-		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/vault", home)
+		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/vault", homeFolder)
 		err = os.Chdir(directory)
 		if err != nil {
 			fmt.Println("error changing dir")

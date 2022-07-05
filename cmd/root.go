@@ -5,11 +5,11 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"os"
 	"errors"
-	"log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log"
+	"os"
 )
 
 var cfgFile string
@@ -59,7 +59,7 @@ func init() {
 func initConfig() {
 
 	if cfgFile == "" {
-		cfgFile = home + "/.flare"
+		cfgFile = homeFolder + "/.flare"
 	}
 
 	if _, err := os.Stat(cfgFile); errors.Is(err, os.ErrNotExist) {
@@ -71,12 +71,12 @@ func initConfig() {
 
 	}
 	viper.SetConfigFile(cfgFile)
-	viper.SetConfigType("yaml")	
+	viper.SetConfigType("yaml")
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		log.Println( "Using config file:", viper.ConfigFileUsed())
+		log.Println("Using config file:", viper.ConfigFileUsed())
 	}
-	
+
 }

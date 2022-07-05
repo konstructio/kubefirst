@@ -1,7 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
@@ -35,10 +31,10 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"github.com/kubefirst/nebulous/pkg/flare"
 	gitlabSsh "github.com/kubefirst/nebulous/pkg/ssh"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	ssh2 "golang.org/x/crypto/ssh"
 )
 
@@ -58,27 +54,22 @@ const trackerStage9 = "10 - Send Telemetry"
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Prepare the environment to provisioning the infrastructure",
+	Long:  `At this step the CLI downloads the required tools to create the infrastructure`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		flare.SetupProgress(10)
 		Trackers = make(map[string]*flare.ActionTracker)
-		Trackers[trackerStage0] = &flare.ActionTracker{flare.CreateTracker(trackerStage0, int64(1))}
-		Trackers[trackerStage1] = &flare.ActionTracker{flare.CreateTracker(trackerStage1, int64(1))}
-		Trackers[trackerStage2] = &flare.ActionTracker{flare.CreateTracker(trackerStage2, int64(1))}
-		Trackers[trackerStage3] = &flare.ActionTracker{flare.CreateTracker(trackerStage3, int64(1))}
-		Trackers[trackerStage4] = &flare.ActionTracker{flare.CreateTracker(trackerStage4, int64(1))}
-		Trackers[trackerStage5] = &flare.ActionTracker{flare.CreateTracker(trackerStage5, int64(3))}
-		Trackers[trackerStage6] = &flare.ActionTracker{flare.CreateTracker(trackerStage6, int64(1))}
-		Trackers[trackerStage7] = &flare.ActionTracker{flare.CreateTracker(trackerStage7, int64(4))}
-		Trackers[trackerStage8] = &flare.ActionTracker{flare.CreateTracker(trackerStage8, int64(1))}
-		Trackers[trackerStage9] = &flare.ActionTracker{flare.CreateTracker(trackerStage9, int64(1))}
+		Trackers[trackerStage0] = &flare.ActionTracker{Tracker: flare.CreateTracker(trackerStage0, int64(1))}
+		Trackers[trackerStage1] = &flare.ActionTracker{Tracker: flare.CreateTracker(trackerStage1, int64(1))}
+		Trackers[trackerStage2] = &flare.ActionTracker{Tracker: flare.CreateTracker(trackerStage2, int64(1))}
+		Trackers[trackerStage3] = &flare.ActionTracker{Tracker: flare.CreateTracker(trackerStage3, int64(1))}
+		Trackers[trackerStage4] = &flare.ActionTracker{Tracker: flare.CreateTracker(trackerStage4, int64(1))}
+		Trackers[trackerStage5] = &flare.ActionTracker{Tracker: flare.CreateTracker(trackerStage5, int64(3))}
+		Trackers[trackerStage6] = &flare.ActionTracker{Tracker: flare.CreateTracker(trackerStage6, int64(1))}
+		Trackers[trackerStage7] = &flare.ActionTracker{Tracker: flare.CreateTracker(trackerStage7, int64(4))}
+		Trackers[trackerStage8] = &flare.ActionTracker{Tracker: flare.CreateTracker(trackerStage8, int64(1))}
+		Trackers[trackerStage9] = &flare.ActionTracker{Tracker: flare.CreateTracker(trackerStage9, int64(1))}
 		infoCmd.Run(cmd, args)
 		metricName := "kubefirst.init.started"
 		metricDomain := "kubefirst.com"
@@ -88,15 +79,7 @@ to quickly create a Cobra application.`,
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
 
-		// todo hack
-		awsProfileSet := os.Getenv("AWS_PROFILE")
-
-		if awsProfileSet == "" {
-			log.Println("\nhack: !!!!! PLEASE SET AWS PROFILE !!!!!\n\nexport AWS_PROFILE=starter\n")
-			os.Exit(1)
-		}
-
-		// todo need to check flags and create config
+		flare.CheckEnvironment()
 
 		// hosted zone name:
 		// name of the hosted zone to be used for the kubefirst install
@@ -107,9 +90,12 @@ to quickly create a Cobra application.`,
 		}
 		log.Println("hostedZoneName:", hostedZoneName)
 		viper.Set("aws.domainname", hostedZoneName)
-		viper.WriteConfig()
+		err := viper.WriteConfig()
+		if err != nil {
+			log.Panic(err)
+		}
 		// admin email
-		// used for letsencrypt notifications and the gitlab root account
+		// used for let's encrypt notifications and the gitlab root account
 		adminEmail, _ := cmd.Flags().GetString("admin-email")
 		log.Println("adminEmail:", adminEmail)
 		viper.Set("adminemail", adminEmail)
@@ -143,30 +129,33 @@ to quickly create a Cobra application.`,
 
 		log.Println("calling createSshKeyPair() ")
 		createSshKeyPair()
-		log.Println("createSshKeyPair() complete\n\n")
+		log.Println("createSshKeyPair() complete")
 		Trackers[trackerStage3].Tracker.Increment(int64(1))
 
-		log.Println("calling cloneGitOpsRepo() function\n")
+		log.Println("calling cloneGitOpsRepo() function")
 		cloneGitOpsRepo()
-		log.Println("cloneGitOpsRepo() complete\n\n")
+		log.Println("cloneGitOpsRepo() complete")
 		Trackers[trackerStage4].Tracker.Increment(int64(1))
 
-		log.Println("calling download() ")
-		download()
-		log.Println("download() complete\n\n")
+		log.Println("calling downloadTools() ")
+		err = downloadTools()
+		if err != nil {
+			log.Panic(err)
+		}
+		log.Println("downloadTools() complete")
 
-		log.Println("calling getAccountInfo() function\n")
+		log.Println("calling getAccountInfo() function")
 		getAccountInfo()
-		log.Println("getAccountInfo() complete\n\n")
+		log.Println("getAccountInfo() complete")
 		Trackers[trackerStage6].Tracker.Increment(int64(1))
 
-		log.Println("calling bucketRand() function\n")
+		log.Println("calling bucketRand() function")
 		bucketRand()
-		log.Println("bucketRand() complete\n\n")
+		log.Println("bucketRand() complete")
 
 		fmt.Println("calling detokenize() ")
-		detokenize(fmt.Sprintf("%s/.kubefirst/gitops", home))
-		fmt.Println("detokenize() complete\n\n")
+		detokenize(fmt.Sprintf("%s/.kubefirst/gitops", homeFolder))
+		fmt.Println("detokenize() complete")
 		Trackers[trackerStage8].Tracker.Increment(int64(1))
 
 		// modConfigYaml()
@@ -178,7 +167,10 @@ to quickly create a Cobra application.`,
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
 
-		viper.WriteConfig()
+		err = viper.WriteConfig()
+		if err != nil {
+			log.Panic(err)
+		}
 		Trackers[trackerStage9].Tracker.Increment(int64(1))
 		time.Sleep(time.Millisecond * 100)
 	},
@@ -187,7 +179,7 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(initCmd)
 
-	initCmd.Flags().String("hosted-zone-name", "", "the domain to provision the kubefirst platofrm in")
+	initCmd.Flags().String("hosted-zone-name", "", "the domain to provision the kubefirst platform in")
 	initCmd.MarkFlagRequired("hosted-zone-name")
 	initCmd.Flags().String("admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
 	initCmd.MarkFlagRequired("admin-email")
@@ -462,7 +454,7 @@ func publicKey() (*ssh.PublicKeys, error) {
 func cloneGitOpsRepo() {
 
 	url := "https://github.com/kubefirst/gitops-template"
-	directory := fmt.Sprintf("%s/.kubefirst/gitops", home)
+	directory := fmt.Sprintf("%s/.kubefirst/gitops", homeFolder)
 
 	// Clone the given repository to the given directory
 	log.Println("git clone", url, directory)
@@ -474,7 +466,7 @@ func cloneGitOpsRepo() {
 		log.Println(err)
 	}
 
-	println("downloaded gitops repo from template to directory", home, "/.kubefirst/gitops")
+	println("downloaded gitops repo from template to directory", homeFolder, "/.kubefirst/gitops")
 }
 
 func configureSoftServe() {
@@ -482,7 +474,7 @@ func configureSoftServe() {
 	// todo manipulate config.yaml
 	// todo git add / commit / push
 	url := "ssh://127.0.0.1:8022/config"
-	directory := fmt.Sprintf("%s/.kubefirst/config", home)
+	directory := fmt.Sprintf("%s/.kubefirst/config", homeFolder)
 
 	// Clone the given repository to the given directory
 	log.Println("git clone", url, directory)
@@ -511,7 +503,7 @@ func configureSoftServe() {
 		panic(err)
 	}
 
-	println("re-wrote config.yaml", home, "/.kubefirst/config")
+	println("re-wrote config.yaml", homeFolder, "/.kubefirst/config")
 
 	w, _ := repo.Worktree()
 
@@ -537,7 +529,7 @@ func configureSoftServe() {
 
 func pushGitopsToSoftServe() {
 
-	directory := fmt.Sprintf("%s/.kubefirst/gitops", home)
+	directory := fmt.Sprintf("%s/.kubefirst/gitops", homeFolder)
 
 	// // Clone the given repository to the given directory
 	log.Println("open %s git repo", directory)
@@ -585,8 +577,8 @@ func pushGitopsToSoftServe() {
 func pushGitopsToGitLab() {
 	domain := viper.GetString("aws.domainname")
 
-	detokenize(fmt.Sprintf("%s/.kubefirst/gitops", home))
-	directory := fmt.Sprintf("%s/.kubefirst/gitops", home)
+	detokenize(fmt.Sprintf("%s/.kubefirst/gitops", homeFolder))
+	directory := fmt.Sprintf("%s/.kubefirst/gitops", homeFolder)
 
 	repo, err := git.PlainOpen(directory)
 	if err != nil {
@@ -728,21 +720,31 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	return nil
 }
 
-func download() {
-	toolsDir := fmt.Sprintf("%s/.kubefirst/tools", home)
+func downloadTools() error {
+	toolsDir := fmt.Sprintf("%s/.kubefirst/tools", homeFolder)
 
 	err := os.Mkdir(toolsDir, 0777)
 	if err != nil {
-		log.Println("error creating directory %s", toolsDir, err)
+		return fmt.Errorf("error creating directory %q, error is: %s", toolsDir, err)
 	}
 
 	kubectlVersion := "v1.20.0"
 	kubectlDownloadUrl := fmt.Sprintf("https://dl.k8s.io/release/%s/bin/%s/%s/kubectl", kubectlVersion, localOs, localArchitecture)
-	downloadFile(kubectlClientPath, kubectlDownloadUrl)
-	os.Chmod(kubectlClientPath, 0755)
+	err = downloadFile(kubectlClientPath, kubectlDownloadUrl)
+	if err != nil {
+		return err
+	}
 
-	// todo this kubeconfig is not available to us until we have run the terraform in base/
-	os.Setenv("KUBECONFIG", kubeconfigPath)
+	err = os.Chmod(kubectlClientPath, 0755)
+	if err != nil {
+		return err
+	}
+
+	// todo: this kubeconfig is not available to us until we have run the terraform in base/
+	err = os.Setenv("KUBECONFIG", kubeconfigPath)
+	if err != nil {
+		return err
+	}
 	log.Println("going to print the kubeconfig env in runtime", os.Getenv("KUBECONFIG"))
 
 	kubectlVersionCmd := exec.Command(kubectlClientPath, "version", "--client", "--short")
@@ -750,64 +752,69 @@ func download() {
 	kubectlVersionCmd.Stderr = os.Stderr
 	err = kubectlVersionCmd.Run()
 	if err != nil {
-		log.Println("failed to call kubectlVersionCmd.Run(): %v", err)
+		return fmt.Errorf("failed to call kubectlVersionCmd.Run(): %v", err)
 	}
+
 	Trackers[trackerStage5].Tracker.Increment(int64(1))
-	// argocdVersion := "v2.3.4"
-	// argocdDownloadUrl := fmt.Sprintf("https://github.com/argoproj/argo-cd/releases/download/%s/argocd-%s-%s", argocdVersion, localOs, localArchitecture)
-	// argocdClientPath := fmt.Sprintf("%s/.kubefirst/tools/argocd", home)
-	// downloadFile(argocdClientPath, argocdDownloadUrl)
-	// os.Chmod(argocdClientPath, 755)
 
-	// argocdVersionCmd := exec.Command(argocdClientPath, "version", "--client", "--short")
-	// argocdVersionCmd.Stdout = os.Stdout
-	// argocdVersionCmd.Stderr = os.Stderr
-	// err = argocdVersionCmd.Run()
-	// if err != nil {
-	// 	fmt.Println("failed to call argocdVersionCmd.Run(): %v", err)
-	// }
-
-	// todo adopt latest helmVersion := "v3.9.0"
+	// todo: adopt latest helmVersion := "v3.9.0"
 	terraformVersion := "1.0.11"
 	// terraformClientPath := fmt.Sprintf("./%s-%s/terraform", localOs, localArchitecture)
 	terraformDownloadUrl := fmt.Sprintf("https://releases.hashicorp.com/terraform/%s/terraform_%s_%s_%s.zip", terraformVersion, terraformVersion, localOs, localArchitecture)
-	terraformDownloadZipPath := fmt.Sprintf("%s/.kubefirst/tools/terraform.zip", home)
-	downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
+	terraformDownloadZipPath := fmt.Sprintf("%s/.kubefirst/tools/terraform.zip", homeFolder)
+	err = downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
+	if err != nil {
+		return err
+	}
 	// terraformZipDownload, err := os.Open(terraformDownloadZipPath)
 	if err != nil {
 		log.Println("error reading terraform file")
 	}
-	unzipDirectory := fmt.Sprintf("%s/.kubefirst/tools", home)
+	unzipDirectory := fmt.Sprintf("%s/.kubefirst/tools", homeFolder)
 	unzip(terraformDownloadZipPath, unzipDirectory)
 
-	os.Chmod(unzipDirectory, 0777)
-	os.Chmod(fmt.Sprintf("%s/terraform", unzipDirectory), 0755)
+	err = os.Chmod(unzipDirectory, 0777)
+	if err != nil {
+		return err
+	}
+	err = os.Chmod(fmt.Sprintf("%s/terraform", unzipDirectory), 0755)
+	if err != nil {
+		return err
+	}
 	Trackers[trackerStage5].Tracker.Increment(int64(1))
 
 	// todo adopt latest helmVersion := "v3.9.0"
 	helmVersion := "v3.2.1"
 	helmDownloadUrl := fmt.Sprintf("https://get.helm.sh/helm-%s-%s-%s.tar.gz", helmVersion, localOs, localArchitecture)
-	helmDownloadTarGzPath := fmt.Sprintf("%s/.kubefirst/tools/helm.tar.gz", home)
-	downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
+	helmDownloadTarGzPath := fmt.Sprintf("%s/.kubefirst/tools/helm.tar.gz", homeFolder)
+	err = downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
+	if err != nil {
+		return err
+	}
 	helmTarDownload, err := os.Open(helmDownloadTarGzPath)
 	if err != nil {
 		log.Println("error reading helm file")
 	}
 	extractFileFromTarGz(helmTarDownload, fmt.Sprintf("%s-%s/helm", localOs, localArchitecture), helmClientPath)
-	os.Chmod(helmClientPath, 0755)
+	err = os.Chmod(helmClientPath, 0755)
+	if err != nil {
+		return err
+	}
+
 	helmVersionCmd := exec.Command(helmClientPath, "version", "--client", "--short")
 
 	// currently argocd init values is generated by flare nebulous ssh
 
-	// todo helm install argocd --create-namespace --wait --values ~/.kubefirst/argocd-init-values.yaml argo/argo-cd
+	// todo: helm install argocd --create-namespace --wait --values ~/.kubefirst/argocd-init-values.yaml argo/argo-cd
 	helmVersionCmd.Stdout = os.Stdout
 	helmVersionCmd.Stderr = os.Stderr
 	err = helmVersionCmd.Run()
 	if err != nil {
-		log.Println("failed to call helmVersionCmd.Run(): %v", err)
+		return fmt.Errorf("failed to call helmVersionCmd.Run(): %v", err)
 	}
 	Trackers[trackerStage5].Tracker.Increment(int64(1))
 
+	return nil
 }
 
 func downloadFile(filepath string, url string) (err error) {
@@ -924,7 +931,7 @@ func extractTarGz(gzipStream io.Reader) {
 
 func createSoftServe(kubeconfigPath string) {
 
-	toolsDir := fmt.Sprintf("%s/.kubefirst/tools", home)
+	toolsDir := fmt.Sprintf("%s/.kubefirst/tools", homeFolder)
 
 	err := os.Mkdir(toolsDir, 0777)
 	if err != nil {
@@ -932,7 +939,7 @@ func createSoftServe(kubeconfigPath string) {
 	}
 
 	// create soft-serve stateful set
-	softServePath := fmt.Sprintf("%s/.kubefirst/gitops/components/soft-serve/manifests.yaml", home)
+	softServePath := fmt.Sprintf("%s/.kubefirst/gitops/components/soft-serve/manifests.yaml", homeFolder)
 	kubectlCreateSoftServeCmd := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "apply", "-f", softServePath, "--wait")
 	kubectlCreateSoftServeCmd.Stdout = os.Stdout
 	kubectlCreateSoftServeCmd.Stderr = os.Stderr
@@ -1035,7 +1042,7 @@ configs:
 
 	// fmt.Println("argo init vals:\n", string(argocdInitValuesYaml))
 
-	err := ioutil.WriteFile(fmt.Sprintf("%s/.kubefirst/argocd-init-values.yaml", home), argocdInitValuesYaml, 0644)
+	err := ioutil.WriteFile(fmt.Sprintf("%s/.kubefirst/argocd-init-values.yaml", homeFolder), argocdInitValuesYaml, 0644)
 	if err != nil {
 		log.Println("received an error while writing the argocd-init-values.yaml file", err.Error())
 		panic("error: argocd-init-values.yaml" + err.Error())

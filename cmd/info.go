@@ -5,29 +5,28 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"log"
-	"github.com/spf13/cobra"
 	"github.com/kubefirst/nebulous/pkg/flare"
+	"github.com/spf13/cobra"
+	"log"
 )
 
 // infoCmd represents the info command
 var infoCmd = &cobra.Command{
 	Use:   "info",
-	Short: "Provide a general overview of host machine and cli",
-	Long: `Command used to allow a deeper inspection of the host machine 
-	and cli version runnig and its current state. Tool recommended for troubleshooting 
-	installations`,
-	Run: func(cmd *cobra.Command, args []string) {		
-		log.Printf("flare-cli golang utility version: v%s", NebolousVersion)
+	Short: "Provides general host and cli information",
+	Long:  `Shows a summary of host details and cli information`,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Printf("Kubefirst-cli version: v%s", kubefirstCliVersion)
 		log.Printf("OS type: %s", localOs)
-		log.Printf("Arch: %s", localArchitecture)
-		log.Printf("$HOME folder: %s", home)
-		log.Printf("kubectl used: %s", kubectlClientPath)
-		log.Printf("terraform used: %s", terraformPath)
-		log.Printf("Kubeconfig in use: %s", kubeconfigPath)
-		flare.CheckFlareFile(home)
-		flare.CheckKubefirstDir(home)	
-		flare.CheckEnvironment()	
+		log.Printf("Architecture: %s", localArchitecture)
+		log.Printf("$HOME folder: %s", homeFolder)
+		log.Printf("Kubectl path: %s", kubectlClientPath)
+		log.Printf("Terraform path: %s", terraformPath)
+		log.Printf("Kubeconfig path: %s", kubeconfigPath)
+
+		flare.CheckFlareFile(homeFolder)
+		flare.CheckKubefirstDir(homeFolder)
+		flare.CheckEnvironment()
 	},
 }
 

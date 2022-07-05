@@ -25,8 +25,8 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("removing $HOME/.kubefirst and $HOME/.flare")
 		// todo ask for user input to verify?
-		os.RemoveAll(fmt.Sprintf("%s/.kubefirst", home))
-		os.Remove(fmt.Sprintf("%s/.flare", home))
+		os.RemoveAll(fmt.Sprintf("%s/.kubefirst", homeFolder))
+		os.Remove(fmt.Sprintf("%s/.flare", homeFolder))
 		log.Println("removed $HOME/.kubefirst and $HOME/.flare")
 		// todo log.Println("proceed to kubefirst create ")
 		log.Println("proceed to flare nebulous create ")

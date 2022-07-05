@@ -5,9 +5,7 @@ go 1.17
 require (
 	github.com/aws/aws-sdk-go v1.44.23
 	github.com/aws/aws-sdk-go-v2/config v1.15.7
-	github.com/aws/aws-sdk-go-v2/service/ecr v1.17.6
 	github.com/aws/aws-sdk-go-v2/service/eks v1.21.1
-	github.com/aws/aws-sdk-go-v2/service/kms v1.17.3
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.20.5
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.6
 	github.com/cip8/autoname v1.0.0
@@ -16,20 +14,18 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/hashicorp/vault/api v1.6.0
 	github.com/jedib0t/go-pretty/v6 v6.3.1
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.11.0
 	github.com/xanzy/go-gitlab v0.68.0
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
 	k8s.io/api v0.24.2
 	k8s.io/apimachinery v0.24.2
 	k8s.io/client-go v0.24.2
-  github.com/argoproj/argo-cd/v2 v2.0.5
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.22.1
 
 replace k8s.io/apimachinery => k8s.io/apimachinery v0.22.1
-
 
 require (
 	github.com/Microsoft/go-winio v0.5.1 // indirect
