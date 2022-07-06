@@ -10,7 +10,9 @@ import (
 func CheckKubefirstDir(home string) error {
 	k1sDir := fmt.Sprintf("%s/.kubefirst", home)
 	if _, err := os.Stat(k1sDir); err != nil {
-		return fmt.Errorf("unable to load \".kubefirst\" directory, error is: %s", err)
+		errorMsg := fmt.Sprintf("unable to load \".flare\" file, error is: %s", err)
+		log.Println(errorMsg)
+		return fmt.Errorf(errorMsg)
 	}
 
 	log.Printf("\".kubefirst\" file found: %s", k1sDir)

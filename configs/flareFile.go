@@ -2,6 +2,7 @@ package configs
 
 import (
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -9,7 +10,11 @@ import (
 func CheckFlareFile(home string) error {
 	flareFile := fmt.Sprintf("%s/.flare", home)
 	if _, err := os.Stat(flareFile); err != nil {
-		return fmt.Errorf("unable to load \".flare\" file, error is: %s", err)
+		errorMsg := fmt.Sprintf("unable to load \".flare\" file, error is: %s", err)
+		log.Println(errorMsg)
+		return fmt.Errorf(errorMsg)
 	}
+
+	log.Println(".flare file is set")
 	return nil
 }
