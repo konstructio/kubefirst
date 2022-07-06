@@ -1,4 +1,4 @@
-package ssh
+package gitlab
 
 import (
 	"crypto/rand"
@@ -9,12 +9,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func marshalRSAPrivate(priv *rsa.PrivateKey) string {
-	return string(pem.EncodeToMemory(&pem.Block{
-		Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv),
-	}))
-}
-
+// GenerateKey generate public and private keys to be consumed by GitLab.
 func GenerateKey() (string, string, error) {
 	reader := rand.Reader
 	bitSize := 2048
@@ -28,8 +23,13 @@ func GenerateKey() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	pubKeyStr := string(ssh.MarshalAuthorizedKey(pub))
-	privKeyStr := marshalRSAPrivate(key)
+	publicKey := string(ssh.MarshalAuthorizedKey(pub))
+	// encode RSA key
+	privateKey := string(pem.EncodeToMemory(
+		&pem.Block{
+			Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key),
+		},
+	))
 
-	return pubKeyStr, privKeyStr, nil
+	return publicKey, privateKey, nil
 }
