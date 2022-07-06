@@ -526,5 +526,7 @@ func  destroyGitlabTerraform(){
 
 		viper.Set("destroy.terraformdestroy.gitlab", true)
 		viper.WriteConfig()
+	} else {
+		log.Println("skip:  destroyGitlabTerraform")
 	}
 }
