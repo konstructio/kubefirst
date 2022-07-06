@@ -1,17 +1,14 @@
 package flare
 
 import (
-	"github.com/jedib0t/go-pretty/v6/progress"
-	"github.com/jedib0t/go-pretty/v6/text"
 	"flag"
 	"fmt"
+	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"time"
 )
 
 type ActionTracker struct {
-	//Message string
-	//Total int64
-	//Increment int64
 	Tracker *progress.Tracker
 }
 
@@ -23,9 +20,9 @@ var (
 	flagHidePercentage     = flag.Bool("hide-percentage", false, "Hide the progress percent?")
 	flagHideTime           = flag.Bool("hide-time", false, "Hide the time taken?")
 	flagHideValue          = flag.Bool("hide-value", false, "Hide the tracker value?")
-//	flagNumTrackers        = flag.Int("num-trackers", 12, "Number of Trackers")
-	flagRandomFail         = flag.Bool("rnd-fail", false, "Introduce random failures in tracking")
-	flagRandomLogs         = flag.Bool("rnd-logs", false, "Output random logs in the middle of tracking")
+	//	flagNumTrackers        = flag.Int("num-trackers", 12, "Number of Trackers")
+	flagRandomFail = flag.Bool("rnd-fail", false, "Introduce random failures in tracking")
+	flagRandomLogs = flag.Bool("rnd-logs", false, "Output random logs in the middle of tracking")
 
 	messageColors = []text.Color{
 		text.FgRed,
@@ -39,7 +36,7 @@ var (
 )
 var pw progress.Writer
 
-func SetupProgress(numTrackers int){
+func SetupProgress(numTrackers int) {
 	flagNumTrackers := flag.Int("num-trackers", numTrackers, "Number of Trackers")
 	flag.Parse()
 	fmt.Printf("Init actions: %d expected tasks ...\n\n", *flagNumTrackers)
@@ -65,7 +62,7 @@ func SetupProgress(numTrackers int){
 
 }
 
-func CreateTracker(title string, total int64) *progress.Tracker{
+func CreateTracker(title string, total int64) *progress.Tracker {
 	units := &progress.UnitsDefault
 	message := title
 	tracker := progress.Tracker{Message: message, Total: total, Units: *units}

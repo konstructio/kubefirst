@@ -1,13 +1,14 @@
-package flare
+package telemetry
 
 import (
 	"fmt"
-	"log"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 )
 
+// SendTelemetry post telemetry data
 func SendTelemetry(domain, metricName string) {
 
 	url := "https://metaphor-go-production.kubefirst.io/telemetry"

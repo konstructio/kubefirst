@@ -6,8 +6,9 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/kubefirst/nebulous/configs"
 	"github.com/spf13/cobra"
-	"github.com/kubefirst/nebulous/pkg/flare"
+	"log"
 )
 
 // infoCmd represents the info command
@@ -17,7 +18,7 @@ var infoCmd = &cobra.Command{
 	Long: `Command used to allow a deeper inspection of the host machine 
 	and cli version runnig and its current state. Tool recommended for troubleshooting 
 	installations`,
-	Run: func(cmd *cobra.Command, args []string) {		
+	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("flare-cli golang utility version: v%s \n", NebolousVersion)
 		fmt.Printf("OS type: %s\n", localOs)
 		fmt.Printf("Arch: %s\n", localArchitecture)
@@ -25,9 +26,18 @@ var infoCmd = &cobra.Command{
 		fmt.Printf("kubectl used: %s\n", kubectlClientPath)
 		fmt.Printf("terraform used: %s\n", terraformPath)
 		fmt.Printf("Kubeconfig in use: %s\n", kubeconfigPath)
-		flare.CheckFlareFile(home,true)
-		flare.CheckKubefirstDir(home,true)	
-		flare.CheckEnvironment(true)	
+		err := configs.CheckFlareFile(home)
+		if err != nil {
+			log.Panic(err)
+		}
+		err = configs.CheckKubefirstDir(home)
+		if err != nil {
+			log.Panic(err)
+		}
+		err = configs.CheckEnvironment()
+		if err != nil {
+			log.Panic(err)
+		}
 		fmt.Printf("----------- \n")
 	},
 }

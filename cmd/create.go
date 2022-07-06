@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/kubefirst/nebulous/internal/telemetry"
 	"github.com/kubefirst/nebulous/pkg/flare"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -39,7 +40,7 @@ to quickly create a Cobra application.`,
 		metricDomain := viper.GetString("aws.domainname")
 
 		if !dryrunMode {
-			flare.SendTelemetry(metricDomain, metricName)
+			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
@@ -88,7 +89,7 @@ to quickly create a Cobra application.`,
 		metricName = "kubefirst.mgmt_cluster_install.completed"
 
 		if !dryrunMode {
-			flare.SendTelemetry(metricDomain, metricName)
+			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
