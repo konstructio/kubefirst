@@ -477,3 +477,56 @@ func syncArgocdApplication(applicationName, argocdAuthToken string) {
 		log.Panicf("error: curl appSync failed failed %s", err)
 	}
 }
+
+func  destroyGitlabTerraform(){
+	log.Println("\n\nTODO -- need to setup and argocd delete against registry and wait?\n\n")
+	// kubeconfig := os.Getenv("HOME") + "/.kube/config"
+	// config, err := argocdclientset.BuildConfigFromFlags("", kubeconfig)
+	// argocdclientset, err := argocdclientset.NewForConfig(config)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	//* should we git clone the gitops repo when destroy is run back to their
+	//* local host to get the latest values of gitops
+
+	os.Setenv("AWS_REGION", viper.GetString("aws.region"))
+	os.Setenv("AWS_ACCOUNT_ID", viper.GetString("aws.accountid"))
+	os.Setenv("HOSTED_ZONE_NAME", viper.GetString("aws.hostedzonename"))
+	os.Setenv("GITLAB_TOKEN", viper.GetString("gitlab.token"))
+
+	os.Setenv("TF_VAR_aws_account_id", viper.GetString("aws.accountid"))
+	os.Setenv("TF_VAR_aws_region", viper.GetString("aws.region"))
+	os.Setenv("TF_VAR_hosted_zone_name", viper.GetString("aws.hostedzonename"))
+
+	directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)	
+	err := os.Chdir(directory)
+	if err != nil {
+		log.Panicf("error: could not change directory to " + directory)
+	}
+
+	os.Setenv("GITLAB_BASE_URL", "http://localhost:8888")
+
+	if !skipGitlabTerraform {
+		tfInitGitlabCmd := exec.Command(terraformPath, "init")
+		tfInitGitlabCmd.Stdout = os.Stdout
+		tfInitGitlabCmd.Stderr = os.Stderr
+		err = tfInitGitlabCmd.Run()
+		if err != nil {
+			log.Panicf("failed to terraform init gitlab %s", err)
+		}
+
+		tfDestroyGitlabCmd := exec.Command(terraformPath, "destroy", "-auto-approve")
+		tfDestroyGitlabCmd.Stdout = os.Stdout
+		tfDestroyGitlabCmd.Stderr = os.Stderr
+		err = tfDestroyGitlabCmd.Run()
+		if err != nil {
+			log.Panicf("failed to terraform destroy gitlab %s", err)
+		}
+
+		viper.Set("destroy.terraformdestroy.gitlab", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("skip:  destroyGitlabTerraform")
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/cip8/autoname"
 	"github.com/spf13/viper"
 	"log"
@@ -246,4 +247,78 @@ func getDNSInfo(hostedZoneName string) string {
 
 func returnHostedZoneId(rawZoneId string) string {
 	return strings.Split(rawZoneId, "/")[2]
+}
+
+  
+func listBucketsInUse() []string{
+	//Read flare file
+	//Iterate over buckets
+	//check if bucket exist
+	//buckets := make([]map[string]string, 0)
+	//var m map[string]string
+	var bucketsInUse []string
+	bucketsConfig := viper.AllKeys()
+	for _, bucketKey := range bucketsConfig {
+		match := strings.HasPrefix(bucketKey,"bucket.") && strings.HasSuffix(bucketKey,".name") 
+		if match {
+			bucketName := viper.GetString(bucketKey)
+			bucketsInUse = append(bucketsInUse,bucketName)
+		}	
+	}
+	return bucketsInUse
+}
+
+func destroyBucket(bucketName string) {
+	
+	s3Client := s3.New(getAWSSession())
+
+	log.Printf("Attempt to delete: %s", bucketName)
+	_, errHead := s3Client.HeadBucket(&s3.HeadBucketInput{
+		Bucket: &bucketName,
+	}) 
+	if errHead != nil {
+		if aerr, ok := errHead.(awserr.Error); ok {
+			switch aerr.Code() {
+			case s3.ErrCodeNoSuchBucket:
+				log.Println("Bucket Error:", s3.ErrCodeNoSuchBucket, aerr.Error())
+			default:
+				log.Println("Bucket Error:",aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			log.Println(errHead.Error())
+		}
+	} else {
+		//if exist, we can delete it
+		_, err := s3Client.DeleteBucket(&s3.DeleteBucketInput{
+			Bucket: &bucketName,
+		})
+		if err != nil {
+			log.Panicf("failed to delete bucket "+bucketName, err.Error())
+		}
+
+	}
+
+}
+
+func getAWSSession() *session.Session {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(viper.GetString("aws.region"))},
+	)
+	if err != nil {
+		log.Panicf("failed to get session ", err.Error())
+	}
+	return sess
+}
+
+func destroyBucketsInUse(){
+	if destroyBuckets {
+		log.Println("Execute: destroyBucketsInUse")
+		for _,bucket := range listBucketsInUse() {
+			destroyBucket(bucket)
+		}
+	} else {
+		log.Println("Skip: destroyBucketsInUse")
+	}
 }
