@@ -1,0 +1,14 @@
+version: "3"
+
+services:
+
+  kubefirst-dev:
+    platform: linux/amd64
+    build:
+      context: ./build
+    container_name: kubefirst-dev
+    volumes:
+      - ./:/home/developer/kubefirst
+    env_file:
+      - .env
+    command: sh -c "./scripts/kubefirst-dev.sh"

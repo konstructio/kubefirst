@@ -1,4 +1,4 @@
-package internal
+package argocd
 
 import (
 	"bytes"
