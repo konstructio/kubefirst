@@ -2,6 +2,7 @@ package configs
 
 import (
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -15,9 +16,13 @@ func CheckEnvironment() error {
 
 	for k, v := range requiredEnvValues {
 		if v == "" {
-			return fmt.Errorf("%s is not set", k)
+			errorMsg := fmt.Sprintf("%s is not set", k)
+			log.Printf(errorMsg)
+			return fmt.Errorf(errorMsg)
 		}
 	}
+
+	log.Println("all environment variables are set")
 
 	return nil
 }
