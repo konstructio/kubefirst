@@ -129,42 +129,57 @@ docker run -it --env-file=kubefirst.env -v $PWD/gitops:/gitops -v $PWD/metaphor:
 
 ### New README
 
-# Flare
+# Kubefirst CLI
 
-- [Flare](#flare)
-  - [Start](#start)
-    - [Start Environment variables](#start-environment-variables)
-    - [Start Actions](#start-actions)
-    - [Start Confirmation](#start-confirmation)
-  - [Destroy](#destroy)
-    - [Destroy Actions](#destroy-actions)
-      - [Notes:](#notes)
+Kubefirst CLI is a cloud provisioning tool. With simple setup and few CLI calls, we spin up a full AWS cluster with full
+GitOps integration, secrets management, production and development Kubernetes environments ready to be consumed.
 
-## Start
+- [Setup](#setup)
+- [Start the container](#start-the-container)
+- [Initialization](#initialization)
+- [Creation](#creation)
+- [Access ArgoCD](#access-argocd)
+- [Destroy](#destroy)
 
-### Start Environment variables
+## Setup
 
-In order to start Kubefirst, the required environment variables are:
+The setup is extremely simple, create a `.env` file in the root folder, and add the following variables:
 
-| Variable         | example            |
-|------------------|--------------------|
-| AWS_PROFILE      | default            |
-| AWS_REGION       | us-east-1          |
-| HOSTED_ZONE_NAME | mydomain.com       |
-| ADMIN_EMAIL      | myemail@somewhere.com |
+| Variable           | example          |
+|--------------------|------------------|
+| AWS_PROFILE        | default          |
+| CLOUD_PROVIDER=aws | aws              |
+| AWS_REGION         | us-east-1        |
+| HOSTED_ZONE_NAME   | example.com      |
+| ADMIN_EMAIL        | john@example.com |
 
-### Start Actions
+## Start the container
+
+We run everything on isolation with Docker, for that, start the container with:
+
+```bash
+docker-compose up kubefirst-dev
+```
+
+## Initialization
+
+Some process requires previous initialization, for that, run:
 
 ```bash
 touch ~/.flare
 mkdir -p ~/.kubefirst
-cd ~/git/kubefirst/gitlab/flare # change to your dir if different
-go build -o bin/flare main.go
-./bin/flare nebulous init --admin-email $ADMIN_EMAIL --cloud aws --hosted-zone-name $HOSTED_ZONE_NAME --region $AWS_REGION
+go run . nebulous init --admin-email $ADMIN_EMAIL --cloud $CLOUD_PROVIDER --hosted-zone-name $HOSTED_ZONE_NAME --region $AWS_REGION
+```
+
+## Creation
+
+At this point, everything is ready to start provisioning the cloud services, and for that we can run:
+
+```bash
 ./bin/flare nebulous create
 ```
 
-### Start Confirmation
+## Access ArgoCD
 
 ```bash
 aws eks update-kubeconfig --name kubefirst
@@ -176,18 +191,16 @@ kubectl -n argocd port-forward svc/argocd-server 8080:80
 
 To destroy remote then local.
 
-These environment variables are expected:
+These environment variables are expected: (todo: move all env. variable references to the setup section)
 
 | Variable         | example                                                                                       |
 |------------------|-----------------------------------------------------------------------------------------------|
 | AWS_PROFILE      | default                                                                                       |
 | AWS_REGION       | us-east-1                                                                                     |
-| AWS_ACCOUNT_ID   | 1xxxxxxxxxx4                                                                                  |
-| HOSTED_ZONE_NAME | mydomain.com                                                                                  |
+| AWS_ACCOUNT_ID   | 000000000                                                                                     |
+| HOSTED_ZONE_NAME | kubefast.com                                                                                  |
 | GITLAB_TOKEN     | "xxxxx1-xx1x-x1xx-1" # replace with value from ~/.flare (only needed if you got to gitlab tf) |
 
-
-### Destroy Actions
 ```bash
 ./bin/flare nebulous destroy
 rm -rf ~/.kubefirst
@@ -196,6 +209,5 @@ rm ~/.flare
 
 #### Notes:
 
-added gitlab.yaml to registry
+added gitlab.yaml to registry  
 pushing local to soft origin
-
