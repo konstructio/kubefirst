@@ -24,9 +24,9 @@ type Config struct {
 	HelmClientPath string
 	HelmVersion    string
 
-	DryRun bool
-
-	DestroyBuckets bool
+	DryRun                        bool
+	SkipDeleteRegistryApplication bool
+	DestroyBuckets                bool
 
 	KubefirstVersion string
 }

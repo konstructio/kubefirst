@@ -4,6 +4,7 @@ import (
 	"fmt"
 	vault "github.com/hashicorp/vault/api"
 	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/internal/k8s"
 	internalVault "github.com/kubefirst/nebulous/internal/vault"
 	"github.com/spf13/viper"
 	gitlab "github.com/xanzy/go-gitlab"
@@ -44,8 +45,8 @@ func configureVault() {
 			log.Panicf("error: getting k8sClient &s", err)
 		}
 
-		vaultSecretClient = clientset.CoreV1().Secrets("vault")
-		vaultToken, err := internalVault.GetVaultRootToken(vaultSecretClient)
+		k8s.VaultSecretClient = clientset.CoreV1().Secrets("vault")
+		vaultToken, err := internalVault.GetVaultRootToken(k8s.VaultSecretClient)
 		if err != nil {
 			log.Panicf("unable to get vault root token, error: %s", err)
 		}

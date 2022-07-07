@@ -13,6 +13,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/internal/k8s"
 	"github.com/kubefirst/nebulous/pkg"
 	"github.com/spf13/viper"
 	"html/template"
@@ -111,20 +112,21 @@ func produceGitlabTokens() {
 		return
 	}
 	time.Sleep(30 * time.Second)
-	argocdSecretClient = clientset.CoreV1().Secrets("argocd")
+	// todo: move it to config
+	k8s.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
-	argocdPassword := getSecretValue(argocdSecretClient, "argocd-initial-admin-secret", "password")
+	argocdPassword := k8s.GetSecretValue(k8s.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
 
 	viper.Set("argocd.admin.password", argocdPassword)
 	viper.WriteConfig()
 
 	log.Println("discovering gitlab toolbox pod")
 
-	gitlabPodsClient = clientset.CoreV1().Pods("gitlab")
-	gitlabPodName := getPodNameByLabel(gitlabPodsClient, "toolbox")
+	k8s.GitlabPodsClient = clientset.CoreV1().Pods("gitlab")
+	gitlabPodName := k8s.GetPodNameByLabel(k8s.GitlabPodsClient, "toolbox")
 
-	gitlabSecretClient = clientset.CoreV1().Secrets("gitlab")
-	secrets, err := gitlabSecretClient.List(context.TODO(), metaV1.ListOptions{})
+	k8s.GitlabSecretClient = clientset.CoreV1().Secrets("gitlab")
+	secrets, err := k8s.GitlabSecretClient.List(context.TODO(), metaV1.ListOptions{})
 
 	var gitlabRootPasswordSecretName string
 
@@ -134,7 +136,7 @@ func produceGitlabTokens() {
 			log.Println("gitlab initial root password secret name: ", gitlabRootPasswordSecretName)
 		}
 	}
-	gitlabRootPassword := getSecretValue(gitlabSecretClient, gitlabRootPasswordSecretName, "password")
+	gitlabRootPassword := k8s.GetSecretValue(k8s.GitlabSecretClient, gitlabRootPasswordSecretName, "password")
 
 	viper.Set("gitlab.podname", gitlabPodName)
 	viper.Set("gitlab.root.password", gitlabRootPassword)
@@ -154,7 +156,7 @@ func produceGitlabTokens() {
 	if gitlabRunnerToken == "" {
 
 		log.Println("getting gitlab runner token")
-		gitlabRunnerRegistrationToken := getSecretValue(gitlabSecretClient, "gitlab-gitlab-runner-secret", "runner-registration-token")
+		gitlabRunnerRegistrationToken := k8s.GetSecretValue(k8s.GitlabSecretClient, "gitlab-gitlab-runner-secret", "runner-registration-token")
 		viper.Set("gitlab.runnertoken", gitlabRunnerRegistrationToken)
 		viper.WriteConfig()
 	}
@@ -326,7 +328,7 @@ func changeRegistryToGitLab() {
 		if err != nil {
 			log.Panicf("error getting kubeconfig for clientset")
 		}
-		argocdSecretClient = clientset.CoreV1().Secrets("argocd")
+		k8s.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
 		var secrets bytes.Buffer
 
@@ -353,7 +355,7 @@ func changeRegistryToGitLab() {
 		ba := []byte(secrets.String())
 		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
 
-		_, err = argocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
+		_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
 		if err != nil {
 			log.Panicf("error creating argocd repository credentials template secret %s", err)
 		}
@@ -383,7 +385,7 @@ func changeRegistryToGitLab() {
 		ba = []byte(repoSecrets.String())
 		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
 
-		_, err = argocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
+		_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
 		if err != nil {
 			log.Panicf("error creating argocd repository connection secret %s", err)
 		}

@@ -55,10 +55,6 @@ to quickly create a Cobra application.`,
 		metricName := "kubefirst.init.started"
 		metricDomain := hostedZoneName
 
-		log.Println("---debug---")
-		log.Println(config.DryRun)
-		log.Println("---debug---")
-
 		if !config.DryRun {
 			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
