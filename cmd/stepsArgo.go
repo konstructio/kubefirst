@@ -13,6 +13,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/internal/gitlab"
 	"github.com/kubefirst/nebulous/internal/k8s"
 	"github.com/kubefirst/nebulous/pkg"
 	"github.com/spf13/viper"
@@ -147,7 +148,7 @@ func produceGitlabTokens() {
 	if gitlabToken == "" {
 
 		log.Println("generating gitlab personal access token")
-		gitlabGeneratePersonalAccessToken(gitlabPodName)
+		gitlab.GitlabGeneratePersonalAccessToken(gitlabPodName)
 
 	}
 
