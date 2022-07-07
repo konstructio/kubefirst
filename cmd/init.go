@@ -10,10 +10,11 @@ import (
 	"log"
 	"strings"
 	"time"
+
+	gitlabSsh "github.com/kubefirst/nebulous/internal/gitlab"
+	"github.com/kubefirst/nebulous/pkg/flare"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/kubefirst/nebulous/pkg/flare"
-	gitlabSsh "github.com/kubefirst/nebulous/pkg/ssh"	
 )
 
 var Trackers map[string]*flare.ActionTracker
@@ -63,7 +64,6 @@ to quickly create a Cobra application.`,
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
 
-		
 		// todo need to check flags and create config
 
 		// hosted zone name:
@@ -168,8 +168,6 @@ func init() {
 
 }
 
-
-
 func createSshKeyPair() {
 	publicKey := viper.GetString("botpublickey")
 	if publicKey == "" {
@@ -227,5 +225,3 @@ configs:
 		log.Panicf("error: could not write argocd-init-values.yaml %s", err)
 	}
 }
-
-

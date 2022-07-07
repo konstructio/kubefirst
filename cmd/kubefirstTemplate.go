@@ -2,19 +2,18 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
-	ssh2 "golang.org/x/crypto/ssh"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"path/filepath"
-	"strings"
 	"github.com/spf13/viper"
-	"io/ioutil"
-	"time"
-
-
+	ssh2 "golang.org/x/crypto/ssh"
 )
 
 func cloneGitOpsRepo() {
@@ -78,7 +77,6 @@ func pushGitopsToSoftServe() {
 	}
 
 }
-
 
 func detokenize(path string) {
 
