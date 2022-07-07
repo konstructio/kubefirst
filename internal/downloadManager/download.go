@@ -1,93 +1,145 @@
-package cmd
+package downloadManager
 
 import (
-	"io"
-	"fmt"
-	"log"
-	"os"
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"fmt"
+	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/pkg"
+	"io"
+	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 )
 
-func download() {
-	toolsDir := fmt.Sprintf("%s/.kubefirst/tools", home)
+func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracker) error {
+
+	toolsDir := fmt.Sprintf("%s/.kubefirst/tools", config.HomePath)
 
 	err := os.Mkdir(toolsDir, 0777)
 	if err != nil {
-		log.Println("error creating directory %s", toolsDir, err)
+		log.Printf("error creating directory %s, error is: %s\n", toolsDir, err)
 	}
 
-	kubectlVersion := "v1.20.0"
-	kubectlDownloadUrl := fmt.Sprintf("https://dl.k8s.io/release/%s/bin/%s/%s/kubectl", kubectlVersion, localOs, localArchitecture)
-	downloadFile(kubectlClientPath, kubectlDownloadUrl)
-	os.Chmod(kubectlClientPath, 0755)
+	kubectlVersion := config.KubectlVersion
+	kubectlDownloadUrl := fmt.Sprintf(
+		"https://dl.k8s.io/release/%s/bin/%s/%s/kubectl",
+		kubectlVersion,
+		config.LocalOs,
+		config.LocalArchitecture,
+	)
 
-	// todo this kubeconfig is not available to us until we have run the terraform in base/
-	os.Setenv("KUBECONFIG", kubeconfigPath)
+	err = downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
+	if err != nil {
+		return err
+	}
+
+	err = os.Chmod(config.KubectlClientPath, 0755)
+	if err != nil {
+		return err
+	}
+
+	// todo: this kubeconfig is not available to us until we have run the terraform in base/
+	err = os.Setenv("KUBECONFIG", config.KubeConfigPath)
+	if err != nil {
+		return err
+	}
+
 	log.Println("going to print the kubeconfig env in runtime", os.Getenv("KUBECONFIG"))
 
-	kubectlStdOut, kubectlStdErr,errKubectl := execShellReturnStrings(kubectlClientPath, "version", "--client", "--short")
-	log.Printf("-> kubectl version:\n\t%s\n\t%s\n",kubectlStdOut,kubectlStdErr)
+	kubectlStdOut, kubectlStdErr, errKubectl := pkg.ExecShellReturnStrings(config.KubectlClientPath, "version", "--client", "--short")
+	log.Printf("-> kubectl version:\n\t%s\n\t%s\n", kubectlStdOut, kubectlStdErr)
 	if errKubectl != nil {
 		log.Panicf("failed to call kubectlVersionCmd.Run(): %v", err)
 	}
 
-	Trackers[trackerStage5].Tracker.Increment(int64(1))
-	// argocdVersion := "v2.3.4"
-	// argocdDownloadUrl := fmt.Sprintf("https://github.com/argoproj/argo-cd/releases/download/%s/argocd-%s-%s", argocdVersion, localOs, localArchitecture)
-	// argocdClientPath := fmt.Sprintf("%s/.kubefirst/tools/argocd", home)
-	// downloadFile(argocdClientPath, argocdDownloadUrl)
-	// os.Chmod(argocdClientPath, 755)
+	const trackerStage20 = "0 - Apply Base"
+	const trackerStage5 = "6 - DownloadTools Tools"
 
-	// argocdVersionCmd := exec.Command(argocdClientPath, "version", "--client", "--short")
-	// argocdVersionCmd.Stdout = os.Stdout
-	// argocdVersionCmd.Stderr = os.Stderr
-	// err = argocdVersionCmd.Run()
-	// if err != nil {
-	// 	fmt.Println("failed to call argocdVersionCmd.Run(): %v", err)
-	// }
+	trackers[trackerStage20] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(trackerStage20, 1)}
+	trackers[trackerStage5].Tracker.Increment(1)
 
-	// todo adopt latest helmVersion := "v3.9.0"
-	terraformVersion := "1.0.11"
-	// terraformClientPath := fmt.Sprintf("./%s-%s/terraform", localOs, localArchitecture)
-	terraformDownloadUrl := fmt.Sprintf("https://releases.hashicorp.com/terraform/%s/terraform_%s_%s_%s.zip", terraformVersion, terraformVersion, localOs, localArchitecture)
-	terraformDownloadZipPath := fmt.Sprintf("%s/.kubefirst/tools/terraform.zip", home)
-	downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
-	// terraformZipDownload, err := os.Open(terraformDownloadZipPath)
+	// todo: adopt latest helmVersion := "v3.9.0"
+	terraformVersion := config.TerraformVersion
+
+	terraformDownloadUrl := fmt.Sprintf(
+		"https://releases.hashicorp.com/terraform/%s/terraform_%s_%s_%s.zip",
+		terraformVersion,
+		terraformVersion,
+		config.LocalOs,
+		config.LocalArchitecture,
+	)
+
+	terraformDownloadZipPath := fmt.Sprintf("%s/.kubefirst/tools/terraform.zip", config.HomePath)
+	err = downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
 	if err != nil {
-		log.Panicf("error reading terraform file")
+		log.Println("error reading terraform file")
+		return err
 	}
-	unzipDirectory := fmt.Sprintf("%s/.kubefirst/tools", home)
+
+	unzipDirectory := fmt.Sprintf("%s/.kubefirst/tools", config.HomePath)
 	unzip(terraformDownloadZipPath, unzipDirectory)
 
-	os.Chmod(unzipDirectory, 0777)
-	os.Chmod(fmt.Sprintf("%s/terraform", unzipDirectory), 0755)
-	Trackers[trackerStage5].Tracker.Increment(int64(1))
+	err = os.Chmod(unzipDirectory, 0777)
+	if err != nil {
+		return err
+	}
 
-	// todo adopt latest helmVersion := "v3.9.0"
-	helmVersion := "v3.2.1"
-	helmDownloadUrl := fmt.Sprintf("https://get.helm.sh/helm-%s-%s-%s.tar.gz", helmVersion, localOs, localArchitecture)
-	helmDownloadTarGzPath := fmt.Sprintf("%s/.kubefirst/tools/helm.tar.gz", home)
-	downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
+	err = os.Chmod(fmt.Sprintf("%s/terraform", unzipDirectory), 0755)
+	if err != nil {
+		return err
+	}
+
+	trackers[trackerStage5].Tracker.Increment(int64(1))
+
+	helmVersion := config.HelmVersion
+	helmDownloadUrl := fmt.Sprintf(
+		"https://get.helm.sh/helm-%s-%s-%s.tar.gz",
+		helmVersion,
+		config.LocalOs,
+		config.LocalArchitecture,
+	)
+
+	helmDownloadTarGzPath := fmt.Sprintf("%s/.kubefirst/tools/helm.tar.gz", config.HomePath)
+	err = downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
+	if err != nil {
+		return err
+	}
+
 	helmTarDownload, err := os.Open(helmDownloadTarGzPath)
 	if err != nil {
 		log.Panicf("could not read helm download content")
 	}
-	extractFileFromTarGz(helmTarDownload, fmt.Sprintf("%s-%s/helm", localOs, localArchitecture), helmClientPath)
-	os.Chmod(helmClientPath, 0755)
-	helmStdOut, helmStdErr,errHelm := execShellReturnStrings(helmClientPath, "version", "--client", "--short")
-	log.Printf("-> kubectl version:\n\t%s\n\t%s\n",helmStdOut,helmStdErr)	
+
+	extractFileFromTarGz(
+		helmTarDownload,
+		fmt.Sprintf("%s-%s/helm", config.LocalOs, config.LocalArchitecture),
+		config.HelmClientPath,
+	)
+	err = os.Chmod(config.HelmClientPath, 0755)
+	if err != nil {
+		return err
+	}
+
+	helmStdOut, helmStdErr, errHelm := pkg.ExecShellReturnStrings(
+		config.HelmClientPath,
+		"version",
+		"--client",
+		"--short",
+	)
+
+	log.Printf("-> kubectl version:\n\t%s\n\t%s\n", helmStdOut, helmStdErr)
 	// currently argocd init values is generated by flare nebulous ssh
 	// todo helm install argocd --create-namespace --wait --values ~/.kubefirst/argocd-init-values.yaml argo/argo-cd
 	if errHelm != nil {
 		log.Panicf("error executing helm version command: %v", err)
 	}
-	Trackers[trackerStage5].Tracker.Increment(int64(1))
+	trackers[trackerStage5].Tracker.Increment(int64(1))
 
+	return nil
 }
 
 func downloadFile(filepath string, url string) (err error) {
@@ -177,27 +229,27 @@ func extractTarGz(gzipStream io.Reader) {
 		}
 		p, _ := filepath.Abs(header.Name)
 		if !strings.Contains(p, "..") {
-		
-			switch header.Typeflag {
-				case tar.TypeDir:
-					if err := os.Mkdir(header.Name, 0755); err != nil {
-						log.Println("extractTarGz: Mkdir() failed: %s", err.Error())
-					}
-				case tar.TypeReg:
-					outFile, err := os.Create(header.Name)
-					if err != nil {
-						log.Println("extractTarGz: Create() failed: %s", err.Error())
-					}
-					if _, err := io.Copy(outFile, tarReader); err != nil {
-						log.Println("extractTarGz: Copy() failed: %s", err.Error())
-					}
-					outFile.Close()
 
-				default:
-					log.Println(
-						"extractTarGz: uknown type: %s in %s",
-						header.Typeflag,
-						header.Name)
+			switch header.Typeflag {
+			case tar.TypeDir:
+				if err := os.Mkdir(header.Name, 0755); err != nil {
+					log.Println("extractTarGz: Mkdir() failed: %s", err.Error())
+				}
+			case tar.TypeReg:
+				outFile, err := os.Create(header.Name)
+				if err != nil {
+					log.Println("extractTarGz: Create() failed: %s", err.Error())
+				}
+				if _, err := io.Copy(outFile, tarReader); err != nil {
+					log.Println("extractTarGz: Copy() failed: %s", err.Error())
+				}
+				outFile.Close()
+
+			default:
+				log.Println(
+					"extractTarGz: uknown type: %s in %s",
+					header.Typeflag,
+					header.Name)
 			}
 		}
 

@@ -1,28 +1,29 @@
-package cmd
+package aws
 
 import (
+	"context"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/cip8/autoname"
+	"github.com/kubefirst/nebulous/configs"
 	"github.com/spf13/viper"
 	"log"
-	"os"
-	"strings"
-	"fmt"
-	"context"
-	"strconv"
 	"net"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
-
-func bucketRand() {
+func BucketRand() {
+	cfg := configs.ReadConfig()
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(viper.GetString("aws.region"))},
 	)
@@ -46,7 +47,7 @@ func bucketRand() {
 
 			regionName := viper.GetString("aws.region")
 			log.Println("region is ", regionName)
-			if !dryrunMode {
+			if !cfg.DryRun {
 				if regionName == "us-east-1" {
 					_, err = s3Client.CreateBucket(&s3.CreateBucketInput{
 						Bucket: &bucketName,
@@ -71,11 +72,11 @@ func bucketRand() {
 			viper.WriteConfig()
 		}
 		log.Printf("bucket %s exists", viper.GetString(fmt.Sprintf("bucket.%s.name", bucket)))
-		Trackers[trackerStage7].Tracker.Increment(int64(1))
+		//Trackers[trackerStage7].Tracker.Increment(int64(1))
 	}
 }
 
-func getAccountInfo() {
+func GetAccountInfo() {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Panicf("failed to load configuration, error: %s", err)
@@ -91,7 +92,7 @@ func getAccountInfo() {
 	viper.WriteConfig()
 }
 
-func testHostedZoneLiveness(hostedZoneName, hostedZoneId string) {
+func TestHostedZoneLiveness(hostedZoneName, hostedZoneId string) {
 	//tracker := progress.Tracker{Message: "testing hosted zone", Total: 25}
 
 	// todo need to create single client and pass it
@@ -121,7 +122,8 @@ func testHostedZoneLiveness(hostedZoneName, hostedZoneId string) {
 	}
 
 	if len(recordList.ResourceRecordSets) == 0 {
-		if !dryrunMode {
+		cfg := configs.ReadConfig()
+		if !cfg.DryRun {
 			record, err := route53Client.ChangeResourceRecordSets(context.TODO(), &route53.ChangeResourceRecordSetsInput{
 				ChangeBatch: &types.ChangeBatch{
 					Changes: []types.Change{
@@ -215,7 +217,7 @@ func testHostedZoneLiveness(hostedZoneName, hostedZoneId string) {
 
 }
 
-func getDNSInfo(hostedZoneName string) string {
+func GetDNSInfo(hostedZoneName string) string {
 
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
@@ -234,7 +236,7 @@ func getDNSInfo(hostedZoneName string) string {
 
 	for _, zone := range hostedZones.HostedZones {
 		if *zone.Name == fmt.Sprintf(`%s%s`, hostedZoneName, ".") {
-			zoneId = returnHostedZoneId(*zone.Id)
+			zoneId = ReturnHostedZoneId(*zone.Id)
 			log.Printf(`found entry for user submitted domain %s, using hosted zone id %s`, hostedZoneName, zoneId)
 			viper.Set("aws.hostedzonename", hostedZoneName)
 			viper.Set("aws.domainid", zoneId)
@@ -245,12 +247,11 @@ func getDNSInfo(hostedZoneName string) string {
 
 }
 
-func returnHostedZoneId(rawZoneId string) string {
+func ReturnHostedZoneId(rawZoneId string) string {
 	return strings.Split(rawZoneId, "/")[2]
 }
 
-  
-func listBucketsInUse() []string{
+func ListBucketsInUse() []string {
 	//Read flare file
 	//Iterate over buckets
 	//check if bucket exist
@@ -259,30 +260,30 @@ func listBucketsInUse() []string{
 	var bucketsInUse []string
 	bucketsConfig := viper.AllKeys()
 	for _, bucketKey := range bucketsConfig {
-		match := strings.HasPrefix(bucketKey,"bucket.") && strings.HasSuffix(bucketKey,".name") 
+		match := strings.HasPrefix(bucketKey, "bucket.") && strings.HasSuffix(bucketKey, ".name")
 		if match {
 			bucketName := viper.GetString(bucketKey)
-			bucketsInUse = append(bucketsInUse,bucketName)
-		}	
+			bucketsInUse = append(bucketsInUse, bucketName)
+		}
 	}
 	return bucketsInUse
 }
 
-func destroyBucket(bucketName string) {
-	
-	s3Client := s3.New(getAWSSession())
+func DestroyBucket(bucketName string) {
+
+	s3Client := s3.New(GetAWSSession())
 
 	log.Printf("Attempt to delete: %s", bucketName)
 	_, errHead := s3Client.HeadBucket(&s3.HeadBucketInput{
 		Bucket: &bucketName,
-	}) 
+	})
 	if errHead != nil {
 		if aerr, ok := errHead.(awserr.Error); ok {
 			switch aerr.Code() {
 			case s3.ErrCodeNoSuchBucket:
 				log.Println("Bucket Error:", s3.ErrCodeNoSuchBucket, aerr.Error())
 			default:
-				log.Println("Bucket Error:",aerr.Error())
+				log.Println("Bucket Error:", aerr.Error())
 			}
 		} else {
 			// Print the error, cast err to awserr.Error to get the Code and
@@ -302,7 +303,7 @@ func destroyBucket(bucketName string) {
 
 }
 
-func getAWSSession() *session.Session {
+func GetAWSSession() *session.Session {
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(viper.GetString("aws.region"))},
 	)
@@ -312,13 +313,14 @@ func getAWSSession() *session.Session {
 	return sess
 }
 
-func destroyBucketsInUse(){
-	if destroyBuckets {
-		log.Println("Execute: destroyBucketsInUse")
-		for _,bucket := range listBucketsInUse() {
-			destroyBucket(bucket)
+func DestroyBucketsInUse() {
+	cfg := configs.ReadConfig()
+	if cfg.DestroyBuckets {
+		log.Println("Execute: DestroyBucketsInUse")
+		for _, bucket := range ListBucketsInUse() {
+			DestroyBucket(bucket)
 		}
 	} else {
-		log.Println("Skip: destroyBucketsInUse")
+		log.Println("Skip: DestroyBucketsInUse")
 	}
 }

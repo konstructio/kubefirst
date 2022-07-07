@@ -1,10 +1,9 @@
-package flare
+package pkg
 
 import (
 	"flag"
 	"fmt"
 	"github.com/jedib0t/go-pretty/v6/progress"
-	"github.com/jedib0t/go-pretty/v6/text"
 	"time"
 )
 
@@ -12,7 +11,20 @@ type ActionTracker struct {
 	Tracker *progress.Tracker
 }
 
+const TrackerStage0 = "1 - Load properties"
+const TrackerStage1 = "2 - Set .flare initial values"
+const TrackerStage2 = "3 - Test Domain Liveness"
+const TrackerStage3 = "4 - Create SSH Key Pair"
+const TrackerStage4 = "5 - Load Templates"
+const TrackerStage5 = "6 - DownloadTools Tools"
+const TrackerStage6 = "7 - Get Account Info"
+const TrackerStage7 = "8 - Create Buckets"
+const TrackerStage8 = "9 - Detokenize"
+const TrackerStage9 = "10 - Send Telemetry"
+
 var (
+	pw                     progress.Writer
+	Trackers               map[string]*ActionTracker
 	flagAutoStop           = flag.Bool("auto-stop", false, "Auto-stop rendering?")
 	flagHideETA            = flag.Bool("hide-eta", false, "Hide the ETA?")
 	flagHideETAOverall     = flag.Bool("hide-eta-overall", false, "Hide the ETA in the overall tracker?")
@@ -20,23 +32,34 @@ var (
 	flagHidePercentage     = flag.Bool("hide-percentage", false, "Hide the progress percent?")
 	flagHideTime           = flag.Bool("hide-time", false, "Hide the time taken?")
 	flagHideValue          = flag.Bool("hide-value", false, "Hide the tracker value?")
-	//	flagNumTrackers        = flag.Int("num-trackers", 12, "Number of Trackers")
-	flagRandomFail = flag.Bool("rnd-fail", false, "Introduce random failures in tracking")
-	flagRandomLogs = flag.Bool("rnd-logs", false, "Output random logs in the middle of tracking")
-
-	messageColors = []text.Color{
-		text.FgRed,
-		text.FgGreen,
-		text.FgYellow,
-		text.FgBlue,
-		text.FgMagenta,
-		text.FgCyan,
-		text.FgWhite,
-	}
 )
-var pw progress.Writer
 
+// GetTrackers keeps one single instance of Trackers alive using singleton pattern.
+func GetTrackers() map[string]*ActionTracker {
+	if Trackers != nil {
+		return Trackers
+	}
+	Trackers = make(map[string]*ActionTracker)
+	return Trackers
+}
+
+// CreateTracker receives Tracker data and return a new Tracker.
+func CreateTracker(title string, total int64) *progress.Tracker {
+
+	tracker := &progress.Tracker{
+		Message: title,
+		Total:   total,
+		Units:   progress.UnitsDefault,
+	}
+
+	pw.AppendTracker(tracker)
+
+	return tracker
+}
+
+// SetupProgress prepare the progress bar setting its initial configuration
 func SetupProgress(numTrackers int) {
+
 	flagNumTrackers := flag.Int("num-trackers", numTrackers, "Number of Trackers")
 	flag.Parse()
 	fmt.Printf("Init actions: %d expected tasks ...\n\n", *flagNumTrackers)
@@ -59,13 +82,4 @@ func SetupProgress(numTrackers int) {
 	pw.Style().Visibility.TrackerOverall = !*flagHideOverallTracker
 	pw.Style().Visibility.Value = !*flagHideValue
 	go pw.Render()
-
-}
-
-func CreateTracker(title string, total int64) *progress.Tracker {
-	units := &progress.UnitsDefault
-	message := title
-	tracker := progress.Tracker{Message: message, Total: total, Units: *units}
-	pw.AppendTracker(&tracker)
-	return &tracker
 }

@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/kubefirst/nebulous/configs"
 	"log"
 	"net/http"
 	"net/url"
@@ -16,7 +17,9 @@ import (
 )
 
 func gitlabGeneratePersonalAccessToken(gitlabPodName string) {
-	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
+	config := configs.ReadConfig()
+
+	kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
 	kPortForward.Stdout = os.Stdout
 	kPortForward.Stderr = os.Stderr
 	err := kPortForward.Start()
@@ -30,7 +33,7 @@ func gitlabGeneratePersonalAccessToken(gitlabPodName string) {
 	id := uuid.New()
 	gitlabToken := id.String()[:20]
 
-	k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "exec", gitlabPodName, "--", "gitlab-rails", "runner", fmt.Sprintf("token = User.find_by_username('root').personal_access_tokens.create(scopes: [:write_registry, :write_repository, :api], name: 'Automation token'); token.set_token('%s'); token.save!", gitlabToken))
+	k := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "exec", gitlabPodName, "--", "gitlab-rails", "runner", fmt.Sprintf("token = User.find_by_username('root').personal_access_tokens.create(scopes: [:write_registry, :write_repository, :api], name: 'Automation token'); token.set_token('%s'); token.save!", gitlabToken))
 	k.Stdout = os.Stdout
 	k.Stderr = os.Stderr
 	err = k.Run()

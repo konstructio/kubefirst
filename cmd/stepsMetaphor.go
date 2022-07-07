@@ -2,24 +2,26 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-	"github.com/spf13/viper"
-	"time"
-	"github.com/go-git/go-git/v5"	
+	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/kubefirst/nebulous/configs"
+	"github.com/spf13/viper"
+	"log"
+	"time"
 )
 
 func hydrateGitlabMetaphorRepo() {
+	config := configs.ReadConfig()
 	//TODO: Should this be skipped if already executed?
 	if !viper.GetBool("create.gitlabmetaphor.cloned") {
-		if dryrunMode {
+		if config.DryRun {
 			log.Printf("[#99] Dry-run mode, hydrateGitlabMetaphorRepo skipped.")
 			return
 		}
 
-		metaphorTemplateDir := fmt.Sprintf("%s/.kubefirst/metaphor", home)
+		metaphorTemplateDir := fmt.Sprintf("%s/.kubefirst/metaphor", config.HomePath)
 
 		url := "https://github.com/kubefirst/metaphor-template"
 

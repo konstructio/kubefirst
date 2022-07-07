@@ -5,8 +5,9 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"log"
+	"github.com/kubefirst/nebulous/configs"
 	"github.com/spf13/cobra"
+	"log"
 )
 
 func init() {
@@ -18,7 +19,8 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version number for kubefirst-cli",
 	Long:  `All software has versions. This is kubefirst's`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Printf("flare-cli golang utility version: v%s", NebolousVersion)
-		
+		config := configs.ReadConfig()
+		log.Printf("flare-cli golang utility version: v%s", config.KubefirstVersion)
+
 	},
 }

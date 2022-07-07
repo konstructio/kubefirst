@@ -1,35 +1,20 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
 	"fmt"
+	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/internal/aws"
+	"github.com/kubefirst/nebulous/internal/downloadManager"
 	"github.com/kubefirst/nebulous/internal/gitlab"
 	"github.com/kubefirst/nebulous/internal/telemetry"
-	"github.com/kubefirst/nebulous/pkg/flare"
+	"github.com/kubefirst/nebulous/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"strings"
 	"time"
-	//gitlabSsh "github.com/kubefirst/nebulous/pkg/ssh"
 )
-
-var Trackers map[string]*flare.ActionTracker
-
-const trackerStage0 = "1 - Load properties"
-const trackerStage1 = "2 - Set .flare initial values"
-const trackerStage2 = "3 - Test Domain Liveness"
-const trackerStage3 = "4 - Create SSH Key Pair"
-const trackerStage4 = "5 - Load Templates"
-const trackerStage5 = "6 - Download Tools"
-const trackerStage6 = "7 - Get Account Info"
-const trackerStage7 = "8 - Create Buckets"
-const trackerStage8 = "9 - Detokenize"
-const trackerStage9 = "10 - Send Telemetry"
 
 // initCmd represents the init command
 var initCmd = &cobra.Command{
@@ -43,23 +28,38 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		flare.SetupProgress(10)
-		Trackers = make(map[string]*flare.ActionTracker)
-		Trackers[trackerStage0] = &flare.ActionTracker{flare.CreateTracker(trackerStage0, int64(1))}
-		Trackers[trackerStage1] = &flare.ActionTracker{flare.CreateTracker(trackerStage1, int64(1))}
-		Trackers[trackerStage2] = &flare.ActionTracker{flare.CreateTracker(trackerStage2, int64(1))}
-		Trackers[trackerStage3] = &flare.ActionTracker{flare.CreateTracker(trackerStage3, int64(1))}
-		Trackers[trackerStage4] = &flare.ActionTracker{flare.CreateTracker(trackerStage4, int64(1))}
-		Trackers[trackerStage5] = &flare.ActionTracker{flare.CreateTracker(trackerStage5, int64(3))}
-		Trackers[trackerStage6] = &flare.ActionTracker{flare.CreateTracker(trackerStage6, int64(1))}
-		Trackers[trackerStage7] = &flare.ActionTracker{flare.CreateTracker(trackerStage7, int64(4))}
-		Trackers[trackerStage8] = &flare.ActionTracker{flare.CreateTracker(trackerStage8, int64(1))}
-		Trackers[trackerStage9] = &flare.ActionTracker{flare.CreateTracker(trackerStage9, int64(1))}
+		config := configs.ReadConfig()
+
+		var err error
+		config.DryRun, err = cmd.Flags().GetBool("dry-run")
+		if err != nil {
+			panic(err)
+		}
+
+		log.Println("dry run enabled:", config.DryRun)
+
+		pkg.SetupProgress(10)
+		trackers := pkg.GetTrackers()
+		trackers[pkg.TrackerStage0] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage0, 1)}
+		trackers[pkg.TrackerStage1] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage1, 1)}
+		trackers[pkg.TrackerStage2] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage2, 1)}
+		trackers[pkg.TrackerStage3] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage3, 1)}
+		trackers[pkg.TrackerStage4] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage4, 1)}
+		trackers[pkg.TrackerStage5] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage5, 3)}
+		trackers[pkg.TrackerStage6] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage6, 1)}
+		trackers[pkg.TrackerStage7] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage7, 4)}
+		trackers[pkg.TrackerStage8] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage8, 1)}
+		trackers[pkg.TrackerStage9] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage9, 1)}
 		infoCmd.Run(cmd, args)
 		hostedZoneName, _ := cmd.Flags().GetString("hosted-zone-name")
 		metricName := "kubefirst.init.started"
 		metricDomain := hostedZoneName
-		if !dryrunMode {
+
+		log.Println("---debug---")
+		log.Println(config.DryRun)
+		log.Println("---debug---")
+
+		if !config.DryRun {
 			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
@@ -90,86 +90,103 @@ to quickly create a Cobra application.`,
 
 		// hosted zone id
 		// so we don't have to keep looking it up from the domain name to use it
-		hostedZoneId := getDNSInfo(hostedZoneName)
+		hostedZoneId := aws.GetDNSInfo(hostedZoneName)
 		// viper values set in above function
 		log.Println("hostedZoneId:", hostedZoneId)
-		Trackers[trackerStage0].Tracker.Increment(int64(1))
-		Trackers[trackerStage1].Tracker.Increment(int64(1))
-		//trackProgress(1, false)
+		trackers[pkg.TrackerStage0].Tracker.Increment(1)
+		trackers[pkg.TrackerStage1].Tracker.Increment(1)
+
 		// todo: this doesn't default to testing the dns check
 		skipHostedZoneCheck := viper.GetBool("init.hostedzonecheck.enabled")
 		if !skipHostedZoneCheck {
 			log.Println("skipping hosted zone check")
 		} else {
-			testHostedZoneLiveness(hostedZoneName, hostedZoneId)
+			aws.TestHostedZoneLiveness(hostedZoneName, hostedZoneId)
 		}
-		Trackers[trackerStage2].Tracker.Increment(int64(1))
+		trackers[pkg.TrackerStage2].Tracker.Increment(1)
 
 		log.Println("calling createSshKeyPair() ")
 		createSshKeyPair()
 		log.Println("createSshKeyPair() complete")
-		Trackers[trackerStage3].Tracker.Increment(int64(1))
+		trackers[pkg.TrackerStage3].Tracker.Increment(1)
 
 		log.Println("calling cloneGitOpsRepo()")
 		cloneGitOpsRepo()
 		log.Println("cloneGitOpsRepo() complete")
-		Trackers[trackerStage4].Tracker.Increment(int64(1))
+		trackers[pkg.TrackerStage4].Tracker.Increment(1)
 
 		log.Println("calling download()")
-		download()
+		err = downloadManager.DownloadTools(config, trackers)
+		if err != nil {
+			panic(err)
+		}
+
 		log.Println("download() complete")
 
-		log.Println("calling getAccountInfo()")
-		getAccountInfo()
-		log.Println("getAccountInfo() complete")
-		Trackers[trackerStage6].Tracker.Increment(int64(1))
+		log.Println("calling GetAccountInfo()")
+		aws.GetAccountInfo()
+		log.Println("GetAccountInfo() complete")
+		trackers[pkg.TrackerStage6].Tracker.Increment(1)
 
-		log.Println("calling bucketRand()")
-		bucketRand()
-		log.Println("bucketRand() complete")
+		log.Println("calling BucketRand()")
+		aws.BucketRand()
+		log.Println("BucketRand() complete")
 
 		log.Println("calling detokenize()")
-		detokenize(fmt.Sprintf("%s/.kubefirst/gitops", home))
+		detokenize(fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath))
 		log.Println("detokenize() complete")
-		Trackers[trackerStage8].Tracker.Increment(int64(1))
+		trackers[pkg.TrackerStage8].Tracker.Increment(1)
 
 		// modConfigYaml()
 		metricName = "kubefirst.init.completed"
 
-		if !dryrunMode {
+		if !config.DryRun {
 			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
 
 		viper.WriteConfig()
-		Trackers[trackerStage9].Tracker.Increment(int64(1))
+		trackers[pkg.TrackerStage9].Tracker.Increment(1)
 		time.Sleep(time.Millisecond * 100)
 	},
 }
 
 func init() {
+	config := configs.ReadConfig()
 	rootCmd.AddCommand(initCmd)
 
-	initCmd.Flags().String("hosted-zone-name", "", "the domain to provision the kubefirst platofrm in")
-	initCmd.MarkFlagRequired("hosted-zone-name")
+	initCmd.Flags().String("hosted-zone-name", "", "the domain to provision the kubefirst platform in")
+	err := initCmd.MarkFlagRequired("hosted-zone-name")
+	if err != nil {
+		panic(err)
+	}
 	initCmd.Flags().String("admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
-	initCmd.MarkFlagRequired("admin-email")
+	err = initCmd.MarkFlagRequired("admin-email")
+	if err != nil {
+		panic(err)
+	}
 	initCmd.Flags().String("cloud", "", "the cloud to provision infrastructure in")
-	initCmd.MarkFlagRequired("cloud")
+	err = initCmd.MarkFlagRequired("cloud")
+	if err != nil {
+		panic(err)
+	}
 	initCmd.Flags().String("region", "", "the region to provision the cloud resources in")
-	initCmd.MarkFlagRequired("region")
+	err = initCmd.MarkFlagRequired("region")
+	if err != nil {
+		panic(err)
+	}
 	initCmd.Flags().Bool("clean", false, "delete any local kubefirst content ~/.kubefirst, ~/.flare")
 
 	log.SetPrefix("LOG: ")
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
 
-	initCmd.PersistentFlags().BoolVarP(&dryrunMode, "dry-run", "s", false, "set to dry-run mode, no changes done on cloud provider selected")
+	initCmd.PersistentFlags().BoolVarP(&config.DryRun, "dry-run", "s", false, "set to dry-run mode, no changes done on cloud provider selected")
 	log.Println("init started")
-
 }
 
 func createSshKeyPair() {
+	config := configs.ReadConfig()
 	publicKey := viper.GetString("botpublickey")
 	if publicKey == "" {
 		log.Println("generating new key pair")
@@ -221,7 +238,7 @@ configs:
         %s
 `, strings.ReplaceAll(privateKey, "\n", "\n        ")))
 
-	err := ioutil.WriteFile(fmt.Sprintf("%s/.kubefirst/argocd-init-values.yaml", home), argocdInitValuesYaml, 0644)
+	err := ioutil.WriteFile(fmt.Sprintf("%s/.kubefirst/argocd-init-values.yaml", config.HomePath), argocdInitValuesYaml, 0644)
 	if err != nil {
 		log.Panicf("error: could not write argocd-init-values.yaml %s", err)
 	}

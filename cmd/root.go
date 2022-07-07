@@ -1,15 +1,12 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
-	"os"
 	"errors"
-	"log"
+	"github.com/kubefirst/nebulous/configs"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log"
+	"os"
 )
 
 var cfgFile string
@@ -41,7 +38,6 @@ func Execute() {
 }
 
 func init() {
-	setGlobals()
 	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.
@@ -57,9 +53,9 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-
+	config := configs.ReadConfig()
 	if cfgFile == "" {
-		cfgFile = home + "/.flare"
+		cfgFile = config.HomePath + "/.flare"
 	}
 
 	if _, err := os.Stat(cfgFile); errors.Is(err, os.ErrNotExist) {
@@ -71,12 +67,12 @@ func initConfig() {
 
 	}
 	viper.SetConfigFile(cfgFile)
-	viper.SetConfigType("yaml")	
+	viper.SetConfigType("yaml")
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		log.Println( "Using config file:", viper.ConfigFileUsed())
+		log.Println("Using config file:", viper.ConfigFileUsed())
 	}
-	
+
 }

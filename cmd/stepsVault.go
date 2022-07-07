@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	vault "github.com/hashicorp/vault/api"
+	"github.com/kubefirst/nebulous/configs"
 	internalVault "github.com/kubefirst/nebulous/internal/vault"
 	"github.com/spf13/viper"
 	gitlab "github.com/xanzy/go-gitlab"
@@ -15,8 +16,9 @@ import (
 )
 
 func configureVault() {
+	config := configs.ReadConfig()
 	if !viper.GetBool("create.terraformapplied.vault") {
-		if dryrunMode {
+		if config.DryRun {
 			log.Printf("[#99] Dry-run mode, configureVault skipped.")
 			return
 		}
@@ -33,13 +35,13 @@ func configureVault() {
 		// ```
 		// ... obviously keep the sensitive values bound to vars
 
-		config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+		k8sClient, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
 		if err != nil {
-			log.Panicf("error: getting config %s", err)
+			log.Panicf("error: getting k8sClient %s", err)
 		}
-		clientset, err := kubernetes.NewForConfig(config)
+		clientset, err := kubernetes.NewForConfig(k8sClient)
 		if err != nil {
-			log.Panicf("error: getting config &s", err)
+			log.Panicf("error: getting k8sClient &s", err)
 		}
 
 		vaultSecretClient = clientset.CoreV1().Secrets("vault")
@@ -51,7 +53,7 @@ func configureVault() {
 		viper.Set("vault.token", vaultToken)
 		viper.WriteConfig()
 
-		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
+		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
 		kPortForward.Stdout = os.Stdout
 		kPortForward.Stderr = os.Stderr
 		err = kPortForward.Start()
@@ -75,13 +77,13 @@ func configureVault() {
 		os.Setenv("TF_VAR_vault_token", viper.GetString("aws.hostedzonename"))
 		os.Setenv("TF_VAR_vault_redirect_uris", "[\"will-be-patched-later\"]")
 
-		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/vault", home)
+		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/vault", config.HomePath)
 		err = os.Chdir(directory)
 		if err != nil {
 			log.Panicf("error: could not change directory to " + directory)
 		}
 
-		tfInitCmd := exec.Command(terraformPath, "init")
+		tfInitCmd := exec.Command(config.TerraformPath, "init")
 		tfInitCmd.Stdout = os.Stdout
 		tfInitCmd.Stderr = os.Stderr
 		err = tfInitCmd.Run()
@@ -89,7 +91,7 @@ func configureVault() {
 			log.Panicf("error: terraform init failed %s", err)
 		}
 
-		tfApplyCmd := exec.Command(terraformPath, "apply", "-target", "module.bootstrap", "-auto-approve")
+		tfApplyCmd := exec.Command(config.TerraformPath, "apply", "-target", "module.bootstrap", "-auto-approve")
 		tfApplyCmd.Stdout = os.Stdout
 		tfApplyCmd.Stderr = os.Stderr
 		err = tfApplyCmd.Run()
@@ -105,8 +107,9 @@ func configureVault() {
 }
 
 func addGitlabOidcApplications() {
+	config := configs.ReadConfig()
 	//TODO: Should this skipped if already executed.
-	if dryrunMode {
+	if config.DryRun {
 		log.Printf("[#99] Dry-run mode, addGitlabOidcApplications skipped.")
 		return
 	}

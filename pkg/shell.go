@@ -1,13 +1,13 @@
-package cmd
+package pkg
 
 import (
-	"log"
 	"bytes"
+	"log"
 	"os/exec"
 )
 
-func execShellReturnStrings(command string, args ...string) (string, string, error) {
-	var outb, errb bytes.Buffer	
+func ExecShellReturnStrings(command string, args ...string) (string, string, error) {
+	var outb, errb bytes.Buffer
 	k := exec.Command(command, args...)
 	k.Stdout = &outb
 	k.Stderr = &errb

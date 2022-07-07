@@ -1,42 +1,45 @@
 package cmd
 
 import (
-	"fmt"
-	"log"
-	"os"
-	"strings"
-	"github.com/spf13/viper"
-	"syscall"
-	"os/exec"
-	"time"
-	"crypto/tls"
-	"net/url"
-	"net/http"
-	"encoding/json"
-	"io/ioutil"
 	"bytes"
+	"context"
+	"crypto/tls"
+	b64 "encoding/base64"
+	"encoding/json"
+	"fmt"
+	"github.com/ghodss/yaml"
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	b64 "encoding/base64"
+	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/pkg"
+	"github.com/spf13/viper"
+	"html/template"
+	"io/ioutil"
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"  
-	"html/template"
-	"github.com/ghodss/yaml"
-	"context"
+	"k8s.io/client-go/tools/clientcmd"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"os/exec"
+	"strings"
+	"syscall"
+	"time"
 )
 
-func helmInstallArgocd(home string, kubeconfigPath string) {
+func helmInstallArgocd(home string) {
+	config := configs.ReadConfig()
 	if !viper.GetBool("create.argocd.helm") {
-		if dryrunMode {
+		if config.DryRun {
 			log.Printf("[#99] Dry-run mode, helmInstallArgocd skipped.")
 			return
 		}
 		// ! commenting out until a clean execution is necessary // create namespace
-		helmRepoAddArgocd := exec.Command(helmClientPath, "--kubeconfig", kubeconfigPath, "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
+		helmRepoAddArgocd := exec.Command(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
 		helmRepoAddArgocd.Stdout = os.Stdout
 		helmRepoAddArgocd.Stderr = os.Stderr
 		err := helmRepoAddArgocd.Run()
@@ -44,7 +47,7 @@ func helmInstallArgocd(home string, kubeconfigPath string) {
 			log.Panicf("error: could not run helm repo add %s", err)
 		}
 
-		helmRepoUpdate := exec.Command(helmClientPath, "--kubeconfig", kubeconfigPath, "repo", "update")
+		helmRepoUpdate := exec.Command(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "repo", "update")
 		helmRepoUpdate.Stdout = os.Stdout
 		helmRepoUpdate.Stderr = os.Stderr
 		err = helmRepoUpdate.Run()
@@ -52,7 +55,7 @@ func helmInstallArgocd(home string, kubeconfigPath string) {
 			log.Panicf("error: could not helm repo update %s", err)
 		}
 
-		helmInstallArgocdCmd := exec.Command(helmClientPath, "--kubeconfig", kubeconfigPath, "upgrade", "--install", "argocd", "--namespace", "argocd", "--create-namespace", "--wait", "--values", fmt.Sprintf("%s/.kubefirst/argocd-init-values.yaml", home), "argo/argo-cd")
+		helmInstallArgocdCmd := exec.Command(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "upgrade", "--install", "argocd", "--namespace", "argocd", "--create-namespace", "--wait", "--values", fmt.Sprintf("%s/.kubefirst/argocd-init-values.yaml", home), "argo/argo-cd")
 		helmInstallArgocdCmd.Stdout = os.Stdout
 		helmInstallArgocdCmd.Stderr = os.Stderr
 		err = helmInstallArgocdCmd.Run()
@@ -69,11 +72,13 @@ func helmInstallArgocd(home string, kubeconfigPath string) {
 }
 
 func awaitGitlab() {
+	config := configs.ReadConfig()
+
 	log.Println("awaitGitlab called")
-	if dryrunMode {
+	if config.DryRun {
 		log.Printf("[#99] Dry-run mode, awaitGitlab skipped.")
 		return
-	}	
+	}
 	max := 200
 	for i := 0; i < max; i++ {
 		hostedZoneName := viper.GetString("aws.hostedzonename")
@@ -89,18 +94,19 @@ func awaitGitlab() {
 	}
 }
 
-func produceGitlabTokens(){
+func produceGitlabTokens() {
 	//TODO: Should this step be skipped if already executed?
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	config := configs.ReadConfig()
+	k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
 	if err != nil {
 		panic(err.Error())
 	}
-	clientset, err := kubernetes.NewForConfig(config)
+	clientset, err := kubernetes.NewForConfig(k8sConfig)
 	if err != nil {
 		panic(err.Error())
 	}
-	log.Println("discovering gitlab toolbox pod")	
-	if dryrunMode {
+	log.Println("discovering gitlab toolbox pod")
+	if config.DryRun {
 		log.Printf("[#99] Dry-run mode, produceGitlabTokens skipped.")
 		return
 	}
@@ -155,28 +161,28 @@ func produceGitlabTokens(){
 
 }
 
-func applyGitlabTerraform(directory string){
+func applyGitlabTerraform(directory string) {
+	config := configs.ReadConfig()
 	if !viper.GetBool("create.terraformapplied.gitlab") {
 		log.Println("Executing applyGitlabTerraform")
-		if dryrunMode {
+		if config.DryRun {
 			log.Printf("[#99] Dry-run mode, applyGitlabTerraform skipped.")
 			return
-		}		
+		}
 		// Prepare for terraform gitlab execution
 		os.Setenv("GITLAB_TOKEN", viper.GetString("gitlab.token"))
 		os.Setenv("GITLAB_BASE_URL", "http://localhost:8888")
 
-
-		directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)
+		directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", config.HomePath)
 		err := os.Chdir(directory)
 		if err != nil {
 			log.Panic("error: could not change directory to " + directory)
 		}
-		_,_,errInit := execShellReturnStrings(terraformPath, "init")
+		_, _, errInit := pkg.ExecShellReturnStrings(config.TerraformPath, "init")
 		if errInit != nil {
 			panic(fmt.Sprintf("error: terraform init for gitlab failed %s", err))
 		}
-		_,_,errApply := execShellReturnStrings(terraformPath, "apply", "-auto-approve")
+		_, _, errApply := pkg.ExecShellReturnStrings(config.TerraformPath, "apply", "-auto-approve")
 		if errApply != nil {
 			panic(fmt.Sprintf("error: terraform apply for gitlab failed %s", err))
 		}
@@ -188,17 +194,16 @@ func applyGitlabTerraform(directory string){
 	}
 }
 
-
-
-func gitlabKeyUpload(){
-	// upload ssh public key	
+func gitlabKeyUpload() {
+	config := configs.ReadConfig()
+	// upload ssh public key
 	if !viper.GetBool("gitlab.keyuploaded") {
 		log.Println("Executing gitlabKeyUpload")
 		log.Println("uploading ssh public key for gitlab user")
-		if dryrunMode {
+		if config.DryRun {
 			log.Printf("[#99] Dry-run mode, gitlabKeyUpload skipped.")
 			return
-		}		
+		}
 		log.Println("uploading ssh public key to gitlab")
 		gitlabToken := viper.GetString("gitlab.token")
 		data := url.Values{
@@ -225,24 +230,25 @@ func gitlabKeyUpload(){
 }
 
 func pushGitopsToGitLab() {
-	if dryrunMode {
+	config := configs.ReadConfig()
+	if config.DryRun {
 		log.Printf("[#99] Dry-run mode, pushGitopsToGitLab skipped.")
 		return
 	}
-	  
+
 	//TODO: should this step to be skipped if already executed?
 	domain := viper.GetString("aws.hostedzonename")
 
-	detokenize(fmt.Sprintf("%s/.kubefirst/gitops", home))
-	directory := fmt.Sprintf("%s/.kubefirst/gitops", home)
+	detokenize(fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath))
+	directory := fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath)
 
 	repo, err := git.PlainOpen(directory)
 	if err != nil {
 		log.Panicf("error opening the directory ", directory, err)
 	}
 
-	//upstream := fmt.Sprintf("ssh://gitlab.%s:22:kubefirst/gitops", viper.GetString("aws.hostedzonename"))
-	// upstream := "git@gitlab.kube1st.com:kubefirst/gitops.git"
+	//upstream := fmt.Sprintf("ssh://gitlab.%s:22:kubefirstVersion/gitops", viper.GetString("aws.hostedzonename"))
+	// upstream := "git@gitlab.kube1st.com:kubefirstVersion/gitops.git"
 	upstream := fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", domain)
 	log.Println("git remote add gitlab at url", upstream)
 
@@ -292,8 +298,9 @@ func pushGitopsToGitLab() {
 }
 
 func changeRegistryToGitLab() {
+	config := configs.ReadConfig()
 	if !viper.GetBool("gitlab.registry") {
-		if dryrunMode {
+		if config.DryRun {
 			log.Printf("[#99] Dry-run mode, changeRegistryToGitLab skipped.")
 			return
 		}
@@ -311,11 +318,11 @@ func changeRegistryToGitLab() {
 		creds := ArgocdGitCreds{PersonalAccessToken: pat, URL: url, FullURL: fullurl}
 
 		var argocdRepositoryAccessTokenSecret *v1.Secret
-		config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+		k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
 		if err != nil {
 			log.Panicf("error getting client from kubeconfig")
 		}
-		clientset, err := kubernetes.NewForConfig(config)
+		clientset, err := kubernetes.NewForConfig(k8sConfig)
 		if err != nil {
 			log.Panicf("error getting kubeconfig for clientset")
 		}
@@ -381,7 +388,7 @@ func changeRegistryToGitLab() {
 			log.Panicf("error creating argocd repository connection secret %s", err)
 		}
 
-		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/.kubefirst/gitops/components/gitlab/argocd-adopts-gitlab.yaml", home))
+		k := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/.kubefirst/gitops/components/gitlab/argocd-adopts-gitlab.yaml", config.HomePath))
 		k.Stdout = os.Stdout
 		k.Stderr = os.Stderr
 		err = k.Run()
@@ -397,11 +404,12 @@ func changeRegistryToGitLab() {
 }
 
 func getArgocdAuthToken() string {
-	if dryrunMode {
+	config := configs.ReadConfig()
+	if config.DryRun {
 		log.Printf("[#99] Dry-run mode, getArgocdAuthToken skipped.")
 		return "nothing"
-	  }
-	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
+	}
+	kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
 	kPortForward.Stdout = os.Stdout
 	kPortForward.Stderr = os.Stderr
 	err := kPortForward.Start()
@@ -452,11 +460,12 @@ func getArgocdAuthToken() string {
 }
 
 func syncArgocdApplication(applicationName, argocdAuthToken string) {
-	if dryrunMode {
+	config := configs.ReadConfig()
+	if config.DryRun {
 		log.Printf("[#99] Dry-run mode, syncArgocdApplication skipped.")
 		return
 	}
-	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
+	kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
 	kPortForward.Stdout = os.Stdout
 	kPortForward.Stderr = os.Stderr
 	err := kPortForward.Start()
@@ -478,7 +487,8 @@ func syncArgocdApplication(applicationName, argocdAuthToken string) {
 	}
 }
 
-func  destroyGitlabTerraform(){
+func destroyGitlabTerraform() {
+	config := configs.ReadConfig()
 	log.Println("\n\nTODO -- need to setup and argocd delete against registry and wait?\n\n")
 	// kubeconfig := os.Getenv("HOME") + "/.kube/config"
 	// config, err := argocdclientset.BuildConfigFromFlags("", kubeconfig)
@@ -499,7 +509,7 @@ func  destroyGitlabTerraform(){
 	os.Setenv("TF_VAR_aws_region", viper.GetString("aws.region"))
 	os.Setenv("TF_VAR_hosted_zone_name", viper.GetString("aws.hostedzonename"))
 
-	directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)	
+	directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", config.HomePath)
 	err := os.Chdir(directory)
 	if err != nil {
 		log.Panicf("error: could not change directory to " + directory)
@@ -508,7 +518,7 @@ func  destroyGitlabTerraform(){
 	os.Setenv("GITLAB_BASE_URL", "http://localhost:8888")
 
 	if !skipGitlabTerraform {
-		tfInitGitlabCmd := exec.Command(terraformPath, "init")
+		tfInitGitlabCmd := exec.Command(config.TerraformPath, "init")
 		tfInitGitlabCmd.Stdout = os.Stdout
 		tfInitGitlabCmd.Stderr = os.Stderr
 		err = tfInitGitlabCmd.Run()
@@ -516,7 +526,7 @@ func  destroyGitlabTerraform(){
 			log.Panicf("failed to terraform init gitlab %s", err)
 		}
 
-		tfDestroyGitlabCmd := exec.Command(terraformPath, "destroy", "-auto-approve")
+		tfDestroyGitlabCmd := exec.Command(config.TerraformPath, "destroy", "-auto-approve")
 		tfDestroyGitlabCmd.Stdout = os.Stdout
 		tfDestroyGitlabCmd.Stderr = os.Stderr
 		err = tfDestroyGitlabCmd.Run()

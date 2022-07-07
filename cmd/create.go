@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/kubefirst/nebulous/configs"
 	"github.com/kubefirst/nebulous/internal/telemetry"
-	"github.com/kubefirst/nebulous/pkg/flare"
+	"github.com/kubefirst/nebulous/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log"
@@ -14,6 +15,7 @@ const trackerStage20 = "0 - Apply Base"
 const trackerStage21 = "1 - Temporary SCM Install"
 const trackerStage22 = "2 - Argo/Final SCM Install"
 const trackerStage23 = "3 - Final Setup"
+
 var skipVault bool
 var skipGitlab bool
 
@@ -29,45 +31,48 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		flare.SetupProgress(4)
-		Trackers = make(map[string]*flare.ActionTracker)
-		Trackers[trackerStage20] = &flare.ActionTracker{Tracker: flare.CreateTracker(trackerStage20, int64(1))}
-		Trackers[trackerStage21] = &flare.ActionTracker{Tracker: flare.CreateTracker(trackerStage21, int64(2))}
-		Trackers[trackerStage22] = &flare.ActionTracker{Tracker: flare.CreateTracker(trackerStage22, int64(7))}
-		Trackers[trackerStage23] = &flare.ActionTracker{Tracker: flare.CreateTracker(trackerStage23, int64(3))}
+		config := configs.ReadConfig()
+
+		pkg.SetupProgress(4)
+		Trackers := make(map[string]*pkg.ActionTracker)
+
+		Trackers[trackerStage20] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(trackerStage20, 1)}
+		Trackers[trackerStage21] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(trackerStage21, 2)}
+		Trackers[trackerStage22] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(trackerStage22, 7)}
+		Trackers[trackerStage23] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(trackerStage23, 3)}
 
 		infoCmd.Run(cmd, args)
 
 		metricName := "kubefirst.mgmt_cluster_install.started"
 		metricDomain := viper.GetString("aws.domainname")
 
-		if !dryrunMode {
+		if !config.DryRun {
 			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
 
-		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", home)
+		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", config.HomePath)
 		applyBaseTerraform(cmd, directory)
 		Trackers[trackerStage20].Tracker.Increment(int64(1))
-		createSoftServe(kubeconfigPath)
+		createSoftServe(config.KubeConfigPath)
 		Trackers[trackerStage21].Tracker.Increment(int64(1))
 		configureSoftserveAndPush()
 		Trackers[trackerStage21].Tracker.Increment(int64(1))
-		helmInstallArgocd(home, kubeconfigPath)
+		helmInstallArgocd(config.HomePath)
 		Trackers[trackerStage22].Tracker.Increment(int64(1))
 
 		if !skipGitlab {
 			//TODO: Confirm if we need to waitgit lab to be ready
 			// OR something, too fast the secret will not be there.
-			awaitGitlab()	
+			awaitGitlab()
 			produceGitlabTokens()
-			Trackers[trackerStage22].Tracker.Increment(int64(1))				
+			Trackers[trackerStage22].Tracker.Increment(int64(1))
 			applyGitlabTerraform(directory)
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
 			gitlabKeyUpload()
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
-		
+
 			if !skipVault {
 				configureVault()
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
@@ -75,17 +80,15 @@ to quickly create a Cobra application.`,
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
 				awaitGitlab()
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
-				
+
 				pushGitopsToGitLab()
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
 				changeRegistryToGitLab()
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
-				
-				
-				
+
 				hydrateGitlabMetaphorRepo()
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
-				
+
 				token := getArgocdAuthToken()
 				syncArgocdApplication("argo-components", token)
 				syncArgocdApplication("gitlab-runner-components", token)
@@ -97,7 +100,7 @@ to quickly create a Cobra application.`,
 
 		metricName = "kubefirst.mgmt_cluster_install.completed"
 
-		if !dryrunMode {
+		if !config.DryRun {
 			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
@@ -107,11 +110,12 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
+	config := configs.ReadConfig()
 	rootCmd.AddCommand(createCmd)
 
 	// todo: make this an optional switch and check for it or viper
 	createCmd.Flags().Bool("destroy", false, "destroy resources")
-	createCmd.PersistentFlags().BoolVarP(&dryrunMode, "dry-run", "s", false, "set to dry-run mode, no changes done on cloud provider selected")
+	createCmd.PersistentFlags().BoolVarP(&config.DryRun, "dry-run", "s", false, "set to dry-run mode, no changes done on cloud provider selected")
 	createCmd.PersistentFlags().BoolVar(&skipVault, "skip-vault", false, "Skip post-git lab install and vault setup")
 	createCmd.PersistentFlags().BoolVar(&skipGitlab, "skip-gitlab", false, "Skip git lab install and vault setup")
 

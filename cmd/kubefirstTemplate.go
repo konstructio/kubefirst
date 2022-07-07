@@ -2,25 +2,25 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-	"os"
-	ssh2 "golang.org/x/crypto/ssh"
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/kubefirst/nebulous/configs"
+	"github.com/spf13/viper"
+	ssh2 "golang.org/x/crypto/ssh"
+	"io/ioutil"
+	"log"
+	"os"
 	"path/filepath"
 	"strings"
-	"github.com/spf13/viper"
-	"io/ioutil"
 	"time"
-
-
 )
 
 func cloneGitOpsRepo() {
 
+	config := configs.ReadConfig()
 	url := "https://github.com/kubefirst/gitops-template"
-	directory := fmt.Sprintf("%s/.kubefirst/gitops", home)
+	directory := fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath)
 
 	log.Println("git clone", url, directory)
 
@@ -28,15 +28,16 @@ func cloneGitOpsRepo() {
 		URL: url,
 	})
 	if err != nil {
-		log.Panicf("reror cloning gitops-template repository from github %s", err)
+		log.Panicf("error cloning gitops-template repository from github, error is: %s", err)
 	}
 
-	log.Println("downloaded gitops repo from template to directory", home, "/.kubefirst/gitops")
+	log.Println("downloaded gitops repo from template to directory", config.HomePath, "/.kubefirst/gitops")
 }
 
 func pushGitopsToSoftServe() {
 
-	directory := fmt.Sprintf("%s/.kubefirst/gitops", home)
+	config := configs.ReadConfig()
+	directory := fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath)
 
 	log.Println("open git repo", directory)
 
@@ -78,7 +79,6 @@ func pushGitopsToSoftServe() {
 	}
 
 }
-
 
 func detokenize(path string) {
 

@@ -6,18 +6,21 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/internal/aws"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"log"
 	"os"
 	"os/exec"
 	"syscall"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var skipGitlabTerraform bool
-var skipDeleteRegistryApplication bool 
-var skipBaseTerraform bool 
-var destroyBuckets bool 
+var skipDeleteRegistryApplication bool
+var skipBaseTerraform bool
+var DestroyBuckets bool
+
 // destroyCmd represents the destroy command
 var destroyCmd = &cobra.Command{
 	Use:   "destroy",
@@ -29,7 +32,9 @@ Optional: skip gitlab terraform
 if the registry has already been delteted.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
+		config := configs.ReadConfig()
+
+		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
 		kPortForward.Stdout = os.Stdout
 		kPortForward.Stderr = os.Stderr
 		err := kPortForward.Start()
@@ -43,7 +48,7 @@ if the registry has already been delteted.`,
 		deleteRegistryApplication()
 		destroyBaseTerraform()
 		//TODO: Remove buckets? Opt-in flag
-		destroyBucketsInUse()
+		aws.DestroyBucketsInUse()
 
 	},
 }
@@ -54,14 +59,14 @@ func init() {
 	destroyCmd.PersistentFlags().BoolVar(&skipGitlabTerraform, "skip-gitlab-terraform", false, "whether to skip the terraform destroy against gitlab - note: if you already deleted registry it doesnt exist")
 	destroyCmd.PersistentFlags().BoolVar(&skipDeleteRegistryApplication, "skip-delete-register", false, "whether to skip deletion of resgister application ")
 	destroyCmd.PersistentFlags().BoolVar(&skipBaseTerraform, "skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
-	destroyCmd.PersistentFlags().BoolVar(&destroyBuckets, "destroy-buckets", false, "remove created aws buckets, not empty buckets are not cleaned")
+	destroyCmd.PersistentFlags().BoolVar(&DestroyBuckets, "destroy-buckets", false, "remove created aws buckets, not empty buckets are not cleaned")
 }
 
-
 func deleteRegistryApplication() {
+	config := configs.ReadConfig()
 	if !skipDeleteRegistryApplication {
 		log.Println("starting port forward to argocd server and deleting registry")
-		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
+		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
 		kPortForward.Stdout = os.Stdout
 		kPortForward.Stderr = os.Stderr
 		err := kPortForward.Start()
