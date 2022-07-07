@@ -121,7 +121,7 @@ func configureSoftServe() {
 	w.Commit("updating soft-serve server config", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
-			Email: installerEmail,
+			Email: config.InstallerEmail,
 			When:  time.Now(),
 		},
 	})

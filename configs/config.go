@@ -8,6 +8,8 @@ import (
 	"runtime"
 )
 
+// Config host application configuration
+// todo: some of these values can be moved to the .env
 type Config struct {
 	AwsProfile        string `env:"AWS_PROFILE"`
 	KubefirstLogPath  string `env:"KUBEFIRST_LOG_PATH" envDefault:"logs"`
@@ -29,6 +31,7 @@ type Config struct {
 	DestroyBuckets                bool
 
 	KubefirstVersion string
+	InstallerEmail   string
 }
 
 func ReadConfig() *Config {
@@ -59,6 +62,8 @@ func ReadConfig() *Config {
 	config.HelmVersion = "v3.2.1"
 
 	config.KubefirstVersion = "0.1.1"
+
+	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
 	return &config
 }
