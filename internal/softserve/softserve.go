@@ -110,7 +110,7 @@ func configureSoftServe() {
 
 	err = ioutil.WriteFile(fmt.Sprintf("%s/config.yaml", directory), []byte(newFile), 0)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	println("re-wrote config.yaml", config.HomePath, "/.kubefirst/config")

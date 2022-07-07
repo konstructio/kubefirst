@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,7 +14,7 @@ func Detokenize(path string) {
 
 	err := filepath.Walk(path, DetokenizeDirectory)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 }
 
@@ -33,13 +34,13 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	matched, err := filepath.Match("*", fi.Name())
 
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	if matched {
 		read, err := ioutil.ReadFile(path)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		// todo should Detokenize be a switch statement based on a value found in viper?
 		gitlabConfigured := viper.GetBool("gitlab.keyuploaded")
@@ -86,7 +87,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 
 		err = ioutil.WriteFile(path, []byte(newContents), 0)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 
 	}

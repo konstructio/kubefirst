@@ -187,11 +187,11 @@ func ProduceGitlabTokens() {
 	config := configs.ReadConfig()
 	k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
 	if err != nil {
-		panic(err.Error())
+		log.Panic(err.Error())
 	}
 	clientset, err := kubernetes.NewForConfig(k8sConfig)
 	if err != nil {
-		panic(err.Error())
+		log.Panic(err.Error())
 	}
 	log.Println("discovering gitlab toolbox pod")
 	if config.DryRun {
@@ -269,11 +269,11 @@ func ApplyGitlabTerraform(directory string) {
 		}
 		_, _, errInit := pkg.ExecShellReturnStrings(config.TerraformPath, "init")
 		if errInit != nil {
-			panic(fmt.Sprintf("error: terraform init for gitlab failed %s", err))
+			log.Panic(fmt.Sprintf("error: terraform init for gitlab failed %s", err))
 		}
 		_, _, errApply := pkg.ExecShellReturnStrings(config.TerraformPath, "apply", "-auto-approve")
 		if errApply != nil {
-			panic(fmt.Sprintf("error: terraform apply for gitlab failed %s", err))
+			log.Panic(fmt.Sprintf("error: terraform apply for gitlab failed %s", err))
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 		viper.Set("create.terraformapplied.gitlab", true)

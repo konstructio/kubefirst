@@ -62,7 +62,7 @@ func initConfig() {
 		log.Printf("Config file not found, creating a blank one: %s \n", cfgFile)
 		err := os.WriteFile(cfgFile, []byte("createdBy: installer\n\n"), 0700)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 
 	}

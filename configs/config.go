@@ -42,13 +42,13 @@ func ReadConfig() *Config {
 
 	if err := env.Parse(&config); err != nil {
 		log.Println("something went wrong loading the environment variables")
-		panic(err)
+		log.Panic(err)
 	}
 
 	var err error
 	config.HomePath, err = os.UserHomeDir()
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	config.LocalOs = runtime.GOOS

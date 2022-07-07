@@ -260,7 +260,7 @@ func unzip(zipFilepath string, unzipDirectory string) {
 	dst := unzipDirectory
 	archive, err := zip.OpenReader(zipFilepath)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	defer archive.Close()
 
@@ -279,21 +279,21 @@ func unzip(zipFilepath string, unzipDirectory string) {
 		}
 
 		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 
 		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 
 		fileInArchive, err := f.Open()
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 
 		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 
 		dstFile.Close()

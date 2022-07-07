@@ -30,11 +30,11 @@ func ApplyBaseTerraform(cmd *cobra.Command, directory string) {
 		}
 		_, _, errInit := pkg.ExecShellReturnStrings(config.TerraformPath, "init")
 		if errInit != nil {
-			panic(fmt.Sprintf("error: terraform init failed %v", err))
+			log.Panic(fmt.Sprintf("error: terraform init failed %v", err))
 		}
 		_, _, errApply := pkg.ExecShellReturnStrings(config.TerraformPath, "apply", "-auto-approve")
 		if errApply != nil {
-			panic(fmt.Sprintf("error: terraform init failed %v", err))
+			log.Panic(fmt.Sprintf("error: terraform init failed %v", err))
 		}
 		keyOut, _, errKey := pkg.ExecShellReturnStrings(config.TerraformPath, "output", "vault_unseal_kms_key")
 		if errKey != nil {

@@ -44,14 +44,14 @@ func getVaultRootToken(vaultSecretClient coreV1Types.SecretInterface) string {
 	secret, err := vaultSecretClient.Get(context.TODO(), name, metaV1.GetOptions{})
 
 	if err != nil {
-		panic(err.Error())
+		log.Panic(err.Error())
 	}
 
 	var jsonData map[string]interface{}
 
 	for _, value := range secret.Data {
 		if err := json.Unmarshal(value, &jsonData); err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		vaultRootToken = jsonData["root_token"].(string)
 	}

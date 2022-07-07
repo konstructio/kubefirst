@@ -32,7 +32,7 @@ to quickly create a Cobra application.`,
 		var err error
 		config.DryRun, err = cmd.Flags().GetBool("dry-run")
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 
 		log.Println("dry run enabled:", config.DryRun)
@@ -113,7 +113,7 @@ to quickly create a Cobra application.`,
 		log.Println("calling download()")
 		err = downloadManager.DownloadTools(config, trackers)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 
 		log.Println("download() complete")
@@ -153,22 +153,22 @@ func init() {
 	initCmd.Flags().String("hosted-zone-name", "", "the domain to provision the kubefirst platform in")
 	err := initCmd.MarkFlagRequired("hosted-zone-name")
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	initCmd.Flags().String("admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
 	err = initCmd.MarkFlagRequired("admin-email")
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	initCmd.Flags().String("cloud", "", "the cloud to provision infrastructure in")
 	err = initCmd.MarkFlagRequired("cloud")
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	initCmd.Flags().String("region", "", "the region to provision the cloud resources in")
 	err = initCmd.MarkFlagRequired("region")
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	initCmd.Flags().Bool("clean", false, "delete any local kubefirst content ~/.kubefirst, ~/.flare")
 
