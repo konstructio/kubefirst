@@ -86,7 +86,7 @@ to quickly create a Cobra application.`,
 
 				gitlab.PushGitOpsToGitLab()
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
-				pkg.ChangeRegistryToGitLab()
+				gitlab.ChangeRegistryToGitLab()
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
 
 				hydrateGitlabMetaphorRepo()

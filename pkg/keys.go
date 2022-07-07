@@ -1,11 +1,15 @@
 package pkg
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	goGitSsh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/nebulous/configs"
-	"github.com/kubefirst/nebulous/internal/gitlab"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"log"
 	"strings"
@@ -16,7 +20,7 @@ func CreateSshKeyPair() {
 	publicKey := viper.GetString("botpublickey")
 	if publicKey == "" {
 		log.Println("generating new key pair")
-		publicKey, privateKey, _ := gitlab.GenerateKey()
+		publicKey, privateKey, _ := GenerateKey()
 		viper.Set("botPublicKey", publicKey)
 		viper.Set("botPrivateKey", privateKey)
 		err := viper.WriteConfig()
@@ -70,11 +74,36 @@ configs:
 	}
 }
 
-func PublicKey() (*ssh.PublicKeys, error) {
-	var publicKey *ssh.PublicKeys
-	publicKey, err := ssh.NewPublicKeys("gitClient", []byte(viper.GetString("botprivatekey")), "")
+func PublicKey() (*goGitSsh.PublicKeys, error) {
+	var publicKey *goGitSsh.PublicKeys
+	publicKey, err := goGitSsh.NewPublicKeys("gitClient", []byte(viper.GetString("botprivatekey")), "")
 	if err != nil {
 		return nil, err
 	}
 	return publicKey, err
+}
+
+// GenerateKey generate public and private keys to be consumed by GitLab.
+func GenerateKey() (string, string, error) {
+	reader := rand.Reader
+	bitSize := 2048
+
+	key, err := rsa.GenerateKey(reader, bitSize)
+	if err != nil {
+		return "", "", err
+	}
+
+	pub, err := ssh.NewPublicKey(key.Public())
+	if err != nil {
+		return "", "", err
+	}
+	publicKey := string(ssh.MarshalAuthorizedKey(pub))
+	// encode RSA key
+	privateKey := string(pem.EncodeToMemory(
+		&pem.Block{
+			Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key),
+		},
+	))
+
+	return publicKey, privateKey, nil
 }

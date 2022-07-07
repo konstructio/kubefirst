@@ -33,5 +33,5 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	nebulousCmd.AddCommand(cleanCmd)
+	initCmd.AddCommand(cleanCmd)
 }
