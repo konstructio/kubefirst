@@ -17,6 +17,5 @@ var versionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		config := configs.ReadConfig()
 		log.Printf("flare-cli golang utility version: v%s", config.KubefirstVersion)
-
 	},
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/kubefirst/nebulous/internal/aws"
 	"github.com/kubefirst/nebulous/internal/gitlab"
 	"github.com/kubefirst/nebulous/internal/k8s"
+	"github.com/kubefirst/nebulous/internal/terraform"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
@@ -37,7 +38,7 @@ if the registry has already been delteted.`,
 		gitlab.DestroyGitlabTerraform()
 		// delete argocd registry
 		k8s.DeleteRegistryApplication()
-		destroyBaseTerraform()
+		terraform.DestroyBaseTerraform()
 		//TODO: Remove buckets? Opt-in flag
 		aws.DestroyBucketsInUse()
 	},

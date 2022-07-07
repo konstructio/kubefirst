@@ -6,7 +6,10 @@ import (
 	"github.com/kubefirst/nebulous/internal/argocd"
 	"github.com/kubefirst/nebulous/internal/gitlab"
 	"github.com/kubefirst/nebulous/internal/helm"
+	"github.com/kubefirst/nebulous/internal/softserve"
 	"github.com/kubefirst/nebulous/internal/telemetry"
+	"github.com/kubefirst/nebulous/internal/terraform"
+	"github.com/kubefirst/nebulous/internal/vault"
 	"github.com/kubefirst/nebulous/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -56,11 +59,11 @@ to quickly create a Cobra application.`,
 		}
 
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", config.HomePath)
-		applyBaseTerraform(cmd, directory)
+		terraform.ApplyBaseTerraform(cmd, directory)
 		Trackers[trackerStage20].Tracker.Increment(int64(1))
-		createSoftServe(config.KubeConfigPath)
+		softserve.CreateSoftServe(config.KubeConfigPath)
 		Trackers[trackerStage21].Tracker.Increment(int64(1))
-		configureSoftserveAndPush()
+		softserve.ConfigureSoftServeAndPush()
 		Trackers[trackerStage21].Tracker.Increment(int64(1))
 		helm.InstallArgocd(config.HomePath)
 		Trackers[trackerStage22].Tracker.Increment(int64(1))
@@ -77,9 +80,9 @@ to quickly create a Cobra application.`,
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
 
 			if !skipVault {
-				configureVault()
+				vault.ConfigureVault()
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
-				addGitlabOidcApplications()
+				vault.AddGitlabOidcApplications()
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
 				gitlab.AwaitGitlab()
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
@@ -89,7 +92,8 @@ to quickly create a Cobra application.`,
 				gitlab.ChangeRegistryToGitLab()
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
 
-				hydrateGitlabMetaphorRepo()
+				gitlab.HydrateGitlabMetaphorRepo()
+
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
 
 				token := argocd.GetArgocdAuthToken()

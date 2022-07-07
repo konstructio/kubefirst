@@ -1,4 +1,4 @@
-package cmd
+package terraform
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func applyBaseTerraform(cmd *cobra.Command, directory string) {
+func ApplyBaseTerraform(cmd *cobra.Command, directory string) {
 	config := configs.ReadConfig()
 	applyBase := viper.GetBool("create.terraformapplied.base")
 	if applyBase != true {
@@ -53,7 +53,7 @@ func applyBaseTerraform(cmd *cobra.Command, directory string) {
 	}
 }
 
-func destroyBaseTerraform() {
+func DestroyBaseTerraform() {
 	config := configs.ReadConfig()
 	if !config.SkipBaseTerraform {
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", config.HomePath)

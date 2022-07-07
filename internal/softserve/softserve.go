@@ -1,4 +1,4 @@
-package cmd
+package softserve
 
 import (
 	"fmt"
@@ -18,12 +18,12 @@ import (
 	"time"
 )
 
-func createSoftServe(kubeconfigPath string) {
+func CreateSoftServe(kubeconfigPath string) {
 	config := configs.ReadConfig()
 	if !viper.GetBool("create.softserve.create") {
-		log.Println("Executing createSoftServe")
+		log.Println("Executing CreateSoftServe")
 		if config.DryRun {
-			log.Printf("[#99] Dry-run mode, createSoftServe skipped.")
+			log.Printf("[#99] Dry-run mode, CreateSoftServe skipped.")
 			return
 		}
 		toolsDir := fmt.Sprintf("%s/.kubefirst/tools", config.HomePath)
@@ -47,18 +47,18 @@ func createSoftServe(kubeconfigPath string) {
 		time.Sleep(60 * time.Second)
 		//TODO: Update mechanism of waiting
 	} else {
-		log.Println("Skipping: createSoftServe")
+		log.Println("Skipping: CreateSoftServe")
 	}
 
 }
 
-func configureSoftserveAndPush() {
+func ConfigureSoftServeAndPush() {
 	config := configs.ReadConfig()
 	configureAndPushFlag := viper.GetBool("create.softserve.configure")
 	if configureAndPushFlag != true {
-		log.Println("Executing configureSoftserveAndPush")
+		log.Println("Executing ConfigureSoftServeAndPush")
 		if config.DryRun {
-			log.Printf("[#99] Dry-run mode, configureSoftserveAndPush skipped.")
+			log.Printf("[#99] Dry-run mode, ConfigureSoftServeAndPush skipped.")
 			return
 		}
 		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")
@@ -77,7 +77,7 @@ func configureSoftserveAndPush() {
 		viper.WriteConfig()
 		time.Sleep(30 * time.Second)
 	} else {
-		log.Println("Skipping: configureSoftserveAndPush")
+		log.Println("Skipping: ConfigureSoftServeAndPush")
 	}
 }
 
