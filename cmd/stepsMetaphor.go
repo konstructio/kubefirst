@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/go-git/go-git/v5"
-	gitConfig "github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/nebulous/configs"
@@ -13,15 +13,15 @@ import (
 )
 
 func hydrateGitlabMetaphorRepo() {
-	config := configs.ReadConfig()
+	cfg := configs.ReadConfig()
 	//TODO: Should this be skipped if already executed?
 	if !viper.GetBool("create.gitlabmetaphor.cloned") {
-		if config.DryRun {
+		if cfg.DryRun {
 			log.Printf("[#99] Dry-run mode, hydrateGitlabMetaphorRepo skipped.")
 			return
 		}
 
-		metaphorTemplateDir := fmt.Sprintf("%s/.kubefirst/metaphor", config.HomePath)
+		metaphorTemplateDir := fmt.Sprintf("%s/.kubefirst/metaphor", cfg.HomePath)
 
 		url := "https://github.com/kubefirst/metaphor-template"
 
@@ -39,10 +39,10 @@ func hydrateGitlabMetaphorRepo() {
 
 		// todo make global
 		gitlabURL := fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename"))
-		log.Println("git remote add origin", gitlabURL)
-		_, err = metaphorTemplateRepo.CreateRemote(&gitConfig.RemoteConfig{
+		log.Println("gitClient remote add origin", gitlabURL)
+		_, err = metaphorTemplateRepo.CreateRemote(&config.RemoteConfig{
 			Name: "gitlab",
-			URLs: []string{fmt.Sprintf("%s/kubefirst/metaphor.git", gitlabURL)},
+			URLs: []string{fmt.Sprintf("%s/kubefirst/metaphor.gitClient", gitlabURL)},
 		})
 
 		w, _ := metaphorTemplateRepo.Worktree()

@@ -5,6 +5,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/internal/gitClient"
 	"github.com/kubefirst/nebulous/pkg"
 	"github.com/spf13/viper"
 	ssh2 "golang.org/x/crypto/ssh"
@@ -71,7 +72,7 @@ func configureSoftserveAndPush() {
 		time.Sleep(20 * time.Second)
 
 		configureSoftServe()
-		pushGitopsToSoftServe()
+		gitClient.PushGitopsToSoftServe()
 		viper.Set("create.softserve.configure", true)
 		viper.WriteConfig()
 		time.Sleep(30 * time.Second)
@@ -86,9 +87,9 @@ func configureSoftServe() {
 	url := "ssh://127.0.0.1:8022/config"
 	directory := fmt.Sprintf("%s/.kubefirst/config", config.HomePath)
 
-	log.Println("git clone", url, directory)
+	log.Println("gitClient clone", url, directory)
 
-	auth, _ := publicKey()
+	auth, _ := pkg.PublicKey()
 
 	auth.HostKeyCallback = ssh2.InsecureIgnoreHostKey()
 

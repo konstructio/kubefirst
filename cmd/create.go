@@ -116,7 +116,7 @@ func init() {
 	// todo: make this an optional switch and check for it or viper
 	createCmd.Flags().Bool("destroy", false, "destroy resources")
 	createCmd.PersistentFlags().BoolVarP(&config.DryRun, "dry-run", "s", false, "set to dry-run mode, no changes done on cloud provider selected")
-	createCmd.PersistentFlags().BoolVar(&skipVault, "skip-vault", false, "Skip post-git lab install and vault setup")
-	createCmd.PersistentFlags().BoolVar(&skipGitlab, "skip-gitlab", false, "Skip git lab install and vault setup")
+	createCmd.PersistentFlags().BoolVar(&skipVault, "skip-vault", false, "Skip post-gitClient lab install and vault setup")
+	createCmd.PersistentFlags().BoolVar(&skipGitlab, "skip-gitlab", false, "Skip gitClient lab install and vault setup")
 
 }

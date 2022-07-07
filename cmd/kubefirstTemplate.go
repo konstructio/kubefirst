@@ -2,83 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/go-git/go-git/v5"
-	gitConfig "github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/kubefirst/nebulous/configs"
 	"github.com/spf13/viper"
-	ssh2 "golang.org/x/crypto/ssh"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
-
-func cloneGitOpsRepo() {
-
-	config := configs.ReadConfig()
-	url := "https://github.com/kubefirst/gitops-template"
-	directory := fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath)
-
-	log.Println("git clone", url, directory)
-
-	_, err := git.PlainClone(directory, false, &git.CloneOptions{
-		URL: url,
-	})
-	if err != nil {
-		log.Panicf("error cloning gitops-template repository from github, error is: %s", err)
-	}
-
-	log.Println("downloaded gitops repo from template to directory", config.HomePath, "/.kubefirst/gitops")
-}
-
-func pushGitopsToSoftServe() {
-
-	config := configs.ReadConfig()
-	directory := fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath)
-
-	log.Println("open git repo", directory)
-
-	repo, err := git.PlainOpen(directory)
-	if err != nil {
-		log.Panicf("error opening the directory ", directory, err)
-	}
-
-	log.Println("git remote add origin ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops")
-	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
-		Name: "soft",
-		URLs: []string{"ssh://127.0.0.1:8022/gitops"},
-	})
-	if err != nil {
-		log.Panicf("Error creating remote repo: %s", err)
-	}
-	w, _ := repo.Worktree()
-
-	log.Println("Committing new changes...")
-	w.Add(".")
-	w.Commit("setting new remote upstream to soft-serve", &git.CommitOptions{
-		Author: &object.Signature{
-			Name:  "kubefirst-bot",
-			Email: "kubefirst-bot@kubefirst.com",
-			When:  time.Now(),
-		},
-	})
-
-	auth, _ := publicKey()
-
-	auth.HostKeyCallback = ssh2.InsecureIgnoreHostKey()
-
-	err = repo.Push(&git.PushOptions{
-		RemoteName: "soft",
-		Auth:       auth,
-	})
-	if err != nil {
-		log.Panicf("error pushing to remote", err)
-	}
-
-}
 
 func detokenize(path string) {
 
@@ -97,7 +26,7 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		return nil //
 	}
 
-	if strings.Contains(path, ".git") || strings.Contains(path, ".terraform") {
+	if strings.Contains(path, ".gitClient") || strings.Contains(path, ".terraform") {
 		return nil
 	}
 

@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"github.com/ghodss/yaml"
 	"github.com/go-git/go-git/v5"
-	gitConfig "github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/nebulous/configs"
@@ -233,8 +233,8 @@ func gitlabKeyUpload() {
 }
 
 func pushGitopsToGitLab() {
-	config := configs.ReadConfig()
-	if config.DryRun {
+	cfg := configs.ReadConfig()
+	if cfg.DryRun {
 		log.Printf("[#99] Dry-run mode, pushGitopsToGitLab skipped.")
 		return
 	}
@@ -242,20 +242,18 @@ func pushGitopsToGitLab() {
 	//TODO: should this step to be skipped if already executed?
 	domain := viper.GetString("aws.hostedzonename")
 
-	detokenize(fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath))
-	directory := fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath)
+	detokenize(fmt.Sprintf("%s/.kubefirst/gitops", cfg.HomePath))
+	directory := fmt.Sprintf("%s/.kubefirst/gitops", cfg.HomePath)
 
 	repo, err := git.PlainOpen(directory)
 	if err != nil {
 		log.Panicf("error opening the directory ", directory, err)
 	}
 
-	//upstream := fmt.Sprintf("ssh://gitlab.%s:22:kubefirstVersion/gitops", viper.GetString("aws.hostedzonename"))
-	// upstream := "git@gitlab.kube1st.com:kubefirstVersion/gitops.git"
 	upstream := fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", domain)
 	log.Println("git remote add gitlab at url", upstream)
 
-	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
+	_, err = repo.CreateRemote(&config.RemoteConfig{
 		Name: "gitlab",
 		URLs: []string{upstream},
 	})

@@ -5,12 +5,11 @@ import (
 	"github.com/kubefirst/nebulous/configs"
 	"github.com/kubefirst/nebulous/internal/aws"
 	"github.com/kubefirst/nebulous/internal/downloadManager"
-	"github.com/kubefirst/nebulous/internal/gitlab"
+	"github.com/kubefirst/nebulous/internal/gitClient"
 	"github.com/kubefirst/nebulous/internal/telemetry"
 	"github.com/kubefirst/nebulous/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"io/ioutil"
 	"log"
 	"strings"
 	"time"
@@ -101,13 +100,13 @@ to quickly create a Cobra application.`,
 		}
 		trackers[pkg.TrackerStage2].Tracker.Increment(1)
 
-		log.Println("calling createSshKeyPair() ")
-		createSshKeyPair()
-		log.Println("createSshKeyPair() complete")
+		log.Println("calling CreateSshKeyPair() ")
+		pkg.CreateSshKeyPair()
+		log.Println("CreateSshKeyPair() complete")
 		trackers[pkg.TrackerStage3].Tracker.Increment(1)
 
 		log.Println("calling cloneGitOpsRepo()")
-		cloneGitOpsRepo()
+		gitClient.CloneGitOpsRepo()
 		log.Println("cloneGitOpsRepo() complete")
 		trackers[pkg.TrackerStage4].Tracker.Increment(1)
 
@@ -133,7 +132,6 @@ to quickly create a Cobra application.`,
 		log.Println("detokenize() complete")
 		trackers[pkg.TrackerStage8].Tracker.Increment(1)
 
-		// modConfigYaml()
 		metricName = "kubefirst.init.completed"
 
 		if !config.DryRun {
@@ -179,63 +177,4 @@ func init() {
 
 	initCmd.PersistentFlags().BoolVarP(&config.DryRun, "dry-run", "s", false, "set to dry-run mode, no changes done on cloud provider selected")
 	log.Println("init started")
-}
-
-func createSshKeyPair() {
-	config := configs.ReadConfig()
-	publicKey := viper.GetString("botpublickey")
-	if publicKey == "" {
-		log.Println("generating new key pair")
-		publicKey, privateKey, _ := gitlab.GenerateKey()
-		viper.Set("botPublicKey", publicKey)
-		viper.Set("botPrivateKey", privateKey)
-		err := viper.WriteConfig()
-		if err != nil {
-			log.Panicf("error: could not write to viper config")
-		}
-	}
-	publicKey = viper.GetString("botpublickey")
-	privateKey := viper.GetString("botprivatekey")
-
-	var argocdInitValuesYaml = []byte(fmt.Sprintf(`
-server:
-  additionalApplications:
-  - name: registry
-    namespace: argocd
-    additionalLabels: {}
-    additionalAnnotations: {}
-    finalizers:
-    - resources-finalizer.argocd.argoproj.io
-    project: default
-    source:
-      repoURL: ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops
-      targetRevision: HEAD
-      path: registry
-    destination:
-      server: https://kubernetes.default.svc
-      namespace: argocd
-    syncPolicy:
-      automated:
-        prune: true
-        selfHeal: true
-      syncOptions:
-      - CreateNamespace=true
-configs:
-  repositories:
-    soft-serve-gitops:
-      url: ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops
-      insecure: 'true'
-      type: git
-      name: soft-serve-gitops
-  credentialTemplates:
-    ssh-creds:
-      url: ssh://soft-serve.soft-serve.svc.cluster.local:22
-      sshPrivateKey: |
-        %s
-`, strings.ReplaceAll(privateKey, "\n", "\n        ")))
-
-	err := ioutil.WriteFile(fmt.Sprintf("%s/.kubefirst/argocd-init-values.yaml", config.HomePath), argocdInitValuesYaml, 0644)
-	if err != nil {
-		log.Panicf("error: could not write argocd-init-values.yaml %s", err)
-	}
 }
