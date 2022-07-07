@@ -47,7 +47,7 @@ func applyBaseTerraform(cmd *cobra.Command, directory string) {
 		viper.Set("vault.kmskeyid", keyId)
 		viper.Set("create.terraformapplied.base", true)
 		viper.WriteConfig()
-		detokenize(fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath))
+		pkg.Detokenize(fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath))
 	} else {
 		log.Println("Skipping: ApplyBaseTerraform")
 	}
@@ -55,7 +55,7 @@ func applyBaseTerraform(cmd *cobra.Command, directory string) {
 
 func destroyBaseTerraform() {
 	config := configs.ReadConfig()
-	if !skipBaseTerraform {
+	if !config.SkipBaseTerraform {
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", config.HomePath)
 		err := os.Chdir(directory)
 		if err != nil {

@@ -6,10 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kubefirst/nebulous/configs"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
+	"strings"
+	"syscall"
 )
 
 // kSyncArgocdApplication request ArgoCD to manual sync an application. Expected parameters are the ArgoCD application
@@ -111,4 +116,88 @@ func getArgoCDToken(username string, password string) (string, error) {
 	}
 
 	return token, nil
+}
+
+func GetArgocdAuthToken() string {
+	config := configs.ReadConfig()
+	if config.DryRun {
+		log.Printf("[#99] Dry-run mode, GetArgocdAuthToken skipped.")
+		return "nothing"
+	}
+	kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
+	kPortForward.Stdout = os.Stdout
+	kPortForward.Stderr = os.Stderr
+	err := kPortForward.Start()
+	defer kPortForward.Process.Signal(syscall.SIGTERM)
+	if err != nil {
+		log.Panicf("error: failed to port-forward to argocd %s", err)
+	}
+
+	url := "https://localhost:8080/api/v1/session"
+
+	payload := strings.NewReader(fmt.Sprintf("{\n\t\"username\":\"admin\",\"password\":\"%s\"\n}", viper.GetString("argocd.admin.password")))
+
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	req, err := http.NewRequest("POST", url, payload)
+	if err != nil {
+		log.Fatal("error getting auth token from argocd ", err)
+	}
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			// N.B.: when used in production, also check for redirect loops
+			return nil
+		},
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Fatal("error requesting auth token from argocd")
+	}
+
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal("error sending POST request to get argocd auth token :", err)
+	}
+
+	var dat map[string]interface{}
+
+	if err := json.Unmarshal(body, &dat); err != nil {
+		log.Panicf("error unmarshalling  %s", err)
+	}
+	token := dat["token"]
+	viper.Set("argocd.admin.apitoken", token)
+	viper.WriteConfig()
+
+	return token.(string)
+
+}
+
+func SyncArgocdApplication(applicationName, argocdAuthToken string) {
+	config := configs.ReadConfig()
+	if config.DryRun {
+		log.Printf("[#99] Dry-run mode, SyncArgocdApplication skipped.")
+		return
+	}
+	kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
+	kPortForward.Stdout = os.Stdout
+	kPortForward.Stderr = os.Stderr
+	err := kPortForward.Start()
+	defer kPortForward.Process.Signal(syscall.SIGTERM)
+	if err != nil {
+		log.Panicf("error: failed to port-forward to argocd %s", err)
+	}
+
+	// todo need to replace this with a curl wrapper and see if it WORKS
+
+	url := fmt.Sprintf("https://localhost:8080/api/v1/applications/%s/sync", applicationName)
+
+	argoCdAppSync := exec.Command("curl", "-k", "-L", "-X", "POST", url, "-H", fmt.Sprintf("Authorization: Bearer %s", argocdAuthToken))
+	argoCdAppSync.Stdout = os.Stdout
+	argoCdAppSync.Stderr = os.Stderr
+	err = argoCdAppSync.Run()
+	if err != nil {
+		log.Panicf("error: curl appSync failed failed %s", err)
+	}
 }

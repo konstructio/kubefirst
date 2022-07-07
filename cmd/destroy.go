@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/kubefirst/nebulous/configs"
 	"github.com/kubefirst/nebulous/internal/aws"
+	"github.com/kubefirst/nebulous/internal/gitlab"
 	"github.com/kubefirst/nebulous/internal/k8s"
 	"github.com/spf13/cobra"
 	"log"
@@ -10,12 +11,6 @@ import (
 	"os/exec"
 	"syscall"
 )
-
-var skipGitlabTerraform bool
-
-//var skipDeleteRegistryApplication bool
-var skipBaseTerraform bool
-var DestroyBuckets bool
 
 // destroyCmd represents the destroy command
 var destroyCmd = &cobra.Command{
@@ -39,7 +34,7 @@ if the registry has already been delteted.`,
 			log.Panicf("error: failed to port-forward to gitlab %s", err)
 		}
 		// todo this needs to be removed when we are no longer in the starter account
-		destroyGitlabTerraform()
+		gitlab.DestroyGitlabTerraform()
 		// delete argocd registry
 		k8s.DeleteRegistryApplication()
 		destroyBaseTerraform()
@@ -53,8 +48,8 @@ func init() {
 
 	rootCmd.AddCommand(destroyCmd)
 
-	destroyCmd.PersistentFlags().BoolVar(&skipGitlabTerraform, "skip-gitlab-terraform", false, "whether to skip the terraform destroy against gitlab - note: if you already deleted registry it doesnt exist")
+	destroyCmd.PersistentFlags().BoolVar(&config.SkipGitlabTerraform, "skip-gitlab-terraform", false, "whether to skip the terraform destroy against gitlab - note: if you already deleted registry it doesnt exist")
 	destroyCmd.PersistentFlags().BoolVar(&config.SkipDeleteRegistryApplication, "skip-delete-register", false, "whether to skip deletion of resgister application ")
-	destroyCmd.PersistentFlags().BoolVar(&skipBaseTerraform, "skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
-	destroyCmd.PersistentFlags().BoolVar(&DestroyBuckets, "destroy-buckets", false, "remove created aws buckets, not empty buckets are not cleaned")
+	destroyCmd.PersistentFlags().BoolVar(&config.SkipBaseTerraform, "skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
+	destroyCmd.PersistentFlags().BoolVar(&config.DestroyBuckets, "destroy-buckets", false, "remove created aws buckets, not empty buckets are not cleaned")
 }

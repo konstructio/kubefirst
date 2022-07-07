@@ -32,6 +32,9 @@ type Config struct {
 
 	KubefirstVersion string
 	InstallerEmail   string
+
+	SkipGitlabTerraform bool
+	SkipBaseTerraform   bool
 }
 
 func ReadConfig() *Config {

@@ -1,18 +1,33 @@
 package gitlab
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/uuid"
 	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/internal/k8s"
+	"github.com/kubefirst/nebulous/pkg"
 	"github.com/spf13/viper"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -71,4 +86,283 @@ func GitlabGeneratePersonalAccessToken(gitlabPodName string) {
 	viper.WriteConfig()
 
 	log.Println("gitlab personal access token generated", gitlabToken)
+}
+
+func PushGitOpsToGitLab() {
+	cfg := configs.ReadConfig()
+	if cfg.DryRun {
+		log.Printf("[#99] Dry-run mode, PushGitOpsToGitLab skipped.")
+		return
+	}
+
+	//TODO: should this step to be skipped if already executed?
+	domain := viper.GetString("aws.hostedzonename")
+
+	pkg.Detokenize(fmt.Sprintf("%s/.kubefirst/gitops", cfg.HomePath))
+	directory := fmt.Sprintf("%s/.kubefirst/gitops", cfg.HomePath)
+
+	repo, err := git.PlainOpen(directory)
+	if err != nil {
+		log.Panicf("error opening the directory ", directory, err)
+	}
+
+	upstream := fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", domain)
+	log.Println("git remote add gitlab at url", upstream)
+
+	_, err = repo.CreateRemote(&config.RemoteConfig{
+		Name: "gitlab",
+		URLs: []string{upstream},
+	})
+	if err != nil {
+		log.Println("Error creating remote repo:", err)
+	}
+	w, _ := repo.Worktree()
+
+	os.RemoveAll(directory + "/terraform/base/.terraform")
+	os.RemoveAll(directory + "/terraform/gitlab/.terraform")
+	os.RemoveAll(directory + "/terraform/vault/.terraform")
+
+	log.Println("Committing new changes...")
+	w.Add(".")
+	_, err = w.Commit("setting new remote upstream to gitlab", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "kubefirst-bot",
+			Email: "kubefirst-bot@kubefirst.com",
+			When:  time.Now(),
+		},
+	})
+	if err != nil {
+		log.Panicf("error committing changes", err)
+	}
+
+	log.Println("setting auth...")
+	// auth, _ := publicKey()
+	// auth.HostKeyCallback = ssh2.InsecureIgnoreHostKey()
+
+	auth := &gitHttp.BasicAuth{
+		Username: "root",
+		Password: viper.GetString("gitlab.token"),
+	}
+
+	err = repo.Push(&git.PushOptions{
+		RemoteName: "gitlab",
+		Auth:       auth,
+	})
+	if err != nil {
+		log.Panicf("error pushing to remote", err)
+	}
+
+}
+
+func AwaitGitlab() {
+	config := configs.ReadConfig()
+
+	log.Println("AwaitGitlab called")
+	if config.DryRun {
+		log.Printf("[#99] Dry-run mode, AwaitGitlab skipped.")
+		return
+	}
+	max := 200
+	for i := 0; i < max; i++ {
+		hostedZoneName := viper.GetString("aws.hostedzonename")
+		resp, _ := http.Get(fmt.Sprintf("https://gitlab.%s", hostedZoneName))
+		if resp != nil && resp.StatusCode == 200 {
+			log.Println("gitlab host resolved, 30 second grace period required...")
+			time.Sleep(time.Second * 30)
+			i = max
+		} else {
+			log.Println("gitlab host not resolved, sleeping 10s")
+			time.Sleep(time.Second * 10)
+		}
+	}
+}
+
+func ProduceGitlabTokens() {
+	//TODO: Should this step be skipped if already executed?
+	config := configs.ReadConfig()
+	k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
+	if err != nil {
+		panic(err.Error())
+	}
+	clientset, err := kubernetes.NewForConfig(k8sConfig)
+	if err != nil {
+		panic(err.Error())
+	}
+	log.Println("discovering gitlab toolbox pod")
+	if config.DryRun {
+		log.Printf("[#99] Dry-run mode, ProduceGitlabTokens skipped.")
+		return
+	}
+	time.Sleep(30 * time.Second)
+	// todo: move it to config
+	k8s.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+
+	argocdPassword := k8s.GetSecretValue(k8s.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
+
+	viper.Set("argocd.admin.password", argocdPassword)
+	viper.WriteConfig()
+
+	log.Println("discovering gitlab toolbox pod")
+
+	k8s.GitlabPodsClient = clientset.CoreV1().Pods("gitlab")
+	gitlabPodName := k8s.GetPodNameByLabel(k8s.GitlabPodsClient, "toolbox")
+
+	k8s.GitlabSecretClient = clientset.CoreV1().Secrets("gitlab")
+	secrets, err := k8s.GitlabSecretClient.List(context.TODO(), metaV1.ListOptions{})
+
+	var gitlabRootPasswordSecretName string
+
+	for _, secret := range secrets.Items {
+		if strings.Contains(secret.Name, "initial-root-password") {
+			gitlabRootPasswordSecretName = secret.Name
+			log.Println("gitlab initial root password secret name: ", gitlabRootPasswordSecretName)
+		}
+	}
+	gitlabRootPassword := k8s.GetSecretValue(k8s.GitlabSecretClient, gitlabRootPasswordSecretName, "password")
+
+	viper.Set("gitlab.podname", gitlabPodName)
+	viper.Set("gitlab.root.password", gitlabRootPassword)
+	viper.WriteConfig()
+
+	gitlabToken := viper.GetString("gitlab.token")
+
+	if gitlabToken == "" {
+
+		log.Println("generating gitlab personal access token")
+		GitlabGeneratePersonalAccessToken(gitlabPodName)
+
+	}
+
+	gitlabRunnerToken := viper.GetString("gitlab.runnertoken")
+
+	if gitlabRunnerToken == "" {
+
+		log.Println("getting gitlab runner token")
+		gitlabRunnerRegistrationToken := k8s.GetSecretValue(k8s.GitlabSecretClient, "gitlab-gitlab-runner-secret", "runner-registration-token")
+		viper.Set("gitlab.runnertoken", gitlabRunnerRegistrationToken)
+		viper.WriteConfig()
+	}
+
+}
+
+func ApplyGitlabTerraform(directory string) {
+	config := configs.ReadConfig()
+	if !viper.GetBool("create.terraformapplied.gitlab") {
+		log.Println("Executing ApplyGitlabTerraform")
+		if config.DryRun {
+			log.Printf("[#99] Dry-run mode, ApplyGitlabTerraform skipped.")
+			return
+		}
+		// Prepare for terraform gitlab execution
+		os.Setenv("GITLAB_TOKEN", viper.GetString("gitlab.token"))
+		os.Setenv("GITLAB_BASE_URL", "http://localhost:8888")
+
+		directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", config.HomePath)
+		err := os.Chdir(directory)
+		if err != nil {
+			log.Panic("error: could not change directory to " + directory)
+		}
+		_, _, errInit := pkg.ExecShellReturnStrings(config.TerraformPath, "init")
+		if errInit != nil {
+			panic(fmt.Sprintf("error: terraform init for gitlab failed %s", err))
+		}
+		_, _, errApply := pkg.ExecShellReturnStrings(config.TerraformPath, "apply", "-auto-approve")
+		if errApply != nil {
+			panic(fmt.Sprintf("error: terraform apply for gitlab failed %s", err))
+		}
+		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
+		viper.Set("create.terraformapplied.gitlab", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("Skipping: ApplyGitlabTerraform")
+	}
+}
+
+func GitlabKeyUpload() {
+	config := configs.ReadConfig()
+	// upload ssh public key
+	if !viper.GetBool("gitlab.keyuploaded") {
+		log.Println("Executing GitlabKeyUpload")
+		log.Println("uploading ssh public key for gitlab user")
+		if config.DryRun {
+			log.Printf("[#99] Dry-run mode, GitlabKeyUpload skipped.")
+			return
+		}
+		log.Println("uploading ssh public key to gitlab")
+		gitlabToken := viper.GetString("gitlab.token")
+		data := url.Values{
+			"title": {"kubefirst"},
+			"key":   {viper.GetString("botpublickey")},
+		}
+
+		gitlabUrlBase := fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname"))
+
+		resp, err := http.PostForm(gitlabUrlBase+"/api/v4/user/keys?private_token="+gitlabToken, data)
+		if err != nil {
+			log.Fatal(err)
+		}
+		var res map[string]interface{}
+		json.NewDecoder(resp.Body).Decode(&res)
+		log.Println(res)
+		log.Println("ssh public key uploaded to gitlab")
+		viper.Set("gitlab.keyuploaded", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("Skipping: GitlabKeyUpload")
+		log.Println("ssh public key already uploaded to gitlab")
+	}
+}
+
+func DestroyGitlabTerraform() {
+	config := configs.ReadConfig()
+	log.Println("\n\nTODO -- need to setup and argocd delete against registry and wait?\n\n")
+	// kubeconfig := os.Getenv("HOME") + "/.kube/config"
+	// config, err := argocdclientset.BuildConfigFromFlags("", kubeconfig)
+	// argocdclientset, err := argocdclientset.NewForConfig(config)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	//* should we git clone the gitops repo when destroy is run back to their
+	//* local host to get the latest values of gitops
+
+	os.Setenv("AWS_REGION", viper.GetString("aws.region"))
+	os.Setenv("AWS_ACCOUNT_ID", viper.GetString("aws.accountid"))
+	os.Setenv("HOSTED_ZONE_NAME", viper.GetString("aws.hostedzonename"))
+	os.Setenv("GITLAB_TOKEN", viper.GetString("gitlab.token"))
+
+	os.Setenv("TF_VAR_aws_account_id", viper.GetString("aws.accountid"))
+	os.Setenv("TF_VAR_aws_region", viper.GetString("aws.region"))
+	os.Setenv("TF_VAR_hosted_zone_name", viper.GetString("aws.hostedzonename"))
+
+	directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", config.HomePath)
+	err := os.Chdir(directory)
+	if err != nil {
+		log.Panicf("error: could not change directory to " + directory)
+	}
+
+	os.Setenv("GITLAB_BASE_URL", "http://localhost:8888")
+
+	if !config.SkipGitlabTerraform {
+		tfInitGitlabCmd := exec.Command(config.TerraformPath, "init")
+		tfInitGitlabCmd.Stdout = os.Stdout
+		tfInitGitlabCmd.Stderr = os.Stderr
+		err = tfInitGitlabCmd.Run()
+		if err != nil {
+			log.Panicf("failed to terraform init gitlab %s", err)
+		}
+
+		tfDestroyGitlabCmd := exec.Command(config.TerraformPath, "destroy", "-auto-approve")
+		tfDestroyGitlabCmd.Stdout = os.Stdout
+		tfDestroyGitlabCmd.Stderr = os.Stderr
+		err = tfDestroyGitlabCmd.Run()
+		if err != nil {
+			log.Panicf("failed to terraform destroy gitlab %s", err)
+		}
+
+		viper.Set("destroy.terraformdestroy.gitlab", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("skip:  DestroyGitlabTerraform")
+	}
 }

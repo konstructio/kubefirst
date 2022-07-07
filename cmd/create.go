@@ -3,6 +3,9 @@ package cmd
 import (
 	"fmt"
 	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/internal/argocd"
+	"github.com/kubefirst/nebulous/internal/gitlab"
+	"github.com/kubefirst/nebulous/internal/helm"
 	"github.com/kubefirst/nebulous/internal/telemetry"
 	"github.com/kubefirst/nebulous/pkg"
 	"github.com/spf13/cobra"
@@ -59,18 +62,18 @@ to quickly create a Cobra application.`,
 		Trackers[trackerStage21].Tracker.Increment(int64(1))
 		configureSoftserveAndPush()
 		Trackers[trackerStage21].Tracker.Increment(int64(1))
-		helmInstallArgocd(config.HomePath)
+		helm.InstallArgocd(config.HomePath)
 		Trackers[trackerStage22].Tracker.Increment(int64(1))
 
 		if !skipGitlab {
 			//TODO: Confirm if we need to waitgit lab to be ready
 			// OR something, too fast the secret will not be there.
-			awaitGitlab()
-			produceGitlabTokens()
+			gitlab.AwaitGitlab()
+			gitlab.ProduceGitlabTokens()
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
-			applyGitlabTerraform(directory)
+			gitlab.ApplyGitlabTerraform(directory)
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
-			gitlabKeyUpload()
+			gitlab.GitlabKeyUpload()
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
 
 			if !skipVault {
@@ -78,23 +81,23 @@ to quickly create a Cobra application.`,
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
 				addGitlabOidcApplications()
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
-				awaitGitlab()
+				gitlab.AwaitGitlab()
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
 
-				pushGitopsToGitLab()
+				gitlab.PushGitOpsToGitLab()
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
-				changeRegistryToGitLab()
+				pkg.ChangeRegistryToGitLab()
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
 
 				hydrateGitlabMetaphorRepo()
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
 
-				token := getArgocdAuthToken()
-				syncArgocdApplication("argo-components", token)
-				syncArgocdApplication("gitlab-runner-components", token)
-				syncArgocdApplication("gitlab-runner", token)
-				syncArgocdApplication("atlantis-components", token)
-				syncArgocdApplication("chartmuseum-components", token)
+				token := argocd.GetArgocdAuthToken()
+				argocd.SyncArgocdApplication("argo-components", token)
+				argocd.SyncArgocdApplication("gitlab-runner-components", token)
+				argocd.SyncArgocdApplication("gitlab-runner", token)
+				argocd.SyncArgocdApplication("atlantis-components", token)
+				argocd.SyncArgocdApplication("chartmuseum-components", token)
 			}
 		}
 

@@ -7,6 +7,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/pkg"
 	"github.com/spf13/viper"
 	"log"
 	"time"
@@ -33,7 +34,7 @@ func hydrateGitlabMetaphorRepo() {
 		}
 		viper.Set("create.gitlabmetaphor.cloned", true)
 
-		detokenize(metaphorTemplateDir)
+		pkg.Detokenize(metaphorTemplateDir)
 
 		viper.Set("create.gitlabmetaphor.detokenized", true)
 

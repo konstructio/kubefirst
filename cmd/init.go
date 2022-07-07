@@ -127,9 +127,9 @@ to quickly create a Cobra application.`,
 		aws.BucketRand()
 		log.Println("BucketRand() complete")
 
-		log.Println("calling detokenize()")
-		detokenize(fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath))
-		log.Println("detokenize() complete")
+		log.Println("calling Detokenize()")
+		pkg.Detokenize(fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath))
+		log.Println("Detokenize() complete")
 		trackers[pkg.TrackerStage8].Tracker.Increment(1)
 
 		metricName = "kubefirst.init.completed"
