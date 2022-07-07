@@ -2,18 +2,17 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"github.com/spf13/viper"
-	"os/exec"
-	"syscall"
-	gitlab "github.com/xanzy/go-gitlab"
 	vault "github.com/hashicorp/vault/api"
+	internalVault "github.com/kubefirst/nebulous/internal/vault"
+	"github.com/spf13/viper"
+	gitlab "github.com/xanzy/go-gitlab"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"github.com/kubefirst/nebulous/pkg/kubefirst"
+	"log"
+	"os"
+	"os/exec"
+	"syscall"
 )
-
 
 func configureVault() {
 	if !viper.GetBool("create.terraformapplied.vault") {
@@ -44,7 +43,10 @@ func configureVault() {
 		}
 
 		vaultSecretClient = clientset.CoreV1().Secrets("vault")
-		vaultToken := kubefirst.GetVaultRootToken(vaultSecretClient)
+		vaultToken, err := internalVault.GetVaultRootToken(vaultSecretClient)
+		if err != nil {
+			log.Panicf("unable to get vault root token, error: %s", err)
+		}
 
 		viper.Set("vault.token", vaultToken)
 		viper.WriteConfig()
@@ -103,7 +105,7 @@ func configureVault() {
 }
 
 func addGitlabOidcApplications() {
-	//TODO: Should this skipped if already executed. 
+	//TODO: Should this skipped if already executed.
 	if dryrunMode {
 		log.Printf("[#99] Dry-run mode, addGitlabOidcApplications skipped.")
 		return

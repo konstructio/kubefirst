@@ -11,10 +11,16 @@ import (
 	"strings"
 	"time"
 
-	gitlabSsh "github.com/kubefirst/nebulous/internal/gitlab"
+	"github.com/kubefirst/nebulous/internal/gitlab"
+	"github.com/kubefirst/nebulous/internal/telemetry"
 	"github.com/kubefirst/nebulous/pkg/flare"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/kubefirst/nebulous/pkg/flare"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	//gitlabSsh "github.com/kubefirst/nebulous/pkg/ssh"
 )
 
 var Trackers map[string]*flare.ActionTracker
@@ -59,7 +65,7 @@ to quickly create a Cobra application.`,
 		metricName := "kubefirst.init.started"
 		metricDomain := hostedZoneName
 		if !dryrunMode {
-			flare.SendTelemetry(metricDomain, metricName)
+			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
@@ -136,7 +142,7 @@ to quickly create a Cobra application.`,
 		metricName = "kubefirst.init.completed"
 
 		if !dryrunMode {
-			flare.SendTelemetry(metricDomain, metricName)
+			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
@@ -172,7 +178,7 @@ func createSshKeyPair() {
 	publicKey := viper.GetString("botpublickey")
 	if publicKey == "" {
 		log.Println("generating new key pair")
-		publicKey, privateKey, _ := gitlabSsh.GenerateKey()
+		publicKey, privateKey, _ := gitlab.GenerateKey()
 		viper.Set("botPublicKey", publicKey)
 		viper.Set("botPrivateKey", privateKey)
 		err := viper.WriteConfig()
