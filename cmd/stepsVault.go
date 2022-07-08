@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"syscall"
 
 	vault "github.com/hashicorp/vault/api"
 	internalVault "github.com/kubefirst/nebulous/internal/vault"
@@ -51,25 +50,6 @@ func configureVault() {
 
 		viper.Set("vault.token", vaultToken)
 		viper.WriteConfig()
-
-		log.Println("starting port forward to gitlab")
-		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
-		kPortForward.Stdout = os.Stdout
-		kPortForward.Stderr = os.Stderr
-		err = kPortForward.Start()
-		defer kPortForward.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Panicf("error: failed to port-forward to gitlab %s", err)
-		}
-		log.Println("starting port forward to vault")
-		kPortForward = exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
-		kPortForward.Stdout = os.Stdout
-		kPortForward.Stderr = os.Stderr
-		err = kPortForward.Start()
-		defer kPortForward.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Panicf("error: failed to port-forward to vault namespce svc/vault %s", err)
-		}
 
 		// Prepare for terraform vault execution
 		os.Setenv("VAULT_ADDR", viper.GetString("vault.local.service"))
@@ -130,14 +110,6 @@ func addGitlabOidcApplications() {
 	)
 	if err != nil {
 		log.Fatal(err)
-	}
-	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
-	kPortForward.Stdout = os.Stdout
-	kPortForward.Stderr = os.Stderr
-	err = kPortForward.Start()
-	defer kPortForward.Process.Signal(syscall.SIGTERM)
-	if err != nil {
-		log.Panicf("error: failed to port-forward to vault namespce svc/vault %s", err)
 	}
 
 	domain := viper.GetString("aws.hostedzonename")

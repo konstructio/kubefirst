@@ -15,7 +15,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/ghodss/yaml"
@@ -167,21 +166,12 @@ func applyGitlabTerraform(directory string) {
 		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 		os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
 		os.Setenv("AWS_PROFILE", "starter") // todo this is an issue
-		log.Println("starting port forward to gitlab")
-		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
-		kPortForward.Stdout = os.Stdout
-		kPortForward.Stderr = os.Stderr
-		err := kPortForward.Start()
-		defer kPortForward.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Panicf("error: failed to port-forward to gitlab %s", err)
-		}
 		// Prepare for terraform gitlab execution
 		os.Setenv("GITLAB_TOKEN", viper.GetString("gitlab.token"))
 		os.Setenv("GITLAB_BASE_URL", viper.GetString("gitlab.local.service"))
 
 		directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)
-		err = os.Chdir(directory)
+		err := os.Chdir(directory)
 		if err != nil {
 			log.Panic("error: could not change directory to " + directory)
 		}
@@ -221,15 +211,6 @@ func gitlabKeyUpload() {
 		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 		os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
 		os.Setenv("AWS_PROFILE", "starter") // todo this is an issue
-		log.Println("starting port forward to gitlab")
-		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
-		kPortForward.Stdout = os.Stdout
-		kPortForward.Stderr = os.Stderr
-		err := kPortForward.Start()
-		defer kPortForward.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Panicf("error: failed to port-forward to gitlab %s", err)
-		}
 		log.Println("uploading ssh public key to gitlab")
 		gitlabToken := viper.GetString("gitlab.token")
 		data := url.Values{
@@ -433,16 +414,9 @@ func getArgocdAuthToken() string {
 		log.Printf("[#99] Dry-run mode, getArgocdAuthToken skipped.")
 		return "nothing"
 	}
-	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
-	kPortForward.Stdout = os.Stdout
-	kPortForward.Stderr = os.Stderr
-	err := kPortForward.Start()
-	defer kPortForward.Process.Signal(syscall.SIGTERM)
-	if err != nil {
-		log.Panicf("error: failed to port-forward to argocd %s", err)
-	}
+	time.Sleep(15 * time.Second)
 
-	url := "https://localhost:8080/api/v1/session"
+	url := fmt.Sprintf("%s/api/v1/session", viper.GetString("argocd.local.service"))
 
 	payload := strings.NewReader(fmt.Sprintf("{\n\t\"username\":\"%s\",\"password\":\"%s\"\n}", viper.GetString("argocd.admin.username"), viper.GetString("argocd.admin.password")))
 
@@ -459,42 +433,38 @@ func getArgocdAuthToken() string {
 		},
 	}
 
-	res, err := client.Do(req)
-	if err != nil {
-		log.Panic("error requesting auth token from argocd", err)
+	x := 3
+	for i := 0; i < x; i++ {
+		res, err := client.Do(req)
+		if err != nil {
+			log.Panic("error requesting auth token from argocd", err)
+		} else {
+			defer res.Body.Close()
+			body, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				log.Panic("error sending POST request to get argocd auth token :", err)
+			}
+
+			var dat map[string]interface{}
+
+			if err := json.Unmarshal(body, &dat); err != nil {
+				log.Panicf("error unmarshalling  %s", err)
+			}
+			token := dat["token"]
+			viper.Set("argocd.admin.apitoken", token)
+			viper.WriteConfig()
+
+			// todo clean this up later
+			return token.(string)
+		}
 	}
-
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Panic("error sending POST request to get argocd auth token :", err)
-	}
-
-	var dat map[string]interface{}
-
-	if err := json.Unmarshal(body, &dat); err != nil {
-		log.Panicf("error unmarshalling  %s", err)
-	}
-	token := dat["token"]
-	viper.Set("argocd.admin.apitoken", token)
-	viper.WriteConfig()
-
-	return token.(string)
-
+	return ""
 }
 
 func syncArgocdApplication(applicationName, argocdAuthToken string) {
 	if dryrunMode {
 		log.Printf("[#99] Dry-run mode, syncArgocdApplication skipped.")
 		return
-	}
-	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
-	kPortForward.Stdout = os.Stdout
-	kPortForward.Stderr = os.Stderr
-	err := kPortForward.Start()
-	defer kPortForward.Process.Signal(syscall.SIGTERM)
-	if err != nil {
-		log.Panicf("error: failed to port-forward to argocd %s", err)
 	}
 
 	// todo need to replace this with a curl wrapper and see if it WORKS
@@ -504,7 +474,7 @@ func syncArgocdApplication(applicationName, argocdAuthToken string) {
 	argoCdAppSync := exec.Command("curl", "-k", "-L", "-X", "POST", url, "-H", fmt.Sprintf("Authorization: Bearer %s", argocdAuthToken))
 	argoCdAppSync.Stdout = os.Stdout
 	argoCdAppSync.Stderr = os.Stderr
-	err = argoCdAppSync.Run()
+	err := argoCdAppSync.Run()
 	if err != nil {
 		log.Panicf("error: curl appSync failed %s", err)
 	}
@@ -518,14 +488,6 @@ func destroyGitlabTerraform() {
 	// if err != nil {
 	// 	return nil, err
 	// }
-	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
-	kPortForward.Stdout = os.Stdout
-	kPortForward.Stderr = os.Stderr
-	err := kPortForward.Start()
-	defer kPortForward.Process.Signal(syscall.SIGTERM)
-	if err != nil {
-		log.Panicf("error: failed to port-forward to gitlab %s", err)
-	}
 	//* should we git clone the gitops repo when destroy is run back to their
 	//* local host to get the latest values of gitops
 
@@ -539,7 +501,7 @@ func destroyGitlabTerraform() {
 	os.Setenv("TF_VAR_hosted_zone_name", viper.GetString("aws.hostedzonename"))
 
 	directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)
-	err = os.Chdir(directory)
+	err := os.Chdir(directory)
 	if err != nil {
 		log.Panicf("error: could not change directory to " + directory)
 	}

@@ -3,6 +3,9 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/exec"
+	"syscall"
 	"time"
 
 	"github.com/kubefirst/nebulous/internal/telemetry"
@@ -61,8 +64,34 @@ to quickly create a Cobra application.`,
 		helmInstallArgocd(home, kubeconfigPath)
 		Trackers[trackerStage22].Tracker.Increment(int64(1))
 
-		log.Println("sleeping for 10 seconds, hurry up jared")
-		time.Sleep(10 * time.Second)
+		//! argocd was just helm installed
+		x := 50
+		for i := 0; i < x; i++ {
+			kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "get", "namespace/argocd")
+			kGetNamespace.Stdout = os.Stdout
+			kGetNamespace.Stderr = os.Stderr
+			err := kGetNamespace.Run()
+			if err != nil {
+				log.Println("Waiting argocd to be born")
+				time.Sleep(10 * time.Second)
+			} else {
+				log.Println("argocd namespace found, continuing")
+				time.Sleep(5 * time.Second)
+				break
+			}
+		}
+
+		kPortForwardArgocd := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
+		kPortForwardArgocd.Stdout = os.Stdout
+		kPortForwardArgocd.Stderr = os.Stderr
+		err := kPortForwardArgocd.Start()
+		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
+		}
+
+		log.Println("sleeping for 30 seconds, hurry up jared")
+		time.Sleep(30 * time.Second)
 
 		log.Println("setting argocd credentials")
 		setArgocdCreds()
@@ -75,6 +104,33 @@ to quickly create a Cobra application.`,
 		//! skip this if syncing from argocd and not helm installing
 		log.Printf("sleeping for 30 seconds, hurry up jared sign into argocd %s", viper.GetString("argocd.admin.password"))
 		time.Sleep(30 * time.Second)
+
+		//!
+		//* we need to stop here and wait for the vault namespace to exist and the vault pod to be ready
+		//!
+		x = 50
+		for i := 0; i < x; i++ {
+			kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "get", "namespace/vault")
+			kGetNamespace.Stdout = os.Stdout
+			kGetNamespace.Stderr = os.Stderr
+			err := kGetNamespace.Run()
+			if err != nil {
+				log.Println("Waiting vault to be born")
+				time.Sleep(10 * time.Second)
+			} else {
+				log.Println("vault namespace found, continuing")
+				time.Sleep(5 * time.Second)
+				break
+			}
+		}
+		kPortForwardVault := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
+		kPortForwardVault.Stdout = os.Stdout
+		kPortForwardVault.Stderr = os.Stderr
+		err = kPortForwardVault.Start()
+		defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			log.Panicf("error: failed to port-forward to vault in main thread %s", err)
+		}
 
 		// todo vault seems to provision well
 		log.Println("waiting for vault unseal")
@@ -89,10 +145,32 @@ to quickly create a Cobra application.`,
 		createVaultConfiguredSecret()
 		log.Println("vault-configured secret created")
 
+		x = 50
+		for i := 0; i < x; i++ {
+			kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "get", "namespace/gitlab")
+			kGetNamespace.Stdout = os.Stdout
+			kGetNamespace.Stderr = os.Stderr
+			err := kGetNamespace.Run()
+			if err != nil {
+				log.Println("Waiting gitlab to be born")
+				time.Sleep(10 * time.Second)
+			} else {
+				log.Println("gitlab namespace found, continuing")
+				time.Sleep(5 * time.Second)
+				break
+			}
+		}
 		log.Println("waiting for gitlab")
 		waitForGitlab()
 		log.Println("gitlab is ready!")
-
+		kPortForwardGitlab := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
+		kPortForwardGitlab.Stdout = os.Stdout
+		kPortForwardGitlab.Stderr = os.Stderr
+		err = kPortForwardGitlab.Start()
+		defer kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			log.Panicf("error: failed to port-forward to gitlab in main thread %s", err)
+		}
 		if !skipGitlab {
 			// TODO: Confirm if we need to waitgit lab to be ready
 			// OR something, too fast the secret will not be there.

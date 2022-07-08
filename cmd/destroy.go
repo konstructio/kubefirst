@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -30,6 +31,31 @@ and all of the components in kubernetes.
 Optional: skip gitlab terraform 
 if the registry has already been delteted.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		kPortForwardGitlab := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
+		kPortForwardGitlab.Stdout = os.Stdout
+		kPortForwardGitlab.Stderr = os.Stderr
+		err := kPortForwardGitlab.Start()
+		defer kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			log.Panicf("error: failed to port-forward to gitlab in main thread %s", err)
+		}
+
+		kPortForwardArgocd := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
+		kPortForwardArgocd.Stdout = os.Stdout
+		kPortForwardArgocd.Stderr = os.Stderr
+		err = kPortForwardArgocd.Start()
+		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
+		}
+		kPortForwardVault := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
+		kPortForwardVault.Stdout = os.Stdout
+		kPortForwardVault.Stderr = os.Stderr
+		err = kPortForwardVault.Start()
+		defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			log.Panicf("error: failed to port-forward to vault in main thread %s", err)
+		}
 
 		// todo this needs to be removed when we are no longer in the starter account
 		destroyGitlabTerraform()
@@ -53,25 +79,17 @@ func init() {
 
 func deleteRegistryApplication() {
 	if !skipDeleteRegistryApplication {
-		log.Println("starting port forward to argocd server and deleting registry")
-		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
-		kPortForward.Stdout = os.Stdout
-		kPortForward.Stderr = os.Stderr
-		err := kPortForward.Start()
-		defer kPortForward.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Panicf("error: failed to port-forward to argocd %s", err)
-		}
 
 		url := "https://localhost:8080/api/v1/applications/registry"
 		argoCdAppSync := exec.Command("curl", "-k", "-vL", "-X", "DELETE", url, "-H", fmt.Sprintf("Authorization: Bearer %s", viper.GetString("argocd.admin.apitoken")))
 		argoCdAppSync.Stdout = os.Stdout
 		argoCdAppSync.Stderr = os.Stderr
-		err = argoCdAppSync.Run()
+		err := argoCdAppSync.Run()
 		if err != nil {
 			log.Panicf("error: curl appSync failed failed %s", err)
 		}
 		log.Println("deleting argocd application registry")
+		time.Sleep(180 * time.Second)
 	} else {
 		log.Println("skip:  deleteRegistryApplication")
 	}

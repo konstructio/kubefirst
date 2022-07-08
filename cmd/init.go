@@ -75,6 +75,7 @@ to quickly create a Cobra application.`,
 		}
 		log.Println("hostedZoneName:", hostedZoneName)
 		viper.Set("aws.hostedzonename", hostedZoneName)
+		viper.Set("argocd.local.service", "http://localhost:8080")
 		viper.Set("gitlab.local.service", "http://localhost:8888")
 		viper.Set("vault.local.service", "http://localhost:8200")
 		viper.WriteConfig()
