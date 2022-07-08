@@ -29,10 +29,10 @@ to quickly create a Cobra application.`,
 		os.Remove(fmt.Sprintf("%s/.flare", home))
 		log.Println("removed $HOME/.kubefirst and $HOME/.flare")
 		// todo log.Println("proceed to kubefirst create ")
-		log.Println("proceed to flare nebulous create ")
+		log.Println("proceed to `kubefirst create` ")
 	},
 }
 
 func init() {
-	nebulousCmd.AddCommand(cleanCmd)
+	rootCmd.AddCommand(cleanCmd)
 }

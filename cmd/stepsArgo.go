@@ -163,12 +163,25 @@ func applyGitlabTerraform(directory string) {
 			log.Printf("[#99] Dry-run mode, applyGitlabTerraform skipped.")
 			return
 		}
+		//* AWS_SDK_LOAD_CONFIG=1
+		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
+		os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
+		os.Setenv("AWS_PROFILE", "starter") // todo this is an issue
+		log.Println("starting port forward to gitlab")
+		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
+		kPortForward.Stdout = os.Stdout
+		kPortForward.Stderr = os.Stderr
+		err := kPortForward.Start()
+		defer kPortForward.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			log.Panicf("error: failed to port-forward to gitlab %s", err)
+		}
 		// Prepare for terraform gitlab execution
 		os.Setenv("GITLAB_TOKEN", viper.GetString("gitlab.token"))
-		os.Setenv("GITLAB_BASE_URL", "http://localhost:8888")
+		os.Setenv("GITLAB_BASE_URL", viper.GetString("gitlab.local.service"))
 
 		directory = fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)
-		err := os.Chdir(directory)
+		err = os.Chdir(directory)
 		if err != nil {
 			log.Panic("error: could not change directory to " + directory)
 		}
@@ -197,6 +210,19 @@ func gitlabKeyUpload() {
 			log.Printf("[#99] Dry-run mode, gitlabKeyUpload skipped.")
 			return
 		}
+		//* AWS_SDK_LOAD_CONFIG=1
+		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
+		os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
+		os.Setenv("AWS_PROFILE", "starter") // todo this is an issue
+		log.Println("starting port forward to gitlab")
+		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
+		kPortForward.Stdout = os.Stdout
+		kPortForward.Stderr = os.Stderr
+		err := kPortForward.Start()
+		defer kPortForward.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			log.Panicf("error: failed to port-forward to gitlab %s", err)
+		}
 		log.Println("uploading ssh public key to gitlab")
 		gitlabToken := viper.GetString("gitlab.token")
 		data := url.Values{
@@ -204,7 +230,7 @@ func gitlabKeyUpload() {
 			"key":   {viper.GetString("botpublickey")},
 		}
 
-		gitlabUrlBase := fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.domainname"))
+		gitlabUrlBase := viper.GetString("gitlab.local.service")
 
 		resp, err := http.PostForm(gitlabUrlBase+"/api/v4/user/keys?private_token="+gitlabToken, data)
 		if err != nil {
@@ -484,7 +510,14 @@ func destroyGitlabTerraform() {
 	// if err != nil {
 	// 	return nil, err
 	// }
-
+	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
+	kPortForward.Stdout = os.Stdout
+	kPortForward.Stderr = os.Stderr
+	err := kPortForward.Start()
+	defer kPortForward.Process.Signal(syscall.SIGTERM)
+	if err != nil {
+		log.Panicf("error: failed to port-forward to gitlab %s", err)
+	}
 	//* should we git clone the gitops repo when destroy is run back to their
 	//* local host to get the latest values of gitops
 
@@ -498,12 +531,12 @@ func destroyGitlabTerraform() {
 	os.Setenv("TF_VAR_hosted_zone_name", viper.GetString("aws.hostedzonename"))
 
 	directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/gitlab", home)
-	err := os.Chdir(directory)
+	err = os.Chdir(directory)
 	if err != nil {
 		log.Panicf("error: could not change directory to " + directory)
 	}
 
-	os.Setenv("GITLAB_BASE_URL", "http://localhost:8888")
+	os.Setenv("GITLAB_BASE_URL", viper.GetString("gitlab.local.service"))
 
 	if !skipGitlabTerraform {
 		tfInitGitlabCmd := exec.Command(terraformPath, "init")

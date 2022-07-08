@@ -50,7 +50,7 @@ func uploadGitlabSSHKey(gitlabToken string) {
 		"key":   {viper.GetString("botpublickey")},
 	}
 
-	gitlabUrlBase := fmt.Sprintf("http://localhost:8888")
+	gitlabUrlBase := viper.GetString("gitlab.local.service")
 
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	resp, err := http.PostForm(gitlabUrlBase+"/api/v4/user/keys?private_token="+gitlabToken, data)

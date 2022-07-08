@@ -16,11 +16,6 @@ import (
 	"github.com/kubefirst/nebulous/pkg/flare"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"github.com/kubefirst/nebulous/pkg/flare"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	//gitlabSsh "github.com/kubefirst/nebulous/pkg/ssh"
 )
 
 var Trackers map[string]*flare.ActionTracker
@@ -80,6 +75,8 @@ to quickly create a Cobra application.`,
 		}
 		log.Println("hostedZoneName:", hostedZoneName)
 		viper.Set("aws.hostedzonename", hostedZoneName)
+		viper.Set("gitlab.local.service", "http://localhost:8888")
+		viper.Set("vault.local.service", "http://localhost:8200")
 		viper.WriteConfig()
 		// admin email
 		// used for letsencrypt notifications and the gitlab root account

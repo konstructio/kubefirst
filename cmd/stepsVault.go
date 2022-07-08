@@ -2,16 +2,17 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"syscall"
+
 	vault "github.com/hashicorp/vault/api"
 	internalVault "github.com/kubefirst/nebulous/internal/vault"
 	"github.com/spf13/viper"
 	gitlab "github.com/xanzy/go-gitlab"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"log"
-	"os"
-	"os/exec"
-	"syscall"
 )
 
 func configureVault() {
@@ -39,7 +40,7 @@ func configureVault() {
 		}
 		clientset, err := kubernetes.NewForConfig(config)
 		if err != nil {
-			log.Panicf("error: getting config &s", err)
+			log.Panicf("error: getting config %s", err)
 		}
 
 		vaultSecretClient = clientset.CoreV1().Secrets("vault")
@@ -51,7 +52,17 @@ func configureVault() {
 		viper.Set("vault.token", vaultToken)
 		viper.WriteConfig()
 
-		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
+		log.Println("starting port forward to gitlab")
+		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
+		kPortForward.Stdout = os.Stdout
+		kPortForward.Stderr = os.Stderr
+		err = kPortForward.Start()
+		defer kPortForward.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			log.Panicf("error: failed to port-forward to gitlab %s", err)
+		}
+		log.Println("starting port forward to vault")
+		kPortForward = exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
 		kPortForward.Stdout = os.Stdout
 		kPortForward.Stderr = os.Stderr
 		err = kPortForward.Start()
@@ -61,10 +72,13 @@ func configureVault() {
 		}
 
 		// Prepare for terraform vault execution
-		os.Setenv("VAULT_ADDR", "http://localhost:8200")
-		os.Setenv("VAULT_TOKEN", vaultToken)
+		os.Setenv("VAULT_ADDR", viper.GetString("vault.local.service"))
+		os.Setenv("VAULT_TOKEN", viper.GetString("vault.token"))
+		os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
+		os.Setenv("AWS_PROFILE", "starter") // todo this is an issue
+		os.Setenv("AWS_DEFAULT_REGION", viper.GetString("aws.region"))
 
-		os.Setenv("TF_VAR_vault_addr", fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename")))
+		os.Setenv("TF_VAR_vault_addr", viper.GetString("vault.local.service"))
 		os.Setenv("TF_VAR_aws_account_id", viper.GetString("aws.accountid"))
 		os.Setenv("TF_VAR_aws_region", viper.GetString("aws.region"))
 		os.Setenv("TF_VAR_email_address", viper.GetString("adminemail"))
@@ -72,7 +86,7 @@ func configureVault() {
 		os.Setenv("TF_VAR_gitlab_token", viper.GetString("gitlab.token"))
 		os.Setenv("TF_VAR_hosted_zone_id", viper.GetString("aws.domainid"))
 		os.Setenv("TF_VAR_hosted_zone_name", viper.GetString("aws.hostedzonename"))
-		os.Setenv("TF_VAR_vault_token", viper.GetString("aws.hostedzonename"))
+		os.Setenv("TF_VAR_vault_token", viper.GetString("vault.token"))
 		os.Setenv("TF_VAR_vault_redirect_uris", "[\"will-be-patched-later\"]")
 
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/vault", home)
@@ -110,15 +124,23 @@ func addGitlabOidcApplications() {
 		log.Printf("[#99] Dry-run mode, addGitlabOidcApplications skipped.")
 		return
 	}
-	domain := viper.GetString("aws.hostedzonename")
 	git, err := gitlab.NewClient(
 		viper.GetString("gitlab.token"),
-		gitlab.WithBaseURL(fmt.Sprintf("https://gitlab.%s/api/v4", domain)),
+		gitlab.WithBaseURL(fmt.Sprintf("%s/api/v4", viper.GetString("gitlab.local.service"))),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
+	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
+	kPortForward.Stdout = os.Stdout
+	kPortForward.Stderr = os.Stderr
+	err = kPortForward.Start()
+	defer kPortForward.Process.Signal(syscall.SIGTERM)
+	if err != nil {
+		log.Panicf("error: failed to port-forward to vault namespce svc/vault %s", err)
+	}
 
+	domain := viper.GetString("aws.hostedzonename")
 	apps := []string{"argo", "argocd", "vault"}
 	cb := make(map[string]string)
 	cb["argo"] = fmt.Sprintf("https://argo.%s/oauth2/callback", domain)
@@ -176,7 +198,7 @@ func addGitlabOidcApplications() {
 
 func addVaultSecret(secretPath string, secretData map[string]interface{}) {
 	config := vault.DefaultConfig()
-	config.Address = fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename"))
+	config.Address = viper.GetString("vault.local.service")
 
 	client, err := vault.NewClient(config)
 	if err != nil {

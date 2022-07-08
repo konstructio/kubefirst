@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/spf13/viper"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 )
@@ -38,17 +39,53 @@ func getPodNameByLabel(gitlabPodsClient coreV1Types.PodInterface, label string) 
 }
 
 func waitForVaultUnseal() {
+	vaultReady := viper.GetBool("create.vault.ready")
+	if !vaultReady {
+		var output bytes.Buffer
+		// todo - add a viper.GetBool() check to the beginning of this function
+		// todo write in golang? see here -> https://github.com/bcreane/k8sutils/blob/master/utils.go
+		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "wait", "--for=condition=ready", "pod", "-l", "vault-sealed=false", "--timeout=300s")
+		k.Stdout = &output
+		k.Stderr = os.Stderr
+		err := k.Run()
+		if err != nil {
+			log.Panicf("failed to execute kubectl wait for vault pods with label vault-sealed=false: %s \n%s", output, err)
+		}
+		log.Printf("the output is: %s", output.String())
+	} else {
+		log.Println("vault is ready")
+	}
+
+}
+
+func waitForGitlab() {
 	var output bytes.Buffer
 	// todo - add a viper.GetBool() check to the beginning of this function
 	// todo write in golang? see here -> https://github.com/bcreane/k8sutils/blob/master/utils.go
-	k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "wait", "--for=condition=ready", "pod", "-l", "vault-sealed=false", "--timeout=120s")
+	k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "wait", "--for=condition=ready", "pod", "-l", "app=webservice", "--timeout=300s")
 	k.Stdout = &output
 	k.Stderr = os.Stderr
 	err := k.Run()
 	if err != nil {
-		log.Panicf("failed to execute kubectl wait for vault pods with label vault-sealed=false: %s \n%s", output, err)
+		log.Panicf("failed to execute kubectl wait for gitlab pods with label app=webservice: %s \n%s", output, err)
 	}
 	log.Printf("the output is: %s", output.String())
+}
+
+func createVaultConfiguredSecret() {
+
+	var output bytes.Buffer
+	// todo - https://github.com/bcreane/k8sutils/blob/master/utils.go
+	// kubectl create secret generic vault-configured --from-literal=isConfigured=true
+	// the purpose of this command is to let the vault-unseal Job running in kuberenetes know that external secrets store should be able to connect to the configured vault
+	k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "create", "secret", "generic", "vault-configured", "--from-literal=isConfigured=true")
+	k.Stdout = &output
+	k.Stderr = os.Stderr
+	err := k.Run()
+	if err != nil {
+		log.Panicf("failed to create secret for vault-configured: %s", err)
+	}
+	log.Println("the secret create output is: %s", output.String())
 
 }
 

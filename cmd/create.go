@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"log"
-	"os"
-	"os/exec"
 	"time"
 
 	"github.com/kubefirst/nebulous/internal/telemetry"
@@ -79,7 +76,7 @@ to quickly create a Cobra application.`,
 		log.Printf("sleeping for 30 seconds, hurry up jared sign into argocd %s", viper.GetString("argocd.admin.password"))
 		time.Sleep(30 * time.Second)
 
-		// todo do without this or make it meaningful
+		// todo vault seems to provision well
 		log.Println("waiting for vault unseal")
 		waitForVaultUnseal()
 		log.Println("vault unseal condition met - continuing")
@@ -88,38 +85,31 @@ to quickly create a Cobra application.`,
 		configureVault()
 		log.Println("vault configured")
 
-		var output bytes.Buffer
-		// todo - https://github.com/bcreane/k8sutils/blob/master/utils.go
-		// kubectl create secret generic vault-configured --from-literal=isConfigured=true
-		// the purpose of this command is to let the vault-unseal Job running in kuberenetes know that external secrets store should be able to connect to the configured vault
-		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "create", "secret", "generic", "vault-configured", "--from-literal=isConfigured=true")
-		k.Stdout = &output
-		k.Stderr = os.Stderr
-		err := k.Run()
-		if err != nil {
-			log.Panicf("failed to create secret for vault-configured: %s", err)
-		}
-		log.Println("the output is: %s", output.String())
+		log.Println("creating vault configured secret")
+		createVaultConfiguredSecret()
+		log.Println("vault-configured secret created")
 
-		return
+		log.Println("waiting for gitlab")
+		waitForGitlab()
+		log.Println("gitlab is ready!")
 
 		if !skipGitlab {
-			//TODO: Confirm if we need to waitgit lab to be ready
+			// TODO: Confirm if we need to waitgit lab to be ready
 			// OR something, too fast the secret will not be there.
-			// awaitGitlab()
-			// produceGitlabTokens()
-			// Trackers[trackerStage22].Tracker.Increment(int64(1))
-			// applyGitlabTerraform(directory)
-			// Trackers[trackerStage22].Tracker.Increment(int64(1))
-			// gitlabKeyUpload()
-			// Trackers[trackerStage22].Tracker.Increment(int64(1))
+			// awaitGitlab() // todo do we need this? or do we want to rebrand as httpAWait for cert?
+			produceGitlabTokens()
+			Trackers[trackerStage22].Tracker.Increment(int64(1))
+			applyGitlabTerraform(directory)
+			Trackers[trackerStage22].Tracker.Increment(int64(1))
+			gitlabKeyUpload()
+			Trackers[trackerStage22].Tracker.Increment(int64(1))
 
 			if !skipVault {
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
 				addGitlabOidcApplications()
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
-				awaitGitlab()
-				Trackers[trackerStage22].Tracker.Increment(int64(1))
+				// awaitGitlab()
+				// Trackers[trackerStage22].Tracker.Increment(int64(1))
 
 				pushGitopsToGitLab()
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
@@ -129,12 +119,12 @@ to quickly create a Cobra application.`,
 				hydrateGitlabMetaphorRepo()
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
 
-				token := viper.GetString("argocd.admin.apitoken")
-				syncArgocdApplication("argo-components", token)
-				syncArgocdApplication("gitlab-runner-components", token)
-				syncArgocdApplication("gitlab-runner", token)
-				syncArgocdApplication("atlantis-components", token)
-				syncArgocdApplication("chartmuseum-components", token)
+				// token := viper.GetString("argocd.admin.apitoken")
+				// syncArgocdApplication("argo-components", token)
+				// syncArgocdApplication("gitlab-runner-components", token)
+				// syncArgocdApplication("gitlab-runner", token)
+				// syncArgocdApplication("atlantis-components", token)
+				// syncArgocdApplication("chartmuseum-components", token)
 			}
 		}
 

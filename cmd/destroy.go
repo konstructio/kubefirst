@@ -10,14 +10,16 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var skipGitlabTerraform bool
-var skipDeleteRegistryApplication bool 
-var skipBaseTerraform bool 
-var destroyBuckets bool 
+var skipDeleteRegistryApplication bool
+var skipBaseTerraform bool
+var destroyBuckets bool
+
 // destroyCmd represents the destroy command
 var destroyCmd = &cobra.Command{
 	Use:   "destroy",
@@ -29,14 +31,6 @@ Optional: skip gitlab terraform
 if the registry has already been delteted.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
-		kPortForward.Stdout = os.Stdout
-		kPortForward.Stderr = os.Stderr
-		err := kPortForward.Start()
-		defer kPortForward.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Panicf("error: failed to port-forward to gitlab %s", err)
-		}
 		// todo this needs to be removed when we are no longer in the starter account
 		destroyGitlabTerraform()
 		// delete argocd registry
@@ -56,7 +50,6 @@ func init() {
 	destroyCmd.PersistentFlags().BoolVar(&skipBaseTerraform, "skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
 	destroyCmd.PersistentFlags().BoolVar(&destroyBuckets, "destroy-buckets", false, "remove created aws buckets, not empty buckets are not cleaned")
 }
-
 
 func deleteRegistryApplication() {
 	if !skipDeleteRegistryApplication {
