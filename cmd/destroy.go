@@ -54,7 +54,7 @@ func init() {
 func deleteRegistryApplication() {
 	if !skipDeleteRegistryApplication {
 		log.Println("starting port forward to argocd server and deleting registry")
-		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
+		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
 		kPortForward.Stdout = os.Stdout
 		kPortForward.Stderr = os.Stderr
 		err := kPortForward.Start()

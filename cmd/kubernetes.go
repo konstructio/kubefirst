@@ -73,20 +73,25 @@ func waitForGitlab() {
 }
 
 func createVaultConfiguredSecret() {
+	if !viper.GetBool("vault.configuredsecret") {
+		var output bytes.Buffer
+		// todo - https://github.com/bcreane/k8sutils/blob/master/utils.go
+		// kubectl create secret generic vault-configured --from-literal=isConfigured=true
+		// the purpose of this command is to let the vault-unseal Job running in kuberenetes know that external secrets store should be able to connect to the configured vault
+		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "create", "secret", "generic", "vault-configured", "--from-literal=isConfigured=true")
+		k.Stdout = &output
+		k.Stderr = os.Stderr
+		err := k.Run()
+		if err != nil {
+			log.Panicf("failed to create secret for vault-configured: %s", err)
+		}
+		log.Println("the secret create output is: %s", output.String())
 
-	var output bytes.Buffer
-	// todo - https://github.com/bcreane/k8sutils/blob/master/utils.go
-	// kubectl create secret generic vault-configured --from-literal=isConfigured=true
-	// the purpose of this command is to let the vault-unseal Job running in kuberenetes know that external secrets store should be able to connect to the configured vault
-	k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "create", "secret", "generic", "vault-configured", "--from-literal=isConfigured=true")
-	k.Stdout = &output
-	k.Stderr = os.Stderr
-	err := k.Run()
-	if err != nil {
-		log.Panicf("failed to create secret for vault-configured: %s", err)
+		viper.Set("vault.configuredsecret", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("vault secret already created")
 	}
-	log.Println("the secret create output is: %s", output.String())
-
 }
 
 func getVaultRootToken(vaultSecretClient coreV1Types.SecretInterface) string {

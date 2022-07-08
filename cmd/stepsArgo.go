@@ -185,13 +185,20 @@ func applyGitlabTerraform(directory string) {
 		if err != nil {
 			log.Panic("error: could not change directory to " + directory)
 		}
-		_, _, errInit := execShellReturnStrings(terraformPath, "init")
-		if errInit != nil {
-			panic(fmt.Sprintf("error: terraform init for gitlab failed %s", err))
+		tfInitCmd := exec.Command(terraformPath, "init")
+		tfInitCmd.Stdout = os.Stdout
+		tfInitCmd.Stderr = os.Stderr
+		err = tfInitCmd.Run()
+		if err != nil {
+			log.Panicf("error: terraform init for gitlab failed %s", err)
 		}
-		_, _, errApply := execShellReturnStrings(terraformPath, "apply", "-auto-approve")
-		if errApply != nil {
-			panic(fmt.Sprintf("error: terraform apply for gitlab failed %s", err))
+
+		tfApplyCmd := exec.Command(terraformPath, "apply", "-auto-approve")
+		tfApplyCmd.Stdout = os.Stdout
+		tfApplyCmd.Stderr = os.Stderr
+		err = tfApplyCmd.Run()
+		if err != nil {
+			log.Panicf("error: terraform apply for gitlab failed %s", err)
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 		viper.Set("create.terraformapplied.gitlab", true)
@@ -229,6 +236,7 @@ func gitlabKeyUpload() {
 			"title": {"kubefirst"},
 			"key":   {viper.GetString("botpublickey")},
 		}
+		time.Sleep(10 * time.Second) // todo, build in a retry
 
 		gitlabUrlBase := viper.GetString("gitlab.local.service")
 
@@ -425,7 +433,7 @@ func getArgocdAuthToken() string {
 		log.Printf("[#99] Dry-run mode, getArgocdAuthToken skipped.")
 		return "nothing"
 	}
-	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
+	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
 	kPortForward.Stdout = os.Stdout
 	kPortForward.Stderr = os.Stderr
 	err := kPortForward.Start()
@@ -453,13 +461,13 @@ func getArgocdAuthToken() string {
 
 	res, err := client.Do(req)
 	if err != nil {
-		log.Fatal("error requesting auth token from argocd")
+		log.Panic("error requesting auth token from argocd", err)
 	}
 
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Fatal("error sending POST request to get argocd auth token :", err)
+		log.Panic("error sending POST request to get argocd auth token :", err)
 	}
 
 	var dat map[string]interface{}
@@ -480,7 +488,7 @@ func syncArgocdApplication(applicationName, argocdAuthToken string) {
 		log.Printf("[#99] Dry-run mode, syncArgocdApplication skipped.")
 		return
 	}
-	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
+	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
 	kPortForward.Stdout = os.Stdout
 	kPortForward.Stderr = os.Stderr
 	err := kPortForward.Start()
@@ -498,7 +506,7 @@ func syncArgocdApplication(applicationName, argocdAuthToken string) {
 	argoCdAppSync.Stderr = os.Stderr
 	err = argoCdAppSync.Run()
 	if err != nil {
-		log.Panicf("error: curl appSync failed failed %s", err)
+		log.Panicf("error: curl appSync failed %s", err)
 	}
 }
 
