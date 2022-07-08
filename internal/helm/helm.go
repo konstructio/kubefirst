@@ -9,10 +9,10 @@ import (
 	"os/exec"
 )
 
-func InstallArgocd(home string) {
+func InstallArgocd(dryRun bool) {
 	config := configs.ReadConfig()
 	if !viper.GetBool("create.argocd.helm") {
-		if config.DryRun {
+		if dryRun {
 			log.Printf("[#99] Dry-run mode, helmInstallArgocd skipped.")
 			return
 		}
@@ -33,7 +33,7 @@ func InstallArgocd(home string) {
 			log.Panicf("error: could not helm repo update %s", err)
 		}
 
-		helmInstallArgocdCmd := exec.Command(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "upgrade", "--install", "argocd", "--namespace", "argocd", "--create-namespace", "--wait", "--values", fmt.Sprintf("%s/.kubefirst/argocd-init-values.yaml", home), "argo/argo-cd")
+		helmInstallArgocdCmd := exec.Command(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "upgrade", "--install", "argocd", "--namespace", "argocd", "--create-namespace", "--wait", "--values", fmt.Sprintf("%s/.kubefirst/argocd-init-values.yaml", config.HomePath), "argo/argo-cd")
 		helmInstallArgocdCmd.Stdout = os.Stdout
 		helmInstallArgocdCmd.Stderr = os.Stderr
 		err = helmInstallArgocdCmd.Run()

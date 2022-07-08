@@ -8,33 +8,32 @@ import (
 	"runtime"
 )
 
+/**
+This is an initial implementation of Config. Please keep in mind we're still working to improve how we handle
+environment variables and general config data.
+*/
+
 // Config host application configuration
 // todo: some of these values can be moved to the .env
 type Config struct {
 	AwsProfile        string `env:"AWS_PROFILE"`
-	KubefirstLogPath  string `env:"KUBEFIRST_LOG_PATH" envDefault:"logs"`
-	KubectlVersion    string `env:"KUBECTL_VERSION" envDefault:"v1.20.0"`
-	HomePath          string
 	LocalOs           string
 	LocalArchitecture string
+	InstallerEmail    string
+
+	KubefirstLogPath  string `env:"KUBEFIRST_LOG_PATH" envDefault:"logs"`
+	HomePath          string
 	KubectlClientPath string
 	KubeConfigPath    string
+	HelmClientPath    string
+	TerraformPath     string
 
+	KubectlVersion   string `env:"KUBECTL_VERSION" envDefault:"v1.20.0"`
 	TerraformVersion string
-	TerraformPath    string
+	HelmVersion      string
 
-	HelmClientPath string
-	HelmVersion    string
-
-	DryRun                        bool
-	SkipDeleteRegistryApplication bool
-	DestroyBuckets                bool
-
+	// todo: move it back
 	KubefirstVersion string
-	InstallerEmail   string
-
-	SkipGitlabTerraform bool
-	SkipBaseTerraform   bool
 }
 
 func ReadConfig() *Config {

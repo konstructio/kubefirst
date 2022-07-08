@@ -18,11 +18,11 @@ import (
 	"time"
 )
 
-func CreateSoftServe(kubeconfigPath string) {
+func CreateSoftServe(dryRun bool, kubeconfigPath string) {
 	config := configs.ReadConfig()
 	if !viper.GetBool("create.softserve.create") {
 		log.Println("Executing CreateSoftServe")
-		if config.DryRun {
+		if dryRun {
 			log.Printf("[#99] Dry-run mode, CreateSoftServe skipped.")
 			return
 		}
@@ -52,12 +52,12 @@ func CreateSoftServe(kubeconfigPath string) {
 
 }
 
-func ConfigureSoftServeAndPush() {
+func ConfigureSoftServeAndPush(dryRun bool) {
 	config := configs.ReadConfig()
 	configureAndPushFlag := viper.GetBool("create.softserve.configure")
 	if configureAndPushFlag != true {
 		log.Println("Executing ConfigureSoftServeAndPush")
-		if config.DryRun {
+		if dryRun {
 			log.Printf("[#99] Dry-run mode, ConfigureSoftServeAndPush skipped.")
 			return
 		}

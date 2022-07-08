@@ -39,10 +39,10 @@ func GetVaultRootToken(vaultSecretClient coreV1Types.SecretInterface) (string, e
 	return vaultRootToken, nil
 }
 
-func ConfigureVault() {
+func ConfigureVault(dryRun bool) {
 	config := configs.ReadConfig()
 	if !viper.GetBool("create.terraformapplied.vault") {
-		if config.DryRun {
+		if dryRun {
 			log.Printf("[#99] Dry-run mode, configureVault skipped.")
 			return
 		}
@@ -130,10 +130,10 @@ func ConfigureVault() {
 	}
 }
 
-func AddGitlabOidcApplications() {
-	config := configs.ReadConfig()
+func AddGitlabOidcApplications(dryRun bool) {
+
 	//TODO: Should this skipped if already executed.
-	if config.DryRun {
+	if dryRun {
 		log.Printf("[#99] Dry-run mode, addGitlabOidcApplications skipped.")
 		return
 	}

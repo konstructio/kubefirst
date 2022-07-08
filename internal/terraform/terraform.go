@@ -4,19 +4,18 @@ import (
 	"fmt"
 	"github.com/kubefirst/nebulous/configs"
 	"github.com/kubefirst/nebulous/pkg"
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log"
 	"os"
 	"strings"
 )
 
-func ApplyBaseTerraform(cmd *cobra.Command, directory string) {
+func ApplyBaseTerraform(dryRun bool, directory string) {
 	config := configs.ReadConfig()
 	applyBase := viper.GetBool("create.terraformapplied.base")
 	if applyBase != true {
 		log.Println("Executing ApplyBaseTerraform")
-		if config.DryRun {
+		if dryRun {
 			log.Printf("[#99] Dry-run mode, applyBaseTerraform skipped.")
 			return
 		}
@@ -53,9 +52,9 @@ func ApplyBaseTerraform(cmd *cobra.Command, directory string) {
 	}
 }
 
-func DestroyBaseTerraform() {
+func DestroyBaseTerraform(skipBaseTerraform bool) {
 	config := configs.ReadConfig()
-	if !config.SkipBaseTerraform {
+	if !skipBaseTerraform {
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", config.HomePath)
 		err := os.Chdir(directory)
 		if err != nil {

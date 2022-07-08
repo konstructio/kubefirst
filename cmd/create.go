@@ -22,9 +22,6 @@ const trackerStage21 = "1 - Temporary SCM Install"
 const trackerStage22 = "2 - Argo/Final SCM Install"
 const trackerStage23 = "3 - Final Setup"
 
-var skipVault bool
-var skipGitlab bool
-
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
@@ -39,6 +36,19 @@ to quickly create a Cobra application.`,
 
 		config := configs.ReadConfig()
 
+		skipVault, err := cmd.Flags().GetBool("skip-vault")
+		if err != nil {
+			log.Panic(err)
+		}
+		skipGitlab, err := cmd.Flags().GetBool("skip-gitlab")
+		if err != nil {
+			log.Panic(err)
+		}
+		dryRun, err := cmd.Flags().GetBool("dry-run")
+		if err != nil {
+			log.Panic(err)
+		}
+
 		pkg.SetupProgress(4)
 		Trackers := make(map[string]*pkg.ActionTracker)
 
@@ -52,62 +62,62 @@ to quickly create a Cobra application.`,
 		metricName := "kubefirst.mgmt_cluster_install.started"
 		metricDomain := viper.GetString("aws.domainname")
 
-		if !config.DryRun {
+		if !dryRun {
 			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
 
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", config.HomePath)
-		terraform.ApplyBaseTerraform(cmd, directory)
+		terraform.ApplyBaseTerraform(dryRun, directory)
 		Trackers[trackerStage20].Tracker.Increment(int64(1))
-		softserve.CreateSoftServe(config.KubeConfigPath)
+		softserve.CreateSoftServe(dryRun, config.KubeConfigPath)
 		Trackers[trackerStage21].Tracker.Increment(int64(1))
-		softserve.ConfigureSoftServeAndPush()
+		softserve.ConfigureSoftServeAndPush(dryRun)
 		Trackers[trackerStage21].Tracker.Increment(int64(1))
-		helm.InstallArgocd(config.HomePath)
+		helm.InstallArgocd(dryRun)
 		Trackers[trackerStage22].Tracker.Increment(int64(1))
 
 		if !skipGitlab {
 			//TODO: Confirm if we need to waitgit lab to be ready
 			// OR something, too fast the secret will not be there.
-			gitlab.AwaitGitlab()
-			gitlab.ProduceGitlabTokens()
+			gitlab.AwaitGitlab(dryRun)
+			gitlab.ProduceGitlabTokens(dryRun)
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
-			gitlab.ApplyGitlabTerraform(directory)
+			gitlab.ApplyGitlabTerraform(dryRun, directory)
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
-			gitlab.GitlabKeyUpload()
+			gitlab.GitlabKeyUpload(dryRun)
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
 
 			if !skipVault {
-				vault.ConfigureVault()
+				vault.ConfigureVault(dryRun)
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
-				vault.AddGitlabOidcApplications()
+				vault.AddGitlabOidcApplications(dryRun)
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
-				gitlab.AwaitGitlab()
+				gitlab.AwaitGitlab(dryRun)
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
 
-				gitlab.PushGitOpsToGitLab()
+				gitlab.PushGitOpsToGitLab(dryRun)
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
-				gitlab.ChangeRegistryToGitLab()
+				gitlab.ChangeRegistryToGitLab(dryRun)
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
 
-				gitlab.HydrateGitlabMetaphorRepo()
+				gitlab.HydrateGitlabMetaphorRepo(dryRun)
 
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
 
-				token := argocd.GetArgocdAuthToken()
-				argocd.SyncArgocdApplication("argo-components", token)
-				argocd.SyncArgocdApplication("gitlab-runner-components", token)
-				argocd.SyncArgocdApplication("gitlab-runner", token)
-				argocd.SyncArgocdApplication("atlantis-components", token)
-				argocd.SyncArgocdApplication("chartmuseum-components", token)
+				token := argocd.GetArgocdAuthToken(dryRun)
+				argocd.SyncArgocdApplication(dryRun, "argo-components", token)
+				argocd.SyncArgocdApplication(dryRun, "gitlab-runner-components", token)
+				argocd.SyncArgocdApplication(dryRun, "gitlab-runner", token)
+				argocd.SyncArgocdApplication(dryRun, "atlantis-components", token)
+				argocd.SyncArgocdApplication(dryRun, "chartmuseum-components", token)
 			}
 		}
 
 		metricName = "kubefirst.mgmt_cluster_install.completed"
 
-		if !config.DryRun {
+		if !dryRun {
 			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
@@ -117,13 +127,12 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	config := configs.ReadConfig()
 	rootCmd.AddCommand(createCmd)
 
 	// todo: make this an optional switch and check for it or viper
 	createCmd.Flags().Bool("destroy", false, "destroy resources")
-	createCmd.PersistentFlags().BoolVarP(&config.DryRun, "dry-run", "s", false, "set to dry-run mode, no changes done on cloud provider selected")
-	createCmd.PersistentFlags().BoolVar(&skipVault, "skip-vault", false, "Skip post-gitClient lab install and vault setup")
-	createCmd.PersistentFlags().BoolVar(&skipGitlab, "skip-gitlab", false, "Skip gitClient lab install and vault setup")
+	createCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
+	createCmd.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
+	createCmd.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
 
 }

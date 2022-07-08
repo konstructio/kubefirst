@@ -66,9 +66,9 @@ func GetSecretValue(k8sClient coreV1Types.SecretInterface, secretName, key strin
 	return string(secret.Data[key])
 }
 
-func DeleteRegistryApplication() {
+func DeleteRegistryApplication(skipDeleteRegistryApplication bool) {
 	config := configs.ReadConfig()
-	if !config.SkipDeleteRegistryApplication {
+	if !skipDeleteRegistryApplication {
 		log.Println("starting port forward to argocd server and deleting registry")
 		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
 		kPortForward.Stdout = os.Stdout

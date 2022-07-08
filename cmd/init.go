@@ -29,13 +29,12 @@ to quickly create a Cobra application.`,
 
 		config := configs.ReadConfig()
 
-		var err error
-		config.DryRun, err = cmd.Flags().GetBool("dry-run")
+		dryRun, err := cmd.Flags().GetBool("dry-run")
 		if err != nil {
 			log.Panic(err)
 		}
 
-		log.Println("dry run enabled:", config.DryRun)
+		log.Println("dry run enabled:", dryRun)
 
 		pkg.SetupProgress(10)
 		trackers := pkg.GetTrackers()
@@ -54,7 +53,7 @@ to quickly create a Cobra application.`,
 		metricName := "kubefirst.init.started"
 		metricDomain := hostedZoneName
 
-		if !config.DryRun {
+		if !dryRun {
 			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
@@ -96,7 +95,7 @@ to quickly create a Cobra application.`,
 		if !skipHostedZoneCheck {
 			log.Println("skipping hosted zone check")
 		} else {
-			aws.TestHostedZoneLiveness(hostedZoneName, hostedZoneId)
+			aws.TestHostedZoneLiveness(dryRun, hostedZoneName, hostedZoneId)
 		}
 		trackers[pkg.TrackerStage2].Tracker.Increment(1)
 
@@ -124,7 +123,7 @@ to quickly create a Cobra application.`,
 		trackers[pkg.TrackerStage6].Tracker.Increment(1)
 
 		log.Println("calling BucketRand()")
-		aws.BucketRand()
+		aws.BucketRand(dryRun)
 		log.Println("BucketRand() complete")
 
 		log.Println("calling Detokenize()")
@@ -134,7 +133,7 @@ to quickly create a Cobra application.`,
 
 		metricName = "kubefirst.init.completed"
 
-		if !config.DryRun {
+		if !dryRun {
 			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
@@ -147,7 +146,6 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	config := configs.ReadConfig()
 	rootCmd.AddCommand(initCmd)
 
 	initCmd.Flags().String("hosted-zone-name", "", "the domain to provision the kubefirst platform in")
@@ -175,6 +173,6 @@ func init() {
 	log.SetPrefix("LOG: ")
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
 
-	initCmd.PersistentFlags().BoolVarP(&config.DryRun, "dry-run", "s", false, "set to dry-run mode, no changes done on cloud provider selected")
+	initCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	log.Println("init started")
 }

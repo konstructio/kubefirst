@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/cip8/autoname"
-	"github.com/kubefirst/nebulous/configs"
 	"github.com/spf13/viper"
 	"log"
 	"net"
@@ -22,8 +21,8 @@ import (
 	"time"
 )
 
-func BucketRand() {
-	cfg := configs.ReadConfig()
+func BucketRand(dryRun bool) {
+
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(viper.GetString("aws.region"))},
 	)
@@ -47,7 +46,7 @@ func BucketRand() {
 
 			regionName := viper.GetString("aws.region")
 			log.Println("region is ", regionName)
-			if !cfg.DryRun {
+			if !dryRun {
 				if regionName == "us-east-1" {
 					_, err = s3Client.CreateBucket(&s3.CreateBucketInput{
 						Bucket: &bucketName,
@@ -92,7 +91,7 @@ func GetAccountInfo() {
 	viper.WriteConfig()
 }
 
-func TestHostedZoneLiveness(hostedZoneName, hostedZoneId string) {
+func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 	//tracker := progress.Tracker{Message: "testing hosted zone", Total: 25}
 
 	// todo need to create single client and pass it
@@ -122,8 +121,7 @@ func TestHostedZoneLiveness(hostedZoneName, hostedZoneId string) {
 	}
 
 	if len(recordList.ResourceRecordSets) == 0 {
-		cfg := configs.ReadConfig()
-		if !cfg.DryRun {
+		if !dryRun {
 			record, err := route53Client.ChangeResourceRecordSets(context.TODO(), &route53.ChangeResourceRecordSetsInput{
 				ChangeBatch: &types.ChangeBatch{
 					Changes: []types.Change{
@@ -313,9 +311,8 @@ func GetAWSSession() *session.Session {
 	return sess
 }
 
-func DestroyBucketsInUse() {
-	cfg := configs.ReadConfig()
-	if cfg.DestroyBuckets {
+func DestroyBucketsInUse(destroyBuckets bool) {
+	if destroyBuckets {
 		log.Println("Execute: DestroyBucketsInUse")
 		for _, bucket := range ListBucketsInUse() {
 			DestroyBucket(bucket)

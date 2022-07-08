@@ -118,9 +118,10 @@ func getArgoCDToken(username string, password string) (string, error) {
 	return token, nil
 }
 
-func GetArgocdAuthToken() string {
+func GetArgocdAuthToken(dryRun bool) string {
 	config := configs.ReadConfig()
-	if config.DryRun {
+
+	if dryRun {
 		log.Printf("[#99] Dry-run mode, GetArgocdAuthToken skipped.")
 		return "nothing"
 	}
@@ -174,9 +175,9 @@ func GetArgocdAuthToken() string {
 
 }
 
-func SyncArgocdApplication(applicationName, argocdAuthToken string) {
+func SyncArgocdApplication(dryRun bool, applicationName, argocdAuthToken string) {
 	config := configs.ReadConfig()
-	if config.DryRun {
+	if dryRun {
 		log.Printf("[#99] Dry-run mode, SyncArgocdApplication skipped.")
 		return
 	}

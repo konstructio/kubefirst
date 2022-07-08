@@ -93,9 +93,9 @@ func GitlabGeneratePersonalAccessToken(gitlabPodName string) {
 	log.Println("gitlab personal access token generated", gitlabToken)
 }
 
-func PushGitOpsToGitLab() {
+func PushGitOpsToGitLab(dryRun bool) {
 	cfg := configs.ReadConfig()
-	if cfg.DryRun {
+	if dryRun {
 		log.Printf("[#99] Dry-run mode, PushGitOpsToGitLab skipped.")
 		return
 	}
@@ -159,11 +159,10 @@ func PushGitOpsToGitLab() {
 
 }
 
-func AwaitGitlab() {
-	config := configs.ReadConfig()
+func AwaitGitlab(dryRun bool) {
 
 	log.Println("AwaitGitlab called")
-	if config.DryRun {
+	if dryRun {
 		log.Printf("[#99] Dry-run mode, AwaitGitlab skipped.")
 		return
 	}
@@ -182,7 +181,7 @@ func AwaitGitlab() {
 	}
 }
 
-func ProduceGitlabTokens() {
+func ProduceGitlabTokens(dryRun bool) {
 	//TODO: Should this step be skipped if already executed?
 	config := configs.ReadConfig()
 	k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
@@ -194,7 +193,7 @@ func ProduceGitlabTokens() {
 		log.Panic(err.Error())
 	}
 	log.Println("discovering gitlab toolbox pod")
-	if config.DryRun {
+	if dryRun {
 		log.Printf("[#99] Dry-run mode, ProduceGitlabTokens skipped.")
 		return
 	}
@@ -250,11 +249,11 @@ func ProduceGitlabTokens() {
 
 }
 
-func ApplyGitlabTerraform(directory string) {
+func ApplyGitlabTerraform(dryRun bool, directory string) {
 	config := configs.ReadConfig()
 	if !viper.GetBool("create.terraformapplied.gitlab") {
 		log.Println("Executing ApplyGitlabTerraform")
-		if config.DryRun {
+		if dryRun {
 			log.Printf("[#99] Dry-run mode, ApplyGitlabTerraform skipped.")
 			return
 		}
@@ -283,13 +282,13 @@ func ApplyGitlabTerraform(directory string) {
 	}
 }
 
-func GitlabKeyUpload() {
-	config := configs.ReadConfig()
+func GitlabKeyUpload(dryRun bool) {
+
 	// upload ssh public key
 	if !viper.GetBool("gitlab.keyuploaded") {
 		log.Println("Executing GitlabKeyUpload")
 		log.Println("uploading ssh public key for gitlab user")
-		if config.DryRun {
+		if dryRun {
 			log.Printf("[#99] Dry-run mode, GitlabKeyUpload skipped.")
 			return
 		}
@@ -318,7 +317,7 @@ func GitlabKeyUpload() {
 	}
 }
 
-func DestroyGitlabTerraform() {
+func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 	config := configs.ReadConfig()
 	log.Println("\n\nTODO -- need to setup and argocd delete against registry and wait?\n\n")
 	// kubeconfig := os.Getenv("HOME") + "/.kube/config"
@@ -348,7 +347,7 @@ func DestroyGitlabTerraform() {
 
 	os.Setenv("GITLAB_BASE_URL", "http://localhost:8888")
 
-	if !config.SkipGitlabTerraform {
+	if !skipGitlabTerraform {
 		tfInitGitlabCmd := exec.Command(config.TerraformPath, "init")
 		tfInitGitlabCmd.Stdout = os.Stdout
 		tfInitGitlabCmd.Stderr = os.Stderr
@@ -372,10 +371,10 @@ func DestroyGitlabTerraform() {
 	}
 }
 
-func ChangeRegistryToGitLab() {
+func ChangeRegistryToGitLab(dryRun bool) {
 	config := configs.ReadConfig()
 	if !viper.GetBool("gitlab.registry") {
-		if config.DryRun {
+		if dryRun {
 			log.Printf("[#99] Dry-run mode, ChangeRegistryToGitLab skipped.")
 			return
 		}
@@ -478,11 +477,11 @@ func ChangeRegistryToGitLab() {
 	}
 }
 
-func HydrateGitlabMetaphorRepo() {
+func HydrateGitlabMetaphorRepo(dryRun bool) {
 	cfg := configs.ReadConfig()
 	//TODO: Should this be skipped if already executed?
 	if !viper.GetBool("create.gitlabmetaphor.cloned") {
-		if cfg.DryRun {
+		if dryRun {
 			log.Printf("[#99] Dry-run mode, hydrateGitlabMetaphorRepo skipped.")
 			return
 		}
