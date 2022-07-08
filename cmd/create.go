@@ -80,6 +80,20 @@ to quickly create a Cobra application.`,
 				break
 			}
 		}
+		for i := 0; i < x; i++ {
+			kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
+			kGetNamespace.Stdout = os.Stdout
+			kGetNamespace.Stderr = os.Stderr
+			err := kGetNamespace.Run()
+			if err != nil {
+				log.Println("Waiting for argocd pods to create, checking in 10 seconds")
+				time.Sleep(10 * time.Second)
+			} else {
+				log.Println("argocd pods found, continuing")
+				time.Sleep(15 * time.Second)
+				break
+			}
+		}
 
 		kPortForwardArgocd := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
 		kPortForwardArgocd.Stdout = os.Stdout
@@ -90,8 +104,8 @@ to quickly create a Cobra application.`,
 			log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
 		}
 
-		log.Println("sleeping for 30 seconds, hurry up jared")
-		time.Sleep(30 * time.Second)
+		log.Println("sleeping for 45 seconds, hurry up jared")
+		time.Sleep(45 * time.Second)
 
 		log.Println("setting argocd credentials")
 		setArgocdCreds()
@@ -119,7 +133,22 @@ to quickly create a Cobra application.`,
 				time.Sleep(10 * time.Second)
 			} else {
 				log.Println("vault namespace found, continuing")
-				time.Sleep(5 * time.Second)
+				time.Sleep(25 * time.Second)
+				break
+			}
+		}
+		x = 50
+		for i := 0; i < x; i++ {
+			kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "get", "pods", "-l", "vault-initialized=true")
+			kGetNamespace.Stdout = os.Stdout
+			kGetNamespace.Stderr = os.Stderr
+			err := kGetNamespace.Run()
+			if err != nil {
+				log.Println("Waiting vault pods to create")
+				time.Sleep(10 * time.Second)
+			} else {
+				log.Println("vault pods found, continuing")
+				time.Sleep(15 * time.Second)
 				break
 			}
 		}
@@ -152,11 +181,26 @@ to quickly create a Cobra application.`,
 			kGetNamespace.Stderr = os.Stderr
 			err := kGetNamespace.Run()
 			if err != nil {
-				log.Println("Waiting gitlab to be born")
+				log.Println("Waiting gitlab namespace to be born")
 				time.Sleep(10 * time.Second)
 			} else {
 				log.Println("gitlab namespace found, continuing")
 				time.Sleep(5 * time.Second)
+				break
+			}
+		}
+		x = 50
+		for i := 0; i < x; i++ {
+			kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "get", "pods", "-l", "app=webservice")
+			kGetNamespace.Stdout = os.Stdout
+			kGetNamespace.Stderr = os.Stderr
+			err := kGetNamespace.Run()
+			if err != nil {
+				log.Println("Waiting gitlab pods to be born")
+				time.Sleep(10 * time.Second)
+			} else {
+				log.Println("gitlab pods found, continuing")
+				time.Sleep(15 * time.Second)
 				break
 			}
 		}

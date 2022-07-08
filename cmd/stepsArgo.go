@@ -470,11 +470,13 @@ func syncArgocdApplication(applicationName, argocdAuthToken string) {
 	// todo need to replace this with a curl wrapper and see if it WORKS
 
 	url := fmt.Sprintf("https://localhost:8080/api/v1/applications/%s/sync", applicationName)
+	var outb bytes.Buffer
 
 	argoCdAppSync := exec.Command("curl", "-k", "-L", "-X", "POST", url, "-H", fmt.Sprintf("Authorization: Bearer %s", argocdAuthToken))
-	argoCdAppSync.Stdout = os.Stdout
+	argoCdAppSync.Stdout = &outb
 	argoCdAppSync.Stderr = os.Stderr
 	err := argoCdAppSync.Run()
+	log.Println("the value from the curl command to sync registry in argocd is:", outb.String())
 	if err != nil {
 		log.Panicf("error: curl appSync failed %s", err)
 	}
