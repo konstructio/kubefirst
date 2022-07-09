@@ -44,12 +44,12 @@ func waitForVaultUnseal() {
 		var output bytes.Buffer
 		// todo - add a viper.GetBool() check to the beginning of this function
 		// todo write in golang? see here -> https://github.com/bcreane/k8sutils/blob/master/utils.go
-		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "wait", "--for=condition=ready", "pod", "-l", "vault-sealed=false", "--timeout=300s")
+		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "wait", "--for=condition=ready", "pod", "-l", "vault-initialized=true", "--timeout=300s")
 		k.Stdout = &output
 		k.Stderr = os.Stderr
 		err := k.Run()
 		if err != nil {
-			log.Panicf("failed to execute kubectl wait for vault pods with label vault-sealed=false: %s \n%s", output, err)
+			log.Panicf("failed to execute kubectl wait for vault pods with label vault-initialized=true: %s \n%s", output, err)
 		}
 		log.Printf("the output is: %s", output.String())
 	} else {

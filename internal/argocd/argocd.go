@@ -6,16 +6,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/spf13/viper"
 )
 
 // kSyncArgocdApplication request ArgoCD to manual sync an application. Expected parameters are the ArgoCD application
 // name and ArgoCD token with enough permission to perform the request against Argo API. When the http request returns
 // status 200 it means a successful request/true, any other http status response return false.
-func kSyncArgocdApplication(applicationName, argocdAuthToken string) (bool, error) {
+func KSyncArgocdApplication(applicationName, argocdAuthToken string) (bool, error) {
 
 	// todo: instantiate a new client on every http request is bad idea, we might need to set a new architecture to avoid
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()

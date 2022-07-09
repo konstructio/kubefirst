@@ -56,13 +56,16 @@ if the registry has already been delteted.`,
 		if err != nil {
 			log.Panicf("error: failed to port-forward to vault in main thread %s", err)
 		}
-
-		// todo this needs to be removed when we are no longer in the starter account
+		log.Println("detroying gitlab terraform")
 		destroyGitlabTerraform()
-		// delete argocd registry
-		deleteRegistryApplication()
+		log.Println("gitlab terraform destruction complete")
+		log.Println("deleting registry application in argocd")
+		deleteArgocdRegistryApplication()
+		log.Println("registry application deleted")
+		log.Println("terraform destroy base")
 		destroyBaseTerraform()
-		//TODO: Remove buckets? Opt-in flag
+		log.Println("terraform base destruction complete")
+		//TODO: move this step to `kubefirst clean` command and empty buckets and delete
 		destroyBucketsInUse()
 
 	},
@@ -77,8 +80,11 @@ func init() {
 	destroyCmd.PersistentFlags().BoolVar(&destroyBuckets, "destroy-buckets", false, "remove created aws buckets, not empty buckets are not cleaned")
 }
 
-func deleteRegistryApplication() {
+func deleteArgocdRegistryApplication() {
 	if !skipDeleteRegistryApplication {
+
+		log.Println("refreshing argocd session token")
+		getArgocdAuthToken()
 
 		url := "https://localhost:8080/api/v1/applications/registry"
 		argoCdAppSync := exec.Command("curl", "-k", "-vL", "-X", "DELETE", url, "-H", fmt.Sprintf("Authorization: Bearer %s", viper.GetString("argocd.admin.apitoken")))
@@ -86,10 +92,10 @@ func deleteRegistryApplication() {
 		argoCdAppSync.Stderr = os.Stderr
 		err := argoCdAppSync.Run()
 		if err != nil {
-			log.Panicf("error: curl appSync failed failed %s", err)
+			log.Panicf("error: delete registry applicatoin from argocd failed: %s", err)
 		}
-		log.Println("deleting argocd application registry")
-		time.Sleep(180 * time.Second)
+		log.Println("waiting for argocd deletion to complete")
+		time.Sleep(240 * time.Second)
 	} else {
 		log.Println("skip:  deleteRegistryApplication")
 	}

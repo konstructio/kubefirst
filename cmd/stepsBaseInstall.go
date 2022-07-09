@@ -15,7 +15,7 @@ import (
 func applyBaseTerraform(cmd *cobra.Command, directory string) {
 	applyBase := viper.GetBool("create.terraformapplied.base")
 	if applyBase != true {
-		log.Println("Executing ApplyBaseTerraform")
+		log.Println("executing ApplyBaseTerraform")
 		if dryrunMode {
 			log.Printf("[#99] Dry-run mode, applyBaseTerraform skipped.")
 			return

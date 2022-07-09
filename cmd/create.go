@@ -46,7 +46,7 @@ to quickly create a Cobra application.`,
 		infoCmd.Run(cmd, args)
 
 		metricName := "kubefirst.mgmt_cluster_install.started"
-		metricDomain := viper.GetString("aws.domainname")
+		metricDomain := viper.GetString("aws.hostedzonename")
 
 		if !dryrunMode {
 			telemetry.SendTelemetry(metricDomain, metricName)
@@ -57,8 +57,22 @@ to quickly create a Cobra application.`,
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", home)
 		applyBaseTerraform(cmd, directory)
 		Trackers[trackerStage20].Tracker.Increment(int64(1))
-		createSoftServe(kubeconfigPath)
-		Trackers[trackerStage21].Tracker.Increment(int64(1))
+
+		createSoftServe()
+		// todo this should be replaced with something more intelligent
+		log.Println("waiting for soft-serve installation to complete...")
+		time.Sleep(60 * time.Second)
+
+		kPortForwardSoftServe := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")
+		kPortForwardSoftServe.Stdout = os.Stdout
+		kPortForwardSoftServe.Stderr = os.Stderr
+		err := kPortForwardSoftServe.Start()
+		defer kPortForwardSoftServe.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			log.Panicf("error: failed to port-forward to soft-serve %s", err)
+		}
+		time.Sleep(20 * time.Second)
+
 		configureSoftserveAndPush()
 		Trackers[trackerStage21].Tracker.Increment(int64(1))
 		helmInstallArgocd(home, kubeconfigPath)
@@ -98,7 +112,7 @@ to quickly create a Cobra application.`,
 		kPortForwardArgocd := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
 		kPortForwardArgocd.Stdout = os.Stdout
 		kPortForwardArgocd.Stderr = os.Stderr
-		err := kPortForwardArgocd.Start()
+		err = kPortForwardArgocd.Start()
 		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 		if err != nil {
 			log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
@@ -161,19 +175,6 @@ to quickly create a Cobra application.`,
 			log.Panicf("error: failed to port-forward to vault in main thread %s", err)
 		}
 
-		// todo vault seems to provision well
-		log.Println("waiting for vault unseal")
-		waitForVaultUnseal()
-		log.Println("vault unseal condition met - continuing")
-
-		log.Println("configuring vault")
-		configureVault()
-		log.Println("vault configured")
-
-		log.Println("creating vault configured secret")
-		createVaultConfiguredSecret()
-		log.Println("vault-configured secret created")
-
 		x = 50
 		for i := 0; i < x; i++ {
 			kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "get", "namespace/gitlab")
@@ -218,36 +219,55 @@ to quickly create a Cobra application.`,
 		if !skipGitlab {
 			// TODO: Confirm if we need to waitgit lab to be ready
 			// OR something, too fast the secret will not be there.
-			// awaitGitlab() // todo do we need this? or do we want to rebrand as httpAWait for cert?
 			produceGitlabTokens()
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
 			applyGitlabTerraform(directory)
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
 			gitlabKeyUpload()
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
+		}
+		if !skipVault {
 
-			if !skipVault {
-				Trackers[trackerStage23].Tracker.Increment(int64(1))
-				addGitlabOidcApplications()
-				Trackers[trackerStage23].Tracker.Increment(int64(1))
-				// awaitGitlab()
-				// Trackers[trackerStage22].Tracker.Increment(int64(1))
+			log.Println("waiting for vault unseal")
+			waitForVaultUnseal()
+			log.Println("vault unseal condition met - continuing")
 
-				pushGitopsToGitLab()
-				Trackers[trackerStage22].Tracker.Increment(int64(1))
-				changeRegistryToGitLab()
-				Trackers[trackerStage22].Tracker.Increment(int64(1))
+			log.Println("configuring vault")
+			configureVault()
+			log.Println("vault configured")
 
-				hydrateGitlabMetaphorRepo()
-				Trackers[trackerStage23].Tracker.Increment(int64(1))
+			log.Println("creating vault configured secret")
+			createVaultConfiguredSecret()
+			log.Println("vault-configured secret created")
 
-				// token := viper.GetString("argocd.admin.apitoken")
-				// syncArgocdApplication("argo-components", token)
-				// syncArgocdApplication("gitlab-runner-components", token)
-				// syncArgocdApplication("gitlab-runner", token)
-				// syncArgocdApplication("atlantis-components", token)
-				// syncArgocdApplication("chartmuseum-components", token)
-			}
+			Trackers[trackerStage23].Tracker.Increment(int64(1))
+			addGitlabOidcApplications()
+			Trackers[trackerStage23].Tracker.Increment(int64(1))
+
+			log.Println("waiting for gitlab dns to propogate before continuing")
+			awaitGitlab()
+
+			log.Println("pushing gitops to gitlab")
+			pushGitRepo("gitlab", "gitops")
+			Trackers[trackerStage22].Tracker.Increment(int64(1))
+
+			log.Println("pushing gitops to metaphor")
+			pushGitRepo("gitlab", "metaphor")
+			Trackers[trackerStage23].Tracker.Increment(int64(1))
+
+			changeRegistryToGitLab()
+			Trackers[trackerStage22].Tracker.Increment(int64(1))
+
+			// todo triage / force apply the contents adjusting
+			// todo kind: Application .repoURL:
+
+			// token := viper.GetString("argocd.admin.apitoken")
+			// syncArgocdApplication("argo-components", token)
+			// syncArgocdApplication("gitlab-runner-components", token)
+			// syncArgocdApplication("gitlab-runner", token)
+			// syncArgocdApplication("atlantis-components", token)
+			// syncArgocdApplication("chartmuseum-components", token)
+
 		}
 
 		metricName = "kubefirst.mgmt_cluster_install.completed"

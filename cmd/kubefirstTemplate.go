@@ -13,69 +13,60 @@ import (
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/spf13/viper"
-	ssh2 "golang.org/x/crypto/ssh"
 )
 
-func cloneGitOpsRepo() {
+func prepareKubefirstTemplateRepo(githubOrg, repoName string) {
 
-	url := "https://github.com/kubefirst/gitops-template"
-	directory := fmt.Sprintf("%s/.kubefirst/gitops", home)
+	repoUrl := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)
+	directory := fmt.Sprintf("%s/.kubefirst/%s", home, repoName)
+	log.Println("git clone", repoUrl, directory)
 
-	log.Println("git clone", url, directory)
-
-	_, err := git.PlainClone(directory, false, &git.CloneOptions{
-		URL: url,
+	repo, err := git.PlainClone(directory, false, &git.CloneOptions{
+		URL: repoUrl,
 	})
 	if err != nil {
-		log.Panicf("reror cloning gitops-template repository from github %s", err)
+		log.Panicf("error cloning %s-template repository from github %s", repoName, err)
 	}
+	viper.Set(fmt.Sprintf("init.repos.%s.cloned", repoName), true)
+	viper.WriteConfig()
 
-	log.Println("downloaded gitops repo from template to directory", home, "/.kubefirst/gitops")
-}
+	log.Printf("cloned %s-template repository to directory %s/.kubefirst/%s", repoName, home, repoName)
 
-func pushGitopsToSoftServe() {
+	log.Printf("detokenizing %s/.kubefirst/%s", home, repoName)
+	detokenize(directory)
+	log.Printf("detokenization of %s/.kubefirst/%s complete", home, repoName)
 
-	directory := fmt.Sprintf("%s/.kubefirst/gitops", home)
+	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", repoName), true)
+	viper.WriteConfig()
 
-	log.Println("open git repo", directory)
-
-	repo, err := git.PlainOpen(directory)
-	if err != nil {
-		log.Panicf("error opening the directory ", directory, err)
-	}
-
-	log.Println("git remote add origin ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops")
+	domain := viper.GetString("aws.hostedzonename")
+	log.Printf("creating git remote gitlab")
+	log.Println("git remote add gitlab at url ", fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", domain))
 	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
-		Name: "soft",
-		URLs: []string{"ssh://127.0.0.1:8022/gitops"},
+		Name: "gitlab",
+		URLs: []string{fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", domain)},
 	})
-	if err != nil {
-		log.Panicf("Error creating remote repo: %s", err)
+
+	if repoName == "gitops" {
+		log.Println("creating git remote ssh://127.0.0.1:8022/gitops")
+		_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
+			Name: "soft",
+			URLs: []string{"ssh://127.0.0.1:8022/gitops"},
+		})
 	}
+
 	w, _ := repo.Worktree()
 
-	log.Println("Committing new changes...")
+	log.Println(fmt.Sprintf("committing detokenized %s content", repoName))
 	w.Add(".")
-	w.Commit("setting new remote upstream to soft-serve", &git.CommitOptions{
+	w.Commit(fmt.Sprintf("committing detokenized %s content", repoName), &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
 			Email: "kubefirst-bot@kubefirst.com",
 			When:  time.Now(),
 		},
 	})
-
-	auth, _ := publicKey()
-
-	auth.HostKeyCallback = ssh2.InsecureIgnoreHostKey()
-
-	err = repo.Push(&git.PushOptions{
-		RemoteName: "soft",
-		Auth:       auth,
-	})
-	if err != nil {
-		log.Panicf("error pushing to remote", err)
-	}
-
+	viper.WriteConfig()
 }
 
 func detokenize(path string) {
@@ -95,7 +86,7 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		return nil //
 	}
 
-	if strings.Contains(path, ".git") || strings.Contains(path, ".terraform") {
+	if strings.Contains(path, ".git/") || strings.Contains(path, ".terraform") {
 		return nil
 	}
 
@@ -122,8 +113,8 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		}
 
 		botPublicKey := viper.GetString("botpublickey")
-		domainId := viper.GetString("aws.domainid")
-		hostedzonename := viper.GetString("aws.hostedzonename")
+		hostedZoneId := viper.GetString("aws.hostedzoneid")
+		hostedZoneName := viper.GetString("aws.hostedzonename")
 		bucketStateStore := viper.GetString("bucket.state-store.name")
 		bucketArgoArtifacts := viper.GetString("bucket.argo-artifacts.name")
 		bucketGitlabBackup := viper.GetString("bucket.gitlab-backup.name")
@@ -138,8 +129,8 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<ARGO_ARTIFACT_BUCKET>", bucketArgoArtifacts, -1)
 		newContents = strings.Replace(newContents, "<GITLAB_BACKUP_BUCKET>", bucketGitlabBackup, -1)
 		newContents = strings.Replace(newContents, "<CHARTMUSEUM_BUCKET>", bucketChartmuseum, -1)
-		newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_ID>", domainId, -1)
-		newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_NAME>", hostedzonename, -1)
+		newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_ID>", hostedZoneId, -1)
+		newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_NAME>", hostedZoneName, -1)
 		newContents = strings.Replace(newContents, "<AWS_DEFAULT_REGION>", region, -1)
 		newContents = strings.Replace(newContents, "<EMAIL_ADDRESS>", adminEmail, -1)
 		newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
@@ -148,7 +139,7 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		}
 
 		if viper.GetBool("create.terraformapplied.gitlab") {
-			newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_NAME>", hostedzonename, -1)
+			newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_NAME>", hostedZoneName, -1)
 			newContents = strings.Replace(newContents, "<AWS_DEFAULT_REGION>", region, -1)
 			newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
 		}

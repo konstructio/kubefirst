@@ -28,8 +28,7 @@ const trackerStage4 = "5 - Load Templates"
 const trackerStage5 = "6 - Download Tools"
 const trackerStage6 = "7 - Get Account Info"
 const trackerStage7 = "8 - Create Buckets"
-const trackerStage8 = "9 - Detokenize"
-const trackerStage9 = "10 - Send Telemetry"
+const trackerStage8 = "9 - Send Telemetry"
 
 // initCmd represents the init command
 var initCmd = &cobra.Command{
@@ -43,7 +42,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		flare.SetupProgress(10)
+		flare.SetupProgress(9)
 		Trackers = make(map[string]*flare.ActionTracker)
 		Trackers[trackerStage0] = &flare.ActionTracker{flare.CreateTracker(trackerStage0, int64(1))}
 		Trackers[trackerStage1] = &flare.ActionTracker{flare.CreateTracker(trackerStage1, int64(1))}
@@ -54,7 +53,6 @@ to quickly create a Cobra application.`,
 		Trackers[trackerStage6] = &flare.ActionTracker{flare.CreateTracker(trackerStage6, int64(1))}
 		Trackers[trackerStage7] = &flare.ActionTracker{flare.CreateTracker(trackerStage7, int64(4))}
 		Trackers[trackerStage8] = &flare.ActionTracker{flare.CreateTracker(trackerStage8, int64(1))}
-		Trackers[trackerStage9] = &flare.ActionTracker{flare.CreateTracker(trackerStage9, int64(1))}
 		infoCmd.Run(cmd, args)
 		hostedZoneName, _ := cmd.Flags().GetString("hosted-zone-name")
 		metricName := "kubefirst.init.started"
@@ -78,7 +76,7 @@ to quickly create a Cobra application.`,
 		viper.Set("argocd.local.service", "http://localhost:8080")
 		viper.Set("gitlab.local.service", "http://localhost:8888")
 		viper.Set("vault.local.service", "http://localhost:8200")
-		viper.WriteConfig()
+
 		// admin email
 		// used for letsencrypt notifications and the gitlab root account
 		adminEmail, _ := cmd.Flags().GetString("admin-email")
@@ -91,14 +89,29 @@ to quickly create a Cobra application.`,
 		viper.Set("aws.region", region)
 		log.Println("region:", region)
 
+		viper.WriteConfig()
+
+		//! tracker 0
+		log.Println("installing kubefirst dependencies")
+		download()
+		log.Println("dependency installation complete")
+		Trackers[trackerStage0].Tracker.Increment(int64(1))
+
+		//! tracker 1
+		log.Println("getting aws account information")
+		getAccountInfo()
+		log.Printf("aws account id: %s\naws user arn: %s", viper.GetString("aws.accountid"), viper.GetString("aws.userarn"))
+		Trackers[trackerStage1].Tracker.Increment(int64(1))
+
+		//! tracker 2
 		// hosted zone id
 		// so we don't have to keep looking it up from the domain name to use it
 		hostedZoneId := getDNSInfo(hostedZoneName)
 		// viper values set in above function
 		log.Println("hostedZoneId:", hostedZoneId)
-		Trackers[trackerStage0].Tracker.Increment(int64(1))
-		Trackers[trackerStage1].Tracker.Increment(int64(1))
-		//trackProgress(1, false)
+		Trackers[trackerStage2].Tracker.Increment(int64(1))
+
+		//! tracker 3
 		// todo: this doesn't default to testing the dns check
 		skipHostedZoneCheck := viper.GetBool("init.hostedzonecheck.enabled")
 		if !skipHostedZoneCheck {
@@ -106,37 +119,39 @@ to quickly create a Cobra application.`,
 		} else {
 			testHostedZoneLiveness(hostedZoneName, hostedZoneId)
 		}
-		Trackers[trackerStage2].Tracker.Increment(int64(1))
-
-		log.Println("calling createSshKeyPair() ")
-		createSshKeyPair()
-		log.Println("createSshKeyPair() complete")
 		Trackers[trackerStage3].Tracker.Increment(int64(1))
 
-		log.Println("calling cloneGitOpsRepo()")
-		cloneGitOpsRepo()
-		log.Println("cloneGitOpsRepo() complete")
+		//! tracker 4
+		//* should we consider going down to a single bucket
+		//* for state and artifacts on open source?
+		//* hitting a bucket limit on an install might deter someone
+		log.Println("creating buckets for state and artifacts")
+		bucketRand()
+		log.Println("bucket creation complete")
 		Trackers[trackerStage4].Tracker.Increment(int64(1))
 
-		log.Println("calling download()")
-		download()
-		log.Println("download() complete")
+		//! tracker 5
+		log.Println("creating an ssh key pair for your new cloud infrastructure")
+		createSshKeyPair()
+		log.Println("ssh key pair creation complete")
+		Trackers[trackerStage5].Tracker.Increment(int64(1))
 
-		log.Println("calling getAccountInfo()")
-		getAccountInfo()
-		log.Println("getAccountInfo() complete")
+		gitopsTemplateGithubOrgOverride := "jarededwards" // discussion point
+
+		log.Printf("cloning and detokenizing the gitops-template repository")
+		if gitopsTemplateGithubOrgOverride != "" {
+			log.Printf("using --gitops-template-gh-org=%s", gitopsTemplateGithubOrgOverride)
+		}
+		//! tracker 6
+		prepareKubefirstTemplateRepo(gitopsTemplateGithubOrgOverride, "gitops")
+		log.Println("clone and detokenization of gitops-template repository complete")
 		Trackers[trackerStage6].Tracker.Increment(int64(1))
+		//! tracker 7
+		log.Printf("cloning and detokenizing the metaphor-template repository")
+		prepareKubefirstTemplateRepo("kubefirst", "metaphor")
+		log.Println("clone and detokenization of metaphor-template repository complete")
+		Trackers[trackerStage7].Tracker.Increment(int64(1))
 
-		log.Println("calling bucketRand()")
-		bucketRand()
-		log.Println("bucketRand() complete")
-
-		log.Println("calling detokenize()")
-		detokenize(fmt.Sprintf("%s/.kubefirst/gitops", home))
-		log.Println("detokenize() complete")
-		Trackers[trackerStage8].Tracker.Increment(int64(1))
-
-		// modConfigYaml()
 		metricName = "kubefirst.init.completed"
 
 		if !dryrunMode {
@@ -145,8 +160,8 @@ to quickly create a Cobra application.`,
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
 
-		viper.WriteConfig()
-		Trackers[trackerStage9].Tracker.Increment(int64(1))
+		//! tracker 8
+		Trackers[trackerStage8].Tracker.Increment(int64(1))
 		time.Sleep(time.Millisecond * 100)
 	},
 }
@@ -175,13 +190,12 @@ func init() {
 func createSshKeyPair() {
 	publicKey := viper.GetString("botpublickey")
 	if publicKey == "" {
-		log.Println("generating new key pair")
 		publicKey, privateKey, _ := gitlab.GenerateKey()
 		viper.Set("botPublicKey", publicKey)
 		viper.Set("botPrivateKey", privateKey)
 		err := viper.WriteConfig()
 		if err != nil {
-			log.Panicf("error: could not write to viper config")
+			log.Panicf("error: could not write to viper config %s", err)
 		}
 	}
 	publicKey = viper.GetString("botpublickey")

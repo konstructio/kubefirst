@@ -2,72 +2,54 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
-	"os"
 	"strings"
-	"github.com/spf13/viper"
-	"os/exec"
-	"syscall"
 	"time"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/spf13/viper"
 	ssh2 "golang.org/x/crypto/ssh"
-	"io/ioutil"
 )
 
-func createSoftServe(kubeconfigPath string) {
+func createSoftServe() {
 	if !viper.GetBool("create.softserve.create") {
-		log.Println("Executing createSoftServe")
+		log.Println("creating soft-serve")
 		if dryrunMode {
 			log.Printf("[#99] Dry-run mode, createSoftServe skipped.")
 			return
 		}
-		toolsDir := fmt.Sprintf("%s/.kubefirst/tools", home)
 
-		err := os.Mkdir(toolsDir, 0777)
-		if err != nil {
-			log.Println("error creating directory %s", toolsDir, err)
-		}
-
-		// create soft-serve stateful set
 		softServePath := fmt.Sprintf("%s/.kubefirst/gitops/components/soft-serve/manifests.yaml", home)
-		softServeApplyOut, softServeApplyErr,errSoftServeApply := execShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "apply", "-f", softServePath, "--wait")
-		log.Printf("Result:\n\t%s\n\t%s\n",softServeApplyOut,softServeApplyErr)	
+		softServeApplyOut, softServeApplyErr, errSoftServeApply := execShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "apply", "-f", softServePath, "--wait")
+		log.Printf("Result:\n\t%s\n\t%s\n", softServeApplyOut, softServeApplyErr)
 		if errSoftServeApply != nil {
-			log.Panicf("failed to call kubectlCreateSoftServeCmd.Run(): %v", err)
-		}	
+			log.Panicf("error: failed to apply soft-serve to the cluster %s", errSoftServeApply)
+		}
 
 		viper.Set("create.softserve.create", true)
 		viper.WriteConfig()
-		log.Println("waiting for soft-serve installation to complete...")
-		time.Sleep(60 * time.Second)
-		//TODO: Update mechanism of waiting
+
 	} else {
 		log.Println("Skipping: createSoftServe")
 	}
 
 }
 
-func configureSoftserveAndPush(){
+func configureSoftserveAndPush() {
 	configureAndPushFlag := viper.GetBool("create.softserve.configure")
-	if configureAndPushFlag != true {
+
+	if !configureAndPushFlag {
 		log.Println("Executing configureSoftserveAndPush")
 		if dryrunMode {
 			log.Printf("[#99] Dry-run mode, configureSoftserveAndPush skipped.")
 			return
-		}		
-		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")
-		kPortForward.Stdout = os.Stdout
-		kPortForward.Stderr = os.Stderr
-		err := kPortForward.Start()
-		defer kPortForward.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Panicf("error: failed to port-forward to soft-serve %s", err)
 		}
-		time.Sleep(20 * time.Second)
 
 		configureSoftServe()
-		pushGitopsToSoftServe()
+		pushGitRepo("soft", "gitops")
+
 		viper.Set("create.softserve.configure", true)
 		viper.WriteConfig()
 		time.Sleep(30 * time.Second)
@@ -125,7 +107,7 @@ func configureSoftServe() {
 		Auth:       auth,
 	})
 	if err != nil {
-		log.Panicf("error pushing to remote", err)
+		log.Panicf("error pushing to remote %s", err)
 	}
 
 }

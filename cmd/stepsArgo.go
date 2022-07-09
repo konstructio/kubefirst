@@ -245,13 +245,13 @@ func pushGitopsToGitLab() {
 
 	//TODO: should this step to be skipped if already executed?
 	domain := viper.GetString("aws.hostedzonename")
-
-	detokenize(fmt.Sprintf("%s/.kubefirst/gitops", home))
 	directory := fmt.Sprintf("%s/.kubefirst/gitops", home)
+
+	detokenize(directory)
 
 	repo, err := git.PlainOpen(directory)
 	if err != nil {
-		log.Panicf("error opening the directory ", directory, err)
+		log.Panicf("error opening the directory %s: %s", directory, err)
 	}
 
 	//upstream := fmt.Sprintf("ssh://gitlab.%s:22:kubefirst/gitops", viper.GetString("aws.hostedzonename"))
@@ -267,7 +267,6 @@ func pushGitopsToGitLab() {
 		log.Println("Error creating remote repo:", err)
 	}
 	w, _ := repo.Worktree()
-
 	os.RemoveAll(directory + "/terraform/base/.terraform")
 	os.RemoveAll(directory + "/terraform/gitlab/.terraform")
 	os.RemoveAll(directory + "/terraform/vault/.terraform")
@@ -483,15 +482,6 @@ func syncArgocdApplication(applicationName, argocdAuthToken string) {
 }
 
 func destroyGitlabTerraform() {
-	log.Println("\n\nTODO -- need to setup and argocd delete against registry and wait?\n\n")
-	// kubeconfig := os.Getenv("HOME") + "/.kube/config"
-	// config, err := argocdclientset.BuildConfigFromFlags("", kubeconfig)
-	// argocdclientset, err := argocdclientset.NewForConfig(config)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	//* should we git clone the gitops repo when destroy is run back to their
-	//* local host to get the latest values of gitops
 
 	os.Setenv("AWS_REGION", viper.GetString("aws.region"))
 	os.Setenv("AWS_ACCOUNT_ID", viper.GetString("aws.accountid"))
