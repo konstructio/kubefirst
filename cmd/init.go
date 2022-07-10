@@ -136,12 +136,13 @@ to quickly create a Cobra application.`,
 		log.Println("ssh key pair creation complete")
 		Trackers[trackerStage5].Tracker.Increment(int64(1))
 
-		gitopsTemplateGithubOrgOverride := "jarededwards" // discussion point
-
+		// TODO: get the below line added as a legit flag, don't merge with any value except kubefirst
+		gitopsTemplateGithubOrgOverride := "kubefirst" // <-- discussion point
 		log.Printf("cloning and detokenizing the gitops-template repository")
 		if gitopsTemplateGithubOrgOverride != "" {
 			log.Printf("using --gitops-template-gh-org=%s", gitopsTemplateGithubOrgOverride)
 		}
+
 		//! tracker 6
 		prepareKubefirstTemplateRepo(gitopsTemplateGithubOrgOverride, "gitops")
 		log.Println("clone and detokenization of gitops-template repository complete")

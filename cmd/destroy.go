@@ -95,7 +95,7 @@ func deleteArgocdRegistryApplication() {
 			log.Panicf("error: delete registry applicatoin from argocd failed: %s", err)
 		}
 		log.Println("waiting for argocd deletion to complete")
-		time.Sleep(240 * time.Second)
+		time.Sleep(300 * time.Second)
 	} else {
 		log.Println("skip:  deleteRegistryApplication")
 	}

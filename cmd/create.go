@@ -251,7 +251,7 @@ to quickly create a Cobra application.`,
 			awaitGitlab()
 
 			log.Println("pushing gitops repo to origin gitlab")
-			// pushGitRepo("gitlab", "gitops") //  todo need to handle if this was already pushed, errors on failure
+			pushGitRepo("gitlab", "gitops") //  todo need to handle if this was already pushed, errors on failure
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
 
 			log.Println("pushing metaphor repo to origin gitlab")

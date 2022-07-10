@@ -1,5 +1,5 @@
-# nebulous
-The Kubefirst Open Source Platform
+# kubefirst
+Infrastructure Management and Application Delivery Open Source GitOps Platform
 
 ![images/nebulous-arch.png](images/nebulous-arch.png)
 
