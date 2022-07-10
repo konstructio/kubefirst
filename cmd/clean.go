@@ -15,7 +15,7 @@ import (
 // cleanCmd represents the clean command
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
-	Short: "A brief description of your command",
+	Short: "removes all kubefirst resources locally for new execution",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 

@@ -6,15 +6,16 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/kubefirst/nebulous/configs"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 // infoCmd represents the info command
 var infoCmd = &cobra.Command{
 	Use:   "info",
-	Short: "Provide a general overview of host machine and cli",
+	Short: "provide a general overview of host machine and cli",
 	Long: `Command used to allow a deeper inspection of the host machine 
 	and cli version runnig and its current state. Tool recommended for troubleshooting 
 	installations`,

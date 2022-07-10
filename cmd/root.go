@@ -5,9 +5,10 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"os"
 	"errors"
 	"log"
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -17,15 +18,10 @@ var cfgFile string
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "kubefirst",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
+	Short: "kubefirst management cluster installer base command",
+	Long: `kubefirst management cluster installer provisions an
+	open source application delivery platform in under an hour. 
+	checkout the docs at docs.kubefirst.com.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println(viper.Get("name")) //! print value coming from ~/.flare --> ~/.kubefirst
 	},
@@ -71,12 +67,12 @@ func initConfig() {
 
 	}
 	viper.SetConfigFile(cfgFile)
-	viper.SetConfigType("yaml")	
+	viper.SetConfigType("yaml")
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		log.Println( "Using config file:", viper.ConfigFileUsed())
+		log.Println("Using config file:", viper.ConfigFileUsed())
 	}
-	
+
 }

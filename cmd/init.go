@@ -33,7 +33,7 @@ const trackerStage8 = "9 - Send Telemetry"
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "A brief description of your command",
+	Short: "initialize your local machine to execute `create`",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
@@ -183,7 +183,6 @@ func init() {
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
 
 	initCmd.PersistentFlags().BoolVarP(&dryrunMode, "dry-run", "s", false, "set to dry-run mode, no changes done on cloud provider selected")
-	log.Println("init started")
 
 }
 

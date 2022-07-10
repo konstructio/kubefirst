@@ -27,7 +27,7 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	rootCmd.AddCommand(nebulousCmd)
+	// rootCmd.AddCommand(nebulousCmd)
 
 	// Here you will define your flags and configuration settings.
 
