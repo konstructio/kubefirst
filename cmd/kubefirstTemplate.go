@@ -41,10 +41,10 @@ func prepareKubefirstTemplateRepo(githubOrg, repoName string) {
 
 	domain := viper.GetString("aws.hostedzonename")
 	log.Printf("creating git remote gitlab")
-	log.Println("git remote add gitlab at url ", fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", domain))
+	log.Println("git remote add gitlab at url ", fmt.Sprintf("https://gitlab.%s/kubefirst/%s.git", domain, repoName))
 	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
 		Name: "gitlab",
-		URLs: []string{fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", domain)},
+		URLs: []string{fmt.Sprintf("https://gitlab.%s/kubefirst/%s.git", domain, repoName)},
 	})
 
 	if repoName == "gitops" {
