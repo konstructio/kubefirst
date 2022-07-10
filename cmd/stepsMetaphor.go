@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/spf13/viper"
 	ssh2 "golang.org/x/crypto/ssh"
 )
@@ -23,6 +23,13 @@ func pushGitRepo(gitOrigin, repoName string) {
 
 	// todo - fix opts := &git.PushOptions{uniqe, stuff} .Push(opts) ?
 	if gitOrigin == "soft" {
+		detokenize(repoDir)
+		os.RemoveAll(repoDir + "/terraform/base/.terraform")
+		os.RemoveAll(repoDir + "/terraform/gitlab/.terraform")
+		os.RemoveAll(repoDir + "/terraform/vault/.terraform")
+		os.Remove(repoDir + "/terraform/base/.terraform.lock.hcl")
+		os.Remove(repoDir + "/terraform/gitlab/.terraform.lock.hcl")
+		commitToRepo(repo, repoName)
 		auth, _ := publicKey()
 
 		auth.HostKeyCallback = ssh2.InsecureIgnoreHostKey()
@@ -38,14 +45,8 @@ func pushGitRepo(gitOrigin, repoName string) {
 	}
 
 	if gitOrigin == "gitlab" {
-		detokenize(repoDir)
-		os.RemoveAll(repoDir + "/terraform/base/.terraform")
-		os.RemoveAll(repoDir + "/terraform/gitlab/.terraform")
-		os.RemoveAll(repoDir + "/terraform/vault/.terraform")
-		os.Remove(repoDir + "/terraform/base/.terraform.lock.hcl")
-		os.Remove(repoDir + "/terraform/gitlab/.terraform.lock.hcl")
-		commitToRepo(repo, repoName)
-		auth := &gitHttp.BasicAuth{
+
+		auth := &http.BasicAuth{
 			Username: "root",
 			Password: viper.GetString("gitlab.token"),
 		}

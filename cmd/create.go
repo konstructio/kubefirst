@@ -58,7 +58,10 @@ to quickly create a Cobra application.`,
 		applyBaseTerraform(cmd, directory)
 		Trackers[trackerStage20].Tracker.Increment(int64(1))
 
+		//! soft-serve was just applied
+
 		createSoftServe()
+		waitForNamespaceandPods("soft-serve", "app=soft-serve")
 		// todo this should be replaced with something more intelligent
 		log.Println("waiting for soft-serve installation to complete...")
 		time.Sleep(60 * time.Second)
@@ -247,11 +250,11 @@ to quickly create a Cobra application.`,
 			log.Println("waiting for gitlab dns to propogate before continuing")
 			awaitGitlab()
 
-			log.Println("pushing gitops to gitlab")
-			pushGitRepo("gitlab", "gitops")
+			log.Println("pushing gitops repo to origin gitlab")
+			// pushGitRepo("gitlab", "gitops") //  todo need to handle if this was already pushed, errors on failure
 			Trackers[trackerStage22].Tracker.Increment(int64(1))
 
-			log.Println("pushing gitops to metaphor")
+			log.Println("pushing metaphor repo to origin gitlab")
 			pushGitRepo("gitlab", "metaphor")
 			Trackers[trackerStage23].Tracker.Increment(int64(1))
 

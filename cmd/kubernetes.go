@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/spf13/viper"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -120,4 +121,36 @@ func getSecretValue(k8sClient coreV1Types.SecretInterface, secretName, key strin
 		log.Println(fmt.Sprintf("error getting key: %s from secret: %s", key, secretName), err)
 	}
 	return string(secret.Data[key])
+}
+
+func waitForNamespaceandPods(namespace, podLabel string) {
+	x := 50
+	for i := 0; i < x; i++ {
+		kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", namespace, "get", fmt.Sprintf("namespace/%s", namespace))
+		kGetNamespace.Stdout = os.Stdout
+		kGetNamespace.Stderr = os.Stderr
+		err := kGetNamespace.Run()
+		if err != nil {
+			log.Println(fmt.Sprintf("waiting for %s namespace to create ", namespace))
+			time.Sleep(10 * time.Second)
+		} else {
+			log.Println(fmt.Sprintf("namespace %s found, continuing", namespace))
+			time.Sleep(10 * time.Second)
+			i = 51
+		}
+	}
+	for i := 0; i < x; i++ {
+		kGetPods := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", namespace, "get", "pods", "-l", podLabel)
+		kGetPods.Stdout = os.Stdout
+		kGetPods.Stderr = os.Stderr
+		err := kGetPods.Run()
+		if err != nil {
+			log.Println(fmt.Sprintf("waiting for %s pods to create ", namespace))
+			time.Sleep(10 * time.Second)
+		} else {
+			log.Println(fmt.Sprintf("%s pods found, continuing", namespace))
+			time.Sleep(10 * time.Second)
+			break
+		}
+	}
 }

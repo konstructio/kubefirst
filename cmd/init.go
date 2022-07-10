@@ -224,6 +224,12 @@ server:
         selfHeal: true
       syncOptions:
       - CreateNamespace=true
+      retry:
+        limit: 5
+        backoff:
+          duration: 10s
+          factor: 2
+          maxDuration: 3m0s	
 configs:
   repositories:
     soft-serve-gitops:
