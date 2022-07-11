@@ -37,7 +37,7 @@ func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
 	randomName := strings.ReplaceAll(autoname.Generate(), "_", "-")
 	viper.Set("bucket.rand", randomName)
 
-	trackers[pkg.TrackerStage7].Tracker.Increment(int64(1))
+	trackers[pkg.CloneAndDetokenizeMetaphorTemplate].Tracker.Increment(int64(1))
 
 	buckets := strings.Fields("state-store argo-artifacts gitlab-backup chartmuseum")
 	for _, bucket := range buckets {

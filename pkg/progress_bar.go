@@ -11,20 +11,26 @@ type ActionTracker struct {
 	Tracker *progress.Tracker
 }
 
-const TrackerStage0 = "1 - Load properties"
-const TrackerStage1 = "2 - Set .flare initial values"
-const TrackerStage2 = "3 - Test Domain Liveness"
-const TrackerStage3 = "4 - Create SSH Key Pair"
-const TrackerStage4 = "5 - Load Templates"
-const TrackerStage5 = "6 - DownloadTools Tools"
-const TrackerStage6 = "7 - Get Account Info"
-const TrackerStage7 = "8 - Create Buckets"
-const TrackerStage8 = "9 - Detokenize"
-const TrackerStage9 = "10 - Send Telemetry"
+const DownloadDependencies = "Download dependencies"
+const GetAccountInfo = "Get Account Info"
+const GetDNSInfo = "Get DNS Info"
+const TestHostedZoneLiveness = "Test Domain Liveness"
+const CloneAndDetokenizeGitOpsTemplate = "Clone and Detokenize (GitOps)"
+const CloneAndDetokenizeMetaphorTemplate = "Clone and Detokenize (Metaphor)"
+const CreateSSHKey = "Create SSH keys"
+const CreateBuckets = "Create Buckets"
+const Detokenization = "Detokenization"
+const SendTelemetry = "Send Telemetry"
 
+const TrackerStage20 = "Apply Base"
+
+//const GetAccountInfo = "1 - Set .flare initial values"
+//const CreateSSHKey = "1 - Load properties"
+//const TestHostedZoneLiveness = "4 - Create SSH Key Pair"
+//const TrackerStage4 = "5 - Load Templates"
+//const CloneAndDetokenizeMetaphorTemplate = "8 - Create Buckets"
+//const Detokenize1 = "9 - Detokenize"
 //const trackerStage5 = "6 - DownloadTools Tools"
-
-const TrackerStage20 = "0 - Apply Base"
 
 //const trackerStage21 = "1 - Temporary SCM Install"
 //const trackerStage22 = "2 - Argo/Final SCM Install"
@@ -77,8 +83,8 @@ func SetupProgress(numTrackers int) {
 	// instantiate a Progress Writer and set up the options
 	pw = progress.NewWriter()
 	pw.SetAutoStop(*flagAutoStop)
-	pw.SetTrackerLength(30)
-	pw.SetMessageWidth(29)
+	pw.SetTrackerLength(40)
+	pw.SetMessageWidth(39)
 	pw.SetNumTrackersExpected(*flagNumTrackers)
 	pw.SetSortBy(progress.SortByPercentDsc)
 	pw.SetStyle(progress.StyleDefault)
