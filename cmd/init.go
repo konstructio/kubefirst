@@ -2,6 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/kubefirst/nebulous/configs"
 	"github.com/kubefirst/nebulous/internal/aws"
 	"github.com/kubefirst/nebulous/internal/downloadManager"
@@ -10,9 +14,6 @@ import (
 	"github.com/kubefirst/nebulous/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"strings"
-	"time"
 )
 
 // initCmd represents the init command
@@ -89,6 +90,22 @@ to quickly create a Cobra application.`,
 		log.Println("hostedZoneId:", hostedZoneId)
 		trackers[pkg.TrackerStage0].Tracker.Increment(1)
 		trackers[pkg.TrackerStage1].Tracker.Increment(1)
+
+		//cluster name
+		clusterName, err := cmd.Flags().GetString("cluster-name")
+		if err != nil {
+			log.Panic(err)
+		}
+		viper.Set("cluster-name", clusterName)
+		log.Println("cluster-name:", clusterName)
+
+		//version-gitops
+		versionGitOps, err := cmd.Flags().GetString("version-gitops")
+		if err != nil {
+			log.Panic(err)
+		}
+		viper.Set("version-gitops", versionGitOps)
+		log.Println("version-gitops:", versionGitOps)
 
 		// todo: this doesn't default to testing the dns check
 		skipHostedZoneCheck := viper.GetBool("init.hostedzonecheck.enabled")
@@ -179,4 +196,7 @@ func init() {
 
 	initCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	log.Println("init started")
+
+	initCmd.Flags().String("cluster-name", "k1st", "the cluster name, used to identify resources on cloud provider")
+	initCmd.Flags().String("version-gitops", "main", "version/branch used on git clone")
 }
