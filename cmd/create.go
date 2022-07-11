@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/internal/argocd"
 	"github.com/kubefirst/nebulous/internal/gitlab"
 	"github.com/kubefirst/nebulous/internal/helm"
 	"github.com/kubefirst/nebulous/internal/softserve"
@@ -16,6 +17,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"log"
 	"os"
+	"os/exec"
 	"syscall"
 	"time"
 )
@@ -78,15 +80,15 @@ to quickly create a Cobra application.`,
 		//! soft-serve was just applied
 
 		softserve.CreateSoftServe(dryRun, config.KubeConfigPath)
-		waitForNamespaceandPods("soft-serve", "app=soft-serve")
+		waitForNamespaceandPods(config, "soft-serve", "app=soft-serve")
 		// todo this should be replaced with something more intelligent
 		log.Println("waiting for soft-serve installation to complete...")
 		time.Sleep(60 * time.Second)
 
-		kPortForwardSoftServe := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")
+		kPortForwardSoftServe := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")
 		kPortForwardSoftServe.Stdout = os.Stdout
 		kPortForwardSoftServe.Stderr = os.Stderr
-		err := kPortForwardSoftServe.Start()
+		err = kPortForwardSoftServe.Start()
 		defer kPortForwardSoftServe.Process.Signal(syscall.SIGTERM)
 		if err != nil {
 			log.Panicf("error: failed to port-forward to soft-serve %s", err)
@@ -102,7 +104,7 @@ to quickly create a Cobra application.`,
 		//! argocd was just helm installed
 		x := 50
 		for i := 0; i < x; i++ {
-			kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "get", "namespace/argocd")
+			kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/argocd")
 			kGetNamespace.Stdout = os.Stdout
 			kGetNamespace.Stderr = os.Stderr
 			err := kGetNamespace.Run()
@@ -116,7 +118,7 @@ to quickly create a Cobra application.`,
 			}
 		}
 		for i := 0; i < x; i++ {
-			kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
+			kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
 			kGetNamespace.Stdout = os.Stdout
 			kGetNamespace.Stderr = os.Stderr
 			err := kGetNamespace.Run()
@@ -130,7 +132,7 @@ to quickly create a Cobra application.`,
 			}
 		}
 
-		kPortForwardArgocd := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
+		kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
 		kPortForwardArgocd.Stdout = os.Stdout
 		kPortForwardArgocd.Stderr = os.Stderr
 		err = kPortForwardArgocd.Start()
@@ -145,9 +147,9 @@ to quickly create a Cobra application.`,
 		log.Println("setting argocd credentials")
 		setArgocdCreds()
 		log.Println("getting an argocd auth token")
-		token := getArgocdAuthToken()
+		token := argocd.GetArgocdAuthToken(dryRun)
 		log.Println("syncing the registry application")
-		syncArgocdApplication("registry", token)
+		argocd.SyncArgocdApplication(dryRun, "registry", token)
 		// todo, need to stall until the registry has synced, then get to ui asap
 
 		//! skip this if syncing from argocd and not helm installing
@@ -159,7 +161,7 @@ to quickly create a Cobra application.`,
 		//!
 		x = 50
 		for i := 0; i < x; i++ {
-			kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "get", "namespace/vault")
+			kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/vault")
 			kGetNamespace.Stdout = os.Stdout
 			kGetNamespace.Stderr = os.Stderr
 			err := kGetNamespace.Run()
@@ -174,7 +176,7 @@ to quickly create a Cobra application.`,
 		}
 		x = 50
 		for i := 0; i < x; i++ {
-			kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "get", "pods", "-l", "vault-initialized=true")
+			kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "get", "pods", "-l", "vault-initialized=true")
 			kGetNamespace.Stdout = os.Stdout
 			kGetNamespace.Stderr = os.Stderr
 			err := kGetNamespace.Run()
@@ -187,7 +189,7 @@ to quickly create a Cobra application.`,
 				break
 			}
 		}
-		kPortForwardVault := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
+		kPortForwardVault := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
 		kPortForwardVault.Stdout = os.Stdout
 		kPortForwardVault.Stderr = os.Stderr
 		err = kPortForwardVault.Start()
@@ -198,7 +200,7 @@ to quickly create a Cobra application.`,
 
 		x = 50
 		for i := 0; i < x; i++ {
-			kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "get", "namespace/gitlab")
+			kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/gitlab")
 			kGetNamespace.Stdout = os.Stdout
 			kGetNamespace.Stderr = os.Stderr
 			err := kGetNamespace.Run()
@@ -213,7 +215,7 @@ to quickly create a Cobra application.`,
 		}
 		x = 50
 		for i := 0; i < x; i++ {
-			kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "get", "pods", "-l", "app=webservice")
+			kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "get", "pods", "-l", "app=webservice")
 			kGetNamespace.Stdout = os.Stdout
 			kGetNamespace.Stderr = os.Stderr
 			err := kGetNamespace.Run()
@@ -227,9 +229,9 @@ to quickly create a Cobra application.`,
 			}
 		}
 		log.Println("waiting for gitlab")
-		waitForGitlab()
+		waitForGitlab(config)
 		log.Println("gitlab is ready!")
-		kPortForwardGitlab := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
+		kPortForwardGitlab := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
 		kPortForwardGitlab.Stdout = os.Stdout
 		kPortForwardGitlab.Stderr = os.Stderr
 		err = kPortForwardGitlab.Start()
@@ -251,7 +253,7 @@ to quickly create a Cobra application.`,
 			if !skipVault {
 
 				log.Println("waiting for vault unseal")
-				waitForVaultUnseal()
+				waitForVaultUnseal(config)
 				log.Println("vault unseal condition met - continuing")
 
 				log.Println("configuring vault")
@@ -259,7 +261,7 @@ to quickly create a Cobra application.`,
 				log.Println("vault configured")
 
 				log.Println("creating vault configured secret")
-				createVaultConfiguredSecret()
+				createVaultConfiguredSecret(config)
 				log.Println("vault-configured secret created")
 
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
@@ -272,7 +274,8 @@ to quickly create a Cobra application.`,
 
 				log.Println("pushing gitops repo to origin gitlab")
 				// refactor: sounds like a new functions, should PushGitOpsToGitLab be renamed/update signature?
-				pushGitRepo("gitlab", "gitops") //  todo need to handle if this was already pushed, errors on failure
+
+				gitlab.PushGitRepo(config, "gitlab", "gitops") // todo: need to handle if this was already pushed, errors on failure)
 				gitlab.PushGitOpsToGitLab(dryRun)
 
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
@@ -321,7 +324,8 @@ func init() {
 
 // todo: move it to internals/ArgoCD
 func setArgocdCreds() {
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	cfg := configs.ReadConfig()
+	config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
 	if err != nil {
 		panic(err.Error())
 	}

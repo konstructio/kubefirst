@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/kubefirst/nebulous/internal/argocd"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -19,6 +20,13 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
+		dryRun, err := cmd.Flags().GetBool("dry-run")
+		if err != nil {
+			log.Panic(err)
+		}
+
+		log.Println("dry run enabled:", dryRun)
+
 		applicationName, _ := cmd.Flags().GetString("app-name")
 		refreshToken, _ := cmd.Flags().GetBool("refresh-token")
 
@@ -28,10 +36,10 @@ to quickly create a Cobra application.`,
 			log.Panic("uh oh - no argocd auth token found in config, try again with `--refresh-token` ")
 		} else {
 			log.Println("getting a new argocd session token")
-			authToken = getArgocdAuthToken()
+			authToken = argocd.GetArgocdAuthToken(dryRun)
 		}
 		log.Printf("syncing the %s application", applicationName)
-		syncArgocdApplication(applicationName, authToken)
+		argocd.SyncArgocdApplication(dryRun, applicationName, authToken)
 	},
 }
 

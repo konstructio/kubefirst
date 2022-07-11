@@ -238,7 +238,7 @@ func GetDNSInfo(hostedZoneName string) string {
 
 	for _, zone := range hostedZones.HostedZones {
 		if *zone.Name == fmt.Sprintf(`%s%s`, hostedZoneName, ".") {
-			hostedZoneId = returnHostedZoneId(*zone.Id)
+			hostedZoneId = ReturnHostedZoneId(*zone.Id)
 			log.Printf(`found entry for user submitted domain %s, using hosted zone id %s`, hostedZoneName, hostedZoneId)
 			viper.Set("aws.hostedzonename", hostedZoneName)
 			viper.Set("aws.hostedzoneid", hostedZoneId)

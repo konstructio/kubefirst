@@ -90,15 +90,16 @@ to quickly create a Cobra application.`,
 		// refactor: confirm it (start)
 		//! tracker 0
 		log.Println("installing kubefirst dependencies")
-		download()
+
+		downloadManager.DownloadTools(config, trackers)
 		log.Println("dependency installation complete")
-		Trackers[trackerStage0].Tracker.Increment(int64(1))
+		trackers[pkg.TrackerStage0].Tracker.Increment(int64(1))
 
 		//! tracker 1
 		log.Println("getting aws account information")
-		getAccountInfo()
+		aws.GetAccountInfo()
 		log.Printf("aws account id: %s\naws user arn: %s", viper.GetString("aws.accountid"), viper.GetString("aws.userarn"))
-		Trackers[trackerStage1].Tracker.Increment(int64(1))
+		trackers[pkg.TrackerStage1].Tracker.Increment(int64(1))
 		// refactor: confirm it (end)
 
 		// hosted zone id
@@ -184,14 +185,14 @@ to quickly create a Cobra application.`,
 		}
 
 		//! tracker 6
-		prepareKubefirstTemplateRepo(gitopsTemplateGithubOrgOverride, "gitops")
+		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops")
 		log.Println("clone and detokenization of gitops-template repository complete")
-		Trackers[trackerStage6].Tracker.Increment(int64(1))
+		trackers[pkg.TrackerStage6].Tracker.Increment(int64(1))
 		//! tracker 7
 		log.Printf("cloning and detokenizing the metaphor-template repository")
-		prepareKubefirstTemplateRepo("kubefirst", "metaphor")
+		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor")
 		log.Println("clone and detokenization of metaphor-template repository complete")
-		Trackers[trackerStage7].Tracker.Increment(int64(1))
+		trackers[pkg.TrackerStage7].Tracker.Increment(int64(1))
 
 		metricName = "kubefirst.init.completed"
 

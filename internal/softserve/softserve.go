@@ -5,6 +5,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/internal/gitlab"
 	"github.com/kubefirst/nebulous/pkg"
 	"github.com/spf13/viper"
 	ssh2 "golang.org/x/crypto/ssh"
@@ -53,7 +54,7 @@ func ConfigureSoftServeAndPush(dryRun bool) {
 
 		configureSoftServe()
 		// refactor: update it
-		PushGitRepo("soft", "gitops")
+		gitlab.PushGitRepo(config, "soft", "gitops")
 
 		viper.Set("create.softserve.configure", true)
 		viper.WriteConfig()

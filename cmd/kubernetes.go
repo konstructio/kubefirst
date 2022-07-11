@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kubefirst/nebulous/configs"
 	"log"
 	"os"
 	"os/exec"
@@ -39,13 +40,13 @@ func getPodNameByLabel(gitlabPodsClient coreV1Types.PodInterface, label string) 
 	return gitlabToolboxPodName
 }
 
-func waitForVaultUnseal() {
+func waitForVaultUnseal(config *configs.Config) {
 	vaultReady := viper.GetBool("create.vault.ready")
 	if !vaultReady {
 		var output bytes.Buffer
 		// todo - add a viper.GetBool() check to the beginning of this function
 		// todo write in golang? see here -> https://github.com/bcreane/k8sutils/blob/master/utils.go
-		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "wait", "--for=condition=ready", "pod", "-l", "vault-initialized=true", "--timeout=300s")
+		k := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "wait", "--for=condition=ready", "pod", "-l", "vault-initialized=true", "--timeout=300s")
 		k.Stdout = &output
 		k.Stderr = os.Stderr
 		err := k.Run()
@@ -59,11 +60,11 @@ func waitForVaultUnseal() {
 
 }
 
-func waitForGitlab() {
+func waitForGitlab(config *configs.Config) {
 	var output bytes.Buffer
 	// todo - add a viper.GetBool() check to the beginning of this function
 	// todo write in golang? see here -> https://github.com/bcreane/k8sutils/blob/master/utils.go
-	k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "gitlab", "wait", "--for=condition=ready", "pod", "-l", "app=webservice", "--timeout=300s")
+	k := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "wait", "--for=condition=ready", "pod", "-l", "app=webservice", "--timeout=300s")
 	k.Stdout = &output
 	k.Stderr = os.Stderr
 	err := k.Run()
@@ -73,13 +74,13 @@ func waitForGitlab() {
 	log.Printf("the output is: %s", output.String())
 }
 
-func createVaultConfiguredSecret() {
+func createVaultConfiguredSecret(config *configs.Config) {
 	if !viper.GetBool("vault.configuredsecret") {
 		var output bytes.Buffer
 		// todo - https://github.com/bcreane/k8sutils/blob/master/utils.go
 		// kubectl create secret generic vault-configured --from-literal=isConfigured=true
 		// the purpose of this command is to let the vault-unseal Job running in kuberenetes know that external secrets store should be able to connect to the configured vault
-		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "create", "secret", "generic", "vault-configured", "--from-literal=isConfigured=true")
+		k := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "create", "secret", "generic", "vault-configured", "--from-literal=isConfigured=true")
 		k.Stdout = &output
 		k.Stderr = os.Stderr
 		err := k.Run()
@@ -123,11 +124,11 @@ func getSecretValue(k8sClient coreV1Types.SecretInterface, secretName, key strin
 	return string(secret.Data[key])
 }
 
-func waitForNamespaceandPods(namespace, podLabel string) {
+func waitForNamespaceandPods(config *configs.Config, namespace, podLabel string) {
 	if !viper.GetBool("create.softserve.ready") {
 		x := 50
 		for i := 0; i < x; i++ {
-			kGetNamespace := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", namespace, "get", fmt.Sprintf("namespace/%s", namespace))
+			kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "get", fmt.Sprintf("namespace/%s", namespace))
 			kGetNamespace.Stdout = os.Stdout
 			kGetNamespace.Stderr = os.Stderr
 			err := kGetNamespace.Run()
@@ -141,7 +142,7 @@ func waitForNamespaceandPods(namespace, podLabel string) {
 			}
 		}
 		for i := 0; i < x; i++ {
-			kGetPods := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", namespace, "get", "pods", "-l", podLabel)
+			kGetPods := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "get", "pods", "-l", podLabel)
 			kGetPods.Stdout = os.Stdout
 			kGetPods.Stderr = os.Stderr
 			err := kGetPods.Run()

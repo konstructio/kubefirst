@@ -541,9 +541,9 @@ func HydrateGitlabMetaphorRepo(dryRun bool) {
 }
 
 // refactor: review it
-func PushGitRepo(gitOrigin, repoName string) {
+func PushGitRepo(config *configs.Config, gitOrigin, repoName string) {
 
-	repoDir := fmt.Sprintf("%s/.kubefirst/%s", home, repoName)
+	repoDir := fmt.Sprintf("%s/.kubefirst/%s", config.HomePath, repoName)
 	repo, err := git.PlainOpen(repoDir)
 	if err != nil {
 		log.Panicf("error opening repo %s: %s", repoName, err)
@@ -551,16 +551,16 @@ func PushGitRepo(gitOrigin, repoName string) {
 
 	// todo - fix opts := &git.PushOptions{uniqe, stuff} .Push(opts) ?
 	if gitOrigin == "soft" {
-		detokenize(repoDir)
+		pkg.Detokenize(repoDir)
 		os.RemoveAll(repoDir + "/terraform/base/.terraform")
 		os.RemoveAll(repoDir + "/terraform/gitlab/.terraform")
 		os.RemoveAll(repoDir + "/terraform/vault/.terraform")
 		os.Remove(repoDir + "/terraform/base/.terraform.lock.hcl")
 		os.Remove(repoDir + "/terraform/gitlab/.terraform.lock.hcl")
-		commitToRepo(repo, repoName)
-		auth, _ := publicKey()
+		CommitToRepo(repo, repoName)
+		auth, _ := pkg.PublicKey()
 
-		auth.HostKeyCallback = ssh2.InsecureIgnoreHostKey()
+		auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 
 		err = repo.Push(&git.PushOptions{
 			RemoteName: gitOrigin,
@@ -574,7 +574,7 @@ func PushGitRepo(gitOrigin, repoName string) {
 
 	if gitOrigin == "gitlab" {
 
-		auth := &http.BasicAuth{
+		auth := &gitHttp.BasicAuth{
 			Username: "root",
 			Password: viper.GetString("gitlab.token"),
 		}

@@ -8,14 +8,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/internal/argocd"
 	"github.com/spf13/viper"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 	"log"
 	"os"
 	"os/exec"
-	"syscall"
+	"time"
 )
 
 var vaultRootToken string
@@ -67,27 +67,22 @@ func GetSecretValue(k8sClient coreV1Types.SecretInterface, secretName, key strin
 }
 
 func DeleteRegistryApplication(skipDeleteRegistryApplication bool) {
-	config := configs.ReadConfig()
+
 	if !skipDeleteRegistryApplication {
-		log.Println("starting port forward to argocd server and deleting registry")
-		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:8080")
-		kPortForward.Stdout = os.Stdout
-		kPortForward.Stderr = os.Stderr
-		err := kPortForward.Start()
-		defer kPortForward.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Panicf("error: failed to port-forward to argocd %s", err)
-		}
+
+		log.Println("refreshing argocd session token")
+		argocd.GetArgocdAuthToken(false)
 
 		url := "https://localhost:8080/api/v1/applications/registry"
 		argoCdAppSync := exec.Command("curl", "-k", "-vL", "-X", "DELETE", url, "-H", fmt.Sprintf("Authorization: Bearer %s", viper.GetString("argocd.admin.apitoken")))
 		argoCdAppSync.Stdout = os.Stdout
 		argoCdAppSync.Stderr = os.Stderr
-		err = argoCdAppSync.Run()
+		err := argoCdAppSync.Run()
 		if err != nil {
-			log.Panicf("error: curl appSync failed failed %s", err)
+			log.Panicf("error: delete registry applicatoin from argocd failed: %s", err)
 		}
-		log.Println("deleting argocd application registry")
+		log.Println("waiting for argocd deletion to complete")
+		time.Sleep(300 * time.Second)
 	} else {
 		log.Println("skip:  deleteRegistryApplication")
 	}

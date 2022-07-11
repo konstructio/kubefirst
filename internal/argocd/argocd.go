@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kubefirst/nebulous/configs"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
@@ -119,7 +118,6 @@ func getArgoCDToken(username string, password string) (string, error) {
 }
 
 func GetArgocdAuthToken(dryRun bool) string {
-	config := configs.ReadConfig()
 
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, GetArgocdAuthToken skipped.")
