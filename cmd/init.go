@@ -19,7 +19,7 @@ import (
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "A brief description of your command",
+	Short: "initialize your local machine to execute `create`",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
@@ -57,7 +57,7 @@ to quickly create a Cobra application.`,
 		if !dryRun {
 			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
-			log.Printf("[#99999] Dry-run mode, telemetry skipped:  %s", metricName)
+			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
 
 		// todo need to check flags and create config
@@ -70,7 +70,9 @@ to quickly create a Cobra application.`,
 		}
 		log.Println("hostedZoneName:", hostedZoneName)
 		viper.Set("aws.hostedzonename", hostedZoneName)
-		viper.WriteConfig()
+		viper.Set("argocd.local.service", "http://localhost:8080")
+		viper.Set("gitlab.local.service", "http://localhost:8888")
+		viper.Set("vault.local.service", "http://localhost:8200")
 		// admin email
 		// used for letsencrypt notifications and the gitlab root account
 		adminEmail, _ := cmd.Flags().GetString("admin-email")
@@ -82,6 +84,22 @@ to quickly create a Cobra application.`,
 		region, _ := cmd.Flags().GetString("region")
 		viper.Set("aws.region", region)
 		log.Println("region:", region)
+
+		viper.WriteConfig()
+
+		// refactor: confirm it (start)
+		//! tracker 0
+		log.Println("installing kubefirst dependencies")
+		download()
+		log.Println("dependency installation complete")
+		Trackers[trackerStage0].Tracker.Increment(int64(1))
+
+		//! tracker 1
+		log.Println("getting aws account information")
+		getAccountInfo()
+		log.Printf("aws account id: %s\naws user arn: %s", viper.GetString("aws.accountid"), viper.GetString("aws.userarn"))
+		Trackers[trackerStage1].Tracker.Increment(int64(1))
+		// refactor: confirm it (end)
 
 		// hosted zone id
 		// so we don't have to keep looking it up from the domain name to use it
@@ -116,9 +134,9 @@ to quickly create a Cobra application.`,
 		}
 		trackers[pkg.TrackerStage2].Tracker.Increment(1)
 
-		log.Println("calling CreateSshKeyPair() ")
+		log.Println("creating an ssh key pair for your new cloud infrastructure")
 		pkg.CreateSshKeyPair()
-		log.Println("CreateSshKeyPair() complete")
+		log.Println("ssh key pair creation complete")
 		trackers[pkg.TrackerStage3].Tracker.Increment(1)
 
 		log.Println("calling cloneGitOpsRepo()")
@@ -143,6 +161,12 @@ to quickly create a Cobra application.`,
 
 		log.Println("calling BucketRand()")
 		trackers[pkg.TrackerStage7].Tracker.Increment(1)
+
+		//! tracker 4
+		//* should we consider going down to a single bucket
+		//* for state and artifacts on open source?
+		//* hitting a bucket limit on an install might deter someone
+		log.Println("creating buckets for state and artifacts")
 		aws.BucketRand(dryRun, trackers)
 		trackers[pkg.TrackerStage7].Tracker.Increment(1)
 		log.Println("BucketRand() complete")
@@ -151,6 +175,23 @@ to quickly create a Cobra application.`,
 		pkg.Detokenize(fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath))
 		log.Println("Detokenize() complete")
 		trackers[pkg.TrackerStage8].Tracker.Increment(1)
+
+		// TODO: get the below line added as a legit flag, don't merge with any value except kubefirst
+		gitopsTemplateGithubOrgOverride := "kubefirst" // <-- discussion point
+		log.Printf("cloning and detokenizing the gitops-template repository")
+		if gitopsTemplateGithubOrgOverride != "" {
+			log.Printf("using --gitops-template-gh-org=%s", gitopsTemplateGithubOrgOverride)
+		}
+
+		//! tracker 6
+		prepareKubefirstTemplateRepo(gitopsTemplateGithubOrgOverride, "gitops")
+		log.Println("clone and detokenization of gitops-template repository complete")
+		Trackers[trackerStage6].Tracker.Increment(int64(1))
+		//! tracker 7
+		log.Printf("cloning and detokenizing the metaphor-template repository")
+		prepareKubefirstTemplateRepo("kubefirst", "metaphor")
+		log.Println("clone and detokenization of metaphor-template repository complete")
+		Trackers[trackerStage7].Tracker.Increment(int64(1))
 
 		metricName = "kubefirst.init.completed"
 
@@ -161,6 +202,8 @@ to quickly create a Cobra application.`,
 		}
 
 		viper.WriteConfig()
+
+		//! tracker 8
 		trackers[pkg.TrackerStage9].Tracker.Increment(1)
 		time.Sleep(time.Millisecond * 100)
 	},

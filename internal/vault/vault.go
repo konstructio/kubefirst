@@ -89,6 +89,9 @@ func ConfigureVault(dryRun bool) {
 		// Prepare for terraform vault execution
 		os.Setenv("VAULT_ADDR", "http://localhost:8200")
 		os.Setenv("VAULT_TOKEN", vaultToken)
+		os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
+		os.Setenv("AWS_PROFILE", "starter") // todo this is an issue
+		os.Setenv("AWS_DEFAULT_REGION", viper.GetString("aws.region"))
 
 		os.Setenv("TF_VAR_vault_addr", fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename")))
 		os.Setenv("TF_VAR_aws_account_id", viper.GetString("aws.accountid"))
@@ -140,7 +143,7 @@ func AddGitlabOidcApplications(dryRun bool) {
 	domain := viper.GetString("aws.hostedzonename")
 	git, err := gitlab.NewClient(
 		viper.GetString("gitlab.token"),
-		gitlab.WithBaseURL(fmt.Sprintf("https://gitlab.%s/api/v4", domain)),
+		gitlab.WithBaseURL(fmt.Sprintf("%s/api/v4", viper.GetString("gitlab.local.service"))),
 	)
 	if err != nil {
 		log.Fatal(err)

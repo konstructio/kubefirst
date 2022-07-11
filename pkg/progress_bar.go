@@ -40,7 +40,9 @@ var (
 	flagHidePercentage     = flag.Bool("hide-percentage", false, "Hide the progress percent?")
 	flagHideTime           = flag.Bool("hide-time", false, "Hide the time taken?")
 	flagHideValue          = flag.Bool("hide-value", false, "Hide the tracker value?")
-)
+	//	flagNumTrackers        = flag.Int("num-trackers", 12, "Number of Trackers")
+	flagRandomFail = flag.Bool("rnd-fail", false, "Introduce random failures in tracking")
+	flagRandomLogs = flag.Bool("rnd-logs", false, "Output random logs in the middle of tracking")
 
 // GetTrackers keeps one single instance of Trackers alive using singleton pattern.
 func GetTrackers() map[string]*ActionTracker {

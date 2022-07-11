@@ -86,6 +86,7 @@ func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracke
 	if err != nil {
 		return err
 	}
+	os.RemoveAll(fmt.Sprintf("%s/terraform.zip", toolsDir))
 
 	trackers[pkg.TrackerStage5].Tracker.Increment(int64(1))
 

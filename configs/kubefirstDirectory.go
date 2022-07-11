@@ -15,6 +15,6 @@ func CheckKubefirstDir(home string) error {
 		return fmt.Errorf(errorMsg)
 	}
 
-	log.Printf("\".kubefirst\" file found: %s", k1sDir)
+	log.Printf("\".kubefirst\" directory found: %s", k1sDir)
 	return nil
 }

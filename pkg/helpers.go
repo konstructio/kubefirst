@@ -55,8 +55,8 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		}
 
 		botPublicKey := viper.GetString("botpublickey")
-		domainId := viper.GetString("aws.domainid")
-		hostedzonename := viper.GetString("aws.hostedzonename")
+		hostedZoneId := viper.GetString("aws.hostedzoneid")
+		hostedZoneName := viper.GetString("aws.hostedzonename")
 		bucketStateStore := viper.GetString("bucket.state-store.name")
 		bucketArgoArtifacts := viper.GetString("bucket.argo-artifacts.name")
 		bucketGitlabBackup := viper.GetString("bucket.gitlab-backup.name")
