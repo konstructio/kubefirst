@@ -22,20 +22,6 @@ const CreateBuckets = "Create Buckets"
 const Detokenization = "Detokenization"
 const SendTelemetry = "Send Telemetry"
 
-const TrackerStage20 = "Apply Base"
-
-//const GetAccountInfo = "1 - Set .flare initial values"
-//const CreateSSHKey = "1 - Load properties"
-//const TestHostedZoneLiveness = "4 - Create SSH Key Pair"
-//const TrackerStage4 = "5 - Load Templates"
-//const CloneAndDetokenizeMetaphorTemplate = "8 - Create Buckets"
-//const Detokenize1 = "9 - Detokenize"
-//const trackerStage5 = "6 - DownloadTools Tools"
-
-//const trackerStage21 = "1 - Temporary SCM Install"
-//const trackerStage22 = "2 - Argo/Final SCM Install"
-//const trackerStage23 = "3 - Final Setup"
-
 var (
 	pw                     progress.Writer
 	Trackers               map[string]*ActionTracker
