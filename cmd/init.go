@@ -46,7 +46,6 @@ to quickly create a Cobra application.`,
 		trackers[pkg.CloneAndDetokenizeMetaphorTemplate] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CloneAndDetokenizeMetaphorTemplate, 1)}
 		trackers[pkg.CreateSSHKey] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CreateSSHKey, 1)}
 		trackers[pkg.CreateBuckets] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CreateBuckets, 1)}
-		trackers[pkg.Detokenization] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.Detokenization, 1)}
 		trackers[pkg.SendTelemetry] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.SendTelemetry, 1)}
 		infoCmd.Run(cmd, args)
 		hostedZoneName, _ := cmd.Flags().GetString("hosted-zone-name")
@@ -159,13 +158,13 @@ to quickly create a Cobra application.`,
 		log.Println("clone and detokenization of metaphor-template repository complete")
 		trackers[pkg.CloneAndDetokenizeMetaphorTemplate].Tracker.Increment(int64(1))
 
-		//! tracker 6
+		//! tracker 7
 		log.Println("creating an ssh key pair for your new cloud infrastructure")
 		pkg.CreateSshKeyPair()
 		log.Println("ssh key pair creation complete")
 		trackers[pkg.CreateSSHKey].Tracker.Increment(1)
 
-		//! tracker 7
+		//! tracker 8
 		//* should we consider going down to a single bucket
 		//* for state and artifacts on open source?
 		//* hitting a bucket limit on an install might deter someone
@@ -174,10 +173,10 @@ to quickly create a Cobra application.`,
 		trackers[pkg.CreateBuckets].Tracker.Increment(1)
 		log.Println("BucketRand() complete")
 
+		//! tracker 9
 		log.Println("calling Detokenize()")
 		pkg.Detokenize(fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath))
 		log.Println("Detokenize() complete")
-		trackers[pkg.Detokenization].Tracker.Increment(1)
 
 		metricName = "kubefirst.init.completed"
 
@@ -189,7 +188,7 @@ to quickly create a Cobra application.`,
 
 		viper.WriteConfig()
 
-		//! tracker 8
+		//! tracker 10
 		trackers[pkg.SendTelemetry].Tracker.Increment(1)
 		time.Sleep(time.Millisecond * 100)
 	},

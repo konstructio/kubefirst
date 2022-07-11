@@ -276,27 +276,23 @@ to quickly create a Cobra application.`,
 				// refactor: sounds like a new functions, should PushGitOpsToGitLab be renamed/update signature?
 
 				gitlab.PushGitRepo(config, "gitlab", "gitops") // todo: need to handle if this was already pushed, errors on failure)
-				gitlab.PushGitOpsToGitLab(dryRun)
+				// todo: keep one of the two git push functions, they're similar, but not exactly the same
+				//gitlab.PushGitOpsToGitLab(dryRun)
+
+				log.Println("pushing metaphor repo to origin gitlab")
+				gitlab.PushGitRepo(config, "gitlab", "metaphor")
+				// todo: keep one of the two git push functions, they're similar, but not exactly the same
+				//gitlab.PushGitOpsToGitLab(dryRun)
+				Trackers[trackerStage23].Tracker.Increment(int64(1))
 
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
 				gitlab.ChangeRegistryToGitLab(dryRun)
 				Trackers[trackerStage22].Tracker.Increment(int64(1))
 
-				// refactor: should this be removed?
-				gitlab.HydrateGitlabMetaphorRepo(dryRun)
-
 				Trackers[trackerStage23].Tracker.Increment(int64(1))
 
 				// todo triage / force apply the contents adjusting
 				// todo kind: Application .repoURL:
-
-				// refactor: should this be deleted?
-				//token := argocd.GetArgocdAuthToken(dryRun)
-				//argocd.SyncArgocdApplication(dryRun, "argo-components", token)
-				//argocd.SyncArgocdApplication(dryRun, "gitlab-runner-components", token)
-				//argocd.SyncArgocdApplication(dryRun, "gitlab-runner", token)
-				//argocd.SyncArgocdApplication(dryRun, "atlantis-components", token)
-				//argocd.SyncArgocdApplication(dryRun, "chartmuseum-components", token)
 			}
 		}
 

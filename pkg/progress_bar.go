@@ -19,7 +19,6 @@ const CloneAndDetokenizeGitOpsTemplate = "Clone and Detokenize (GitOps)"
 const CloneAndDetokenizeMetaphorTemplate = "Clone and Detokenize (Metaphor)"
 const CreateSSHKey = "Create SSH keys"
 const CreateBuckets = "Create Buckets"
-const Detokenization = "Detokenization"
 const SendTelemetry = "Send Telemetry"
 
 var (
