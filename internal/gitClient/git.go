@@ -31,7 +31,7 @@ func CloneGitOpsRepo() {
 		SingleBranch:  true,
 	})
 	if err != nil {
-		log.Panicf("error cloning gitops-template repository from github, error is: %s", err)
+		log.Panicf("error cloning gitops-template repository from github, error is:  %s", err)
 	}
 
 	log.Println("downloaded gitops repo from template to directory", config.HomePath, "/.kubefirst/gitops")
