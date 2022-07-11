@@ -2,19 +2,19 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
-	ssh2 "golang.org/x/crypto/ssh"
-	"github.com/go-git/go-git/v5"
-	gitConfig "github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"path/filepath"
 	"strings"
-	"github.com/spf13/viper"
-	"io/ioutil"
 	"time"
 
-
+	"github.com/go-git/go-git/v5"
+	gitConfig "github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/spf13/viper"
+	ssh2 "golang.org/x/crypto/ssh"
 )
 
 func cloneGitOpsRepo() {
@@ -22,10 +22,13 @@ func cloneGitOpsRepo() {
 	url := "https://github.com/kubefirst/gitops-template"
 	directory := fmt.Sprintf("%s/.kubefirst/gitops", home)
 
-	log.Println("git clone", url, directory)
+	log.Println("git clone", url, directory, versionGitOps)
 
 	_, err := git.PlainClone(directory, false, &git.CloneOptions{
 		URL: url,
+		//ReferenceName: plumbing.NewBranchReferenceName("fix/argo-role-conflict-name"),
+		ReferenceName: plumbing.NewBranchReferenceName(versionGitOps),
+		SingleBranch:  true,
 	})
 	if err != nil {
 		log.Panicf("reror cloning gitops-template repository from github %s", err)
@@ -78,7 +81,6 @@ func pushGitopsToSoftServe() {
 	}
 
 }
-
 
 func detokenize(path string) {
 
@@ -134,6 +136,7 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		adminEmail := viper.GetString("adminemail")
 		awsAccountId := viper.GetString("aws.accountid")
 		kmsKeyId := viper.GetString("vault.kmskeyid")
+		clusterName := viper.GetString("clustername")
 
 		newContents = strings.Replace(newContents, "<SOFT_SERVE_INITIAL_ADMIN_PUBLIC_KEY>", strings.TrimSpace(botPublicKey), -1)
 		newContents = strings.Replace(newContents, "<TF_STATE_BUCKET>", bucketStateStore, -1)
@@ -145,6 +148,7 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<AWS_DEFAULT_REGION>", region, -1)
 		newContents = strings.Replace(newContents, "<EMAIL_ADDRESS>", adminEmail, -1)
 		newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
+		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", clusterName, -1)
 		if kmsKeyId != "" {
 			newContents = strings.Replace(newContents, "<KMS_KEY_ID>", kmsKeyId, -1)
 		}

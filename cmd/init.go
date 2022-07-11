@@ -10,10 +10,11 @@ import (
 	"log"
 	"strings"
 	"time"
+
+	"github.com/kubefirst/nebulous/pkg/flare"
+	gitlabSsh "github.com/kubefirst/nebulous/pkg/ssh"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/kubefirst/nebulous/pkg/flare"
-	gitlabSsh "github.com/kubefirst/nebulous/pkg/ssh"	
 )
 
 var Trackers map[string]*flare.ActionTracker
@@ -54,6 +55,10 @@ to quickly create a Cobra application.`,
 		Trackers[trackerStage8] = &flare.ActionTracker{flare.CreateTracker(trackerStage8, int64(1))}
 		Trackers[trackerStage9] = &flare.ActionTracker{flare.CreateTracker(trackerStage9, int64(1))}
 		infoCmd.Run(cmd, args)
+
+		log.Println("clusterName:", clusterName)
+		viper.Set("clusterName", clusterName)
+
 		hostedZoneName, _ := cmd.Flags().GetString("hosted-zone-name")
 		metricName := "kubefirst.init.started"
 		metricDomain := hostedZoneName
@@ -63,7 +68,6 @@ to quickly create a Cobra application.`,
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
 
-		
 		// todo need to check flags and create config
 
 		// hosted zone name:
@@ -103,6 +107,11 @@ to quickly create a Cobra application.`,
 			testHostedZoneLiveness(hostedZoneName, hostedZoneId)
 		}
 		Trackers[trackerStage2].Tracker.Increment(int64(1))
+
+		// version-gitops
+		// version-gitops used on git clone process, internal and external repos
+		viper.Set("version-gitops", versionGitOps)
+		log.Println("version-gitops", versionGitOps)
 
 		log.Println("calling createSshKeyPair() ")
 		createSshKeyPair()
@@ -163,12 +172,13 @@ func init() {
 	log.SetPrefix("LOG: ")
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
 
+	initCmd.PersistentFlags().StringVarP(&clusterName, "cluster-name", "n", "k1st", "the cluster name, used to identify resources on cloud provider")
+	initCmd.PersistentFlags().StringVarP(&versionGitOps, "version-gitops", "b", "main", "version/branch used on git clone")
+
 	initCmd.PersistentFlags().BoolVarP(&dryrunMode, "dry-run", "s", false, "set to dry-run mode, no changes done on cloud provider selected")
 	log.Println("init started")
 
 }
-
-
 
 func createSshKeyPair() {
 	publicKey := viper.GetString("botpublickey")
@@ -227,5 +237,3 @@ configs:
 		log.Panicf("error: could not write argocd-init-values.yaml %s", err)
 	}
 }
-
-
