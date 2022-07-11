@@ -22,6 +22,14 @@ const TrackerStage7 = "8 - Create Buckets"
 const TrackerStage8 = "9 - Detokenize"
 const TrackerStage9 = "10 - Send Telemetry"
 
+//const trackerStage5 = "6 - DownloadTools Tools"
+
+const TrackerStage20 = "0 - Apply Base"
+
+//const trackerStage21 = "1 - Temporary SCM Install"
+//const trackerStage22 = "2 - Argo/Final SCM Install"
+//const trackerStage23 = "3 - Final Setup"
+
 var (
 	pw                     progress.Writer
 	Trackers               map[string]*ActionTracker

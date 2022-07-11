@@ -45,7 +45,7 @@ to quickly create a Cobra application.`,
 		trackers[pkg.TrackerStage4] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage4, 1)}
 		trackers[pkg.TrackerStage5] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage5, 3)}
 		trackers[pkg.TrackerStage6] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage6, 1)}
-		trackers[pkg.TrackerStage7] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage7, 4)}
+		trackers[pkg.TrackerStage7] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage7, 3)}
 		trackers[pkg.TrackerStage8] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage8, 1)}
 		trackers[pkg.TrackerStage9] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage9, 1)}
 		infoCmd.Run(cmd, args)
@@ -56,7 +56,7 @@ to quickly create a Cobra application.`,
 		if !dryRun {
 			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
-			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
+			log.Printf("[#99999] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
 
 		// todo need to check flags and create config
@@ -110,10 +110,12 @@ to quickly create a Cobra application.`,
 		trackers[pkg.TrackerStage4].Tracker.Increment(1)
 
 		log.Println("calling download()")
+		trackers[pkg.TrackerStage5].Tracker.Increment(1)
 		err = downloadManager.DownloadTools(config, trackers)
 		if err != nil {
 			log.Panic(err)
 		}
+		trackers[pkg.TrackerStage5].Tracker.Increment(1)
 
 		log.Println("download() complete")
 
@@ -123,7 +125,9 @@ to quickly create a Cobra application.`,
 		trackers[pkg.TrackerStage6].Tracker.Increment(1)
 
 		log.Println("calling BucketRand()")
-		aws.BucketRand(dryRun)
+		trackers[pkg.TrackerStage7].Tracker.Increment(1)
+		aws.BucketRand(dryRun, trackers)
+		trackers[pkg.TrackerStage7].Tracker.Increment(1)
 		log.Println("BucketRand() complete")
 
 		log.Println("calling Detokenize()")

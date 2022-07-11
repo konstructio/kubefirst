@@ -10,6 +10,7 @@ import (
 
 // SendTelemetry post telemetry data
 func SendTelemetry(domain, metricName string) {
+	log.Println("SendTelemetry (working...)")
 
 	url := "https://metaphor-go-production.kubefirst.io/telemetry"
 	method := "POST"
@@ -35,4 +36,6 @@ func SendTelemetry(domain, metricName string) {
 	body, err := ioutil.ReadAll(res.Body)
 
 	log.Println(string(body))
+
+	log.Println("SendTelemetry (done)")
 }

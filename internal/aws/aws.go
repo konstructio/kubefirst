@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/cip8/autoname"
+	"github.com/kubefirst/nebulous/pkg"
 	"github.com/spf13/viper"
 	"log"
 	"net"
@@ -21,7 +22,7 @@ import (
 	"time"
 )
 
-func BucketRand(dryRun bool) {
+func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
 
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(viper.GetString("aws.region"))},
@@ -35,6 +36,8 @@ func BucketRand(dryRun bool) {
 
 	randomName := strings.ReplaceAll(autoname.Generate(), "_", "-")
 	viper.Set("bucket.rand", randomName)
+
+	trackers[pkg.TrackerStage7].Tracker.Increment(int64(1))
 
 	buckets := strings.Fields("state-store argo-artifacts gitlab-backup chartmuseum")
 	for _, bucket := range buckets {
@@ -71,7 +74,6 @@ func BucketRand(dryRun bool) {
 			viper.WriteConfig()
 		}
 		log.Printf("bucket %s exists", viper.GetString(fmt.Sprintf("bucket.%s.name", bucket)))
-		//Trackers[trackerStage7].Tracker.Increment(int64(1))
 	}
 }
 
@@ -217,6 +219,8 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 
 func GetDNSInfo(hostedZoneName string) string {
 
+	log.Println("GetDNSInfo (working...)")
+
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Println("failed to load configuration, error:", err)
@@ -241,6 +245,7 @@ func GetDNSInfo(hostedZoneName string) string {
 			viper.WriteConfig()
 		}
 	}
+	log.Println("GetDNSInfo (done)")
 	return zoneId
 
 }

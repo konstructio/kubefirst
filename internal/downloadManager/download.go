@@ -56,12 +56,6 @@ func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracke
 		log.Panicf("failed to call kubectlVersionCmd.Run(): %v", err)
 	}
 
-	const trackerStage20 = "0 - Apply Base"
-	const trackerStage5 = "6 - DownloadTools Tools"
-
-	trackers[trackerStage20] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(trackerStage20, 1)}
-	trackers[trackerStage5].Tracker.Increment(1)
-
 	// todo: adopt latest helmVersion := "v3.9.0"
 	terraformVersion := config.TerraformVersion
 
@@ -93,7 +87,7 @@ func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracke
 		return err
 	}
 
-	trackers[trackerStage5].Tracker.Increment(int64(1))
+	trackers[pkg.TrackerStage5].Tracker.Increment(int64(1))
 
 	helmVersion := config.HelmVersion
 	helmDownloadUrl := fmt.Sprintf(
@@ -137,7 +131,6 @@ func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracke
 	if errHelm != nil {
 		log.Panicf("error executing helm version command: %v", err)
 	}
-	trackers[trackerStage5].Tracker.Increment(int64(1))
 
 	return nil
 }
