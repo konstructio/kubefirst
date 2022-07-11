@@ -2,12 +2,13 @@ package pkg
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/spf13/viper"
 )
 
 func Detokenize(path string) {
@@ -64,6 +65,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		adminEmail := viper.GetString("adminemail")
 		awsAccountId := viper.GetString("aws.accountid")
 		kmsKeyId := viper.GetString("vault.kmskeyid")
+		clusterName := viper.GetString("cluster-name")
 
 		newContents = strings.Replace(newContents, "<SOFT_SERVE_INITIAL_ADMIN_PUBLIC_KEY>", strings.TrimSpace(botPublicKey), -1)
 		newContents = strings.Replace(newContents, "<TF_STATE_BUCKET>", bucketStateStore, -1)
@@ -78,6 +80,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		if kmsKeyId != "" {
 			newContents = strings.Replace(newContents, "<KMS_KEY_ID>", kmsKeyId, -1)
 		}
+		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", clusterName, -1)
 
 		if viper.GetBool("create.terraformapplied.gitlab") {
 			newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_NAME>", hostedzonename, -1)

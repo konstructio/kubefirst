@@ -2,14 +2,17 @@ package gitClient
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/kubefirst/nebulous/configs"
 	"github.com/kubefirst/nebulous/pkg"
+	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
-	"log"
-	"time"
 )
 
 func CloneGitOpsRepo() {
@@ -18,10 +21,14 @@ func CloneGitOpsRepo() {
 	url := "https://github.com/kubefirst/gitops-template"
 	directory := fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath)
 
-	log.Println("gitClient clone", url, directory)
+	versionGitOps := viper.GetString("version-gitops")
+
+	log.Println("git clone -b ", versionGitOps, url, directory)
 
 	_, err := git.PlainClone(directory, false, &git.CloneOptions{
-		URL: url,
+		URL:           url,
+		ReferenceName: plumbing.NewBranchReferenceName(versionGitOps),
+		SingleBranch:  true,
 	})
 	if err != nil {
 		log.Panicf("error cloning gitops-template repository from github, error is: %s", err)
