@@ -2,17 +2,19 @@ package softserve
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	ssh2 "golang.org/x/crypto/ssh"
-	"io/ioutil"
-	"log"
-	"strings"
-	"time"
 )
 
 func CreateSoftServe(dryRun bool, kubeconfigPath string) {
@@ -110,9 +112,12 @@ func configureSoftServe() {
 		},
 	})
 
+	upstreamReference := plumbing.ReferenceName("refs/remote/main")
+	referenceList := append([]config.RefSpec{}, config.RefSpec(upstreamReference))
 	err = repo.Push(&git.PushOptions{
 		RemoteName: "origin",
 		Auth:       auth,
+		RefSpecs:   referenceList,
 	})
 	if err != nil {
 		log.Panicf("error pushing to remote", err)
