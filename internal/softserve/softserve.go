@@ -1,73 +1,61 @@
-package cmd
+package softserve
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"strings"
-	"github.com/spf13/viper"
-	"os/exec"
-	"syscall"
-	"time"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/nebulous/internal/gitlab"
+	"github.com/kubefirst/nebulous/pkg"
+	"github.com/spf13/viper"
 	ssh2 "golang.org/x/crypto/ssh"
 	"io/ioutil"
+	"log"
+	"strings"
+	"time"
 )
 
-func createSoftServe(kubeconfigPath string) {
+func CreateSoftServe(dryRun bool, kubeconfigPath string) {
+	config := configs.ReadConfig()
 	if !viper.GetBool("create.softserve.create") {
-		log.Println("Executing createSoftServe")
-		if dryrunMode {
+		log.Println("creating soft-serve")
+		if dryRun {
 			log.Printf("[#99] Dry-run mode, createSoftServe skipped.")
 			return
 		}
-		toolsDir := fmt.Sprintf("%s/.kubefirst/tools", home)
 
-		err := os.Mkdir(toolsDir, 0777)
-		if err != nil {
-			log.Println("error creating directory %s", toolsDir, err)
-		}
-
-		// create soft-serve stateful set
-		softServePath := fmt.Sprintf("%s/.kubefirst/gitops/components/soft-serve/manifests.yaml", home)
-		softServeApplyOut, softServeApplyErr,errSoftServeApply := execShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "apply", "-f", softServePath, "--wait")
-		log.Printf("Result:\n\t%s\n\t%s\n",softServeApplyOut,softServeApplyErr)	
+		softServePath := fmt.Sprintf("%s/.kubefirst/gitops/components/soft-serve/manifests.yaml", config.HomePath)
+		softServeApplyOut, softServeApplyErr, errSoftServeApply := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "apply", "-f", softServePath, "--wait")
+		log.Printf("Result:\n\t%s\n\t%s\n", softServeApplyOut, softServeApplyErr)
 		if errSoftServeApply != nil {
-			log.Panicf("failed to call kubectlCreateSoftServeCmd.Run(): %v", err)
-		}	
+			log.Panicf("error: failed to apply soft-serve to the cluster %s", errSoftServeApply)
+		}
 
 		viper.Set("create.softserve.create", true)
 		viper.WriteConfig()
-		log.Println("waiting for soft-serve installation to complete...")
-		time.Sleep(60 * time.Second)
-		//TODO: Update mechanism of waiting
+
 	} else {
 		log.Println("Skipping: createSoftServe")
 	}
 
 }
 
-func configureSoftserveAndPush(){
+func ConfigureSoftServeAndPush(dryRun bool) {
+	config := configs.ReadConfig()
+
 	configureAndPushFlag := viper.GetBool("create.softserve.configure")
-	if configureAndPushFlag != true {
+
+	if !configureAndPushFlag {
 		log.Println("Executing configureSoftserveAndPush")
-		if dryrunMode {
+		if dryRun {
 			log.Printf("[#99] Dry-run mode, configureSoftserveAndPush skipped.")
 			return
-		}		
-		kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")
-		kPortForward.Stdout = os.Stdout
-		kPortForward.Stderr = os.Stderr
-		err := kPortForward.Start()
-		defer kPortForward.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Panicf("error: failed to port-forward to soft-serve %s", err)
 		}
-		time.Sleep(20 * time.Second)
 
 		configureSoftServe()
-		pushGitopsToSoftServe()
+		// refactor: update it
+		gitlab.PushGitRepo(config, "soft", "gitops")
+
 		viper.Set("create.softserve.configure", true)
 		viper.WriteConfig()
 		time.Sleep(30 * time.Second)
@@ -77,12 +65,14 @@ func configureSoftserveAndPush(){
 }
 
 func configureSoftServe() {
+	config := configs.ReadConfig()
+
 	url := "ssh://127.0.0.1:8022/config"
-	directory := fmt.Sprintf("%s/.kubefirst/config", home)
+	directory := fmt.Sprintf("%s/.kubefirst/config", config.HomePath)
 
-	log.Println("git clone", url, directory)
+	log.Println("gitClient clone", url, directory)
 
-	auth, _ := publicKey()
+	auth, _ := pkg.PublicKey()
 
 	auth.HostKeyCallback = ssh2.InsecureIgnoreHostKey()
 
@@ -103,10 +93,10 @@ func configureSoftServe() {
 
 	err = ioutil.WriteFile(fmt.Sprintf("%s/config.yaml", directory), []byte(newFile), 0)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
-	println("re-wrote config.yaml", home, "/.kubefirst/config")
+	println("re-wrote config.yaml", config.HomePath, "/.kubefirst/config")
 
 	w, _ := repo.Worktree()
 
@@ -115,7 +105,7 @@ func configureSoftServe() {
 	w.Commit("updating soft-serve server config", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
-			Email: installerEmail,
+			Email: config.InstallerEmail,
 			When:  time.Now(),
 		},
 	})

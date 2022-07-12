@@ -5,9 +5,9 @@ go 1.17
 require (
 	github.com/aws/aws-sdk-go v1.44.23
 	github.com/aws/aws-sdk-go-v2/config v1.15.7
-	github.com/aws/aws-sdk-go-v2/service/eks v1.21.1
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.20.5
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.6
+	github.com/caarlos0/env/v6 v6.9.3
 	github.com/cip8/autoname v1.0.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2

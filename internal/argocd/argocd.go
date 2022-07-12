@@ -10,6 +10,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
+	"strings"
+	"time"
 )
 
 // kSyncArgocdApplication request ArgoCD to manual sync an application. Expected parameters are the ArgoCD application
@@ -111,4 +115,79 @@ func getArgoCDToken(username string, password string) (string, error) {
 	}
 
 	return token, nil
+}
+
+func GetArgocdAuthToken(dryRun bool) string {
+
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, GetArgocdAuthToken skipped.")
+		return "nothing"
+	}
+
+	time.Sleep(15 * time.Second)
+
+	url := fmt.Sprintf("%s/api/v1/session", viper.GetString("argocd.local.service"))
+
+	payload := strings.NewReader(fmt.Sprintf("{\n\t\"username\":\"admin\",\"password\":\"%s\"\n}", viper.GetString("argocd.admin.password")))
+
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	req, err := http.NewRequest("POST", url, payload)
+	if err != nil {
+		log.Fatal("error getting auth token from argocd ", err)
+	}
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			// N.B.: when used in production, also check for redirect loops
+			return nil
+		},
+	}
+
+	x := 3
+	for i := 0; i < x; i++ {
+		res, err := client.Do(req)
+		if err != nil {
+			log.Panic("error requesting auth token from argocd", err)
+		} else {
+			defer res.Body.Close()
+			body, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				log.Panic("error sending POST request to get argocd auth token :", err)
+			}
+
+			var dat map[string]interface{}
+
+			if err := json.Unmarshal(body, &dat); err != nil {
+				log.Panicf("error unmarshalling  %s", err)
+			}
+			token := dat["token"]
+			viper.Set("argocd.admin.apitoken", token)
+			viper.WriteConfig()
+
+			// todo clean this up later
+			return token.(string)
+		}
+	}
+	return ""
+}
+
+func SyncArgocdApplication(dryRun bool, applicationName, argocdAuthToken string) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, SyncArgocdApplication skipped.")
+		return
+	}
+
+	// todo need to replace this with a curl wrapper and see if it WORKS
+
+	url := fmt.Sprintf("https://localhost:8080/api/v1/applications/%s/sync", applicationName)
+	var outb bytes.Buffer
+
+	argoCdAppSync := exec.Command("curl", "-k", "-L", "-X", "POST", url, "-H", fmt.Sprintf("Authorization: Bearer %s", argocdAuthToken))
+	argoCdAppSync.Stdout = os.Stdout
+	argoCdAppSync.Stderr = os.Stderr
+	err := argoCdAppSync.Run()
+	log.Println("the value from the curl command to sync registry in argocd is:", outb.String())
+	if err != nil {
+		log.Panicf("error: curl appSync failed failed %s", err)
+	}
 }
