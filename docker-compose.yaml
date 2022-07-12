@@ -7,6 +7,8 @@ services:
     build:
       context: ./build
     container_name: kubefirst-dev
+    ports:
+      - "8080:8080" # ArgoCD
     volumes:
       - ./:/home/developer/kubefirst
     env_file:
