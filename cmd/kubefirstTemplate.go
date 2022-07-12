@@ -1,25 +1,84 @@
-package pkg
+package cmd
 
 import (
 	"fmt"
+	"github.com/kubefirst/nebulous/configs"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/go-git/go-git/v5"
+	gitConfig "github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/spf13/viper"
 )
 
-func Detokenize(path string) {
+func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName string) {
 
-	err := filepath.Walk(path, DetokenizeDirectory)
+	repoUrl := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)
+	directory := fmt.Sprintf("%s/.kubefirst/%s", config.HomePath, repoName)
+	log.Println("git clone", repoUrl, directory)
+
+	repo, err := git.PlainClone(directory, false, &git.CloneOptions{
+		URL: repoUrl,
+	})
 	if err != nil {
-		log.Panic(err)
+		log.Panicf("error cloning %s-template repository from github %s", repoName, err)
+	}
+	viper.Set(fmt.Sprintf("init.repos.%s.cloned", repoName), true)
+	viper.WriteConfig()
+
+	log.Printf("cloned %s-template repository to directory %s/.kubefirst/%s", repoName, config.HomePath, repoName)
+
+	log.Printf("detokenizing %s/.kubefirst/%s", config.HomePath, repoName)
+	detokenize(directory)
+	log.Printf("detokenization of %s/.kubefirst/%s complete", config.HomePath, repoName)
+
+	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", repoName), true)
+	viper.WriteConfig()
+
+	domain := viper.GetString("aws.hostedzonename")
+	log.Printf("creating git remote gitlab")
+	log.Println("git remote add gitlab at url ", fmt.Sprintf("https://gitlab.%s/kubefirst/%s.git", domain, repoName))
+	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
+		Name: "gitlab",
+		URLs: []string{fmt.Sprintf("https://gitlab.%s/kubefirst/%s.git", domain, repoName)},
+	})
+
+	if repoName == "gitops" {
+		log.Println("creating git remote ssh://127.0.0.1:8022/gitops")
+		_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
+			Name: "soft",
+			URLs: []string{"ssh://127.0.0.1:8022/gitops"},
+		})
+	}
+
+	w, _ := repo.Worktree()
+
+	log.Println(fmt.Sprintf("committing detokenized %s content", repoName))
+	w.Add(".")
+	w.Commit(fmt.Sprintf("committing detokenized %s content", repoName), &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "kubefirst-bot",
+			Email: "kubefirst-bot@kubefirst.com",
+			When:  time.Now(),
+		},
+	})
+	viper.WriteConfig()
+}
+
+func detokenize(path string) {
+
+	err := filepath.Walk(path, detokenizeDirectory)
+	if err != nil {
+		panic(err)
 	}
 }
 
-func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
+func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	if err != nil {
 		return err
 	}
@@ -28,22 +87,22 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		return nil //
 	}
 
-	if strings.Contains(path, ".gitClient") || strings.Contains(path, ".terraform") {
+	if strings.Contains(path, ".git/") || strings.Contains(path, ".terraform") {
 		return nil
 	}
 
 	matched, err := filepath.Match("*", fi.Name())
 
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 
 	if matched {
 		read, err := ioutil.ReadFile(path)
 		if err != nil {
-			log.Panic(err)
+			panic(err)
 		}
-		// todo should Detokenize be a switch statement based on a value found in viper?
+		// todo should detokenize be a switch statement based on a value found in viper?
 		gitlabConfigured := viper.GetBool("gitlab.keyuploaded")
 
 		newContents := ""
@@ -65,7 +124,6 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		adminEmail := viper.GetString("adminemail")
 		awsAccountId := viper.GetString("aws.accountid")
 		kmsKeyId := viper.GetString("vault.kmskeyid")
-		clusterName := viper.GetString("cluster-name")
 
 		newContents = strings.Replace(newContents, "<SOFT_SERVE_INITIAL_ADMIN_PUBLIC_KEY>", strings.TrimSpace(botPublicKey), -1)
 		newContents = strings.Replace(newContents, "<TF_STATE_BUCKET>", bucketStateStore, -1)
@@ -80,7 +138,6 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		if kmsKeyId != "" {
 			newContents = strings.Replace(newContents, "<KMS_KEY_ID>", kmsKeyId, -1)
 		}
-		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", clusterName, -1)
 
 		if viper.GetBool("create.terraformapplied.gitlab") {
 			newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_NAME>", hostedZoneName, -1)
@@ -90,7 +147,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 
 		err = ioutil.WriteFile(path, []byte(newContents), 0)
 		if err != nil {
-			log.Panic(err)
+			panic(err)
 		}
 
 	}

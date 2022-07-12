@@ -14,15 +14,10 @@ var cfgFile string
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "kubefirst",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
+	Short: "kubefirst management cluster installer base command",
+	Long: `kubefirst management cluster installer provisions an
+	open source application delivery platform in under an hour. 
+	checkout the docs at docs.kubefirst.com.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println(viper.Get("name")) //! print value coming from ~/.flare --> ~/.kubefirst
 	},

@@ -107,3 +107,18 @@ func GenerateKey() (string, string, error) {
 
 	return publicKey, privateKey, nil
 }
+
+func ModConfigYaml() {
+
+	file, err := ioutil.ReadFile("./config.yaml")
+	if err != nil {
+		log.Println("error reading file", err)
+	}
+
+	newFile := strings.Replace(string(file), "allow-keyless: false", "allow-keyless: true", -1)
+
+	err = ioutil.WriteFile("./config.yaml", []byte(newFile), 0)
+	if err != nil {
+		panic(err)
+	}
+}

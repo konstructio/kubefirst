@@ -37,7 +37,7 @@ func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
 	randomName := strings.ReplaceAll(autoname.Generate(), "_", "-")
 	viper.Set("bucket.rand", randomName)
 
-	trackers[pkg.TrackerStage7].Tracker.Increment(int64(1))
+	trackers[pkg.CloneAndDetokenizeMetaphorTemplate].Tracker.Increment(int64(1))
 
 	buckets := strings.Fields("state-store argo-artifacts gitlab-backup chartmuseum")
 	for _, bucket := range buckets {
@@ -234,19 +234,19 @@ func GetDNSInfo(hostedZoneName string) string {
 		log.Println("oh no error on call", err)
 	}
 
-	var zoneId string
+	var hostedZoneId string
 
 	for _, zone := range hostedZones.HostedZones {
 		if *zone.Name == fmt.Sprintf(`%s%s`, hostedZoneName, ".") {
-			zoneId = ReturnHostedZoneId(*zone.Id)
-			log.Printf(`found entry for user submitted domain %s, using hosted zone id %s`, hostedZoneName, zoneId)
+			hostedZoneId = ReturnHostedZoneId(*zone.Id)
+			log.Printf(`found entry for user submitted domain %s, using hosted zone id %s`, hostedZoneName, hostedZoneId)
 			viper.Set("aws.hostedzonename", hostedZoneName)
-			viper.Set("aws.domainid", zoneId)
+			viper.Set("aws.hostedzoneid", hostedZoneId)
 			viper.WriteConfig()
 		}
 	}
 	log.Println("GetDNSInfo (done)")
-	return zoneId
+	return hostedZoneId
 
 }
 

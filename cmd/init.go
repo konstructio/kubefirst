@@ -9,7 +9,6 @@ import (
 	"github.com/kubefirst/nebulous/configs"
 	"github.com/kubefirst/nebulous/internal/aws"
 	"github.com/kubefirst/nebulous/internal/downloadManager"
-	"github.com/kubefirst/nebulous/internal/gitClient"
 	"github.com/kubefirst/nebulous/internal/telemetry"
 	"github.com/kubefirst/nebulous/pkg"
 	"github.com/spf13/cobra"
@@ -19,7 +18,7 @@ import (
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "A brief description of your command",
+	Short: "initialize your local machine to execute `create`",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
@@ -39,16 +38,15 @@ to quickly create a Cobra application.`,
 
 		pkg.SetupProgress(10)
 		trackers := pkg.GetTrackers()
-		trackers[pkg.TrackerStage0] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage0, 1)}
-		trackers[pkg.TrackerStage1] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage1, 1)}
-		trackers[pkg.TrackerStage2] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage2, 1)}
-		trackers[pkg.TrackerStage3] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage3, 1)}
-		trackers[pkg.TrackerStage4] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage4, 1)}
-		trackers[pkg.TrackerStage5] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage5, 3)}
-		trackers[pkg.TrackerStage6] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage6, 1)}
-		trackers[pkg.TrackerStage7] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage7, 3)}
-		trackers[pkg.TrackerStage8] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage8, 1)}
-		trackers[pkg.TrackerStage9] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TrackerStage9, 1)}
+		trackers[pkg.DownloadDependencies] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.DownloadDependencies, 3)}
+		trackers[pkg.GetAccountInfo] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.GetAccountInfo, 1)}
+		trackers[pkg.GetDNSInfo] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.GetDNSInfo, 1)}
+		trackers[pkg.TestHostedZoneLiveness] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TestHostedZoneLiveness, 1)}
+		trackers[pkg.CloneAndDetokenizeGitOpsTemplate] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CloneAndDetokenizeGitOpsTemplate, 1)}
+		trackers[pkg.CloneAndDetokenizeMetaphorTemplate] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CloneAndDetokenizeMetaphorTemplate, 1)}
+		trackers[pkg.CreateSSHKey] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CreateSSHKey, 1)}
+		trackers[pkg.CreateBuckets] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CreateBuckets, 1)}
+		trackers[pkg.SendTelemetry] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.SendTelemetry, 1)}
 		infoCmd.Run(cmd, args)
 		hostedZoneName, _ := cmd.Flags().GetString("hosted-zone-name")
 		metricName := "kubefirst.init.started"
@@ -57,7 +55,7 @@ to quickly create a Cobra application.`,
 		if !dryRun {
 			telemetry.SendTelemetry(metricDomain, metricName)
 		} else {
-			log.Printf("[#99999] Dry-run mode, telemetry skipped:  %s", metricName)
+			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
 
 		// todo need to check flags and create config
@@ -70,7 +68,9 @@ to quickly create a Cobra application.`,
 		}
 		log.Println("hostedZoneName:", hostedZoneName)
 		viper.Set("aws.hostedzonename", hostedZoneName)
-		viper.WriteConfig()
+		viper.Set("argocd.local.service", "http://localhost:8080")
+		viper.Set("gitlab.local.service", "http://localhost:8888")
+		viper.Set("vault.local.service", "http://localhost:8200")
 		// admin email
 		// used for letsencrypt notifications and the gitlab root account
 		adminEmail, _ := cmd.Flags().GetString("admin-email")
@@ -83,15 +83,7 @@ to quickly create a Cobra application.`,
 		viper.Set("aws.region", region)
 		log.Println("region:", region)
 
-		// hosted zone id
-		// so we don't have to keep looking it up from the domain name to use it
-		hostedZoneId := aws.GetDNSInfo(hostedZoneName)
-		// viper values set in above function
-		log.Println("hostedZoneId:", hostedZoneId)
-		trackers[pkg.TrackerStage0].Tracker.Increment(1)
-		trackers[pkg.TrackerStage1].Tracker.Increment(1)
-
-		//cluster name
+		// cluster name
 		clusterName, err := cmd.Flags().GetString("cluster-name")
 		if err != nil {
 			log.Panic(err)
@@ -99,7 +91,7 @@ to quickly create a Cobra application.`,
 		viper.Set("cluster-name", clusterName)
 		log.Println("cluster-name:", clusterName)
 
-		//version-gitops
+		// version-gitops
 		versionGitOps, err := cmd.Flags().GetString("version-gitops")
 		if err != nil {
 			log.Panic(err)
@@ -107,6 +99,33 @@ to quickly create a Cobra application.`,
 		viper.Set("version-gitops", versionGitOps)
 		log.Println("version-gitops:", versionGitOps)
 
+		viper.WriteConfig()
+
+		//! tracker 0
+		log.Println("installing kubefirst dependencies")
+		trackers[pkg.DownloadDependencies].Tracker.Increment(1)
+		err = downloadManager.DownloadTools(config, trackers)
+		if err != nil {
+			log.Panic(err)
+		}
+		log.Println("dependency installation complete")
+		trackers[pkg.DownloadDependencies].Tracker.Increment(1)
+
+		//! tracker 1
+		log.Println("getting aws account information")
+		aws.GetAccountInfo()
+		log.Printf("aws account id: %s\naws user arn: %s", viper.GetString("aws.accountid"), viper.GetString("aws.userarn"))
+		trackers[pkg.GetAccountInfo].Tracker.Increment(1)
+
+		//! tracker 2
+		// hosted zone id
+		// So we don't have to keep looking it up from the domain name to use it
+		hostedZoneId := aws.GetDNSInfo(hostedZoneName)
+		// viper values set in above function
+		log.Println("hostedZoneId:", hostedZoneId)
+		trackers[pkg.GetDNSInfo].Tracker.Increment(1)
+
+		//! tracker 3
 		// todo: this doesn't default to testing the dns check
 		skipHostedZoneCheck := viper.GetBool("init.hostedzonecheck.enabled")
 		if !skipHostedZoneCheck {
@@ -114,43 +133,50 @@ to quickly create a Cobra application.`,
 		} else {
 			aws.TestHostedZoneLiveness(dryRun, hostedZoneName, hostedZoneId)
 		}
-		trackers[pkg.TrackerStage2].Tracker.Increment(1)
+		trackers[pkg.TestHostedZoneLiveness].Tracker.Increment(1)
 
-		log.Println("calling CreateSshKeyPair() ")
-		pkg.CreateSshKeyPair()
-		log.Println("CreateSshKeyPair() complete")
-		trackers[pkg.TrackerStage3].Tracker.Increment(1)
-
-		log.Println("calling cloneGitOpsRepo()")
-		gitClient.CloneGitOpsRepo()
-		log.Println("cloneGitOpsRepo() complete")
-		trackers[pkg.TrackerStage4].Tracker.Increment(1)
-
-		log.Println("calling download()")
-		trackers[pkg.TrackerStage5].Tracker.Increment(1)
-		err = downloadManager.DownloadTools(config, trackers)
-		if err != nil {
-			log.Panic(err)
+		//! tracker 4
+		// todo: remove it after successful dry-run test
+		//log.Println("calling cloneGitOpsRepo()")
+		//gitClient.CloneGitOpsRepo()
+		//log.Println("cloneGitOpsRepo() complete")
+		// refactor: start
+		// TODO: get the below line added as a legit flag, don't merge with any value except kubefirst
+		gitopsTemplateGithubOrgOverride := "kubefirst" // <-- discussion point
+		log.Printf("cloning and detokenizing the gitops-template repository")
+		if gitopsTemplateGithubOrgOverride != "" {
+			log.Printf("using --gitops-template-gh-org=%s", gitopsTemplateGithubOrgOverride)
 		}
-		trackers[pkg.TrackerStage5].Tracker.Increment(1)
 
-		log.Println("download() complete")
+		//! tracker 5
+		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops")
+		log.Println("clone and detokenization of gitops-template repository complete")
+		trackers[pkg.CloneAndDetokenizeGitOpsTemplate].Tracker.Increment(int64(1))
+		//! tracker 6
+		log.Printf("cloning and detokenizing the metaphor-template repository")
+		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor")
+		log.Println("clone and detokenization of metaphor-template repository complete")
+		trackers[pkg.CloneAndDetokenizeMetaphorTemplate].Tracker.Increment(int64(1))
 
-		log.Println("calling GetAccountInfo()")
-		aws.GetAccountInfo()
-		log.Println("GetAccountInfo() complete")
-		trackers[pkg.TrackerStage6].Tracker.Increment(1)
+		//! tracker 7
+		log.Println("creating an ssh key pair for your new cloud infrastructure")
+		pkg.CreateSshKeyPair()
+		log.Println("ssh key pair creation complete")
+		trackers[pkg.CreateSSHKey].Tracker.Increment(1)
 
-		log.Println("calling BucketRand()")
-		trackers[pkg.TrackerStage7].Tracker.Increment(1)
+		//! tracker 8
+		//* should we consider going down to a single bucket
+		//* for state and artifacts on open source?
+		//* hitting a bucket limit on an install might deter someone
+		log.Println("creating buckets for state and artifacts")
 		aws.BucketRand(dryRun, trackers)
-		trackers[pkg.TrackerStage7].Tracker.Increment(1)
+		trackers[pkg.CreateBuckets].Tracker.Increment(1)
 		log.Println("BucketRand() complete")
 
+		//! tracker 9
 		log.Println("calling Detokenize()")
 		pkg.Detokenize(fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath))
 		log.Println("Detokenize() complete")
-		trackers[pkg.TrackerStage8].Tracker.Increment(1)
 
 		metricName = "kubefirst.init.completed"
 
@@ -161,7 +187,9 @@ to quickly create a Cobra application.`,
 		}
 
 		viper.WriteConfig()
-		trackers[pkg.TrackerStage9].Tracker.Increment(1)
+
+		//! tracker 10
+		trackers[pkg.SendTelemetry].Tracker.Increment(1)
 		time.Sleep(time.Millisecond * 100)
 	},
 }
