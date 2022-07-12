@@ -9,7 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/kubefirst/configs"
 	"log"
 	"os"
 	"os/exec"

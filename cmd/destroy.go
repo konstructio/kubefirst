@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"github.com/kubefirst/nebulous/configs"
-	"github.com/kubefirst/nebulous/internal/aws"
-	"github.com/kubefirst/nebulous/internal/gitlab"
-	"github.com/kubefirst/nebulous/internal/k8s"
-	"github.com/kubefirst/nebulous/internal/terraform"
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/gitlab"
+	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
 	"log"
 	"os"

@@ -8,7 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kubefirst/nebulous/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/spf13/viper"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"

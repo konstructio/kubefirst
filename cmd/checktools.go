@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/kubefirst/nebulous/configs"
-	"github.com/kubefirst/nebulous/pkg"
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 )
 

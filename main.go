@@ -6,7 +6,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/kubefirst/nebulous/cmd"
+	"github.com/kubefirst/kubefirst/cmd"
 	"log"
 	"os"
 	"time"

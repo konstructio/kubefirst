@@ -2,7 +2,7 @@ package helm
 
 import (
 	"fmt"
-	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/viper"
 	"log"
 	"os"

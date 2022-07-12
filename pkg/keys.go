@@ -7,7 +7,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	goGitSsh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
-	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
