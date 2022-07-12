@@ -102,6 +102,7 @@ to quickly create a Cobra application.`,
 
 		//! tracker 0
 		log.Println("installing kubefirst dependencies")
+		trackers[pkg.DownloadDependencies].Tracker.Increment(1)
 		err = downloadManager.DownloadTools(config, trackers)
 		if err != nil {
 			log.Panic(err)
