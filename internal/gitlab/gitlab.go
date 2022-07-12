@@ -252,7 +252,7 @@ func ApplyGitlabTerraform(dryRun bool, directory string) {
 		//* AWS_SDK_LOAD_CONFIG=1
 		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 		os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
-		os.Setenv("AWS_PROFILE", "starter") // todo this is an issue
+		os.Setenv("AWS_PROFILE", config.AwsProfile)
 		// Prepare for terraform gitlab execution
 		os.Setenv("GITLAB_TOKEN", viper.GetString("gitlab.token"))
 		os.Setenv("GITLAB_BASE_URL", viper.GetString("gitlab.local.service"))

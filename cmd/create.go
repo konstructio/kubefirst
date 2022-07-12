@@ -253,6 +253,26 @@ to quickly create a Cobra application.`,
 			if !skipVault {
 
 				log.Println("waiting for vault unseal")
+				/**
+
+				 */
+
+				x = 50
+				for i := 0; i < x; i++ {
+					kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "pod", "-l", "vault-initialized=true", "-n", "vault")
+					kGetNamespace.Stdout = os.Stdout
+					kGetNamespace.Stderr = os.Stderr
+					err := kGetNamespace.Run()
+					if err != nil {
+						log.Println("Waiting vault to be born")
+						time.Sleep(10 * time.Second)
+					} else {
+						log.Println("a Pod was found, continuing")
+						time.Sleep(25 * time.Second)
+						break
+					}
+				}
+
 				waitForVaultUnseal(config)
 				log.Println("vault unseal condition met - continuing")
 
