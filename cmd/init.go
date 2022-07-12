@@ -9,7 +9,7 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
-	"github.com/kubefirst/kubefirst/internal/telemetry"
+	"github.com/kubefirst/kubefirst/internal/telemetry"	
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -149,12 +149,12 @@ to quickly create a Cobra application.`,
 		}
 
 		//! tracker 5
-		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops")
+		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops",viper.GetString("version-gitops"))
 		log.Println("clone and detokenization of gitops-template repository complete")
 		trackers[pkg.CloneAndDetokenizeGitOpsTemplate].Tracker.Increment(int64(1))
 		//! tracker 6
 		log.Printf("cloning and detokenizing the metaphor-template repository")
-		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor")
+		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor","main")
 		log.Println("clone and detokenization of metaphor-template repository complete")
 		trackers[pkg.CloneAndDetokenizeMetaphorTemplate].Tracker.Increment(int64(1))
 
