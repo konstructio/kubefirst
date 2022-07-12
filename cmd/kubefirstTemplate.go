@@ -9,21 +9,28 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/spf13/viper"
 )
 
-func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName string) {
+func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName string, branch string) {
+
+	if branch == "" {
+		branch = "main"
+	}
 
 	repoUrl := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)
 	directory := fmt.Sprintf("%s/.kubefirst/%s", config.HomePath, repoName)
 	log.Println("git clone", repoUrl, directory)
+	log.Println("git clone -b ", branch, repoUrl, directory)
 
 	repo, err := git.PlainClone(directory, false, &git.CloneOptions{
 		URL: repoUrl,
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		SingleBranch:  true,
 	})
 	if err != nil {
 		log.Panicf("error cloning %s-template repository from github %s", repoName, err)
