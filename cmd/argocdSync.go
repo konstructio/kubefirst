@@ -11,7 +11,7 @@ import (
 // argocdSyncCmd represents the argocdSync command
 var argocdSyncCmd = &cobra.Command{
 	Use:   "argocdSync",
-	Short: "A brief description of your command",
+	Short: "request ArgoCD to synchronize applications",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 

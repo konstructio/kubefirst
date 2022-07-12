@@ -12,7 +12,7 @@ func init() {
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version number for kubefirst-cli",
+	Short: "print the version number for kubefirst-cli",
 	Long:  `All software has versions. This is kubefirst's`,
 	Run: func(cmd *cobra.Command, args []string) {
 		config := configs.ReadConfig()

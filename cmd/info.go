@@ -11,7 +11,7 @@ import (
 // infoCmd represents the info command
 var infoCmd = &cobra.Command{
 	Use:   "info",
-	Short: "Provides general Kubefirst setup data",
+	Short: "provides general Kubefirst setup data",
 	Long:  `Provides machine data, files and folders paths`,
 	Run: func(cmd *cobra.Command, args []string) {
 
