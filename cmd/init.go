@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -103,7 +102,6 @@ to quickly create a Cobra application.`,
 
 		//! tracker 0
 		log.Println("installing kubefirst dependencies")
-		trackers[pkg.DownloadDependencies].Tracker.Increment(1)
 		err = downloadManager.DownloadTools(config, trackers)
 		if err != nil {
 			log.Panic(err)
@@ -136,35 +134,6 @@ to quickly create a Cobra application.`,
 		trackers[pkg.TestHostedZoneLiveness].Tracker.Increment(1)
 
 		//! tracker 4
-		// todo: remove it after successful dry-run test
-		//log.Println("calling cloneGitOpsRepo()")
-		//gitClient.CloneGitOpsRepo()
-		//log.Println("cloneGitOpsRepo() complete")
-		// refactor: start
-		// TODO: get the below line added as a legit flag, don't merge with any value except kubefirst
-		gitopsTemplateGithubOrgOverride := "kubefirst" // <-- discussion point
-		log.Printf("cloning and detokenizing the gitops-template repository")
-		if gitopsTemplateGithubOrgOverride != "" {
-			log.Printf("using --gitops-template-gh-org=%s", gitopsTemplateGithubOrgOverride)
-		}
-
-		//! tracker 5
-		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops")
-		log.Println("clone and detokenization of gitops-template repository complete")
-		trackers[pkg.CloneAndDetokenizeGitOpsTemplate].Tracker.Increment(int64(1))
-		//! tracker 6
-		log.Printf("cloning and detokenizing the metaphor-template repository")
-		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor")
-		log.Println("clone and detokenization of metaphor-template repository complete")
-		trackers[pkg.CloneAndDetokenizeMetaphorTemplate].Tracker.Increment(int64(1))
-
-		//! tracker 7
-		log.Println("creating an ssh key pair for your new cloud infrastructure")
-		pkg.CreateSshKeyPair()
-		log.Println("ssh key pair creation complete")
-		trackers[pkg.CreateSSHKey].Tracker.Increment(1)
-
-		//! tracker 8
 		//* should we consider going down to a single bucket
 		//* for state and artifacts on open source?
 		//* hitting a bucket limit on an install might deter someone
@@ -173,10 +142,28 @@ to quickly create a Cobra application.`,
 		trackers[pkg.CreateBuckets].Tracker.Increment(1)
 		log.Println("BucketRand() complete")
 
-		//! tracker 9
-		log.Println("calling Detokenize()")
-		pkg.Detokenize(fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath))
-		log.Println("Detokenize() complete")
+		//! tracker 5
+		log.Println("creating an ssh key pair for your new cloud infrastructure")
+		pkg.CreateSshKeyPair()
+		log.Println("ssh key pair creation complete")
+		trackers[pkg.CreateSSHKey].Tracker.Increment(1)
+
+		//! tracker 6
+		// TODO: get the below line added as a legit flag, don't merge with any value except kubefirst
+		gitopsTemplateGithubOrgOverride := "kubefirst" // <-- discussion point
+		log.Printf("cloning and detokenizing the gitops-template repository")
+		if gitopsTemplateGithubOrgOverride != "" {
+			log.Printf("using --gitops-template-gh-org=%s", gitopsTemplateGithubOrgOverride)
+		}
+		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops")
+		log.Println("clone and detokenization of gitops-template repository complete")
+		trackers[pkg.CloneAndDetokenizeGitOpsTemplate].Tracker.Increment(int64(1))
+
+		//! tracker 7
+		log.Printf("cloning and detokenizing the metaphor-template repository")
+		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor")
+		log.Println("clone and detokenization of metaphor-template repository complete")
+		trackers[pkg.CloneAndDetokenizeMetaphorTemplate].Tracker.Increment(int64(1))
 
 		metricName = "kubefirst.init.completed"
 
@@ -188,7 +175,7 @@ to quickly create a Cobra application.`,
 
 		viper.WriteConfig()
 
-		//! tracker 10
+		//! tracker 8
 		trackers[pkg.SendTelemetry].Tracker.Increment(1)
 		time.Sleep(time.Millisecond * 100)
 	},
