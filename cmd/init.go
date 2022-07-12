@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubefirst/nebulous/configs"
-	"github.com/kubefirst/nebulous/internal/aws"
-	"github.com/kubefirst/nebulous/internal/downloadManager"
-	"github.com/kubefirst/nebulous/internal/telemetry"
-	"github.com/kubefirst/nebulous/pkg"
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/downloadManager"
+	"github.com/kubefirst/kubefirst/internal/telemetry"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

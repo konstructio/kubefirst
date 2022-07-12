@@ -1,4 +1,4 @@
-module github.com/kubefirst/nebulous
+module github.com/kubefirst/kubefirst
 
 go 1.17
 

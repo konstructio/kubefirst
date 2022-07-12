@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/kubefirst/nebulous/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/argocd"
 	"log"
 
 	"github.com/spf13/cobra"

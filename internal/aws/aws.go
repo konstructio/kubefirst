@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/cip8/autoname"
-	"github.com/kubefirst/nebulous/pkg"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	"log"
 	"net"

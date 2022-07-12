@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"errors"
-	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log"

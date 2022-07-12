@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/kubefirst/nebulous/configs"
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/cobra"
 	"log"
 )

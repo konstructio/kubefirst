@@ -9,8 +9,8 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/kubefirst/nebulous/configs"
-	"github.com/kubefirst/nebulous/pkg"
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 )
