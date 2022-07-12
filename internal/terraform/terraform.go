@@ -34,14 +34,14 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		terraformInit.Stderr = os.Stderr
 		errInit := terraformInit.Run()
 		if errInit != nil {
-			log.Panic(fmt.Sprintf("error: terraform init failed %v", err))
+			log.Panic(fmt.Sprintf("error: terraform init failed %v", errInit))
 		}
 		terraformApply := exec.Command(config.TerraformPath, "apply", "-auto-approve")
 		terraformApply.Stdout = os.Stdout
 		terraformApply.Stderr = os.Stderr
 		errApply := terraformApply.Run()
 		if errApply != nil {
-			log.Panic(fmt.Sprintf("error: terraform init failed %v", err))
+			log.Panic(fmt.Sprintf("error: terraform init failed %v", errApply))
 		}
 		
 		var keyOut bytes.Buffer
@@ -50,7 +50,7 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		k.Stderr = os.Stderr
 		errKey := k.Run()
 		if errKey != nil {
-			log.Panicf("error: terraform apply failed %v", err)
+			log.Panicf("error: terraform apply failed %v", errKey)
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 		keyIdNoSpace := strings.TrimSpace(keyOut.String())
@@ -83,7 +83,7 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		terraformInit.Stderr = os.Stderr
 		errInit := terraformInit.Run()
 		if errInit != nil {
-			log.Panicf("failed to terraform init base %v", err)
+			log.Panicf("failed to terraform init base %v", errInit)
 		}
 
 		terraformDestroy := exec.Command(config.TerraformPath, "destroy", "-auto-approve")
@@ -91,7 +91,7 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		terraformDestroy.Stderr = os.Stderr
 		errDestroy := terraformDestroy.Run()
 		if errDestroy != nil {
-			log.Panicf("failed to terraform destroy base %v", err)
+			log.Panicf("failed to terraform destroy base %v", errDestroy)
 		}
 		viper.Set("destroy.terraformdestroy.base", true)
 		viper.WriteConfig()
