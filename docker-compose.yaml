@@ -9,6 +9,8 @@ services:
     container_name: kubefirst-dev
     ports:
       - "8080:8080" # ArgoCD
+      - "8888:8888" # GitLab
+      - "8200:8200" # Vault
     volumes:
       - ./:/home/developer/kubefirst
     env_file:
