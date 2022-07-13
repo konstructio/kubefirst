@@ -20,11 +20,11 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// todo delete the s3 buckets associated with the ~/.flare file
+		// todo delete the s3 buckets associated with the ~/.kubefirst file
 		// todo ask for user input to verify deletion?
 		config := configs.ReadConfig()
 
-		log.Println("removing $HOME/.kubefirst and $HOME/.flare")
+		log.Printf("removing %q and %q", config.KubeConfigPath, config.KubefirstConfigFilePath)
 		// todo ask for user input to verify?
 		err := os.RemoveAll(config.K1srtFolderPath)
 		if err != nil {
@@ -35,7 +35,7 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Panicf("unable to delete %q file, error is: ", err)
 		}
-		log.Println("removed $HOME/.kubefirst and $HOME/.flare")
+		log.Printf("removed %q and %q", config.KubeConfigPath, config.KubefirstConfigFilePath)
 
 		log.Printf("%q and %q folders were removed", config.K1srtFolderPath, config.KubectlClientPath)
 
@@ -47,7 +47,7 @@ to quickly create a Cobra application.`,
 			log.Panicf("error: could not create directory %q/tools - it must exist to continue %s", config.K1srtFolderPath, err)
 		}
 
-		log.Println("created $HOME/.kubefirst and $HOME/.kubefirst/tools - proceed to `kubefirst init`")
+		log.Printf("created %q and %q/tools - proceed to `kubefirst init`", config.KubefirstConfigFilePath, config.K1srtFolderPath)
 	},
 }
 
