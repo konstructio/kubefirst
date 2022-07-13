@@ -24,6 +24,8 @@ func ExecShellReturnStrings(command string, args ...string) (string, string, err
 	return outb.String(), errb.String(), err
 }
 
+// Exec shell actions supporting:
+// - Map of Vars loaded
 func ExecShellReturnStringsWithVars(osvars map[string]string, command string, args ...string) (string, string, error) {
 	
 	log.Printf("INFO: Running %s",command)
@@ -57,8 +59,16 @@ func ExecShellWithVars(osvars map[string]string, command string, args ...string)
 		log.Printf(" export %s = %s", k, v)
 	}
 	cmd := exec.Command(command, args...)
-	cmdReaderOut, _ := cmd.StdoutPipe()
-	cmdReaderErr, _ := cmd.StderrPipe()
+	cmdReaderOut, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Println(fmt.Sprintf("error: %s failed creating out pipe for: %v",command, err))
+		return err
+	}
+	cmdReaderErr, err := cmd.StderrPipe()
+	if err != nil {
+		log.Println(fmt.Sprintf("error: %s failed creating out pipe for:  %v",command, err))
+		return err
+	}
 
 	scannerOut := bufio.NewScanner(cmdReaderOut)
 	stdOut := make(chan string)
@@ -82,10 +92,10 @@ func ExecShellWithVars(osvars map[string]string, command string, args ...string)
 		doneErr <- true
 	}()
 
-	errApply := cmd.Run()
-	if errApply != nil {
-		log.Println(fmt.Sprintf("error: %s init failed %v",command, errApply))
-		return errApply
+	err = cmd.Run()
+	if err != nil {
+		log.Println(fmt.Sprintf("error: %s failed %v",command, err))
+		return err
 	} else {
 		close(stdOut)
 		close(stdErr)
