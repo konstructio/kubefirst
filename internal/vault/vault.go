@@ -112,14 +112,14 @@ func ConfigureVault(dryRun bool) {
 			log.Panicf("error: could not change directory to " + directory)
 		}
 
-		tfInitCmdErr := pkg.ExecShellWithVars(envs,config.TerraformPath, "init")
-		if tfInitCmdErr != nil {
-			log.Panicf("error: terraform init failed %s", tfInitCmdErr)
+		err = pkg.ExecShellWithVars(envs,config.TerraformPath, "init")
+		if err != nil {
+			log.Panicf("error: terraform init failed %s", err)
 		}
 
-		tfApplyCmdErr := pkg.ExecShellWithVars(envs,config.TerraformPath, "apply", "-target", "module.bootstrap", "-auto-approve")
-		if tfApplyCmdErr != nil {
-			log.Panicf("error: terraform apply failed %s", tfApplyCmdErr)
+		err = pkg.ExecShellWithVars(envs,config.TerraformPath, "apply", "-target", "module.bootstrap", "-auto-approve")
+		if err != nil {
+			log.Panicf("error: terraform apply failed %s", err)
 		}
 
 		viper.Set("create.terraformapplied.vault", true)

@@ -30,13 +30,13 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		if err != nil {
 			log.Panicf("error, directory does not exist - did you `kubefirst init`?: %s \nerror: %v", directory, err)
 		}
-		terraformInitErr := pkg.ExecShellWithVars(envs,config.TerraformPath, "init")
-		if terraformInitErr != nil {
-			log.Panic(fmt.Sprintf("error: terraform init failed %v", terraformInitErr))
+		err = pkg.ExecShellWithVars(envs,config.TerraformPath, "init")
+		if err != nil {
+			log.Panic(fmt.Sprintf("error: terraform init failed %v", err))
 		}
-		terraformApplyErr := pkg.ExecShellWithVars(envs,config.TerraformPath, "apply", "-auto-approve")
-		if terraformApplyErr != nil {
-			log.Panic(fmt.Sprintf("error: terraform init failed %v", terraformApplyErr))
+		err = pkg.ExecShellWithVars(envs,config.TerraformPath, "apply", "-auto-approve")
+		if err != nil {
+			log.Panic(fmt.Sprintf("error: terraform init failed %v", err))
 		}
 		
 		var keyOut bytes.Buffer
@@ -74,14 +74,14 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		envs["TF_VAR_aws_region"]= viper.GetString("aws.region")
 		envs["TF_VAR_hosted_zone_name"]=viper.GetString("aws.hostedzonename")
 
-		terraformInitErr := pkg.ExecShellWithVars(envs,config.TerraformPath, "init")
-		if terraformInitErr != nil {
-			log.Panicf("failed to terraform init base %v", terraformInitErr)
+		err = pkg.ExecShellWithVars(envs,config.TerraformPath, "init")
+		if err != nil {
+			log.Panicf("failed to terraform init base %v", err)
 		}
 
-		terraformDestroyErr := pkg.ExecShellWithVars(envs,config.TerraformPath, "destroy", "-auto-approve")
-		if terraformDestroyErr != nil {
-			log.Panicf("failed to terraform destroy base %v", terraformDestroyErr)
+		err = pkg.ExecShellWithVars(envs,config.TerraformPath, "destroy", "-auto-approve")
+		if err != nil {
+			log.Panicf("failed to terraform destroy base %v", err)
 		}
 		viper.Set("destroy.terraformdestroy.base", true)
 		viper.WriteConfig()
