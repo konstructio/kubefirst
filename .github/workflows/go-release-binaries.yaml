@@ -11,5 +11,20 @@ jobs:
     - uses: wangyoucao577/go-release-action@v1.29
       with:
         github_token: ${{ secrets.RELEASE_TOKEN }}
+        goos: darwin
+        goarch: amd64
+    - uses: wangyoucao577/go-release-action@v1.29
+      with:
+        github_token: ${{ secrets.RELEASE_TOKEN }}
+        goos: darwin
+        goarch: arm64
+    - uses: wangyoucao577/go-release-action@v1.29
+      with:
+        github_token: ${{ secrets.RELEASE_TOKEN }}
         goos: linux
         goarch: amd64
+    - uses: wangyoucao577/go-release-action@v1.29
+      with:
+        github_token: ${{ secrets.RELEASE_TOKEN }}
+        goos: linux
+        goarch: arm64
