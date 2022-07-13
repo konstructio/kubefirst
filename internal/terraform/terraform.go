@@ -1,15 +1,15 @@
 package terraform
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	"log"
 	"os"
-	"strings"
-	"bytes"
 	"os/exec"
+	"strings"
 )
 
 func ApplyBaseTerraform(dryRun bool, directory string) {
@@ -43,7 +43,7 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		if errApply != nil {
 			log.Panic(fmt.Sprintf("error: terraform init failed %v", errApply))
 		}
-		
+
 		var keyOut bytes.Buffer
 		k := exec.Command(config.TerraformPath, "output", "vault_unseal_kms_key")
 		k.Stdout = &keyOut
@@ -59,7 +59,7 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		viper.Set("vault.kmskeyid", keyId)
 		viper.Set("create.terraformapplied.base", true)
 		viper.WriteConfig()
-		pkg.Detokenize(fmt.Sprintf("%s/.kubefirst/gitops", config.HomePath))
+		pkg.Detokenize(fmt.Sprintf("%s/gitops", config.K1srtFolderPath))
 	} else {
 		log.Println("Skipping: ApplyBaseTerraform")
 	}
@@ -68,7 +68,7 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 func DestroyBaseTerraform(skipBaseTerraform bool) {
 	config := configs.ReadConfig()
 	if !skipBaseTerraform {
-		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", config.HomePath)
+		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1srtFolderPath)
 		err := os.Chdir(directory)
 		if err != nil {
 			log.Panicf("error: could not change directory to " + directory)

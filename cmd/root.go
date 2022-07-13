@@ -50,7 +50,7 @@ func init() {
 func initConfig() {
 	config := configs.ReadConfig()
 	if cfgFile == "" {
-		cfgFile = config.HomePath + "/.flare"
+		cfgFile = config.KubefirstConfigFilePath
 	}
 
 	if _, err := os.Stat(cfgFile); errors.Is(err, os.ErrNotExist) {

@@ -17,7 +17,7 @@ import (
 
 func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracker) error {
 
-	toolsDir := fmt.Sprintf("%s/.kubefirst/tools", config.HomePath)
+	toolsDir := fmt.Sprintf("%s/tools", config.K1srtFolderPath)
 
 	err := os.Mkdir(toolsDir, 0777)
 	if err != nil {
@@ -67,14 +67,14 @@ func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracke
 		config.LocalArchitecture,
 	)
 
-	terraformDownloadZipPath := fmt.Sprintf("%s/.kubefirst/tools/terraform.zip", config.HomePath)
+	terraformDownloadZipPath := fmt.Sprintf("%s/tools/terraform.zip", config.K1srtFolderPath)
 	err = downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
 	if err != nil {
 		log.Println("error reading terraform file")
 		return err
 	}
 
-	unzipDirectory := fmt.Sprintf("%s/.kubefirst/tools", config.HomePath)
+	unzipDirectory := fmt.Sprintf("%s/tools", config.K1srtFolderPath)
 	unzip(terraformDownloadZipPath, unzipDirectory)
 
 	err = os.Chmod(unzipDirectory, 0777)
@@ -98,7 +98,7 @@ func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracke
 		config.LocalArchitecture,
 	)
 
-	helmDownloadTarGzPath := fmt.Sprintf("%s/.kubefirst/tools/helm.tar.gz", config.HomePath)
+	helmDownloadTarGzPath := fmt.Sprintf("%s/tools/helm.tar.gz", config.K1srtFolderPath)
 	err = downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
 	if err != nil {
 		return err
