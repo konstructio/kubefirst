@@ -2,17 +2,18 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
+
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/viper"
 )
 
@@ -28,7 +29,7 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 	log.Println("git clone -b ", branch, repoUrl, directory)
 
 	repo, err := git.PlainClone(directory, false, &git.CloneOptions{
-		URL: repoUrl,
+		URL:           repoUrl,
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
 	})
@@ -120,6 +121,7 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(string(read), "https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops.git", "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", -1)
 		}
 
+		argocdOidcClientId := viper.GetString(("gitlab.oidc.argocd.applicationid"))
 		botPublicKey := viper.GetString("botpublickey")
 		hostedZoneId := viper.GetString("aws.hostedzoneid")
 		hostedZoneName := viper.GetString("aws.hostedzonename")
@@ -137,6 +139,7 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<ARGO_ARTIFACT_BUCKET>", bucketArgoArtifacts, -1)
 		newContents = strings.Replace(newContents, "<GITLAB_BACKUP_BUCKET>", bucketGitlabBackup, -1)
 		newContents = strings.Replace(newContents, "<CHARTMUSEUM_BUCKET>", bucketChartmuseum, -1)
+		newContents = strings.Replace(newContents, "<ARGOCD_OIDC_CLIENT_ID>", argocdOidcClientId, -1)
 		newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_ID>", hostedZoneId, -1)
 		newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_NAME>", hostedZoneName, -1)
 		newContents = strings.Replace(newContents, "<AWS_DEFAULT_REGION>", region, -1)
