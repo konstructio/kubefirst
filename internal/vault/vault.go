@@ -103,7 +103,7 @@ func ConfigureVault(dryRun bool) {
 		envs["TF_VAR_gitlab_token"]= viper.GetString("gitlab.token")
 		envs["TF_VAR_hosted_zone_id"]= viper.GetString("aws.domainid")
 		envs["TF_VAR_hosted_zone_name"]= viper.GetString("aws.hostedzonename")
-		envs["TF_VAR_vault_token"]=  viper.GetString("aws.hostedzonename")  //! todo: probably wrong value
+		envs["TF_VAR_vault_token"]=  vaultToken
 		envs["TF_VAR_vault_redirect_uris"]= "[\"will-be-patched-later\"]"
 
 		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/vault", config.HomePath)
