@@ -106,7 +106,7 @@ func ConfigureVault(dryRun bool) {
 		envs["TF_VAR_vault_token"]=  vaultToken
 		envs["TF_VAR_vault_redirect_uris"]= "[\"will-be-patched-later\"]"
 
-		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/vault", config.HomePath)
+		directory := fmt.Sprintf("%s/gitops/terraform/vault", config.K1srtFolderPath)
 		err = os.Chdir(directory)
 		if err != nil {
 			log.Panicf("error: could not change directory to " + directory)

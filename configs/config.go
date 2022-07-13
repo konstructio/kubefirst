@@ -21,12 +21,13 @@ type Config struct {
 	LocalArchitecture string
 	InstallerEmail    string
 
-	KubefirstLogPath  string `env:"KUBEFIRST_LOG_PATH" envDefault:"logs"`
-	HomePath          string
-	KubectlClientPath string
-	KubeConfigPath    string
-	HelmClientPath    string
-	TerraformPath     string
+	KubefirstLogPath        string `env:"KUBEFIRST_LOG_PATH" envDefault:"logs"`
+	KubefirstConfigFilePath string
+	K1srtFolderPath         string
+	KubectlClientPath       string
+	KubeConfigPath          string
+	HelmClientPath          string
+	TerraformPath           string
 
 	KubectlVersion   string `env:"KUBECTL_VERSION" envDefault:"v1.20.0"`
 	TerraformVersion string
@@ -44,19 +45,25 @@ func ReadConfig() *Config {
 		log.Panic(err)
 	}
 
-	var err error
-	config.HomePath, err = os.UserHomeDir()
+	homePath, err := os.UserHomeDir()
 	if err != nil {
 		log.Panic(err)
 	}
 
+	config.K1srtFolderPath = fmt.Sprintf("%s/.k1srt", homePath)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	config.KubefirstConfigFilePath = fmt.Sprintf("%s/.kubefirst", homePath)
+
 	config.LocalOs = runtime.GOOS
 	config.LocalArchitecture = runtime.GOARCH
 
-	config.KubectlClientPath = fmt.Sprintf("%s/.kubefirst/tools/kubectl", config.HomePath)
-	config.KubeConfigPath = fmt.Sprintf("%s/.kubefirst/gitops/terraform/base/kubeconfig_kubefirst", config.HomePath)
-	config.TerraformPath = fmt.Sprintf("%s/.kubefirst/tools/terraform", config.HomePath)
-	config.HelmClientPath = fmt.Sprintf("%s/.kubefirst/tools/helm", config.HomePath)
+	config.KubectlClientPath = fmt.Sprintf("%s/tools/kubectl", config.K1srtFolderPath)
+	config.KubeConfigPath = fmt.Sprintf("%s/gitops/terraform/base/kubeconfig_kubefirst", config.K1srtFolderPath)
+	config.TerraformPath = fmt.Sprintf("%s/tools/terraform", config.K1srtFolderPath)
+	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1srtFolderPath)
 
 	config.TerraformVersion = "1.0.11"
 

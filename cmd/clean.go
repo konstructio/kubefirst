@@ -20,24 +20,34 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// todo delete the s3 buckets associated with the ~/.flare file
+		// todo delete the s3 buckets associated with the ~/.kubefirst file
 		// todo ask for user input to verify deletion?
 		config := configs.ReadConfig()
 
-		log.Println("removing $HOME/.kubefirst and $HOME/.flare")
+		log.Printf("removing %q and %q", config.KubeConfigPath, config.KubefirstConfigFilePath)
 		// todo ask for user input to verify?
-		os.RemoveAll(fmt.Sprintf("%s/.kubefirst", config.HomePath))
-		os.Remove(fmt.Sprintf("%s/.flare", config.HomePath))
-		log.Println("removed $HOME/.kubefirst and $HOME/.flare")
-		if err := os.Mkdir(fmt.Sprintf("%s/.kubefirst", config.HomePath), os.ModePerm); err != nil {
-			log.Panicf("error: could not create directory $HOME/.kubefirst - it must exist to continue %s", err)
-		}
-		toolsDir := fmt.Sprintf("%s/.kubefirst/tools", config.HomePath)
-		if err := os.Mkdir(toolsDir, os.ModePerm); err != nil {
-			log.Panicf("error: could not create directory $HOME/.kubefirst/tools - it must exist to continue %s", err)
+		err := os.RemoveAll(config.K1srtFolderPath)
+		if err != nil {
+			log.Panicf("unable to delete %q folder, error is: %s", config.K1srtFolderPath, err)
 		}
 
-		log.Println("created $HOME/.kubefirst and $HOME/.kubefirst/tools - proceed to `kubefirst init`")
+		err = os.Remove(config.KubefirstConfigFilePath)
+		if err != nil {
+			log.Panicf("unable to delete %q file, error is: ", err)
+		}
+		log.Printf("removed %q and %q", config.KubeConfigPath, config.KubefirstConfigFilePath)
+
+		log.Printf("%q and %q folders were removed", config.K1srtFolderPath, config.KubectlClientPath)
+
+		if err := os.Mkdir(fmt.Sprintf("%s", config.K1srtFolderPath), os.ModePerm); err != nil {
+			log.Panicf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1srtFolderPath, err)
+		}
+		toolsDir := fmt.Sprintf("%s/tools", config.K1srtFolderPath)
+		if err := os.Mkdir(toolsDir, os.ModePerm); err != nil {
+			log.Panicf("error: could not create directory %q/tools - it must exist to continue %s", config.K1srtFolderPath, err)
+		}
+
+		log.Printf("created %q and %q/tools - proceed to `kubefirst init`", config.KubefirstConfigFilePath, config.K1srtFolderPath)
 	},
 }
 

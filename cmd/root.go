@@ -19,7 +19,7 @@ var rootCmd = &cobra.Command{
 	open source application delivery platform in under an hour. 
 	checkout the docs at docs.kubefirst.com.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Println(viper.Get("name")) //! print value coming from ~/.flare --> ~/.kubefirst
+		log.Println(viper.Get("name"))
 	},
 }
 
@@ -39,7 +39,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.flare)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.kubefirst)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -50,7 +50,7 @@ func init() {
 func initConfig() {
 	config := configs.ReadConfig()
 	if cfgFile == "" {
-		cfgFile = config.HomePath + "/.flare"
+		cfgFile = config.KubefirstConfigFilePath
 	}
 
 	if _, err := os.Stat(cfgFile); errors.Is(err, os.ErrNotExist) {
