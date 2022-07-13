@@ -265,12 +265,12 @@ func ApplyGitlabTerraform(dryRun bool, directory string) {
 		}
 		tfInitCmdErr := pkg.ExecShellWithVars(envs,config.TerraformPath, "init")
 		if tfInitCmdErr != nil {
-			log.Panicf("error: terraform init for gitlab failed %s", err)
+			log.Panicf("error: terraform init for gitlab failed %s", tfInitCmdErr)
 		}
 
 		tfApplyCmdErr := pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
 		if tfApplyCmdErr != nil {
-			log.Panicf("error: terraform apply for gitlab failed %s", err)
+			log.Panicf("error: terraform apply for gitlab failed %s", tfApplyCmdErr)
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 		viper.Set("create.terraformapplied.gitlab", true)
@@ -346,12 +346,12 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 	if !skipGitlabTerraform {
 		tfInitGitlabCmdErr := pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if tfInitGitlabCmdErr != nil {
-			log.Panicf("failed to terraform init gitlab %s", err)
+			log.Panicf("failed to terraform init gitlab %s", tfInitGitlabCmdErr)
 		}
 
 		tfDestroyGitlabCmdErr := pkg.ExecShellWithVars(envs,config.TerraformPath, "destroy", "-auto-approve")
 		if tfDestroyGitlabCmdErr != nil {
-			log.Panicf("failed to terraform destroy gitlab %s", err)
+			log.Panicf("failed to terraform destroy gitlab %s", tfDestroyGitlabCmdErr)
 		}
 
 		viper.Set("destroy.terraformdestroy.gitlab", true)
