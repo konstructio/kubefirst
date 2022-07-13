@@ -73,7 +73,7 @@ to quickly create a Cobra application.`,
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
 
-		directory := fmt.Sprintf("%s/.kubefirst/gitops/terraform/base", config.HomePath)
+		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1srtFolderPath)
 		terraform.ApplyBaseTerraform(dryRun, directory)
 		Trackers[trackerStage20].Tracker.Increment(int64(1))
 

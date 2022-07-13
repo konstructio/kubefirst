@@ -68,7 +68,7 @@ configs:
         %s
 `, strings.ReplaceAll(privateKey, "\n", "\n        ")))
 
-	err := ioutil.WriteFile(fmt.Sprintf("%s/.kubefirst/argocd-init-values.yaml", config.HomePath), argocdInitValuesYaml, 0644)
+	err := ioutil.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1srtFolderPath), argocdInitValuesYaml, 0644)
 	if err != nil {
 		log.Panicf("error: could not write argocd-init-values.yaml %s", err)
 	}

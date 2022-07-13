@@ -24,7 +24,7 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 	}
 
 	repoUrl := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)
-	directory := fmt.Sprintf("%s/.kubefirst/%s", config.HomePath, repoName)
+	directory := fmt.Sprintf("%s/%s", config.K1srtFolderPath, repoName)
 	log.Println("git clone", repoUrl, directory)
 	log.Println("git clone -b ", branch, repoUrl, directory)
 
@@ -39,11 +39,11 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 	viper.Set(fmt.Sprintf("init.repos.%s.cloned", repoName), true)
 	viper.WriteConfig()
 
-	log.Printf("cloned %s-template repository to directory %s/.kubefirst/%s", repoName, config.HomePath, repoName)
+	log.Printf("cloned %s-template repository to directory %s/%s", repoName, config.K1srtFolderPath, repoName)
 
-	log.Printf("detokenizing %s/.kubefirst/%s", config.HomePath, repoName)
+	log.Printf("detokenizing %s/%s", config.K1srtFolderPath, repoName)
 	detokenize(directory)
-	log.Printf("detokenization of %s/.kubefirst/%s complete", config.HomePath, repoName)
+	log.Printf("detokenization of %s/%s complete", config.K1srtFolderPath, repoName)
 
 	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", repoName), true)
 	viper.WriteConfig()

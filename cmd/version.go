@@ -16,6 +16,6 @@ var versionCmd = &cobra.Command{
 	Long:  `All software has versions. This is kubefirst's`,
 	Run: func(cmd *cobra.Command, args []string) {
 		config := configs.ReadConfig()
-		log.Printf("flare-cli golang utility version: v%s", config.KubefirstVersion)
+		log.Printf("kubefirst-cli golang utility version: v%s", config.KubefirstVersion)
 	},
 }
