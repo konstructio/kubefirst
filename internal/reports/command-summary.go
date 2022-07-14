@@ -108,8 +108,8 @@ func max(a, b int) int {
 	return b
 }
 
-// CleanSummary receives a well-formatted buffer of bytes, and style it to the output.
-func CleanSummary(cleanSummary bytes.Buffer) {
+// CommandSummary receives a well-formatted buffer of bytes, and style it to the output.
+func CommandSummary(cleanSummary bytes.Buffer) {
 
 	const kubefirstBoldPurple = "#d0bae9"
 	const kubefirstLightPurple = "#3c356c"
