@@ -6,16 +6,26 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/kubernetes"
+	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"log"
 	"os"
 	"os/exec"
 	"time"
+	"fmt"
 )	
 
 
 
 // todo: move it to internals/ArgoCD
-func setArgocdCreds() {
+func setArgocdCreds(dryRun bool) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, setArgocdCreds skipped.")
+		viper.Set("argocd.admin.password", "dry-run-not-real-pwd")
+		viper.Set("argocd.admin.username", "dry-run-not-admin")
+		viper.WriteConfig()
+		return 
+	} 
+
 	cfg := configs.ReadConfig()
 	config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
 	if err != nil {
@@ -52,7 +62,11 @@ func sendCompleteInstallTelemetry(dryRun bool){
 	}
 }
 
-func waitArgoCDToBeReady(){
+func waitArgoCDToBeReady(dryRun bool){
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, waitArgoCDToBeReady skipped.")
+		return 
+	} 
 	config := configs.ReadConfig()
 	x := 50
 	for i := 0; i < x; i++ {
@@ -85,7 +99,11 @@ func waitArgoCDToBeReady(){
 	}
 }
 
-func waitVaultToBeInitialized() {
+func waitVaultToBeInitialized(dryRun bool) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, waitVaultToBeInitialized skipped.")
+		return 
+	} 
 	config := configs.ReadConfig()
 	x := 50
 	for i := 0; i < x; i++ {
@@ -119,7 +137,11 @@ func waitVaultToBeInitialized() {
 	}
 }
 
-func waitGitlabToBeReady() {
+func waitGitlabToBeReady(dryRun bool) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, waitVaultToBeInitialized skipped.")
+		return 
+	} 
 	config := configs.ReadConfig()
 	x := 50
 	for i := 0; i < x; i++ {
@@ -152,4 +174,10 @@ func waitGitlabToBeReady() {
 		}
 	}
 
+}
+
+//Notify user in the STOUT and also logfile
+func informUser(message string){	
+	log.Println(message)
+	progressPrinter.LogMessage(fmt.Sprintf("- %s",message))
 }

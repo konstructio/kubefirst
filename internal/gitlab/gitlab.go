@@ -532,8 +532,11 @@ func HydrateGitlabMetaphorRepo(dryRun bool) {
 }
 
 // refactor: review it
-func PushGitRepo(config *configs.Config, gitOrigin, repoName string) {
-
+func PushGitRepo(dryRun bool, config *configs.Config, gitOrigin, repoName string) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, PushGitRepo skipped.")
+		return 
+	} 
 	repoDir := fmt.Sprintf("%s/%s", config.K1srtFolderPath, repoName)
 	repo, err := git.PlainOpen(repoDir)
 	if err != nil {

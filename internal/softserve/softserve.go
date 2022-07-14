@@ -54,7 +54,7 @@ func ConfigureSoftServeAndPush(dryRun bool) {
 
 		configureSoftServe()
 		// refactor: update it
-		gitlab.PushGitRepo(config, "soft", "gitops")
+		gitlab.PushGitRepo(dryRun, config, "soft", "gitops")
 
 		viper.Set("create.softserve.configure", true)
 		viper.WriteConfig()

@@ -40,7 +40,11 @@ func getPodNameByLabel(gitlabPodsClient coreV1Types.PodInterface, label string) 
 	return gitlabToolboxPodName
 }
 
-func waitForVaultUnseal(config *configs.Config) {
+func waitForVaultUnseal(dryRun bool, config *configs.Config) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, waitForGitlab skipped.")
+		return 
+	}
 	vaultReady := viper.GetBool("create.vault.ready")
 	if !vaultReady {
 		var output bytes.Buffer
@@ -60,7 +64,11 @@ func waitForVaultUnseal(config *configs.Config) {
 
 }
 
-func waitForGitlab(config *configs.Config) {
+func waitForGitlab(dryRun bool, config *configs.Config) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, waitForGitlab skipped.")
+		return 
+	} 
 	var output bytes.Buffer
 	// todo - add a viper.GetBool() check to the beginning of this function
 	// todo write in golang? see here -> https://github.com/bcreane/k8sutils/blob/master/utils.go
@@ -74,7 +82,11 @@ func waitForGitlab(config *configs.Config) {
 	log.Printf("the output is: %s", output.String())
 }
 
-func createVaultConfiguredSecret(config *configs.Config) {
+func createVaultConfiguredSecret(dryRun bool, config *configs.Config) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, createVaultConfiguredSecret skipped.")
+		return 
+	} 
 	if !viper.GetBool("vault.configuredsecret") {
 		var output bytes.Buffer
 		// todo - https://github.com/bcreane/k8sutils/blob/master/utils.go
@@ -124,7 +136,11 @@ func getSecretValue(k8sClient coreV1Types.SecretInterface, secretName, key strin
 	return string(secret.Data[key])
 }
 
-func waitForNamespaceandPods(config *configs.Config, namespace, podLabel string) {
+func waitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, podLabel string) {
+	if dryRun {		
+		log.Printf("[#99] Dry-run mode, waitForNamespaceandPods skipped")
+		return
+	} 
 	if !viper.GetBool("create.softserve.ready") {
 		x := 50
 		for i := 0; i < x; i++ {

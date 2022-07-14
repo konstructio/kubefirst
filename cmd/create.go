@@ -9,7 +9,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/softserve"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
-	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log"
@@ -17,6 +16,7 @@ import (
 	"os/exec"
 	"syscall"
 	"time"
+	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 )
 
 const trackerStage20 = "0 - Apply Base"
@@ -36,6 +36,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
+		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 		config := configs.ReadConfig()
 
 		skipVault, err := cmd.Flags().GetBool("skip-vault")
@@ -51,69 +52,84 @@ to quickly create a Cobra application.`,
 			log.Panic(err)
 		}
 
-		pkg.SetupProgress(4)
-		Trackers := make(map[string]*pkg.ActionTracker)
-
-		Trackers[trackerStage20] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(trackerStage20, 1)}
-		Trackers[trackerStage21] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(trackerStage21, 2)}
-		Trackers[trackerStage22] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(trackerStage22, 7)}
-		Trackers[trackerStage23] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(trackerStage23, 3)}
-
 		infoCmd.Run(cmd, args)
+		progressPrinter.IncrementTracker("step-0", 1)
 
-		
+
+		progressPrinter.AddTracker("step-softserve", "Prepare Temporary Repo ", 4)
 		sendStartedInstallTelemetry(dryRun)
+		progressPrinter.IncrementTracker("step-softserve", 1)
 
 
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1srtFolderPath)
+		informUser("Creating K8S Cluster")
 		terraform.ApplyBaseTerraform(dryRun, directory)
-		Trackers[trackerStage20].Tracker.Increment(int64(1))
+		progressPrinter.IncrementTracker("step-softserve", 1)
 
 		//! soft-serve was just applied
 
 		softserve.CreateSoftServe(dryRun, config.KubeConfigPath)
-		waitForNamespaceandPods(config, "soft-serve", "app=soft-serve")
+		informUser("Created Softserve")
+		progressPrinter.IncrementTracker("step-softserve", 1)
+		informUser("Waiting Softserve")
+		waitForNamespaceandPods(dryRun, config, "soft-serve", "app=soft-serve")
+		progressPrinter.IncrementTracker("step-softserve", 1)
 		// todo this should be replaced with something more intelligent
-		log.Println("waiting for soft-serve installation to complete...")
-		time.Sleep(60 * time.Second)
-
-		kPortForwardSoftServe := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")
-		kPortForwardSoftServe.Stdout = os.Stdout
-		kPortForwardSoftServe.Stderr = os.Stderr
-		err = kPortForwardSoftServe.Start()
-		defer kPortForwardSoftServe.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Panicf("error: failed to port-forward to soft-serve %s", err)
+		log.Println("Waiting for soft-serve installation to complete...")		
+		if !dryRun {
+			time.Sleep(60 * time.Second)
+			kPortForwardSoftServe := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")
+			kPortForwardSoftServe.Stdout = os.Stdout
+			kPortForwardSoftServe.Stderr = os.Stderr
+			err = kPortForwardSoftServe.Start()
+			defer kPortForwardSoftServe.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Panicf("error: failed to port-forward to soft-serve %s", err)
+			}
+			time.Sleep(20 * time.Second)
 		}
-		time.Sleep(20 * time.Second)
 
-		Trackers[trackerStage21].Tracker.Increment(int64(1))
-		softserve.ConfigureSoftServeAndPush(dryRun)
-		Trackers[trackerStage21].Tracker.Increment(int64(1))
+		informUser("Softserve Update")
+		softserve.ConfigureSoftServeAndPush(dryRun)		
+		progressPrinter.IncrementTracker("step-softserve", 1)		
+
+		progressPrinter.AddTracker("step-argo", "Deploy CI/CD ", 5)
+		informUser("Deploy ArgoCD")
+		progressPrinter.IncrementTracker("step-argo", 1)
 		helm.InstallArgocd(dryRun)
-		Trackers[trackerStage22].Tracker.Increment(int64(1))
 
 		//! argocd was just helm installed
-		waitArgoCDToBeReady()
+		waitArgoCDToBeReady(dryRun)
+		informUser("ArgoCD Ready")
+		progressPrinter.IncrementTracker("step-argo", 1)
+		if !dryRun {
+			kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
+			kPortForwardArgocd.Stdout = os.Stdout
+			kPortForwardArgocd.Stderr = os.Stderr
+			err = kPortForwardArgocd.Start()
+			defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
+			}
 
-		kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
-		kPortForwardArgocd.Stdout = os.Stdout
-		kPortForwardArgocd.Stderr = os.Stderr
-		err = kPortForwardArgocd.Start()
-		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
+			log.Println("sleeping for 45 seconds, hurry up jared")
+			time.Sleep(45 * time.Second)
 		}
+		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")))
+		progressPrinter.IncrementTracker("step-argo", 1)
 
-		log.Println("sleeping for 45 seconds, hurry up jared")
-		time.Sleep(45 * time.Second)
+		informUser("Setting argocd credentials")
+		setArgocdCreds(dryRun)		
+		progressPrinter.IncrementTracker("step-argo", 1)
 
-		log.Println("setting argocd credentials")
-		setArgocdCreds()
-		log.Println("getting an argocd auth token")
+		informUser("Getting an argocd auth token")
 		token := argocd.GetArgocdAuthToken(dryRun)
-		log.Println("syncing the registry application")
+		progressPrinter.IncrementTracker("step-argo", 1)
+
+		informUser("Syncing the registry application")
 		argocd.SyncArgocdApplication(dryRun, "registry", token)
+		progressPrinter.IncrementTracker("step-argo", 1)
+
 		// todo, need to stall until the registry has synced, then get to ui asap
 
 		//! skip this if syncing from argocd and not helm installing
@@ -123,82 +139,109 @@ to quickly create a Cobra application.`,
 		//!
 		//* we need to stop here and wait for the vault namespace to exist and the vault pod to be ready
 		//!
-		waitVaultToBeInitialized()		
-		kPortForwardVault := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
-		kPortForwardVault.Stdout = os.Stdout
-		kPortForwardVault.Stderr = os.Stderr
-		err = kPortForwardVault.Start()
-		defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Panicf("error: failed to port-forward to vault in main thread %s", err)
+		progressPrinter.AddTracker("step-gitlab", "Setup Gitlab", 6)
+		informUser("Waiting vault to be ready")
+		waitVaultToBeInitialized(dryRun)		
+		progressPrinter.IncrementTracker("step-gitlab", 1)
+		if !dryRun {
+			kPortForwardVault := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
+			kPortForwardVault.Stdout = os.Stdout
+			kPortForwardVault.Stderr = os.Stderr
+			err = kPortForwardVault.Start()
+			defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Panicf("error: failed to port-forward to vault in main thread %s", err)
+			}
 		}
-		waitGitlabToBeReady()
+		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")))
+		progressPrinter.IncrementTracker("step-gitlab", 1)
+
+		informUser("Waiting gitlab to be ready")
+		waitGitlabToBeReady(dryRun)
 		log.Println("waiting for gitlab")
-		waitForGitlab(config)
+		waitForGitlab(dryRun, config)
 		log.Println("gitlab is ready!")
-		kPortForwardGitlab := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
-		kPortForwardGitlab.Stdout = os.Stdout
-		kPortForwardGitlab.Stderr = os.Stderr
-		err = kPortForwardGitlab.Start()
-		defer kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Panicf("error: failed to port-forward to gitlab in main thread %s", err)
+		progressPrinter.IncrementTracker("step-gitlab", 1)
+
+		if !dryRun {
+			kPortForwardGitlab := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
+			kPortForwardGitlab.Stdout = os.Stdout
+			kPortForwardGitlab.Stderr = os.Stderr
+			err = kPortForwardGitlab.Start()
+			defer kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Panicf("error: failed to port-forward to gitlab in main thread %s", err)
+			}
 		}
+		informUser(fmt.Sprintf("Gitlab available at %s", viper.GetString("gitlab.local.service")))
+		progressPrinter.IncrementTracker("step-gitlab", 1)
 
 		if !skipGitlab {
 			// TODO: Confirm if we need to waitgit lab to be ready
 			// OR something, too fast the secret will not be there.
+			informUser("Gitlab setup tokens")
 			gitlab.ProduceGitlabTokens(dryRun)
-			Trackers[trackerStage22].Tracker.Increment(int64(1))
+			progressPrinter.IncrementTracker("step-gitlab", 1)
+			informUser("Gitlab terraform")
 			gitlab.ApplyGitlabTerraform(dryRun, directory)
-			Trackers[trackerStage22].Tracker.Increment(int64(1))
 			gitlab.GitlabKeyUpload(dryRun)
-			Trackers[trackerStage22].Tracker.Increment(int64(1))
+			informUser("Gitlab ready")
+			progressPrinter.IncrementTracker("step-gitlab", 1)
 
 			if !skipVault {
 
-				log.Println("waiting for vault unseal")
+				progressPrinter.AddTracker("step-vault", "Configure Vault", 4)
+				informUser("waiting for vault unseal")
 				/**
 
 				 */
-				waitVaultToBeInitialized()				
-				waitForVaultUnseal(config)
-				log.Println("vault unseal condition met - continuing")
+				waitVaultToBeInitialized(dryRun)	
+				informUser("Vault initialized")
+				progressPrinter.IncrementTracker("step-vault", 1)
+
+				waitForVaultUnseal(dryRun,config)
+				informUser("Vault unseal")
+				progressPrinter.IncrementTracker("step-vault", 1)				
 
 				log.Println("configuring vault")
 				vault.ConfigureVault(dryRun)
-				log.Println("vault configured")
+				informUser("Vault configured")
+				progressPrinter.IncrementTracker("step-vault", 1)
 
 				log.Println("creating vault configured secret")
-				createVaultConfiguredSecret(config)
-				log.Println("vault-configured secret created")
+				createVaultConfiguredSecret(dryRun, config)
+				informUser("Vault  secret created")
+				progressPrinter.IncrementTracker("step-vault", 1)
 
-				Trackers[trackerStage23].Tracker.Increment(int64(1))
+
+				progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 5)
 				vault.AddGitlabOidcApplications(dryRun)
-				Trackers[trackerStage23].Tracker.Increment(int64(1))
+				informUser("Added Gitlab OIDC")
+				progressPrinter.IncrementTracker("step-post-gitlab", 1)
 
-				log.Println("waiting for gitlab dns to propagate before continuing")
+
+				informUser("Waiting for Gitlab dns to propagate before continuing")
 				gitlab.AwaitGitlab(dryRun)
-				Trackers[trackerStage22].Tracker.Increment(int64(1))
+				progressPrinter.IncrementTracker("step-post-gitlab", 1) 
 
-				log.Println("pushing gitops repo to origin gitlab")
+
+				informUser("Pushing gitops repo to origin gitlab")
 				// refactor: sounds like a new functions, should PushGitOpsToGitLab be renamed/update signature?
 
-				gitlab.PushGitRepo(config, "gitlab", "gitops") // todo: need to handle if this was already pushed, errors on failure)
+				gitlab.PushGitRepo(dryRun, config, "gitlab", "gitops") // todo: need to handle if this was already pushed, errors on failure)
+				progressPrinter.IncrementTracker("step-post-gitlab", 1) 
 				// todo: keep one of the two git push functions, they're similar, but not exactly the same
 				//gitlab.PushGitOpsToGitLab(dryRun)
 
-				log.Println("pushing metaphor repo to origin gitlab")
-				gitlab.PushGitRepo(config, "gitlab", "metaphor")
+				informUser("Pushing metaphor repo to origin gitlab")
+				gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
+				progressPrinter.IncrementTracker("step-post-gitlab", 1) 
 				// todo: keep one of the two git push functions, they're similar, but not exactly the same
 				//gitlab.PushGitOpsToGitLab(dryRun)
-				Trackers[trackerStage23].Tracker.Increment(int64(1))
 
-				Trackers[trackerStage22].Tracker.Increment(int64(1))
+				informUser("Changing registry to Gitlab")
 				gitlab.ChangeRegistryToGitLab(dryRun)
-				Trackers[trackerStage22].Tracker.Increment(int64(1))
-
-				Trackers[trackerStage23].Tracker.Increment(int64(1))
+				progressPrinter.IncrementTracker("step-post-gitlab", 1) 
 
 				// todo triage / force apply the contents adjusting
 				// todo kind: Application .repoURL:
@@ -217,6 +260,8 @@ func init() {
 	createCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	createCmd.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
 	createCmd.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
-
+	
+	progressPrinter.GetInstance()
+	progressPrinter.SetupProgress(4)
 }
 
