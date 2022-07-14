@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/spf13/cobra"
 	"log"
 	"runtime"
+	"strings"
 )
 
 // infoCmd represents the info command
@@ -17,15 +20,21 @@ var infoCmd = &cobra.Command{
 
 		config := configs.ReadConfig()
 
-		fmt.Printf("Kubefirst CLI version: v%s \n", config.KubefirstVersion)
-		fmt.Printf("Operational System: %s\n", config.LocalOs)
-		fmt.Printf("Architecture: %s\n", config.LocalArchitecture)
-		fmt.Printf("Go Lang version: v%s \n", runtime.Version())
-		fmt.Printf("Kubefirst config file: %s\n", config.KubefirstConfigFilePath)
-		fmt.Printf("Kubefirst config folder: %s\n", config.K1FolderPath)
-		fmt.Printf("Kubectl path: %s\n", config.KubectlClientPath)
-		fmt.Printf("Terraform path: %s\n", config.TerraformPath)
-		fmt.Printf("Kubeconfig path: %s\n", config.KubeConfigPath)
+		var infoSummary bytes.Buffer
+
+		infoSummary.WriteString(strings.Repeat("-", 70))
+		infoSummary.WriteString("\nInfo summary:\n")
+		infoSummary.WriteString(strings.Repeat("-", 70))
+
+		//infoSummary.WriteString(fmt.Sprintf("Kubefirst CLI version: v%s \n", config.KubefirstVersion))
+		infoSummary.WriteString(fmt.Sprintf("\n\nOperational System: %s\n", config.LocalOs))
+		infoSummary.WriteString(fmt.Sprintf("Architecture: %s\n", config.LocalArchitecture))
+		infoSummary.WriteString(fmt.Sprintf("Go Lang version: v%s \n", runtime.Version()))
+		infoSummary.WriteString(fmt.Sprintf("Kubefirst config file: %s\n", config.KubefirstConfigFilePath))
+		infoSummary.WriteString(fmt.Sprintf("Kubefirst config folder: %s\n", config.K1FolderPath))
+		infoSummary.WriteString(fmt.Sprintf("Kubectl path: %s\n", config.KubectlClientPath))
+		infoSummary.WriteString(fmt.Sprintf("Terraform path: %s\n", config.TerraformPath))
+		infoSummary.WriteString(fmt.Sprintf("Kubeconfig path: %s\n", config.KubeConfigPath))
 
 		err := configs.CheckKubefirstConfigFile(config)
 		if err != nil {
@@ -40,6 +49,8 @@ var infoCmd = &cobra.Command{
 			log.Panic(err)
 		}
 		fmt.Printf("----------- \n")
+	
+		reports.CommandSummary(infoSummary)
 	},
 }
 
