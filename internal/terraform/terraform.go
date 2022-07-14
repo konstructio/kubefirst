@@ -22,19 +22,19 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 			return
 		}
 		envs := map[string]string{}
-		envs["TF_VAR_aws_account_id"]=viper.GetString("aws.accountid")
-		envs["TF_VAR_aws_region"]= viper.GetString("aws.region")
-		envs["TF_VAR_hosted_zone_name"]=viper.GetString("aws.hostedzonename")
+		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
+		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
+		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 
 		err := os.Chdir(directory)
 		if err != nil {
 			log.Panicf("error, directory does not exist - did you `kubefirst init`?: %s \nerror: %v", directory, err)
 		}
-		err = pkg.ExecShellWithVars(envs,config.TerraformPath, "init")
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if err != nil {
 			log.Panic(fmt.Sprintf("error: terraform init failed %v", err))
 		}
-		err = pkg.ExecShellWithVars(envs,config.TerraformPath, "apply", "-auto-approve")
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
 		if err != nil {
 			log.Panic(fmt.Sprintf("error: terraform init failed %v", err))
 		}
@@ -54,7 +54,7 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		viper.Set("vault.kmskeyid", keyId)
 		viper.Set("create.terraformapplied.base", true)
 		viper.WriteConfig()
-		pkg.Detokenize(fmt.Sprintf("%s/gitops", config.K1srtFolderPath))
+		pkg.Detokenize(fmt.Sprintf("%s/gitops", config.K1FolderPath))
 	} else {
 		log.Println("Skipping: ApplyBaseTerraform")
 	}
@@ -63,23 +63,23 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 func DestroyBaseTerraform(skipBaseTerraform bool) {
 	config := configs.ReadConfig()
 	if !skipBaseTerraform {
-		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1srtFolderPath)
+		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 		err := os.Chdir(directory)
 		if err != nil {
 			log.Panicf("error: could not change directory to " + directory)
 		}
 
 		envs := map[string]string{}
-		envs["TF_VAR_aws_account_id"]=viper.GetString("aws.accountid")
-		envs["TF_VAR_aws_region"]= viper.GetString("aws.region")
-		envs["TF_VAR_hosted_zone_name"]=viper.GetString("aws.hostedzonename")
+		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
+		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
+		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 
-		err = pkg.ExecShellWithVars(envs,config.TerraformPath, "init")
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if err != nil {
 			log.Panicf("failed to terraform init base %v", err)
 		}
 
-		err = pkg.ExecShellWithVars(envs,config.TerraformPath, "destroy", "-auto-approve")
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "destroy", "-auto-approve")
 		if err != nil {
 			log.Panicf("failed to terraform destroy base %v", err)
 		}

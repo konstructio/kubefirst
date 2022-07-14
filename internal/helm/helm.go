@@ -3,10 +3,9 @@ package helm
 import (
 	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	"log"
-	"os"
-	"os/exec"
 )
 
 func InstallArgocd(dryRun bool) {
@@ -17,26 +16,17 @@ func InstallArgocd(dryRun bool) {
 			return
 		}
 		// ! commenting out until a clean execution is necessary // create namespace
-		helmRepoAddArgocd := exec.Command(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
-		helmRepoAddArgocd.Stdout = os.Stdout
-		helmRepoAddArgocd.Stderr = os.Stderr
-		err := helmRepoAddArgocd.Run()
+		_, _, err := pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
 		if err != nil {
 			log.Panicf("error: could not run helm repo add %s", err)
 		}
 
-		helmRepoUpdate := exec.Command(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "repo", "update")
-		helmRepoUpdate.Stdout = os.Stdout
-		helmRepoUpdate.Stderr = os.Stderr
-		err = helmRepoUpdate.Run()
+		_, _, err = pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "repo", "update")
 		if err != nil {
 			log.Panicf("error: could not helm repo update %s", err)
 		}
 
-		helmInstallArgocdCmd := exec.Command(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "upgrade", "--install", "argocd", "--namespace", "argocd", "--create-namespace", "--wait", "--values", fmt.Sprintf("%s/argocd-init-values.yaml", config.K1srtFolderPath), "argo/argo-cd")
-		helmInstallArgocdCmd.Stdout = os.Stdout
-		helmInstallArgocdCmd.Stderr = os.Stderr
-		err = helmInstallArgocdCmd.Run()
+		_, _, err = pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "upgrade", "--install", "argocd", "--namespace", "argocd", "--create-namespace", "--wait", "--values", fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), "argo/argo-cd")
 		if err != nil {
 			log.Panicf("error: could not helm install argocd command %s", err)
 		}

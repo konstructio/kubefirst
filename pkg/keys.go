@@ -54,6 +54,12 @@ server:
         selfHeal: true
       syncOptions:
       - CreateNamespace=true
+      retry:
+        limit: 5
+        backoff:
+          duration: 5s
+          maxDuration: 5m0s
+          factor: 2
 configs:
   repositories:
     soft-serve-gitops:
@@ -68,7 +74,7 @@ configs:
         %s
 `, strings.ReplaceAll(privateKey, "\n", "\n        ")))
 
-	err := ioutil.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1srtFolderPath), argocdInitValuesYaml, 0644)
+	err := ioutil.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
 	if err != nil {
 		log.Panicf("error: could not write argocd-init-values.yaml %s", err)
 	}

@@ -10,8 +10,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"os/exec"
+
+	"github.com/kubefirst/kubefirst/pkg"
 	"strings"
 	"time"
 )
@@ -182,10 +182,7 @@ func SyncArgocdApplication(dryRun bool, applicationName, argocdAuthToken string)
 	url := fmt.Sprintf("https://localhost:8080/api/v1/applications/%s/sync", applicationName)
 	var outb bytes.Buffer
 
-	argoCdAppSync := exec.Command("curl", "-k", "-L", "-X", "POST", url, "-H", fmt.Sprintf("Authorization: Bearer %s", argocdAuthToken))
-	argoCdAppSync.Stdout = os.Stdout
-	argoCdAppSync.Stderr = os.Stderr
-	err := argoCdAppSync.Run()
+	_, _, err := pkg.ExecShellReturnStrings("curl", "-k", "-L", "-X", "POST", url, "-H", fmt.Sprintf("Authorization: Bearer %s", argocdAuthToken))
 	log.Println("the value from the curl command to sync registry in argocd is:", outb.String())
 	if err != nil {
 		log.Panicf("error: curl appSync failed failed %s", err)

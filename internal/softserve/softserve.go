@@ -24,7 +24,7 @@ func CreateSoftServe(dryRun bool, kubeconfigPath string) {
 			return
 		}
 
-		softServePath := fmt.Sprintf("%s/gitops/components/soft-serve/manifests.yaml", config.K1srtFolderPath)
+		softServePath := fmt.Sprintf("%s/gitops/components/soft-serve/manifests.yaml", config.K1FolderPath)
 		softServeApplyOut, softServeApplyErr, errSoftServeApply := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "soft-serve", "apply", "-f", softServePath, "--wait")
 		log.Printf("Result:\n\t%s\n\t%s\n", softServeApplyOut, softServeApplyErr)
 		if errSoftServeApply != nil {
@@ -54,7 +54,7 @@ func ConfigureSoftServeAndPush(dryRun bool) {
 
 		configureSoftServe()
 		// refactor: update it
-		gitlab.PushGitRepo(config, "soft", "gitops")
+		gitlab.PushGitRepo(dryRun, config, "soft", "gitops")
 
 		viper.Set("create.softserve.configure", true)
 		viper.WriteConfig()
@@ -68,7 +68,7 @@ func configureSoftServe() {
 	config := configs.ReadConfig()
 
 	url := "ssh://127.0.0.1:8022/config"
-	directory := fmt.Sprintf("%s/config", config.K1srtFolderPath)
+	directory := fmt.Sprintf("%s/config", config.K1FolderPath)
 
 	log.Println("gitClient clone", url, directory)
 
@@ -96,7 +96,7 @@ func configureSoftServe() {
 		log.Panic(err)
 	}
 
-	println("re-wrote config.yaml", config.K1srtFolderPath, "/config")
+	println("re-wrote config.yaml", config.K1FolderPath, "/config")
 
 	w, _ := repo.Worktree()
 

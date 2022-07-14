@@ -61,11 +61,23 @@ func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
 							LocationConstraint: aws.String(regionName),
 						},
 					})
-				}
+				}				
 				if err != nil {
 					log.Println("failed to create bucket "+bucketName, err.Error())
 					os.Exit(1)
 				}
+				vc := &s3.VersioningConfiguration{}
+				vc.Status = aws.String(s3.BucketVersioningStatusEnabled)
+				versionConfigInput := &s3.PutBucketVersioningInput{
+					Bucket: aws.String(bucketName),
+					VersioningConfiguration: vc,
+				}
+				log.Printf("[DEBUG] S3 put bucket versioning: %#v", versionConfigInput)
+				_, err := s3Client.PutBucketVersioning(versionConfigInput)
+				if err != nil {
+					log.Panicf("Error putting S3 versioning: %s", err)
+				}
+
 			} else {
 				log.Printf("[#99] Dry-run mode, bucket creation skipped:  %s", bucketName)
 			}
