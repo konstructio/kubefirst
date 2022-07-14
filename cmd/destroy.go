@@ -8,9 +8,9 @@ import (
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
 	"log"
-	"os"
 	"os/exec"
 	"syscall"
+	"bytes"
 )
 
 // destroyCmd represents the destroy command
@@ -42,30 +42,40 @@ if the registry has already been deleted.`,
 		if err != nil {
 			log.Panic(err)
 		}
-
+		
+		var kPortForwardOutb, kPortForwardErrb bytes.Buffer 
 		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
-		kPortForward.Stdout = os.Stdout
-		kPortForward.Stderr = os.Stderr
+		kPortForward.Stdout = &kPortForwardOutb
+		kPortForward.Stderr = &kPortForwardErrb
 		defer kPortForward.Process.Signal(syscall.SIGTERM)
 		err = kPortForward.Start()
 		if err != nil {
+			log.Println("Commad Execution STDOUT: %s", kPortForwardOutb.String())
+			log.Println("Commad Execution STDERR: %s", kPortForwardErrb.String())
 			log.Panicf("error: failed to port-forward to gitlab in main thread %s", err)
 		}
 
+		var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer 
 		kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
-		kPortForwardArgocd.Stdout = os.Stdout
-		kPortForwardArgocd.Stderr = os.Stderr
+		kPortForwardArgocd.Stdout = &kPortForwardArgocdOutb
+		kPortForwardArgocd.Stderr = &kPortForwardArgocdErrb
 		err = kPortForwardArgocd.Start()
 		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 		if err != nil {
+			log.Println("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
+			log.Println("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
 			log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
 		}
+
+		var kPortForwardVaultOutb, kPortForwardVaultErrb bytes.Buffer 
 		kPortForwardVault := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
-		kPortForwardVault.Stdout = os.Stdout
-		kPortForwardVault.Stderr = os.Stderr
+		kPortForwardVault.Stdout = &kPortForwardVaultOutb
+		kPortForwardVault.Stderr = &kPortForwardVaultErrb
 		err = kPortForwardVault.Start()
 		defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
 		if err != nil {
+			log.Println("Commad Execution STDOUT: %s", kPortForwardVaultOutb.String())
+			log.Println("Commad Execution STDERR: %s", kPortForwardVaultErrb.String())
 			log.Panicf("error: failed to port-forward to vault in main thread %s", err)
 		}
 		log.Println("destroying gitlab terraform")

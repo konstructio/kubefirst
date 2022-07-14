@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+	"bytes"
 )
 
 // GetVaultRootToken get `vault-unseal-keys` token on Vault.
@@ -77,13 +78,16 @@ func ConfigureVault(dryRun bool) {
 
 		viper.Set("vault.token", vaultToken)
 		viper.WriteConfig()
-
+		
+		var kPortForwardOutb, kPortForwardErrb bytes.Buffer 
 		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
-		kPortForward.Stdout = os.Stdout
-		kPortForward.Stderr = os.Stderr
+		kPortForward.Stdout = &kPortForwardOutb
+		kPortForward.Stderr = &kPortForwardErrb
 		err = kPortForward.Start()
 		defer kPortForward.Process.Signal(syscall.SIGTERM)
 		if err != nil {
+			log.Println("Commad Execution STDOUT: %s", kPortForwardOutb.String())
+        	log.Println("Commad Execution STDERR: %s", kPortForwardErrb.String())
 			log.Panicf("error: failed to port-forward to vault namespce svc/vault %s", err)
 		}
 

@@ -8,10 +8,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"log"
-	"os"
-	"os/exec"
 	"time"
 	"fmt"
+	"github.com/kubefirst/kubefirst/pkg"
 )	
 
 
@@ -70,10 +69,7 @@ func waitArgoCDToBeReady(dryRun bool){
 	config := configs.ReadConfig()
 	x := 50
 	for i := 0; i < x; i++ {
-		kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/argocd")
-		kGetNamespace.Stdout = os.Stdout
-		kGetNamespace.Stderr = os.Stderr
-		err := kGetNamespace.Run()
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/argocd")
 		if err != nil {
 			log.Println("Waiting argocd to be born")
 			time.Sleep(10 * time.Second)
@@ -84,10 +80,7 @@ func waitArgoCDToBeReady(dryRun bool){
 		}
 	}
 	for i := 0; i < x; i++ {
-		kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
-		kGetNamespace.Stdout = os.Stdout
-		kGetNamespace.Stderr = os.Stderr
-		err := kGetNamespace.Run()
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
 		if err != nil {
 			log.Println("Waiting for argocd pods to create, checking in 10 seconds")
 			time.Sleep(10 * time.Second)
@@ -107,10 +100,7 @@ func waitVaultToBeInitialized(dryRun bool) {
 	config := configs.ReadConfig()
 	x := 50
 	for i := 0; i < x; i++ {
-		kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/vault")
-		kGetNamespace.Stdout = os.Stdout
-		kGetNamespace.Stderr = os.Stderr
-		err := kGetNamespace.Run()
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/vault")
 		if err != nil {
 			log.Println("Waiting vault to be born")
 			time.Sleep(10 * time.Second)
@@ -122,10 +112,7 @@ func waitVaultToBeInitialized(dryRun bool) {
 	}
 	x = 50
 	for i := 0; i < x; i++ {
-		kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "get", "pods", "-l", "vault-initialized=true")
-		kGetNamespace.Stdout = os.Stdout
-		kGetNamespace.Stderr = os.Stderr
-		err := kGetNamespace.Run()
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "get", "pods", "-l", "vault-initialized=true")
 		if err != nil {
 			log.Println("Waiting vault pods to create")
 			time.Sleep(10 * time.Second)
@@ -145,10 +132,7 @@ func waitGitlabToBeReady(dryRun bool) {
 	config := configs.ReadConfig()
 	x := 50
 	for i := 0; i < x; i++ {
-		kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/gitlab")
-		kGetNamespace.Stdout = os.Stdout
-		kGetNamespace.Stderr = os.Stderr
-		err := kGetNamespace.Run()
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/gitlab")
 		if err != nil {
 			log.Println("Waiting gitlab namespace to be born")
 			time.Sleep(10 * time.Second)
@@ -160,10 +144,7 @@ func waitGitlabToBeReady(dryRun bool) {
 	}
 	x = 50
 	for i := 0; i < x; i++ {
-		kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "get", "pods", "-l", "app=webservice")
-		kGetNamespace.Stdout = os.Stdout
-		kGetNamespace.Stderr = os.Stderr
-		err := kGetNamespace.Run()
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "get", "pods", "-l", "app=webservice")
 		if err != nil {
 			log.Println("Waiting gitlab pods to be born")
 			time.Sleep(10 * time.Second)

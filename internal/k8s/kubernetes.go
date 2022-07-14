@@ -12,9 +12,8 @@ import (
 	"github.com/spf13/viper"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
+	"github.com/kubefirst/kubefirst/pkg"
 	"log"
-	"os"
-	"os/exec"
 	"time"
 )
 
@@ -74,10 +73,7 @@ func DeleteRegistryApplication(skipDeleteRegistryApplication bool) {
 		argocd.GetArgocdAuthToken(false)
 
 		url := "https://localhost:8080/api/v1/applications/registry"
-		argoCdAppSync := exec.Command("curl", "-k", "-vL", "-X", "DELETE", url, "-H", fmt.Sprintf("Authorization: Bearer %s", viper.GetString("argocd.admin.apitoken")))
-		argoCdAppSync.Stdout = os.Stdout
-		argoCdAppSync.Stderr = os.Stderr
-		err := argoCdAppSync.Run()
+		_, _, err := pkg.ExecShellReturnStrings("curl", "-k", "-vL", "-X", "DELETE", url, "-H", fmt.Sprintf("Authorization: Bearer %s", viper.GetString("argocd.admin.apitoken")))
 		if err != nil {
 			log.Panicf("error: delete registry applicatoin from argocd failed: %s", err)
 		}
