@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log"
-	"os"
+	"bytes"
 	"os/exec"
 	"syscall"
 	"time"
@@ -77,13 +77,17 @@ to quickly create a Cobra application.`,
 		// todo this should be replaced with something more intelligent
 		log.Println("Waiting for soft-serve installation to complete...")		
 		if !dryRun {
+			var kPortForwardSoftServeOutb, kPortForwardSoftServeErrb bytes.Buffer	
 			time.Sleep(60 * time.Second)
 			kPortForwardSoftServe := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")
-			kPortForwardSoftServe.Stdout = os.Stdout
-			kPortForwardSoftServe.Stderr = os.Stderr
+			kPortForwardSoftServe.Stdout = &kPortForwardSoftServeOutb
+			kPortForwardSoftServe.Stderr = &kPortForwardSoftServeErrb
 			err = kPortForwardSoftServe.Start()
 			defer kPortForwardSoftServe.Process.Signal(syscall.SIGTERM)
 			if err != nil {
+				// If it doesn't error, we kinda don't care much. 
+				log.Println("Commad Execution STDOUT: %s", kPortForwardSoftServeOutb.String())
+				log.Println("Commad Execution STDERR: %s", kPortForwardSoftServeErrb.String())
 				log.Panicf("error: failed to port-forward to soft-serve %s", err)
 			}
 			time.Sleep(20 * time.Second)
@@ -103,12 +107,15 @@ to quickly create a Cobra application.`,
 		informUser("ArgoCD Ready")
 		progressPrinter.IncrementTracker("step-argo", 1)
 		if !dryRun {
+			var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer 
 			kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
-			kPortForwardArgocd.Stdout = os.Stdout
-			kPortForwardArgocd.Stderr = os.Stderr
+			kPortForwardArgocd.Stdout = &kPortForwardArgocdOutb
+			kPortForwardArgocd.Stderr = &kPortForwardArgocdErrb
 			err = kPortForwardArgocd.Start()
 			defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 			if err != nil {
+				log.Println("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
+				log.Println("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
 				log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
 			}
 
@@ -144,12 +151,16 @@ to quickly create a Cobra application.`,
 		waitVaultToBeInitialized(dryRun)		
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 		if !dryRun {
+			var kPortForwardVaultOutb, kPortForwardVaultErrb bytes.Buffer 
 			kPortForwardVault := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
-			kPortForwardVault.Stdout = os.Stdout
-			kPortForwardVault.Stderr = os.Stderr
+			kPortForwardVault.Stdout = &kPortForwardVaultOutb
+			kPortForwardVault.Stderr = &kPortForwardVaultErrb
 			err = kPortForwardVault.Start()
 			defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
 			if err != nil {
+				// If it doesn't error, we kinda don't care much. 
+				log.Println("Commad Execution STDOUT: %s", kPortForwardVaultOutb.String())
+				log.Println("Commad Execution STDERR: %s", kPortForwardVaultErrb.String())
 				log.Panicf("error: failed to port-forward to vault in main thread %s", err)
 			}
 		}
@@ -164,12 +175,16 @@ to quickly create a Cobra application.`,
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 
 		if !dryRun {
+			var kPortForwardGitlabOutb, kPortForwardGitlabErrb bytes.Buffer 
 			kPortForwardGitlab := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
-			kPortForwardGitlab.Stdout = os.Stdout
-			kPortForwardGitlab.Stderr = os.Stderr
+			kPortForwardGitlab.Stdout = &kPortForwardGitlabOutb
+			kPortForwardGitlab.Stderr = &kPortForwardGitlabErrb
 			err = kPortForwardGitlab.Start()
 			defer kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
 			if err != nil {
+				// If it doesn't error, we kinda don't care much. 
+				log.Println("Commad Execution STDOUT: %s", kPortForwardGitlabOutb.String())
+				log.Println("Commad Execution STDERR: %s", kPortForwardGitlabErrb.String())
 				log.Panicf("error: failed to port-forward to gitlab in main thread %s", err)
 			}
 		}
