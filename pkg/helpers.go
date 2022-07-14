@@ -1,7 +1,9 @@
 package pkg
 
 import (
+	"errors"
 	"fmt"
+	"github.com/kubefirst/kubefirst/configs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -94,6 +96,34 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		}
 
 	}
+
+	return nil
+}
+
+// SetupViper handles Viper config file. If config file doesn't exist, create, in case the file is available, use it.
+func SetupViper(config *configs.Config) error {
+
+	viperConfigFile := config.KubefirstConfigFilePath
+
+	if _, err := os.Stat(viperConfigFile); errors.Is(err, os.ErrNotExist) {
+		log.Printf("Config file not found, creating a blank one: %s \n", viperConfigFile)
+		err = os.WriteFile(viperConfigFile, []byte("createdBy: installer\n\n"), 0700)
+		if err != nil {
+			return fmt.Errorf("unable to create blank config file, error is: %s", err)
+		}
+	}
+
+	viper.SetConfigFile(viperConfigFile)
+	viper.SetConfigType("yaml")
+	viper.AutomaticEnv() // read in environment variables that match
+
+	// if a config file is found, read it in.
+	err := viper.ReadInConfig()
+	if err != nil {
+		return fmt.Errorf("unable to read config file, error is: %s", err)
+	}
+
+	log.Println("Using config file:", viper.ConfigFileUsed())
 
 	return nil
 }
