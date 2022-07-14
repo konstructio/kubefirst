@@ -22,7 +22,7 @@ var infoCmd = &cobra.Command{
 		fmt.Printf("Architecture: %s\n", config.LocalArchitecture)
 		fmt.Printf("Go Lang version: v%s \n", runtime.Version())
 		fmt.Printf("Kubefirst config file: %s\n", config.KubefirstConfigFilePath)
-		fmt.Printf("Kubefirst config folder: %s\n", config.K1srtFolderPath)
+		fmt.Printf("Kubefirst config folder: %s\n", config.K1FolderPath)
 		fmt.Printf("Kubectl path: %s\n", config.KubectlClientPath)
 		fmt.Printf("Terraform path: %s\n", config.TerraformPath)
 		fmt.Printf("Kubeconfig path: %s\n", config.KubeConfigPath)

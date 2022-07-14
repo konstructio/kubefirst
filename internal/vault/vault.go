@@ -6,8 +6,8 @@ import (
 	"fmt"
 	vault "github.com/hashicorp/vault/api"
 	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	gitlab "github.com/xanzy/go-gitlab"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -89,35 +89,35 @@ func ConfigureVault(dryRun bool) {
 
 		// Prepare for terraform vault execution
 		envs := map[string]string{}
-		envs["VAULT_ADDR"]="http://localhost:8200" //Should this come from init?
-		envs["VAULT_TOKEN"]=vaultToken
-		envs["AWS_SDK_LOAD_CONFIG"]= "1"
-		envs["AWS_PROFILE"]=config.AwsProfile
-		envs["AWS_DEFAULT_REGION"]= viper.GetString("aws.region")
+		envs["VAULT_ADDR"] = "http://localhost:8200" //Should this come from init?
+		envs["VAULT_TOKEN"] = vaultToken
+		envs["AWS_SDK_LOAD_CONFIG"] = "1"
+		envs["AWS_PROFILE"] = config.AwsProfile
+		envs["AWS_DEFAULT_REGION"] = viper.GetString("aws.region")
 
-		envs["TF_VAR_vault_addr"]= fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename"))
-		envs["TF_VAR_aws_account_id"]= viper.GetString("aws.accountid")
-		envs["TF_VAR_aws_region"]= viper.GetString("aws.region")
-		envs["TF_VAR_email_address"]= viper.GetString("adminemail")
-		envs["TF_VAR_gitlab_runner_token"]= viper.GetString("gitlab.runnertoken")
-		envs["TF_VAR_gitlab_token"]= viper.GetString("gitlab.token")
-		envs["TF_VAR_hosted_zone_id"]= viper.GetString("aws.domainid")
-		envs["TF_VAR_hosted_zone_name"]= viper.GetString("aws.hostedzonename")
-		envs["TF_VAR_vault_token"]=  vaultToken
-		envs["TF_VAR_vault_redirect_uris"]= "[\"will-be-patched-later\"]"
+		envs["TF_VAR_vault_addr"] = fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename"))
+		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
+		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
+		envs["TF_VAR_email_address"] = viper.GetString("adminemail")
+		envs["TF_VAR_gitlab_runner_token"] = viper.GetString("gitlab.runnertoken")
+		envs["TF_VAR_gitlab_token"] = viper.GetString("gitlab.token")
+		envs["TF_VAR_hosted_zone_id"] = viper.GetString("aws.domainid")
+		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
+		envs["TF_VAR_vault_token"] = vaultToken
+		envs["TF_VAR_vault_redirect_uris"] = "[\"will-be-patched-later\"]"
 
-		directory := fmt.Sprintf("%s/gitops/terraform/vault", config.K1srtFolderPath)
+		directory := fmt.Sprintf("%s/gitops/terraform/vault", config.K1FolderPath)
 		err = os.Chdir(directory)
 		if err != nil {
 			log.Panicf("error: could not change directory to " + directory)
 		}
 
-		err = pkg.ExecShellWithVars(envs,config.TerraformPath, "init")
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if err != nil {
 			log.Panicf("error: terraform init failed %s", err)
 		}
 
-		err = pkg.ExecShellWithVars(envs,config.TerraformPath, "apply", "-target", "module.bootstrap", "-auto-approve")
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-target", "module.bootstrap", "-auto-approve")
 		if err != nil {
 			log.Panicf("error: terraform apply failed %s", err)
 		}
