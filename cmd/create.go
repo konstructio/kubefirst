@@ -7,14 +7,11 @@ import (
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/softserve"
-	"github.com/kubefirst/kubefirst/internal/telemetry"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 	"log"
 	"os"
 	"os/exec"
@@ -64,14 +61,9 @@ to quickly create a Cobra application.`,
 
 		infoCmd.Run(cmd, args)
 
-		metricName := "kubefirst.mgmt_cluster_install.started"
-		metricDomain := viper.GetString("aws.hostedzonename")
+		
+		sendStartedInstallTelemetry(dryRun)
 
-		if !dryRun {
-			telemetry.SendTelemetry(metricDomain, metricName)
-		} else {
-			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
-		}
 
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1srtFolderPath)
 		terraform.ApplyBaseTerraform(dryRun, directory)
@@ -102,35 +94,7 @@ to quickly create a Cobra application.`,
 		Trackers[trackerStage22].Tracker.Increment(int64(1))
 
 		//! argocd was just helm installed
-		x := 50
-		for i := 0; i < x; i++ {
-			kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/argocd")
-			kGetNamespace.Stdout = os.Stdout
-			kGetNamespace.Stderr = os.Stderr
-			err := kGetNamespace.Run()
-			if err != nil {
-				log.Println("Waiting argocd to be born")
-				time.Sleep(10 * time.Second)
-			} else {
-				log.Println("argocd namespace found, continuing")
-				time.Sleep(5 * time.Second)
-				break
-			}
-		}
-		for i := 0; i < x; i++ {
-			kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
-			kGetNamespace.Stdout = os.Stdout
-			kGetNamespace.Stderr = os.Stderr
-			err := kGetNamespace.Run()
-			if err != nil {
-				log.Println("Waiting for argocd pods to create, checking in 10 seconds")
-				time.Sleep(10 * time.Second)
-			} else {
-				log.Println("argocd pods found, continuing")
-				time.Sleep(15 * time.Second)
-				break
-			}
-		}
+		waitArgoCDToBeReady()
 
 		kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
 		kPortForwardArgocd.Stdout = os.Stdout
@@ -159,36 +123,7 @@ to quickly create a Cobra application.`,
 		//!
 		//* we need to stop here and wait for the vault namespace to exist and the vault pod to be ready
 		//!
-		x = 50
-		for i := 0; i < x; i++ {
-			kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/vault")
-			kGetNamespace.Stdout = os.Stdout
-			kGetNamespace.Stderr = os.Stderr
-			err := kGetNamespace.Run()
-			if err != nil {
-				log.Println("Waiting vault to be born")
-				time.Sleep(10 * time.Second)
-			} else {
-				log.Println("vault namespace found, continuing")
-				time.Sleep(25 * time.Second)
-				break
-			}
-		}
-		x = 50
-		for i := 0; i < x; i++ {
-			kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "get", "pods", "-l", "vault-initialized=true")
-			kGetNamespace.Stdout = os.Stdout
-			kGetNamespace.Stderr = os.Stderr
-			err := kGetNamespace.Run()
-			if err != nil {
-				log.Println("Waiting vault pods to create")
-				time.Sleep(10 * time.Second)
-			} else {
-				log.Println("vault pods found, continuing")
-				time.Sleep(15 * time.Second)
-				break
-			}
-		}
+		waitVaultToBeInitialized()		
 		kPortForwardVault := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
 		kPortForwardVault.Stdout = os.Stdout
 		kPortForwardVault.Stderr = os.Stderr
@@ -197,37 +132,7 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Panicf("error: failed to port-forward to vault in main thread %s", err)
 		}
-
-		x = 50
-		for i := 0; i < x; i++ {
-			kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/gitlab")
-			kGetNamespace.Stdout = os.Stdout
-			kGetNamespace.Stderr = os.Stderr
-			err := kGetNamespace.Run()
-			if err != nil {
-				log.Println("Waiting gitlab namespace to be born")
-				time.Sleep(10 * time.Second)
-			} else {
-				log.Println("gitlab namespace found, continuing")
-				time.Sleep(5 * time.Second)
-				break
-			}
-		}
-		x = 50
-		for i := 0; i < x; i++ {
-			kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "get", "pods", "-l", "app=webservice")
-			kGetNamespace.Stdout = os.Stdout
-			kGetNamespace.Stderr = os.Stderr
-			err := kGetNamespace.Run()
-			if err != nil {
-				log.Println("Waiting gitlab pods to be born")
-				time.Sleep(10 * time.Second)
-			} else {
-				log.Println("gitlab pods found, continuing")
-				time.Sleep(15 * time.Second)
-				break
-			}
-		}
+		waitGitlabToBeReady()
 		log.Println("waiting for gitlab")
 		waitForGitlab(config)
 		log.Println("gitlab is ready!")
@@ -256,23 +161,7 @@ to quickly create a Cobra application.`,
 				/**
 
 				 */
-
-				x = 50
-				for i := 0; i < x; i++ {
-					kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "pod", "-l", "vault-initialized=true", "-n", "vault")
-					kGetNamespace.Stdout = os.Stdout
-					kGetNamespace.Stderr = os.Stderr
-					err := kGetNamespace.Run()
-					if err != nil {
-						log.Println("Waiting vault to be born")
-						time.Sleep(10 * time.Second)
-					} else {
-						log.Println("a Pod was found, continuing")
-						time.Sleep(25 * time.Second)
-						break
-					}
-				}
-
+				waitVaultToBeInitialized()				
 				waitForVaultUnseal(config)
 				log.Println("vault unseal condition met - continuing")
 
@@ -315,14 +204,7 @@ to quickly create a Cobra application.`,
 				// todo kind: Application .repoURL:
 			}
 		}
-
-		metricName = "kubefirst.mgmt_cluster_install.completed"
-
-		if !dryRun {
-			telemetry.SendTelemetry(metricDomain, metricName)
-		} else {
-			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
-		}
+		sendCompleteInstallTelemetry(dryRun)
 		time.Sleep(time.Millisecond * 100)
 	},
 }
@@ -338,22 +220,3 @@ func init() {
 
 }
 
-// todo: move it to internals/ArgoCD
-func setArgocdCreds() {
-	cfg := configs.ReadConfig()
-	config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
-	if err != nil {
-		panic(err.Error())
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-	argocdSecretClient = clientset.CoreV1().Secrets("argocd")
-
-	argocdPassword := getSecretValue(argocdSecretClient, "argocd-initial-admin-secret", "password")
-
-	viper.Set("argocd.admin.password", argocdPassword)
-	viper.Set("argocd.admin.username", "admin")
-	viper.WriteConfig()
-}
