@@ -8,6 +8,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
+	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/softserve"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
@@ -15,14 +16,10 @@ import (
 	"github.com/spf13/viper"
 	"log"
 	"os/exec"
+	"strings"
 	"syscall"
 	"time"
 )
-
-const trackerStage20 = "0 - Apply Base"
-const trackerStage21 = "1 - Temporary SCM Install"
-const trackerStage22 = "2 - Argo/Final SCM Install"
-const trackerStage23 = "3 - Final Setup"
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -52,7 +49,57 @@ to quickly create a Cobra application.`,
 			log.Panic(err)
 		}
 
-		infoCmd.Run(cmd, args)
+		// todo: remove it?
+		//infoCmd.Run(cmd, args)
+
+		var handOffData bytes.Buffer
+		type createHandOff struct {
+			AwsAccountId      string
+			AwsHostedZoneName string
+			AwsRegion         string
+			ClusterName       string
+			ArgoCDUrl         string
+			ArgoCDUsername    string
+			ArgoCDPassword    string
+		}
+
+		clusterData := createHandOff{
+			ClusterName:       viper.GetString("cluster-name"),
+			AwsAccountId:      viper.GetString("aws.accountid"),
+			AwsHostedZoneName: viper.GetString("aws.hostedzonename"),
+			AwsRegion:         viper.GetString("aws.region"),
+			ArgoCDUrl:         viper.GetString("argocd.local.service"),
+			ArgoCDUsername:    viper.GetString("argocd.admin.username"),
+			ArgoCDPassword:    viper.GetString("argocd.admin.password"),
+		}
+
+		handOffData.WriteString(strings.Repeat("-", 70))
+		handOffData.WriteString(fmt.Sprintf("\nCluster %q is up and running!:\n", clusterData.ClusterName))
+		handOffData.WriteString(strings.Repeat("-", 70))
+
+		// todo: make it dynamic for GCP
+		handOffData.WriteString("\n\n--- AWS ")
+		handOffData.WriteString(strings.Repeat("-", 62))
+		handOffData.WriteString(fmt.Sprintf("\n AWS Account Id: %s\n", clusterData.AwsAccountId))
+		handOffData.WriteString(fmt.Sprintf(" AWS hosted zone name: %s\n", clusterData.AwsHostedZoneName))
+		handOffData.WriteString(fmt.Sprintf(" AWS region: %s\n", clusterData.AwsRegion))
+		handOffData.WriteString(strings.Repeat("-", 70))
+
+		handOffData.WriteString("\n\n--- ArgoCD ")
+		handOffData.WriteString(strings.Repeat("-", 59))
+		handOffData.WriteString(fmt.Sprintf("\n URL: %s\n", clusterData.ArgoCDUrl))
+		handOffData.WriteString(fmt.Sprintf(" username: %s\n", clusterData.ArgoCDUsername))
+		handOffData.WriteString(fmt.Sprintf(" password: %s\n", clusterData.ArgoCDPassword))
+		handOffData.WriteString(strings.Repeat("-", 70))
+
+		reports.CommandSummary(handOffData)
+
+		if dryRun {
+			fmt.Println("dry running...")
+			log.Println("020202020")
+			return
+		}
+
 		progressPrinter.IncrementTracker("step-0", 1)
 
 		progressPrinter.AddTracker("step-softserve", "Prepare Temporary Repo ", 4)
@@ -259,6 +306,7 @@ to quickly create a Cobra application.`,
 		}
 		sendCompleteInstallTelemetry(dryRun)
 		time.Sleep(time.Millisecond * 100)
+
 	},
 }
 
