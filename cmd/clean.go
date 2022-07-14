@@ -1,32 +1,38 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"log"
 	"os"
-
-	"github.com/spf13/cobra"
+	"strings"
 )
 
-// cleanCmd represents the clean command
+// todo delete the s3 buckets associated with the ~/.kubefirst file
+// todo ask for user input to verify deletion?
+// todo ask for user input to verify?
+// cleanCmd removes all kubefirst resources locally for new execution.
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "removes all kubefirst resources locally for new execution",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Long: `Kubefirst creates files and folders during installation at your local environment. This command removes all
+Kubefirst files.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// todo delete the s3 buckets associated with the ~/.kubefirst file
-		// todo ask for user input to verify deletion?
+
 		config := configs.ReadConfig()
 
-		log.Printf("removing %q and %q", config.KubeConfigPath, config.KubefirstConfigFilePath)
-		// todo ask for user input to verify?
-		err := os.RemoveAll(config.K1srtFolderPath)
+		// command line flags
+		rmLogsFolder, err := cmd.Flags().GetBool("rm-logs")
+		if err != nil {
+			log.Panic(err)
+		}
+
+		// delete files and folders
+		err = os.RemoveAll(config.K1srtFolderPath)
 		if err != nil {
 			log.Panicf("unable to delete %q folder, error is: %s", config.K1srtFolderPath, err)
 		}
@@ -35,22 +41,49 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Panicf("unable to delete %q file, error is: ", err)
 		}
-		log.Printf("removed %q and %q", config.KubeConfigPath, config.KubefirstConfigFilePath)
 
-		log.Printf("%q and %q folders were removed", config.K1srtFolderPath, config.KubectlClientPath)
+		// remove logs folder if flag is enabled
+		var logFolderLocation string
+		if rmLogsFolder {
+			logFolderLocation = viper.GetString("log-folder-location")
+			err := os.RemoveAll(logFolderLocation)
+			if err != nil {
+				log.Panicf("unable to delete logs folder at %q", config.KubefirstLogPath)
+			}
+		}
 
+		// re-create folder
 		if err := os.Mkdir(fmt.Sprintf("%s", config.K1srtFolderPath), os.ModePerm); err != nil {
 			log.Panicf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1srtFolderPath, err)
 		}
-		toolsDir := fmt.Sprintf("%s/tools", config.K1srtFolderPath)
-		if err := os.Mkdir(toolsDir, os.ModePerm); err != nil {
-			log.Panicf("error: could not create directory %q/tools - it must exist to continue %s", config.K1srtFolderPath, err)
+
+		// re-create base
+		log.Printf("%q config file and %q folder were deleted and re-created", config.KubefirstConfigFilePath, config.K1srtFolderPath)
+
+		var cleanSummary bytes.Buffer
+		cleanSummary.WriteString(strings.Repeat("-", 70))
+		cleanSummary.WriteString("\nclean summary:\n")
+		cleanSummary.WriteString(strings.Repeat("-", 70))
+		cleanSummary.WriteString("\n\nFiles and folders deleted:\n\n")
+
+		cleanSummary.WriteString(fmt.Sprintf("   %q\n", config.KubefirstConfigFilePath))
+		cleanSummary.WriteString(fmt.Sprintf("   %q\n", config.K1srtFolderPath))
+
+		if rmLogsFolder {
+			cleanSummary.WriteString(fmt.Sprintf("   %q\n", logFolderLocation))
 		}
 
-		log.Printf("created %q and %q/tools - proceed to `kubefirst init`", config.KubefirstConfigFilePath, config.K1srtFolderPath)
+		cleanSummary.WriteString("\nRe-created empty folder: \n\n")
+		cleanSummary.WriteString(fmt.Sprintf("   %q\n\n", config.K1srtFolderPath))
+
+		cleanSummary.WriteString("Re-created empty config file: \n\n")
+		cleanSummary.WriteString(fmt.Sprintf("   %q", config.KubefirstConfigFilePath))
+
+		reports.CleanSummary(cleanSummary)
 	},
 }
 
 func init() {
-	initCmd.AddCommand(cleanCmd)
+	rootCmd.AddCommand(cleanCmd)
+	cleanCmd.Flags().Bool("rm-logs", false, "remove logs folder")
 }
