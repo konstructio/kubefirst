@@ -19,8 +19,8 @@ import (
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "removes all kubefirst resources locally for new execution",
-	Long: `Kubefirst creates files and folders during installation at your local environment. This command removes all
-Kubefirst files.`,
+	Long: `Kubefirst creates files and folders during installation at your local environment. This command removes and 
+re-create all Kubefirst files.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		config := configs.ReadConfig()
@@ -45,7 +45,7 @@ Kubefirst files.`,
 		// remove logs folder if flag is enabled
 		var logFolderLocation string
 		if rmLogsFolder {
-			logFolderLocation = viper.GetString("log-folder-location")
+			logFolderLocation = viper.GetString("log.folder.location")
 			err := os.RemoveAll(logFolderLocation)
 			if err != nil {
 				log.Panicf("unable to delete logs folder at %q", config.KubefirstLogPath)

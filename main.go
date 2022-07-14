@@ -46,10 +46,6 @@ func main() {
 
 	file, err := openLogFile(logfile)
 	if err != nil {
-		log.Panic(err)
-	}
-
-	if err != nil {
 		log.Panicf("unable to store log location, error is: %s", err)
 	}
 
