@@ -32,9 +32,9 @@ re-create all Kubefirst files.`,
 		}
 
 		// delete files and folders
-		err = os.RemoveAll(config.K1srtFolderPath)
+		err = os.RemoveAll(config.K1FolderPath)
 		if err != nil {
-			log.Panicf("unable to delete %q folder, error is: %s", config.K1srtFolderPath, err)
+			log.Panicf("unable to delete %q folder, error is: %s", config.K1FolderPath, err)
 		}
 
 		err = os.Remove(config.KubefirstConfigFilePath)
@@ -53,12 +53,12 @@ re-create all Kubefirst files.`,
 		}
 
 		// re-create folder
-		if err := os.Mkdir(fmt.Sprintf("%s", config.K1srtFolderPath), os.ModePerm); err != nil {
-			log.Panicf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1srtFolderPath, err)
+		if err := os.Mkdir(fmt.Sprintf("%s", config.K1FolderPath), os.ModePerm); err != nil {
+			log.Panicf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1FolderPath, err)
 		}
 
 		// re-create base
-		log.Printf("%q config file and %q folder were deleted and re-created", config.KubefirstConfigFilePath, config.K1srtFolderPath)
+		log.Printf("%q config file and %q folder were deleted and re-created", config.KubefirstConfigFilePath, config.K1FolderPath)
 
 		var cleanSummary bytes.Buffer
 		cleanSummary.WriteString(strings.Repeat("-", 70))
@@ -67,14 +67,14 @@ re-create all Kubefirst files.`,
 		cleanSummary.WriteString("\n\nFiles and folders deleted:\n\n")
 
 		cleanSummary.WriteString(fmt.Sprintf("   %q\n", config.KubefirstConfigFilePath))
-		cleanSummary.WriteString(fmt.Sprintf("   %q\n", config.K1srtFolderPath))
+		cleanSummary.WriteString(fmt.Sprintf("   %q\n", config.K1FolderPath))
 
 		if rmLogsFolder {
 			cleanSummary.WriteString(fmt.Sprintf("   %q\n", logFolderLocation))
 		}
 
 		cleanSummary.WriteString("\nRe-created empty folder: \n\n")
-		cleanSummary.WriteString(fmt.Sprintf("   %q\n\n", config.K1srtFolderPath))
+		cleanSummary.WriteString(fmt.Sprintf("   %q\n\n", config.K1FolderPath))
 
 		cleanSummary.WriteString("Re-created empty config file: \n\n")
 		cleanSummary.WriteString(fmt.Sprintf("   %q", config.KubefirstConfigFilePath))

@@ -89,8 +89,8 @@ func PushGitOpsToGitLab(dryRun bool) {
 	//TODO: should this step to be skipped if already executed?
 	domain := viper.GetString("aws.hostedzonename")
 
-	pkg.Detokenize(fmt.Sprintf("%s/gitops", cfg.K1srtFolderPath))
-	directory := fmt.Sprintf("%s/gitops", cfg.K1srtFolderPath)
+	pkg.Detokenize(fmt.Sprintf("%s/gitops", cfg.K1FolderPath))
+	directory := fmt.Sprintf("%s/gitops", cfg.K1FolderPath)
 
 	repo, err := git.PlainOpen(directory)
 	if err != nil {
@@ -248,18 +248,18 @@ func ApplyGitlabTerraform(dryRun bool, directory string) {
 		//* AWS_SDK_LOAD_CONFIG=1
 		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 		envs := map[string]string{}
-		envs["AWS_SDK_LOAD_CONFIG"]="1"
-		envs["AWS_PROFILE"]=config.AwsProfile
+		envs["AWS_SDK_LOAD_CONFIG"] = "1"
+		envs["AWS_PROFILE"] = config.AwsProfile
 		// Prepare for terraform gitlab execution
-		envs["GITLAB_TOKEN"]=viper.GetString("gitlab.token")
-		envs["GITLAB_BASE_URL"]=viper.GetString("gitlab.local.service")
+		envs["GITLAB_TOKEN"] = viper.GetString("gitlab.token")
+		envs["GITLAB_BASE_URL"] = viper.GetString("gitlab.local.service")
 
-		directory = fmt.Sprintf("%s/gitops/terraform/gitlab", config.K1srtFolderPath)
+		directory = fmt.Sprintf("%s/gitops/terraform/gitlab", config.K1FolderPath)
 		err := os.Chdir(directory)
 		if err != nil {
 			log.Panic("error: could not change directory to " + directory)
 		}
-		err = pkg.ExecShellWithVars(envs,config.TerraformPath, "init")
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if err != nil {
 			log.Panicf("error: terraform init for gitlab failed %s", err)
 		}
@@ -321,17 +321,16 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 	config := configs.ReadConfig()
 	envs := map[string]string{}
 
-	envs["AWS_REGION"]= viper.GetString("aws.region")
-	envs["AWS_ACCOUNT_ID"]= viper.GetString("aws.accountid")
-	envs["HOSTED_ZONE_NAME"]= viper.GetString("aws.hostedzonename")
-	envs["GITLAB_TOKEN"]=  viper.GetString("gitlab.token")
+	envs["AWS_REGION"] = viper.GetString("aws.region")
+	envs["AWS_ACCOUNT_ID"] = viper.GetString("aws.accountid")
+	envs["HOSTED_ZONE_NAME"] = viper.GetString("aws.hostedzonename")
+	envs["GITLAB_TOKEN"] = viper.GetString("gitlab.token")
 
-	envs["TF_VAR_aws_account_id"]=  viper.GetString("aws.accountid")
-	envs["TF_VAR_aws_region"]=  viper.GetString("aws.region")
-	envs["TF_VAR_hosted_zone_name"]=   viper.GetString("aws.hostedzonename")
+	envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
+	envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
+	envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 
-
-	directory := fmt.Sprintf("%s/.gitops/terraform/gitlab", config.K1srtFolderPath)
+	directory := fmt.Sprintf("%s/.gitops/terraform/gitlab", config.K1FolderPath)
 	err := os.Chdir(directory)
 	if err != nil {
 		log.Panicf("error: could not change directory to " + directory)
@@ -345,7 +344,7 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 			log.Panicf("failed to terraform init gitlab %s", err)
 		}
 
-		err = pkg.ExecShellWithVars(envs,config.TerraformPath, "destroy", "-auto-approve")
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "destroy", "-auto-approve")
 		if err != nil {
 			log.Panicf("failed to terraform destroy gitlab %s", err)
 		}
@@ -448,7 +447,7 @@ func ChangeRegistryToGitLab(dryRun bool) {
 			log.Panicf("error creating argocd repository connection secret %s", err)
 		}
 
-		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/gitlab/argocd-adopts-gitlab.yaml", config.K1srtFolderPath))
+		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/gitlab/argocd-adopts-gitlab.yaml", config.K1FolderPath))
 		if err != nil {
 			log.Panicf("failed to call execute kubectl apply of argocd patch to adopt gitlab: %s", err)
 		}
@@ -469,7 +468,7 @@ func HydrateGitlabMetaphorRepo(dryRun bool) {
 			return
 		}
 
-		metaphorTemplateDir := fmt.Sprintf("%s/metaphor", cfg.K1srtFolderPath)
+		metaphorTemplateDir := fmt.Sprintf("%s/metaphor", cfg.K1FolderPath)
 
 		url := "https://github.com/kubefirst/metaphor-template"
 
@@ -528,9 +527,9 @@ func HydrateGitlabMetaphorRepo(dryRun bool) {
 func PushGitRepo(dryRun bool, config *configs.Config, gitOrigin, repoName string) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, PushGitRepo skipped.")
-		return 
-	} 
-	repoDir := fmt.Sprintf("%s/%s", config.K1srtFolderPath, repoName)
+		return
+	}
+	repoDir := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
 	repo, err := git.PlainOpen(repoDir)
 	if err != nil {
 		log.Panicf("error opening repo %s: %s", repoName, err)

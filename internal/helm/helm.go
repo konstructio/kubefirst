@@ -26,7 +26,7 @@ func InstallArgocd(dryRun bool) {
 			log.Panicf("error: could not helm repo update %s", err)
 		}
 
-		_, _, err = pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "upgrade", "--install", "argocd", "--namespace", "argocd", "--create-namespace", "--wait", "--values", fmt.Sprintf("%s/argocd-init-values.yaml", config.K1srtFolderPath), "argo/argo-cd")
+		_, _, err = pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "upgrade", "--install", "argocd", "--namespace", "argocd", "--create-namespace", "--wait", "--values", fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), "argo/argo-cd")
 		if err != nil {
 			log.Panicf("error: could not helm install argocd command %s", err)
 		}

@@ -19,7 +19,7 @@ func CloneGitOpsRepo() {
 
 	config := configs.ReadConfig()
 	url := "https://github.com/kubefirst/gitops-template"
-	directory := fmt.Sprintf("%s/gitops", config.K1srtFolderPath)
+	directory := fmt.Sprintf("%s/gitops", config.K1FolderPath)
 
 	versionGitOps := viper.GetString("version-gitops")
 
@@ -34,13 +34,13 @@ func CloneGitOpsRepo() {
 		log.Panicf("error cloning gitops-template repository from github, error is:  %s", err)
 	}
 
-	log.Println("downloaded gitops repo from template to directory", config.K1srtFolderPath, "/gitops")
+	log.Println("downloaded gitops repo from template to directory", config.K1FolderPath, "/gitops")
 }
 
 func PushGitopsToSoftServe() {
 
 	cfg := configs.ReadConfig()
-	directory := fmt.Sprintf("%s/gitops", cfg.K1srtFolderPath)
+	directory := fmt.Sprintf("%s/gitops", cfg.K1FolderPath)
 
 	log.Println("open gitClient repo", directory)
 
