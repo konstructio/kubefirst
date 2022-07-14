@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
@@ -10,7 +11,6 @@ import (
 	"log"
 	"os/exec"
 	"syscall"
-	"bytes"
 )
 
 // destroyCmd represents the destroy command
@@ -42,8 +42,8 @@ if the registry has already been deleted.`,
 		if err != nil {
 			log.Panic(err)
 		}
-		
-		var kPortForwardOutb, kPortForwardErrb bytes.Buffer 
+
+		var kPortForwardOutb, kPortForwardErrb bytes.Buffer
 		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
 		kPortForward.Stdout = &kPortForwardOutb
 		kPortForward.Stderr = &kPortForwardErrb
@@ -55,7 +55,7 @@ if the registry has already been deleted.`,
 			log.Panicf("error: failed to port-forward to gitlab in main thread %s", err)
 		}
 
-		var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer 
+		var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer
 		kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
 		kPortForwardArgocd.Stdout = &kPortForwardArgocdOutb
 		kPortForwardArgocd.Stderr = &kPortForwardArgocdErrb
@@ -67,7 +67,7 @@ if the registry has already been deleted.`,
 			log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
 		}
 
-		var kPortForwardVaultOutb, kPortForwardVaultErrb bytes.Buffer 
+		var kPortForwardVaultOutb, kPortForwardVaultErrb bytes.Buffer
 		kPortForwardVault := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
 		kPortForwardVault.Stdout = &kPortForwardVaultOutb
 		kPortForwardVault.Stderr = &kPortForwardVaultErrb

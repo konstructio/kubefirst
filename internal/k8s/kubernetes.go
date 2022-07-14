@@ -9,10 +9,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
-	"github.com/kubefirst/kubefirst/pkg"
 	"log"
 	"time"
 )

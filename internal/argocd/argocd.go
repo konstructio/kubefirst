@@ -11,9 +11,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/kubefirst/kubefirst/pkg"
 	"strings"
 	"time"
-	"github.com/kubefirst/kubefirst/pkg"
 )
 
 // kSyncArgocdApplication request ArgoCD to manual sync an application. Expected parameters are the ArgoCD application
