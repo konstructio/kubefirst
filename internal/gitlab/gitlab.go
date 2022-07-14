@@ -29,7 +29,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -69,10 +68,7 @@ func GitlabGeneratePersonalAccessToken(gitlabPodName string) {
 	id := uuid.New()
 	gitlabToken := id.String()[:20]
 
-	k := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "exec", gitlabPodName, "--", "gitlab-rails", "runner", fmt.Sprintf("token = User.find_by_username('root').personal_access_tokens.create(scopes: [:write_registry, :write_repository, :api], name: 'Automation token'); token.set_token('%s'); token.save!", gitlabToken))
-	k.Stdout = os.Stdout
-	k.Stderr = os.Stderr
-	err := k.Run()
+	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "exec", gitlabPodName, "--", "gitlab-rails", "runner", fmt.Sprintf("token = User.find_by_username('root').personal_access_tokens.create(scopes: [:write_registry, :write_repository, :api], name: 'Automation token'); token.set_token('%s'); token.save!", gitlabToken))
 	if err != nil {
 		log.Panicf("error running exec against %s to generate gitlab personal access token for root user", gitlabPodName)
 	}
@@ -340,7 +336,7 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 		log.Panicf("error: could not change directory to " + directory)
 	}
 
-	os.Setenv("GITLAB_BASE_URL", viper.GetString("gitlab.local.service"))
+	envs["GITLAB_BASE_URL"] = viper.GetString("gitlab.local.service")
 
 	if !skipGitlabTerraform {
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
@@ -451,10 +447,7 @@ func ChangeRegistryToGitLab(dryRun bool) {
 			log.Panicf("error creating argocd repository connection secret %s", err)
 		}
 
-		k := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/gitlab/argocd-adopts-gitlab.yaml", config.K1FolderPath))
-		k.Stdout = os.Stdout
-		k.Stderr = os.Stderr
-		err = k.Run()
+		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/gitlab/argocd-adopts-gitlab.yaml", config.K1FolderPath))
 		if err != nil {
 			log.Panicf("failed to call execute kubectl apply of argocd patch to adopt gitlab: %s", err)
 		}

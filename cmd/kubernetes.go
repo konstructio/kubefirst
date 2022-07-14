@@ -10,14 +10,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/spf13/viper"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 	"log"
 	"os"
 	"os/exec"
 	"time"
-
-	"github.com/spf13/viper"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 var vaultRootToken string
@@ -43,7 +43,7 @@ func getPodNameByLabel(gitlabPodsClient coreV1Types.PodInterface, label string) 
 func waitForVaultUnseal(dryRun bool, config *configs.Config) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, waitForGitlab skipped.")
-		return 
+		return
 	}
 	vaultReady := viper.GetBool("create.vault.ready")
 	if !vaultReady {
@@ -67,8 +67,8 @@ func waitForVaultUnseal(dryRun bool, config *configs.Config) {
 func waitForGitlab(dryRun bool, config *configs.Config) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, waitForGitlab skipped.")
-		return 
-	} 
+		return
+	}
 	var output bytes.Buffer
 	// todo - add a viper.GetBool() check to the beginning of this function
 	// todo write in golang? see here -> https://github.com/bcreane/k8sutils/blob/master/utils.go
@@ -85,8 +85,8 @@ func waitForGitlab(dryRun bool, config *configs.Config) {
 func createVaultConfiguredSecret(dryRun bool, config *configs.Config) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, createVaultConfiguredSecret skipped.")
-		return 
-	} 
+		return
+	}
 	if !viper.GetBool("vault.configuredsecret") {
 		var output bytes.Buffer
 		// todo - https://github.com/bcreane/k8sutils/blob/master/utils.go
@@ -137,17 +137,14 @@ func getSecretValue(k8sClient coreV1Types.SecretInterface, secretName, key strin
 }
 
 func waitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, podLabel string) {
-	if dryRun {		
+	if dryRun {
 		log.Printf("[#99] Dry-run mode, waitForNamespaceandPods skipped")
 		return
-	} 
+	}
 	if !viper.GetBool("create.softserve.ready") {
 		x := 50
 		for i := 0; i < x; i++ {
-			kGetNamespace := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "get", fmt.Sprintf("namespace/%s", namespace))
-			kGetNamespace.Stdout = os.Stdout
-			kGetNamespace.Stderr = os.Stderr
-			err := kGetNamespace.Run()
+			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "get", fmt.Sprintf("namespace/%s", namespace))
 			if err != nil {
 				log.Println(fmt.Sprintf("waiting for %s namespace to create ", namespace))
 				time.Sleep(10 * time.Second)
@@ -158,10 +155,7 @@ func waitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, pod
 			}
 		}
 		for i := 0; i < x; i++ {
-			kGetPods := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "get", "pods", "-l", podLabel)
-			kGetPods.Stdout = os.Stdout
-			kGetPods.Stderr = os.Stderr
-			err := kGetPods.Run()
+			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "get", "pods", "-l", podLabel)
 			if err != nil {
 				log.Println(fmt.Sprintf("waiting for %s pods to create ", namespace))
 				time.Sleep(10 * time.Second)
