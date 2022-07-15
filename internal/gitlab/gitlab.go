@@ -453,9 +453,6 @@ func ChangeRegistryToGitLab(dryRun bool) {
 		log.Panicf("failed to call execute kubectl apply of argocd patch to adopt gitlab: %s", err)
 	}
 
-	viper.Set("gitlab.registry", true)
-	viper.WriteConfig()
-
 }
 
 func HydrateGitlabMetaphorRepo(dryRun bool) {
