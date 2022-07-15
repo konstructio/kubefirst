@@ -129,11 +129,12 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		bucketArgoArtifacts := viper.GetString("bucket.argo-artifacts.name")
 		bucketGitlabBackup := viper.GetString("bucket.gitlab-backup.name")
 		bucketChartmuseum := viper.GetString("bucket.chartmuseum.name")
+		clusterName := viper.GetString("cluster-name")
+
 		region := viper.GetString("aws.region")
 		adminEmail := viper.GetString("adminemail")
 		awsAccountId := viper.GetString("aws.accountid")
 		kmsKeyId := viper.GetString("vault.kmskeyid")
-		k8sClusterName := viper.GetString("cluster-name")
 
 		newContents = strings.Replace(newContents, "<SOFT_SERVE_INITIAL_ADMIN_PUBLIC_KEY>", strings.TrimSpace(botPublicKey), -1)
 		newContents = strings.Replace(newContents, "<TF_STATE_BUCKET>", bucketStateStore, -1)
@@ -146,7 +147,7 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<AWS_DEFAULT_REGION>", region, -1)
 		newContents = strings.Replace(newContents, "<EMAIL_ADDRESS>", adminEmail, -1)
 		newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
-		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", k8sClusterName, -1)
+		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", clusterName, -1)
 		if kmsKeyId != "" {
 			newContents = strings.Replace(newContents, "<KMS_KEY_ID>", kmsKeyId, -1)
 		}

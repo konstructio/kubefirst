@@ -79,7 +79,7 @@ re-create all Kubefirst files.`,
 		cleanSummary.WriteString("Re-created empty config file: \n\n")
 		cleanSummary.WriteString(fmt.Sprintf("   %q", config.KubefirstConfigFilePath))
 
-		reports.CommandSummary(cleanSummary)
+		fmt.Println(reports.StyleMessage(cleanSummary.String()))
 	},
 }
 
