@@ -2,18 +2,19 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/go-git/go-git/v5"
-	gitConfig "github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/go-git/go-git/v5"
+	gitConfig "github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/spf13/viper"
 )
 
 func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName string, branch string) {
@@ -127,6 +128,8 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		bucketArgoArtifacts := viper.GetString("bucket.argo-artifacts.name")
 		bucketGitlabBackup := viper.GetString("bucket.gitlab-backup.name")
 		bucketChartmuseum := viper.GetString("bucket.chartmuseum.name")
+		clusterName := viper.GetString("cluster-name")
+
 		region := viper.GetString("aws.region")
 		adminEmail := viper.GetString("adminemail")
 		awsAccountId := viper.GetString("aws.accountid")
@@ -142,6 +145,7 @@ func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<AWS_DEFAULT_REGION>", region, -1)
 		newContents = strings.Replace(newContents, "<EMAIL_ADDRESS>", adminEmail, -1)
 		newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
+		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", clusterName, -1)
 		if kmsKeyId != "" {
 			newContents = strings.Replace(newContents, "<KMS_KEY_ID>", kmsKeyId, -1)
 		}

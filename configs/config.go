@@ -2,10 +2,11 @@ package configs
 
 import (
 	"fmt"
-	"github.com/caarlos0/env/v6"
 	"log"
 	"os"
 	"runtime"
+
+	"github.com/caarlos0/env/v6"
 )
 
 /**
@@ -61,7 +62,7 @@ func ReadConfig() *Config {
 	config.LocalArchitecture = runtime.GOARCH
 
 	config.KubectlClientPath = fmt.Sprintf("%s/tools/kubectl", config.K1FolderPath)
-	config.KubeConfigPath = fmt.Sprintf("%s/gitops/terraform/base/kubeconfig_kubefirst", config.K1FolderPath)
+	config.KubeConfigPath = fmt.Sprintf("%s/gitops/terraform/base/kubeconfig", config.K1FolderPath)
 	config.TerraformPath = fmt.Sprintf("%s/tools/terraform", config.K1FolderPath)
 	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
 
