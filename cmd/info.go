@@ -49,8 +49,8 @@ var infoCmd = &cobra.Command{
 			log.Panic(err)
 		}
 		fmt.Printf("----------- \n")
-	
-		reports.CommandSummary(infoSummary)
+
+		fmt.Println(reports.StyleMessage(infoSummary.String()))
 	},
 }
 
