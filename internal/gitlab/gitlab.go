@@ -560,7 +560,13 @@ func PushGitRepo(dryRun bool, config *configs.Config, gitOrigin, repoName string
 	}
 
 	if gitOrigin == "gitlab" {
-
+		pkg.Detokenize(repoDir)
+		os.RemoveAll(repoDir + "/terraform/base/.terraform")
+		os.RemoveAll(repoDir + "/terraform/gitlab/.terraform")
+		os.RemoveAll(repoDir + "/terraform/vault/.terraform")
+		os.Remove(repoDir + "/terraform/base/.terraform.lock.hcl")
+		os.Remove(repoDir + "/terraform/gitlab/.terraform.lock.hcl")
+		CommitToRepo(repo, repoName)
 		auth := &gitHttp.BasicAuth{
 			Username: "root",
 			Password: viper.GetString("gitlab.token"),
