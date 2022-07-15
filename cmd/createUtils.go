@@ -161,12 +161,14 @@ func loopUntilPodIsReady() {
 			log.Printf("vault is availbale but the body is not what is expected %s", err)
 			continue
 		}
-		isInitialized := responseJson["initialized"]
-		if !isInitialized.(bool) {
+
+		_, ok := responseJson["initialized"]
+		if ok {
 			log.Printf("vault is initialized and is in the expected state")
-			break
+			return
 		}
 	}
+	log.Panic("vault was never initialized")
 }
 
 type VaultInitResponse struct {
