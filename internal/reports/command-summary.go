@@ -124,12 +124,12 @@ func CommandSummary(cleanSummary bytes.Buffer) {
 
 func getStyle() lipgloss.Style {
 
-	const kubefirstBoldPurple = "#d0bae9"
-	const kubefirstLightPurple = "#3c356c"
+	const kubefirstBoldPurple = "#5f00af"
+	const kubefirstLightPurple = "#d0bae9"
 
 	var style = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(kubefirstBoldPurple)).
-		Background(lipgloss.Color(kubefirstLightPurple)).
+		Foreground(lipgloss.Color(kubefirstLightPurple)).
+		Background(lipgloss.Color(kubefirstBoldPurple)).
 		PaddingTop(2).
 		PaddingBottom(2).
 		PaddingLeft(2).
