@@ -13,13 +13,17 @@ import (
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
-	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/softserve"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+const trackerStage20 = "0 - Apply Base"
+const trackerStage21 = "1 - Temporary SCM Install"
+const trackerStage22 = "2 - Argo/Final SCM Install"
+const trackerStage23 = "3 - Final Setup"
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -49,11 +53,7 @@ to quickly create a Cobra application.`,
 			log.Panic(err)
 		}
 
-		// todo:
-		// isolate commands, in case we want to run some validations on the create, it would be a good idea to call the
-		// functions that does the validations
 		infoCmd.Run(cmd, args)
-
 		progressPrinter.IncrementTracker("step-0", 1)
 
 		progressPrinter.AddTracker("step-softserve", "Prepare Temporary Repo ", 4)
@@ -208,13 +208,15 @@ to quickly create a Cobra application.`,
 
 				progressPrinter.AddTracker("step-vault", "Configure Vault", 4)
 				informUser("waiting for vault unseal")
+				/**
 
-				informUser("Vault initialized")
+				 */
+				waitVaultToBeRunning(dryRun)
+				informUser("Vault running")
 				progressPrinter.IncrementTracker("step-vault", 1)
 
-				// todo need to make sure this is not needed
-				// waitForVaultUnseal(dryRun, config)
-				// informUser("Vault unseal")
+				waitForVaultUnseal(dryRun, config)
+				informUser("Vault unseal")
 				progressPrinter.IncrementTracker("step-vault", 1)
 
 				log.Println("configuring vault")
@@ -226,7 +228,9 @@ to quickly create a Cobra application.`,
 				createVaultConfiguredSecret(dryRun, config)
 				informUser("Vault  secret created")
 				progressPrinter.IncrementTracker("step-vault", 1)
+			}
 
+			if !viper.GetBool("gitlab.oidc-created") {
 				progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 5)
 				vault.AddGitlabOidcApplications(dryRun)
 				informUser("Added Gitlab OIDC")
@@ -238,24 +242,34 @@ to quickly create a Cobra application.`,
 
 				informUser("Pushing gitops repo to origin gitlab")
 				// refactor: sounds like a new functions, should PushGitOpsToGitLab be renamed/update signature?
-
+				viper.Set("gitlab.oidc-created", true)
+				viper.WriteConfig()
+			}
+			if !viper.GetBool("gitlab.gitops-pushed") {
 				gitlab.PushGitRepo(dryRun, config, "gitlab", "gitops") // todo: need to handle if this was already pushed, errors on failure)
 				progressPrinter.IncrementTracker("step-post-gitlab", 1)
 				// todo: keep one of the two git push functions, they're similar, but not exactly the same
 				//gitlab.PushGitOpsToGitLab(dryRun)
-
+				viper.Set("gitlab.gitops-pushed", true)
+				viper.WriteConfig()
+			}
+			if !viper.GetBool("gitlab.metaphor-pushed") {
 				informUser("Pushing metaphor repo to origin gitlab")
 				gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
 				progressPrinter.IncrementTracker("step-post-gitlab", 1)
 				// todo: keep one of the two git push functions, they're similar, but not exactly the same
 				//gitlab.PushGitOpsToGitLab(dryRun)
-
+				viper.Set("gitlab.metaphor-pushed", true)
+				viper.WriteConfig()
+			}
+			if !viper.GetBool("gitlab.registered") {
 				informUser("Changing registry to Gitlab")
 				gitlab.ChangeRegistryToGitLab(dryRun)
 				progressPrinter.IncrementTracker("step-post-gitlab", 1)
-
 				// todo triage / force apply the contents adjusting
 				// todo kind: Application .repoURL:
+				viper.Set("gitlab.registered", true)
+				viper.WriteConfig()
 			}
 		}
 		sendCompleteInstallTelemetry(dryRun)
