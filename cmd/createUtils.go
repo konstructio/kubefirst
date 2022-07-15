@@ -130,9 +130,12 @@ func waitVaultToBeRunning(dryRun bool) {
 }
 
 func loopUntilPodIsReady() {
+
 	x := 50
 	url := "http://localhost:8200/v1/sys/health"
 	for i := 0; i < x; i++ {
+		log.Println("vault is not ready yet, sleeping and checking again")
+		time.Sleep(10 * time.Second)
 
 		req, _ := http.NewRequest("GET", url, nil)
 
@@ -140,27 +143,29 @@ func loopUntilPodIsReady() {
 
 		res, err := http.DefaultClient.Do(req)
 		if err != nil {
-			log.Println("error with http request Do")
+			log.Println("error with http request Do, vault is not available", err)
+			continue
 		}
 
 		defer res.Body.Close()
 		body, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			log.Println("error body does not exist")
+			log.Println("vault is availbale but the body is not what is expected ", err)
+			continue
 		}
 		fmt.Println(string(body))
 
 		var responseJson map[string]interface{}
 
 		if err := json.Unmarshal(body, &responseJson); err != nil {
-			log.Printf("error unmarshalling  %s", err)
+			log.Printf("vault is availbale but the body is not what is expected %s", err)
+			continue
 		}
 		isInitialized := responseJson["initialized"]
 		if !isInitialized.(bool) {
+			log.Printf("vault is initialized and is in the expected state")
 			break
 		}
-		log.Println("vault is not ready yet, sleeping and checking again")
-		time.Sleep(10 * time.Second)
 	}
 }
 
@@ -180,13 +185,42 @@ type VaultUnsealResponse struct {
 	UnsealKeysHex         []interface{} `json:"unseal_keys_hex"`
 	UnsealShares          int           `json:"unseal_shares"`
 	UnsealThreshold       int           `json:"unseal_threshold"`
-	RecoveryKeysB64       []string      `json:"recovery_keys_b64"`
-	RecoveryKeysHex       []string      `json:"recovery_keys_hex"`
+	RecoveryKeysBase64    []string      `json:"recovery_keys_base64"`
+	RecoveryKeys          []string      `json:"recovery_keys"`
 	RecoveryKeysShares    int           `json:"recovery_keys_shares"`
 	RecoveryKeysThreshold int           `json:"recovery_keys_threshold"`
 	RootToken             string        `json:"root_token"`
 	Keys                  []string      `json:"keys"`
 	KeysB64               []string      `json:"keys_base64"`
+}
+
+func marshalJson() {
+	str := `{
+    "keys": [],
+    "keys_base64": [],
+    "recovery_keys": [
+      "fbb8963f2442526a5e9bc3bcea96c584381a13bb91427fddc318f21da941a70a8e",
+      "502e96b44fce560df6b8971c196660ec9103609d63b5effabc9639e7200714d4be",
+      "395e31bb195f8f55aa6f055b07362f00672cbb888d5cbb362e64de86010352be6d",
+      "9ecfbf6809f7b4033a0f244b4a6682ba5bf67c960807a40f12418af9a02a8d46e3",
+      "3f1329b003870822e540ddbed99a0e3150feb7524c0e3e13336857e531579e99af"
+    ],
+    "recovery_keys_base64": [
+      "+7iWPyRCUmpem8O86pbFhDgaE7uRQn/dwxjyHalBpwqO",
+      "UC6WtE/OVg32uJccGWZg7JEDYJ1jte/6vJY55yAHFNS+",
+      "OV4xuxlfj1WqbwVbBzYvAGcsu4iNXLs2LmTehgEDUr5t",
+      "ns+/aAn3tAM6DyRLSmaCulv2fJYIB6QPEkGK+aAqjUbj",
+      "PxMpsAOHCCLlQN2+2ZoOMVD+t1JMDj4TM2hX5TFXnpmv"
+    ],
+    "root_token": "s.83Ex66wBVE4wtw9xmZLheK8P"
+  }`
+	log.Printf(str)
+
+	res := VaultUnsealResponse{}
+	json.Unmarshal([]byte(str), &res)
+
+	log.Println(res)
+
 }
 
 func initializeVaultAndAutoUnseal() {
@@ -204,20 +238,13 @@ func initializeVaultAndAutoUnseal() {
 	}
 
 	defer res.Body.Close()
-
 	body, _ := ioutil.ReadAll(res.Body)
 
-	var responseJson VaultUnsealResponse
+	vaultResponse := VaultUnsealResponse{}
+	json.Unmarshal(body, &vaultResponse)
 
-	if err := json.Unmarshal(body, &responseJson); err != nil {
-		log.Printf("error unmarshalling  %s", err)
-	}
-
-	fmt.Println(responseJson)
-	viper.Set("vault.recovery-keys", responseJson.RecoveryKeysB64)
-
-	viper.Set("vault.unseal-keys", responseJson)
-	viper.Set("vault.token", responseJson.RootToken)
+	viper.Set("vault.token", vaultResponse.RootToken)
+	viper.Set("vault.unseal-keys", vaultResponse)
 	viper.WriteConfig()
 }
 

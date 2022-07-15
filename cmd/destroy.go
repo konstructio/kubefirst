@@ -1,27 +1,17 @@
 package cmd
 
 import (
-<<<<<<< Updated upstream
 	"bytes"
-=======
 	"log"
-	"os"
 	"os/exec"
 	"syscall"
 
->>>>>>> Stashed changes
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
-<<<<<<< Updated upstream
-	"log"
-	"os/exec"
-	"syscall"
-=======
->>>>>>> Stashed changes
 )
 
 // destroyCmd represents the destroy command
