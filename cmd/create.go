@@ -3,6 +3,11 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"os/exec"
+	"syscall"
+	"time"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
@@ -14,10 +19,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"os/exec"
-	"syscall"
-	"time"
 )
 
 // createCmd represents the create command
@@ -146,7 +147,7 @@ to quickly create a Cobra application.`,
 		//!
 		progressPrinter.AddTracker("step-gitlab", "Setup Gitlab", 6)
 		informUser("Waiting vault to be ready")
-		waitVaultToBeInitialized(dryRun)
+		waitVaultToBeRunning(dryRun)
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 		if !dryRun {
 			var kPortForwardVaultOutb, kPortForwardVaultErrb bytes.Buffer
@@ -157,11 +158,13 @@ to quickly create a Cobra application.`,
 			defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
 			if err != nil {
 				// If it doesn't error, we kinda don't care much.
-				log.Println("Commad Execution STDOUT: %s", kPortForwardVaultOutb.String())
-				log.Println("Commad Execution STDERR: %s", kPortForwardVaultErrb.String())
+				log.Printf("Commad Execution STDOUT: %s", kPortForwardVaultOutb.String())
+				log.Printf("Commad Execution STDERR: %s", kPortForwardVaultErrb.String())
 				log.Panicf("error: failed to port-forward to vault in main thread %s", err)
 			}
 		}
+		loopUntilPodIsReady()
+		initializeVaultAndAutoUnseal()
 		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")))
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 
@@ -205,15 +208,13 @@ to quickly create a Cobra application.`,
 
 				progressPrinter.AddTracker("step-vault", "Configure Vault", 4)
 				informUser("waiting for vault unseal")
-				/**
 
-				 */
-				waitVaultToBeInitialized(dryRun)
 				informUser("Vault initialized")
 				progressPrinter.IncrementTracker("step-vault", 1)
 
-				waitForVaultUnseal(dryRun, config)
-				informUser("Vault unseal")
+				// todo need to make sure this is not needed
+				// waitForVaultUnseal(dryRun, config)
+				// informUser("Vault unseal")
 				progressPrinter.IncrementTracker("step-vault", 1)
 
 				log.Println("configuring vault")
