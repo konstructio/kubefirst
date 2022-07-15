@@ -13,5 +13,6 @@ kubeconfig_*
 /git
 bin
 .vscode/settings.json
-log
+logs/
+/tmp
 lint_log.txt

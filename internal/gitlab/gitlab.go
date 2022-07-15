@@ -10,6 +10,14 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"html/template"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/ghodss/yaml"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -20,17 +28,10 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
-	"html/template"
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"log"
-	"net/http"
-	"net/url"
-	"os"
-	"strings"
-	"time"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -94,7 +95,7 @@ func PushGitOpsToGitLab(dryRun bool) {
 
 	repo, err := git.PlainOpen(directory)
 	if err != nil {
-		log.Panicf("error opening the directory ", directory, err)
+		log.Panicf("error opening the directory %s:  %s", directory, err)
 	}
 
 	upstream := fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", domain)
@@ -330,7 +331,7 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 	envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 	envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 
-	directory := fmt.Sprintf("%s/.gitops/terraform/gitlab", config.K1FolderPath)
+	directory := fmt.Sprintf("%s/gitops/terraform/gitlab", config.K1FolderPath)
 	err := os.Chdir(directory)
 	if err != nil {
 		log.Panicf("error: could not change directory to " + directory)
