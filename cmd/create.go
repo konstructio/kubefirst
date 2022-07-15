@@ -16,7 +16,6 @@ import (
 	"github.com/spf13/viper"
 	"log"
 	"os/exec"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -49,56 +48,10 @@ to quickly create a Cobra application.`,
 			log.Panic(err)
 		}
 
-		// todo: remove it?
-		//infoCmd.Run(cmd, args)
-
-		var handOffData bytes.Buffer
-		type createHandOff struct {
-			AwsAccountId      string
-			AwsHostedZoneName string
-			AwsRegion         string
-			ClusterName       string
-			ArgoCDUrl         string
-			ArgoCDUsername    string
-			ArgoCDPassword    string
-		}
-
-		clusterData := createHandOff{
-			ClusterName:       viper.GetString("cluster-name"),
-			AwsAccountId:      viper.GetString("aws.accountid"),
-			AwsHostedZoneName: viper.GetString("aws.hostedzonename"),
-			AwsRegion:         viper.GetString("aws.region"),
-			ArgoCDUrl:         viper.GetString("argocd.local.service"),
-			ArgoCDUsername:    viper.GetString("argocd.admin.username"),
-			ArgoCDPassword:    viper.GetString("argocd.admin.password"),
-		}
-
-		handOffData.WriteString(strings.Repeat("-", 70))
-		handOffData.WriteString(fmt.Sprintf("\nCluster %q is up and running!:\n", clusterData.ClusterName))
-		handOffData.WriteString(strings.Repeat("-", 70))
-
-		// todo: make it dynamic for GCP
-		handOffData.WriteString("\n\n--- AWS ")
-		handOffData.WriteString(strings.Repeat("-", 62))
-		handOffData.WriteString(fmt.Sprintf("\n AWS Account Id: %s\n", clusterData.AwsAccountId))
-		handOffData.WriteString(fmt.Sprintf(" AWS hosted zone name: %s\n", clusterData.AwsHostedZoneName))
-		handOffData.WriteString(fmt.Sprintf(" AWS region: %s\n", clusterData.AwsRegion))
-		handOffData.WriteString(strings.Repeat("-", 70))
-
-		handOffData.WriteString("\n\n--- ArgoCD ")
-		handOffData.WriteString(strings.Repeat("-", 59))
-		handOffData.WriteString(fmt.Sprintf("\n URL: %s\n", clusterData.ArgoCDUrl))
-		handOffData.WriteString(fmt.Sprintf(" username: %s\n", clusterData.ArgoCDUsername))
-		handOffData.WriteString(fmt.Sprintf(" password: %s\n", clusterData.ArgoCDPassword))
-		handOffData.WriteString(strings.Repeat("-", 70))
-
-		reports.CommandSummary(handOffData)
-
-		if dryRun {
-			fmt.Println("dry running...")
-			log.Println("020202020")
-			return
-		}
+		// todo:
+		// isolate commands, in case we want to run some validations on the create, it would be a good idea to call the
+		// functions that does the validations
+		infoCmd.Run(cmd, args)
 
 		progressPrinter.IncrementTracker("step-0", 1)
 
@@ -306,6 +259,30 @@ to quickly create a Cobra application.`,
 		}
 		sendCompleteInstallTelemetry(dryRun)
 		time.Sleep(time.Millisecond * 100)
+
+		if dryRun {
+			log.Println("no handoff data on dry-run mode")
+			return
+		}
+
+		// prepare data for the handoff report
+		clusterData := reports.CreateHandOff{
+			ClusterName:       viper.GetString("cluster-name"),
+			AwsAccountId:      viper.GetString("aws.accountid"),
+			AwsHostedZoneName: viper.GetString("aws.hostedzonename"),
+			AwsRegion:         viper.GetString("aws.region"),
+			ArgoCDUrl:         viper.GetString("argocd.local.service"),
+			ArgoCDUsername:    viper.GetString("argocd.admin.username"),
+			ArgoCDPassword:    viper.GetString("argocd.admin.password"),
+			VaultUrl:          viper.GetString("vault.local.service"),
+			VaultToken:        viper.GetString("vault.token"),
+		}
+
+		// build the string that will be sent to the report
+		handOffData := reports.BuildCreateHandOffReport(clusterData)
+
+		// call handoff report and apply style
+		reports.CommandSummary(handOffData)
 
 	},
 }
