@@ -20,10 +20,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const trackerStage20 = "0 - Apply Base"
-const trackerStage21 = "1 - Temporary SCM Install"
-const trackerStage22 = "2 - Argo/Final SCM Install"
-const trackerStage23 = "3 - Final Setup"
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
