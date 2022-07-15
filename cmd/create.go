@@ -8,6 +8,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
+	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/softserve"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
@@ -18,11 +19,6 @@ import (
 	"syscall"
 	"time"
 )
-
-const trackerStage20 = "0 - Apply Base"
-const trackerStage21 = "1 - Temporary SCM Install"
-const trackerStage22 = "2 - Argo/Final SCM Install"
-const trackerStage23 = "3 - Final Setup"
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -52,7 +48,11 @@ to quickly create a Cobra application.`,
 			log.Panic(err)
 		}
 
+		// todo:
+		// isolate commands, in case we want to run some validations on the create, it would be a good idea to call the
+		// functions that does the validations
 		infoCmd.Run(cmd, args)
+
 		progressPrinter.IncrementTracker("step-0", 1)
 
 		progressPrinter.AddTracker("step-softserve", "Prepare Temporary Repo ", 4)
@@ -259,6 +259,31 @@ to quickly create a Cobra application.`,
 		}
 		sendCompleteInstallTelemetry(dryRun)
 		time.Sleep(time.Millisecond * 100)
+
+		if dryRun {
+			log.Println("no handoff data on dry-run mode")
+			return
+		}
+
+		// prepare data for the handoff report
+		clusterData := reports.CreateHandOff{
+			ClusterName:       viper.GetString("cluster-name"),
+			AwsAccountId:      viper.GetString("aws.accountid"),
+			AwsHostedZoneName: viper.GetString("aws.hostedzonename"),
+			AwsRegion:         viper.GetString("aws.region"),
+			ArgoCDUrl:         viper.GetString("argocd.local.service"),
+			ArgoCDUsername:    viper.GetString("argocd.admin.username"),
+			ArgoCDPassword:    viper.GetString("argocd.admin.password"),
+			VaultUrl:          viper.GetString("vault.local.service"),
+			VaultToken:        viper.GetString("vault.token"),
+		}
+
+		// build the string that will be sent to the report
+		handOffData := reports.BuildCreateHandOffReport(clusterData)
+
+		// call handoff report and apply style
+		reports.CommandSummary(handOffData)
+
 	},
 }
 

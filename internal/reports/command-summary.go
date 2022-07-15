@@ -111,17 +111,7 @@ func max(a, b int) int {
 // CommandSummary receives a well-formatted buffer of bytes, and style it to the output.
 func CommandSummary(cleanSummary bytes.Buffer) {
 
-	const kubefirstBoldPurple = "#d0bae9"
-	const kubefirstLightPurple = "#3c356c"
-
-	var style = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(kubefirstBoldPurple)).
-		Background(lipgloss.Color(kubefirstLightPurple)).
-		PaddingTop(2).
-		PaddingBottom(2).
-		PaddingLeft(2).
-		PaddingRight(2).
-		Width(75)
+	style := getStyle()
 
 	p := tea.NewProgram(
 		Model{Content: style.Render(cleanSummary.String())},
@@ -130,4 +120,26 @@ func CommandSummary(cleanSummary bytes.Buffer) {
 	if err := p.Start(); err != nil {
 		log.Panicf("unable to load reports screen, error is: %s", err)
 	}
+}
+
+func getStyle() lipgloss.Style {
+
+	const kubefirstBoldPurple = "#5f00af"
+	const kubefirstLightPurple = "#d0bae9"
+
+	var style = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(kubefirstLightPurple)).
+		Background(lipgloss.Color(kubefirstBoldPurple)).
+		PaddingTop(2).
+		PaddingBottom(2).
+		PaddingLeft(2).
+		PaddingRight(2).
+		Width(75)
+	return style
+}
+
+// StyleMessage receives a string and return a style string
+func StyleMessage(message string) string {
+	style := getStyle()
+	return style.Render(message)
 }
