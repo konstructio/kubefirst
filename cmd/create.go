@@ -84,8 +84,8 @@ to quickly create a Cobra application.`,
 			defer kPortForwardSoftServe.Process.Signal(syscall.SIGTERM)
 			if err != nil {
 				// If it doesn't error, we kinda don't care much.
-				log.Println("Commad Execution STDOUT: %s", kPortForwardSoftServeOutb.String())
-				log.Println("Commad Execution STDERR: %s", kPortForwardSoftServeErrb.String())
+				log.Printf("Commad Execution STDOUT: %s", kPortForwardSoftServeOutb.String())
+				log.Printf("Commad Execution STDERR: %s", kPortForwardSoftServeErrb.String())
 				log.Panicf("error: failed to port-forward to soft-serve %s", err)
 			}
 			time.Sleep(20 * time.Second)
@@ -112,8 +112,8 @@ to quickly create a Cobra application.`,
 			err = kPortForwardArgocd.Start()
 			defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 			if err != nil {
-				log.Println("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
-				log.Println("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
+				log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
+				log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
 				log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
 			}
 
@@ -157,8 +157,8 @@ to quickly create a Cobra application.`,
 			defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
 			if err != nil {
 				// If it doesn't error, we kinda don't care much.
-				log.Println("Commad Execution STDOUT: %s", kPortForwardVaultOutb.String())
-				log.Println("Commad Execution STDERR: %s", kPortForwardVaultErrb.String())
+				log.Printf("Commad Execution STDOUT: %s", kPortForwardVaultOutb.String())
+				log.Printf("Commad Execution STDERR: %s", kPortForwardVaultErrb.String())
 				log.Panicf("error: failed to port-forward to vault in main thread %s", err)
 			}
 		}
