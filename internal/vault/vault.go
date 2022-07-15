@@ -5,20 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	vault "github.com/hashicorp/vault/api"
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/k8s"
-	"github.com/kubefirst/kubefirst/pkg"
-	"github.com/spf13/viper"
-	gitlab "github.com/xanzy/go-gitlab"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/tools/clientcmd"
 	"log"
 	"os"
 	"os/exec"
 	"syscall"
+
+	vault "github.com/hashicorp/vault/api"
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/spf13/viper"
+	gitlab "github.com/xanzy/go-gitlab"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // GetVaultRootToken get `vault-unseal-keys` token on Vault.
@@ -61,29 +59,12 @@ func ConfigureVault(dryRun bool) {
 		// ```
 		// ... obviously keep the sensitive values bound to vars
 
-		k8sClient, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
-		if err != nil {
-			log.Panicf("error: getting k8sClient %s", err)
-		}
-		clientset, err := kubernetes.NewForConfig(k8sClient)
-		if err != nil {
-			log.Panicf("error: getting k8sClient &s", err)
-		}
-
-		k8s.VaultSecretClient = clientset.CoreV1().Secrets("vault")
-		vaultToken, err := GetVaultRootToken(k8s.VaultSecretClient)
-		if err != nil {
-			log.Panicf("unable to get vault root token, error: %s", err)
-		}
-
-		viper.Set("vault.token", vaultToken)
-		viper.WriteConfig()
-
+		vaultToken := viper.GetString("vault.token")
 		var kPortForwardOutb, kPortForwardErrb bytes.Buffer
 		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
 		kPortForward.Stdout = &kPortForwardOutb
 		kPortForward.Stderr = &kPortForwardErrb
-		err = kPortForward.Start()
+		err := kPortForward.Start()
 		defer kPortForward.Process.Signal(syscall.SIGTERM)
 		if err != nil {
 			log.Println("Commad Execution STDOUT: %s", kPortForwardOutb.String())
