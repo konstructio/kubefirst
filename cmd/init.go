@@ -8,7 +8,7 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
-	"github.com/kubefirst/kubefirst/internal/telemetry"	
+	"github.com/kubefirst/kubefirst/internal/telemetry"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -215,4 +215,5 @@ func init() {
 
 	initCmd.Flags().String("cluster-name", "k1st", "the cluster name, used to identify resources on cloud provider")
 	initCmd.Flags().String("version-gitops", "main", "version/branch used on git clone")
+	initCmd.Flags().String("recycle-ssl", "false", "backup/restore cert-manager secrets from bucket during provisioning")
 }
