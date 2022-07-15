@@ -3,6 +3,14 @@ package aws
 import (
 	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"log"
+	"net"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
@@ -14,13 +22,45 @@ import (
 	"github.com/cip8/autoname"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
-	"log"
-	"net"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
+
+func CreateBucket(dryRun bool, name string) {
+	log.Println("createBucketCalled")
+
+	s3Client := s3.New(GetAWSSession())
+
+	log.Println("creating", "bucket", name)
+
+	regionName := viper.GetString("aws.region")
+	log.Println("region is ", regionName)
+	if !dryRun {
+		_, err := s3Client.CreateBucket(&s3.CreateBucketInput{
+			Bucket: &name,
+			CreateBucketConfiguration: &s3.CreateBucketConfiguration{
+				LocationConstraint: aws.String(regionName),
+			},
+		})
+		if err != nil {
+			if awsErr, ok := err.(awserr.Error); ok {
+				switch awsErr.Code() {
+				case s3.ErrCodeBucketAlreadyExists:
+					log.Println("Bucket already exists " + name)
+					os.Exit(1)
+				case s3.ErrCodeBucketAlreadyOwnedByYou:
+					log.Println("Bucket already exists but OwnedByYou, the process will continue: " + name)
+				}
+			} else {
+				log.Println("failed to create bucket "+name, err.Error())
+				os.Exit(1)
+			}
+		}
+	} else {
+		log.Printf("[#99] Dry-run mode, bucket creation skipped:  %s", name)
+	}
+	viper.Set(fmt.Sprintf("bucket.%s.created", name), true)
+	viper.Set(fmt.Sprintf("bucket.%s.name", name), name)
+	viper.WriteConfig()
+}
 
 func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
 
@@ -325,4 +365,29 @@ func DestroyBucketsInUse(destroyBuckets bool) {
 	} else {
 		log.Println("Skip: DestroyBucketsInUse")
 	}
+}
+
+func UploadFile(bucket, key, fileName string) error {
+	// The session the S3 Uploader will use
+	//sess := session.Must(session.NewSession())
+
+	// Create an uploader with the session and default options
+	uploader := s3manager.NewUploader(GetAWSSession())
+
+	f, err := os.Open(fileName)
+	if err != nil {
+		return fmt.Errorf("failed to open file %q, %v", fileName, err)
+	}
+
+	// Upload the file to S3.
+	result, err := uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		Body:   f,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upload file, %v", err)
+	}
+	fmt.Printf("file uploaded to, %s\n", result.Location)
+	return nil
 }
