@@ -124,7 +124,7 @@ func PushGitOpsToGitLab(dryRun bool) {
 		},
 	})
 	if err != nil {
-		log.Panicf("error committing changes", err)
+		log.Panicf("error committing changes %s", err)
 	}
 
 	log.Println("setting auth...")
@@ -141,7 +141,7 @@ func PushGitOpsToGitLab(dryRun bool) {
 		Auth:       auth,
 	})
 	if err != nil {
-		log.Panicf("error pushing to remote", err)
+		log.Panicf("error pushing to remote %s", err)
 	}
 
 }
@@ -391,27 +391,30 @@ func ChangeRegistryToGitLab(dryRun bool) {
 	var secrets bytes.Buffer
 
 	c, err := template.New("creds-gitlab").Parse(`
-		apiVersion: v1
-		data:
-			password: {{ .PersonalAccessToken }}
-			url: {{ .URL }}
-			username: cm9vdA==
-		kind: Secret
-		metadata:
-			annotations:
-				managed-by: argocd.argoproj.io
-			labels:
-				argocd.argoproj.io/secret-type: repo-creds
-			name: creds-gitlab
-			namespace: argocd
-		type: Opaque
-	`)
+    apiVersion: v1
+    data:
+      password: {{ .PersonalAccessToken }}
+      url: {{ .URL }}
+      username: cm9vdA==
+    kind: Secret
+    metadata:
+      annotations:
+        managed-by: argocd.argoproj.io
+      labels:
+        argocd.argoproj.io/secret-type: repo-creds
+      name: creds-gitlab
+      namespace: argocd
+    type: Opaque
+  `)
 	if err := c.Execute(&secrets, creds); err != nil {
 		log.Panicf("error executing golang template for git repository credentials template %s", err)
 	}
 
 	ba := []byte(secrets.String())
 	err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
+	if err != nil {
+		log.Println("error unmarshalling yaml during argocd repository secret create", err)
+	}
 
 	_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
 	if err != nil {
@@ -421,21 +424,21 @@ func ChangeRegistryToGitLab(dryRun bool) {
 	var repoSecrets bytes.Buffer
 
 	c, err = template.New("repo-gitlab").Parse(`
-		apiVersion: v1
-		data:
-			project: ZGVmYXVsdA==
-			type: Z2l0
-			url: {{ .FullURL }}
-		kind: Secret
-		metadata:
-			annotations:
-				managed-by: argocd.argoproj.io
-			labels:
-				argocd.argoproj.io/secret-type: repository
-			name: repo-gitlab
-			namespace: argocd
-		type: Opaque
-	`)
+    apiVersion: v1
+    data:
+      project: ZGVmYXVsdA==
+      type: Z2l0
+      url: {{ .FullURL }}
+    kind: Secret
+    metadata:
+      annotations:
+        managed-by: argocd.argoproj.io
+      labels:
+        argocd.argoproj.io/secret-type: repository
+      name: repo-gitlab
+      namespace: argocd
+    type: Opaque
+  `)
 	if err := c.Execute(&repoSecrets, creds); err != nil {
 		log.Panicf("error executing golang template for gitops repository template %s", err)
 	}

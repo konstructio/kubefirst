@@ -81,8 +81,8 @@ to quickly create a Cobra application.`,
 			defer kPortForwardSoftServe.Process.Signal(syscall.SIGTERM)
 			if err != nil {
 				// If it doesn't error, we kinda don't care much.
-				log.Println("Commad Execution STDOUT: %s", kPortForwardSoftServeOutb.String())
-				log.Println("Commad Execution STDERR: %s", kPortForwardSoftServeErrb.String())
+				log.Printf("Commad Execution STDOUT: %s", kPortForwardSoftServeOutb.String())
+				log.Printf("Commad Execution STDERR: %s", kPortForwardSoftServeErrb.String())
 				log.Panicf("error: failed to port-forward to soft-serve %s", err)
 			}
 			time.Sleep(20 * time.Second)
@@ -109,13 +109,13 @@ to quickly create a Cobra application.`,
 			err = kPortForwardArgocd.Start()
 			defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 			if err != nil {
-				log.Println("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
-				log.Println("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
+				log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
+				log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
 				log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
 			}
 
-			log.Println("sleeping for 45 seconds, hurry up jared")
-			time.Sleep(45 * time.Second)
+			// log.Println("sleeping for 45 seconds, hurry up jared")
+			// time.Sleep(45 * time.Second)
 		}
 		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")))
 		progressPrinter.IncrementTracker("step-argo", 1)
@@ -135,8 +135,8 @@ to quickly create a Cobra application.`,
 		// todo, need to stall until the registry has synced, then get to ui asap
 
 		//! skip this if syncing from argocd and not helm installing
-		log.Printf("sleeping for 30 seconds, hurry up jared sign into argocd %s", viper.GetString("argocd.admin.password"))
-		time.Sleep(30 * time.Second)
+		// log.Printf("sleeping for 30 seconds, hurry up jared sign into argocd %s", viper.GetString("argocd.admin.password"))
+		// time.Sleep(30 * time.Second)
 
 		//!
 		//* we need to stop here and wait for the vault namespace to exist and the vault pod to be ready
@@ -180,8 +180,8 @@ to quickly create a Cobra application.`,
 			defer kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
 			if err != nil {
 				// If it doesn't error, we kinda don't care much.
-				log.Println("Commad Execution STDOUT: %s", kPortForwardGitlabOutb.String())
-				log.Println("Commad Execution STDERR: %s", kPortForwardGitlabErrb.String())
+				log.Printf("Commad Execution STDOUT: %s", kPortForwardGitlabOutb.String())
+				log.Printf("Commad Execution STDERR: %s", kPortForwardGitlabErrb.String())
 				log.Panicf("error: failed to port-forward to gitlab in main thread %s", err)
 			}
 		}

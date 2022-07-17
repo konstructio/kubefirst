@@ -8,13 +8,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
-	"log"
-	"time"
 )
 
 var vaultRootToken string
@@ -36,6 +37,14 @@ func GetPodNameByLabel(gitlabPodsClient coreV1Types.PodInterface, label string) 
 
 	return gitlabToolboxPodName
 }
+
+// func CreateRepoSecret() {
+
+// }
+
+// func CreateCredentialsTemplateSecret() {
+
+// }
 
 func getVaultRootToken(vaultSecretClient coreV1Types.SecretInterface) string {
 	name := "vault-unseal-keys"

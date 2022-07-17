@@ -60,8 +60,8 @@ if the registry has already been deleted.`,
 		err = kPortForwardArgocd.Start()
 		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 		if err != nil {
-			log.Println("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
-			log.Println("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
+			log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
+			log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
 			log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
 		}
 		// kPortForwardVault := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
