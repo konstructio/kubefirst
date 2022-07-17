@@ -25,10 +25,11 @@ var gitlabToolboxPodName string
 var GitlabSecretClient coreV1Types.SecretInterface
 var VaultSecretClient coreV1Types.SecretInterface
 var ArgocdSecretClient coreV1Types.SecretInterface
-var GitlabPodsClient coreV1Types.PodInterface
 
-func GetPodNameByLabel(gitlabPodsClient coreV1Types.PodInterface, label string) string {
-	pods, err := gitlabPodsClient.List(context.TODO(), metaV1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", label)})
+// var GitlabPodsClient coreV1Types.PodInterface
+
+func GetPodNameByLabel(podsClient coreV1Types.PodInterface, label string) string {
+	pods, err := podsClient.List(context.TODO(), metaV1.ListOptions{LabelSelector: label})
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -36,6 +37,13 @@ func GetPodNameByLabel(gitlabPodsClient coreV1Types.PodInterface, label string) 
 	gitlabToolboxPodName = pods.Items[0].Name
 
 	return gitlabToolboxPodName
+}
+
+func DeletePodByName(podsClient coreV1Types.PodInterface, podName string) {
+	err := podsClient.Delete(context.TODO(), podName, metaV1.DeleteOptions{})
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 // func CreateRepoSecret() {

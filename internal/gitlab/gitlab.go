@@ -195,8 +195,8 @@ func ProduceGitlabTokens(dryRun bool) {
 
 	log.Println("discovering gitlab toolbox pod")
 
-	k8s.GitlabPodsClient = clientset.CoreV1().Pods("gitlab")
-	gitlabPodName := k8s.GetPodNameByLabel(k8s.GitlabPodsClient, "toolbox")
+	gitlabPodClient := clientset.CoreV1().Pods("gitlab")
+	gitlabPodName := k8s.GetPodNameByLabel(gitlabPodClient, "app=toolbox")
 
 	k8s.GitlabSecretClient = clientset.CoreV1().Secrets("gitlab")
 	secrets, err := k8s.GitlabSecretClient.List(context.TODO(), metaV1.ListOptions{})

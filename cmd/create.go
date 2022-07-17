@@ -12,6 +12,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/helm"
+	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/softserve"
@@ -19,6 +20,8 @@ import (
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 // createCmd represents the create command
@@ -247,6 +250,26 @@ to quickly create a Cobra application.`,
 				// todo: keep one of the two git push functions, they're similar, but not exactly the same
 				//gitlab.PushGitOpsToGitLab(dryRun)
 				viper.Set("gitlab.gitops-pushed", true)
+				viper.WriteConfig()
+			}
+			if !viper.GetBool("argocd.oidc-patched") {
+				cfg := configs.ReadConfig()
+				config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
+				if err != nil {
+					panic(err.Error())
+				}
+				clientset, err := kubernetes.NewForConfig(config)
+				if err != nil {
+					panic(err.Error())
+				}
+
+				argocdSecretClient = clientset.CoreV1().Secrets("argocd")
+				patchSecret(argocdSecretClient, "argocd-secret", "oidc.gitlab.clientSecret", viper.GetString("gitlab.oidc.argocd.secret"))
+
+				argocdPodClient := clientset.CoreV1().Pods("argocd")
+				argocdPodName := k8s.GetPodNameByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+				k8s.DeletePodByName(argocdPodClient, argocdPodName)
+				viper.Set("argocd.oidc-patched", true)
 				viper.WriteConfig()
 			}
 			if !viper.GetBool("gitlab.metaphor-pushed") {

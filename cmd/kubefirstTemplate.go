@@ -14,6 +14,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
 
@@ -42,7 +43,7 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 	log.Printf("cloned %s-template repository to directory %s/%s", repoName, config.K1FolderPath, repoName)
 
 	log.Printf("detokenizing %s/%s", config.K1FolderPath, repoName)
-	detokenize(directory)
+	pkg.Detokenize(directory)
 	log.Printf("detokenization of %s/%s complete", config.K1FolderPath, repoName)
 
 	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", repoName), true)
@@ -78,13 +79,13 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 	viper.WriteConfig()
 }
 
-func detokenize(path string) {
+// func detokenize(path string) {
 
-	err := filepath.Walk(path, detokenizeDirectory)
-	if err != nil {
-		panic(err)
-	}
-}
+// 	err := filepath.Walk(path, detokenizeDirectory)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// }
 
 func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	if err != nil {

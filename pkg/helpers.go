@@ -3,12 +3,13 @@ package pkg
 import (
 	"errors"
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/kubefirst/kubefirst/configs"
 
 	"github.com/spf13/viper"
 )
@@ -30,7 +31,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		return nil //
 	}
 
-	if strings.Contains(path, ".gitClient") || strings.Contains(path, ".terraform") {
+	if strings.Contains(path, ".gitClient") || strings.Contains(path, ".terraform") || strings.Contains(path, ".git") {
 		return nil
 	}
 
@@ -68,6 +69,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		awsAccountId := viper.GetString("aws.accountid")
 		kmsKeyId := viper.GetString("vault.kmskeyid")
 		clusterName := viper.GetString("cluster-name")
+		argocdOidcClientId := viper.GetString(("gitlab.oidc.argocd.applicationid"))
 
 		newContents = strings.Replace(newContents, "<SOFT_SERVE_INITIAL_ADMIN_PUBLIC_KEY>", strings.TrimSpace(botPublicKey), -1)
 		newContents = strings.Replace(newContents, "<TF_STATE_BUCKET>", bucketStateStore, -1)
@@ -83,6 +85,10 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<KMS_KEY_ID>", kmsKeyId, -1)
 		}
 		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", clusterName, -1)
+
+		if argocdOidcClientId != "" {
+			newContents = strings.Replace(newContents, "<ARGOCD_OIDC_CLIENT_ID>", argocdOidcClientId, -1)
+		}
 
 		if viper.GetBool("create.terraformapplied.gitlab") {
 			newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_NAME>", hostedZoneName, -1)
