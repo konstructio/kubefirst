@@ -9,15 +9,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"time"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
-	"log"
-	"os"
-	"os/exec"
-	"time"
 )
 
 var vaultRootToken string
@@ -99,7 +100,7 @@ func createVaultConfiguredSecret(dryRun bool, config *configs.Config) {
 		if err != nil {
 			log.Panicf("failed to create secret for vault-configured: %s", err)
 		}
-		log.Println("the secret create output is: %s", output.String())
+		log.Printf("the secret create output is: %s", output.String())
 
 		viper.Set("vault.configuredsecret", true)
 		viper.WriteConfig()

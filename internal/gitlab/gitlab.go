@@ -124,7 +124,7 @@ func PushGitOpsToGitLab(dryRun bool) {
 		},
 	})
 	if err != nil {
-		log.Panicf("error committing changes", err)
+		log.Panicf("error committing changes %s", err)
 	}
 
 	log.Println("setting auth...")
@@ -141,7 +141,7 @@ func PushGitOpsToGitLab(dryRun bool) {
 		Auth:       auth,
 	})
 	if err != nil {
-		log.Panicf("error pushing to remote", err)
+		log.Panicf("error pushing to remote %s", err)
 	}
 
 }
@@ -412,6 +412,9 @@ func ChangeRegistryToGitLab(dryRun bool) {
 
 	ba := []byte(secrets.String())
 	err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
+	if err != nil {
+		log.Println("error unmarshalling yaml during argocd repository secret create", err)
+	}
 
 	_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
 	if err != nil {
