@@ -169,6 +169,10 @@ func AwaitGitlab(dryRun bool) {
 }
 
 func ProduceGitlabTokens(dryRun bool) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, ProduceGitlabTokens skipped.")
+		return
+	}
 	//TODO: Should this step be skipped if already executed?
 	config := configs.ReadConfig()
 	k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
@@ -180,10 +184,6 @@ func ProduceGitlabTokens(dryRun bool) {
 		log.Panic(err.Error())
 	}
 	log.Println("discovering gitlab toolbox pod")
-	if dryRun {
-		log.Printf("[#99] Dry-run mode, ProduceGitlabTokens skipped.")
-		return
-	}
 	time.Sleep(30 * time.Second)
 	// todo: move it to config
 	k8s.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")

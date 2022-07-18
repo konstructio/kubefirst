@@ -162,8 +162,8 @@ to quickly create a Cobra application.`,
 				log.Panicf("error: failed to port-forward to vault in main thread %s", err)
 			}
 		}
-		loopUntilPodIsReady()
-		initializeVaultAndAutoUnseal()
+		loopUntilPodIsReady(dryRun)
+		initializeVaultAndAutoUnseal(dryRun)
 		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")))
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 
@@ -252,7 +252,7 @@ to quickly create a Cobra application.`,
 				viper.Set("gitlab.gitops-pushed", true)
 				viper.WriteConfig()
 			}
-			if !viper.GetBool("argocd.oidc-patched") {
+			if !dryRun && !viper.GetBool("argocd.oidc-patched") {
 				cfg := configs.ReadConfig()
 				config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
 				if err != nil {

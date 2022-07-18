@@ -31,7 +31,7 @@ var ArgocdSecretClient coreV1Types.SecretInterface
 func GetPodNameByLabel(podsClient coreV1Types.PodInterface, label string) string {
 	pods, err := podsClient.List(context.TODO(), metaV1.ListOptions{LabelSelector: label})
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	gitlabToolboxPodName = pods.Items[0].Name
@@ -42,7 +42,7 @@ func GetPodNameByLabel(podsClient coreV1Types.PodInterface, label string) string
 func DeletePodByName(podsClient coreV1Types.PodInterface, podName string) {
 	err := podsClient.Delete(context.TODO(), podName, metaV1.DeleteOptions{})
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 }
 
