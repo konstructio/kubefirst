@@ -188,3 +188,21 @@ func SyncArgocdApplication(dryRun bool, applicationName, argocdAuthToken string)
 		log.Panicf("error: curl appSync failed failed %s", err)
 	}
 }
+
+func DeleteArgocdApplicationNoCascade(dryRun bool, applicationName, argocdAuthToken string) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, SyncArgocdApplication skipped.")
+		return
+	}
+
+	// todo need to replace this with a curl wrapper and see if it WORKS
+
+	url := fmt.Sprintf("https://localhost:8080/api/v1/applications/%s?cascade=false", applicationName)
+	var outb bytes.Buffer
+
+	_, _, err := pkg.ExecShellReturnStrings("curl", "-k", "-L", "-X", "DELETE", url, "-H", fmt.Sprintf("Authorization: Bearer %s", argocdAuthToken))
+	log.Println("the value from the curl command to delete registry in argocd is:", outb.String())
+	if err != nil {
+		log.Panicf("error: curl app delete failed %s", err)
+	}
+}

@@ -18,6 +18,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/softserve"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
@@ -130,6 +131,13 @@ to quickly create a Cobra application.`,
 		informUser("Getting an argocd auth token")
 		token := argocd.GetArgocdAuthToken(dryRun)
 		progressPrinter.IncrementTracker("step-argo", 1)
+
+		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry.yaml", config.K1FolderPath))
+		if err != nil {
+			log.Panicf("failed to call execute kubectl apply of argocd patch to adopt gitlab: %s", err)
+		}
+		time.Sleep(45 * time.Second)
+		//TODO: ensure argocd is in a good heathy state before syncing the registry application
 
 		informUser("Syncing the registry application")
 		argocd.SyncArgocdApplication(dryRun, "registry", token)
@@ -282,7 +290,15 @@ to quickly create a Cobra application.`,
 				viper.WriteConfig()
 			}
 			if !viper.GetBool("gitlab.registered") {
-				informUser("Changing registry to Gitlab")
+				// informUser("Getting ArgoCD auth token")
+				// token := argocd.GetArgocdAuthToken(dryRun)
+				// progressPrinter.IncrementTracker("step-post-gitlab", 1)
+
+				// informUser("Detaching the registry application from softserve")
+				// argocd.DeleteArgocdApplicationNoCascade(dryRun, "registry", token)
+				// progressPrinter.IncrementTracker("step-post-gitlab", 1)
+
+				informUser("Adding the registry application registered against gitlab")
 				gitlab.ChangeRegistryToGitLab(dryRun)
 				progressPrinter.IncrementTracker("step-post-gitlab", 1)
 				// todo triage / force apply the contents adjusting
