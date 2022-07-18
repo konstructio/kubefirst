@@ -10,9 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 	"log"
 	"os"
 	"os/exec"
@@ -163,23 +160,4 @@ func waitForNamespaceandPods(config *configs.Config, namespace, podLabel string)
 	} else {
 		log.Println("soft-serve is ready, skipping")
 	}
-}
-
-func GetResourcesDynamically(dynamic dynamic.Interface, ctx context.Context,
-	group string, version string, resource string, namespace string) (
-	[]unstructured.Unstructured, error) {
-
-	resourceId := schema.GroupVersionResource{
-		Group:    group,
-		Version:  version,
-		Resource: resource,
-	}
-	list, err := dynamic.Resource(resourceId).Namespace(namespace).
-		List(ctx, metaV1.ListOptions{})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return list.Items, nil
 }

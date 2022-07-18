@@ -3,40 +3,30 @@ package ssl
 import (
 	"context"
 	"fmt"
-	"github.com/itchyny/gojq"
-	"github.com/kubefirst/kubefirst/cmd"
+	"log"
+
+	"github.com/kubefirst/kubefirst/configs"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	ctrl "sigs.k8s.io/controller-runtime"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func BackupCertificates() {
-	//config := configs.ReadConfig()
-	//
-	//secrets, errF := os.Create("/tmp/secrets.yaml")
-	//if errF != nil {
-	//	panic(errF)
-	//}
-	//defer secrets.Close()
-	//
-	//kGetAllSecrets := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "secrets", "-A")
-	//kGetAllSecrets.Stdout = secrets
-	//err := kGetAllSecrets.Run()
-	//
-	//if err != nil {
-	//	log.Println("Secrets get successful: " + err.Error())
-	//} else {
-	//	log.Println("Error getting secretsL: " + err.Error())
-	//}
-	ctx := context.Background()
-	config := ctrl.GetConfigOrDie()
-	dynamic := dynamic.NewForConfigOrDie(config)
+	config := configs.ReadConfig()
 
-	namespace := "default"
-	query := ".metadata.labels[\"app.kubernetes.io/managed-by\"] == \"Helm\""
+	k8sClient, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
+	if err != nil {
+		log.Panicf("error: getting k8sClient %s", err)
+	}
 
-	items, err := GetResourcesByJq(dynamic, ctx, "apps", "v1", "deployments", namespace, query)
+	dynamic := dynamic.NewForConfigOrDie(k8sClient)
+
+	namespace := "argo"
+
+	items, err := GetResourcesDynamically(dynamic, context.TODO(),
+		"cert-manager.io", "v1", "certificates", namespace)
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -44,54 +34,26 @@ func BackupCertificates() {
 			fmt.Printf("%+v\n", item)
 		}
 	}
+
 }
 
-func GetResourcesByJq(dynamic dynamic.Interface, ctx context.Context, group string,
-	version string, resource string, namespace string, jq string) (
+func GetResourcesDynamically(dynamic dynamic.Interface, ctx context.Context,
+	group string, version string, resource string, namespace string) (
 	[]unstructured.Unstructured, error) {
 
-	resources := make([]unstructured.Unstructured, 0)
+	resourceId := schema.GroupVersionResource{
+		Group:    group,
+		Version:  version,
+		Resource: resource,
+	}
+	list, err := dynamic.Resource(resourceId).Namespace(namespace).
+		List(ctx, metaV1.ListOptions{})
 
-	query, err := gojq.Parse(jq)
 	if err != nil {
 		return nil, err
 	}
 
-	items, err := cmd.GetResourcesDynamically(dynamic, ctx, group, version, resource, namespace)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, item := range items {
-		// Convert object to raw JSON
-		var rawJson interface{}
-		err = runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &rawJson)
-		if err != nil {
-			return nil, err
-		}
-
-		// Evaluate jq against JSON
-		iter := query.Run(rawJson)
-		for {
-			result, ok := iter.Next()
-			if !ok {
-				break
-			}
-			if err, ok := result.(error); ok {
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				boolResult, ok := result.(bool)
-				if !ok {
-					fmt.Println("Query returned non-boolean value")
-				} else if boolResult {
-					resources = append(resources, item)
-				}
-			}
-		}
-	}
-	return resources, nil
+	return list.Items, nil
 }
 
 func RestoreCertificates() {

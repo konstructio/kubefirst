@@ -2,10 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/aws"
+
 	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // backupSslCmd represents the backupSsl command
@@ -17,8 +16,8 @@ where can be used on provisioning phase with the flag --recycle-ssl`,
 
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("backupSsl called")
-		bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
-		aws.CreateBucket(false, bucketName)
+		//bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
+		//aws.CreateBucket(false, bucketName)
 
 		ssl.BackupCertificates()
 	},
