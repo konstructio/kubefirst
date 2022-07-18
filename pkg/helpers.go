@@ -31,7 +31,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		return nil //
 	}
 
-	if strings.Contains(path, ".gitClient") || strings.Contains(path, ".terraform") || strings.Contains(path, ".git") {
+	if strings.Contains(path, ".gitClient") || strings.Contains(path, ".terraform") || strings.Contains(path, ".git/") {
 		return nil
 	}
 
