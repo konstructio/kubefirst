@@ -22,6 +22,7 @@ type Config struct {
 	InstallerEmail    string
 
 	KubefirstLogPath        string `env:"KUBEFIRST_LOG_PATH" envDefault:"logs"`
+	KubefirstConfigFileName string
 	KubefirstConfigFilePath string
 	K1FolderPath            string
 	KubectlClientPath       string
@@ -51,11 +52,9 @@ func ReadConfig() *Config {
 	}
 
 	config.K1FolderPath = fmt.Sprintf("%s/.k1", homePath)
-	if err != nil {
-		log.Panic(err)
-	}
 
-	config.KubefirstConfigFilePath = fmt.Sprintf("%s/.kubefirst", homePath)
+	config.KubefirstConfigFileName = ".kubefirst"
+	config.KubefirstConfigFilePath = fmt.Sprintf("%s/%s", homePath, config.KubefirstConfigFileName)
 
 	config.LocalOs = runtime.GOOS
 	config.LocalArchitecture = runtime.GOARCH

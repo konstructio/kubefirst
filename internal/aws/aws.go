@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/cip8/autoname"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
@@ -61,7 +62,7 @@ func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
 							LocationConstraint: aws.String(regionName),
 						},
 					})
-				}				
+				}
 				if err != nil {
 					log.Println("failed to create bucket "+bucketName, err.Error())
 					os.Exit(1)
@@ -69,7 +70,7 @@ func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
 				vc := &s3.VersioningConfiguration{}
 				vc.Status = aws.String(s3.BucketVersioningStatusEnabled)
 				versionConfigInput := &s3.PutBucketVersioningInput{
-					Bucket: aws.String(bucketName),
+					Bucket:                  aws.String(bucketName),
 					VersioningConfiguration: vc,
 				}
 				log.Printf("[DEBUG] S3 put bucket versioning: %#v", versionConfigInput)
@@ -337,4 +338,60 @@ func DestroyBucketsInUse(destroyBuckets bool) {
 	} else {
 		log.Println("Skip: DestroyBucketsInUse")
 	}
+}
+
+// SendFileToS3 receives a bucket name, a file name and upload it to AWS S3.
+func SendFileToS3(bucketName string, localFilename string, remoteFilename string) error {
+
+	file, err := os.Open(localFilename)
+	if err != nil {
+		log.Printf("unable to open file %q, %v", localFilename, err)
+		return err
+	}
+	defer file.Close()
+
+	awsSession := GetAWSSession()
+	uploader := s3manager.NewUploader(awsSession)
+
+	_, err = uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(remoteFilename),
+		Body:   file,
+	})
+	if err != nil {
+		log.Printf("unable to upload %q to %q, error: %v", localFilename, bucketName, err)
+		return err
+	}
+
+	log.Printf("Successfully uploaded %q to %q\n", localFilename, bucketName)
+
+	return nil
+
+}
+
+// DownloadS3File receives a bucket name, filename and download the file at AWS S3
+func DownloadS3File(bucketName string, filename string) error {
+
+	awsSession := GetAWSSession()
+
+	file, err := os.Create(fmt.Sprintf("./tmp/%s", filename))
+	if err != nil {
+		return err
+	}
+
+	downloader := s3manager.NewDownloader(awsSession)
+	numBytes, err := downloader.Download(file,
+		&s3.GetObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(filename),
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Downloaded file: %s, file size(bytes): %s", file.Name(), numBytes)
+
+	return nil
+
 }
