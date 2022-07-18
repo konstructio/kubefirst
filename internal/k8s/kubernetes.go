@@ -1,7 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
-*/
 package k8s
 
 import (
@@ -92,28 +88,30 @@ func DeleteRegistryApplication(skipDeleteRegistryApplication bool) {
 	}
 }
 
-func GetResourcesDynamically(dynamic dynamic.Interface, 
+func GetResourcesDynamically(dynamic dynamic.Interface,
 	ctx context.Context,
-	group string, 
-	version string, 
-	resource []string, 
-	namespace string) (
-	[]unstructured.Unstructured, error) {
-	var listTypes &unstructuredtype
-	for k, v := range resource {
+	group string,
+	version string,
+	resources []string,
+	namespace string,
+) ([]unstructured.UnstructuredList, error) {
 
-	}
-	resourceId := schema.GroupVersionResource{
-		Group:    group,
-		Version:  version,
-		Resource: resource,
-	}
-	list, err := dynamic.Resource(resourceId).Namespace(namespace).
-		List(ctx, metaV1.ListOptions{})
+	var listTypes []unstructured.UnstructuredList
 
-	if err != nil {
-		return nil, err
+	for _, resource := range resources {
+
+		resourceId := schema.GroupVersionResource{
+			Group:    group,
+			Version:  version,
+			Resource: resource,
+		}
+
+		resourceList, err := dynamic.Resource(resourceId).Namespace(namespace).List(ctx, metaV1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+		listTypes = append(listTypes, *resourceList)
 	}
 
-	return list.Items, nil
+	return listTypes, nil
 }

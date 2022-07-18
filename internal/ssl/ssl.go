@@ -7,7 +7,6 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/k8s"
-	"github.com/kubefirst/kubefirst/pkg"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -29,9 +28,15 @@ func GetBackupCertificates(namespaces []string) ([]string, error) {
 		// if err != nil {
 		// 	return nil, fmt.Errorf("error getting resources from k8s: %s", err)
 		// }
-		var k8sTypes []string
+
+		k8sResourceTypes := []string{
+			"certificates",
+			//"issuer",
+			//"clusterissuer",
+		}
+
 		items, err := k8s.GetResourcesDynamically(k8sClient, context.TODO(),
-			"cert-manager.io", "v1", k8sTypes, namespace)
+			"cert-manager.io", "v1", k8sResourceTypes, namespace)
 		if err != nil {
 			return nil, fmt.Errorf("error getting resources from k8s: %s", err)
 		}
@@ -41,22 +46,24 @@ func GetBackupCertificates(namespaces []string) ([]string, error) {
 			if err != nil {
 				return nil, fmt.Errorf("error converting object on json: %s", err)
 			}
+			//yamlObj, err := yaml.JSONToYAML(jsonObj)
 			yamlObj, err := yaml.JSONToYAML(jsonObj)
 			if err != nil {
 				return nil, fmt.Errorf("error converting object from json to yaml: %s", err)
 			}
-			fileName := fmt.Sprintf("%s.%s", item.GetName(), "yaml")
-			err = pkg.CreateFile(fileName, yamlObj)
-			if err != nil {
-				return nil, err
-			}
-			files = append(files, fileName)
+			fmt.Println("---debug---")
+			fmt.Println(string(yamlObj))
+			fmt.Println("---debug---")
+
+			// todo: uncomment after unblocking the code above
+			//fileName := fmt.Sprintf("%s.%s", item.GetName(), "yaml")
+			//err = pkg.CreateFile(fileName, yamlObj)
+			//if err != nil {
+			//	return nil, err
+			//}
+			//files = append(files, fileName)
 		}
 	}
 
 	return files, nil
-}
-
-func RestoreCertificates() {
-
 }
