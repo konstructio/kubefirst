@@ -303,6 +303,13 @@ to quickly create a Cobra application.`,
 				progressPrinter.IncrementTracker("step-post-gitlab", 1)
 				// todo triage / force apply the contents adjusting
 				// todo kind: Application .repoURL:
+
+				informUser("Getting an argocd auth token")
+				token := argocd.GetArgocdAuthToken(dryRun)
+				
+				informUser("Syncing the registry application")
+				argocd.SyncArgocdApplication(dryRun, "registry", token)
+				
 				viper.Set("gitlab.registered", true)
 				viper.WriteConfig()
 			}
