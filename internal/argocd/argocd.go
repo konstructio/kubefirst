@@ -148,11 +148,12 @@ func GetArgocdAuthToken(dryRun bool) string {
 		log.Print("requesting auth token from argocd: attempt %s of %s", i, x)
 		time.Sleep(1 * time.Second)
 		res, err := client.Do(req)
-		defer res.Body.Close()
+		
 		if err != nil {
 			log.Print("error requesting auth token from argocd", err)
 			continue
-		} else {			
+		} else {	
+			defer res.Body.Close()		
 			body, err := ioutil.ReadAll(res.Body)
 			if err != nil {
 				log.Print("error sending POST request to get argocd auth token:", err)
