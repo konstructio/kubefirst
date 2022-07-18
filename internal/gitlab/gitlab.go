@@ -170,24 +170,24 @@ func AwaitGitlab(dryRun bool) {
 }
 
 func ProduceGitlabTokens(dryRun bool) {
-  //TODO: Should this step be skipped if already executed?
-  config := configs.ReadConfig()
-  k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
-  if err != nil {
-    log.Panic(err.Error())
-  }
-  clientset, err := kubernetes.NewForConfig(k8sConfig)
-  if err != nil {
-    log.Panic(err.Error())
-  }
-  log.Println("discovering gitlab toolbox pod")
-  if dryRun {
-    log.Printf("[#99] Dry-run mode, ProduceGitlabTokens skipped.")
-    return
-  }
-  time.Sleep(30 * time.Second)
-  // todo: move it to config
-  k8s.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, ProduceGitlabTokens skipped.")
+		return
+	}
+	//TODO: Should this step be skipped if already executed?
+	config := configs.ReadConfig()
+	k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
+	if err != nil {
+		log.Panic(err.Error())
+	}
+	clientset, err := kubernetes.NewForConfig(k8sConfig)
+	if err != nil {
+		log.Panic(err.Error())
+	}
+	log.Println("discovering gitlab toolbox pod")
+	time.Sleep(30 * time.Second)
+	// todo: move it to config
+	k8s.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
   argocdPassword := k8s.GetSecretValue(k8s.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
 

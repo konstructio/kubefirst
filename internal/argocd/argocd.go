@@ -145,20 +145,26 @@ func GetArgocdAuthToken(dryRun bool) string {
 
 	x := 3
 	for i := 0; i < x; i++ {
+		log.Print("requesting auth token from argocd: attempt %s of %s", i, x)
+		time.Sleep(1 * time.Second)
 		res, err := client.Do(req)
+		
 		if err != nil {
-			log.Panic("error requesting auth token from argocd", err)
-		} else {
-			defer res.Body.Close()
+			log.Print("error requesting auth token from argocd", err)
+			continue
+		} else {	
+			defer res.Body.Close()		
 			body, err := ioutil.ReadAll(res.Body)
 			if err != nil {
-				log.Panic("error sending POST request to get argocd auth token :", err)
+				log.Print("error sending POST request to get argocd auth token:", err)
+				continue
 			}
 
 			var dat map[string]interface{}
 
 			if err := json.Unmarshal(body, &dat); err != nil {
-				log.Panicf("error unmarshalling  %s", err)
+				log.Print("error unmarshalling  %s", err)
+				continue
 			}
 			token := dat["token"]
 			viper.Set("argocd.admin.apitoken", token)
@@ -168,6 +174,9 @@ func GetArgocdAuthToken(dryRun bool) string {
 			return token.(string)
 		}
 	}
+	log.Panic("Fail to get a token")
+	// This code is unreacheble, as in absence of token we want to fail the install.
+	// I kept is to avoid compiler to complain. 
 	return ""
 }
 
