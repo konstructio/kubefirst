@@ -8,14 +8,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/argocd"
-	"github.com/spf13/viper"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 	"log"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/spf13/viper"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 var vaultRootToken string
@@ -86,4 +90,30 @@ func DeleteRegistryApplication(skipDeleteRegistryApplication bool) {
 	} else {
 		log.Println("skip:  deleteRegistryApplication")
 	}
+}
+
+func GetResourcesDynamically(dynamic dynamic.Interface, 
+	ctx context.Context,
+	group string, 
+	version string, 
+	resource []string, 
+	namespace string) (
+	[]unstructured.Unstructured, error) {
+	var listTypes &unstructuredtype
+	for k, v := range resource {
+
+	}
+	resourceId := schema.GroupVersionResource{
+		Group:    group,
+		Version:  version,
+		Resource: resource,
+	}
+	list, err := dynamic.Resource(resourceId).Namespace(namespace).
+		List(ctx, metaV1.ListOptions{})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return list.Items, nil
 }

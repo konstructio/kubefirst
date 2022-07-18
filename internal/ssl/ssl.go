@@ -3,57 +3,58 @@ package ssl
 import (
 	"context"
 	"fmt"
-	"log"
 
+	"github.com/ghodss/yaml"
 	"github.com/kubefirst/kubefirst/configs"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/pkg"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func BackupCertificates() {
+// GetBackupCertificates create a backup of Certificates on AWS S3 in yaml files
+func GetBackupCertificates(namespaces []string) ([]string, error) {
 	config := configs.ReadConfig()
 
-	k8sClient, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
+	k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
 	if err != nil {
-		log.Panicf("error: getting k8sClient %s", err)
+		return nil, fmt.Errorf("error getting k8sClient %s", err)
 	}
 
-	dynamic := dynamic.NewForConfigOrDie(k8sClient)
+	k8sClient := dynamic.NewForConfigOrDie(k8sConfig)
+	var files []string
+	for _, namespace := range namespaces {
+		// items, err := k8s.GetResourcesDynamically(k8sClient, context.TODO(),
+		// 	"cert-manager.io", "v1", "certificates", namespace)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error getting resources from k8s: %s", err)
+		// }
 
-	namespace := "argo"
+		items, err := k8s.GetResourcesDynamically(k8sClient, context.TODO(),
+			"cert-manager.io", "v1", "certificates", namespace)
+		if err != nil {
+			return nil, fmt.Errorf("error getting resources from k8s: %s", err)
+		}
 
-	items, err := GetResourcesDynamically(dynamic, context.TODO(),
-		"cert-manager.io", "v1", "certificates", namespace)
-	if err != nil {
-		fmt.Println(err)
-	} else {
 		for _, item := range items {
-			fmt.Printf("%+v\n", item)
+			jsonObj, err := item.MarshalJSON()
+			if err != nil {
+				return nil, fmt.Errorf("error converting object on json: %s", err)
+			}
+			yamlObj, err := yaml.JSONToYAML(jsonObj)
+			if err != nil {
+				return nil, fmt.Errorf("error converting object from json to yaml: %s", err)
+			}
+			fileName := fmt.Sprintf("%s.%s", item.GetName(), "yaml")
+			err = pkg.CreateFile(fileName, yamlObj)
+			if err != nil {
+				return nil, err
+			}
+			files = append(files, fileName)
 		}
 	}
 
-}
-
-func GetResourcesDynamically(dynamic dynamic.Interface, ctx context.Context,
-	group string, version string, resource string, namespace string) (
-	[]unstructured.Unstructured, error) {
-
-	resourceId := schema.GroupVersionResource{
-		Group:    group,
-		Version:  version,
-		Resource: resource,
-	}
-	list, err := dynamic.Resource(resourceId).Namespace(namespace).
-		List(ctx, metaV1.ListOptions{})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return list.Items, nil
+	return files, nil
 }
 
 func RestoreCertificates() {
