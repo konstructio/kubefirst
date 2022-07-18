@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/spf13/cobra"
 	"log"
+	"os"
 )
 
 var k1state = &cobra.Command{
@@ -55,6 +57,14 @@ var k1state = &cobra.Command{
 				fmt.Println(err)
 				return
 			}
+			currentFolder, err := os.Getwd()
+			finalMsg := fmt.Sprintf("Kubefirst configuration file was downloaded to %q/, and is now available to be copied to %q/",
+				currentFolder,
+				config.K1FolderPath,
+			)
+
+			log.Printf(finalMsg)
+			fmt.Println(reports.StyleMessage(finalMsg))
 		}
 	},
 }

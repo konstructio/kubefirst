@@ -374,7 +374,7 @@ func DownloadS3File(bucketName string, filename string) error {
 
 	awsSession := GetAWSSession()
 
-	file, err := os.Create(fmt.Sprintf("./tmp/%s", filename))
+	file, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
@@ -390,7 +390,7 @@ func DownloadS3File(bucketName string, filename string) error {
 		return err
 	}
 
-	log.Printf("Downloaded file: %s, file size(bytes): %s", file.Name(), numBytes)
+	log.Printf("Downloaded file: %s, file size(bytes): %v", file.Name(), numBytes)
 
 	return nil
 
