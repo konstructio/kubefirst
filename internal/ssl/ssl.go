@@ -29,9 +29,9 @@ func GetBackupCertificates(namespaces []string) ([]string, error) {
 		// if err != nil {
 		// 	return nil, fmt.Errorf("error getting resources from k8s: %s", err)
 		// }
-
+		var k8sTypes []string
 		items, err := k8s.GetResourcesDynamically(k8sClient, context.TODO(),
-			"cert-manager.io", "v1", "certificates", namespace)
+			"cert-manager.io", "v1", k8sTypes, namespace)
 		if err != nil {
 			return nil, fmt.Errorf("error getting resources from k8s: %s", err)
 		}
