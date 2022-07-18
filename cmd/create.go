@@ -244,7 +244,7 @@ to quickly create a Cobra application.`,
 				progressPrinter.IncrementTracker("step-post-gitlab", 1)
 
 				informUser("Waiting for Gitlab dns to propagate before continuing")
-				gitlab.AwaitGitlab(dryRun)
+				gitlab.AwaitHost("gitlab", dryRun)
 				progressPrinter.IncrementTracker("step-post-gitlab", 1)
 
 				informUser("Pushing gitops repo to origin gitlab")
@@ -304,12 +304,28 @@ to quickly create a Cobra application.`,
 				// todo triage / force apply the contents adjusting
 				// todo kind: Application .repoURL:
 
+				informUser("Waiting for argocd host to resolve")
+				gitlab.AwaitHost("argocd", dryRun)
+				cfg := configs.ReadConfig()
+				config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
+				if err != nil {
+					panic(err.Error())
+				}
+				clientset, err := kubernetes.NewForConfig(config)
+				if err != nil {
+					panic(err.Error())
+				}
+				argocdPodClient := clientset.CoreV1().Pods("argocd")
+				argocdPodName := k8s.GetPodNameByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+				k8s.DeletePodByName(argocdPodClient, argocdPodName)
+				waitArgoCDToBeReady(dryRun)
+
 				informUser("Getting an argocd auth token")
 				token := argocd.GetArgocdAuthToken(dryRun)
-				
+
 				informUser("Syncing the registry application")
 				argocd.SyncArgocdApplication(dryRun, "registry", token)
-				
+
 				viper.Set("gitlab.registered", true)
 				viper.WriteConfig()
 			}

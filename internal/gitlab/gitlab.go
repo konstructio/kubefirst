@@ -146,23 +146,23 @@ func PushGitOpsToGitLab(dryRun bool) {
 
 }
 
-func AwaitGitlab(dryRun bool) {
+func AwaitHost(appName string, dryRun bool) {
 
-	log.Println("AwaitGitlab called")
+	log.Println("AwaitHost called")
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, AwaitGitlab skipped.")
+		log.Printf("[#99] Dry-run mode, AwaitHost skipped.")
 		return
 	}
 	max := 200
 	for i := 0; i < max; i++ {
 		hostedZoneName := viper.GetString("aws.hostedzonename")
-		resp, _ := http.Get(fmt.Sprintf("https://gitlab.%s", hostedZoneName))
+		resp, _ := http.Get(fmt.Sprintf("https://%s.%s", appName, hostedZoneName))
 		if resp != nil && resp.StatusCode == 200 {
-			log.Println("gitlab host resolved, 30 second grace period required...")
+			log.Println(fmt.Printf("%s host resolved, 30 second grace period required...", appName))
 			time.Sleep(time.Second * 30)
 			i = max
 		} else {
-			log.Println("gitlab host not resolved, sleeping 10s")
+			log.Println(fmt.Printf("%s host not resolved, sleeping 10s", appName))
 			time.Sleep(time.Second * 10)
 		}
 	}
