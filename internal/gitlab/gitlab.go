@@ -572,7 +572,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops.git
+    repoURL: ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops
     path: components/argocd
     targetRevision: HEAD
   destination:
@@ -598,6 +598,7 @@ spec:
 		if err != nil {
 			log.Println(err)
 		}
+		file.Close()
 
 		pkg.Detokenize(repoDir)
 		os.RemoveAll(repoDir + "/terraform/base/.terraform")
