@@ -49,6 +49,10 @@ var k1state = &cobra.Command{
 				fmt.Println(err)
 				return
 			}
+			finalMsg := fmt.Sprintf("Kubefirst configuration file was upload to AWS S3 at %q bucket name", bucketName)
+
+			log.Printf(finalMsg)
+			fmt.Println(reports.StyleMessage(finalMsg))
 		}
 
 		if pull {
