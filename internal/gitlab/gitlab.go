@@ -545,6 +545,8 @@ func PushGitRepo(dryRun bool, config *configs.Config, gitOrigin, repoName string
 		os.RemoveAll(repoDir + "/terraform/gitlab/.terraform")
 		os.RemoveAll(repoDir + "/terraform/vault/.terraform")
 		os.Remove(repoDir + "/terraform/base/.terraform.lock.hcl")
+		os.Remove(repoDir + "/terraform/vault/.terraform.lock.hcl")
+		os.Remove(repoDir + "/terraform/users/.terraform.lock.hcl")
 		os.Remove(repoDir + "/terraform/gitlab/.terraform.lock.hcl")
 		CommitToRepo(repo, repoName)
 		auth, _ := pkg.PublicKey()
@@ -605,6 +607,8 @@ spec:
 		os.RemoveAll(repoDir + "/terraform/gitlab/.terraform")
 		os.RemoveAll(repoDir + "/terraform/vault/.terraform")
 		os.Remove(repoDir + "/terraform/base/.terraform.lock.hcl")
+		os.Remove(repoDir + "/terraform/vault/.terraform.lock.hcl")
+		os.Remove(repoDir + "/terraform/users/.terraform.lock.hcl")
 		os.Remove(repoDir + "/terraform/gitlab/.terraform.lock.hcl")
 
 		CommitToRepo(repo, repoName)
