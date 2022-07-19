@@ -28,3 +28,4 @@ jobs:
         github_token: ${{ secrets.RELEASE_TOKEN }}
         goos: linux
         goarch: arm64
+
