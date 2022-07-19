@@ -98,10 +98,10 @@ to quickly create a Cobra application.`,
 		log.Println("adminEmail:", adminEmail)
 		viper.Set("adminemail", adminEmail)
 
-		// profile
+		// set region
 		region, err := cmd.Flags().GetString("region")
 		if err != nil {
-			log.Println(err)
+			log.Panicf("unable to get region values from viper")
 		}
 		viper.Set("aws.region", region)
 		// propagate it to local environment
@@ -111,9 +111,10 @@ to quickly create a Cobra application.`,
 		}
 		log.Println("region:", region)
 
+		// set profile
 		profile, err := cmd.Flags().GetString("profile")
 		if err != nil {
-			log.Println(err)
+			log.Panicf("unable to get region values from viper")
 		}
 		viper.Set("aws.profile", profile)
 		// propagate it to local environment
@@ -259,6 +260,7 @@ func init() {
 	if err != nil {
 		log.Panic(err)
 	}
+
 	initCmd.Flags().Bool("clean", false, "delete any local kubefirst content ~/.kubefirst, ~/.k1")
 
 	log.SetPrefix("LOG: ")
