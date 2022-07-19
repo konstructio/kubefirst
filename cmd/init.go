@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -80,6 +81,11 @@ to quickly create a Cobra application.`,
 		// name of the cloud region to provision resources when resources are region-specific
 		region, _ := cmd.Flags().GetString("region")
 		viper.Set("aws.region", region)
+		// propagate it to local environment
+		err = os.Setenv("AWS_REGION", region)
+		if err != nil {
+			log.Panicf("unable to set environment variable AWS_REGION, error is: %v", err)
+		}
 		log.Println("region:", region)
 
 		// cluster name
