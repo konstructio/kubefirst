@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/kubefirst/kubefirst/internal/ssl"
@@ -19,6 +20,7 @@ where can be used on provisioning phase with the flag --recycle-ssl`,
 		if err != nil {
 			log.Panic(err)
 		}
+		fmt.Println("Backup certificates finished successfully")
 	},
 }
 

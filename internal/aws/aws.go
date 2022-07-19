@@ -400,6 +400,6 @@ func UploadFile(bucket, key, fileName string) error {
 	if err != nil {
 		return fmt.Errorf("failed to upload file, %v", err)
 	}
-	fmt.Printf("file uploaded to, %s\n", result.Location)
+	log.Printf("file uploaded to, %s\n", result.Location)
 	return nil
 }
