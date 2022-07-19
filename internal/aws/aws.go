@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -401,5 +402,45 @@ func UploadFile(bucket, key, fileName string) error {
 		return fmt.Errorf("failed to upload file, %v", err)
 	}
 	log.Printf("file uploaded to, %s\n", result.Location)
+	return nil
+}
+
+func DownloadBucket(bucket string, destFolder string) error {
+	// Create a file to write the S3 Object contents to.
+	// f, err := os.Create(filename)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to create file %q, %v", filename, err)
+	// }
+	s3Client := s3.New(GetAWSSession())
+	downloader := s3manager.NewDownloader(GetAWSSession())
+
+	log.Println("Listing the objects in the bucket:")
+	listObjsResponse, err := s3Client.ListObjectsV2(&s3.ListObjectsV2Input{
+		Bucket: aws.String(bucket),
+		Prefix: aws.String(""),
+	})
+
+	if err != nil {
+		panic("Couldn't list bucket contents")
+	}
+
+	for _, object := range listObjsResponse.Contents {
+		log.Printf("%s (%d bytes, class %v) \n", *object.Key, object.Size, object.StorageClass)
+
+		f, err := pkg.CreateFullPath(filepath.Join(destFolder, *object.Key))
+		if err != nil {
+			return fmt.Errorf("failed to create file %q, %v", *object.Key, err)
+		}
+
+		// Write the contents of S3 Object to the file
+		_, err = downloader.Download(f, &s3.GetObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(*object.Key),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to download file, %v", err)
+		}
+		f.Close()
+	}
 	return nil
 }
