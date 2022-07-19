@@ -2,17 +2,16 @@ package cmd
 
 import (
 	"bytes"
-	"log"
-	"os"
-	"os/exec"
-	"syscall"
-
+	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
+	"log"
+	"os/exec"
+	"syscall"
 )
 
 // destroyCmd represents the destroy command
@@ -45,34 +44,50 @@ if the registry has already been deleted.`,
 			log.Panic(err)
 		}
 
+		var kPortForwardOutb, kPortForwardErrb bytes.Buffer
 		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
-		kPortForward.Stdout = os.Stdout
-		kPortForward.Stderr = os.Stderr
-		defer kPortForward.Process.Signal(syscall.SIGTERM)
+		kPortForward.Stdout = &kPortForwardOutb
+		kPortForward.Stderr = &kPortForwardErrb
+		defer func() {
+			_ = kPortForward.Process.Signal(syscall.SIGTERM)
+		}()
 		err = kPortForward.Start()
 		if err != nil {
 			log.Printf("warning: failed to port-forward to gitlab in main thread %s", err)
+			log.Printf("Commad Execution STDOUT: %s", kPortForwardOutb.String())
+			log.Printf("Commad Execution STDERR: %s", kPortForwardErrb.String())
+
 		}
 
-		var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer
-		kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
-		kPortForwardArgocd.Stdout = &kPortForwardArgocdOutb
-		kPortForwardArgocd.Stderr = &kPortForwardArgocdErrb
-		err = kPortForwardArgocd.Start()
-		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
-			log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
-			log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
+		if !skipDeleteRegistryApplication {
+			var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer
+			kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
+			kPortForwardArgocd.Stdout = &kPortForwardArgocdOutb
+			kPortForwardArgocd.Stderr = &kPortForwardArgocdErrb
+			err = kPortForwardArgocd.Start()
+			defer func() {
+				_ = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+			}()
+			if err != nil {
+				log.Printf("error: failed to port-forward to argocd in main thread %s", err)
+				log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
+				log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
+			}
 		}
-		// kPortForwardVault := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
-		// kPortForwardVault.Stdout = os.Stdout
-		// kPortForwardVault.Stderr = os.Stderr
-		// err = kPortForwardVault.Start()
-		// defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
-		// if err != nil {
-		// 	log.Panicf("error: failed to port-forward to vault in main thread %s", err)
-		// }
+
+		var kPortForwardVaultOutb, kPortForwardVaultErrb bytes.Buffer
+		kPortForwardVault := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
+		kPortForwardVault.Stdout = &kPortForwardVaultOutb
+		kPortForwardVault.Stderr = &kPortForwardVaultErrb
+		err = kPortForwardVault.Start()
+		defer func() {
+			_ = kPortForwardVault.Process.Signal(syscall.SIGTERM)
+		}()
+		if err != nil {
+			log.Printf("error: failed to port-forward to vault in main thread %s", err)
+			log.Printf("Commad Execution STDOUT: %s", kPortForwardVaultOutb.String())
+			log.Printf("Commad Execution STDERR: %s", kPortForwardVaultErrb.String())
+		}
 		log.Println("destroying gitlab terraform")
 
 		gitlab.DestroyGitlabTerraform(skipGitlabTerraform)
@@ -87,6 +102,7 @@ if the registry has already been deleted.`,
 		log.Println("terraform base destruction complete")
 		//TODO: move this step to `kubefirst clean` command and empty buckets and delete
 		aws.DestroyBucketsInUse(destroyBuckets)
+		fmt.Println("End of execution destroy")
 	},
 }
 

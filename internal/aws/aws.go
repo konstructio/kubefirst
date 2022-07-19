@@ -172,7 +172,7 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 	count := 0
 	// todo need to exit after n number of minutes and tell them to check ns records
 	// todo this logic sucks
-	for count <= 25 {
+	for count <= 100 {
 		count++
 		//tracker.Increment(1)
 		//log.Println(text.Faint.Sprintf("[INFO] dns test %d of 25", count))
@@ -190,10 +190,10 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 				// todo check ip against route53RecordValue in some capacity so we can pivot the value for testing
 				log.Println(fmt.Sprintf("%s. in TXT record value: %s\n", route53RecordName, ip))
 				//tracker.MarkAsDone()
-				count = 26
+				count = 101
 			}
 		}
-		if count == 25 {
+		if count == 100 {
 			//tracker.MarkAsErrored()
 			//pw.Stop()
 			log.Panicf("unable to resolve hosted zone dns record. please check your domain registrar")

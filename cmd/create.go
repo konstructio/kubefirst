@@ -397,7 +397,7 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	rootCmd.AddCommand(createCmd)
+	clusterCmd.AddCommand(createCmd)
 
 	// todo: make this an optional switch and check for it or viper
 	createCmd.Flags().Bool("destroy", false, "destroy resources")
