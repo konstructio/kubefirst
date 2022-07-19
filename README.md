@@ -11,17 +11,6 @@ GitOps integration, secrets management, production and development Kubernetes en
 - [Destroy](#destroy)
 - [Available Commands]()
 
-## Setup
-
-The setup is extremely simple, create a `.env` file in the root folder, and add the following variables:
-
-| Variable           | example          |
-|--------------------|------------------|
-| AWS_PROFILE        | default          |
-| CLOUD_PROVIDER=aws | aws              |
-| HOSTED_ZONE_NAME   | example.com      |
-| ADMIN_EMAIL        | john@example.com |
-
 ## Start the container
 
 We run everything on isolation with Docker, for that, start the container with:

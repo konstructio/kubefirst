@@ -211,6 +211,13 @@ func init() {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	initCmd.Flags().String("profile", "", "the profile to provision the cloud resources in")
+	err = initCmd.MarkFlagRequired("profile")
+	if err != nil {
+		log.Panic(err)
+	}
+
 	initCmd.Flags().Bool("clean", false, "delete any local kubefirst content ~/.kubefirst, ~/.k1")
 
 	log.SetPrefix("LOG: ")
