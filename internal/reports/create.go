@@ -12,31 +12,29 @@ type CreateHandOff struct {
 	AwsRegion         string
 	ClusterName       string
 
-	GitlabURL		string
-	GitlabUser		string
-	GitlabPassword		string
-	
-	RepoGitops		string
-	RepoMetaphor		string
+	GitlabURL      string
+	GitlabUser     string
+	GitlabPassword string
 
-	VaultUrl          string
-	VaultToken        string
+	RepoGitops   string
+	RepoMetaphor string
 
-	ArgoCDUrl         string
-	ArgoCDUsername    string
-	ArgoCDPassword    string
+	VaultUrl   string
+	VaultToken string
 
-	ArgoWorkflowsUrl         string
+	ArgoCDUrl      string
+	ArgoCDUsername string
+	ArgoCDPassword string
 
-	AtlantisUrl         string
+	ArgoWorkflowsUrl string
 
-	ChartMuseumUrl         string
+	AtlantisUrl string
 
-	MetaphorDevUrl         string
-	MetaphorStageUrl         string
-	MetaphorProductionUrl         string
+	ChartMuseumUrl string
 
-
+	MetaphorDevUrl        string
+	MetaphorStageUrl      string
+	MetaphorProductionUrl string
 }
 
 func BuildCreateHandOffReport(clusterData CreateHandOff) bytes.Buffer {
@@ -60,8 +58,8 @@ func BuildCreateHandOffReport(clusterData CreateHandOff) bytes.Buffer {
 	handOffData.WriteString(fmt.Sprintf("\n username: %s", clusterData.GitlabUser))
 	handOffData.WriteString(fmt.Sprintf("\n password: %s", clusterData.GitlabPassword))
 	handOffData.WriteString("\n Repos: ")
-	handOffData.WriteString(fmt.Sprintf("\n  %s",clusterData.RepoGitops))
-	handOffData.WriteString(fmt.Sprintf("\n  %s",clusterData.RepoMetaphor))
+	handOffData.WriteString(fmt.Sprintf("\n  %s", clusterData.RepoGitops))
+	handOffData.WriteString(fmt.Sprintf("\n  %s", clusterData.RepoMetaphor))
 	//handOffData.WriteString(strings.Repeat("-", 70))
 
 	handOffData.WriteString("\n--- Vault ")
