@@ -229,6 +229,9 @@ func initializeVaultAndAutoUnseal(dryRun bool) {
 		log.Panic(err)
 	}
 
+	log.Println(string(body))
+
+
 	vaultResponse := VaultUnsealResponse{}
 	err = json.Unmarshal(body, &vaultResponse)
 	if err != nil {
