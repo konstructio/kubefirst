@@ -210,126 +210,125 @@ to quickly create a Cobra application.`,
 			gitlab.GitlabKeyUpload(dryRun)
 			informUser("Gitlab ready")
 			progressPrinter.IncrementTracker("step-gitlab", 1)
-
-			if !skipVault {
-
-				progressPrinter.AddTracker("step-vault", "Configure Vault", 4)
-				informUser("waiting for vault unseal")
-				/**
-
-				 */
-				waitVaultToBeRunning(dryRun)
-				informUser("Vault running")
-				progressPrinter.IncrementTracker("step-vault", 1)
-
-				waitForVaultUnseal(dryRun, config)
-				informUser("Vault unseal")
-				progressPrinter.IncrementTracker("step-vault", 1)
-
-				log.Println("configuring vault")
-				vault.ConfigureVault(dryRun)
-				informUser("Vault configured")
-				progressPrinter.IncrementTracker("step-vault", 1)
-
-				log.Println("creating vault configured secret")
-				createVaultConfiguredSecret(dryRun, config)
-				informUser("Vault  secret created")
-				progressPrinter.IncrementTracker("step-vault", 1)
-			}
-
-			if !viper.GetBool("gitlab.oidc-created") {
-				progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 5)
-				vault.AddGitlabOidcApplications(dryRun)
-				informUser("Added Gitlab OIDC")
-				progressPrinter.IncrementTracker("step-post-gitlab", 1)
-
-				informUser("Waiting for Gitlab dns to propagate before continuing")
-				gitlab.AwaitHost("gitlab", dryRun)
-				progressPrinter.IncrementTracker("step-post-gitlab", 1)
-
-				informUser("Pushing gitops repo to origin gitlab")
-				// refactor: sounds like a new functions, should PushGitOpsToGitLab be renamed/update signature?
-				viper.Set("gitlab.oidc-created", true)
-				viper.WriteConfig()
-			}
-			if !viper.GetBool("gitlab.gitops-pushed") {
-				gitlab.PushGitRepo(dryRun, config, "gitlab", "gitops") // todo: need to handle if this was already pushed, errors on failure)
-				progressPrinter.IncrementTracker("step-post-gitlab", 1)
-				// todo: keep one of the two git push functions, they're similar, but not exactly the same
-				//gitlab.PushGitOpsToGitLab(dryRun)
-				viper.Set("gitlab.gitops-pushed", true)
-				viper.WriteConfig()
-			}
-			if !dryRun && !viper.GetBool("argocd.oidc-patched") {
-				cfg := configs.ReadConfig()
-				config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
-				if err != nil {
-					panic(err.Error())
-				}
-				clientset, err := kubernetes.NewForConfig(config)
-				if err != nil {
-					panic(err.Error())
-				}
-
-				argocdSecretClient = clientset.CoreV1().Secrets("argocd")
-				patchSecret(argocdSecretClient, "argocd-secret", "oidc.gitlab.clientSecret", viper.GetString("gitlab.oidc.argocd.secret"))
-
-				argocdPodClient := clientset.CoreV1().Pods("argocd")
-				argocdPodName := k8s.GetPodNameByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
-				k8s.DeletePodByName(argocdPodClient, argocdPodName)
-				viper.Set("argocd.oidc-patched", true)
-				viper.WriteConfig()
-			}
-			if !viper.GetBool("gitlab.metaphor-pushed") {
-				informUser("Pushing metaphor repo to origin gitlab")
-				gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
-				progressPrinter.IncrementTracker("step-post-gitlab", 1)
-				// todo: keep one of the two git push functions, they're similar, but not exactly the same
-				//gitlab.PushGitOpsToGitLab(dryRun)
-				viper.Set("gitlab.metaphor-pushed", true)
-				viper.WriteConfig()
-			}
-			if !viper.GetBool("gitlab.registered") {
-				// informUser("Getting ArgoCD auth token")
-				// token := argocd.GetArgocdAuthToken(dryRun)
-				// progressPrinter.IncrementTracker("step-post-gitlab", 1)
-
-				// informUser("Detaching the registry application from softserve")
-				// argocd.DeleteArgocdApplicationNoCascade(dryRun, "registry", token)
-				// progressPrinter.IncrementTracker("step-post-gitlab", 1)
-
-				informUser("Adding the registry application registered against gitlab")
-				gitlab.ChangeRegistryToGitLab(dryRun)
-				progressPrinter.IncrementTracker("step-post-gitlab", 1)
-				// todo triage / force apply the contents adjusting
-				// todo kind: Application .repoURL:
-
-				informUser("Waiting for argocd host to resolve")
-				gitlab.AwaitHost("argocd", dryRun)
-				cfg := configs.ReadConfig()
-				config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
-				if err != nil {
-					panic(err.Error())
-				}
-				clientset, err := kubernetes.NewForConfig(config)
-				if err != nil {
-					panic(err.Error())
-				}
-				argocdPodClient := clientset.CoreV1().Pods("argocd")
-				argocdPodName := k8s.GetPodNameByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
-				k8s.DeletePodByName(argocdPodClient, argocdPodName)
-				waitArgoCDToBeReady(dryRun)
-
-				informUser("Getting an argocd auth token")
-				token := argocd.GetArgocdAuthToken(dryRun)
-
-				informUser("Syncing the registry application")
-				argocd.SyncArgocdApplication(dryRun, "registry", token)
-
-				viper.Set("gitlab.registered", true)
-				viper.WriteConfig()
-			}
 		}
+		if !skipVault {
+
+			progressPrinter.AddTracker("step-vault", "Configure Vault", 4)
+			informUser("waiting for vault unseal")
+			/**
+
+			 */
+			waitVaultToBeRunning(dryRun)
+			informUser("Vault running")
+			progressPrinter.IncrementTracker("step-vault", 1)
+
+			waitForVaultUnseal(dryRun, config)
+			informUser("Vault unseal")
+			progressPrinter.IncrementTracker("step-vault", 1)
+
+			log.Println("configuring vault")
+			vault.ConfigureVault(dryRun)
+			informUser("Vault configured")
+			progressPrinter.IncrementTracker("step-vault", 1)
+
+			log.Println("creating vault configured secret")
+			createVaultConfiguredSecret(dryRun, config)
+			informUser("Vault  secret created")
+			progressPrinter.IncrementTracker("step-vault", 1)
+		}
+
+		if !viper.GetBool("gitlab.oidc-created") {
+			progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 5)
+			vault.AddGitlabOidcApplications(dryRun)
+			informUser("Added Gitlab OIDC")
+			progressPrinter.IncrementTracker("step-post-gitlab", 1)
+
+			informUser("Waiting for Gitlab dns to propagate before continuing")
+			gitlab.AwaitHost("gitlab", dryRun)
+			progressPrinter.IncrementTracker("step-post-gitlab", 1)
+
+			informUser("Pushing gitops repo to origin gitlab")
+			// refactor: sounds like a new functions, should PushGitOpsToGitLab be renamed/update signature?
+			viper.Set("gitlab.oidc-created", true)
+			viper.WriteConfig()
+		}
+		if !viper.GetBool("gitlab.gitops-pushed") {
+			gitlab.PushGitRepo(dryRun, config, "gitlab", "gitops") // todo: need to handle if this was already pushed, errors on failure)
+			progressPrinter.IncrementTracker("step-post-gitlab", 1)
+			// todo: keep one of the two git push functions, they're similar, but not exactly the same
+			//gitlab.PushGitOpsToGitLab(dryRun)
+			viper.Set("gitlab.gitops-pushed", true)
+			viper.WriteConfig()
+		}
+		if !dryRun && !viper.GetBool("argocd.oidc-patched") {
+			cfg := configs.ReadConfig()
+			config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
+			if err != nil {
+				panic(err.Error())
+			}
+			clientset, err := kubernetes.NewForConfig(config)
+			if err != nil {
+				panic(err.Error())
+			}
+
+			argocdSecretClient = clientset.CoreV1().Secrets("argocd")
+			patchSecret(argocdSecretClient, "argocd-secret", "oidc.gitlab.clientSecret", viper.GetString("gitlab.oidc.argocd.secret"))
+
+			argocdPodClient := clientset.CoreV1().Pods("argocd")
+			argocdPodName := k8s.GetPodNameByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+			k8s.DeletePodByName(argocdPodClient, argocdPodName)
+			viper.Set("argocd.oidc-patched", true)
+			viper.WriteConfig()
+		}
+		if !viper.GetBool("gitlab.metaphor-pushed") {
+			informUser("Pushing metaphor repo to origin gitlab")
+			gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
+			progressPrinter.IncrementTracker("step-post-gitlab", 1)
+			// todo: keep one of the two git push functions, they're similar, but not exactly the same
+			//gitlab.PushGitOpsToGitLab(dryRun)
+			viper.Set("gitlab.metaphor-pushed", true)
+			viper.WriteConfig()
+		}
+		if !viper.GetBool("gitlab.registered") {
+			// informUser("Getting ArgoCD auth token")
+			// token := argocd.GetArgocdAuthToken(dryRun)
+			// progressPrinter.IncrementTracker("step-post-gitlab", 1)
+
+			// informUser("Detaching the registry application from softserve")
+			// argocd.DeleteArgocdApplicationNoCascade(dryRun, "registry", token)
+			// progressPrinter.IncrementTracker("step-post-gitlab", 1)
+
+			informUser("Adding the registry application registered against gitlab")
+			gitlab.ChangeRegistryToGitLab(dryRun)
+			progressPrinter.IncrementTracker("step-post-gitlab", 1)
+			// todo triage / force apply the contents adjusting
+			// todo kind: Application .repoURL:
+
+			// informUser("Waiting for argocd host to resolve")
+			// gitlab.AwaitHost("argocd", dryRun)
+			cfg := configs.ReadConfig()
+			config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
+			if err != nil {
+				panic(err.Error())
+			}
+			clientset, err := kubernetes.NewForConfig(config)
+			if err != nil {
+				panic(err.Error())
+			}
+			argocdPodClient := clientset.CoreV1().Pods("argocd")
+			argocdPodName := k8s.GetPodNameByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+			k8s.DeletePodByName(argocdPodClient, argocdPodName)
+			waitArgoCDToBeReady(dryRun)
+
+			time.Sleep(time.Second * 30)
+
+			informUser("Syncing the registry application")
+			argocd.SyncArgocdApplication(dryRun, "registry", viper.GetString("argocd.admin.apitoken"))
+
+			viper.Set("gitlab.registered", true)
+			viper.WriteConfig()
+		}
+
 		sendCompleteInstallTelemetry(dryRun)
 		time.Sleep(time.Millisecond * 100)
 
