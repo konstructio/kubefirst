@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/kubefirst/kubefirst/internal/argocd"
 	"log"
+
+	"github.com/kubefirst/kubefirst/internal/argocd"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -20,10 +21,12 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		dryRun, err := cmd.Flags().GetBool("dry-run")
-		if err != nil {
-			log.Panic(err)
-		}
+		// dryRun, err := cmd.Flags().GetBool("dry-run")
+		// if err != nil {
+		// 	log.Panic(err)
+		// }
+
+		dryRun := false
 
 		log.Println("dry run enabled:", dryRun)
 

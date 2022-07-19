@@ -187,7 +187,7 @@ func AddGitlabOidcApplications(dryRun bool) {
 
 func addVaultSecret(secretPath string, secretData map[string]interface{}) {
 	config := vault.DefaultConfig()
-	config.Address = fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename"))
+	config.Address = viper.GetString("vault.local.service")
 
 	client, err := vault.NewClient(config)
 	if err != nil {

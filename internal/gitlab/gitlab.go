@@ -124,7 +124,7 @@ func PushGitOpsToGitLab(dryRun bool) {
 		},
 	})
 	if err != nil {
-		log.Panicf("error committing changes", err)
+		log.Panicf("error committing changes %s", err)
 	}
 
 	log.Println("setting auth...")
@@ -141,34 +141,38 @@ func PushGitOpsToGitLab(dryRun bool) {
 		Auth:       auth,
 	})
 	if err != nil {
-		log.Panicf("error pushing to remote", err)
+		log.Panicf("error pushing to remote %s", err)
 	}
 
 }
 
-func AwaitGitlab(dryRun bool) {
+func AwaitHost(appName string, dryRun bool) {
 
-	log.Println("AwaitGitlab called")
+	log.Println("AwaitHost called")
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, AwaitGitlab skipped.")
+		log.Printf("[#99] Dry-run mode, AwaitHost skipped.")
 		return
 	}
 	max := 200
 	for i := 0; i < max; i++ {
 		hostedZoneName := viper.GetString("aws.hostedzonename")
-		resp, _ := http.Get(fmt.Sprintf("https://gitlab.%s", hostedZoneName))
+		resp, _ := http.Get(fmt.Sprintf("https://%s.%s", appName, hostedZoneName))
 		if resp != nil && resp.StatusCode == 200 {
-			log.Println("gitlab host resolved, 30 second grace period required...")
+			log.Println(fmt.Printf("%s host resolved, 30 second grace period required...", appName))
 			time.Sleep(time.Second * 30)
 			i = max
 		} else {
-			log.Println("gitlab host not resolved, sleeping 10s")
+			log.Println(fmt.Printf("%s host not resolved, sleeping 10s", appName))
 			time.Sleep(time.Second * 10)
 		}
 	}
 }
 
 func ProduceGitlabTokens(dryRun bool) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, ProduceGitlabTokens skipped.")
+		return
+	}
 	//TODO: Should this step be skipped if already executed?
 	config := configs.ReadConfig()
 	k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
@@ -180,10 +184,6 @@ func ProduceGitlabTokens(dryRun bool) {
 		log.Panic(err.Error())
 	}
 	log.Println("discovering gitlab toolbox pod")
-	if dryRun {
-		log.Printf("[#99] Dry-run mode, ProduceGitlabTokens skipped.")
-		return
-	}
 	time.Sleep(30 * time.Second)
 	// todo: move it to config
 	k8s.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
@@ -195,8 +195,8 @@ func ProduceGitlabTokens(dryRun bool) {
 
 	log.Println("discovering gitlab toolbox pod")
 
-	k8s.GitlabPodsClient = clientset.CoreV1().Pods("gitlab")
-	gitlabPodName := k8s.GetPodNameByLabel(k8s.GitlabPodsClient, "toolbox")
+	gitlabPodClient := clientset.CoreV1().Pods("gitlab")
+	gitlabPodName := k8s.GetPodNameByLabel(gitlabPodClient, "app=toolbox")
 
 	k8s.GitlabSecretClient = clientset.CoreV1().Secrets("gitlab")
 	secrets, err := k8s.GitlabSecretClient.List(context.TODO(), metaV1.ListOptions{})
@@ -391,27 +391,30 @@ func ChangeRegistryToGitLab(dryRun bool) {
 	var secrets bytes.Buffer
 
 	c, err := template.New("creds-gitlab").Parse(`
-		apiVersion: v1
-		data:
-			password: {{ .PersonalAccessToken }}
-			url: {{ .URL }}
-			username: cm9vdA==
-		kind: Secret
-		metadata:
-			annotations:
-				managed-by: argocd.argoproj.io
-			labels:
-				argocd.argoproj.io/secret-type: repo-creds
-			name: creds-gitlab
-			namespace: argocd
-		type: Opaque
-	`)
+    apiVersion: v1
+    data:
+      password: {{ .PersonalAccessToken }}
+      url: {{ .URL }}
+      username: cm9vdA==
+    kind: Secret
+    metadata:
+      annotations:
+        managed-by: argocd.argoproj.io
+      labels:
+        argocd.argoproj.io/secret-type: repo-creds
+      name: creds-gitlab
+      namespace: argocd
+    type: Opaque
+  `)
 	if err := c.Execute(&secrets, creds); err != nil {
 		log.Panicf("error executing golang template for git repository credentials template %s", err)
 	}
 
 	ba := []byte(secrets.String())
 	err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
+	if err != nil {
+		log.Println("error unmarshalling yaml during argocd repository secret create", err)
+	}
 
 	_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
 	if err != nil {
@@ -421,21 +424,21 @@ func ChangeRegistryToGitLab(dryRun bool) {
 	var repoSecrets bytes.Buffer
 
 	c, err = template.New("repo-gitlab").Parse(`
-		apiVersion: v1
-		data:
-			project: ZGVmYXVsdA==
-			type: Z2l0
-			url: {{ .FullURL }}
-		kind: Secret
-		metadata:
-			annotations:
-				managed-by: argocd.argoproj.io
-			labels:
-				argocd.argoproj.io/secret-type: repository
-			name: repo-gitlab
-			namespace: argocd
-		type: Opaque
-	`)
+    apiVersion: v1
+    data:
+      project: ZGVmYXVsdA==
+      type: Z2l0
+      url: {{ .FullURL }}
+    kind: Secret
+    metadata:
+      annotations:
+        managed-by: argocd.argoproj.io
+      labels:
+        argocd.argoproj.io/secret-type: repository
+      name: repo-gitlab
+      namespace: argocd
+    type: Opaque
+  `)
 	if err := c.Execute(&repoSecrets, creds); err != nil {
 		log.Panicf("error executing golang template for gitops repository template %s", err)
 	}
@@ -447,6 +450,10 @@ func ChangeRegistryToGitLab(dryRun bool) {
 	if err != nil {
 		log.Panicf("error creating argocd repository connection secret %s", err)
 	}
+
+	// curl -X 'DELETE' \
+	// 'https://$ARGO_ADDRESS/api/v1/applications/registry?cascade=false' \
+	// -H 'accept: application/json'
 
 	_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/gitlab/argocd-adopts-gitlab.yaml", config.K1FolderPath))
 	if err != nil {
@@ -538,6 +545,8 @@ func PushGitRepo(dryRun bool, config *configs.Config, gitOrigin, repoName string
 		os.RemoveAll(repoDir + "/terraform/gitlab/.terraform")
 		os.RemoveAll(repoDir + "/terraform/vault/.terraform")
 		os.Remove(repoDir + "/terraform/base/.terraform.lock.hcl")
+		os.Remove(repoDir + "/terraform/vault/.terraform.lock.hcl")
+		os.Remove(repoDir + "/terraform/users/.terraform.lock.hcl")
 		os.Remove(repoDir + "/terraform/gitlab/.terraform.lock.hcl")
 		CommitToRepo(repo, repoName)
 		auth, _ := pkg.PublicKey()
@@ -555,12 +564,53 @@ func PushGitRepo(dryRun bool, config *configs.Config, gitOrigin, repoName string
 	}
 
 	if gitOrigin == "gitlab" {
+		registryFileContent := `apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-components
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "100"
+spec:
+  project: default
+  source:
+    repoURL: ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops
+    path: components/argocd
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 5m0s
+        factor: 2`
+		file, err := os.Create(fmt.Sprintf("%s/gitops/registry/argocd.yaml", config.K1FolderPath))
+		if err != nil {
+			log.Println(err)
+		}
+		_, err = file.WriteString(registryFileContent)
+		if err != nil {
+			log.Println(err)
+		}
+		file.Close()
+
 		pkg.Detokenize(repoDir)
 		os.RemoveAll(repoDir + "/terraform/base/.terraform")
 		os.RemoveAll(repoDir + "/terraform/gitlab/.terraform")
 		os.RemoveAll(repoDir + "/terraform/vault/.terraform")
 		os.Remove(repoDir + "/terraform/base/.terraform.lock.hcl")
+		os.Remove(repoDir + "/terraform/vault/.terraform.lock.hcl")
+		os.Remove(repoDir + "/terraform/users/.terraform.lock.hcl")
 		os.Remove(repoDir + "/terraform/gitlab/.terraform.lock.hcl")
+
 		CommitToRepo(repo, repoName)
 		auth := &gitHttp.BasicAuth{
 			Username: "root",

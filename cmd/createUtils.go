@@ -129,7 +129,11 @@ func waitVaultToBeRunning(dryRun bool) {
 	}
 }
 
-func loopUntilPodIsReady() {
+func loopUntilPodIsReady(dryRun bool) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, loopUntilPodIsReady skipped.")
+		return
+	}
 
 	x := 50
 	url := "http://localhost:8200/v1/sys/health"
@@ -153,7 +157,7 @@ func loopUntilPodIsReady() {
 			log.Println("vault is availbale but the body is not what is expected ", err)
 			continue
 		}
-		fmt.Println(string(body))
+		log.Println(string(body))
 
 		var responseJson map[string]interface{}
 
@@ -196,7 +200,11 @@ type VaultUnsealResponse struct {
 	KeysB64               []string      `json:"keys_base64"`
 }
 
-func initializeVaultAndAutoUnseal() {
+func initializeVaultAndAutoUnseal(dryRun bool) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, initializeVaultAndAutoUnseal skipped.")
+		return
+	}
 	url := "http://127.0.0.1:8200/v1/sys/init"
 
 	payload := strings.NewReader("{\n\t\"stored_shares\": 3,\n\t\"recovery_threshold\": 3,\n\t\"recovery_shares\": 5\n}")

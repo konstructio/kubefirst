@@ -32,34 +32,6 @@ func CreateSshKeyPair() {
 	privateKey := viper.GetString("botprivatekey")
 
 	var argocdInitValuesYaml = []byte(fmt.Sprintf(`
-server:
-  additionalApplications:
-  - name: registry
-    namespace: argocd
-    additionalLabels: {}
-    additionalAnnotations: {}
-    finalizers:
-    - resources-finalizer.argocd.argoproj.io
-    project: default
-    source:
-      repoURL: ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops
-      targetRevision: HEAD
-      path: registry
-    destination:
-      server: https://kubernetes.default.svc
-      namespace: argocd
-    syncPolicy:
-      automated:
-        prune: true
-        selfHeal: true
-      syncOptions:
-      - CreateNamespace=true
-      retry:
-        limit: 5
-        backoff:
-          duration: 5s
-          maxDuration: 5m0s
-          factor: 2
 configs:
   repositories:
     soft-serve-gitops:

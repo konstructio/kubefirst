@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"log"
+	"os"
 	"os/exec"
 	"syscall"
 
@@ -44,14 +45,14 @@ if the registry has already been deleted.`,
 			log.Panic(err)
 		}
 
-		// kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
-		// kPortForward.Stdout = os.Stdout
-		// kPortForward.Stderr = os.Stderr
-		// defer kPortForward.Process.Signal(syscall.SIGTERM)
-		// err = kPortForward.Start()
-		// if err != nil {
-		// 	log.Panicf("error: failed to port-forward to gitlab in main thread %s", err)
-		// }
+		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
+		kPortForward.Stdout = os.Stdout
+		kPortForward.Stderr = os.Stderr
+		defer kPortForward.Process.Signal(syscall.SIGTERM)
+		err = kPortForward.Start()
+		if err != nil {
+			log.Printf("warning: failed to port-forward to gitlab in main thread %s", err)
+		}
 
 		var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer
 		kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
@@ -60,8 +61,8 @@ if the registry has already been deleted.`,
 		err = kPortForwardArgocd.Start()
 		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 		if err != nil {
-			log.Println("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
-			log.Println("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
+			log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
+			log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
 			log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
 		}
 		// kPortForwardVault := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")

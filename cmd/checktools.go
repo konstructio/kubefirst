@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
@@ -27,13 +28,13 @@ var checktoolsCmd = &cobra.Command{
 		fmt.Printf("-> helm version:\n\t%s\n\t%s\n", helmVersion, helmStdErr)
 
 		if errKubectl != nil {
-			fmt.Println("failed to call kubectlVersionCmd.Run(): %v", errKubectl)
+			fmt.Printf("failed to call kubectlVersionCmd.Run(): %v", errKubectl)
 		}
 		if errHelm != nil {
-			fmt.Println("failed to call helmVersionCmd.Run(): %v", errHelm)
+			fmt.Printf("failed to call helmVersionCmd.Run(): %v", errHelm)
 		}
 		if errTerraform != nil {
-			fmt.Println("failed to call terraformVersionCmd.Run(): %v", errTerraform)
+			fmt.Printf("failed to call terraformVersionCmd.Run(): %v", errTerraform)
 		}
 
 	},

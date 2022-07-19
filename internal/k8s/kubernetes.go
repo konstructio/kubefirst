@@ -8,13 +8,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
-	"log"
-	"time"
 )
 
 var vaultRootToken string
@@ -24,18 +25,34 @@ var gitlabToolboxPodName string
 var GitlabSecretClient coreV1Types.SecretInterface
 var VaultSecretClient coreV1Types.SecretInterface
 var ArgocdSecretClient coreV1Types.SecretInterface
-var GitlabPodsClient coreV1Types.PodInterface
 
-func GetPodNameByLabel(gitlabPodsClient coreV1Types.PodInterface, label string) string {
-	pods, err := gitlabPodsClient.List(context.TODO(), metaV1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", label)})
+// var GitlabPodsClient coreV1Types.PodInterface
+
+func GetPodNameByLabel(podsClient coreV1Types.PodInterface, label string) string {
+	pods, err := podsClient.List(context.TODO(), metaV1.ListOptions{LabelSelector: label})
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	gitlabToolboxPodName = pods.Items[0].Name
 
 	return gitlabToolboxPodName
 }
+
+func DeletePodByName(podsClient coreV1Types.PodInterface, podName string) {
+	err := podsClient.Delete(context.TODO(), podName, metaV1.DeleteOptions{})
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+// func CreateRepoSecret() {
+
+// }
+
+// func CreateCredentialsTemplateSecret() {
+
+// }
 
 func getVaultRootToken(vaultSecretClient coreV1Types.SecretInterface) string {
 	name := "vault-unseal-keys"

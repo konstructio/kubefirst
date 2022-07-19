@@ -9,15 +9,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"time"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
-	"log"
-	"os"
-	"os/exec"
-	"time"
 )
 
 var vaultRootToken string
@@ -29,16 +30,16 @@ var vaultSecretClient coreV1Types.SecretInterface
 var argocdSecretClient coreV1Types.SecretInterface
 var gitlabPodsClient coreV1Types.PodInterface
 
-func getPodNameByLabel(gitlabPodsClient coreV1Types.PodInterface, label string) string {
-	pods, err := gitlabPodsClient.List(context.TODO(), metaV1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", label)})
-	if err != nil {
-		fmt.Println(err)
-	}
+// func getPodNameByLabel(gitlabPodsClient coreV1Types.PodInterface, label string) string {
+// 	pods, err := gitlabPodsClient.List(context.TODO(), metaV1.ListOptions{LabelSelector: label})
+// 	if err != nil {
+// 		fmt.Println(err)
+// 	}
 
-	gitlabToolboxPodName = pods.Items[0].Name
+// 	gitlabToolboxPodName = pods.Items[0].Name
 
-	return gitlabToolboxPodName
-}
+// 	return gitlabToolboxPodName
+// }
 
 func waitForVaultUnseal(dryRun bool, config *configs.Config) {
 	if dryRun {
@@ -99,7 +100,7 @@ func createVaultConfiguredSecret(dryRun bool, config *configs.Config) {
 		if err != nil {
 			log.Panicf("failed to create secret for vault-configured: %s", err)
 		}
-		log.Println("the secret create output is: %s", output.String())
+		log.Printf("the secret create output is: %s", output.String())
 
 		viper.Set("vault.configuredsecret", true)
 		viper.WriteConfig()
@@ -134,6 +135,15 @@ func getSecretValue(k8sClient coreV1Types.SecretInterface, secretName, key strin
 		log.Println(fmt.Sprintf("error getting key: %s from secret: %s", key, secretName), err)
 	}
 	return string(secret.Data[key])
+}
+
+func patchSecret(k8sClient coreV1Types.SecretInterface, secretName, key, val string) {
+	secret, err := k8sClient.Get(context.TODO(), secretName, metaV1.GetOptions{})
+	if err != nil {
+		log.Println(fmt.Sprintf("error getting key: %s from secret: %s", key, secretName), err)
+	}
+	secret.Data[key] = []byte(val)
+	k8sClient.Update(context.TODO(), secret, metaV1.UpdateOptions{})
 }
 
 func waitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, podLabel string) {
