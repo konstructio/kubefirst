@@ -3,6 +3,13 @@ package aws
 import (
 	"context"
 	"fmt"
+	"log"
+	"net"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
@@ -14,12 +21,6 @@ import (
 	"github.com/cip8/autoname"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
-	"log"
-	"net"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
@@ -61,7 +62,7 @@ func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
 							LocationConstraint: aws.String(regionName),
 						},
 					})
-				}				
+				}
 				if err != nil {
 					log.Println("failed to create bucket "+bucketName, err.Error())
 					os.Exit(1)
@@ -69,7 +70,7 @@ func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
 				vc := &s3.VersioningConfiguration{}
 				vc.Status = aws.String(s3.BucketVersioningStatusEnabled)
 				versionConfigInput := &s3.PutBucketVersioningInput{
-					Bucket: aws.String(bucketName),
+					Bucket:                  aws.String(bucketName),
 					VersioningConfiguration: vc,
 				}
 				log.Printf("[DEBUG] S3 put bucket versioning: %#v", versionConfigInput)
@@ -170,7 +171,7 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 	count := 0
 	// todo need to exit after n number of minutes and tell them to check ns records
 	// todo this logic sucks
-	for count <= 25 {
+	for count <= 100 {
 		count++
 		//tracker.Increment(1)
 		//log.Println(text.Faint.Sprintf("[INFO] dns test %d of 25", count))
@@ -188,10 +189,10 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 				// todo check ip against route53RecordValue in some capacity so we can pivot the value for testing
 				log.Println(fmt.Sprintf("%s. in TXT record value: %s\n", route53RecordName, ip))
 				//tracker.MarkAsDone()
-				count = 26
+				count = 101
 			}
 		}
-		if count == 25 {
+		if count == 100 {
 			//tracker.MarkAsErrored()
 			//pw.Stop()
 			log.Panicf("unable to resolve hosted zone dns record. please check your domain registrar")
