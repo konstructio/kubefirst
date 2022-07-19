@@ -134,9 +134,9 @@ to quickly create a Cobra application.`,
 		// todo: this doesn't default to testing the dns check
 		skipHostedZoneCheck := viper.GetBool("init.hostedzonecheck.enabled")
 		if !skipHostedZoneCheck {
-			log.Println("skipping hosted zone check")
-		} else {
 			aws.TestHostedZoneLiveness(dryRun, hostedZoneName, hostedZoneId)
+		} else {
+			log.Println("skipping hosted zone check")
 		}
 		trackers[pkg.TestHostedZoneLiveness].Tracker.Increment(1)
 
