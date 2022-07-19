@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -309,15 +310,14 @@ func DestroyBucket(bucketName string) {
 }
 
 func GetAWSSession() *session.Session {
-	sess, err := session.NewSessionWithOptions(session.Options{
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		Config: aws.Config{
 			Region: aws.String(viper.GetString("aws.region")),
 		},
 		Profile: viper.GetString("aws.profile"),
-	})
-	if err != nil {
-		log.Panicf("failed to get session ", err.Error())
-	}
+
+		AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
+	}))
 	return sess
 }
 

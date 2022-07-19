@@ -79,5 +79,13 @@ func ReadConfig() *Config {
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
+	// If the AWS_SDK_LOAD_CONFIG environment variable is set to a truthy value the shared config file (~/.aws/config)
+	// will also be loaded in addition to the shared credentials file (~/.aws/credentials).
+	// AWS SDK client will take it in advance
+	err = os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
+	if err != nil {
+		log.Panicf("unable to set AWS_SDK_LOAD_CONFIG enviroment value, error is: %v", err)
+	}
+
 	return &config
 }

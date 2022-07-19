@@ -1,28 +1,3 @@
-<p align="center">
-  <img style="width:44%" src="images/kubefirst.svg" alt="Kubefirst Logo"/>
-</p>
-
-<p align="center">
-  GitOps Infrastructure & Application Delivery Platform
-</p>
-
-<p align="center">
-  <a href="https://docs.kubefirst.com/kubefirst/install.html">Install</a>&nbsp;|&nbsp;
-  <a href="https://docs.kubefirst.com/index.html">Documentation</a>&nbsp;|&nbsp;
-  <a href="https://twitter.com/kubefirst">Twitter</a>&nbsp;|&nbsp;
-  <a href="https://join.slack.com/t/kubefirst/shared_invite/zt-r0r9cfts-OVnH0ooELDLm9n9p2aU7fw">Slack</a>&nbsp;|&nbsp;
-  <a href="https://kubeshop.io/blog-projects/kubefirst">Blog</a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/kubefirst/kubefirst/releases"><img title="Release" src="https://img.shields.io/github/v/release/kubefirst/kubefirst"/></a>
-  <!-- <a href=""><img title="Docker builds" src="https://img.shields.io/docker/automated/kubeshop/tracetest"/></a> -->
-  <a href="https://github.com/kubefirst/kubefirst/releases"><img title="Release date" src="https://img.shields.io/github/release-date/kubefirst/kubefirst"/></a>
-</p>
-
-
----
-
 # Kubefirst CLI
 
 The Kubefirst CLI is a cloud provisioning tool. With simple setup and two CLI commands, we create a kubernetes cluster managed with automated Infrastructure as Code, GitOps asset management and application delivery, secrets management, a sample application delivered to development, staging, and production, and so much more. It's an open source platform ready to be customized to suit your company's needs.
