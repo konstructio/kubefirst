@@ -229,11 +229,14 @@ func initializeVaultAndAutoUnseal(dryRun bool) {
 		log.Panic(err)
 	}
 
+	log.Println(string(body))
+
 	vaultResponse := VaultUnsealResponse{}
 	err = json.Unmarshal(body, &vaultResponse)
 	if err != nil {
 		log.Panic(err)
 	}
+
 
 	viper.Set("vault.token", vaultResponse.RootToken)
 	viper.Set("vault.unseal-keys", vaultResponse)
