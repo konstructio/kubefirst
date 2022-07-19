@@ -133,3 +133,16 @@ func SetupViper(config *configs.Config) error {
 
 	return nil
 }
+
+func CreateFile(fileName string, fileContent []byte) error {
+	file, err := os.Create(fileName)
+	if err != nil {
+		return fmt.Errorf("error creating file: %s", err)
+	}
+	defer file.Close()
+	_, err = file.Write(fileContent)
+	if err != nil {
+		return fmt.Errorf("unable to write the file: %s", err)
+	}
+	return nil
+}
