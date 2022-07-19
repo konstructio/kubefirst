@@ -119,7 +119,7 @@ to quickly create a Cobra application.`,
 				log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
 				log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
 			}
-		}	
+		}
 
 		// log.Println("sleeping for 45 seconds, hurry up jared")
 		// time.Sleep(45 * time.Second)
@@ -241,7 +241,7 @@ to quickly create a Cobra application.`,
 			progressPrinter.IncrementTracker("step-vault", 1)
 		}
 		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 5)
-		if !viper.GetBool("gitlab.oidc-created") {			
+		if !viper.GetBool("gitlab.oidc-created") {
 			vault.AddGitlabOidcApplications(dryRun)
 			informUser("Added Gitlab OIDC")
 			progressPrinter.IncrementTracker("step-post-gitlab", 1)
@@ -322,7 +322,7 @@ to quickly create a Cobra application.`,
 				argocdPodClient := clientset.CoreV1().Pods("argocd")
 				argocdPodName := k8s.GetPodNameByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
 				kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
-				informUser("deleting argocd-server pod")			
+				informUser("deleting argocd-server pod")
 				k8s.DeletePodByName(argocdPodClient, argocdPodName)
 			}
 			informUser("waiting for argocd to be ready")
@@ -358,8 +358,6 @@ to quickly create a Cobra application.`,
 		sendCompleteInstallTelemetry(dryRun)
 		time.Sleep(time.Millisecond * 100)
 
-
-
 		// prepare data for the handoff report
 		clusterData := reports.CreateHandOff{
 			AwsAccountId:      viper.GetString("aws.accountid"),
@@ -367,40 +365,33 @@ to quickly create a Cobra application.`,
 			AwsRegion:         viper.GetString("aws.region"),
 			ClusterName:       viper.GetString("cluster-name"),
 
-			GitlabURL:          fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename")),
-			GitlabUser:         "root" ,
-			GitlabPassword:     viper.GetString("gitlab.token")     ,
+			GitlabURL:      fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename")),
+			GitlabUser:     "root",
+			GitlabPassword: viper.GetString("gitlab.token"),
 
-			RepoGitops:          fmt.Sprintf("https://gitlab.%s/kubefirst/gitops", viper.GetString("aws.hostedzonename")),
-			RepoMetaphor:         fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor", viper.GetString("aws.hostedzonename")),
+			RepoGitops:   fmt.Sprintf("https://gitlab.%s/kubefirst/gitops", viper.GetString("aws.hostedzonename")),
+			RepoMetaphor: fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor", viper.GetString("aws.hostedzonename")),
 
+			VaultUrl:   fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename")),
+			VaultToken: viper.GetString("vault.token"),
 
-			VaultUrl:          fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename")),        
-			VaultToken:        viper.GetString("vault.token"),
+			ArgoCDUrl:      fmt.Sprintf("https://argocd.%s", viper.GetString("aws.hostedzonename")),
+			ArgoCDUsername: viper.GetString("argocd.admin.username"),
+			ArgoCDPassword: viper.GetString("argocd.admin.password"),
 
+			ArgoWorkflowsUrl: fmt.Sprintf("https://argo.%s", viper.GetString("aws.hostedzonename")),
+			AtlantisUrl:      fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename")),
+			ChartMuseumUrl:   fmt.Sprintf("https://chartmuseum.%s", viper.GetString("aws.hostedzonename")),
 
-			ArgoCDUrl:         fmt.Sprintf("https://argocd.%s", viper.GetString("aws.hostedzonename")),        
-			ArgoCDUsername:    viper.GetString("argocd.admin.username"),
-			ArgoCDPassword:    viper.GetString("argocd.admin.password"),
-
-			ArgoWorkflowsUrl:  fmt.Sprintf("https://argo.%s", viper.GetString("aws.hostedzonename")),        
-			AtlantisUrl:       fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename")),   
-			ChartMuseumUrl:    fmt.Sprintf("https://chartmuseum.%s", viper.GetString("aws.hostedzonename")),      
-			
-			MetaphorDevUrl:      fmt.Sprintf("https://metaphor-development.%s", viper.GetString("aws.hostedzonename")),      
-			MetaphorStageUrl:      fmt.Sprintf("https://metaphor-staging.%s", viper.GetString("aws.hostedzonename")),          
-			MetaphorProductionUrl:     fmt.Sprintf("https://metaphor-production.%s", viper.GetString("aws.hostedzonename")),          
-		
+			MetaphorDevUrl:        fmt.Sprintf("https://metaphor-development.%s", viper.GetString("aws.hostedzonename")),
+			MetaphorStageUrl:      fmt.Sprintf("https://metaphor-staging.%s", viper.GetString("aws.hostedzonename")),
+			MetaphorProductionUrl: fmt.Sprintf("https://metaphor-production.%s", viper.GetString("aws.hostedzonename")),
 		}
 
 		// build the string that will be sent to the report
 		handOffData := reports.BuildCreateHandOffReport(clusterData)
 		// call handoff report and apply style
 		reports.CommandSummary(handOffData)
-
-
-		
-		
 
 	},
 }
