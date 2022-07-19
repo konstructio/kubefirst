@@ -11,7 +11,6 @@ func CheckEnvironment() error {
 
 	requiredEnvValues := map[string]string{
 		"AWS_PROFILE": os.Getenv("AWS_PROFILE"),
-		"AWS_REGION":  os.Getenv("AWS_REGION"),
 	}
 
 	for k, v := range requiredEnvValues {

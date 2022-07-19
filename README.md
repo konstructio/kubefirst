@@ -18,7 +18,6 @@ The setup is extremely simple, create a `.env` file in the root folder, and add 
 | Variable           | example          |
 |--------------------|------------------|
 | AWS_PROFILE        | default          |
-| AWS_REGION         | us-east-1        |
 | CLOUD_PROVIDER=aws | aws              |
 | HOSTED_ZONE_NAME   | example.com      |
 | ADMIN_EMAIL        | john@example.com |
@@ -45,7 +44,7 @@ go run . init --admin-email $ADMIN_EMAIL --cloud $CLOUD_PROVIDER --hosted-zone-n
 At this point, everything is ready to start provisioning the cloud services, and for that we can run:
 
 ```bash
-go run . create
+go run . cluster create
 ```
 
 ## Access ArgoCD
@@ -72,11 +71,11 @@ rm ~/.flare
 Kubefirst provides extra tooling for handling the provisioning work.
 
 | Command    | Description                                               |
-|------------|-----------------------------------------------------------|
-| argocdSync | Request ArgoCD to synchronize applications                |
-| checktools | use to check compatibility of .kubefirst/tools            |
-| clean      | removes all kubefirst resources locally for new execution |
-| create     | create a kubefirst management cluster                     |
+|:------------|:-----------------------------------------------------------|
+| argocdSync     | Request ArgoCD to synchronize applications                |
+| checktools     | use to check compatibility of .kubefirst/tools            |
+| clean          | removes all kubefirst resources locally for new execution |
+| cluster create | create a kubefirst management cluster                     |
 | destroy    | destroy the kubefirst management cluster                  |
 | info       | provides general Kubefirst setup data                     |
 | init       | initialize your local machine to execute `create`         |
