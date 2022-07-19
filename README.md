@@ -18,7 +18,6 @@ The setup is extremely simple, create a `.env` file in the root folder, and add 
 | Variable           | example          |
 |--------------------|------------------|
 | AWS_PROFILE        | default          |
-| AWS_REGION         | us-east-1        |
 | CLOUD_PROVIDER=aws | aws              |
 | HOSTED_ZONE_NAME   | example.com      |
 | ADMIN_EMAIL        | john@example.com |
