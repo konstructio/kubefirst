@@ -11,3 +11,8 @@ kubeconfig_*
 */cypress/videos/
 .DS_Store
 /git
+bin
+.vscode/settings.json
+logs/
+/tmp
+lint_log.txt

@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ template "metaphor.fullname" . }}
-  labels:
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-data:
-  CONFIG_ONE: your-first-config
-  CONFIG_TWO: your-second-config
