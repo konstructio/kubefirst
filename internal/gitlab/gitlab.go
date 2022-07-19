@@ -289,7 +289,6 @@ func GitlabKeyUpload(dryRun bool) {
 		}
 
 		os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
-		os.Setenv("AWS_PROFILE", "starter") // todo this is an issue
 
 		log.Println("uploading ssh public key to gitlab")
 		gitlabToken := viper.GetString("gitlab.token")
