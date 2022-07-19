@@ -37,6 +37,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
+		var kPortForwardArgocd *exec.Cmd
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 		config := configs.ReadConfig()
 
@@ -106,17 +107,19 @@ to quickly create a Cobra application.`,
 		informUser("ArgoCD Ready")
 		progressPrinter.IncrementTracker("step-argo", 1)
 
-		var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer
-		kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
-		kPortForwardArgocd.Stdout = &kPortForwardArgocdOutb
-		kPortForwardArgocd.Stderr = &kPortForwardArgocdErrb
-		err = kPortForwardArgocd.Start()
-		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
-			log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
-			log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
-		}
+		if !dryRun {
+			var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer
+			kPortForwardArgocd = exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
+			kPortForwardArgocd.Stdout = &kPortForwardArgocdOutb
+			kPortForwardArgocd.Stderr = &kPortForwardArgocdErrb
+			err = kPortForwardArgocd.Start()
+			defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
+				log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
+				log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
+			}
+		}	
 
 		// log.Println("sleeping for 45 seconds, hurry up jared")
 		// time.Sleep(45 * time.Second)
@@ -131,12 +134,13 @@ to quickly create a Cobra application.`,
 		informUser("Getting an argocd auth token")
 		token := argocd.GetArgocdAuthToken(dryRun)
 		progressPrinter.IncrementTracker("step-argo", 1)
-
-		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry.yaml", config.K1FolderPath))
-		if err != nil {
-			log.Panicf("failed to call execute kubectl apply of argocd patch to adopt gitlab: %s", err)
+		if !dryRun {
+			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry.yaml", config.K1FolderPath))
+			if err != nil {
+				log.Panicf("failed to call execute kubectl apply of argocd patch to adopt gitlab: %s", err)
+			}
+			time.Sleep(45 * time.Second)
 		}
-		time.Sleep(45 * time.Second)
 		//TODO: ensure argocd is in a good heathy state before syncing the registry application
 
 		informUser("Syncing the registry application")
@@ -236,9 +240,8 @@ to quickly create a Cobra application.`,
 			informUser("Vault  secret created")
 			progressPrinter.IncrementTracker("step-vault", 1)
 		}
-
-		if !viper.GetBool("gitlab.oidc-created") {
-			progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 5)
+		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 5)
+		if !viper.GetBool("gitlab.oidc-created") {			
 			vault.AddGitlabOidcApplications(dryRun)
 			informUser("Added Gitlab OIDC")
 			progressPrinter.IncrementTracker("step-post-gitlab", 1)
@@ -306,20 +309,22 @@ to quickly create a Cobra application.`,
 
 			// informUser("Waiting for argocd host to resolve")
 			// gitlab.AwaitHost("argocd", dryRun)
-			cfg := configs.ReadConfig()
-			config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
-			if err != nil {
-				panic(err.Error())
+			if !dryRun {
+				cfg := configs.ReadConfig()
+				config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
+				if err != nil {
+					panic(err.Error())
+				}
+				clientset, err := kubernetes.NewForConfig(config)
+				if err != nil {
+					panic(err.Error())
+				}
+				argocdPodClient := clientset.CoreV1().Pods("argocd")
+				argocdPodName := k8s.GetPodNameByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+				kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+				informUser("deleting argocd-server pod")			
+				k8s.DeletePodByName(argocdPodClient, argocdPodName)
 			}
-			clientset, err := kubernetes.NewForConfig(config)
-			if err != nil {
-				panic(err.Error())
-			}
-			argocdPodClient := clientset.CoreV1().Pods("argocd")
-			argocdPodName := k8s.GetPodNameByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
-			kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
-			informUser("deleting argocd-server pod")
-			k8s.DeletePodByName(argocdPodClient, argocdPodName)
 			informUser("waiting for argocd to be ready")
 			waitArgoCDToBeReady(dryRun)
 
@@ -353,29 +358,49 @@ to quickly create a Cobra application.`,
 		sendCompleteInstallTelemetry(dryRun)
 		time.Sleep(time.Millisecond * 100)
 
-		if dryRun {
-			log.Println("no handoff data on dry-run mode")
-			return
-		}
+
 
 		// prepare data for the handoff report
 		clusterData := reports.CreateHandOff{
-			ClusterName:       viper.GetString("cluster-name"),
 			AwsAccountId:      viper.GetString("aws.accountid"),
 			AwsHostedZoneName: viper.GetString("aws.hostedzonename"),
 			AwsRegion:         viper.GetString("aws.region"),
-			ArgoCDUrl:         viper.GetString("argocd.local.service"),
+			ClusterName:       viper.GetString("cluster-name"),
+
+			GitlabURL:          fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename")),
+			GitlabUser:         "root" ,
+			GitlabPassword:     viper.GetString("gitlab.token")     ,
+
+			RepoGitops:          fmt.Sprintf("https://gitlab.%s/kubefirst/gitops", viper.GetString("aws.hostedzonename")),
+			RepoMetaphor:         fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor", viper.GetString("aws.hostedzonename")),
+
+
+			VaultUrl:          fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename")),        
+			VaultToken:        viper.GetString("vault.token"),
+
+
+			ArgoCDUrl:         fmt.Sprintf("https://argocd.%s", viper.GetString("aws.hostedzonename")),        
 			ArgoCDUsername:    viper.GetString("argocd.admin.username"),
 			ArgoCDPassword:    viper.GetString("argocd.admin.password"),
-			VaultUrl:          viper.GetString("vault.local.service"),
-			VaultToken:        viper.GetString("vault.token"),
+
+			ArgoWorkflowsUrl:  fmt.Sprintf("https://argo.%s", viper.GetString("aws.hostedzonename")),        
+			AtlantisUrl:       fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename")),   
+			ChartMuseumUrl:    fmt.Sprintf("https://chartmuseum.%s", viper.GetString("aws.hostedzonename")),      
+			
+			MetaphorDevUrl:      fmt.Sprintf("https://metaphor-development.%s", viper.GetString("aws.hostedzonename")),      
+			MetaphorStageUrl:      fmt.Sprintf("https://metaphor-staging.%s", viper.GetString("aws.hostedzonename")),          
+			MetaphorProductionUrl:     fmt.Sprintf("https://metaphor-production.%s", viper.GetString("aws.hostedzonename")),          
+		
 		}
 
 		// build the string that will be sent to the report
 		handOffData := reports.BuildCreateHandOffReport(clusterData)
-
 		// call handoff report and apply style
 		reports.CommandSummary(handOffData)
+
+
+		
+		
 
 	},
 }

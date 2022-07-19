@@ -213,6 +213,6 @@ func init() {
 	initCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	log.Println("init started")
 
-	initCmd.Flags().String("cluster-name", "k1st", "the cluster name, used to identify resources on cloud provider")
+	initCmd.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
 	initCmd.Flags().String("version-gitops", "main", "version/branch used on git clone")
 }
