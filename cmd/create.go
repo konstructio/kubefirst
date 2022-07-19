@@ -105,22 +105,22 @@ to quickly create a Cobra application.`,
 		waitArgoCDToBeReady(dryRun)
 		informUser("ArgoCD Ready")
 		progressPrinter.IncrementTracker("step-argo", 1)
-		if !dryRun {
-			var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer
-			kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
-			kPortForwardArgocd.Stdout = &kPortForwardArgocdOutb
-			kPortForwardArgocd.Stderr = &kPortForwardArgocdErrb
-			err = kPortForwardArgocd.Start()
-			defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
-			if err != nil {
-				log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
-				log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
-				log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
-			}
 
-			// log.Println("sleeping for 45 seconds, hurry up jared")
-			// time.Sleep(45 * time.Second)
+		var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer
+		kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
+		kPortForwardArgocd.Stdout = &kPortForwardArgocdOutb
+		kPortForwardArgocd.Stderr = &kPortForwardArgocdErrb
+		err = kPortForwardArgocd.Start()
+		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
+			log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
+			log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
 		}
+
+		// log.Println("sleeping for 45 seconds, hurry up jared")
+		// time.Sleep(45 * time.Second)
+
 		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")))
 		progressPrinter.IncrementTracker("step-argo", 1)
 
@@ -317,13 +317,34 @@ to quickly create a Cobra application.`,
 			}
 			argocdPodClient := clientset.CoreV1().Pods("argocd")
 			argocdPodName := k8s.GetPodNameByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+			kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+			informUser("deleting argocd-server pod")
 			k8s.DeletePodByName(argocdPodClient, argocdPodName)
+			informUser("waiting for argocd to be ready")
 			waitArgoCDToBeReady(dryRun)
 
-			time.Sleep(time.Second * 30)
+			informUser("Port forwarding to new argocd-server pod")
+			if !dryRun {
+				time.Sleep(time.Second * 20)
+				var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer
+				config := configs.ReadConfig()
+				kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
+				kPortForwardArgocd.Stdout = &kPortForwardArgocdOutb
+				kPortForwardArgocd.Stderr = &kPortForwardArgocdErrb
+				err = kPortForwardArgocd.Start()
+				defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+				if err != nil {
+					log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
+					log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
+					log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
+				}
+				log.Println("sleeping for 40 seconds")
+				time.Sleep(40 * time.Second)
+			}
 
 			informUser("Syncing the registry application")
-			argocd.SyncArgocdApplication(dryRun, "registry", viper.GetString("argocd.admin.apitoken"))
+			token := argocd.GetArgocdAuthToken(dryRun)
+			argocd.SyncArgocdApplication(dryRun, "registry", token)
 
 			viper.Set("gitlab.registered", true)
 			viper.WriteConfig()
