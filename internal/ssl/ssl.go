@@ -19,6 +19,12 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+var namespaces []string
+
+func init() {
+	namespaces = []string{"argo", "atlantis", "chartmuseum", "gitlab", "vault"}
+}
+
 func getItemsToBackup(apiGroup string, apiVersion string, resourceType string, namespaces []string, jqQuery string) ([]string, error) {
 	config := configs.ReadConfig()
 
@@ -85,7 +91,6 @@ func GetBackupCertificates() (string, error) {
 	aws.CreateBucket(false, bucketName)
 
 	log.Println("getting certificates")
-	namespaces := []string{"argo", "atlantis", "chartmuseum", "gitlab", "vault"}
 	certificates, err := getItemsToBackup("cert-manager.io", "v1", "certificates", namespaces, "")
 	if err != nil {
 		log.Panic(err)
@@ -121,4 +126,26 @@ func GetBackupCertificates() (string, error) {
 	}
 
 	return "Backuped Cert-Manager resources finished successfully!", nil
+}
+
+func RestoreSSL() {
+	config := configs.ReadConfig()
+
+	for _, ns := range namespaces {
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "create", "ns", ns)
+		if err != nil {
+			log.Print("failed to create ns: %s, assuming that exists...", err)
+		}
+	}
+	aws.DownloadBucket("k1-kube1st.com", config.CertsPath)
+	//! We need apply secrets firstly than other resources, accordingly with cert-manager docs
+	pathsRestored := []string{"secrets", "certs", "clusterissuers"}
+	for _, path := range pathsRestored {
+		log.Printf("applying the folder: %s", path)
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "apply", "-f", filepath.Join(config.CertsPath, path))
+		if err != nil {
+			log.Printf("failed to apply %s: %s, assuming that exists...", path, err)
+		}
+	}
+
 }
