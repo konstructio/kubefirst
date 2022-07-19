@@ -219,16 +219,14 @@ to quickly create a Cobra application.`,
 
 			progressPrinter.AddTracker("step-vault", "Configure Vault", 4)
 			informUser("waiting for vault unseal")
-			/**
 
-			 */
-			waitVaultToBeRunning(dryRun)
-			informUser("Vault running")
-			progressPrinter.IncrementTracker("step-vault", 1)
+			// waitVaultToBeRunning(dryRun)
+			// informUser("Vault running")
+			// progressPrinter.IncrementTracker("step-vault", 1)
 
-			waitForVaultUnseal(dryRun, config)
-			informUser("Vault unseal")
-			progressPrinter.IncrementTracker("step-vault", 1)
+			// waitForVaultUnseal(dryRun, config)
+			// informUser("Vault unseal")
+			// progressPrinter.IncrementTracker("step-vault", 1)
 
 			log.Println("configuring vault")
 			vault.ConfigureVault(dryRun)

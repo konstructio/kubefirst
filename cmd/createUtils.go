@@ -205,24 +205,35 @@ func initializeVaultAndAutoUnseal(dryRun bool) {
 		log.Printf("[#99] Dry-run mode, initializeVaultAndAutoUnseal skipped.")
 		return
 	}
+
+	time.Sleep(time.Second * 10)
 	url := "http://127.0.0.1:8200/v1/sys/init"
 
 	payload := strings.NewReader("{\n\t\"stored_shares\": 3,\n\t\"recovery_threshold\": 3,\n\t\"recovery_shares\": 5\n}")
 
-	req, _ := http.NewRequest("POST", url, payload)
+	req, err := http.NewRequest("POST", url, payload)
+	if err != nil {
+		log.Panic(err)
+	}
 
 	req.Header.Add("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error in Do http client request")
+		log.Println("error in Do http client request", err)
 	}
 
 	defer res.Body.Close()
-	body, _ := ioutil.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Panic(err)
+	}
 
 	vaultResponse := VaultUnsealResponse{}
-	json.Unmarshal(body, &vaultResponse)
+	err = json.Unmarshal(body, &vaultResponse)
+	if err != nil {
+		log.Panic(err)
+	}
 
 	viper.Set("vault.token", vaultResponse.RootToken)
 	viper.Set("vault.unseal-keys", vaultResponse)
