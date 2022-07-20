@@ -32,7 +32,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// GenerateKey -  generate public and private keys to be consumed by GitLab.
+// GenerateKey generate public and private keys to be consumed by GitLab.
 func GenerateKey() (string, string, error) {
 	reader := rand.Reader
 	bitSize := 2048
@@ -268,8 +268,6 @@ func ApplyGitlabTerraform(dryRun bool, directory string) {
 			log.Printf("[#99] Dry-run mode, applyGitlabTerraform skipped.")
 			return
 		}
-		//* AWS_SDK_LOAD_CONFIG=1
-		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 		envs := map[string]string{}
 		envs["AWS_SDK_LOAD_CONFIG"] = "1"
 		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
@@ -309,8 +307,6 @@ func GitlabKeyUpload(dryRun bool) {
 			log.Printf("[#99] Dry-run mode, GitlabKeyUpload skipped.")
 			return
 		}
-
-		os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
 
 		log.Println("uploading ssh public key to gitlab")
 		gitlabToken := viper.GetString("gitlab.token")
