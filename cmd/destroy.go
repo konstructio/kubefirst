@@ -48,6 +48,22 @@ if the registry has already been deleted.`,
 			log.Panic(err)
 		}
 
+		arnRole, err := cmd.Flags().GetString("aws-assume-role")
+		if err != nil {
+			log.Println("unable to use the provided AWS IAM role for AssumeRole feature")
+			return
+		}
+
+		if len(arnRole) > 0 {
+			log.Println("calling assume role")
+			err := aws.AssumeRole(arnRole)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			log.Printf("assuming new AWS credentials based on role %q", arnRole)
+		}
+
 		if dryRun {
 			skipGitlabTerraform = true
 			skipDeleteRegistryApplication = true
@@ -143,4 +159,7 @@ func init() {
 	destroyCmd.Flags().Bool("skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
 	destroyCmd.Flags().Bool("destroy-buckets", false, "remove created aws buckets, not empty buckets are not cleaned")
 	destroyCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
+
+	// AWS assume role
+	destroyCmd.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")
 }
