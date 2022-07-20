@@ -47,6 +47,21 @@ to quickly create a Cobra application.`,
 
 		log.Println("dry run enabled:", dryRun)
 
+		arnRole, err := cmd.Flags().GetString("aws-assume-role")
+		if err != nil {
+			log.Println("unable to use the provided AWS IAM role for AssumeRole feature")
+			return
+		}
+		fmt.Println(os.Getenv("AWS_ACCESS_KEY_ID"))
+		if len(arnRole) > 0 {
+			log.Println("calling assume role")
+			err := aws.AssumeRole(arnRole)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
+
 		pkg.SetupProgress(10)
 		trackers := pkg.GetTrackers()
 		trackers[pkg.DownloadDependencies] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.DownloadDependencies, 3)}
@@ -273,4 +288,7 @@ func init() {
 	initCmd.Flags().String("s3-suffix", "", "unique identifier for s3 buckets")
 	initCmd.Flags().String("version-gitops", "main", "version/branch used on git clone")
 	initCmd.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
+
+	// AWS assume role
+	initCmd.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")
 }

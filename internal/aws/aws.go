@@ -1,5 +1,7 @@
 package aws
 
+// todo: refactor is necessary to use AWS SDK v2 only
+
 import (
 	"context"
 	"fmt"
@@ -19,11 +21,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	stsV1 "github.com/aws/aws-sdk-go/service/sts"
 	"github.com/cip8/autoname"
+	"github.com/google/uuid"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )

@@ -45,7 +45,6 @@ var infoCmd = &cobra.Command{
 		if err != nil {
 			log.Println("Installer dir check:", err)
 		}
-		fmt.Printf("----------- \n")
 
 		fmt.Println(reports.StyleMessage(infoSummary.String()))
 	},
