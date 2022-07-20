@@ -9,7 +9,9 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"log"
+	"os"
 	"os/exec"
 	"syscall"
 )
@@ -43,6 +45,19 @@ if the registry has already been deleted.`,
 		if err != nil {
 			log.Panic(err)
 		}
+
+		// set profile
+		profile, err := cmd.Flags().GetString("profile")
+		if err != nil {
+			log.Panicf("unable to get region values from viper")
+		}
+		viper.Set("aws.profile", profile)
+		// propagate it to local environment
+		err = os.Setenv("AWS_PROFILE", profile)
+		if err != nil {
+			log.Panicf("unable to set environment variable AWS_PROFILE, error is: %v", err)
+		}
+		log.Println("profile:", profile)
 
 		arnRole, err := cmd.Flags().GetString("aws-assume-role")
 		if err != nil {
@@ -130,6 +145,12 @@ func init() {
 	destroyCmd.Flags().Bool("skip-delete-register", false, "whether to skip deletion of register application ")
 	destroyCmd.Flags().Bool("skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
 	destroyCmd.Flags().Bool("destroy-buckets", false, "remove created aws buckets, not empty buckets are not cleaned")
+
+	initCmd.Flags().String("profile", "", "the profile to provision the cloud resources in. The profile data is collected from ~/.aws/config")
+	err := initCmd.MarkFlagRequired("profile")
+	if err != nil {
+		log.Panic(err)
+	}
 
 	// AWS assume role
 	destroyCmd.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")

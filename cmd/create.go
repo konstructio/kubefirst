@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"syscall"
 	"time"
@@ -53,6 +54,19 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Panic(err)
 		}
+
+		// set profile
+		profile, err := cmd.Flags().GetString("profile")
+		if err != nil {
+			log.Panicf("unable to get region values from viper")
+		}
+		viper.Set("aws.profile", profile)
+		// propagate it to local environment
+		err = os.Setenv("AWS_PROFILE", profile)
+		if err != nil {
+			log.Panicf("unable to set environment variable AWS_PROFILE, error is: %v", err)
+		}
+		log.Println("profile:", profile)
 
 		infoCmd.Run(cmd, args)
 		progressPrinter.IncrementTracker("step-0", 1)
@@ -394,6 +408,12 @@ func init() {
 	createCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	createCmd.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
 	createCmd.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
+
+	initCmd.Flags().String("profile", "", "the profile to provision the cloud resources in. The profile data is collected from ~/.aws/config")
+	err := initCmd.MarkFlagRequired("profile")
+	if err != nil {
+		log.Panic(err)
+	}
 
 	progressPrinter.GetInstance()
 	progressPrinter.SetupProgress(4)
