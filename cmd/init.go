@@ -34,6 +34,12 @@ to quickly create a Cobra application.`,
 			log.Panic(err)
 		}
 
+		disableTelemetry, err := cmd.Flags().GetBool("disable-telemetry")
+		if err != nil {
+			log.Panic(err)
+		}
+
+
 		log.Println("dry run enabled:", dryRun)
 
 		pkg.SetupProgress(10)
@@ -53,7 +59,7 @@ to quickly create a Cobra application.`,
 		metricDomain := hostedZoneName
 
 		if !dryRun {
-			telemetry.SendTelemetry(metricDomain, metricName)
+			telemetry.SendTelemetry(disableTelemetry, metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
@@ -175,7 +181,7 @@ to quickly create a Cobra application.`,
 		metricName = "kubefirst.init.completed"
 
 		if !dryRun {
-			telemetry.SendTelemetry(metricDomain, metricName)
+			telemetry.SendTelemetry(disableTelemetry, metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
