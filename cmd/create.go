@@ -401,6 +401,7 @@ func init() {
 	createCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	createCmd.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
 	createCmd.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")	
+	createCmd.Flags().Bool("disable-telemetry", false, "Installer will not send telemetry about this installation")
 
 	progressPrinter.GetInstance()
 	progressPrinter.SetupProgress(4)

@@ -38,7 +38,9 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Panic(err)
 		}
-
+		if(disableTelemetry){
+			log.Println("Telemetry Disabled")
+		}
 
 		log.Println("dry run enabled:", dryRun)
 
@@ -227,4 +229,5 @@ func init() {
 
 	initCmd.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
 	initCmd.Flags().String("version-gitops", "main", "version/branch used on git clone")
+	initCmd.Flags().Bool("disable-telemetry", false, "Installer will not send telemetry about this installation")
 }
