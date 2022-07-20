@@ -34,12 +34,14 @@ to quickly create a Cobra application.`,
 			log.Panic(err)
 		}
 
-		disableTelemetry, err := cmd.Flags().GetBool("disable-telemetry")
+		useTelemetry, err := cmd.Flags().GetBool("use-telemetry")
 		if err != nil {
 			log.Panic(err)
 		}
-		if(disableTelemetry){
-			log.Println("Telemetry Disabled")
+
+		if !useTelemetry {
+			log.Println("telemetry is disabled")
+			return
 		}
 
 		log.Println("dry run enabled:", dryRun)
@@ -61,7 +63,7 @@ to quickly create a Cobra application.`,
 		metricDomain := hostedZoneName
 
 		if !dryRun {
-			telemetry.SendTelemetry(disableTelemetry, metricDomain, metricName)
+			telemetry.SendTelemetry(useTelemetry, metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
@@ -183,7 +185,7 @@ to quickly create a Cobra application.`,
 		metricName = "kubefirst.init.completed"
 
 		if !dryRun {
-			telemetry.SendTelemetry(disableTelemetry, metricDomain, metricName)
+			telemetry.SendTelemetry(useTelemetry, metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
@@ -229,5 +231,5 @@ func init() {
 
 	initCmd.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
 	initCmd.Flags().String("version-gitops", "main", "version/branch used on git clone")
-	initCmd.Flags().Bool("disable-telemetry", false, "Installer will not send telemetry about this installation")
+	initCmd.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
 }
