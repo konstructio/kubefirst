@@ -44,6 +44,22 @@ if the registry has already been deleted.`,
 			log.Panic(err)
 		}
 
+		arnRole, err := cmd.Flags().GetString("aws-assume-role")
+		if err != nil {
+			log.Println("unable to use the provided AWS IAM role for AssumeRole feature")
+			return
+		}
+
+		if len(arnRole) > 0 {
+			log.Println("calling assume role")
+			err := aws.AssumeRole(arnRole)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			log.Printf("assuming new AWS credentials based on role %q", arnRole)
+		}
+
 		var kPortForwardOutb, kPortForwardErrb bytes.Buffer
 		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
 		kPortForward.Stdout = &kPortForwardOutb
@@ -114,4 +130,7 @@ func init() {
 	destroyCmd.Flags().Bool("skip-delete-register", false, "whether to skip deletion of register application ")
 	destroyCmd.Flags().Bool("skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
 	destroyCmd.Flags().Bool("destroy-buckets", false, "remove created aws buckets, not empty buckets are not cleaned")
+
+	// AWS assume role
+	destroyCmd.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")
 }

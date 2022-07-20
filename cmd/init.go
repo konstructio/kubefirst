@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -41,7 +40,7 @@ to quickly create a Cobra application.`,
 			log.Println("unable to use the provided AWS IAM role for AssumeRole feature")
 			return
 		}
-		fmt.Println(os.Getenv("AWS_ACCESS_KEY_ID"))
+
 		if len(arnRole) > 0 {
 			log.Println("calling assume role")
 			err := aws.AssumeRole(arnRole)
@@ -49,6 +48,7 @@ to quickly create a Cobra application.`,
 				log.Println(err)
 				return
 			}
+			log.Printf("assuming new AWS credentials based on role %q", arnRole)
 		}
 
 		pkg.SetupProgress(10)
