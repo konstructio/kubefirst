@@ -66,6 +66,8 @@ to quickly create a Cobra application.`,
 		terraform.ApplyBaseTerraform(dryRun, directory)
 		progressPrinter.IncrementTracker("step-softserve", 1)
 
+		restoreSSLCmd.Run(cmd, args)
+
 		//! soft-serve was just applied
 
 		softserve.CreateSoftServe(dryRun, config.KubeConfigPath)
@@ -104,6 +106,7 @@ to quickly create a Cobra application.`,
 
 		//! argocd was just helm installed
 		waitArgoCDToBeReady(dryRun)
+
 		informUser("ArgoCD Ready")
 		progressPrinter.IncrementTracker("step-argo", 1)
 
@@ -146,7 +149,6 @@ to quickly create a Cobra application.`,
 		informUser("Syncing the registry application")
 		argocd.SyncArgocdApplication(dryRun, "registry", token)
 		progressPrinter.IncrementTracker("step-argo", 1)
-
 		// todo, need to stall until the registry has synced, then get to ui asap
 
 		//! skip this if syncing from argocd and not helm installing

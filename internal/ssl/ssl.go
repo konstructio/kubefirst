@@ -3,6 +3,7 @@ package ssl
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
+	yaml2 "gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
@@ -93,7 +95,7 @@ func GetBackupCertificates() (string, error) {
 	log.Println("getting certificates")
 	certificates, err := getItemsToBackup("cert-manager.io", "v1", "certificates", namespaces, "")
 	if err != nil {
-		log.Panic(err)
+		return "", fmt.Errorf("erro: %s", err)
 	}
 	for _, cert := range certificates {
 		fullPath := strings.Replace(cert, config.CertsPath, "/certs", 1)
@@ -105,7 +107,7 @@ func GetBackupCertificates() (string, error) {
 	query := ".metadata.annotations[\"cert-manager.io/issuer-kind\"] == \"ClusterIssuer\""
 	secrets, err := getItemsToBackup("", "v1", "secrets", namespaces, query)
 	if err != nil {
-		log.Panic(err)
+		return "", fmt.Errorf("erro: %s", err)
 	}
 	for _, secret := range secrets {
 		fullPath := strings.Replace(secret, config.CertsPath, "/secrets", 1)
@@ -117,7 +119,7 @@ func GetBackupCertificates() (string, error) {
 	log.Println("getting clusterissuers")
 	clusterIssuers, err := getItemsToBackup("cert-manager.io", "v1", "clusterissuers", emptyNS, "")
 	if err != nil {
-		log.Panic(err)
+		return "", fmt.Errorf("erro: %s", err)
 	}
 	for _, clusterissuer := range clusterIssuers {
 		fullPath := strings.Replace(clusterissuer, config.CertsPath, "/clusterissuers", 1)
@@ -128,7 +130,7 @@ func GetBackupCertificates() (string, error) {
 	return "Backuped Cert-Manager resources finished successfully!", nil
 }
 
-func RestoreSSL() {
+func RestoreSSL() error {
 	config := configs.ReadConfig()
 
 	for _, ns := range namespaces {
@@ -137,15 +139,63 @@ func RestoreSSL() {
 			log.Print("failed to create ns: %s, assuming that exists...", err)
 		}
 	}
-	aws.DownloadBucket("k1-kube1st.com", config.CertsPath)
+	bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
+	aws.DownloadBucket(bucketName, config.CertsPath)
 	//! We need apply secrets firstly than other resources, accordingly with cert-manager docs
 	pathsRestored := []string{"secrets", "certs", "clusterissuers"}
 	for _, path := range pathsRestored {
+		log.Print(path)
+		//clean yaml
+		//TODO filter yaml extension
+		files, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", filepath.Join(config.CertsPath, path), "/"))
+		if err != nil {
+			return fmt.Errorf("erro: %s", err)
+		}
+
+		for _, f := range files {
+			log.Println(f.Name())
+			pathyaml := fmt.Sprintf("%s/%s", filepath.Join(config.CertsPath, path), f.Name())
+
+			yfile, err := ioutil.ReadFile(pathyaml)
+
+			if err != nil {
+				return fmt.Errorf("erro: %s", err)
+			}
+
+			data := make(map[interface{}]interface{})
+
+			err = yaml2.Unmarshal(yfile, &data)
+
+			if err != nil {
+				return fmt.Errorf("erro: %s", err)
+			}
+
+			metadataMap := data["metadata"].(map[interface{}]interface{})
+			delete(metadataMap, "resourceVersion")
+			delete(metadataMap, "uid")
+			delete(metadataMap, "creationTimestamp")
+			delete(metadataMap, "managedFields")
+			data["metadata"] = metadataMap
+			dataCleaned, err := yaml2.Marshal(&data)
+
+			if err != nil {
+				return fmt.Errorf("erro: %s", err)
+			}
+
+			err = ioutil.WriteFile(fmt.Sprintf("%s%s", pathyaml, ".clean"), dataCleaned, 0644)
+
+			if err != nil {
+				return fmt.Errorf("erro: %s", err)
+			}
+
+			log.Println("yaml cleaned written")
+		}
+
 		log.Printf("applying the folder: %s", path)
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "apply", "-f", filepath.Join(config.CertsPath, path))
+		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "apply", "-f", filepath.Join(config.CertsPath, path))
 		if err != nil {
 			log.Printf("failed to apply %s: %s, assuming that exists...", path, err)
 		}
 	}
-
+	return nil
 }
