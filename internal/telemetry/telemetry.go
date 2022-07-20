@@ -9,7 +9,13 @@ import (
 )
 
 // SendTelemetry post telemetry data
-func SendTelemetry(domain, metricName string) {
+func SendTelemetry(useTelemetry bool, domain string, metricName string) {
+
+	if !useTelemetry {
+		log.Println("Telemetry disable by user choice, nothing was sent")
+		return
+	}
+
 	log.Println("SendTelemetry (working...)")
 
 	url := "https://metaphor-go-production.kubefirst.io/telemetry"

@@ -54,13 +54,20 @@ to quickly create a Cobra application.`,
 			log.Panic(err)
 		}
 
+		useTelemetry, err := cmd.Flags().GetBool("use-telemetry")
+		if err != nil {
+			log.Panic(err)
+		}
+
 		infoCmd.Run(cmd, args)
 		progressPrinter.IncrementTracker("step-0", 1)
 
 		progressPrinter.AddTracker("step-softserve", "Prepare Temporary Repo ", 4)
-		sendStartedInstallTelemetry(dryRun)
+		sendStartedInstallTelemetry(dryRun, useTelemetry)
 		progressPrinter.IncrementTracker("step-softserve", 1)
-
+		if !useTelemetry {
+			informUser("Telemetry Disabled")
+		}
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 		informUser("Creating K8S Cluster")
 		terraform.ApplyBaseTerraform(dryRun, directory)
@@ -345,7 +352,7 @@ to quickly create a Cobra application.`,
 			viper.WriteConfig()
 		}
 
-		sendCompleteInstallTelemetry(dryRun)
+		sendCompleteInstallTelemetry(dryRun, useTelemetry)
 		time.Sleep(time.Millisecond * 100)
 
 		// prepare data for the handoff report
@@ -394,6 +401,7 @@ func init() {
 	createCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	createCmd.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
 	createCmd.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
+	createCmd.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
 
 	progressPrinter.GetInstance()
 	progressPrinter.SetupProgress(4)

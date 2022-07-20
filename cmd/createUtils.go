@@ -46,19 +46,19 @@ func setArgocdCreds(dryRun bool) {
 	viper.WriteConfig()
 }
 
-func sendStartedInstallTelemetry(dryRun bool) {
+func sendStartedInstallTelemetry(dryRun bool, useTelemetry bool) {
 	metricName := "kubefirst.mgmt_cluster_install.started"
 	if !dryRun {
-		telemetry.SendTelemetry(viper.GetString("aws.hostedzonename"), metricName)
+		telemetry.SendTelemetry(useTelemetry, viper.GetString("aws.hostedzonename"), metricName)
 	} else {
 		log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 	}
 }
 
-func sendCompleteInstallTelemetry(dryRun bool) {
+func sendCompleteInstallTelemetry(dryRun bool, useTelemetry bool) {
 	metricName := "kubefirst.mgmt_cluster_install.completed"
 	if !dryRun {
-		telemetry.SendTelemetry(viper.GetString("aws.hostedzonename"), metricName)
+		telemetry.SendTelemetry(useTelemetry, viper.GetString("aws.hostedzonename"), metricName)
 	} else {
 		log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 	}
