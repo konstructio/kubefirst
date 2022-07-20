@@ -59,18 +59,13 @@ to quickly create a Cobra application.`,
 			log.Panic(err)
 		}
 
-		if !useTelemetry {
-			log.Println("telemetry is disabled")
-			return
-		}
-
 		infoCmd.Run(cmd, args)
 		progressPrinter.IncrementTracker("step-0", 1)
 
 		progressPrinter.AddTracker("step-softserve", "Prepare Temporary Repo ", 4)
 		sendStartedInstallTelemetry(dryRun, useTelemetry)
 		progressPrinter.IncrementTracker("step-softserve", 1)
-		if useTelemetry {
+		if !useTelemetry {
 			informUser("Telemetry Disabled")
 		}
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)

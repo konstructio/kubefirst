@@ -41,7 +41,6 @@ to quickly create a Cobra application.`,
 
 		if !useTelemetry {
 			log.Println("telemetry is disabled")
-			return
 		}
 
 		log.Println("dry run enabled:", dryRun)
