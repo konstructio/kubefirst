@@ -107,6 +107,10 @@ func GetAccountInfo() {
 }
 
 func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, TestHostedZoneLiveness skipped.")
+		return
+	}
 	//tracker := progress.Tracker{Message: "testing hosted zone", Total: 25}
 
 	// todo need to create single client and pass it

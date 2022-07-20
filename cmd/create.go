@@ -357,7 +357,7 @@ to quickly create a Cobra application.`,
 
 			GitlabURL:      fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename")),
 			GitlabUser:     "root",
-			GitlabPassword: viper.GetString("gitlab.token"),
+			GitlabPassword: viper.GetString("gitlab.root.password"),
 
 			RepoGitops:   fmt.Sprintf("https://gitlab.%s/kubefirst/gitops", viper.GetString("aws.hostedzonename")),
 			RepoMetaphor: fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor", viper.GetString("aws.hostedzonename")),
