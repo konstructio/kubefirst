@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -33,8 +34,22 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Panic(err)
 		}
-
 		log.Println("dry run enabled:", dryRun)
+
+		arnRole, err := cmd.Flags().GetString("aws-assume-role")
+		if err != nil {
+			log.Println("unable to use the provided AWS IAM role for AssumeRole feature")
+			return
+		}
+		fmt.Println(os.Getenv("AWS_ACCESS_KEY_ID"))
+		if len(arnRole) > 0 {
+			log.Println("calling assume role")
+			err := aws.AssumeRole(arnRole)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
 
 		pkg.SetupProgress(10)
 		trackers := pkg.GetTrackers()
@@ -227,7 +242,7 @@ func init() {
 		log.Panic(err)
 	}
 
-	initCmd.Flags().String("profile", "", "the profile to provision the cloud resources in")
+	initCmd.Flags().String("profile", "", "the profile to provision the cloud resources in. The profile data is collected from ~/aws/config")
 	err = initCmd.MarkFlagRequired("profile")
 	if err != nil {
 		log.Panic(err)
@@ -243,4 +258,7 @@ func init() {
 
 	initCmd.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
 	initCmd.Flags().String("version-gitops", "main", "version/branch used on git clone")
+
+	// AWS assume role
+	initCmd.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")
 }
