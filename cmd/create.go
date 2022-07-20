@@ -219,18 +219,8 @@ to quickly create a Cobra application.`,
 		}
 		if !skipVault {
 
-			progressPrinter.AddTracker("step-vault", "Configure Vault", 4)
+			progressPrinter.AddTracker("step-vault", "Configure Vault", 2)
 			informUser("waiting for vault unseal")
-			/**
-
-			 */
-			waitVaultToBeRunning(dryRun)
-			informUser("Vault running")
-			progressPrinter.IncrementTracker("step-vault", 1)
-
-			waitForVaultUnseal(dryRun, config)
-			informUser("Vault unseal")
-			progressPrinter.IncrementTracker("step-vault", 1)
 
 			log.Println("configuring vault")
 			vault.ConfigureVault(dryRun)
@@ -369,7 +359,7 @@ to quickly create a Cobra application.`,
 
 			GitlabURL:      fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename")),
 			GitlabUser:     "root",
-			GitlabPassword: viper.GetString("gitlab.token"),
+			GitlabPassword: viper.GetString("gitlab.root.password"),
 
 			RepoGitops:   fmt.Sprintf("https://gitlab.%s/kubefirst/gitops", viper.GetString("aws.hostedzonename")),
 			RepoMetaphor: fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor", viper.GetString("aws.hostedzonename")),

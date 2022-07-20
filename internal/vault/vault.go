@@ -67,8 +67,8 @@ func ConfigureVault(dryRun bool) {
 		err := kPortForward.Start()
 		defer kPortForward.Process.Signal(syscall.SIGTERM)
 		if err != nil {
-			log.Println("Commad Execution STDOUT: %s", kPortForwardOutb.String())
-			log.Println("Commad Execution STDERR: %s", kPortForwardErrb.String())
+			log.Printf("Commad Execution STDOUT: %s", kPortForwardOutb.String())
+			log.Printf("Commad Execution STDERR: %s", kPortForwardErrb.String())
 			log.Panicf("error: failed to port-forward to vault namespce svc/vault %s", err)
 		}
 

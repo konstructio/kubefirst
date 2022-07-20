@@ -100,32 +100,37 @@ func waitVaultToBeRunning(dryRun bool) {
 		log.Printf("[#99] Dry-run mode, waitVaultToBeRunning skipped.")
 		return
 	}
-	config := configs.ReadConfig()
-	x := 50
-	for i := 0; i < x; i++ {
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/vault")
-		if err != nil {
-			log.Println("Waiting vault to be born")
-			time.Sleep(10 * time.Second)
-		} else {
-			log.Println("vault namespace found, continuing")
-			time.Sleep(25 * time.Second)
-			break
+	token := viper.GetString("vault.token")
+	if len(token) == 0 {
+		config := configs.ReadConfig()
+		x := 50
+		for i := 0; i < x; i++ {
+			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/vault")
+			if err != nil {
+				log.Println("Waiting vault to be born")
+				time.Sleep(10 * time.Second)
+			} else {
+				log.Println("vault namespace found, continuing")
+				time.Sleep(25 * time.Second)
+				break
+			}
 		}
-	}
 
-	//! failing
-	x = 50
-	for i := 0; i < x; i++ {
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "get", "pods", "-l", "app.kubernetes.io/instance=vault")
-		if err != nil {
-			log.Println("Waiting vault pods to create")
-			time.Sleep(10 * time.Second)
-		} else {
-			log.Println("vault pods found, continuing")
-			time.Sleep(15 * time.Second)
-			break
+		//! failing
+		x = 50
+		for i := 0; i < x; i++ {
+			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "get", "pods", "-l", "app.kubernetes.io/instance=vault")
+			if err != nil {
+				log.Println("Waiting vault pods to create")
+				time.Sleep(10 * time.Second)
+			} else {
+				log.Println("vault pods found, continuing")
+				time.Sleep(15 * time.Second)
+				break
+			}
 		}
+	} else {
+		log.Println("vault token arleady exists, skipping vault health checks waitVaultToBeRunning")
 	}
 }
 
@@ -134,45 +139,49 @@ func loopUntilPodIsReady(dryRun bool) {
 		log.Printf("[#99] Dry-run mode, loopUntilPodIsReady skipped.")
 		return
 	}
+	token := viper.GetString("vault.token")
+	if len(token) == 0 {
 
-	x := 50
-	url := "http://localhost:8200/v1/sys/health"
-	for i := 0; i < x; i++ {
-		log.Println("vault is not ready yet, sleeping and checking again")
-		time.Sleep(10 * time.Second)
+		x := 50
+		url := "http://localhost:8200/v1/sys/health"
+		for i := 0; i < x; i++ {
+			log.Println("vault is not ready yet, sleeping and checking again")
+			time.Sleep(10 * time.Second)
 
-		req, _ := http.NewRequest("GET", url, nil)
+			req, _ := http.NewRequest("GET", url, nil)
 
-		req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Content-Type", "application/json")
 
-		res, err := http.DefaultClient.Do(req)
-		if err != nil {
-			log.Println("error with http request Do, vault is not available", err)
-			continue
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				log.Println("error with http request Do, vault is not available", err)
+				continue
+			}
+
+			defer res.Body.Close()
+			body, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				log.Println("vault is availbale but the body is not what is expected ", err)
+				continue
+			}
+
+			var responseJson map[string]interface{}
+
+			if err := json.Unmarshal(body, &responseJson); err != nil {
+				log.Printf("vault is availbale but the body is not what is expected %s", err)
+				continue
+			}
+
+			_, ok := responseJson["initialized"]
+			if ok {
+				log.Printf("vault is initialized and is in the expected state")
+				return
+			}
+			log.Panic("vault was never initialized")
 		}
-
-		defer res.Body.Close()
-		body, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			log.Println("vault is availbale but the body is not what is expected ", err)
-			continue
-		}
-		log.Println(string(body))
-
-		var responseJson map[string]interface{}
-
-		if err := json.Unmarshal(body, &responseJson); err != nil {
-			log.Printf("vault is availbale but the body is not what is expected %s", err)
-			continue
-		}
-
-		_, ok := responseJson["initialized"]
-		if ok {
-			log.Printf("vault is initialized and is in the expected state")
-			return
-		}
+	} else {
+		log.Println("vault token arleady exists, skipping vault health checks loopUntilPodIsReady")
 	}
-	log.Panic("vault was never initialized")
 }
 
 type VaultInitResponse struct {
@@ -205,28 +214,47 @@ func initializeVaultAndAutoUnseal(dryRun bool) {
 		log.Printf("[#99] Dry-run mode, initializeVaultAndAutoUnseal skipped.")
 		return
 	}
-	url := "http://127.0.0.1:8200/v1/sys/init"
 
-	payload := strings.NewReader("{\n\t\"stored_shares\": 3,\n\t\"recovery_threshold\": 3,\n\t\"recovery_shares\": 5\n}")
+	token := viper.GetString("vault.token")
+	if len(token) == 0 {
 
-	req, _ := http.NewRequest("POST", url, payload)
+		time.Sleep(time.Second * 10)
+		url := "http://127.0.0.1:8200/v1/sys/init"
 
-	req.Header.Add("Content-Type", "application/json")
+		payload := strings.NewReader("{\n\t\"stored_shares\": 3,\n\t\"recovery_threshold\": 3,\n\t\"recovery_shares\": 5\n}")
 
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Println("error in Do http client request")
+		req, err := http.NewRequest("POST", url, payload)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		req.Header.Add("Content-Type", "application/json")
+
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			log.Println("error in Do http client request", err)
+		}
+
+		defer res.Body.Close()
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		log.Println(string(body))
+
+		vaultResponse := VaultUnsealResponse{}
+		err = json.Unmarshal(body, &vaultResponse)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		viper.Set("vault.token", vaultResponse.RootToken)
+		viper.Set("vault.unseal-keys", vaultResponse)
+		viper.WriteConfig()
+	} else {
+		log.Println("vault token already exists, continuing")
 	}
-
-	defer res.Body.Close()
-	body, _ := ioutil.ReadAll(res.Body)
-
-	vaultResponse := VaultUnsealResponse{}
-	json.Unmarshal(body, &vaultResponse)
-
-	viper.Set("vault.token", vaultResponse.RootToken)
-	viper.Set("vault.unseal-keys", vaultResponse)
-	viper.WriteConfig()
 }
 
 func waitGitlabToBeReady(dryRun bool) {

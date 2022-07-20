@@ -109,6 +109,10 @@ func GetAccountInfo() {
 }
 
 func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, TestHostedZoneLiveness skipped.")
+		return
+	}
 	//tracker := progress.Tracker{Message: "testing hosted zone", Total: 25}
 
 	// todo need to create single client and pass it
@@ -126,49 +130,36 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 	log.Println("checking to see if record", route53RecordName, "exists")
 	log.Println("hostedZoneId", hostedZoneId)
 	log.Println("route53RecordName", route53RecordName)
-
-	recordList, err := route53Client.ListResourceRecordSets(context.TODO(), &route53.ListResourceRecordSetsInput{
-		HostedZoneId:    aws.String(hostedZoneId),
-		StartRecordName: aws.String(route53RecordName),
-		StartRecordType: "TXT",
-	})
-	if err != nil {
-		log.Println("failed read route53 ", err.Error())
-		os.Exit(1)
-	}
-
-	if len(recordList.ResourceRecordSets) == 0 {
-		if !dryRun {
-			record, err := route53Client.ChangeResourceRecordSets(context.TODO(), &route53.ChangeResourceRecordSetsInput{
-				ChangeBatch: &types.ChangeBatch{
-					Changes: []types.Change{
-						{
-							Action: "CREATE",
-							ResourceRecordSet: &types.ResourceRecordSet{
-								Name: aws.String(route53RecordName),
-								Type: "TXT",
-								ResourceRecords: []types.ResourceRecord{
-									{
-										Value: aws.String(strconv.Quote(route53RecordValue)),
-									},
+	if !dryRun {
+		record, err := route53Client.ChangeResourceRecordSets(context.TODO(), &route53.ChangeResourceRecordSetsInput{
+			ChangeBatch: &types.ChangeBatch{
+				Changes: []types.Change{
+					{
+						Action: "UPSERT",
+						ResourceRecordSet: &types.ResourceRecordSet{
+							Name: aws.String(route53RecordName),
+							Type: "TXT",
+							ResourceRecords: []types.ResourceRecord{
+								{
+									Value: aws.String(strconv.Quote(route53RecordValue)),
 								},
-								TTL:           aws.Int64(10),
-								Weight:        aws.Int64(100),
-								SetIdentifier: aws.String("CREATE sanity check for kubefirst installation"),
 							},
+							TTL:           aws.Int64(10),
+							Weight:        aws.Int64(100),
+							SetIdentifier: aws.String("CREATE sanity check for kubefirst installation"),
 						},
 					},
-					Comment: aws.String("CREATE sanity check dns record."),
 				},
-				HostedZoneId: aws.String(hostedZoneId),
-			})
-			if err != nil {
-				log.Println(err)
-			}
-			log.Println("record creation status is ", record.ChangeInfo.Status)
-		} else {
-			log.Printf("[#99] Dry-run mode, route53 creation/update skipped:  %s", route53RecordName)
+				Comment: aws.String("CREATE sanity check dns record."),
+			},
+			HostedZoneId: aws.String(hostedZoneId),
+		})
+		if err != nil {
+			log.Println(err)
 		}
+		log.Println("record creation status is ", record.ChangeInfo.Status)
+	} else {
+		log.Printf("[#99] Dry-run mode, route53 creation/update skipped:  %s", route53RecordName)
 	}
 	count := 0
 	// todo need to exit after n number of minutes and tell them to check ns records
