@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/cobra"
-	"log"
+	"fmt"
 )
 
 func init() {
@@ -16,6 +16,6 @@ var versionCmd = &cobra.Command{
 	Long:  `All software has versions. This is kubefirst's`,
 	Run: func(cmd *cobra.Command, args []string) {
 		config := configs.ReadConfig()
-		log.Printf("kubefirst-cli golang utility version: v%s", config.KubefirstVersion)
+		fmt.Printf("\n\nkubefirst-cli golang utility version: v%s\n \n ", config.KubefirstVersion)
 	},
 }
