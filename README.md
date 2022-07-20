@@ -25,7 +25,7 @@ Some process requires previous initialization, for that, run:
 
 ```bash
 mkdir -p ~/.kubefirst
-go run . init --admin-email $ADMIN_EMAIL --cloud $CLOUD_PROVIDER --hosted-zone-name $HOSTED_ZONE_NAME --region $AWS_REGION
+go run . init --admin-email email@example.com --cloud aws --hosted-zone-name example.com --region eu-central-1 --profile default
 ```
 
 ## Creation
