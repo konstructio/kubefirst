@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"syscall"
 	"time"
@@ -62,6 +63,19 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Panic(err)
 		}
+
+		// set profile
+		profile, err := cmd.Flags().GetString("profile")
+		if err != nil {
+			log.Panicf("unable to get region values from viper")
+		}
+		viper.Set("aws.profile", profile)
+		// propagate it to local environment
+		err = os.Setenv("AWS_PROFILE", profile)
+		if err != nil {
+			log.Panicf("unable to set environment variable AWS_PROFILE, error is: %v", err)
+		}
+		log.Println("profile:", profile)
 
 		infoCmd.Run(cmd, args)
 		progressPrinter.IncrementTracker("step-0", 1)
@@ -369,7 +383,7 @@ to quickly create a Cobra application.`,
 		}
 
 		//!--
-		
+
 		if !skipVault {
 			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
 			log.Println("configuring vault backend")
