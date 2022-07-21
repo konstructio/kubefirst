@@ -16,3 +16,4 @@ bin
 logs/
 /tmp
 lint_log.txt
+credentials
