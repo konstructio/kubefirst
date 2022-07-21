@@ -82,7 +82,6 @@ func getItemsToBackup(apiGroup string, apiVersion string, resourceType string, n
 	return files, nil
 }
 
-//func GetBackupCertificates(apiGroup string, apiVersion string, resourceTypes []string, namespace string) ([]string, error) {
 // GetBackupCertificates create a backup of Certificates on AWS S3 in yaml files
 func GetBackupCertificates() (string, error) {
 	config := configs.ReadConfig()
@@ -142,7 +141,9 @@ func RestoreSSL() error {
 	bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
 	aws.DownloadBucket(bucketName, config.CertsPath)
 	//! We need apply secrets firstly than other resources, accordingly with cert-manager docs
-	pathsRestored := []string{"secrets", "certs", "clusterissuers"}
+	//pathsRestored := []string{"secrets", "certs", "clusterissuers"}
+	//! At this moment, we dont have the crds certs/clusterissuers installed on cluster
+	pathsRestored := []string{"secrets"}
 	for _, path := range pathsRestored {
 		log.Print(path)
 		//clean yaml
