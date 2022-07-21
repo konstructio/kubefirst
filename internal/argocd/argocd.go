@@ -68,7 +68,6 @@ func SyncRetry(httpClient pkg.HTTPDoer, attempts int, interval int, applicationN
 func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (httpCodeResponse int, syncStatus string, Error error) {
 
 	url := fmt.Sprintf("%s/api/v1/applications/%s/sync", viper.GetString("argocd.local.service"), applicationName)
-	//url := fmt.Sprintf("%s/v1/api/sync", "http://localhost:9090")
 	fmt.Println(url)
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
