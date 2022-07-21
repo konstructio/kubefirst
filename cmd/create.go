@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"log"
+	"net/http"
 	"os/exec"
 	"syscall"
 	"time"
@@ -141,10 +143,28 @@ to quickly create a Cobra application.`,
 			}
 			time.Sleep(45 * time.Second)
 		}
-		//TODO: ensure argocd is in a good heathy state before syncing the registry application
 
 		informUser("Syncing the registry application")
-		argocd.SyncArgocdApplication(dryRun, "registry", token)
+
+		if dryRun {
+			log.Printf("[#99] Dry-run mode, Sync ArgoCD skipped")
+		} else {
+			// todo: create ArgoCD struct, and host dependencies (like http client)
+			customTransport := http.DefaultTransport.(*http.Transport).Clone()
+			customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+			httpClient := http.Client{Transport: customTransport}
+
+			// retry to sync ArgoCD application until reaches the maximum attempts
+			argoCDIsReady, err := argocd.SyncRetry(&httpClient, 10, 6, "registry", token)
+			if err != nil {
+				log.Printf("something went wrong during ArgoCD sync step, error is: %v", err)
+			}
+
+			if !argoCDIsReady {
+				log.Println("unable to sync ArgoCD application, continuing...")
+			}
+		}
+
 		progressPrinter.IncrementTracker("step-argo", 1)
 
 		// todo, need to stall until the registry has synced, then get to ui asap
