@@ -15,6 +15,8 @@ GitOps integration, secrets management, production and development Kubernetes en
 - [Destroy](#destroy)
 - [Available Commands]()
 
+![kubefirst architecture diagram](/images/kubefirst-arch.png)
+
 ## Setup
 
 The setup is extremely simple, create a `.env` file in the root folder, and add the following variables:
@@ -87,4 +89,4 @@ Kubefirst provides extra tooling for handling the provisioning work.
 
 ---
 
-![kubefirst architecture diagram](/images/kubefirst-arch.png)
+![kubefirst provisioning diagram](/images/provisioning.png)
