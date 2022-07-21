@@ -88,5 +88,5 @@ Kubefirst provides extra tooling for handling the provisioning work.
 | version    | print the version number for kubefirst-cli"               |
 
 ---
-
+## The provisioning process
 ![kubefirst provisioning diagram](/images/provisioning.png)
