@@ -133,3 +133,23 @@ func SetupViper(config *configs.Config) error {
 
 	return nil
 }
+
+func CreateFile(fileName string, fileContent []byte) error {
+	file, err := os.Create(fileName)
+	if err != nil {
+		return fmt.Errorf("error creating file: %s", err)
+	}
+	defer file.Close()
+	_, err = file.Write(fileContent)
+	if err != nil {
+		return fmt.Errorf("unable to write the file: %s", err)
+	}
+	return nil
+}
+
+func CreateFullPath(p string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(p), 0777); err != nil {
+		return nil, err
+	}
+	return os.Create(p)
+}

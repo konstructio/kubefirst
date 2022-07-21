@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/cip8/autoname"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
@@ -329,4 +331,99 @@ func DestroyBucketsInUse(destroyBuckets bool) {
 	} else {
 		log.Println("Skip: DestroyBucketsInUse")
 	}
+}
+
+func CreateBucket(dryRun bool, name string) {
+	log.Println("createBucketCalled")
+
+	s3Client := s3.New(GetAWSSession())
+
+	log.Println("creating", "bucket", name)
+
+	regionName := viper.GetString("aws.region")
+	log.Println("region is ", regionName)
+	if !dryRun {
+		_, err := s3Client.CreateBucket(&s3.CreateBucketInput{
+			Bucket: &name,
+			CreateBucketConfiguration: &s3.CreateBucketConfiguration{
+				LocationConstraint: aws.String(regionName),
+			},
+		})
+		if err != nil {
+			if awsErr, ok := err.(awserr.Error); ok {
+				switch awsErr.Code() {
+				case s3.ErrCodeBucketAlreadyExists:
+					log.Println("Bucket already exists " + name)
+					os.Exit(1)
+				case s3.ErrCodeBucketAlreadyOwnedByYou:
+					log.Println("Bucket already exists but OwnedByYou, the process will continue: " + name)
+				}
+			} else {
+				log.Println("failed to create bucket "+name, err.Error())
+				os.Exit(1)
+			}
+		}
+	} else {
+		log.Printf("[#99] Dry-run mode, bucket creation skipped:  %s", name)
+	}
+	viper.Set(fmt.Sprintf("bucket.%s.created", name), true)
+	viper.Set(fmt.Sprintf("bucket.%s.name", name), name)
+	viper.WriteConfig()
+}
+
+func UploadFile(bucket, key, fileName string) error {
+	uploader := s3manager.NewUploader(GetAWSSession())
+
+	f, err := os.Open(fileName)
+	if err != nil {
+		return fmt.Errorf("failed to open file %q, %v", fileName, err)
+	}
+
+	// Upload the file to S3.
+	result, err := uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		Body:   f,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upload file, %v", err)
+	}
+	log.Printf("file uploaded to, %s\n", result.Location)
+	return nil
+}
+
+func DownloadBucket(bucket string, destFolder string) error {
+	s3Client := s3.New(GetAWSSession())
+	downloader := s3manager.NewDownloader(GetAWSSession())
+
+	log.Println("Listing the objects in the bucket:")
+	listObjsResponse, err := s3Client.ListObjectsV2(&s3.ListObjectsV2Input{
+		Bucket: aws.String(bucket),
+		Prefix: aws.String(""),
+	})
+
+	if err != nil {
+		log.Printf("Couldn't list bucket contents")
+		return fmt.Errorf("Couldn't list bucket contents")
+	}
+
+	for _, object := range listObjsResponse.Contents {
+		log.Printf("%s (%d bytes, class %v) \n", *object.Key, object.Size, object.StorageClass)
+
+		f, err := pkg.CreateFullPath(filepath.Join(destFolder, *object.Key))
+		if err != nil {
+			return fmt.Errorf("failed to create file %q, %v", *object.Key, err)
+		}
+
+		// Write the contents of S3 Object to the file
+		_, err = downloader.Download(f, &s3.GetObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(*object.Key),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to download file, %v", err)
+		}
+		f.Close()
+	}
+	return nil
 }
