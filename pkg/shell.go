@@ -107,8 +107,13 @@ func ExecShellWithVars(osvars map[string]string, command string, args ...string)
 }
 
 // Not meant to be exported, for internal use only.
-func reader(scanner *bufio.Scanner, out chan string) {
-    for scanner.Scan() {
+func reader(scanner *bufio.Scanner, out chan string) {		
+    defer func() {
+        if r := recover(); r != nil {
+            log.Println("Error processing logs from command. Error:\n", r)
+        }
+    }()
+    for scanner.Scan() {		
         out <- scanner.Text()
     }
 }
