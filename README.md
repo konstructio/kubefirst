@@ -1,3 +1,7 @@
+![K-Ray, the Kubefirst mascot](/images/kubefirst.svg)
+
+---
+
 # Kubefirst CLI
 
 Kubefirst CLI is a cloud provisioning tool. With simple setup and few CLI calls, we spin up a full AWS cluster with full
@@ -10,6 +14,8 @@ GitOps integration, secrets management, production and development Kubernetes en
 - [Access ArgoCD](#access-argocd)
 - [Destroy](#destroy)
 - [Available Commands]()
+
+![kubefirst architecture diagram](/images/kubefirst-arch.png)
 
 ## Setup
 
@@ -81,7 +87,6 @@ Kubefirst provides extra tooling for handling the provisioning work.
 | init       | initialize your local machine to execute `create`         |
 | version    | print the version number for kubefirst-cli"               |
 
-#### Notes:
-
-added gitlab.yaml to registry  
-pushing local to soft origin
+---
+## The provisioning process
+![kubefirst provisioning diagram](/images/provisioning.png)
