@@ -21,10 +21,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-var namespaces []string
-
-func init() {
-	namespaces = []string{"argo", "atlantis", "chartmuseum", "gitlab", "vault"}
+func getNamespacesToBackupSSL() (ns []string) {
+	return []string{"argo", "atlantis", "chartmuseum", "gitlab", "vault"}
 }
 
 func getItemsToBackup(apiGroup string, apiVersion string, resourceType string, namespaces []string, jqQuery string) ([]string, error) {
@@ -85,7 +83,7 @@ func getItemsToBackup(apiGroup string, apiVersion string, resourceType string, n
 // GetBackupCertificates create a backup of Certificates on AWS S3 in yaml files
 func GetBackupCertificates() (string, error) {
 	config := configs.ReadConfig()
-
+	namespaces := getNamespacesToBackupSSL()
 	log.Println("GetBackupCertificates called")
 	bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
 	//path := "cert-manager"
@@ -131,7 +129,7 @@ func GetBackupCertificates() (string, error) {
 
 func RestoreSSL() error {
 	config := configs.ReadConfig()
-
+	namespaces := getNamespacesToBackupSSL()
 	for _, ns := range namespaces {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "create", "ns", ns)
 		if err != nil {
