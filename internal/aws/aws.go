@@ -372,10 +372,6 @@ func CreateBucket(dryRun bool, name string) {
 }
 
 func UploadFile(bucket, key, fileName string) error {
-	// The session the S3 Uploader will use
-	//sess := session.Must(session.NewSession())
-
-	// Create an uploader with the session and default options
 	uploader := s3manager.NewUploader(GetAWSSession())
 
 	f, err := os.Open(fileName)
@@ -397,11 +393,6 @@ func UploadFile(bucket, key, fileName string) error {
 }
 
 func DownloadBucket(bucket string, destFolder string) error {
-	// Create a file to write the S3 Object contents to.
-	// f, err := os.Create(filename)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to create file %q, %v", filename, err)
-	// }
 	s3Client := s3.New(GetAWSSession())
 	downloader := s3manager.NewDownloader(GetAWSSession())
 
