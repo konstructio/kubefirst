@@ -3,14 +3,15 @@ FROM --platform=linux/amd64 golang:1.18
 WORKDIR /opt/kubefirst
 
 RUN apt-get update && \
-    apt-get install -y unzip
+    apt-get install -y unzip  curl jq vim unzip less \
+     && rm -rf /var/lib/apt/lists/* 
 
 
 # enable terminal vi mode
 RUN set -o vi
 
 # Kubernetes client
-RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.21.3/bin/linux/amd64/kubectl && \
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.21.3/bin/$(uname -s)/amd64/kubectl && \
     chmod +x ./kubectl && \
     mv kubectl /usr/local/bin/
 
@@ -27,6 +28,11 @@ RUN curl -LO https://github.com/weaveworks/eksctl/releases/latest/download/eksct
 RUN curl -LO https://s3.us-west-2.amazonaws.com/amazon-eks/1.21.2/2021-07-05/bin/linux/amd64/aws-iam-authenticator && \
     chmod +x aws-iam-authenticator && \
     mv aws-iam-authenticator /usr/local/bin/
+
+RUN  go install github.com/spf13/cobra-cli@latest
+RUN  go install golang.org/x/tools/cmd/godoc@latest
+RUN  go install golang.org/x/lint/golint@latest
+
 
 # setup user
 RUN useradd -ms /bin/bash developer
