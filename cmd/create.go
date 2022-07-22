@@ -165,7 +165,7 @@ to quickly create a Cobra application.`,
 			httpClient := http.Client{Transport: customTransport}
 
 			// retry to sync ArgoCD application until reaches the maximum attempts
-			argoCDIsReady, err := argocd.SyncRetry(&httpClient, 10, 6, "registry", token)
+			argoCDIsReady, err := argocd.SyncRetry(&httpClient, 60, 5, "registry", token)
 			if err != nil {
 				log.Printf("something went wrong during ArgoCD sync step, error is: %v", err)
 			}
@@ -368,7 +368,25 @@ to quickly create a Cobra application.`,
 
 			informUser("Syncing the registry application")
 			token := argocd.GetArgocdAuthToken(dryRun)
-			argocd.SyncArgocdApplication(dryRun, "registry", token)
+
+			if dryRun {
+				log.Printf("[#99] Dry-run mode, Sync ArgoCD skipped")
+			} else {
+				// todo: create ArgoCD struct, and host dependencies (like http client)
+				customTransport := http.DefaultTransport.(*http.Transport).Clone()
+				customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+				httpClient := http.Client{Transport: customTransport}
+
+				// retry to sync ArgoCD application until reaches the maximum attempts
+				argoCDIsReady, err := argocd.SyncRetry(&httpClient, 60, 5, "registry", token)
+				if err != nil {
+					log.Printf("something went wrong during ArgoCD sync step, error is: %v", err)
+				}
+
+				if !argoCDIsReady {
+					log.Println("unable to sync ArgoCD application, continuing...")
+				}
+			}
 
 			viper.Set("gitlab.registered", true)
 			viper.WriteConfig()

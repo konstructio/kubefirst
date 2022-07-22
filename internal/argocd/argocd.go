@@ -55,7 +55,9 @@ func SyncRetry(httpClient pkg.HTTPDoer, attempts int, interval int, applicationN
 		}
 
 		log.Printf(
-			"sleeping %d seconds before trying to ArgoCD sync again, last Sync status is: %q",
+			"(%d/%d) sleeping %d seconds before trying to ArgoCD sync again, last Sync status is: %q",
+			i+1,
+			attempts,
 			interval,
 			syncStatus,
 		)
