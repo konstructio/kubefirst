@@ -50,6 +50,14 @@ func DeletePodByName(podsClient coreV1Types.PodInterface, podName string) {
 		log.Println(err)
 	}
 }
+func DeletePodByLabel(podsClient coreV1Types.PodInterface, label string) {
+	err := podsClient.DeleteCollection(context.TODO(),metaV1.DeleteOptions{}, metaV1.ListOptions{LabelSelector: label})
+	if err != nil {
+		log.Println(err)
+	} else {
+		log.Println("Success delete of pods with label(%s).",label)
+	}
+}
 
 // func CreateRepoSecret() {
 

@@ -147,13 +147,16 @@ func PushGitOpsToGitLab(dryRun bool) {
 }
 
 func AwaitHost(appName string, dryRun bool) {
+	AwaitHostNTimes(appName, dryRun, 200)
+}
 
+func AwaitHostNTimes(appName string, dryRun bool, times int) {
 	log.Println("AwaitHost called")
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, AwaitHost skipped.")
 		return
 	}
-	max := 200
+	max := times
 	for i := 0; i < max; i++ {
 		hostedZoneName := viper.GetString("aws.hostedzonename")
 		resp, _ := http.Get(fmt.Sprintf("https://%s.%s", appName, hostedZoneName))
