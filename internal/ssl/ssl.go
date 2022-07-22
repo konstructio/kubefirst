@@ -22,7 +22,7 @@ import (
 )
 
 func getNamespacesToBackupSSL() (ns []string) {
-	return []string{"argo", "atlantis", "chartmuseum", "gitlab", "vault"}
+	return []string{"argo", "argocd", "atlantis", "chartmuseum", "gitlab", "vault"}
 }
 
 func getItemsToBackup(apiGroup string, apiVersion string, resourceType string, namespaces []string, jqQuery string) ([]string, error) {
