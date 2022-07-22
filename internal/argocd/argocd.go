@@ -68,7 +68,7 @@ func SyncRetry(httpClient pkg.HTTPDoer, attempts int, interval int, applicationN
 func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (httpCodeResponse int, syncStatus string, Error error) {
 
 	url := fmt.Sprintf("%s/api/v1/applications/%s/sync", viper.GetString("argocd.local.service"), applicationName)
-	fmt.Println(url)
+	log.Println(url)
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		log.Println(err)
@@ -78,7 +78,7 @@ func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (
 	res, err := httpClient.Do(req)
 	if err != nil {
 		log.Printf("error sending POST request to ArgoCD for syncing application (%s)\n", applicationName)
-		fmt.Println(err)
+		log.Println(err)
 		return res.StatusCode, "", err
 	}
 	defer res.Body.Close()
