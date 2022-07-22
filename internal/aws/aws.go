@@ -87,6 +87,8 @@ func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
 			viper.Set(fmt.Sprintf("bucket.%s.created", bucket), true)
 			viper.Set(fmt.Sprintf("bucket.%s.name", bucket), bucketName)
 			viper.WriteConfig()
+
+			PutTagKubefirstOnBuckets(bucketName, viper.GetString("cluster-name"))
 		}
 		log.Printf("bucket %s exists", viper.GetString(fmt.Sprintf("bucket.%s.name", bucket)))
 	}
@@ -261,11 +263,6 @@ func ReturnHostedZoneId(rawZoneId string) string {
 }
 
 func ListBucketsInUse() []string {
-	//Read flare file
-	//Iterate over buckets
-	//check if bucket exist
-	//buckets := make([]map[string]string, 0)
-	//var m map[string]string
 	var bucketsInUse []string
 	bucketsConfig := viper.AllKeys()
 	for _, bucketKey := range bucketsConfig {
@@ -279,7 +276,6 @@ func ListBucketsInUse() []string {
 }
 
 func DestroyBucket(bucketName string) {
-
 	s3Client := s3.New(GetAWSSession())
 
 	log.Printf("Attempt to delete: %s", bucketName)
@@ -295,21 +291,16 @@ func DestroyBucket(bucketName string) {
 				log.Println("Bucket Error:", aerr.Error())
 			}
 		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
 			log.Println(errHead.Error())
 		}
 	} else {
-		//if exist, we can delete it
 		_, err := s3Client.DeleteBucket(&s3.DeleteBucketInput{
 			Bucket: &bucketName,
 		})
 		if err != nil {
 			log.Panicf("failed to delete bucket "+bucketName, err.Error())
 		}
-
 	}
-
 }
 
 func GetAWSSession() *session.Session {
@@ -426,4 +417,37 @@ func DownloadBucket(bucket string, destFolder string) error {
 		f.Close()
 	}
 	return nil
+}
+
+func PutTagKubefirstOnBuckets(bucketName, clusterName string) {
+	svc := s3.New(session.New())
+	input := &s3.PutBucketTaggingInput{
+		Bucket: aws.String("bucketName"),
+		Tagging: &s3.Tagging{
+			TagSet: []*s3.Tag{
+				{
+					Key:   aws.String("Provisioned-by"),
+					Value: aws.String("Kubefirst"),
+				},
+				{
+					Key:   aws.String("ClusterName"),
+					Value: aws.String(clusterName),
+				},
+			},
+		},
+	}
+
+	result, err := svc.PutBucketTagging(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				log.Println(aerr.Error())
+			}
+		} else {
+			log.Println(err.Error())
+		}
+		return
+	}
+	log.Println(result)
 }

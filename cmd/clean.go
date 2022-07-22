@@ -3,16 +3,17 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/reports"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-// todo delete the s3 buckets associated with the ~/.kubefirst file
 // todo ask for user input to verify deletion?
 // todo ask for user input to verify?
 // cleanCmd removes all kubefirst resources locally for new execution.
@@ -24,6 +25,12 @@ re-create all Kubefirst files.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		config := configs.ReadConfig()
+
+		destroyBuckets, err := cmd.Flags().GetBool("destroy-buckets")
+		if err != nil {
+			log.Panic(err)
+		}
+		aws.DestroyBucketsInUse(destroyBuckets)
 
 		// command line flags
 		rmLogsFolder, err := cmd.Flags().GetBool("rm-logs")
