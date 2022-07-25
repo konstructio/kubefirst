@@ -387,10 +387,11 @@ to quickly create a Cobra application.`,
 		argocdPodClient := clientset.CoreV1().Pods("argocd")
 		for i := 1; i < 10; i++ {
 			argoCDHostReady := gitlab.AwaitHostNTimes("argocd", dryRun, 10)
-			if !argoCDHostReady {
-				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
-			} else {
+			if argoCDHostReady {
+				informUser("ArgoCD DNS is ready")
 				break
+			} else {
+				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")				
 			}
 		}
 
