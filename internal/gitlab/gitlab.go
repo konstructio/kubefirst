@@ -150,13 +150,14 @@ func AwaitHost(appName string, dryRun bool) {
 	AwaitHostNTimes(appName, dryRun, 200)
 }
 
-func AwaitHostNTimes(appName string, dryRun bool, times int) {
+func AwaitHostNTimes(appName string, dryRun bool, times int) bool{
 	log.Println("AwaitHost called")
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, AwaitHost skipped.")
-		return
+		return true
 	}
 	max := times
+	hostReady := false
 	for i := 0; i < max; i++ {
 		hostedZoneName := viper.GetString("aws.hostedzonename")
 		resp, _ := http.Get(fmt.Sprintf("https://%s.%s", appName, hostedZoneName))
@@ -164,11 +165,13 @@ func AwaitHostNTimes(appName string, dryRun bool, times int) {
 			log.Println(fmt.Printf("%s host resolved, 30 second grace period required...", appName))
 			time.Sleep(time.Second * 30)
 			i = max
+			hostReady = true
 		} else {
 			log.Println(fmt.Printf("%s host not resolved, sleeping 10s", appName))
 			time.Sleep(time.Second * 10)
 		}
 	}
+	return hostReady
 }
 
 func ProduceGitlabTokens(dryRun bool) {
