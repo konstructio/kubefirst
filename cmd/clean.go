@@ -10,6 +10,7 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -20,8 +21,8 @@ import (
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "removes all kubefirst resources locally for new execution",
-	Long: `Kubefirst creates files and folders during installation at your local environment. This command removes and 
-re-create all Kubefirst files.`,
+	Long: `Kubefirst creates files, folders and cloud buckets during installation at your environment. This command removes and 
+re-create all Kubefirst files. To destroy cloud resources you need to specify aditional flags (--destroy-buckets)`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		config := configs.ReadConfig()
@@ -30,7 +31,18 @@ re-create all Kubefirst files.`,
 		if err != nil {
 			log.Panic(err)
 		}
-		aws.DestroyBucketsInUse(destroyBuckets)
+		destroyConfirm, err := cmd.Flags().GetBool("destroy-confirm")
+		if err != nil {
+			log.Panic(err)
+		}
+		if destroyBuckets && !destroyConfirm {
+			destroyConfirm = pkg.AskForConfirmation("This process will delete cloud buckets and all files inside, do you really want to proceed?")
+			if !destroyConfirm {
+				os.Exit(130)
+			}
+		}
+
+		aws.DestroyBucketsInUse(destroyBuckets && destroyConfirm)
 
 		// command line flags
 		rmLogsFolder, err := cmd.Flags().GetBool("rm-logs")
@@ -93,4 +105,6 @@ re-create all Kubefirst files.`,
 func init() {
 	rootCmd.AddCommand(cleanCmd)
 	cleanCmd.Flags().Bool("rm-logs", false, "remove logs folder")
+	cleanCmd.Flags().Bool("destroy-buckets", false, "destroy buckets created by init cmd")
+	cleanCmd.Flags().Bool("destroy-confirm", false, "confirm destroy operation (to be used during automation")
 }
