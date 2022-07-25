@@ -29,11 +29,11 @@ re-create all Kubefirst files. To destroy cloud resources you need to specify ad
 
 		destroyBuckets, err := cmd.Flags().GetBool("destroy-buckets")
 		if err != nil {
-			log.Panic(err)
+			log.Println(err)
 		}
 		destroyConfirm, err := cmd.Flags().GetBool("destroy-confirm")
 		if err != nil {
-			log.Panic(err)
+			log.Println(err)
 		}
 		if destroyBuckets && !destroyConfirm {
 			destroyConfirm = pkg.AskForConfirmation("This process will delete cloud buckets and all files inside, do you really want to proceed?")
