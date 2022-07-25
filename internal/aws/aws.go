@@ -445,10 +445,7 @@ func PutTagKubefirstOnBuckets(bucketName, clusterName string) {
 	_, err := svc.PutBucketTagging(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			default:
-				log.Println(aerr.Error())
-			}
+			log.Println(aerr.Error())
 		} else {
 			log.Println(err.Error())
 		}
