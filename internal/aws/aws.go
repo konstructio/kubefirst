@@ -11,9 +11,11 @@ import (
 	"strings"
 	"time"
 
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
+	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -80,15 +82,13 @@ func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
 				if err != nil {
 					log.Panicf("Error putting S3 versioning: %s", err)
 				}
-
+				PutTagKubefirstOnBuckets(bucketName, viper.GetString("cluster-name"))
 			} else {
 				log.Printf("[#99] Dry-run mode, bucket creation skipped:  %s", bucketName)
 			}
 			viper.Set(fmt.Sprintf("bucket.%s.created", bucket), true)
 			viper.Set(fmt.Sprintf("bucket.%s.name", bucket), bucketName)
 			viper.WriteConfig()
-
-			PutTagKubefirstOnBuckets(bucketName, viper.GetString("cluster-name"))
 		}
 		log.Printf("bucket %s exists", viper.GetString(fmt.Sprintf("bucket.%s.name", bucket)))
 	}
@@ -315,9 +315,13 @@ func GetAWSSession() *session.Session {
 
 func DestroyBucketsInUse(destroyBuckets bool) {
 	if destroyBuckets {
-		log.Println("Execute: DestroyBucketsInUse")
+		log.Println("Confirmed: DestroyBucketsInUse")
 		for _, bucket := range ListBucketsInUse() {
-			DestroyBucket(bucket)
+			log.Printf("Deleting versions, objects and bucket: %s:", bucket)
+			err := DestroyBucketObjectsAndVersions(bucket, viper.GetString("aws.region"))
+			if err != nil {
+				log.Panic("Error deleting bucket/objects/version, the resources may have already been removed, please re-run without flag --destroy-buckets and check on console")
+			}
 		}
 	} else {
 		log.Println("Skip: DestroyBucketsInUse")
@@ -420,9 +424,10 @@ func DownloadBucket(bucket string, destFolder string) error {
 }
 
 func PutTagKubefirstOnBuckets(bucketName, clusterName string) {
+	log.Printf("tagging bucket... %s:%s", bucketName, clusterName)
 	svc := s3.New(session.New())
 	input := &s3.PutBucketTaggingInput{
-		Bucket: aws.String("bucketName"),
+		Bucket: aws.String(bucketName),
 		Tagging: &s3.Tagging{
 			TagSet: []*s3.Tag{
 				{
@@ -437,7 +442,7 @@ func PutTagKubefirstOnBuckets(bucketName, clusterName string) {
 		},
 	}
 
-	result, err := svc.PutBucketTagging(input)
+	_, err := svc.PutBucketTagging(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
@@ -449,5 +454,76 @@ func PutTagKubefirstOnBuckets(bucketName, clusterName string) {
 		}
 		return
 	}
-	log.Println(result)
+	log.Printf("Bucket: %s tagged successfully", bucketName)
+}
+
+func DestroyBucketObjectsAndVersions(bucket, region string) error {
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
+	if err != nil {
+		log.Printf("Failed to load config: %v", err)
+		return err
+	}
+
+	client := s3v2.NewFromConfig(cfg)
+
+	deleteObject := func(bucket, key, versionId *string) {
+		log.Printf("Object: %s/%s\n", *key, awsv2.ToString(versionId))
+		_, err := client.DeleteObject(context.TODO(), &s3v2.DeleteObjectInput{
+			Bucket:    bucket,
+			Key:       key,
+			VersionId: versionId,
+		})
+		if err != nil {
+			log.Printf("Failed to delete object: %v", err)
+		}
+	}
+
+	in := &s3v2.ListObjectsV2Input{Bucket: &bucket}
+	for {
+		out, err := client.ListObjectsV2(context.TODO(), in)
+		if err != nil {
+			log.Printf("Failed to list objects: %v", err)
+			return err
+		}
+
+		for _, item := range out.Contents {
+			deleteObject(&bucket, item.Key, nil)
+		}
+
+		if out.IsTruncated {
+			in.ContinuationToken = out.ContinuationToken
+		} else {
+			break
+		}
+	}
+
+	inVer := &s3v2.ListObjectVersionsInput{Bucket: &bucket}
+	for {
+		out, err := client.ListObjectVersions(context.TODO(), inVer)
+		if err != nil {
+			log.Printf("Failed to list version objects: %v", err)
+			return err
+		}
+
+		for _, item := range out.DeleteMarkers {
+			deleteObject(&bucket, item.Key, item.VersionId)
+		}
+
+		for _, item := range out.Versions {
+			deleteObject(&bucket, item.Key, item.VersionId)
+		}
+
+		if out.IsTruncated {
+			inVer.VersionIdMarker = out.NextVersionIdMarker
+			inVer.KeyMarker = out.NextKeyMarker
+		} else {
+			break
+		}
+	}
+
+	_, err = client.DeleteBucket(context.TODO(), &s3v2.DeleteBucketInput{Bucket: &bucket})
+	if err != nil {
+		log.Printf("Failed to delete bucket: %v", err)
+	}
+	return nil
 }
