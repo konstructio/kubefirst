@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
+func BucketRand(dryRun bool) {
 
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(viper.GetString("aws.region"))},
@@ -39,10 +39,11 @@ func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
 
 	s3Client := s3.New(sess)
 
-	randomName := strings.ReplaceAll(autoname.Generate(), "_", "-")
-	viper.Set("bucket.rand", randomName)
-
-	trackers[pkg.CloneAndDetokenizeMetaphorTemplate].Tracker.Increment(int64(1))
+	randomName := viper.GetString("bucket.rand")
+	if randomName == "" {
+		randomName = strings.ReplaceAll(autoname.Generate(), "_", "-")
+		viper.Set("bucket.rand", randomName)
+	}	
 
 	buckets := strings.Fields("state-store argo-artifacts gitlab-backup chartmuseum")
 	for _, bucket := range buckets {

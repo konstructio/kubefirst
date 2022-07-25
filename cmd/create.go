@@ -77,6 +77,17 @@ to quickly create a Cobra application.`,
 
 		restoreSSLCmd.Run(cmd, args)
 
+
+		kubeconfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
+		if err != nil {
+			panic(err.Error())
+		}
+		clientset, err := kubernetes.NewForConfig(kubeconfig)
+		if err != nil {
+			panic(err.Error())
+		}
+
+
 		//! soft-serve was just applied
 
 		softserve.CreateSoftServe(dryRun, config.KubeConfigPath)
@@ -283,22 +294,11 @@ to quickly create a Cobra application.`,
 			viper.WriteConfig()
 		}
 		if !dryRun && !viper.GetBool("argocd.oidc-patched") {
-			cfg := configs.ReadConfig()
-			config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
-			if err != nil {
-				panic(err.Error())
-			}
-			clientset, err := kubernetes.NewForConfig(config)
-			if err != nil {
-				panic(err.Error())
-			}
-
 			argocdSecretClient = clientset.CoreV1().Secrets("argocd")
 			patchSecret(argocdSecretClient, "argocd-secret", "oidc.gitlab.clientSecret", viper.GetString("gitlab.oidc.argocd.secret"))
 
 			argocdPodClient := clientset.CoreV1().Pods("argocd")
-			argocdPodName := k8s.GetPodNameByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
-			k8s.DeletePodByName(argocdPodClient, argocdPodName)
+			k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")			
 			viper.Set("argocd.oidc-patched", true)
 			viper.WriteConfig()
 		}
@@ -329,20 +329,10 @@ to quickly create a Cobra application.`,
 			// informUser("Waiting for argocd host to resolve")
 			// gitlab.AwaitHost("argocd", dryRun)
 			if !dryRun {
-				cfg := configs.ReadConfig()
-				config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
-				if err != nil {
-					panic(err.Error())
-				}
-				clientset, err := kubernetes.NewForConfig(config)
-				if err != nil {
-					panic(err.Error())
-				}
 				argocdPodClient := clientset.CoreV1().Pods("argocd")
-				argocdPodName := k8s.GetPodNameByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
 				kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 				informUser("deleting argocd-server pod")
-				k8s.DeletePodByName(argocdPodClient, argocdPodName)
+				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
 			}
 			informUser("waiting for argocd to be ready")
 			waitArgoCDToBeReady(dryRun)
@@ -391,6 +381,21 @@ to quickly create a Cobra application.`,
 			viper.Set("gitlab.registered", true)
 			viper.WriteConfig()
 		}
+
+		//!--
+		// Wait argocd cert to work, or force restart
+		argocdPodClient := clientset.CoreV1().Pods("argocd")
+		for i := 1; i < 15; i++ {
+			argoCDHostReady := gitlab.AwaitHostNTimes("argocd", dryRun, 20)
+			if argoCDHostReady {
+				informUser("ArgoCD DNS is ready")
+				break
+			} else {
+				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")				
+			}
+		}
+
+		//!--
 
 		sendCompleteInstallTelemetry(dryRun, useTelemetry)
 		time.Sleep(time.Millisecond * 100)
