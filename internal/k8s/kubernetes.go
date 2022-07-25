@@ -55,7 +55,7 @@ func DeletePodByLabel(podsClient coreV1Types.PodInterface, label string) {
 	if err != nil {
 		log.Println(err)
 	} else {
-		log.Println("Success delete of pods with label(%s).",label)
+		log.Printf("Success delete of pods with label(%s).",label)
 	}
 }
 

@@ -385,8 +385,8 @@ to quickly create a Cobra application.`,
 		//!--
 		// Wait argocd cert to work, or force restart
 		argocdPodClient := clientset.CoreV1().Pods("argocd")
-		for i := 1; i < 10; i++ {
-			argoCDHostReady := gitlab.AwaitHostNTimes("argocd", dryRun, 10)
+		for i := 1; i < 15; i++ {
+			argoCDHostReady := gitlab.AwaitHostNTimes("argocd", dryRun, 20)
 			if argoCDHostReady {
 				informUser("ArgoCD DNS is ready")
 				break
