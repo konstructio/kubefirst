@@ -36,6 +36,8 @@ type Config struct {
 
 	// todo: move it back
 	KubefirstVersion string
+
+	CertsPath string
 }
 
 func ReadConfig() *Config {
@@ -65,13 +67,13 @@ func ReadConfig() *Config {
 	config.KubeConfigPath = fmt.Sprintf("%s/gitops/terraform/base/kubeconfig", config.K1FolderPath)
 	config.TerraformPath = fmt.Sprintf("%s/tools/terraform", config.K1FolderPath)
 	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
-
+	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.TerraformVersion = "1.0.11"
 
 	// todo adopt latest helmVersion := "v3.9.0"
 	config.HelmVersion = "v3.2.1"
 
-	config.KubefirstVersion = "0.1.1"
+	config.KubefirstVersion = "1.8.0"
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 

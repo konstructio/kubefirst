@@ -3,15 +3,15 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"os/exec"
+	"syscall"
+
 	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
-	"log"
-	"os/exec"
-	"syscall"
 )
 
 // destroyCmd represents the destroy command
@@ -36,10 +36,6 @@ if the registry has already been deleted.`,
 			log.Panic(err)
 		}
 		skipBaseTerraform, err := cmd.Flags().GetBool("skip-base-terraform")
-		if err != nil {
-			log.Panic(err)
-		}
-		destroyBuckets, err := cmd.Flags().GetBool("destroy-buckets")
 		if err != nil {
 			log.Panic(err)
 		}
@@ -100,8 +96,6 @@ if the registry has already been deleted.`,
 		log.Println("terraform destroy base")
 		terraform.DestroyBaseTerraform(skipBaseTerraform)
 		log.Println("terraform base destruction complete")
-		//TODO: move this step to `kubefirst clean` command and empty buckets and delete
-		aws.DestroyBucketsInUse(destroyBuckets)
 		fmt.Println("End of execution destroy")
 	},
 }

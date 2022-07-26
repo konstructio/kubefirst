@@ -34,6 +34,15 @@ to quickly create a Cobra application.`,
 			log.Panic(err)
 		}
 
+		useTelemetry, err := cmd.Flags().GetBool("use-telemetry")
+		if err != nil {
+			log.Panic(err)
+		}
+
+		if !useTelemetry {
+			log.Println("telemetry is disabled")
+		}
+
 		log.Println("dry run enabled:", dryRun)
 
 		pkg.SetupProgress(10)
@@ -53,7 +62,7 @@ to quickly create a Cobra application.`,
 		metricDomain := hostedZoneName
 
 		if !dryRun {
-			telemetry.SendTelemetry(metricDomain, metricName)
+			telemetry.SendTelemetry(useTelemetry, metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
@@ -104,6 +113,13 @@ to quickly create a Cobra application.`,
 		viper.Set("version-gitops", versionGitOps)
 		log.Println("version-gitops:", versionGitOps)
 
+		bucketRand, err := cmd.Flags().GetString("s3-suffix")
+		if err != nil {
+			log.Panic(err)
+		}
+		viper.Set("bucket.rand", bucketRand)
+		log.Println("s3-suffix:", clusterName)
+
 		viper.WriteConfig()
 
 		//! tracker 0
@@ -145,7 +161,7 @@ to quickly create a Cobra application.`,
 		//* for state and artifacts on open source?
 		//* hitting a bucket limit on an install might deter someone
 		log.Println("creating buckets for state and artifacts")
-		aws.BucketRand(dryRun, trackers)
+		aws.BucketRand(dryRun)
 		trackers[pkg.CreateBuckets].Tracker.Increment(1)
 		log.Println("BucketRand() complete")
 
@@ -175,7 +191,7 @@ to quickly create a Cobra application.`,
 		metricName = "kubefirst.init.completed"
 
 		if !dryRun {
-			telemetry.SendTelemetry(metricDomain, metricName)
+			telemetry.SendTelemetry(useTelemetry, metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
@@ -220,5 +236,7 @@ func init() {
 	log.Println("init started")
 
 	initCmd.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
+	initCmd.Flags().String("s3-suffix", "", "unique identifier for s3 buckets")
 	initCmd.Flags().String("version-gitops", "main", "version/branch used on git clone")
+	initCmd.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
 }

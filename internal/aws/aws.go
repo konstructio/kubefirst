@@ -6,24 +6,28 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
+	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/cip8/autoname"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
 
-func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
+func BucketRand(dryRun bool) {
 
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(viper.GetString("aws.region"))},
@@ -35,10 +39,11 @@ func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
 
 	s3Client := s3.New(sess)
 
-	randomName := strings.ReplaceAll(autoname.Generate(), "_", "-")
-	viper.Set("bucket.rand", randomName)
-
-	trackers[pkg.CloneAndDetokenizeMetaphorTemplate].Tracker.Increment(int64(1))
+	randomName := viper.GetString("bucket.rand")
+	if randomName == "" {
+		randomName = strings.ReplaceAll(autoname.Generate(), "_", "-")
+		viper.Set("bucket.rand", randomName)
+	}	
 
 	buckets := strings.Fields("state-store argo-artifacts gitlab-backup chartmuseum")
 	for _, bucket := range buckets {
@@ -78,7 +83,7 @@ func BucketRand(dryRun bool, trackers map[string]*pkg.ActionTracker) {
 				if err != nil {
 					log.Panicf("Error putting S3 versioning: %s", err)
 				}
-
+				PutTagKubefirstOnBuckets(bucketName, viper.GetString("cluster-name"))
 			} else {
 				log.Printf("[#99] Dry-run mode, bucket creation skipped:  %s", bucketName)
 			}
@@ -107,6 +112,10 @@ func GetAccountInfo() {
 }
 
 func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, TestHostedZoneLiveness skipped.")
+		return
+	}
 	//tracker := progress.Tracker{Message: "testing hosted zone", Total: 25}
 
 	// todo need to create single client and pass it
@@ -255,11 +264,6 @@ func ReturnHostedZoneId(rawZoneId string) string {
 }
 
 func ListBucketsInUse() []string {
-	//Read flare file
-	//Iterate over buckets
-	//check if bucket exist
-	//buckets := make([]map[string]string, 0)
-	//var m map[string]string
 	var bucketsInUse []string
 	bucketsConfig := viper.AllKeys()
 	for _, bucketKey := range bucketsConfig {
@@ -273,7 +277,6 @@ func ListBucketsInUse() []string {
 }
 
 func DestroyBucket(bucketName string) {
-
 	s3Client := s3.New(GetAWSSession())
 
 	log.Printf("Attempt to delete: %s", bucketName)
@@ -289,21 +292,16 @@ func DestroyBucket(bucketName string) {
 				log.Println("Bucket Error:", aerr.Error())
 			}
 		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
 			log.Println(errHead.Error())
 		}
 	} else {
-		//if exist, we can delete it
 		_, err := s3Client.DeleteBucket(&s3.DeleteBucketInput{
 			Bucket: &bucketName,
 		})
 		if err != nil {
 			log.Panicf("failed to delete bucket "+bucketName, err.Error())
 		}
-
 	}
-
 }
 
 func GetAWSSession() *session.Session {
@@ -318,11 +316,212 @@ func GetAWSSession() *session.Session {
 
 func DestroyBucketsInUse(destroyBuckets bool) {
 	if destroyBuckets {
-		log.Println("Execute: DestroyBucketsInUse")
+		log.Println("Confirmed: DestroyBucketsInUse")
 		for _, bucket := range ListBucketsInUse() {
-			DestroyBucket(bucket)
+			log.Printf("Deleting versions, objects and bucket: %s:", bucket)
+			err := DestroyBucketObjectsAndVersions(bucket, viper.GetString("aws.region"))
+			if err != nil {
+				log.Panic("Error deleting bucket/objects/version, the resources may have already been removed, please re-run without flag --destroy-buckets and check on console")
+			}
 		}
 	} else {
 		log.Println("Skip: DestroyBucketsInUse")
 	}
+}
+
+func CreateBucket(dryRun bool, name string) {
+	log.Println("createBucketCalled")
+
+	s3Client := s3.New(GetAWSSession())
+
+	log.Println("creating", "bucket", name)
+
+	regionName := viper.GetString("aws.region")
+	log.Println("region is ", regionName)
+	if !dryRun {
+		_, err := s3Client.CreateBucket(&s3.CreateBucketInput{
+			Bucket: &name,
+			CreateBucketConfiguration: &s3.CreateBucketConfiguration{
+				LocationConstraint: aws.String(regionName),
+			},
+		})
+		if err != nil {
+			if awsErr, ok := err.(awserr.Error); ok {
+				switch awsErr.Code() {
+				case s3.ErrCodeBucketAlreadyExists:
+					log.Println("Bucket already exists " + name)
+					os.Exit(1)
+				case s3.ErrCodeBucketAlreadyOwnedByYou:
+					log.Println("Bucket already exists but OwnedByYou, the process will continue: " + name)
+				}
+			} else {
+				log.Println("failed to create bucket "+name, err.Error())
+				os.Exit(1)
+			}
+		}
+	} else {
+		log.Printf("[#99] Dry-run mode, bucket creation skipped:  %s", name)
+	}
+	viper.Set(fmt.Sprintf("bucket.%s.created", name), true)
+	viper.Set(fmt.Sprintf("bucket.%s.name", name), name)
+	viper.WriteConfig()
+}
+
+func UploadFile(bucket, key, fileName string) error {
+	uploader := s3manager.NewUploader(GetAWSSession())
+
+	f, err := os.Open(fileName)
+	if err != nil {
+		return fmt.Errorf("failed to open file %q, %v", fileName, err)
+	}
+
+	// Upload the file to S3.
+	result, err := uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		Body:   f,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upload file, %v", err)
+	}
+	log.Printf("file uploaded to, %s\n", result.Location)
+	return nil
+}
+
+func DownloadBucket(bucket string, destFolder string) error {
+	s3Client := s3.New(GetAWSSession())
+	downloader := s3manager.NewDownloader(GetAWSSession())
+
+	log.Println("Listing the objects in the bucket:")
+	listObjsResponse, err := s3Client.ListObjectsV2(&s3.ListObjectsV2Input{
+		Bucket: aws.String(bucket),
+		Prefix: aws.String(""),
+	})
+
+	if err != nil {
+		log.Printf("Couldn't list bucket contents")
+		return fmt.Errorf("Couldn't list bucket contents")
+	}
+
+	for _, object := range listObjsResponse.Contents {
+		log.Printf("%s (%d bytes, class %v) \n", *object.Key, object.Size, object.StorageClass)
+
+		f, err := pkg.CreateFullPath(filepath.Join(destFolder, *object.Key))
+		if err != nil {
+			return fmt.Errorf("failed to create file %q, %v", *object.Key, err)
+		}
+
+		// Write the contents of S3 Object to the file
+		_, err = downloader.Download(f, &s3.GetObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(*object.Key),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to download file, %v", err)
+		}
+		f.Close()
+	}
+	return nil
+}
+
+func PutTagKubefirstOnBuckets(bucketName, clusterName string) {
+	log.Printf("tagging bucket... %s:%s", bucketName, clusterName)
+	svc := s3.New(session.New())
+	input := &s3.PutBucketTaggingInput{
+		Bucket: aws.String(bucketName),
+		Tagging: &s3.Tagging{
+			TagSet: []*s3.Tag{
+				{
+					Key:   aws.String("Provisioned-by"),
+					Value: aws.String("Kubefirst"),
+				},
+				{
+					Key:   aws.String("ClusterName"),
+					Value: aws.String(clusterName),
+				},
+			},
+		},
+	}
+
+	_, err := svc.PutBucketTagging(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			log.Println(aerr.Error())
+		} else {
+			log.Println(err.Error())
+		}
+		return
+	}
+	log.Printf("Bucket: %s tagged successfully", bucketName)
+}
+
+func DestroyBucketObjectsAndVersions(bucket, region string) error {
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
+	if err != nil {
+		log.Printf("Failed to load config: %v", err)
+		return err
+	}
+
+	client := s3v2.NewFromConfig(cfg)
+
+	deleteObject := func(bucket, key, versionId *string) {
+		log.Printf("Object: %s/%s\n", *key, awsv2.ToString(versionId))
+		_, err := client.DeleteObject(context.TODO(), &s3v2.DeleteObjectInput{
+			Bucket:    bucket,
+			Key:       key,
+			VersionId: versionId,
+		})
+		if err != nil {
+			log.Printf("Failed to delete object: %v", err)
+		}
+	}
+
+	in := &s3v2.ListObjectsV2Input{Bucket: &bucket}
+	for {
+		out, err := client.ListObjectsV2(context.TODO(), in)
+		if err != nil {
+			log.Printf("Failed to list objects: %v", err)
+			return err
+		}
+
+		for _, item := range out.Contents {
+			deleteObject(&bucket, item.Key, nil)
+		}
+
+		if out.IsTruncated {
+			in.ContinuationToken = out.ContinuationToken
+		} else {
+			break
+		}
+	}
+
+	inVer := &s3v2.ListObjectVersionsInput{Bucket: &bucket}
+	for {
+		out, err := client.ListObjectVersions(context.TODO(), inVer)
+		if err != nil {
+			log.Printf("Failed to list version objects: %v", err)
+			return err
+		}
+
+		for _, item := range out.DeleteMarkers {
+			deleteObject(&bucket, item.Key, item.VersionId)
+		}
+
+		for _, item := range out.Versions {
+			deleteObject(&bucket, item.Key, item.VersionId)
+		}
+
+		if out.IsTruncated {
+			inVer.VersionIdMarker = out.NextVersionIdMarker
+			inVer.KeyMarker = out.NextKeyMarker
+		} else {
+			break
+		}
+	}
+
+	_, err = client.DeleteBucket(context.TODO(), &s3v2.DeleteBucketInput{Bucket: &bucket})
+	if err != nil {
+		log.Printf("Failed to delete bucket: %v", err)
+	}
+	return nil
 }
