@@ -5,12 +5,14 @@ Copyright © 2022 Kubefirst Inc. devops@kubefirst.com
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/kubefirst/kubefirst/cmd"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
-	"log"
 	"os"
 	"time"
 )
@@ -21,7 +23,7 @@ func main() {
 
 	currentFolder, err := os.Getwd()
 	if err != nil {
-		log.Panicf("unable to get current folder location, error is: %s", err)
+		log.Panic().Msgf("unable to get current folder location, error is: %s", err)
 	}
 	logsFolder := fmt.Sprintf("%s/%s", currentFolder, "logs")
 	// we're ignoring folder creation handling at the moment
@@ -31,36 +33,39 @@ func main() {
 	logfile := fmt.Sprintf("%s/log_%d.log", logsFolder, epoch)
 	fmt.Printf("Logging at: %s \n", logfile)
 
-	config := configs.ReadConfig()
-
-	err = pkg.SetupViper(config)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	viper.Set("log-folder-location", logsFolder)
-	err = viper.WriteConfig()
-	if err != nil {
-		log.Panicf("unable to set log-file-location, error is: %s", err)
-	}
-
 	file, err := openLogFile(logfile)
 	if err != nil {
-		log.Panicf("unable to store log location, error is: %s", err)
+		//log.Panicf("unable to store log location, error is: %s", err)
 	}
 
 	// handle file close request
 	defer func(file *os.File) {
 		err := file.Close()
 		if err != nil {
-			log.Print(err)
+			log.Err(err).Send()
 		}
 	}(file)
 
-	// setup logging
-	log.SetOutput(file)
-	log.SetPrefix("LOG: ")
-	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
+	// setup logging with color and code line on logs
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: file}).With().Caller().Logger()
+
+	config := configs.ReadConfig()
+	err = pkg.SetupViper(config)
+	if err != nil {
+		log.Panic().Err(err).Send()
+	}
+
+	viper.Set("log-folder-location", logsFolder)
+	err = viper.WriteConfig()
+	if err != nil {
+		log.Panic().Msgf("unable to set log-file-location, error is: %s", err)
+	}
+
+	log.Info().Msgf("info example")
+	log.Err(errors.New("error msg")).Send()
+	log.Warn().Msg("warning")
+	log.Debug().Str("Service Context", "ArgoCD").Msg("this is happening here")
 
 	cmd.Execute()
 }

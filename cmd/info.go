@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"log"
 	"runtime"
 	"strings"
 )
@@ -38,15 +38,15 @@ var infoCmd = &cobra.Command{
 
 		err := configs.CheckKubefirstConfigFile(config)
 		if err != nil {
-			log.Panic(err)
+			log.Panic().Err(err).Send()
 		}
 		err = configs.CheckKubefirstDir(config)
 		if err != nil {
-			log.Panic(err)
+			log.Panic().Err(err).Send()
 		}
 		err = configs.CheckEnvironment()
 		if err != nil {
-			log.Panic(err)
+			log.Panic().Err(err).Send()
 		}
 		fmt.Printf("----------- \n")
 

@@ -1,8 +1,9 @@
 package configs
 
 import (
+	"errors"
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"os"
 )
 
@@ -16,12 +17,12 @@ func CheckEnvironment() error {
 	for k, v := range requiredEnvValues {
 		if v == "" {
 			errorMsg := fmt.Sprintf("%s is not set", k)
-			log.Printf(errorMsg)
+			log.Err(errors.New(errorMsg)).Send()
 			return fmt.Errorf(errorMsg)
 		}
 	}
 
-	log.Println("all environment variables are set")
+	log.Info().Msg("all environment variables are set")
 
 	return nil
 }

@@ -2,7 +2,7 @@ package configs
 
 import (
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"os"
 )
 
@@ -11,10 +11,10 @@ func CheckKubefirstDir(config *Config) error {
 	k1sDir := fmt.Sprintf("%s", config.K1FolderPath)
 	if _, err := os.Stat(k1sDir); err != nil {
 		errorMsg := fmt.Sprintf("unable to load \".k1\" directory, error is: %s", err)
-		log.Println(errorMsg)
+		log.Err(err).Send()
 		return fmt.Errorf(errorMsg)
 	}
 
-	log.Printf("\".k1\" directory found: %s", k1sDir)
+	log.Info().Msgf("\".k1\" directory found: %s", k1sDir)
 	return nil
 }
