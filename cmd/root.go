@@ -1,9 +1,8 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"log"
 	"os"
 )
 
@@ -15,7 +14,9 @@ var rootCmd = &cobra.Command{
 	open source application delivery platform in under an hour. 
 	checkout the docs at docs.kubefirst.com.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Println(viper.Get("name"))
+		//log.Println(viper.Get("name"))
+		fmt.Println("To learn more about kubefirst, run:")
+		fmt.Println("  kubefirst help")
 	},
 }
 
@@ -32,6 +33,6 @@ func init() {
 	cobra.OnInitialize()
 
 	// Cobra also supports local flags, which will only run, when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")	
-	
+	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
 }

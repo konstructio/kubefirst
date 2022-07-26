@@ -38,6 +38,8 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		progressPrinter.GetInstance()
+		progressPrinter.SetupProgress(4)
 
 		var kPortForwardArgocd *exec.Cmd
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
@@ -77,7 +79,6 @@ to quickly create a Cobra application.`,
 
 		restoreSSLCmd.Run(cmd, args)
 
-
 		kubeconfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
 		if err != nil {
 			panic(err.Error())
@@ -86,7 +87,6 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			panic(err.Error())
 		}
-
 
 		//! soft-serve was just applied
 
@@ -298,7 +298,7 @@ to quickly create a Cobra application.`,
 			patchSecret(argocdSecretClient, "argocd-secret", "oidc.gitlab.clientSecret", viper.GetString("gitlab.oidc.argocd.secret"))
 
 			argocdPodClient := clientset.CoreV1().Pods("argocd")
-			k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")			
+			k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
 			viper.Set("argocd.oidc-patched", true)
 			viper.WriteConfig()
 		}
@@ -391,7 +391,7 @@ to quickly create a Cobra application.`,
 				informUser("ArgoCD DNS is ready")
 				break
 			} else {
-				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")				
+				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
 			}
 		}
 
@@ -448,6 +448,4 @@ func init() {
 	createCmd.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
 	createCmd.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
 
-	progressPrinter.GetInstance()
-	progressPrinter.SetupProgress(4)
 }

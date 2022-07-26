@@ -26,6 +26,8 @@ and all of the components in kubernetes.
 Optional: skip gitlab terraform 
 if the registry has already been deleted.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		progressPrinter.GetInstance()
+		progressPrinter.SetupProgress(2)
 
 		config := configs.ReadConfig()
 
@@ -141,7 +143,4 @@ func init() {
 	destroyCmd.Flags().Bool("skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
 	destroyCmd.Flags().Bool("destroy-buckets", false, "remove created aws buckets, not empty buckets are not cleaned")
 	destroyCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
-
-	progressPrinter.GetInstance()
-	progressPrinter.SetupProgress(2)
 }
