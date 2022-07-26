@@ -19,7 +19,7 @@ import (
 
 func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracker) error {
 
-	toolsDirPath := fmt.Sprintf("%s/toolsx", config.K1FolderPath)
+	toolsDirPath := fmt.Sprintf("%s/tools", config.K1FolderPath)
 
 	// create folder if it doesn't exist
 	if _, err := os.Stat(toolsDirPath); errors.Is(err, fs.ErrNotExist) {
