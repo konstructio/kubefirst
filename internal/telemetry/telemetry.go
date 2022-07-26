@@ -23,7 +23,7 @@ func SendTelemetry(useTelemetry bool, domain string, metricName string) {
 
 	log.Println("SendTelemetry (working...)")
 
-	url := "https://metaphor-go-production.mgmt.kubefirst.com/telemetry"
+	url := "https://telemetry.kubefirst.com/telemetry"
 	method := "POST"
 
 	payload := strings.NewReader(fmt.Sprintf(`{"domain": "%s","name": "%s"}`, domain, metricName))
