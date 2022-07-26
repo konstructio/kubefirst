@@ -4,10 +4,12 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -17,22 +19,24 @@ import (
 
 func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracker) error {
 
-	toolsDir := fmt.Sprintf("%s/tools", config.K1FolderPath)
+	toolsDirPath := fmt.Sprintf("%s/toolsx", config.K1FolderPath)
 
-	err := os.Mkdir(toolsDir, 0777)
-	if err != nil {
-		log.Printf("error creating directory %s, error is: %s\n", toolsDir, err)
+	// create folder if it doesn't exist
+	if _, err := os.Stat(toolsDirPath); errors.Is(err, fs.ErrNotExist) {
+		err = os.Mkdir(toolsDirPath, 0777)
+		if err != nil {
+			return err
+		}
 	}
 
-	kubectlVersion := config.KubectlVersion
 	kubectlDownloadUrl := fmt.Sprintf(
 		"https://dl.k8s.io/release/%s/bin/%s/%s/kubectl",
-		kubectlVersion,
+		config.KubectlVersion,
 		config.LocalOs,
 		config.LocalArchitecture,
 	)
 
-	err = downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
+	err := downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
 	if err != nil {
 		return err
 	}
@@ -86,7 +90,7 @@ func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracke
 	if err != nil {
 		return err
 	}
-	os.RemoveAll(fmt.Sprintf("%s/terraform.zip", toolsDir))
+	os.RemoveAll(fmt.Sprintf("%s/terraform.zip", toolsDirPath))
 
 	trackers[pkg.DownloadDependencies].Tracker.Increment(int64(1))
 
@@ -136,27 +140,28 @@ func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracke
 	return nil
 }
 
-func downloadFile(filepath string, url string) (err error) {
-	// Create the file
-	out, err := os.Create(filepath)
+// downloadFile Downloads a file from the "url" parameter, localFilename is the file destination in the local machine.
+func downloadFile(localFilename string, url string) error {
+	// create local file
+	out, err := os.Create(localFilename)
 	if err != nil {
 		return err
 	}
 	defer out.Close()
 
-	// Get the data
+	// get data
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
-	// Check server response
+	// check server response
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("bad status: %s", resp.Status)
 	}
 
-	// Writer the body to file
+	// writer the body to the file
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
 		return err
