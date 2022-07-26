@@ -204,52 +204,6 @@ func extractFileFromTarGz(gzipStream io.Reader, tarAddress string, targetFilePat
 	}
 }
 
-func extractTarGz(gzipStream io.Reader) {
-	uncompressedStream, err := gzip.NewReader(gzipStream)
-	if err != nil {
-		log.Fatal("extractTarGz: NewReader failed")
-	}
-
-	tarReader := tar.NewReader(uncompressedStream)
-
-	for {
-		header, err := tarReader.Next()
-
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Println("extractTarGz: Next() failed: %s", err.Error())
-		}
-		p, _ := filepath.Abs(header.Name)
-		if !strings.Contains(p, "..") {
-
-			switch header.Typeflag {
-			case tar.TypeDir:
-				if err := os.Mkdir(header.Name, 0755); err != nil {
-					log.Println("extractTarGz: Mkdir() failed: %s", err.Error())
-				}
-			case tar.TypeReg:
-				outFile, err := os.Create(header.Name)
-				if err != nil {
-					log.Println("extractTarGz: Create() failed: %s", err.Error())
-				}
-				if _, err := io.Copy(outFile, tarReader); err != nil {
-					log.Println("extractTarGz: Copy() failed: %s", err.Error())
-				}
-				outFile.Close()
-
-			default:
-				log.Println(
-					"extractTarGz: uknown type: %s in %s",
-					header.Typeflag,
-					header.Name)
-			}
-		}
-
-	}
-}
-
 func unzip(zipFilepath string, unzipDirectory string) {
 	dst := unzipDirectory
 	archive, err := zip.OpenReader(zipFilepath)
