@@ -18,16 +18,16 @@ var k1state = &cobra.Command{
 
 		push, err := cmd.Flags().GetBool("push")
 		if err != nil {
-			log.Panic(err)
+			log.Println(err)
 		}
 		pull, err := cmd.Flags().GetBool("pull")
 		if err != nil {
-			log.Panic(err)
+			log.Println(err)
 		}
 
 		bucketName, err := cmd.Flags().GetString("bucket-name")
 		if err != nil {
-			log.Panic(err)
+			log.Println(err)
 		}
 
 		if !push && !pull {
