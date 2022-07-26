@@ -10,11 +10,11 @@ import (
 
 // SendTelemetry post telemetry data
 func SendTelemetry(useTelemetry bool, domain string, metricName string) {
-    defer func() {
-        if r := recover(); r != nil {
-            log.Println("Error sending telemetry. Error:\n", r)
-        }
-    }()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("Error sending telemetry. Error:\n", r)
+		}
+	}()
 
 	if !useTelemetry {
 		log.Println("Telemetry disable by user choice, nothing was sent")

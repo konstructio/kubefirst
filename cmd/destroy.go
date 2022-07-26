@@ -11,8 +11,8 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/k8s"
-	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
+	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
 )
 
@@ -51,7 +51,7 @@ if the registry has already been deleted.`,
 			skipDeleteRegistryApplication = true
 			skipBaseTerraform = true
 		}
-		progressPrinter.AddTracker("step-prepare", "Open Ports", 3)		
+		progressPrinter.AddTracker("step-prepare", "Open Ports", 3)
 
 		var kPortForwardOutb, kPortForwardErrb bytes.Buffer
 		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
@@ -69,7 +69,6 @@ if the registry has already been deleted.`,
 		}
 		informUser("Open gitlab port-forward")
 		progressPrinter.IncrementTracker("step-prepare", 1)
-
 
 		if !skipDeleteRegistryApplication {
 			var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer
@@ -107,12 +106,12 @@ if the registry has already been deleted.`,
 
 		log.Println("destroying gitlab terraform")
 
-		progressPrinter.AddTracker("step-destroy", "Destroy Cloud", 4)		
+		progressPrinter.AddTracker("step-destroy", "Destroy Cloud", 4)
 		progressPrinter.IncrementTracker("step-destroy", 1)
 		informUser("Destroying Gitlab")
-		gitlab.DestroyGitlabTerraform(skipGitlabTerraform)		
+		gitlab.DestroyGitlabTerraform(skipGitlabTerraform)
 		progressPrinter.IncrementTracker("step-destroy", 1)
-		
+
 		log.Println("gitlab terraform destruction complete")
 		log.Println("deleting registry application in argocd")
 
