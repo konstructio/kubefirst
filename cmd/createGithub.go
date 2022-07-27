@@ -26,6 +26,8 @@ var createGithubCmd = &cobra.Command{
 		config := configs.ReadConfig()
 		log.Printf(config.AwsProfile)
 		infoCmd.Run(cmd, args)
+
+		progressPrinter.AddTracker("step-0", "Test Installer ", 4)
 		//sendStartedInstallTelemetry(dryRun, useTelemetry)
 		informUser("Create Github Org")
 		informUser("Create Github Repo - gitops")
@@ -48,7 +50,7 @@ var createGithubCmd = &cobra.Command{
 		informUser("Show Hand-off screen")
 		//reports.CreateHandOff
 		//reports.CommandSummary(handOffData)
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Millisecond * 2000)
 		return nil
 	},
 }
