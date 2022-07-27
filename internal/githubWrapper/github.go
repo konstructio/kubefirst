@@ -1,4 +1,4 @@
-package githupWrapper
+package githubWrapper
 
 import (
 	"context"
