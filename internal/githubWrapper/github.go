@@ -11,19 +11,19 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type githubSession struct {
+type GithubSession struct {
 	context     context.Context
 	staticToken oauth2.TokenSource
 	oauthClient *http.Client
 	gitClient   *github.Client
 }
 
-func New() githubSession {
+func New() GithubSession {
 	token := os.Getenv("GITHUB_AUTH_TOKEN")
 	if token == "" {
 		log.Fatal("Unauthorized: No token present")
 	}
-	var gSession githubSession
+	var gSession GithubSession
 	gSession.context = context.Background()
 	gSession.staticToken = oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	gSession.oauthClient = oauth2.NewClient(gSession.context, gSession.staticToken)
@@ -32,7 +32,7 @@ func New() githubSession {
 
 }
 
-func (g githubSession) createPrivateRepo(org string, name string, description string) {
+func (g GithubSession) CreatePrivateRepo(org string, name string, description string) error {
 	if name == "" {
 		log.Fatal("No name: New repos must be given a name")
 	}
@@ -44,7 +44,8 @@ func (g githubSession) createPrivateRepo(org string, name string, description st
 		AutoInit:    &autoInit}
 	repo, _, err := g.gitClient.Repositories.Create(g.context, org, r)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("error creating private repo: %s - %s", name, err)
 	}
-	fmt.Printf("Successfully created new repo: %v\n", repo.GetName())
+	log.Printf("Successfully created new repo: %v\n", repo.GetName())
+	return nil
 }
