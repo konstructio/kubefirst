@@ -39,11 +39,18 @@ var createGithubCmd = &cobra.Command{
 		createRepo("gitops")
 		//gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
 		// make a github version of it
-		informUser("Create Github Repo - metaphot")
+		informUser("Create Github Repo - metaphor")
 		//gitlab.PushGitRepo(dryRun, config, "gitlab", "gitops")
 		// make a github version of it
 		informUser("Creating K8S Cluster")
 		//terraform.ApplyBaseTerraform(dryRun, directory)
+
+		// this should be handled by the process detokinize
+		//!-New
+		informUser("Point registry to github") // this should be handled by the process detokinize
+		informUser("Add github runner")
+
+		//!-Old
 		informUser("Setup ArgoCD")
 		informUser("Wait Vailt to be ready")
 		informUser("Unseal Vault")
@@ -53,6 +60,8 @@ var createGithubCmd = &cobra.Command{
 		informUser("Final Argo Synch")
 		informUser("Wait ArgoCD to be ready")
 		//sendCompleteInstallTelemetry(dryRun, useTelemetry)
+
+		//!-New
 		informUser("Show Hand-off screen")
 		//reports.CreateHandOff
 		//reports.CommandSummary(handOffData)
