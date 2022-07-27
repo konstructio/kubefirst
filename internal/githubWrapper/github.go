@@ -18,6 +18,7 @@ type GithubSession struct {
 	gitClient   *github.Client
 }
 
+// Create a new client for github wrapper
 func New() GithubSession {
 	token := os.Getenv("GITHUB_AUTH_TOKEN")
 	if token == "" {
@@ -32,6 +33,7 @@ func New() GithubSession {
 
 }
 
+// Use github API to create a private repo
 func (g GithubSession) CreatePrivateRepo(org string, name string, description string) error {
 	if name == "" {
 		log.Fatal("No name: New repos must be given a name")
@@ -48,4 +50,17 @@ func (g GithubSession) CreatePrivateRepo(org string, name string, description st
 	}
 	log.Printf("Successfully created new repo: %v\n", repo.GetName())
 	return nil
+}
+
+// Add ssh keys to a user account to allow kubefirst installer
+// to use its own token during installation
+func (g GithubSession) AddSSHKey(publicKey string) error {
+	log.Printf("Add SSH key to user account on behalf of kubefrist")
+	return nil
+}
+
+// Verify if a repo exists
+func (g GithubSession) IsRepoInUse(org string, name string) (bool, error) {
+	log.Printf("Add SSH key to user account on behalf of kubefrist")
+	return false, nil
 }
