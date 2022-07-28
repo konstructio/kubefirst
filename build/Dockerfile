@@ -35,6 +35,6 @@ RUN  go install golang.org/x/lint/golint@latest
 
 
 # setup user
-RUN useradd -ms /bin/bash developer
-USER developer
+# RUN useradd -ms /bin/bash developer
+# USER developer
 WORKDIR /home/developer/kubefirst
