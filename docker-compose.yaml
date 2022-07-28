@@ -15,4 +15,5 @@ services:
       - "8200:8200" # Vault
     volumes:
       - ./:/home/developer/kubefirst
+      - $HOME/.aws/:/root/.aws/
     command: sh -c "./scripts/kubefirst-dev.sh"
