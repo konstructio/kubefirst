@@ -5,8 +5,11 @@ services:
   kubefirst-dev:
     platform: linux/amd64
     build:
-      context: ./build
+      context: .
+      dockerfile: ./build/Dockerfile
     container_name: kubefirst-dev
+    env_file:
+      - .env
     environment:
       TERM: xterm-256color
     ports:
@@ -14,5 +17,6 @@ services:
       - "8888:8888" # GitLab
       - "8200:8200" # Vault
     volumes:
-      - ./:/home/developer/kubefirst
+      - ./:/opt/kubefirst
+      - $HOME/.aws:/home/developer/.aws
     command: sh -c "./scripts/kubefirst-dev.sh"
