@@ -18,5 +18,6 @@ services:
       - "8200:8200" # Vault
     volumes:
       - ./:/opt/kubefirst
+      # AWS credentials are strictly used to provision the Kubefirst in your AWS account
       - $HOME/.aws:/home/developer/.aws
     command: sh -c "./scripts/kubefirst-dev.sh"

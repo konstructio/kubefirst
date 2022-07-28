@@ -14,7 +14,7 @@ GitOps integration, secrets management, production and development Kubernetes en
 - [Creation](#creation)
 - [Access ArgoCD](#access-argocd)
 - [Destroy](#destroy)
-- [Available Commands]()
+- [Available Commands](#available-commands)
 
 ![kubefirst architecture diagram](/images/kubefirst-arch.png)
 
