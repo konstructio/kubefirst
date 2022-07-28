@@ -60,8 +60,12 @@ docker-compose up kubefirst-dev
 Some process requires previous initialization, for that, run:
 
 ```bash
-mkdir -p ~/.kubefirst
-go run . init --admin-email user@example.com --cloud aws --hosted-zone-name domain.example --region eu-central-1 --cluster-name your_cluster_name
+go run . init \
+--cloud aws \
+--region eu-central-1 \
+--admin-email user@example.com \
+--cluster-name your_cluster_name \
+--hosted-zone-name domain.example
 ```
 
 ## Creation
@@ -85,26 +89,23 @@ kubectl -n argocd port-forward svc/argocd-server 8080:80
 It will destroy the kubefirst management cluster, and clean up every change made in the cloud.
 
 ```bash
-
 go run . destroy
-rm -rf ~/.kubefirst
-rm ~/.flare
 ```
 
 ## Available Commands
 
 Kubefirst provides extra tooling for handling the provisioning work.
 
-| Command    | Description                                               |
-|:------------|:-----------------------------------------------------------|
+| Command        | Description                                               |
+|:---------------|:----------------------------------------------------------|
 | argocdSync     | Request ArgoCD to synchronize applications                |
 | checktools     | use to check compatibility of .kubefirst/tools            |
 | clean          | removes all kubefirst resources locally for new execution |
 | cluster create | create a kubefirst management cluster                     |
-| destroy    | destroy the kubefirst management cluster                  |
-| info       | provides general Kubefirst setup data                     |
-| init       | initialize your local machine to execute `create`         |
-| version    | print the version number for kubefirst-cli"               |
+| destroy        | destroy the kubefirst management cluster                  |
+| info           | provides general Kubefirst setup data                     |
+| init           | initialize your local machine to execute `create`         |
+| version        | print the version number for kubefirst-cli"               |
 
 ---
 ## The provisioning process
