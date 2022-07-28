@@ -29,7 +29,23 @@ The setup is extremely simple, create a `.env` file in the root folder, and add 
 
 ## DNS Setup
 
+In order to install Kubefirst it's required to have a public domain. For root domains, setting the `--hosted-zone-name` 
+is enough, in case you want to use subdomains, and the domain is hosted on AWS, please follow the 
+[AWS documentation](https://aws.amazon.com/premiumsupport/knowledge-center/create-subdomain-route-53/).
+
+Provisioned services on root domain will be hosted as:
+```
+argocd.example.com
+gitlab.example.com
 ...
+```
+
+Provisioned services on subdomains will be hosted as:
+```
+argocd.subdomain.example.com
+gitlab.subdomain.example.com
+...
+```
 
 ## Start the container
 
