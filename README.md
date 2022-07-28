@@ -7,7 +7,8 @@
 Kubefirst CLI is a cloud provisioning tool. With simple setup and few CLI calls, we spin up a full AWS cluster with full
 GitOps integration, secrets management, production and development Kubernetes environments ready to be consumed.
 
-- [Setup](#setup)
+- [Environment Variables](#environment-variables)
+- [DNS setup](#dns-setup)
 - [Start the container](#start-the-container)
 - [Initialization](#initialization)
 - [Creation](#creation)
@@ -17,16 +18,18 @@ GitOps integration, secrets management, production and development Kubernetes en
 
 ![kubefirst architecture diagram](/images/kubefirst-arch.png)
 
-## Setup
+## Environment Variables
 
 The setup is extremely simple, create a `.env` file in the root folder, and add the following variables:
 
-| Variable           | example          |
-|--------------------|------------------|
-| AWS_PROFILE        | default          |
-| CLOUD_PROVIDER=aws | aws              |
-| HOSTED_ZONE_NAME   | example.com      |
-| ADMIN_EMAIL        | john@example.com |
+| Variable    | example      |
+|-------------|--------------|
+| AWS_PROFILE | default      |
+| AWS_REGION  | eu-central-1 |
+
+## DNS Setup
+
+...
 
 ## Start the container
 
@@ -42,7 +45,7 @@ Some process requires previous initialization, for that, run:
 
 ```bash
 mkdir -p ~/.kubefirst
-go run . init --admin-email $ADMIN_EMAIL --cloud $CLOUD_PROVIDER --hosted-zone-name $HOSTED_ZONE_NAME --region $AWS_REGION
+go run . init --admin-email user@example.com --cloud aws --hosted-zone-name domain.example --region eu-central-1 --cluster-name your_cluster_name
 ```
 
 ## Creation
