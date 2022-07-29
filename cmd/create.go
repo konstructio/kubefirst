@@ -155,7 +155,7 @@ to quickly create a Cobra application.`,
 		progressPrinter.IncrementTracker("step-argo", 1)
 
 		informUser("Getting an argocd auth token")
-		token := argocd.GetArgocdAuthToken(dryRun)
+
 		progressPrinter.IncrementTracker("step-argo", 1)
 		if !dryRun {
 			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry.yaml", config.K1FolderPath))
@@ -164,34 +164,7 @@ to quickly create a Cobra application.`,
 			}
 			time.Sleep(45 * time.Second)
 		}
-
-		informUser("Syncing the registry application")
-
-		if dryRun {
-			log.Printf("[#99] Dry-run mode, Sync ArgoCD skipped")
-		} else {
-			// todo: create ArgoCD struct, and host dependencies (like http client)
-			customTransport := http.DefaultTransport.(*http.Transport).Clone()
-			customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-			httpClient := http.Client{Transport: customTransport}
-
-			// retry to sync ArgoCD application until reaches the maximum attempts
-			argoCDIsReady, err := argocd.SyncRetry(&httpClient, 60, 5, "registry", token)
-			if err != nil {
-				log.Printf("something went wrong during ArgoCD sync step, error is: %v", err)
-			}
-
-			if !argoCDIsReady {
-				log.Println("unable to sync ArgoCD application, continuing...")
-			}
-		}
-
 		progressPrinter.IncrementTracker("step-argo", 1)
-		// todo, need to stall until the registry has synced, then get to ui asap
-
-		//! skip this if syncing from argocd and not helm installing
-		// log.Printf("sleeping for 30 seconds, hurry up jared sign into argocd %s", viper.GetString("argocd.admin.password"))
-		// time.Sleep(30 * time.Second)
 
 		//!
 		//* we need to stop here and wait for the vault namespace to exist and the vault pod to be ready
@@ -368,7 +341,7 @@ to quickly create a Cobra application.`,
 				httpClient := http.Client{Transport: customTransport}
 
 				// retry to sync ArgoCD application until reaches the maximum attempts
-				argoCDIsReady, err := argocd.SyncRetry(&httpClient, 60, 5, "registry", token)
+				argoCDIsReady, err := argocd.SyncRetry(&httpClient, 120, 5, "registry", token)
 				if err != nil {
 					log.Printf("something went wrong during ArgoCD sync step, error is: %v", err)
 				}

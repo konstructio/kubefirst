@@ -43,7 +43,7 @@ func BucketRand(dryRun bool) {
 	if randomName == "" {
 		randomName = strings.ReplaceAll(autoname.Generate(), "_", "-")
 		viper.Set("bucket.rand", randomName)
-	}	
+	}
 
 	buckets := strings.Fields("state-store argo-artifacts gitlab-backup chartmuseum")
 	for _, bucket := range buckets {
@@ -367,18 +367,19 @@ func CreateBucket(dryRun bool, name string) {
 	viper.WriteConfig()
 }
 
-func UploadFile(bucket, key, fileName string) error {
+// UploadFile receives a bucket name, a file name and upload it to AWS S3.
+func UploadFile(bucketName string, remoteFilename string, localFilename string) error {
 	uploader := s3manager.NewUploader(GetAWSSession())
 
-	f, err := os.Open(fileName)
+	f, err := os.Open(localFilename)
 	if err != nil {
-		return fmt.Errorf("failed to open file %q, %v", fileName, err)
+		return fmt.Errorf("failed to open file %q, %v", localFilename, err)
 	}
 
 	// Upload the file to S3.
 	result, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(remoteFilename),
 		Body:   f,
 	})
 	if err != nil {
@@ -524,4 +525,32 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 		log.Printf("Failed to delete bucket: %v", err)
 	}
 	return nil
+}
+
+// DownloadS3File receives a bucket name, filename and download the file at AWS S3
+// todo: this is v1 / refactor to use v2
+func DownloadS3File(bucketName string, filename string) error {
+
+	awsSession := GetAWSSession()
+
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+
+	downloader := s3manager.NewDownloader(awsSession)
+	numBytes, err := downloader.Download(file,
+		&s3.GetObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(filename),
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Downloaded file: %s, file size(bytes): %v", file.Name(), numBytes)
+
+	return nil
+
 }
