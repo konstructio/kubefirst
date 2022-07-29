@@ -7,26 +7,45 @@
 Kubefirst CLI is a cloud provisioning tool. With simple setup and few CLI calls, we spin up a full AWS cluster with full
 GitOps integration, secrets management, production and development Kubernetes environments ready to be consumed.
 
-- [Setup](#setup)
+- [Environment Variables](#environment-variables)
+- [DNS setup](#dns-setup)
 - [Start the container](#start-the-container)
 - [Initialization](#initialization)
 - [Creation](#creation)
 - [Access ArgoCD](#access-argocd)
 - [Destroy](#destroy)
-- [Available Commands]()
+- [Available Commands](#available-commands)
 
 ![kubefirst architecture diagram](/images/kubefirst-arch.png)
 
-## Setup
+## Environment Variables
 
 The setup is extremely simple, create a `.env` file in the root folder, and add the following variables:
 
-| Variable           | example          |
-|--------------------|------------------|
-| AWS_PROFILE        | default          |
-| CLOUD_PROVIDER=aws | aws              |
-| HOSTED_ZONE_NAME   | example.com      |
-| ADMIN_EMAIL        | john@example.com |
+| Variable    | example      |
+|-------------|--------------|
+| AWS_PROFILE | default      |
+| AWS_REGION  | eu-central-1 |
+
+## DNS Setup
+
+In order to install Kubefirst it's required to have a public domain. For root domains, setting the `--hosted-zone-name` 
+is enough, in case you want to use subdomains, and the domain is hosted on AWS, please follow the 
+[AWS documentation](https://aws.amazon.com/premiumsupport/knowledge-center/create-subdomain-route-53/).
+
+Provisioned services on root domain will be hosted as:
+```
+argocd.example.com
+gitlab.example.com
+...
+```
+
+Provisioned services on subdomains will be hosted as:
+```
+argocd.subdomain.example.com
+gitlab.subdomain.example.com
+...
+```
 
 ## Start the container
 
@@ -41,8 +60,12 @@ docker-compose up kubefirst-dev
 Some process requires previous initialization, for that, run:
 
 ```bash
-mkdir -p ~/.kubefirst
-go run . init --admin-email $ADMIN_EMAIL --cloud $CLOUD_PROVIDER --hosted-zone-name $HOSTED_ZONE_NAME --region $AWS_REGION
+go run . init \
+--cloud aws \
+--region eu-central-1 \
+--admin-email user@example.com \
+--cluster-name your_cluster_name \
+--hosted-zone-name domain.example
 ```
 
 ## Creation
@@ -66,26 +89,23 @@ kubectl -n argocd port-forward svc/argocd-server 8080:80
 It will destroy the kubefirst management cluster, and clean up every change made in the cloud.
 
 ```bash
-
 go run . destroy
-rm -rf ~/.kubefirst
-rm ~/.flare
 ```
 
 ## Available Commands
 
 Kubefirst provides extra tooling for handling the provisioning work.
 
-| Command    | Description                                               |
-|:------------|:-----------------------------------------------------------|
+| Command        | Description                                               |
+|:---------------|:----------------------------------------------------------|
 | argocdSync     | Request ArgoCD to synchronize applications                |
 | checktools     | use to check compatibility of .kubefirst/tools            |
 | clean          | removes all kubefirst resources locally for new execution |
 | cluster create | create a kubefirst management cluster                     |
-| destroy    | destroy the kubefirst management cluster                  |
-| info       | provides general Kubefirst setup data                     |
-| init       | initialize your local machine to execute `create`         |
-| version    | print the version number for kubefirst-cli"               |
+| destroy        | destroy the kubefirst management cluster                  |
+| info           | provides general Kubefirst setup data                     |
+| init           | initialize your local machine to execute `create`         |
+| version        | print the version number for kubefirst-cli"               |
 
 ---
 ## The provisioning process
