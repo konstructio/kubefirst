@@ -425,7 +425,7 @@ func ChangeRegistryToGitLab(dryRun bool) {
 
 	_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
 	if err != nil {
-		log.Panicf("error creating argocd repository credentials template secret %s", err)
+		log.Panicf("error creating argocd repository credentials template %s", err)
 	}
 
 	var repoSecrets bytes.Buffer
