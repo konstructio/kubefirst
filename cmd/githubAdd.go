@@ -23,11 +23,11 @@ var githubAddCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		fmt.Println("Org used:", org)
 
 		gitWrapper := githubWrapper.New()
 		gitWrapper.CreatePrivateRepo(org, "gitops", "Kubefirst Gitops")
 		gitWrapper.CreatePrivateRepo(org, "metaphor", "Sample Kubefirst App")
-
 		return nil
 	},
 }
