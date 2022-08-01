@@ -9,11 +9,12 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // githubRemoveValidateCmd represents the githubRemoveValidate command
 var githubRemoveValidateCmd = &cobra.Command{
-	Use:   "githubRemoveValidate",
+	Use:   "remove-github-validate",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -55,13 +56,7 @@ to quickly create a Cobra application.`,
 func init() {
 	actionCmd.AddCommand(githubRemoveValidateCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// githubRemoveValidateCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// githubRemoveValidateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	githubRemoveValidateCmd.Flags().String("github-owner", "", "Github Owner of repos")
+	viper.BindPFlag("github.owner", githubRemoveValidateCmd.Flags().Lookup("github.owner"))
+	githubRemoveValidateCmd.MarkFlagRequired("github.owner")
 }

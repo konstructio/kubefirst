@@ -23,6 +23,7 @@ var githubRemoveCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		fmt.Println("Owner used:", owner)
 		gitWrapper := githubWrapper.New()
 		err = gitWrapper.RemoveRepo(owner, "gitops")
 		if err != nil {
