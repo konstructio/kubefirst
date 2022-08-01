@@ -2,12 +2,12 @@ version: "3"
 
 services:
 
-  kubefirst-dev:
+  kubefirst:
     platform: linux/amd64
     build:
       context: .
       dockerfile: ./build/Dockerfile
-    container_name: kubefirst-dev
+    container_name: kubefirst
     env_file:
       - .env
     environment:
@@ -20,4 +20,4 @@ services:
       - ./:/opt/kubefirst
       # AWS credentials are strictly used to provision the Kubefirst in your AWS account
       - $HOME/.aws:/home/developer/.aws
-    command: sh -c "./scripts/kubefirst-dev.sh"
+    command: sh -c "./scripts/kubefirst.sh"
