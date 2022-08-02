@@ -52,7 +52,7 @@ gitlab.subdomain.example.com
 We run everything on isolation with Docker, for that, start the container with:
 
 ```bash
-docker-compose up kubefirst-dev
+docker-compose up kubefirst
 ```
 
 ## Initialization
