@@ -383,6 +383,14 @@ var createGithubCmd = &cobra.Command{
 		//gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
 		// make a github version of it
 
+		//gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
+		// make a github version of it
+
+		err := githubAddCmd.RunE(cmd, args)
+		if err != nil {
+			return err
+		}
+
 		informUser("Created Github Repo - gitops/metaphor")
 
 		//populate
