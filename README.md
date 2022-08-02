@@ -1,5 +1,5 @@
 <p align="center">
-  <img style="width:66%" src="images/kubefirst.svg" alt="Kubefirst Logo"/>
+  <img style="width:44%" src="images/kubefirst.svg" alt="Kubefirst Logo"/>
 </p>
 
 <p align="center">
