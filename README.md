@@ -25,7 +25,7 @@
 
 # Kubefirst CLI
 
-The Kubefirst CLI is a cloud provisioning tool. With simple setup and two CLI commands, we create an AWS EKS cluster managed by automated Infrastructure as Code, GitOps integration and delivery, secrets management powered by Hashicorp Vault, a sample application delivered to multiple environments, and so much more. It's an open source platform ready to be customized to suit your company's needs.
+The Kubefirst CLI is a cloud provisioning tool. With simple setup and two CLI commands, we create an AWS EKS cluster managed by automated Infrastructure as Code, GitOps asset management and application delivery, secrets management powered by Hashicorp Vault, a sample application delivered to development, staging, and production, and so much more. It's an open source platform ready to be customized to suit your company's needs.
 
 - [DNS Setup](#dns-setup)
 - [Clone the Repository](#clone-the-repository)
