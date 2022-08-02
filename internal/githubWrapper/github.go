@@ -52,6 +52,30 @@ func (g GithubSession) CreatePrivateRepo(org string, name string, description st
 	return nil
 }
 
+func (g GithubSession) RemoveRepo(owner string, name string) error {
+	if name == "" {
+		log.Fatal("No name:  repos must be given a name")
+	}
+	_, err := g.gitClient.Repositories.Delete(g.context, owner, name)
+	if err != nil {
+		return fmt.Errorf("error removing private repo: %s - %s", name, err)
+	}
+	log.Printf("Successfully removed repo: %v\n", name)
+	return nil
+}
+
+func (g GithubSession) GetRepo(owner string, name string) (*github.Repository, error) {
+	if name == "" {
+		log.Fatal("No name: repos must be given a name")
+	}
+	repo, _, err := g.gitClient.Repositories.Get(g.context, owner, name)
+	if err != nil {
+		return nil, fmt.Errorf("error removing private repo: %s - %s", name, err)
+	}
+	log.Printf("Successfully removed repo: %v\n", repo.GetName())
+	return repo, nil
+}
+
 // Add ssh keys to a user account to allow kubefirst installer
 // to use its own token during installation
 func (g GithubSession) AddSSHKey(publicKey string) error {

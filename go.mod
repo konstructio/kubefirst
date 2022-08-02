@@ -19,6 +19,7 @@ require (
 	github.com/hashicorp/vault/api v1.6.0
 	github.com/itchyny/gojq v0.12.8
 	github.com/jedib0t/go-pretty/v6 v6.3.1
+	github.com/otiai10/copy v1.7.0
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.11.0
 	github.com/xanzy/go-gitlab v0.68.0
