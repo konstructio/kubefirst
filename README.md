@@ -31,6 +31,7 @@ The Kubefirst CLI is a cloud provisioning tool. With simple setup and two CLI co
 - [Clone the Repository](#clone-the-repository)
 - [Environment Variables](#environment-variables)
 - [Start the Container](#start-the-container)
+- [Connect to the Container](#connect-to-the-container)
 - [Initialization](#initialization)
 - [Creation](#creation)
 - [Access ArgoCD](#access-argocd)
@@ -90,6 +91,14 @@ We run everything in isolation with Docker, for that, start the container with:
 docker-compose up kubefirst
 ```
 
+## Connect to the Container
+
+Open a new terminal to connect to the container to run kubefirst
+
+```bash
+docker exec -it kubefirst bash
+```
+
 ## Initialization
 
 Some process requires previous initialization, for that, run:
@@ -105,7 +114,7 @@ go run . init \
 
 ## Creation
 
-At this point, everything is ready to start provisioning the cloud services, and for that we can run:
+At this point, everything is ready to start provisioning the cloud services, and for that run:
 
 ```bash
 go run . cluster create
@@ -114,7 +123,7 @@ go run . cluster create
 ## Access ArgoCD
 
 ```bash
-aws eks update-kubeconfig --name kubefirst
+aws eks update-kubeconfig --name your_cluster_name
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 kubectl -n argocd port-forward svc/argocd-server 8080:80
 ```
