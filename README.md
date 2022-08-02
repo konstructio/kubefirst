@@ -1,15 +1,38 @@
-![K-Ray, the Kubefirst mascot](/images/kubefirst.svg)
+<p align="center">
+  <img style="width:66%" src="images/kubefirst.svg" alt="Kubefirst Logo"/>
+</p>
+
+<p align="center">
+  GitOps Infrastructure & Application Delivery Platform
+</p>
+
+<p align="center">
+  <a href="https://docs.kubefirst.com/kubefirst/install.html">Install</a>&nbsp;|&nbsp;
+  <a href="https://docs.kubefirst.com/index.html">Documentation</a>&nbsp;|&nbsp;
+  <a href="https://twitter.com/kubefirst">Twitter</a>&nbsp;|&nbsp;
+  <a href="https://join.slack.com/t/kubefirst/shared_invite/zt-r0r9cfts-OVnH0ooELDLm9n9p2aU7fw">Slack</a>&nbsp;|&nbsp;
+  <a href="https://kubeshop.io/blog-projects/kubefirst">Blog</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/kubefirst/kubefirst/releases"><img title="Release" src="https://img.shields.io/github/v/release/kubefirst/kubefirst"/></a>
+  <!-- <a href=""><img title="Docker builds" src="https://img.shields.io/docker/automated/kubeshop/tracetest"/></a> -->
+  <!-- <a href="https://github.com/kubeshop/tracetest/releases"><img title="Release date" src="https://img.shields.io/github/release-date/kubeshop/tracetest"/></a> -->
+</p>
+
+
+<!-- ![K-Ray, the Kubefirst mascot](/images/kubefirst.svg)  -->
 
 ---
 
 # Kubefirst CLI
 
-Kubefirst CLI is a cloud provisioning tool. With simple setup and few CLI calls, we spin up a full AWS cluster with full
-GitOps integration, secrets management, production and development Kubernetes environments ready to be consumed.
+The Kubefirst CLI is a cloud provisioning tool. With simple setup and two CLI commands, we create an AWS EKS cluster managed by automated Infrastructure as Code, GitOps integration and delivery, secrets management powered by Hashicorp Vault, a sample application delivered to multiple environments, and so much more. It's an open source platform ready to be customized to suit your company's needs.
 
+- [DNS Setup](#dns-setup)
+- [Clone the Repository](#clone-the-repository)
 - [Environment Variables](#environment-variables)
-- [DNS setup](#dns-setup)
-- [Start the container](#start-the-container)
+- [Start the Container](#start-the-container)
 - [Initialization](#initialization)
 - [Creation](#creation)
 - [Access ArgoCD](#access-argocd)
@@ -18,38 +41,52 @@ GitOps integration, secrets management, production and development Kubernetes en
 
 ![kubefirst architecture diagram](/images/kubefirst-arch.png)
 
-## Environment Variables
-
-The setup is extremely simple, create a `.env` file in the root folder, and add the following variables:
-
-| Variable    | example      |
-|-------------|--------------|
-| AWS_PROFILE | default      |
-| AWS_REGION  | eu-central-1 |
-
 ## DNS Setup
 
-In order to install Kubefirst it's required to have a public domain. For root domains, setting the `--hosted-zone-name` 
-is enough, in case you want to use subdomains, and the domain is hosted on AWS, please follow the 
+In order to install Kubefirst it's required to have a public domain. For root domains, setting the `--hosted-zone-name`
+is enough, in case you want to use subdomains, and the domain is hosted on AWS, please follow the
 [AWS documentation](https://aws.amazon.com/premiumsupport/knowledge-center/create-subdomain-route-53/).
 
 Provisioned services on root domain will be hosted as:
-```
+
+```bash
 argocd.example.com
 gitlab.example.com
 ...
 ```
 
 Provisioned services on subdomains will be hosted as:
-```
+
+```bash
 argocd.subdomain.example.com
 gitlab.subdomain.example.com
 ...
 ```
 
-## Start the container
+## Clone the repository
 
-We run everything on isolation with Docker, for that, start the container with:
+Clone the repository to have the latest `main` branch content
+
+```bash
+# via HTTPS
+git clone https://github.com/kubefirst/kubefirst.git
+
+# via SSH
+git clone git@github.com:kubefirst/kubefirst.git
+```
+
+## Environment Variables
+
+Create a `.env` file in the root of the `kubefirst` repository, and add the following variables:
+
+```env
+AWS_PROFILE=default
+AWS_REGION=eu-central-1
+```
+
+## Start the Container
+
+We run everything in isolation with Docker, for that, start the container with:
 
 ```bash
 docker-compose up kubefirst
@@ -108,5 +145,7 @@ Kubefirst provides extra tooling for handling the provisioning work.
 | version        | print the version number for kubefirst-cli"               |
 
 ---
-## The provisioning process
+
+## The Provisioning Process
+
 ![kubefirst provisioning diagram](/images/provisioning.png)
