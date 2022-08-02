@@ -104,7 +104,7 @@ docker exec -it kubefirst bash
 Some process requires previous initialization, for that, run:
 
 ```bash
-go run . init \
+kubefirst init \
 --cloud aws \
 --region eu-central-1 \
 --admin-email user@example.com \
@@ -117,7 +117,7 @@ go run . init \
 At this point, everything is ready to start provisioning the cloud services, and for that run:
 
 ```bash
-go run . cluster create
+kubefirst cluster create
 ```
 
 ## Access ArgoCD
@@ -133,7 +133,7 @@ kubectl -n argocd port-forward svc/argocd-server 8080:80
 It will destroy the kubefirst management cluster, and clean up every change made in the cloud.
 
 ```bash
-go run . destroy
+kubefirst destroy
 ```
 
 ## Available Commands

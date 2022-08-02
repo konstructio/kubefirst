@@ -37,4 +37,10 @@ WORKDIR /home/developer/kubefirst
 COPY --chown=developer:developer . .
 
 # download dependencies and prepare fresh installation
-RUN go mod download && go run . clean
+RUN go mod download &&  \
+    go build
+
+USER root
+RUN  mv ./kubefirst /usr/local/bin/ && chmod 777 /usr/local/bin/kubefirst
+USER developer
+RUN kubefirst clean
