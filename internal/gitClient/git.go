@@ -18,15 +18,13 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func CloneRepoAndDetokenize(gitHost, githubOrg, repoName string, branch string) (string, error) {
+func CloneRepoAndDetokenize(repoUrl string, folderName string, branch string) (string, error) {
 	config := configs.ReadConfig()
 	if branch == "" {
 		branch = "main"
 	}
 
-	repoUrl := fmt.Sprintf("https://%s/%s/%s-template", gitHost, githubOrg, repoName)
-	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
-	log.Println("git clone", repoUrl, directory)
+	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, folderName)
 	log.Println("git clone -b ", branch, repoUrl, directory)
 
 	_, err := git.PlainClone(directory, false, &git.CloneOptions{
@@ -35,19 +33,19 @@ func CloneRepoAndDetokenize(gitHost, githubOrg, repoName string, branch string) 
 		SingleBranch:  true,
 	})
 	if err != nil {
-		log.Println("error cloning %s-template repository from github %s", repoName, err)
+		log.Println("error cloning %s repository from github %s", folderName, err)
 		return directory, err
 	}
-	viper.Set(fmt.Sprintf("init.repos.%s.cloned", repoName), true)
+	viper.Set(fmt.Sprintf("init.repos.%s.cloned", folderName), true)
 	viper.WriteConfig()
 
-	log.Printf("cloned %s-template repository to directory %s/%s", repoName, config.K1FolderPath, repoName)
+	log.Printf("cloned %s-template repository to directory %s/%s", folderName, config.K1FolderPath, folderName)
 
-	log.Printf("detokenizing %s/%s", config.K1FolderPath, repoName)
+	log.Printf("detokenizing %s/%s", config.K1FolderPath, folderName)
 	pkg.Detokenize(directory)
-	log.Printf("detokenization of %s/%s complete", config.K1FolderPath, repoName)
+	log.Printf("detokenization of %s/%s complete", config.K1FolderPath, folderName)
 
-	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", repoName), true)
+	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", folderName), true)
 	viper.WriteConfig()
 	return directory, nil
 }

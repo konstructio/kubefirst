@@ -7,6 +7,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/spf13/cobra"
 )
@@ -23,7 +24,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("githubPopulate called")
-		//config := configs.ReadConfig()
+		config := configs.ReadConfig()
 		owner, err := cmd.Flags().GetString("github-owner")
 		if err != nil {
 			return err
@@ -35,13 +36,13 @@ to quickly create a Cobra application.`,
 		}
 
 		//sourceFolder := fmt.Sprintf("%s/sample", config.K1FolderPath)
-		sourceFolder, err := gitClient.CloneRepoAndDetokenize(githubHost, "kubefirst", "gitops", "main")
+		sourceFolder, err := gitClient.CloneRepoAndDetokenize(config.GitopsTemplateURL, "gitops", "main")
 		if err != nil {
 			return err
 		}
 		fmt.Println("githubPopulate:", sourceFolder)
 		gitClient.PopulateRepoWithToken(owner, "gitops", sourceFolder, githubHost)
-		sourceFolder, err = gitClient.CloneRepoAndDetokenize(githubHost, "kubefirst", "metaphor", "main")
+		sourceFolder, err = gitClient.CloneRepoAndDetokenize(config.MetaphorTemplateURL, "metaphor", "main")
 		if err != nil {
 			return err
 		}
