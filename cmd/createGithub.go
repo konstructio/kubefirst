@@ -36,6 +36,7 @@ var createGithubCmd = &cobra.Command{
 	Short: "create a kubefirst management cluster with github as Git Repo",
 	Long:  `Create a kubefirst cluster using github as the Git Repo and setup integrations`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+
 		progressPrinter.GetInstance()
 		progressPrinter.SetupProgress(4)
 
@@ -62,6 +63,17 @@ var createGithubCmd = &cobra.Command{
 		if !useTelemetry {
 			informUser("Telemetry Disabled")
 		}
+
+		err = githubAddCmd.RunE(cmd, args)
+		if err != nil {
+			return err
+		}
+
+		err = githubPopulateCmd.RunE(cmd, args)
+		if err != nil {
+			return err
+		}
+
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 		informUser("Creating K8S Cluster")
 		terraform.ApplyBaseTerraform(dryRun, directory)
@@ -118,6 +130,7 @@ var createGithubCmd = &cobra.Command{
 		informUser("Getting an argocd auth token")
 		token := argocd.GetArgocdAuthToken(dryRun)
 		progressPrinter.IncrementTracker("step-argo", 1)
+
 		if !dryRun {
 			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-base.yaml", config.K1FolderPath))
 			if err != nil {
@@ -369,11 +382,6 @@ var createGithubCmd = &cobra.Command{
 		gitWrapper.CreatePrivateRepo("org-demo-6za", "gitops-template-foo", "My Foo Repo")
 		//gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
 		// make a github version of it
-
-		err := githubAddCmd.RunE(cmd, args)
-		if err != nil {
-			return err
-		}
 
 		informUser("Created Github Repo - gitops/metaphor")
 
