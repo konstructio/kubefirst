@@ -371,7 +371,7 @@ var createGithubCmd = &cobra.Command{
 		fmt.Println("createGithub called")
 		progressPrinter.GetInstance()
 		progressPrinter.SetupProgress(4)
-		config := configs.ReadConfig()
+		//config := configs.ReadConfig()
 		log.Printf(config.AwsProfile)
 		infoCmd.Run(cmd, args)
 
@@ -379,7 +379,7 @@ var createGithubCmd = &cobra.Command{
 		//sendStartedInstallTelemetry(dryRun, useTelemetry)
 		informUser("Create Github Org")
 		informUser("Create Github Repo - gitops")
-		gitWrapper.CreatePrivateRepo("org-demo-6za", "gitops-template-foo", "My Foo Repo")
+		//gitWrapper.CreatePrivateRepo("org-demo-6za", "gitops-template-foo", "My Foo Repo")
 		//gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
 		// make a github version of it
 
