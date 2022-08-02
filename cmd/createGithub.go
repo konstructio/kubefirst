@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/spf13/cobra"
 )
@@ -25,18 +24,23 @@ var createGithubCmd = &cobra.Command{
 		progressPrinter.GetInstance()
 		progressPrinter.SetupProgress(4)
 		config := configs.ReadConfig()
-		gitWrapper := githubWrapper.New()
 		log.Printf(config.AwsProfile)
 		infoCmd.Run(cmd, args)
 
 		progressPrinter.AddTracker("step-0", "Test Installer ", 4)
 		//sendStartedInstallTelemetry(dryRun, useTelemetry)
-		informUser("Create Github Org")
-		informUser("Create Github Repo - gitops")
-		gitWrapper.CreatePrivateRepo("", "sample", "My First App")
 		//gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
 		// make a github version of it
-		informUser("Create Github Repo - metaphor")
+
+		err := githubAddCmd.RunE(cmd, args)
+		if err != nil {
+			return err
+		}
+
+		informUser("Created Github Repo - gitops/metaphor")
+
+		//populate
+
 		//gitlab.PushGitRepo(dryRun, config, "gitlab", "gitops")
 		// make a github version of it
 		informUser("Creating K8S Cluster")
@@ -69,5 +73,8 @@ var createGithubCmd = &cobra.Command{
 
 func init() {
 	clusterCmd.AddCommand(createGithubCmd)
-
+	currentCommand := createGithubCmd
+	currentCommand.Flags().String("github-org", "", "Github Org of repos")
+	currentCommand.Flags().String("github-owner", "", "Github Owner of repos")
+	currentCommand.Flags().String("github-host", "github.com", "Github repo, usally github.com, but it can change on enterprise customers.")
 }

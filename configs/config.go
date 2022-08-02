@@ -39,6 +39,9 @@ type Config struct {
 	KubefirstVersion string
 
 	CertsPath string
+
+	MetaphorTemplateURL string
+	GitopsTemplateURL   string
 }
 
 func ReadConfig() *Config {
@@ -78,6 +81,9 @@ func ReadConfig() *Config {
 	config.KubefirstVersion = "1.8.2"
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
+
+	config.MetaphorTemplateURL = "https://github.com/kubefirst/metaphor-template.git"
+	config.GitopsTemplateURL = "https://github.com/kubefirst/gitops-template-gh.git"
 
 	return &config
 }
