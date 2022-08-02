@@ -18,6 +18,40 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+func CloneRepoAndDetokenize(gitHost, githubOrg, repoName string, branch string) (string, error) {
+	config := configs.ReadConfig()
+	if branch == "" {
+		branch = "main"
+	}
+
+	repoUrl := fmt.Sprintf("https://%s/%s/%s-template", gitHost, githubOrg, repoName)
+	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
+	log.Println("git clone", repoUrl, directory)
+	log.Println("git clone -b ", branch, repoUrl, directory)
+
+	_, err := git.PlainClone(directory, false, &git.CloneOptions{
+		URL:           repoUrl,
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		SingleBranch:  true,
+	})
+	if err != nil {
+		log.Println("error cloning %s-template repository from github %s", repoName, err)
+		return directory, err
+	}
+	viper.Set(fmt.Sprintf("init.repos.%s.cloned", repoName), true)
+	viper.WriteConfig()
+
+	log.Printf("cloned %s-template repository to directory %s/%s", repoName, config.K1FolderPath, repoName)
+
+	log.Printf("detokenizing %s/%s", config.K1FolderPath, repoName)
+	pkg.Detokenize(directory)
+	log.Printf("detokenization of %s/%s complete", config.K1FolderPath, repoName)
+
+	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", repoName), true)
+	viper.WriteConfig()
+	return directory, nil
+}
+
 // Polupate a git host, such as github using a token auth with content of a folder.
 // Use copy to flat the history
 func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHost string) error {
