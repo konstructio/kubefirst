@@ -29,9 +29,13 @@ import (
 
 func BucketRand(dryRun bool) {
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(viper.GetString("aws.region"))},
-	)
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Config: aws.Config{
+			Region: aws.String(viper.GetString("aws.region")),
+		},
+		Profile: viper.GetString("aws.profile"),
+	})
+
 	if err != nil {
 		log.Println("failed to attempt bucket creation ", err.Error())
 		os.Exit(1)
@@ -305,9 +309,12 @@ func DestroyBucket(bucketName string) {
 }
 
 func GetAWSSession() *session.Session {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(viper.GetString("aws.region"))},
-	)
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Config: aws.Config{
+			Region: aws.String(viper.GetString("aws.region")),
+		},
+		Profile: viper.GetString("aws.profile"),
+	})
 	if err != nil {
 		log.Panicf("failed to get session ", err.Error())
 	}

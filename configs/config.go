@@ -17,7 +17,6 @@ environment variables and general config data.
 // Config host application configuration
 // todo: some of these values can be moved to the .env
 type Config struct {
-	AwsProfile        string `env:"AWS_PROFILE"`
 	LocalOs           string
 	LocalArchitecture string
 	InstallerEmail    string
@@ -75,7 +74,7 @@ func ReadConfig() *Config {
 	// todo adopt latest helmVersion := "v3.9.0"
 	config.HelmVersion = "v3.2.1"
 
-	config.KubefirstVersion = "1.8.2"
+	config.KubefirstVersion = "1.8.4"
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 

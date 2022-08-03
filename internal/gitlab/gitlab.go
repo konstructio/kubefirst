@@ -151,7 +151,7 @@ func AwaitHost(appName string, dryRun bool) {
 	AwaitHostNTimes(appName, dryRun, 200)
 }
 
-func AwaitHostNTimes(appName string, dryRun bool, times int) bool{
+func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
 	log.Println("AwaitHostNTimes called")
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, AwaitHost skipped.")
@@ -258,7 +258,7 @@ func ApplyGitlabTerraform(dryRun bool, directory string) {
 		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 		envs := map[string]string{}
 		envs["AWS_SDK_LOAD_CONFIG"] = "1"
-		envs["AWS_PROFILE"] = config.AwsProfile
+		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
 		// Prepare for terraform gitlab execution
 		envs["GITLAB_TOKEN"] = viper.GetString("gitlab.token")
 		envs["GITLAB_BASE_URL"] = viper.GetString("gitlab.local.service")
@@ -329,6 +329,7 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 	config := configs.ReadConfig()
 	envs := map[string]string{}
 
+	envs["AWS_PROFILE"] = viper.GetString("aws.profile")
 	envs["AWS_REGION"] = viper.GetString("aws.region")
 	envs["AWS_ACCOUNT_ID"] = viper.GetString("aws.accountid")
 	envs["HOSTED_ZONE_NAME"] = viper.GetString("aws.hostedzonename")

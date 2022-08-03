@@ -44,10 +44,6 @@ var infoCmd = &cobra.Command{
 		if err != nil {
 			log.Panic(err)
 		}
-		err = configs.CheckEnvironment()
-		if err != nil {
-			log.Panic(err)
-		}
 		fmt.Printf("----------- \n")
 
 		fmt.Println(reports.StyleMessage(infoSummary.String()))

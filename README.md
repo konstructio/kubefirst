@@ -29,7 +29,6 @@ The Kubefirst CLI is a cloud provisioning tool. With simple setup and two CLI co
 
 - [DNS Setup](#dns-setup)
 - [Clone the Repository](#clone-the-repository)
-- [Environment Variables](#environment-variables)
 - [Start the Container](#start-the-container)
 - [Connect to the Container](#connect-to-the-container)
 - [Initialization](#initialization)
@@ -74,15 +73,6 @@ git clone https://github.com/kubefirst/kubefirst.git
 git clone git@github.com:kubefirst/kubefirst.git
 ```
 
-## Environment Variables
-
-Create a `.env` file in the root of the `kubefirst` repository, and add the following variables:
-
-```env
-AWS_PROFILE=default
-AWS_REGION=eu-central-1
-```
-
 ## Start the Container
 
 We run everything in isolation with Docker, for that, start the container with:
@@ -106,6 +96,7 @@ Some process requires previous initialization, for that, run:
 ```bash
 kubefirst init \
 --cloud aws \
+--profile default \
 --region eu-central-1 \
 --admin-email user@example.com \
 --cluster-name your_cluster_name \
