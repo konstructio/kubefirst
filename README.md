@@ -96,6 +96,7 @@ Some process requires previous initialization, for that, run:
 ```bash
 kubefirst init \
 --cloud aws \
+--profile default \
 --region eu-central-1 \
 --admin-email user@example.com \
 --cluster-name your_cluster_name \

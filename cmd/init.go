@@ -111,7 +111,10 @@ to quickly create a Cobra application.`,
 		}
 		log.Println("region:", region)
 
-		profile, _ := cmd.Flags().GetString("profile")
+		profile, err := cmd.Flags().GetString("profile")
+		if err != nil {
+			log.Println(err)
+		}
 		viper.Set("aws.profile", profile)
 		// propagate it to local environment
 		err = os.Setenv("AWS_PROFILE", profile)
