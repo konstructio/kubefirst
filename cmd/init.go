@@ -86,9 +86,11 @@ to quickly create a Cobra application.`,
 		log.Println("adminEmail:", adminEmail)
 		viper.Set("adminemail", adminEmail)
 
-		// region
-		// name of the cloud region to provision resources when resources are region-specific
-		region, _ := cmd.Flags().GetString("region")
+		// profile
+		region, err := cmd.Flags().GetString("region")
+		if err != nil {
+			log.Println(err)
+		}
 		viper.Set("aws.region", region)
 		// propagate it to local environment
 		err = os.Setenv("AWS_REGION", region)
@@ -96,6 +98,15 @@ to quickly create a Cobra application.`,
 			log.Panicf("unable to set environment variable AWS_REGION, error is: %v", err)
 		}
 		log.Println("region:", region)
+
+		profile, _ := cmd.Flags().GetString("profile")
+		viper.Set("aws.profile", profile)
+		// propagate it to local environment
+		err = os.Setenv("AWS_PROFILE", profile)
+		if err != nil {
+			log.Panicf("unable to set environment variable AWS_PROFILE, error is: %v", err)
+		}
+		log.Println("profile:", profile)
 
 		// cluster name
 		clusterName, err := cmd.Flags().GetString("cluster-name")
@@ -222,8 +233,14 @@ func init() {
 	if err != nil {
 		log.Panic(err)
 	}
-	initCmd.Flags().String("region", "", "the region to provision the cloud resources in")
+	initCmd.Flags().String("region", "eu-west-1", "the region to provision the cloud resources in")
 	err = initCmd.MarkFlagRequired("region")
+	if err != nil {
+		log.Panic(err)
+	}
+
+	initCmd.Flags().String("profile", "default", "AWS profile located at ~/.aws/config")
+	err = initCmd.MarkFlagRequired("profile")
 	if err != nil {
 		log.Panic(err)
 	}
