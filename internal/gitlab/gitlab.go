@@ -329,6 +329,7 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 	config := configs.ReadConfig()
 	envs := map[string]string{}
 
+	envs["AWS_PROFILE"] = viper.GetString("aws.profile")
 	envs["AWS_REGION"] = viper.GetString("aws.region")
 	envs["AWS_ACCOUNT_ID"] = viper.GetString("aws.accountid")
 	envs["HOSTED_ZONE_NAME"] = viper.GetString("aws.hostedzonename")
