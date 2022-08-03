@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -56,6 +58,16 @@ to quickly create a Cobra application.`,
 		trackers[pkg.CreateSSHKey] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CreateSSHKey, 1)}
 		trackers[pkg.CreateBuckets] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CreateBuckets, 1)}
 		trackers[pkg.SendTelemetry] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.SendTelemetry, 1)}
+
+		k1Dir := fmt.Sprintf("%s", config.K1FolderPath)
+		if _, err := os.Stat(k1Dir); errors.Is(err, os.ErrNotExist) {
+			if err := os.Mkdir(k1Dir, os.ModePerm); err != nil {
+				log.Panicf("info: could not create directory %q - error: %s", config.K1FolderPath, err)
+			}
+		} else {
+			log.Printf("info: %s already exist", k1Dir)
+		}
+
 		infoCmd.Run(cmd, args)
 		hostedZoneName, _ := cmd.Flags().GetString("hosted-zone-name")
 		metricName := "kubefirst.init.started"
