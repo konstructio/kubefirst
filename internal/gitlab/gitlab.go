@@ -373,99 +373,103 @@ func ChangeRegistryToGitLab(dryRun bool) {
 		return
 	}
 
-	type ArgocdGitCreds struct {
-		PersonalAccessToken string
-		URL                 string
-		FullURL             string
-	}
+	if !viper.GetBool("gitlab.changeregistry.gitlab") {
+		type ArgocdGitCreds struct {
+			PersonalAccessToken string
+			URL                 string
+			FullURL             string
+		}
 
-	pat := b64.StdEncoding.EncodeToString([]byte(viper.GetString("gitlab.token")))
-	url := b64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("https://gitlab.%s/kubefirst/", viper.GetString("aws.hostedzonename"))))
-	fullurl := b64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename"))))
+		pat := b64.StdEncoding.EncodeToString([]byte(viper.GetString("gitlab.token")))
+		url := b64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("https://gitlab.%s/kubefirst/", viper.GetString("aws.hostedzonename"))))
+		fullurl := b64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename"))))
 
-	creds := ArgocdGitCreds{PersonalAccessToken: pat, URL: url, FullURL: fullurl}
+		creds := ArgocdGitCreds{PersonalAccessToken: pat, URL: url, FullURL: fullurl}
 
-	var argocdRepositoryAccessTokenSecret *v1.Secret
-	k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
-	if err != nil {
-		log.Panicf("error getting client from kubeconfig")
-	}
-	clientset, err := kubernetes.NewForConfig(k8sConfig)
-	if err != nil {
-		log.Panicf("error getting kubeconfig for clientset")
-	}
-	k8s.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+		var argocdRepositoryAccessTokenSecret *v1.Secret
+		k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
+		if err != nil {
+			log.Panicf("error getting client from kubeconfig")
+		}
+		clientset, err := kubernetes.NewForConfig(k8sConfig)
+		if err != nil {
+			log.Panicf("error getting kubeconfig for clientset")
+		}
+		k8s.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
-	var secrets bytes.Buffer
+		var secrets bytes.Buffer
 
-	c, err := template.New("creds-gitlab").Parse(`
-    apiVersion: v1
-    data:
-      password: {{ .PersonalAccessToken }}
-      url: {{ .URL }}
-      username: cm9vdA==
-    kind: Secret
-    metadata:
-      annotations:
-        managed-by: argocd.argoproj.io
-      labels:
-        argocd.argoproj.io/secret-type: repo-creds
-      name: creds-gitlab
-      namespace: argocd
-    type: Opaque
-  `)
-	if err := c.Execute(&secrets, creds); err != nil {
-		log.Panicf("error executing golang template for git repository credentials template %s", err)
-	}
+		c, err := template.New("creds-gitlab").Parse(`
+		apiVersion: v1
+		data:
+		password: {{ .PersonalAccessToken }}
+		url: {{ .URL }}
+		username: cm9vdA==
+		kind: Secret
+		metadata:
+		annotations:
+			managed-by: argocd.argoproj.io
+		labels:
+			argocd.argoproj.io/secret-type: repo-creds
+		name: creds-gitlab
+		namespace: argocd
+		type: Opaque
+	`)
+		if err := c.Execute(&secrets, creds); err != nil {
+			log.Panicf("error executing golang template for git repository credentials template %s", err)
+		}
 
-	ba := []byte(secrets.String())
-	err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
-	if err != nil {
-		log.Println("error unmarshalling yaml during argocd repository secret create", err)
-	}
+		ba := []byte(secrets.String())
+		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
+		if err != nil {
+			log.Println("error unmarshalling yaml during argocd repository secret create", err)
+		}
 
-	_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
-	if err != nil {
-		log.Panicf("error creating argocd repository credentials template %s", err)
-	}
+		_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
+		if err != nil {
+			log.Panicf("error creating argocd repository credentials template %s", err)
+		}
 
-	var repoSecrets bytes.Buffer
+		var repoSecrets bytes.Buffer
 
-	c, err = template.New("repo-gitlab").Parse(`
-    apiVersion: v1
-    data:
-      project: ZGVmYXVsdA==
-      type: Z2l0
-      url: {{ .FullURL }}
-    kind: Secret
-    metadata:
-      annotations:
-        managed-by: argocd.argoproj.io
-      labels:
-        argocd.argoproj.io/secret-type: repository
-      name: repo-gitlab
-      namespace: argocd
-    type: Opaque
-  `)
-	if err := c.Execute(&repoSecrets, creds); err != nil {
-		log.Panicf("error executing golang template for gitops repository template %s", err)
-	}
+		c, err = template.New("repo-gitlab").Parse(`
+		apiVersion: v1
+		data:
+		project: ZGVmYXVsdA==
+		type: Z2l0
+		url: {{ .FullURL }}
+		kind: Secret
+		metadata:
+		annotations:
+			managed-by: argocd.argoproj.io
+		labels:
+			argocd.argoproj.io/secret-type: repository
+		name: repo-gitlab
+		namespace: argocd
+		type: Opaque
+	`)
+		if err := c.Execute(&repoSecrets, creds); err != nil {
+			log.Panicf("error executing golang template for gitops repository template %s", err)
+		}
 
-	ba = []byte(repoSecrets.String())
-	err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
+		ba = []byte(repoSecrets.String())
+		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
 
-	_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
-	if err != nil {
-		log.Panicf("error creating argocd repository connection secret %s", err)
-	}
+		_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
+		if err != nil {
+			log.Panicf("error creating argocd repository connection secret %s", err)
+		}
 
-	// curl -X 'DELETE' \
-	// 'https://$ARGO_ADDRESS/api/v1/applications/registry?cascade=false' \
-	// -H 'accept: application/json'
+		// curl -X 'DELETE' \
+		// 'https://$ARGO_ADDRESS/api/v1/applications/registry?cascade=false' \
+		// -H 'accept: application/json'
 
-	_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/gitlab/argocd-adopts-gitlab.yaml", config.K1FolderPath))
-	if err != nil {
-		log.Panicf("failed to call execute kubectl apply of argocd patch to adopt gitlab: %s", err)
+		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/gitlab/argocd-adopts-gitlab.yaml", config.K1FolderPath))
+		if err != nil {
+			log.Panicf("failed to call execute kubectl apply of argocd patch to adopt gitlab: %s", err)
+		}
+		viper.Set("gitlab.changeregistry.gitlab", true)
+		viper.WriteConfig()
 	}
 
 }
