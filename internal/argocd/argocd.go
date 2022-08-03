@@ -6,14 +6,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"net/http"
 
-	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/spf13/viper"
+
 	"strings"
 	"time"
+
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
 )
 
 type ArgoCDConfig struct {
@@ -268,4 +271,23 @@ func DeleteArgocdApplicationNoCascade(dryRun bool, applicationName, argocdAuthTo
 	if err != nil {
 		log.Panicf("error: curl app delete failed %s", err)
 	}
+}
+
+func ApplyRegistry(dryRun bool) error {
+	config := configs.ReadConfig()
+	if !dryRun {
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-base.yaml", config.K1FolderPath))
+		if err != nil {
+			log.Printf("failed to execute kubectl apply of registry-base: %s", err)
+			return err
+		}
+		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-github.yaml", config.K1FolderPath))
+		if err != nil {
+			log.Printf("failed to execute kubectl apply of registry-github: %s", err)
+			return err
+		}
+
+		time.Sleep(45 * time.Second)
+	}
+	return nil
 }

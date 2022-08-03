@@ -5,7 +5,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"bytes"
 	"crypto/tls"
 	"fmt"
 	"log"
@@ -23,7 +22,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
-	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -61,23 +59,23 @@ var createGithubCmd = &cobra.Command{
 		if !useTelemetry {
 			informUser("Telemetry Disabled")
 		}
+		/*
+			informUser("Creating gitops/metaphor repos")
+			err = githubAddCmd.RunE(cmd, args)
+			if err != nil {
+				return err
+			}
 
-		informUser("Creating gitops/metaphor repos")
-		err = githubAddCmd.RunE(cmd, args)
-		if err != nil {
-			return err
-		}
-
-		informUser("populating gitops/metaphor repos")
-		err = githubPopulateCmd.RunE(cmd, args)
-		if err != nil {
-			return err
-		}
-
+			informUser("populating gitops/metaphor repos")
+			err = githubPopulateCmd.RunE(cmd, args)
+			if err != nil {
+				return err
+			}
+		*/
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 		informUser("Creating K8S Cluster")
 		terraform.ApplyBaseTerraform(dryRun, directory)
-		progressPrinter.IncrementTracker("step-terraform", 1)
+		//progressPrinter.IncrementTracker("step-terraform", 1)
 
 		informUser("Attempt to recycle certs")
 		restoreSSLCmd.Run(cmd, args)
@@ -98,7 +96,7 @@ var createGithubCmd = &cobra.Command{
 		informUser("ArgoCD Ready")
 		progressPrinter.IncrementTracker("step-argo", 1)
 
-		kPortForwardArgocd, err = k8sPortForward(dryRun, "argocd", "svc/argocd-server", "8080:80")
+		kPortForwardArgocd, err = k8s.K8sPortForward(dryRun, "argocd", "svc/argocd-server", "8080:80")
 		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 
 		// log.Println("sleeping for 45 seconds, hurry up jared")
@@ -115,7 +113,7 @@ var createGithubCmd = &cobra.Command{
 		token := argocd.GetArgocdAuthToken(dryRun)
 		progressPrinter.IncrementTracker("step-argo", 1)
 
-		applyRegistry(dryRun)
+		argocd.ApplyRegistry(dryRun)
 
 		informUser("Syncing the registry application")
 
@@ -156,7 +154,7 @@ var createGithubCmd = &cobra.Command{
 		informUser("Waiting vault to be ready")
 		waitVaultToBeRunning(dryRun)
 		progressPrinter.IncrementTracker("step-github", 1)
-		kPortForwardVault, err := k8sPortForward(dryRun, "vault", "svc/vault", "8200:8200")
+		kPortForwardVault, err := k8s.K8sPortForward(dryRun, "vault", "svc/vault", "8200:8200")
 		defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
 
 		loopUntilPodIsReady(dryRun)
@@ -164,7 +162,7 @@ var createGithubCmd = &cobra.Command{
 		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")))
 		progressPrinter.IncrementTracker("step-github", 1)
 
-		if !skipVault {
+		if !true { //skipVault
 
 			progressPrinter.AddTracker("step-vault", "Configure Vault", 2)
 			informUser("waiting for vault unseal")
@@ -238,7 +236,7 @@ var createGithubCmd = &cobra.Command{
 
 			informUser("Port forwarding to new argocd-server pod")
 			time.Sleep(time.Second * 20)
-			kPortForwardArgocd, err = k8sPortForward(dryRun, "argocd", "svc/argocd-server", "8080:80")
+			kPortForwardArgocd, err = k8s.K8sPortForward(dryRun, "argocd", "svc/argocd-server", "8080:80")
 			defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 			log.Println("sleeping for 40 seconds")
 			time.Sleep(40 * time.Second)
@@ -340,11 +338,6 @@ var createGithubCmd = &cobra.Command{
 		//gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
 		// make a github version of it
 
-		err := githubAddCmd.RunE(cmd, args)
-		if err != nil {
-			return err
-		}
-
 		informUser("Created Github Repo - gitops/metaphor")
 
 		//populate
@@ -385,43 +378,11 @@ func init() {
 	currentCommand.Flags().String("github-org", "", "Github Org of repos")
 	currentCommand.Flags().String("github-owner", "", "Github Owner of repos")
 	currentCommand.Flags().String("github-host", "github.com", "Github repo, usally github.com, but it can change on enterprise customers.")
-}
-
-func k8sPortForward(dryRun bool, namespace string, filter string, ports string) (*exec.Cmd, error) {
-	config := configs.ReadConfig()
-
-	if !dryRun {
-		var kPortForwardOutb, kPortForwardErrb bytes.Buffer
-		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "port-forward", filter, ports)
-		kPortForward.Stdout = &kPortForwardOutb
-		kPortForward.Stderr = &kPortForwardErrb
-		err := kPortForward.Start()
-		//defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			// If it doesn't error, we kinda don't care much.
-			log.Printf("Commad Execution STDOUT: %s", kPortForwardOutb.String())
-			log.Printf("Commad Execution STDERR: %s", kPortForwardErrb.String())
-			log.Printf("error: failed to port-forward to %s in main thread %s", filter, err)
-			return kPortForward, err
-		}
-		return kPortForward, nil
-	}
-	return nil, nil
-}
-
-func applyRegistry(dryRun bool) error {
-	config := configs.ReadConfig()
-	if !dryRun {
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-base.yaml", config.K1FolderPath))
-		if err != nil {
-			log.Panicf("failed to execute kubectl apply of registry-base: %s", err)
-		}
-		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-github.yaml", config.K1FolderPath))
-		if err != nil {
-			log.Panicf("failed to execute kubectl apply of registry-github: %s", err)
-		}
-
-		time.Sleep(45 * time.Second)
-	}
+	// todo: make this an optional switch and check for it or viper
+	currentCommand.Flags().Bool("destroy", false, "destroy resources")
+	currentCommand.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
+	currentCommand.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
+	currentCommand.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
+	currentCommand.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
 
 }

@@ -5,10 +5,12 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package k8s
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
+	"os/exec"
 	"time"
 
 	"github.com/itchyny/gojq"
@@ -204,4 +206,26 @@ func GetClientSet() (*kubernetes.Clientset, error) {
 	}
 
 	return clientset, nil
+}
+
+func K8sPortForward(dryRun bool, namespace string, filter string, ports string) (*exec.Cmd, error) {
+	config := configs.ReadConfig()
+
+	if !dryRun {
+		var kPortForwardOutb, kPortForwardErrb bytes.Buffer
+		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "port-forward", filter, ports)
+		kPortForward.Stdout = &kPortForwardOutb
+		kPortForward.Stderr = &kPortForwardErrb
+		err := kPortForward.Start()
+		//defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			// If it doesn't error, we kinda don't care much.
+			log.Printf("Commad Execution STDOUT: %s", kPortForwardOutb.String())
+			log.Printf("Commad Execution STDERR: %s", kPortForwardErrb.String())
+			log.Printf("error: failed to port-forward to %s in main thread %s", filter, err)
+			return kPortForward, err
+		}
+		return kPortForward, nil
+	}
+	return nil, nil
 }
