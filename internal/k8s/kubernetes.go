@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/itchyny/gojq"
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
@@ -20,7 +21,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 var vaultRootToken string
@@ -51,11 +54,11 @@ func DeletePodByName(podsClient coreV1Types.PodInterface, podName string) {
 	}
 }
 func DeletePodByLabel(podsClient coreV1Types.PodInterface, label string) {
-	err := podsClient.DeleteCollection(context.TODO(),metaV1.DeleteOptions{}, metaV1.ListOptions{LabelSelector: label})
+	err := podsClient.DeleteCollection(context.TODO(), metaV1.DeleteOptions{}, metaV1.ListOptions{LabelSelector: label})
 	if err != nil {
 		log.Println(err)
 	} else {
-		log.Printf("Success delete of pods with label(%s).",label)
+		log.Printf("Success delete of pods with label(%s).", label)
 	}
 }
 
@@ -184,4 +187,21 @@ func GetResourcesByJq(dynamic dynamic.Interface, ctx context.Context, group stri
 		}
 	}
 	return resources, nil
+}
+
+func GetClientSet() (*kubernetes.Clientset, error) {
+	config := configs.ReadConfig()
+
+	kubeconfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
+	if err != nil {
+		log.Printf("Error getting kubeconfig: %s", err)
+		return nil, err
+	}
+	clientset, err := kubernetes.NewForConfig(kubeconfig)
+	if err != nil {
+		log.Printf("Error getting clientset: %s", err)
+		return clientset, err
+	}
+
+	return clientset, nil
 }
