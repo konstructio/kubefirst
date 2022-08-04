@@ -402,9 +402,9 @@ func ChangeRegistryToGitLab(dryRun bool) {
 		c, err := template.New("creds-gitlab").Parse(`
 		apiVersion: v1
 		data:
-		password: {{ .PersonalAccessToken }}
-		url: {{ .URL }}
-		username: cm9vdA==
+			password: {{ .PersonalAccessToken }}
+			url: {{ .URL }}
+			username: cm9vdA==
 		kind: Secret
 		metadata:
 		annotations:
@@ -435,9 +435,9 @@ func ChangeRegistryToGitLab(dryRun bool) {
 		c, err = template.New("repo-gitlab").Parse(`
 		apiVersion: v1
 		data:
-		project: ZGVmYXVsdA==
-		type: Z2l0
-		url: {{ .FullURL }}
+			project: ZGVmYXVsdA==
+			type: Z2l0
+			url: {{ .FullURL }}
 		kind: Secret
 		metadata:
 		annotations:
