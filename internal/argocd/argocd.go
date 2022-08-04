@@ -275,6 +275,10 @@ func DeleteArgocdApplicationNoCascade(dryRun bool, applicationName, argocdAuthTo
 
 func ApplyRegistry(dryRun bool) error {
 	config := configs.ReadConfig()
+	if viper.GetBool("argocd.registry.applied") {
+		log.Println("skipped ApplyRegistry - ")
+		return nil
+	}
 	if !dryRun {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-base.yaml", config.K1FolderPath))
 		if err != nil {
@@ -288,6 +292,8 @@ func ApplyRegistry(dryRun bool) error {
 		}
 
 		time.Sleep(45 * time.Second)
+		viper.Set("argocd.registry.applied", true)
+		viper.WriteConfig()
 	}
 	return nil
 }

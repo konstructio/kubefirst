@@ -59,19 +59,19 @@ var createGithubCmd = &cobra.Command{
 		if !useTelemetry {
 			informUser("Telemetry Disabled")
 		}
-		/*
-			informUser("Creating gitops/metaphor repos")
-			err = githubAddCmd.RunE(cmd, args)
-			if err != nil {
-				return err
-			}
 
-			informUser("populating gitops/metaphor repos")
-			err = githubPopulateCmd.RunE(cmd, args)
-			if err != nil {
-				return err
-			}
-		*/
+		informUser("Creating gitops/metaphor repos")
+		err = githubAddCmd.RunE(cmd, args)
+		if err != nil {
+			return err
+		}
+
+		informUser("populating gitops/metaphor repos")
+		err = githubPopulateCmd.RunE(cmd, args)
+		if err != nil {
+			return err
+		}
+
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 		informUser("Creating K8S Cluster")
 		terraform.ApplyBaseTerraform(dryRun, directory)
