@@ -175,6 +175,15 @@ func RestoreSSL() error {
 			delete(metadataMap, "creationTimestamp")
 			delete(metadataMap, "managedFields")
 			data["metadata"] = metadataMap
+
+			dataMap := data["data"].(map[string]interface{})
+			for k, _ := range dataMap {
+				if k != "tls.crt" && k != "tls.key" {
+					log.Printf("Remove undesired keys [%s].", k)
+					delete(dataMap, k)
+				}
+			}
+			data["data"] = dataMap
 			dataCleaned, err := yaml2.Marshal(&data)
 
 			if err != nil {
