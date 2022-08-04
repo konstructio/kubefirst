@@ -422,7 +422,6 @@ func ChangeRegistryToGitLab(dryRun bool) {
 			Type: "Opaque",
 		}
 
-		log.Println(argocdRepositoryAccessTokenSecret.String())
 		_ = k8s.ArgocdSecretClient.Delete(context.TODO(), "creds-gitlab", metaV1.DeleteOptions{})
 		_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
 		if err != nil {
