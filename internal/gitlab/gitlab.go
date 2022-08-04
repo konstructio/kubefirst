@@ -407,14 +407,17 @@ func ChangeRegistryToGitLab(dryRun bool) {
 			username: cm9vdA==
 		kind: Secret
 		metadata:
-		annotations:
-			managed-by: argocd.argoproj.io
-		labels:
-			argocd.argoproj.io/secret-type: repo-creds
-		name: creds-gitlab
-		namespace: argocd
+			annotations:
+				managed-by: argocd.argoproj.io
+			labels:
+				argocd.argoproj.io/secret-type: repo-creds
+			name: creds-gitlab
+			namespace: argocd
 		type: Opaque
-	`)
+		`)
+		if err != nil {
+			log.Panicf("error reading template")
+		}
 		if err := c.Execute(&secrets, creds); err != nil {
 			log.Panicf("error executing golang template for git repository credentials template %s", err)
 		}
@@ -440,14 +443,17 @@ func ChangeRegistryToGitLab(dryRun bool) {
 			url: {{ .FullURL }}
 		kind: Secret
 		metadata:
-		annotations:
-			managed-by: argocd.argoproj.io
-		labels:
-			argocd.argoproj.io/secret-type: repository
-		name: repo-gitlab
-		namespace: argocd
+			annotations:
+				managed-by: argocd.argoproj.io
+			labels:
+				argocd.argoproj.io/secret-type: repository
+			name: repo-gitlab
+			namespace: argocd
 		type: Opaque
-	`)
+		`)
+		if err != nil {
+			log.Panicf("error reading template")
+		}
 		if err := c.Execute(&repoSecrets, creds); err != nil {
 			log.Panicf("error executing golang template for gitops repository template %s", err)
 		}
