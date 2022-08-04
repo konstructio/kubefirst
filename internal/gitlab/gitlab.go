@@ -204,6 +204,9 @@ func ProduceGitlabTokens(dryRun bool) {
 	k8s.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
 	argocdPassword := k8s.GetSecretValue(k8s.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
+	if argocdPassword == "" {
+		log.Panicf("Missing argocdPassword")
+	}
 
 	viper.Set("argocd.admin.password", argocdPassword)
 	viper.WriteConfig()
@@ -225,7 +228,9 @@ func ProduceGitlabTokens(dryRun bool) {
 		}
 	}
 	gitlabRootPassword := k8s.GetSecretValue(k8s.GitlabSecretClient, gitlabRootPasswordSecretName, "password")
-
+	if gitlabRootPassword == "" {
+		log.Panicf("Missing gitlabRootPassword")
+	}
 	viper.Set("gitlab.podname", gitlabPodName)
 	viper.Set("gitlab.root.password", gitlabRootPassword)
 	viper.WriteConfig()
@@ -245,6 +250,9 @@ func ProduceGitlabTokens(dryRun bool) {
 
 		log.Println("getting gitlab runner token")
 		gitlabRunnerRegistrationToken := k8s.GetSecretValue(k8s.GitlabSecretClient, "gitlab-gitlab-runner-secret", "runner-registration-token")
+		if gitlabRunnerRegistrationToken == "" {
+			log.Panicf("Missing gitlabRunnerRegistrationToken")
+		}
 		viper.Set("gitlab.runnertoken", gitlabRunnerRegistrationToken)
 		viper.WriteConfig()
 	}
