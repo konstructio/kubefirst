@@ -1,7 +1,6 @@
 package gitlab
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
@@ -10,7 +9,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"net/url"
@@ -18,7 +16,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ghodss/yaml"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -396,7 +393,6 @@ func ChangeRegistryToGitLab(dryRun bool) {
 
 		creds := ArgocdGitCreds{PersonalAccessToken: pat, URL: url, FullURL: fullurl}
 
-		var argocdRepositoryAccessTokenSecret *v1.Secret
 		k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
 		if err != nil {
 			log.Panicf("error getting client from kubeconfig")
@@ -407,74 +403,52 @@ func ChangeRegistryToGitLab(dryRun bool) {
 		}
 		k8s.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
-		var secrets bytes.Buffer
-		credGitlabTemplate := `apiVersion: v1
-kind: Secret
-data:
-  password: {{ .PersonalAccessToken }}
-  url: {{ .URL }}
-  username: cm9vdA==
-metadata:
-  annotations:
-    managed-by: argocd.argoproj.io
-  labels:
-    argocd.argoproj.io/secret-type: repo-creds
-  name: creds-gitlab
-  namespace: argocd
-type: Opaque
-		`
-		log.Println(credGitlabTemplate)
-
-		c, err := template.New("creds-gitlab").Parse(credGitlabTemplate)
-		if err != nil {
-			log.Panicf("error reading template")
-		}
-		if err := c.Execute(&secrets, creds); err != nil {
-			log.Panicf("error executing golang template for git repository credentials template %s", err)
+		argocdRepositoryAccessTokenSecret := &v1.Secret{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name:      "creds-gitlab",
+				Namespace: "argocd",
+				Labels: map[string]string{
+					"argocd.argoproj.io/secret-type": "repo-creds",
+				},
+				Annotations: map[string]string{
+					"managed-by": "argocd.argoproj.io",
+				},
+			},
+			Data: map[string][]byte{
+				"password": []byte(creds.PersonalAccessToken),
+				"url":      []byte(creds.URL),
+				"username": []byte("cm9vdA=="),
+			},
+			Type: "Opaque",
 		}
 
-		log.Println(secrets.String())
-		ba := []byte(secrets.String())
-		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
-		if err != nil {
-			log.Println("error unmarshalling yaml during argocd repository secret create", err)
-		}
-
+		log.Println(argocdRepositoryAccessTokenSecret.String())
+		_ = k8s.ArgocdSecretClient.Delete(context.TODO(), "creds-gitlab", metaV1.DeleteOptions{})
 		_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
 		if err != nil {
 			log.Panicf("error creating argocd repository credentials template %s", err)
 		}
 
-		var repoSecrets bytes.Buffer
-
-		repoGitlabString := `apiVersion: v1
-data:
-  project: ZGVmYXVsdA==
-  type: Z2l0
-  url: {{ .FullURL }}
-kind: Secret
-metadata:
-  annotations:
-    managed-by: argocd.argoproj.io
-  labels:
-    argocd.argoproj.io/secret-type: repository
-  name: repo-gitlab
-  namespace: argocd
-type: Opaque
-		`
-		log.Println(repoGitlabString)
-		c, err = template.New("repo-gitlab").Parse(repoGitlabString)
-		if err != nil {
-			log.Panicf("error reading template")
+		argocdRepoSecret := &v1.Secret{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name:      "repo-gitlab",
+				Namespace: "argocd",
+				Labels: map[string]string{
+					"argocd.argoproj.io/secret-type": "repository",
+				},
+				Annotations: map[string]string{
+					"managed-by": "argocd.argoproj.io",
+				},
+			},
+			Data: map[string][]byte{
+				"project": []byte("ZGVmYXVsdA=="),
+				"type":    []byte("Z2l0"),
+				"url":     []byte(creds.FullURL),
+			},
+			Type: "Opaque",
 		}
-		if err := c.Execute(&repoSecrets, creds); err != nil {
-			log.Panicf("error executing golang template for gitops repository template %s", err)
-		}
-
-		ba = []byte(repoSecrets.String())
-		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
-
-		_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
+		_ = k8s.ArgocdSecretClient.Delete(context.TODO(), "repo-gitlab", metaV1.DeleteOptions{})
+		_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepoSecret, metaV1.CreateOptions{})
 		if err != nil {
 			log.Panicf("error creating argocd repository connection secret %s", err)
 		}
