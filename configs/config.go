@@ -35,7 +35,8 @@ type Config struct {
 	HelmVersion      string
 
 	// todo: move it back
-	KubefirstVersion string
+	KubefirstVersion       string
+	ArgoCDChartHelmVersion string
 
 	CertsPath string
 }
@@ -70,7 +71,7 @@ func ReadConfig() *Config {
 	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.TerraformVersion = "1.0.11"
-
+	config.ArgoCDChartHelmVersion = "4.10.5"
 	// todo adopt latest helmVersion := "v3.9.0"
 	config.HelmVersion = "v3.2.1"
 

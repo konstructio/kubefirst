@@ -2,10 +2,11 @@ package helm
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
-	"log"
 )
 
 func InstallArgocd(dryRun bool) {
@@ -26,7 +27,7 @@ func InstallArgocd(dryRun bool) {
 			log.Panicf("error: could not helm repo update %s", err)
 		}
 
-		_, _, err = pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "upgrade", "--install", "argocd", "--namespace", "argocd", "--create-namespace", "--wait", "--values", fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), "argo/argo-cd")
+		_, _, err = pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "upgrade", "--install", "argocd", "--namespace", "argocd", "--create-namespace", "--version", config.ArgoCDChartHelmVersion, "--wait", "--values", fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), "argo/argo-cd")
 		if err != nil {
 			log.Panicf("error: could not helm install argocd command %s", err)
 		}

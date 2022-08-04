@@ -1,7 +1,6 @@
 package gitlab
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
@@ -10,7 +9,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"net/url"
@@ -18,7 +16,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ghodss/yaml"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -36,7 +33,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// GenerateKey generate public and private keys to be consumed by GitLab.
+// GenerateKey -  generate public and private keys to be consumed by GitLab.
 func GenerateKey() (string, string, error) {
 	reader := rand.Reader
 	bitSize := 2048
@@ -61,6 +58,7 @@ func GenerateKey() (string, string, error) {
 	return publicKey, privateKey, nil
 }
 
+// GitlabGeneratePersonalAccessToken - Generate a Access Token for Gitlab
 func GitlabGeneratePersonalAccessToken(gitlabPodName string) {
 	config := configs.ReadConfig()
 
@@ -80,6 +78,8 @@ func GitlabGeneratePersonalAccessToken(gitlabPodName string) {
 	log.Println("gitlab personal access token generated", gitlabToken)
 }
 
+// PushGitOpsToGitLab - Push GitOps to Gitlab repository
+// Use repo loaded from `init``
 func PushGitOpsToGitLab(dryRun bool) {
 	cfg := configs.ReadConfig()
 	if dryRun {
@@ -146,11 +146,17 @@ func PushGitOpsToGitLab(dryRun bool) {
 
 }
 
+// AwaitHost - Await for a Host to be avialable, it wait for 200 cycles.
+// Prefer to use `AwaitHostNTimes` as it provide more control
 func AwaitHost(appName string, dryRun bool) {
 	log.Println("AwaitHost called")
 	AwaitHostNTimes(appName, dryRun, 200)
 }
 
+// AwaitHostNTimes - Wait for a Host to be responsive
+// - To return 200
+// - To return true if host is ready, or false if dont.
+// - Supports to pass numbr of cycles to test
 func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
 	log.Println("AwaitHostNTimes called")
 	if dryRun {
@@ -176,6 +182,7 @@ func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
 	return hostReady
 }
 
+// ProduceGitlabTokens - Produce Gitlab token from argoCD secret
 func ProduceGitlabTokens(dryRun bool) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, ProduceGitlabTokens skipped.")
@@ -197,6 +204,9 @@ func ProduceGitlabTokens(dryRun bool) {
 	k8s.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
 	argocdPassword := k8s.GetSecretValue(k8s.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
+	if argocdPassword == "" {
+		log.Panicf("Missing argocdPassword")
+	}
 
 	viper.Set("argocd.admin.password", argocdPassword)
 	viper.WriteConfig()
@@ -218,7 +228,9 @@ func ProduceGitlabTokens(dryRun bool) {
 		}
 	}
 	gitlabRootPassword := k8s.GetSecretValue(k8s.GitlabSecretClient, gitlabRootPasswordSecretName, "password")
-
+	if gitlabRootPassword == "" {
+		log.Panicf("Missing gitlabRootPassword")
+	}
 	viper.Set("gitlab.podname", gitlabPodName)
 	viper.Set("gitlab.root.password", gitlabRootPassword)
 	viper.WriteConfig()
@@ -238,6 +250,9 @@ func ProduceGitlabTokens(dryRun bool) {
 
 		log.Println("getting gitlab runner token")
 		gitlabRunnerRegistrationToken := k8s.GetSecretValue(k8s.GitlabSecretClient, "gitlab-gitlab-runner-secret", "runner-registration-token")
+		if gitlabRunnerRegistrationToken == "" {
+			log.Panicf("Missing gitlabRunnerRegistrationToken")
+		}
 		viper.Set("gitlab.runnertoken", gitlabRunnerRegistrationToken)
 		viper.WriteConfig()
 	}
@@ -386,7 +401,6 @@ func ChangeRegistryToGitLab(dryRun bool) {
 
 		creds := ArgocdGitCreds{PersonalAccessToken: pat, URL: url, FullURL: fullurl}
 
-		var argocdRepositoryAccessTokenSecret *v1.Secret
 		k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
 		if err != nil {
 			log.Panicf("error getting client from kubeconfig")
@@ -397,65 +411,51 @@ func ChangeRegistryToGitLab(dryRun bool) {
 		}
 		k8s.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
-		var secrets bytes.Buffer
-
-		c, err := template.New("creds-gitlab").Parse(`
-		apiVersion: v1
-		data:
-			password: {{ .PersonalAccessToken }}
-			url: {{ .URL }}
-			username: cm9vdA==
-		kind: Secret
-		metadata:
-		annotations:
-			managed-by: argocd.argoproj.io
-		labels:
-			argocd.argoproj.io/secret-type: repo-creds
-		name: creds-gitlab
-		namespace: argocd
-		type: Opaque
-	`)
-		if err := c.Execute(&secrets, creds); err != nil {
-			log.Panicf("error executing golang template for git repository credentials template %s", err)
+		argocdRepositoryAccessTokenSecret := &v1.Secret{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name:      "creds-gitlab",
+				Namespace: "argocd",
+				Labels: map[string]string{
+					"argocd.argoproj.io/secret-type": "repo-creds",
+				},
+				Annotations: map[string]string{
+					"managed-by": "argocd.argoproj.io",
+				},
+			},
+			Data: map[string][]byte{
+				"password": []byte(creds.PersonalAccessToken),
+				"url":      []byte(creds.URL),
+				"username": []byte("cm9vdA=="),
+			},
+			Type: "Opaque",
 		}
 
-		ba := []byte(secrets.String())
-		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
-		if err != nil {
-			log.Println("error unmarshalling yaml during argocd repository secret create", err)
-		}
-
+		_ = k8s.ArgocdSecretClient.Delete(context.TODO(), "creds-gitlab", metaV1.DeleteOptions{})
 		_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
 		if err != nil {
 			log.Panicf("error creating argocd repository credentials template %s", err)
 		}
 
-		var repoSecrets bytes.Buffer
-
-		c, err = template.New("repo-gitlab").Parse(`
-		apiVersion: v1
-		data:
-			project: ZGVmYXVsdA==
-			type: Z2l0
-			url: {{ .FullURL }}
-		kind: Secret
-		metadata:
-		annotations:
-			managed-by: argocd.argoproj.io
-		labels:
-			argocd.argoproj.io/secret-type: repository
-		name: repo-gitlab
-		namespace: argocd
-		type: Opaque
-	`)
-		if err := c.Execute(&repoSecrets, creds); err != nil {
-			log.Panicf("error executing golang template for gitops repository template %s", err)
+		argocdRepoSecret := &v1.Secret{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name:      "repo-gitlab",
+				Namespace: "argocd",
+				Labels: map[string]string{
+					"argocd.argoproj.io/secret-type": "repository",
+				},
+				Annotations: map[string]string{
+					"managed-by": "argocd.argoproj.io",
+				},
+			},
+			Data: map[string][]byte{
+				"project": []byte("ZGVmYXVsdA=="),
+				"type":    []byte("Z2l0"),
+				"url":     []byte(creds.FullURL),
+			},
+			Type: "Opaque",
 		}
-
-		ba = []byte(repoSecrets.String())
-		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
-
-		_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
+		_ = k8s.ArgocdSecretClient.Delete(context.TODO(), "repo-gitlab", metaV1.DeleteOptions{})
+		_, err = k8s.ArgocdSecretClient.Create(context.TODO(), argocdRepoSecret, metaV1.CreateOptions{})
 		if err != nil {
 			log.Panicf("error creating argocd repository connection secret %s", err)
 		}

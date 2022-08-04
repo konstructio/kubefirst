@@ -199,10 +199,10 @@ func GetArgocdAuthToken(dryRun bool) string {
 		},
 	}
 
-	x := 5
+	x := 20
 	for i := 0; i < x; i++ {
 		log.Printf("requesting auth token from argocd: attempt %d of %d", i+1, x)
-		time.Sleep(2 * time.Second)
+		time.Sleep(5 * time.Second)
 		res, err := client.Do(req)
 
 		if err != nil {
@@ -210,6 +210,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 			continue
 		} else {
 			defer res.Body.Close()
+			log.Printf("Request ArgoCD Token: Result HTTP Status %d", res.StatusCode)
 			if res.StatusCode != http.StatusOK {
 				log.Print("HTTP status NOK")
 				continue
