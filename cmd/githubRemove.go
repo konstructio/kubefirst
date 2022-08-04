@@ -33,6 +33,10 @@ var githubRemoveCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		err = gitWrapper.RemoveSSHKey(viper.GetInt64("github.ssh.keyId"))
+		if err != nil {
+			return err
+		}
 
 		viper.Set("github.repo.added", false)
 		viper.Set("github.repo.populated", false)

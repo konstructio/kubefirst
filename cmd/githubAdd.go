@@ -44,6 +44,15 @@ var githubAddCmd = &cobra.Command{
 		gitWrapper.CreatePrivateRepo(org, "gitops", "Kubefirst Gitops")
 		gitWrapper.CreatePrivateRepo(org, "metaphor", "Sample Kubefirst App")
 
+		//Add Github SSHPublic key
+		if viper.GetString("botPublicKey") != "" {
+			key, err := gitWrapper.AddSSHKey("kubefirst-bot", viper.GetString("botPublicKey"))
+			viper.Set("github.ssh.keyId", key.GetID())
+			if err != nil {
+				return err
+			}
+		}
+
 		viper.Set("github.repo.added", true)
 		viper.WriteConfig()
 		return nil

@@ -18,7 +18,7 @@ type GithubSession struct {
 	gitClient   *github.Client
 }
 
-// Create a new client for github wrapper
+// New - Create a new client for github wrapper
 func New() GithubSession {
 	token := os.Getenv("GITHUB_AUTH_TOKEN")
 	if token == "" {
@@ -33,7 +33,7 @@ func New() GithubSession {
 
 }
 
-// Use github API to create a private repo
+// CreatePrivateRepo - Use github API to create a private repo
 func (g GithubSession) CreatePrivateRepo(org string, name string, description string) error {
 	if name == "" {
 		log.Fatal("No name: New repos must be given a name")
@@ -52,6 +52,7 @@ func (g GithubSession) CreatePrivateRepo(org string, name string, description st
 	return nil
 }
 
+// RemoveRepo - Remove  a repo
 func (g GithubSession) RemoveRepo(owner string, name string) error {
 	if name == "" {
 		log.Fatal("No name:  repos must be given a name")
@@ -64,6 +65,7 @@ func (g GithubSession) RemoveRepo(owner string, name string) error {
 	return nil
 }
 
+// GetRepo - Returns  a repo
 func (g GithubSession) GetRepo(owner string, name string) (*github.Repository, error) {
 	if name == "" {
 		log.Fatal("No name: repos must be given a name")
@@ -76,15 +78,29 @@ func (g GithubSession) GetRepo(owner string, name string) (*github.Repository, e
 	return repo, nil
 }
 
-// Add ssh keys to a user account to allow kubefirst installer
+// AddSSHKey - Add ssh keys to a user account to allow kubefirst installer
 // to use its own token during installation
-func (g GithubSession) AddSSHKey(publicKey string) error {
+func (g GithubSession) AddSSHKey(keyTitle string, publicKey string) (*github.Key, error) {
 	log.Printf("Add SSH key to user account on behalf of kubefrist")
+	key, _, err := g.gitClient.Users.CreateKey(g.context, &github.Key{Title: &keyTitle, Key: &publicKey})
+	if err != nil {
+		return nil, fmt.Errorf("error add SSH Key: %s", err)
+	}
+	return key, nil
+}
+
+// RemoveSSHKey - Removes SSH Key from github user
+func (g GithubSession) RemoveSSHKey(keyId int64) error {
+	log.Printf("Remove SSH key to user account on behalf of kubefrist")
+	_, err := g.gitClient.Users.DeleteKey(g.context, keyId)
+	if err != nil {
+		return fmt.Errorf("error remiving SSH Key: %s", err)
+	}
 	return nil
 }
 
-// Verify if a repo exists
+// IsRepoInUse - Verify if a repo exists
 func (g GithubSession) IsRepoInUse(org string, name string) (bool, error) {
-	log.Printf("Add SSH key to user account on behalf of kubefrist")
+	log.Printf("check if a repo is in use already")
 	return false, nil
 }
