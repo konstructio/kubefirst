@@ -36,7 +36,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// GenerateKey generate public and private keys to be consumed by GitLab.
+// GenerateKey -  generate public and private keys to be consumed by GitLab.
 func GenerateKey() (string, string, error) {
 	reader := rand.Reader
 	bitSize := 2048
@@ -61,6 +61,7 @@ func GenerateKey() (string, string, error) {
 	return publicKey, privateKey, nil
 }
 
+// GitlabGeneratePersonalAccessToken - Generate a Access Token for Gitlab
 func GitlabGeneratePersonalAccessToken(gitlabPodName string) {
 	config := configs.ReadConfig()
 
@@ -80,6 +81,8 @@ func GitlabGeneratePersonalAccessToken(gitlabPodName string) {
 	log.Println("gitlab personal access token generated", gitlabToken)
 }
 
+// PushGitOpsToGitLab - Push GitOps to Gitlab repository
+// Use repo loaded from `init``
 func PushGitOpsToGitLab(dryRun bool) {
 	cfg := configs.ReadConfig()
 	if dryRun {
@@ -146,11 +149,17 @@ func PushGitOpsToGitLab(dryRun bool) {
 
 }
 
+// AwaitHost - Await for a Host to be avialable, it wait for 200 cycles.
+// Prefer to use `AwaitHostNTimes` as it provide more control
 func AwaitHost(appName string, dryRun bool) {
 	log.Println("AwaitHost called")
 	AwaitHostNTimes(appName, dryRun, 200)
 }
 
+// AwaitHostNTimes - Wait for a Host to be responsive
+// - To return 200
+// - To return true if host is ready, or false if dont.
+// - Supports to pass numbr of cycles to test
 func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
 	log.Println("AwaitHostNTimes called")
 	if dryRun {
@@ -176,6 +185,7 @@ func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
 	return hostReady
 }
 
+// ProduceGitlabTokens - Produce Gitlab token from argoCD secret
 func ProduceGitlabTokens(dryRun bool) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, ProduceGitlabTokens skipped.")
@@ -398,23 +408,24 @@ func ChangeRegistryToGitLab(dryRun bool) {
 		k8s.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
 		var secrets bytes.Buffer
+		credGitlabTemplate := `apiVersion: v1
+kind: Secret
+data:
+  password: {{ .PersonalAccessToken }}
+  url: {{ .URL }}
+  username: cm9vdA==
+metadata:
+  annotations:
+    managed-by: argocd.argoproj.io
+  labels:
+    argocd.argoproj.io/secret-type: repo-creds
+  name: creds-gitlab
+  namespace: argocd
+type: Opaque
+		`
+		log.Println(credGitlabTemplate)
 
-		c, err := template.New("creds-gitlab").Parse(`
-		apiVersion: v1
-		data:
-			password: {{ .PersonalAccessToken }}
-			url: {{ .URL }}
-			username: cm9vdA==
-		kind: Secret
-		metadata:
-			annotations:
-				managed-by: argocd.argoproj.io
-			labels:
-				argocd.argoproj.io/secret-type: repo-creds
-			name: creds-gitlab
-			namespace: argocd
-		type: Opaque
-		`)
+		c, err := template.New("creds-gitlab").Parse(credGitlabTemplate)
 		if err != nil {
 			log.Panicf("error reading template")
 		}
@@ -422,6 +433,7 @@ func ChangeRegistryToGitLab(dryRun bool) {
 			log.Panicf("error executing golang template for git repository credentials template %s", err)
 		}
 
+		log.Println(secrets.String())
 		ba := []byte(secrets.String())
 		err = yaml.Unmarshal(ba, &argocdRepositoryAccessTokenSecret)
 		if err != nil {
@@ -435,22 +447,23 @@ func ChangeRegistryToGitLab(dryRun bool) {
 
 		var repoSecrets bytes.Buffer
 
-		c, err = template.New("repo-gitlab").Parse(`
-		apiVersion: v1
-		data:
-			project: ZGVmYXVsdA==
-			type: Z2l0
-			url: {{ .FullURL }}
-		kind: Secret
-		metadata:
-			annotations:
-				managed-by: argocd.argoproj.io
-			labels:
-				argocd.argoproj.io/secret-type: repository
-			name: repo-gitlab
-			namespace: argocd
-		type: Opaque
-		`)
+		repoGitlabString := `apiVersion: v1
+data:
+  project: ZGVmYXVsdA==
+  type: Z2l0
+  url: {{ .FullURL }}
+kind: Secret
+metadata:
+  annotations:
+    managed-by: argocd.argoproj.io
+  labels:
+    argocd.argoproj.io/secret-type: repository
+  name: repo-gitlab
+  namespace: argocd
+type: Opaque
+		`
+		log.Println(repoGitlabString)
+		c, err = template.New("repo-gitlab").Parse(repoGitlabString)
 		if err != nil {
 			log.Panicf("error reading template")
 		}
