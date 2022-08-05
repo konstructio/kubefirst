@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	b64 "encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -395,9 +394,9 @@ func ChangeRegistryToGitLab(dryRun bool) {
 			FullURL             string
 		}
 
-		pat := b64.StdEncoding.EncodeToString([]byte(viper.GetString("gitlab.token")))
-		url := b64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("https://gitlab.%s/kubefirst/", viper.GetString("aws.hostedzonename"))))
-		fullurl := b64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename"))))
+		pat := viper.GetString("gitlab.token")
+		url := fmt.Sprintf("https://gitlab.%s/kubefirst/", viper.GetString("aws.hostedzonename"))
+		fullurl := fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename"))
 
 		creds := ArgocdGitCreds{PersonalAccessToken: pat, URL: url, FullURL: fullurl}
 
