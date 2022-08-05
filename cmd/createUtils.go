@@ -33,6 +33,9 @@ func setArgocdCreds(dryRun bool) {
 	argocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
 	argocdPassword := getSecretValue(argocdSecretClient, "argocd-initial-admin-secret", "password")
+	if argocdPassword == "" {
+		log.Panicf("Missing argocdPassword")
+	}
 
 	viper.Set("argocd.admin.password", argocdPassword)
 	viper.Set("argocd.admin.username", "admin")

@@ -77,7 +77,7 @@ func ConfigureVault(dryRun bool) {
 		envs["VAULT_ADDR"] = "http://localhost:8200" //Should this come from init?
 		envs["VAULT_TOKEN"] = vaultToken
 		envs["AWS_SDK_LOAD_CONFIG"] = "1"
-		envs["AWS_PROFILE"] = config.AwsProfile
+		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
 		envs["AWS_DEFAULT_REGION"] = viper.GetString("aws.region")
 
 		envs["TF_VAR_vault_addr"] = fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename"))

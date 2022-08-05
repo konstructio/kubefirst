@@ -3,12 +3,13 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/reports"
-	"github.com/spf13/cobra"
 	"log"
 	"runtime"
 	"strings"
+
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/spf13/cobra"
 )
 
 // infoCmd represents the info command
@@ -38,15 +39,11 @@ var infoCmd = &cobra.Command{
 
 		err := configs.CheckKubefirstConfigFile(config)
 		if err != nil {
-			log.Panic(err)
+			log.Println("Config file check:", err)
 		}
 		err = configs.CheckKubefirstDir(config)
 		if err != nil {
-			log.Panic(err)
-		}
-		err = configs.CheckEnvironment()
-		if err != nil {
-			log.Panic(err)
+			log.Println("Installer dir check:", err)
 		}
 		fmt.Printf("----------- \n")
 

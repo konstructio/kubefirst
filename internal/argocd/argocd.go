@@ -200,10 +200,10 @@ func GetArgocdAuthToken(dryRun bool) string {
 		},
 	}
 
-	x := 3
+	x := 20
 	for i := 0; i < x; i++ {
 		log.Printf("requesting auth token from argocd: attempt %d of %d", i+1, x)
-		time.Sleep(1 * time.Second)
+		time.Sleep(5 * time.Second)
 		res, err := client.Do(req)
 
 		if err != nil {
@@ -211,6 +211,11 @@ func GetArgocdAuthToken(dryRun bool) string {
 			continue
 		} else {
 			defer res.Body.Close()
+			log.Printf("Request ArgoCD Token: Result HTTP Status %d", res.StatusCode)
+			if res.StatusCode != http.StatusOK {
+				log.Print("HTTP status NOK")
+				continue
+			}
 			body, err := ioutil.ReadAll(res.Body)
 			if err != nil {
 				log.Print("error sending POST request to get argocd auth token:", err)
@@ -218,9 +223,16 @@ func GetArgocdAuthToken(dryRun bool) string {
 			}
 
 			var dat map[string]interface{}
-
+			if body == nil {
+				log.Print("body object is nil")
+				continue
+			}
 			if err := json.Unmarshal(body, &dat); err != nil {
-				log.Print("error unmarshalling  %s", err)
+				log.Printf("error unmarshalling  %s", err)
+				continue
+			}
+			if dat == nil {
+				log.Print("dat object is nil")
 				continue
 			}
 			token := dat["token"]

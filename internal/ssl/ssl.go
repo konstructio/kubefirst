@@ -175,6 +175,7 @@ func RestoreSSL() error {
 			delete(metadataMap, "creationTimestamp")
 			delete(metadataMap, "managedFields")
 			data["metadata"] = metadataMap
+
 			dataCleaned, err := yaml2.Marshal(&data)
 
 			if err != nil {
