@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	b64 "encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -395,9 +394,9 @@ func ChangeRegistryToGitLab(dryRun bool) {
 			FullURL             string
 		}
 
-		pat := b64.StdEncoding.EncodeToString([]byte(viper.GetString("gitlab.token")))
-		url := b64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("https://gitlab.%s/kubefirst/", viper.GetString("aws.hostedzonename"))))
-		fullurl := b64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename"))))
+		pat := viper.GetString("gitlab.token")
+		url := fmt.Sprintf("https://gitlab.%s/kubefirst/", viper.GetString("aws.hostedzonename"))
+		fullurl := fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename"))
 
 		creds := ArgocdGitCreds{PersonalAccessToken: pat, URL: url, FullURL: fullurl}
 
@@ -425,7 +424,7 @@ func ChangeRegistryToGitLab(dryRun bool) {
 			Data: map[string][]byte{
 				"password": []byte(creds.PersonalAccessToken),
 				"url":      []byte(creds.URL),
-				"username": []byte("cm9vdA=="),
+				"username": []byte("root"),
 			},
 			Type: "Opaque",
 		}
@@ -448,8 +447,8 @@ func ChangeRegistryToGitLab(dryRun bool) {
 				},
 			},
 			Data: map[string][]byte{
-				"project": []byte("ZGVmYXVsdA=="),
-				"type":    []byte("Z2l0"),
+				"project": []byte("default"),
+				"type":    []byte("git"),
 				"url":     []byte(creds.FullURL),
 			},
 			Type: "Opaque",
