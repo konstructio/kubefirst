@@ -17,6 +17,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
+	yaml2 "gopkg.in/yaml.v2"
 )
 
 type ArgoCDConfig struct {
@@ -306,6 +307,54 @@ func ApplyRegistry(dryRun bool) error {
 		time.Sleep(45 * time.Second)
 		viper.Set("argocd.registry.applied", true)
 		viper.WriteConfig()
+	}
+	return nil
+}
+
+//ConfigRepo - Sample config struct
+type ConfigRepo struct {
+	Configs struct {
+		Repositories struct {
+			RepoGitops struct {
+				URL      string `yaml:"url"`
+				Insecure bool   `yaml:"insecure"`
+				Type     string `yaml:"type"`
+				Name     string `yaml:"name"`
+			} `yaml:"github-serve-gitops"`
+		} `yaml:"repositories"`
+		CredentialTemplates struct {
+			SSHCreds struct {
+				URL           string `yaml:"url"`
+				SSHPrivateKey string `yaml:"sshPrivateKey"`
+			} `yaml:"ssh-creds"`
+		} `yaml:"credentialTemplates"`
+	} `yaml:"configs"`
+}
+
+//  CreateInitalArgoRepository - Fill and create argocd-init-values.yaml for Github installs
+func CreateInitalArgoRepository(githubURL string) error {
+	config := configs.ReadConfig()
+
+	privateKey := viper.GetString("botprivatekey")
+
+	argoConfig := ConfigRepo{}
+	argoConfig.Configs.Repositories.RepoGitops.URL = githubURL
+	argoConfig.Configs.Repositories.RepoGitops.Insecure = false
+	argoConfig.Configs.Repositories.RepoGitops.Type = "git"
+	argoConfig.Configs.Repositories.RepoGitops.Name = "github-gitops"
+	argoConfig.Configs.CredentialTemplates.SSHCreds.URL = "ssh://github.com:22"
+	argoConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = privateKey
+
+	argoYaml, err := yaml2.Marshal(&argoConfig)
+	if err != nil {
+		log.Printf("error: marsheling yaml for argo config %s", err)
+		return err
+	}
+
+	err = ioutil.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoYaml, 0644)
+	if err != nil {
+		log.Printf("error: could not write argocd-init-values.yaml %s", err)
+		return err
 	}
 	return nil
 }

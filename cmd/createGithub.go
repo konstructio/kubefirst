@@ -20,7 +20,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/reports"
-	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -72,22 +71,30 @@ var createGithubCmd = &cobra.Command{
 			return err
 		}
 
-		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
-		informUser("Creating K8S Cluster")
-		terraform.ApplyBaseTerraform(dryRun, directory)
+		//directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
+		//informUser("Creating K8S Cluster")
+		//terraform.ApplyBaseTerraform(dryRun, directory)
+
 		//progressPrinter.IncrementTracker("step-terraform", 1)
 
 		informUser("Attempt to recycle certs")
-		restoreSSLCmd.Run(cmd, args)
+		//restoreSSLCmd.Run(cmd, args)
+
+		/*
+
+			progressPrinter.AddTracker("step-argo", "Deploy CI/CD ", 5)
+			informUser("Deploy ArgoCD")
+			progressPrinter.IncrementTracker("step-argo", 1)
+		*/
+		argocd.CreateInitalArgoRepository("git@github.com:kxdroid/gitops.git")
+
+		return nil
 
 		clientset, err := k8s.GetClientSet()
 		if err != nil {
 			log.Printf("Failed to get clientset for k8s : %s", err)
 			return err
 		}
-		progressPrinter.AddTracker("step-argo", "Deploy CI/CD ", 5)
-		informUser("Deploy ArgoCD")
-		progressPrinter.IncrementTracker("step-argo", 1)
 		helm.InstallArgocd(dryRun)
 
 		//! argocd was just helm installed
@@ -324,7 +331,6 @@ var createGithubCmd = &cobra.Command{
 		progressPrinter.GetInstance()
 		progressPrinter.SetupProgress(4)
 		//config := configs.ReadConfig()
-		log.Printf(config.AwsProfile)
 		infoCmd.Run(cmd, args)
 
 		progressPrinter.AddTracker("step-0", "Test Installer ", 4)
