@@ -425,7 +425,7 @@ func ChangeRegistryToGitLab(dryRun bool) {
 			Data: map[string][]byte{
 				"password": []byte(creds.PersonalAccessToken),
 				"url":      []byte(creds.URL),
-				"username": []byte("cm9vdA=="),
+				"username": []byte("root"),
 			},
 			Type: "Opaque",
 		}
@@ -448,8 +448,8 @@ func ChangeRegistryToGitLab(dryRun bool) {
 				},
 			},
 			Data: map[string][]byte{
-				"project": []byte("ZGVmYXVsdA=="),
-				"type":    []byte("Z2l0"),
+				"project": []byte("default"),
+				"type":    []byte("git"),
 				"url":     []byte(creds.FullURL),
 			},
 			Type: "Opaque",
