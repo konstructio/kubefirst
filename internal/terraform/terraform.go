@@ -3,13 +3,14 @@ package terraform
 import (
 	"bytes"
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/pkg"
-	"github.com/spf13/viper"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/spf13/viper"
 )
 
 func ApplyBaseTerraform(dryRun bool, directory string) {
@@ -22,6 +23,7 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 			return
 		}
 		envs := map[string]string{}
+		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
 		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
@@ -70,6 +72,7 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		}
 
 		envs := map[string]string{}
+		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
 		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")

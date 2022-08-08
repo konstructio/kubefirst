@@ -82,12 +82,13 @@ func getItemsToBackup(apiGroup string, apiVersion string, resourceType string, n
 
 // GetBackupCertificates create a backup of Certificates on AWS S3 in yaml files
 func GetBackupCertificates() (string, error) {
+	log.Println("GetBackupCertificates called")
+
+	bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
+	aws.CreateBucket(false, bucketName)
+
 	config := configs.ReadConfig()
 	namespaces := getNamespacesToBackupSSL()
-	log.Println("GetBackupCertificates called")
-	bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
-	//path := "cert-manager"
-	aws.CreateBucket(false, bucketName)
 
 	log.Println("getting certificates")
 	certificates, err := getItemsToBackup("cert-manager.io", "v1", "certificates", namespaces, "")
@@ -175,6 +176,7 @@ func RestoreSSL() error {
 			delete(metadataMap, "creationTimestamp")
 			delete(metadataMap, "managedFields")
 			data["metadata"] = metadataMap
+
 			dataCleaned, err := yaml2.Marshal(&data)
 
 			if err != nil {

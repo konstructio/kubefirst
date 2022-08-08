@@ -17,7 +17,6 @@ environment variables and general config data.
 // Config host application configuration
 // todo: some of these values can be moved to the .env
 type Config struct {
-	AwsProfile        string `env:"AWS_PROFILE"`
 	LocalOs           string
 	LocalArchitecture string
 	InstallerEmail    string
@@ -36,7 +35,8 @@ type Config struct {
 	HelmVersion      string
 
 	// todo: move it back
-	KubefirstVersion string
+	KubefirstVersion       string
+	ArgoCDChartHelmVersion string
 
 	CertsPath string
 }
@@ -71,11 +71,11 @@ func ReadConfig() *Config {
 	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.TerraformVersion = "1.0.11"
-
+	config.ArgoCDChartHelmVersion = "4.10.5"
 	// todo adopt latest helmVersion := "v3.9.0"
 	config.HelmVersion = "v3.2.1"
 
-	config.KubefirstVersion = "1.8.2"
+	config.KubefirstVersion = "1.8.4"
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 

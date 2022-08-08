@@ -8,8 +8,6 @@ services:
       context: .
       dockerfile: ./build/Dockerfile
     container_name: kubefirst
-    env_file:
-      - .env
     environment:
       TERM: xterm-256color
     ports:
@@ -21,3 +19,8 @@ services:
       # AWS credentials are strictly used to provision the Kubefirst in your AWS account
       - $HOME/.aws:/home/developer/.aws
     command: sh -c "./scripts/kubefirst.sh"
+    dns:
+      - 208.67.222.222 #Cisco DNS
+      - 1.1.1.1 #Cloudflare DNS
+      - 1.0.0.1 #Cloudflare DNS
+      - 8.8.8.8 #Google DNS
