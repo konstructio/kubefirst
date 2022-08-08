@@ -27,7 +27,13 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
-		envs["TF_VAR_nodes_spot"] = viper.GetString("aws.nodes_spot")
+
+		nodes_spot := viper.GetBool("aws.nodes_spot")
+		if nodes_spot {
+			envs["TF_VAR_capacity_type"] = "SPOT"
+		}
+
+		log.Printf("tf env vars: ", envs)
 
 		err := os.Chdir(directory)
 		if err != nil {
