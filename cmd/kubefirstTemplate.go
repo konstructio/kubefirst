@@ -24,7 +24,7 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 		branch = "main"
 	}
 
-	repoUrl := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)
+	repoUrl := fmt.Sprintf("https://github.com/%s/%s-template-spot", githubOrg, repoName)
 	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
 	log.Println("git clone", repoUrl, directory)
 	log.Println("git clone -b ", branch, repoUrl, directory)
