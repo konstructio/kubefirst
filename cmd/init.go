@@ -123,6 +123,13 @@ to quickly create a Cobra application.`,
 		}
 		log.Println("profile:", profile)
 
+		nodes_spot, err := cmd.Flags().GetBool("aws-nodes-spot")
+		if err != nil {
+			log.Panic(err)
+		}
+		viper.Set("aws.nodes_spot", nodes_spot)
+		log.Println("aws.nodes_spot: ", nodes_spot)
+
 		// cluster name
 		clusterName, err := cmd.Flags().GetString("cluster-name")
 		if err != nil {
@@ -271,4 +278,5 @@ func init() {
 	initCmd.Flags().String("s3-suffix", "", "unique identifier for s3 buckets")
 	initCmd.Flags().String("version-gitops", "main", "version/branch used on git clone")
 	initCmd.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
+	initCmd.Flags().Bool("aws-nodes-spot", false, "nodes spot on AWS EKS compute nodes")
 }
