@@ -339,19 +339,38 @@ func DestroyBucketsInUse(destroyBuckets bool) {
 func CreateBucket(dryRun bool, name string) {
 	log.Println("createBucketCalled")
 
-	s3Client := s3.New(GetAWSSession())
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Config: aws.Config{
+			Region: aws.String(viper.GetString("aws.region")),
+		},
+		Profile: viper.GetString("aws.profile"),
+	})
+
+	if err != nil {
+		log.Println("failed to attempt bucket creation ", err.Error())
+		os.Exit(1)
+	}
+
+	s3Client := s3.New(sess)
 
 	log.Println("creating", "bucket", name)
 
 	regionName := viper.GetString("aws.region")
 	log.Println("region is ", regionName)
+
 	if !dryRun {
-		_, err := s3Client.CreateBucket(&s3.CreateBucketInput{
-			Bucket: &name,
-			CreateBucketConfiguration: &s3.CreateBucketConfiguration{
-				LocationConstraint: aws.String(regionName),
-			},
-		})
+		if regionName == "us-east-1" {
+			_, err = s3Client.CreateBucket(&s3.CreateBucketInput{
+				Bucket: &name,
+			})
+		} else {
+			_, err = s3Client.CreateBucket(&s3.CreateBucketInput{
+				Bucket: &name,
+				CreateBucketConfiguration: &s3.CreateBucketConfiguration{
+					LocationConstraint: aws.String(regionName),
+				},
+			})
+		}
 		if err != nil {
 			if awsErr, ok := err.(awserr.Error); ok {
 				switch awsErr.Code() {
