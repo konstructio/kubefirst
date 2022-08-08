@@ -30,7 +30,7 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 
 		nodes_spot := viper.GetBool("aws.nodes_spot")
 		if nodes_spot {
-			envs["TF_VAR_capacity_type"] = "SPOT"
+			envs["TF_VAR_lifecycle_nodes"] = "SPOT"
 		}
 
 		log.Printf("tf env vars: ", envs)
@@ -45,7 +45,7 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		}
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
 		if err != nil {
-			log.Panic(fmt.Sprintf("error: terraform init failed %v", err))
+			log.Panic(fmt.Sprintf("error: terraform apply failed %v", err))
 		}
 
 		var keyOut bytes.Buffer
@@ -83,7 +83,11 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
-		envs["TF_VAR_nodes_spot"] = viper.GetString("aws.nodes_spot")
+
+		nodes_spot := viper.GetBool("aws.nodes_spot")
+		if nodes_spot {
+			envs["TF_VAR_capacity_type"] = "SPOT"
+		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if err != nil {
