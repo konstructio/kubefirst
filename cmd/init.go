@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -52,10 +54,21 @@ to quickly create a Cobra application.`,
 		trackers[pkg.GetDNSInfo] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.GetDNSInfo, 1)}
 		trackers[pkg.TestHostedZoneLiveness] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.TestHostedZoneLiveness, 1)}
 		trackers[pkg.CloneAndDetokenizeGitOpsTemplate] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CloneAndDetokenizeGitOpsTemplate, 1)}
-		trackers[pkg.CloneAndDetokenizeMetaphorTemplate] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CloneAndDetokenizeMetaphorTemplate, 1)}
+		trackers[pkg.CloneAndDetokenizeMetaphorJsTemplate] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CloneAndDetokenizeMetaphorJsTemplate, 1)}
+		trackers[pkg.CloneAndDetokenizeMetaphorGoTemplate] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CloneAndDetokenizeMetaphorGoTemplate, 1)}
 		trackers[pkg.CreateSSHKey] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CreateSSHKey, 1)}
 		trackers[pkg.CreateBuckets] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CreateBuckets, 1)}
 		trackers[pkg.SendTelemetry] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.SendTelemetry, 1)}
+
+		k1Dir := fmt.Sprintf("%s", config.K1FolderPath)
+		if _, err := os.Stat(k1Dir); errors.Is(err, os.ErrNotExist) {
+			if err := os.Mkdir(k1Dir, os.ModePerm); err != nil {
+				log.Panicf("info: could not create directory %q - error: %s", config.K1FolderPath, err)
+			}
+		} else {
+			log.Printf("info: %s already exist", k1Dir)
+		}
+
 		infoCmd.Run(cmd, args)
 		hostedZoneName, _ := cmd.Flags().GetString("hosted-zone-name")
 		metricName := "kubefirst.init.started"
@@ -86,9 +99,11 @@ to quickly create a Cobra application.`,
 		log.Println("adminEmail:", adminEmail)
 		viper.Set("adminemail", adminEmail)
 
-		// region
-		// name of the cloud region to provision resources when resources are region-specific
-		region, _ := cmd.Flags().GetString("region")
+		// profile
+		region, err := cmd.Flags().GetString("region")
+		if err != nil {
+			log.Println(err)
+		}
 		viper.Set("aws.region", region)
 		// propagate it to local environment
 		err = os.Setenv("AWS_REGION", region)
@@ -186,7 +201,13 @@ to quickly create a Cobra application.`,
 		log.Printf("cloning and detokenizing the metaphor-template repository")
 		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor", "main")
 		log.Println("clone and detokenization of metaphor-template repository complete")
-		trackers[pkg.CloneAndDetokenizeMetaphorTemplate].Tracker.Increment(int64(1))
+		trackers[pkg.CloneAndDetokenizeMetaphorJsTemplate].Tracker.Increment(int64(1))
+
+		//! tracker 8
+		log.Printf("cloning and detokenizing the metaphor-go-template repository")
+		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor-go", "main")
+		log.Println("clone and detokenization of metaphor-go-template repository complete")
+		trackers[pkg.CloneAndDetokenizeMetaphorJsTemplate].Tracker.Increment(int64(1))
 
 		metricName = "kubefirst.init.completed"
 
@@ -222,8 +243,14 @@ func init() {
 	if err != nil {
 		log.Panic(err)
 	}
-	initCmd.Flags().String("region", "", "the region to provision the cloud resources in")
+	initCmd.Flags().String("region", "eu-west-1", "the region to provision the cloud resources in")
 	err = initCmd.MarkFlagRequired("region")
+	if err != nil {
+		log.Panic(err)
+	}
+
+	initCmd.Flags().String("profile", "default", "AWS profile located at ~/.aws/config")
+	err = initCmd.MarkFlagRequired("profile")
 	if err != nil {
 		log.Panic(err)
 	}

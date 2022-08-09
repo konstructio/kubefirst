@@ -155,7 +155,7 @@ to quickly create a Cobra application.`,
 		progressPrinter.IncrementTracker("step-argo", 1)
 
 		informUser("Getting an argocd auth token")
-		token := argocd.GetArgocdAuthToken(dryRun)
+
 		progressPrinter.IncrementTracker("step-argo", 1)
 		if !dryRun {
 			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry.yaml", config.K1FolderPath))
@@ -164,34 +164,7 @@ to quickly create a Cobra application.`,
 			}
 			time.Sleep(45 * time.Second)
 		}
-
-		informUser("Syncing the registry application")
-
-		if dryRun {
-			log.Printf("[#99] Dry-run mode, Sync ArgoCD skipped")
-		} else {
-			// todo: create ArgoCD struct, and host dependencies (like http client)
-			customTransport := http.DefaultTransport.(*http.Transport).Clone()
-			customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-			httpClient := http.Client{Transport: customTransport}
-
-			// retry to sync ArgoCD application until reaches the maximum attempts
-			argoCDIsReady, err := argocd.SyncRetry(&httpClient, 60, 5, "registry", token)
-			if err != nil {
-				log.Printf("something went wrong during ArgoCD sync step, error is: %v", err)
-			}
-
-			if !argoCDIsReady {
-				log.Println("unable to sync ArgoCD application, continuing...")
-			}
-		}
-
 		progressPrinter.IncrementTracker("step-argo", 1)
-		// todo, need to stall until the registry has synced, then get to ui asap
-
-		//! skip this if syncing from argocd and not helm installing
-		// log.Printf("sleeping for 30 seconds, hurry up jared sign into argocd %s", viper.GetString("argocd.admin.password"))
-		// time.Sleep(30 * time.Second)
 
 		//!
 		//* we need to stop here and wait for the vault namespace to exist and the vault pod to be ready
@@ -261,7 +234,7 @@ to quickly create a Cobra application.`,
 			informUser("waiting for vault unseal")
 
 			log.Println("configuring vault")
-			vault.ConfigureVault(dryRun)
+			vault.ConfigureVault(dryRun, true)
 			informUser("Vault configured")
 			progressPrinter.IncrementTracker("step-vault", 1)
 
@@ -270,7 +243,7 @@ to quickly create a Cobra application.`,
 			informUser("Vault  secret created")
 			progressPrinter.IncrementTracker("step-vault", 1)
 		}
-		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 5)
+		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 6)
 		if !viper.GetBool("gitlab.oidc-created") {
 			vault.AddGitlabOidcApplications(dryRun)
 			informUser("Added Gitlab OIDC")
@@ -311,6 +284,17 @@ to quickly create a Cobra application.`,
 			viper.Set("gitlab.metaphor-pushed", true)
 			viper.WriteConfig()
 		}
+
+		if !viper.GetBool("gitlab.metaphor-go-pushed") {
+			informUser("Pushing metaphor-go repo to origin gitlab")
+			gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor-go")
+			progressPrinter.IncrementTracker("step-post-gitlab", 1)
+			// todo: keep one of the two git push functions, they're similar, but not exactly the same
+			//gitlab.PushGitOpsToGitLab(dryRun)
+			viper.Set("gitlab.metaphor-pushed", true)
+			viper.WriteConfig()
+		}
+
 		if !viper.GetBool("gitlab.registered") {
 			// informUser("Getting ArgoCD auth token")
 			// token := argocd.GetArgocdAuthToken(dryRun)
@@ -396,6 +380,14 @@ to quickly create a Cobra application.`,
 		}
 
 		//!--
+
+		if !skipVault {
+			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
+			log.Println("configuring vault backend")
+			vault.ConfigureVault(dryRun, false)
+			informUser("Vault backend configured")
+			progressPrinter.IncrementTracker("step-vault-be", 1)
+		}
 
 		sendCompleteInstallTelemetry(dryRun, useTelemetry)
 		time.Sleep(time.Millisecond * 100)

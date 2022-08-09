@@ -151,7 +151,7 @@ func AwaitHost(appName string, dryRun bool) {
 	AwaitHostNTimes(appName, dryRun, 200)
 }
 
-func AwaitHostNTimes(appName string, dryRun bool, times int) bool{
+func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
 	log.Println("AwaitHostNTimes called")
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, AwaitHost skipped.")
@@ -478,7 +478,7 @@ func HydrateGitlabMetaphorRepo(dryRun bool) {
 			return
 		}
 
-		metaphorTemplateDir := fmt.Sprintf("%s/metaphor", cfg.K1FolderPath)
+		metaphorTemplateDir := fmt.Sprintf("%s/k1-app", cfg.K1FolderPath)
 
 		url := "https://github.com/kubefirst/metaphor-template"
 
@@ -486,7 +486,7 @@ func HydrateGitlabMetaphorRepo(dryRun bool) {
 			URL: url,
 		})
 		if err != nil {
-			log.Panicf("error cloning metaphor-template repo")
+			log.Panicf("error cloning k1-app-template repo")
 		}
 		viper.Set("create.gitlabmetaphor.cloned", true)
 
@@ -499,12 +499,12 @@ func HydrateGitlabMetaphorRepo(dryRun bool) {
 		log.Println("gitClient remote add origin", gitlabURL)
 		_, err = metaphorTemplateRepo.CreateRemote(&config.RemoteConfig{
 			Name: "gitlab",
-			URLs: []string{fmt.Sprintf("%s/kubefirst/metaphor.gitClient", gitlabURL)},
+			URLs: []string{fmt.Sprintf("%s/kubefirst/k1-app.gitClient", gitlabURL)},
 		})
 
 		w, _ := metaphorTemplateRepo.Worktree()
 
-		log.Println("Committing detokenized metaphor content")
+		log.Println("Committing detokenized k1-app content")
 		w.Add(".")
 		w.Commit("setting new remote upstream to gitlab", &git.CommitOptions{
 			Author: &object.Signature{
@@ -522,7 +522,7 @@ func HydrateGitlabMetaphorRepo(dryRun bool) {
 			},
 		})
 		if err != nil {
-			log.Panicf("error pushing detokenized metaphor repository to remote at" + gitlabURL)
+			log.Panicf("error pushing detokenized k1-app repository to remote at" + gitlabURL)
 		}
 
 		viper.Set("create.gitlabmetaphor.pushed", true)
@@ -540,6 +540,7 @@ func PushGitRepo(dryRun bool, config *configs.Config, gitOrigin, repoName string
 		return
 	}
 	repoDir := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
+	// check if there is a repository at the specified location
 	repo, err := git.PlainOpen(repoDir)
 	if err != nil {
 		log.Panicf("error opening repo %s: %s", repoName, err)
@@ -607,7 +608,7 @@ spec:
 		if err != nil {
 			log.Println(err)
 		}
-		file.Close()
+		defer file.Close()
 
 		pkg.Detokenize(repoDir)
 		os.RemoveAll(repoDir + "/terraform/base/.terraform")
