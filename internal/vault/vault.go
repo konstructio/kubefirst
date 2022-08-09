@@ -58,6 +58,10 @@ func ConfigureVault(dryRun bool, bootstrapOnly bool) {
 	// ```
 	// ... obviously keep the sensitive values bound to vars
 
+  if bootstrapOnly {
+		viper.Set("vault.oidc_redirect_uris", "will-be-patched-later")
+	}
+
 	vaultToken := viper.GetString("vault.token")
 	var kPortForwardOutb, kPortForwardErrb bytes.Buffer
 	kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
@@ -88,8 +92,7 @@ func ConfigureVault(dryRun bool, bootstrapOnly bool) {
 	envs["TF_VAR_hosted_zone_id"] = viper.GetString("aws.domainid")
 	envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 	envs["TF_VAR_vault_token"] = vaultToken
-	envs["TF_VAR_vault_redirect_uris"] = "[\"will-be-patched-later\"]"
-
+  envs["TF_VAR_vault_redirect_uris"] = viper.GetString("vault.oidc_redirect_uris")
 	directory := fmt.Sprintf("%s/gitops/terraform/vault", config.K1FolderPath)
 	err = os.Chdir(directory)
 	if err != nil {
@@ -141,6 +144,9 @@ func AddGitlabOidcApplications(dryRun bool) {
 	cb["argo"] = fmt.Sprintf("https://argo.%s/oauth2/callback", domain)
 	cb["argocd"] = fmt.Sprintf("https://argocd.%s/auth/callback", domain)
 	cb["vault"] = fmt.Sprintf("https://vault.%s:8250/oidc/callback http://localhost:8250/oidc/callback https://vault.%s/ui/vault/auth/oidc/oidc/callback http://localhost:8200/ui/vault/auth/oidc/oidc/callback", domain, domain)
+  
+	viper.Set("vault.oidc_redirect_uris", cb["vault"])
+  viper.WriteConfig()
 
 	for _, app := range apps {
 		log.Println("checking to see if", app, "oidc application needs to be created in gitlab")
