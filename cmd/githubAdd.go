@@ -52,7 +52,7 @@ var githubAddCmd = &cobra.Command{
 				return err
 			}
 		}
-
+		viper.Set("github.enabled", true)
 		viper.Set("github.repo.added", true)
 		viper.WriteConfig()
 		return nil

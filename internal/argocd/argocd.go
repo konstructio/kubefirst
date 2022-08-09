@@ -340,7 +340,7 @@ func CreateInitalArgoRepository(githubURL string) error {
 	argoConfig.Configs.Repositories.RepoGitops.URL = githubURL
 	argoConfig.Configs.Repositories.RepoGitops.Type = "git"
 	argoConfig.Configs.Repositories.RepoGitops.Name = "github-gitops"
-	argoConfig.Configs.CredentialTemplates.SSHCreds.URL = "ssh://github.com:22"
+	argoConfig.Configs.CredentialTemplates.SSHCreds.URL = githubURL
 	argoConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = privateKey
 
 	argoYaml, err := yaml2.Marshal(&argoConfig)

@@ -40,6 +40,9 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			return err
 		}
+		viper.Set("github.owner", owner)
+		viper.WriteConfig()
+
 		log.Println("dry-run:", dryrun)
 
 		if viper.GetBool("github.repo.populated") {
@@ -64,6 +67,7 @@ to quickly create a Cobra application.`,
 		}
 		fmt.Println("githubPopulate:", sourceFolder)
 		gitClient.PopulateRepoWithToken(owner, "metaphor", sourceFolder, githubHost)
+		viper.Set("github.metaphor-pushed", true)
 
 		viper.Set("github.repo.populated", true)
 		viper.WriteConfig()
