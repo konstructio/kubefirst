@@ -34,9 +34,16 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
 	})
-	if err != nil {
-		log.Panicf("error cloning %s-template repository from github %s", repoName, err)
+	if err == git.ErrRepositoryAlreadyExists {
+		log.Printf("github repository %s-template was previously cloned from github. warning: %s", repoName, err)
+		repo, err = git.PlainOpen(directory)
+		if err != nil {
+			log.Panic(err)
+		}
+	} else {
+		log.Panic(err)
 	}
+
 	viper.Set(fmt.Sprintf("init.repos.%s.cloned", repoName), true)
 	viper.WriteConfig()
 
@@ -56,6 +63,9 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 		Name: "gitlab",
 		URLs: []string{fmt.Sprintf("https://gitlab.%s/kubefirst/%s.git", domain, repoName)},
 	})
+	if err != nil {
+		log.Println(err)
+	}
 
 	if repoName == "gitops" {
 		log.Println("creating git remote ssh://127.0.0.1:8022/gitops")
@@ -63,6 +73,10 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 			Name: "soft",
 			URLs: []string{"ssh://127.0.0.1:8022/gitops"},
 		})
+		if err != nil {
+			log.Println(err)
+		}
+
 	}
 
 	w, _ := repo.Worktree()
@@ -78,14 +92,6 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 	})
 	viper.WriteConfig()
 }
-
-// func detokenize(path string) {
-
-// 	err := filepath.Walk(path, detokenizeDirectory)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// }
 
 func detokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	if err != nil {
