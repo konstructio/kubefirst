@@ -211,13 +211,13 @@ to quickly create a Cobra application.`,
 		if gitopsTemplateGithubOrgOverride != "" {
 			log.Printf("using --gitops-template-gh-org=%s", gitopsTemplateGithubOrgOverride)
 		}
-		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops-template-spot", viper.GetString("version-gitops"))
+		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops", viper.GetString("version-gitops"))
 		log.Println("clone and detokenization of gitops-template repository complete")
 		trackers[pkg.CloneAndDetokenizeGitOpsTemplate].Tracker.Increment(int64(1))
 
 		//! tracker 7
 		log.Printf("cloning and detokenizing the metaphor-template repository")
-		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor-template", "main")
+		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor", "main")
 		log.Println("clone and detokenization of metaphor-template repository complete")
 		trackers[pkg.CloneAndDetokenizeMetaphorTemplate].Tracker.Increment(int64(1))
 
