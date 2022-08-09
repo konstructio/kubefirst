@@ -60,6 +60,7 @@ func ConfigureVault(dryRun bool, bootstrapOnly bool) {
 
   if bootstrapOnly {
 		viper.Set("vault.oidc_redirect_uris", "will-be-patched-later")
+		viper.WriteConfig()
 	}
 
 	vaultToken := viper.GetString("vault.token")
