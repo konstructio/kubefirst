@@ -20,6 +20,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -71,13 +72,13 @@ var createGithubCmd = &cobra.Command{
 			return err
 		}
 
-		//directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
-		//informUser("Creating K8S Cluster")
-		//terraform.ApplyBaseTerraform(dryRun, directory)
+		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
+		informUser("Creating K8S Cluster")
+		terraform.ApplyBaseTerraform(dryRun, directory)
 
 		//progressPrinter.IncrementTracker("step-terraform", 1)
 
-		informUser("Attempt to recycle certs")
+		//informUser("Attempt to recycle certs")
 		//restoreSSLCmd.Run(cmd, args)
 
 		/*
@@ -88,8 +89,6 @@ var createGithubCmd = &cobra.Command{
 		*/
 		argocd.CreateInitalArgoRepository("git@github.com:kxdroid/gitops.git")
 
-		return nil
-
 		clientset, err := k8s.GetClientSet()
 		if err != nil {
 			log.Printf("Failed to get clientset for k8s : %s", err)
@@ -99,9 +98,8 @@ var createGithubCmd = &cobra.Command{
 
 		//! argocd was just helm installed
 		waitArgoCDToBeReady(dryRun)
-
 		informUser("ArgoCD Ready")
-		progressPrinter.IncrementTracker("step-argo", 1)
+		//progressPrinter.IncrementTracker("step-argo", 1)
 
 		kPortForwardArgocd, err = k8s.K8sPortForward(dryRun, "argocd", "svc/argocd-server", "8080:80")
 		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
@@ -110,15 +108,15 @@ var createGithubCmd = &cobra.Command{
 		// time.Sleep(45 * time.Second)
 
 		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")))
-		progressPrinter.IncrementTracker("step-argo", 1)
+		//progressPrinter.IncrementTracker("step-argo", 1)
 
 		informUser("Setting argocd credentials")
 		setArgocdCreds(dryRun)
-		progressPrinter.IncrementTracker("step-argo", 1)
+		//progressPrinter.IncrementTracker("step-argo", 1)
 
 		informUser("Getting an argocd auth token")
 		token := argocd.GetArgocdAuthToken(dryRun)
-		progressPrinter.IncrementTracker("step-argo", 1)
+		//progressPrinter.IncrementTracker("step-argo", 1)
 
 		argocd.ApplyRegistry(dryRun)
 
@@ -143,7 +141,7 @@ var createGithubCmd = &cobra.Command{
 			}
 		}
 
-		progressPrinter.IncrementTracker("step-argo", 1)
+		//progressPrinter.IncrementTracker("step-argo", 1)
 
 		return nil
 
