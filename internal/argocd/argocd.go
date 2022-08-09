@@ -6,14 +6,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"net/http"
 
-	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/spf13/viper"
+
 	"strings"
 	"time"
+
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
+	yaml2 "gopkg.in/yaml.v2"
 )
 
 type ArgoCDConfig struct {
@@ -197,10 +201,10 @@ func GetArgocdAuthToken(dryRun bool) string {
 		},
 	}
 
-	x := 3
+	x := 20
 	for i := 0; i < x; i++ {
 		log.Printf("requesting auth token from argocd: attempt %d of %d", i+1, x)
-		time.Sleep(1 * time.Second)
+		time.Sleep(5 * time.Second)
 		res, err := client.Do(req)
 
 		if err != nil {
@@ -208,6 +212,11 @@ func GetArgocdAuthToken(dryRun bool) string {
 			continue
 		} else {
 			defer res.Body.Close()
+			log.Printf("Request ArgoCD Token: Result HTTP Status %d", res.StatusCode)
+			if res.StatusCode != http.StatusOK {
+				log.Print("HTTP status NOK")
+				continue
+			}
 			body, err := ioutil.ReadAll(res.Body)
 			if err != nil {
 				log.Print("error sending POST request to get argocd auth token:", err)
@@ -215,9 +224,16 @@ func GetArgocdAuthToken(dryRun bool) string {
 			}
 
 			var dat map[string]interface{}
-
+			if body == nil {
+				log.Print("body object is nil")
+				continue
+			}
 			if err := json.Unmarshal(body, &dat); err != nil {
-				log.Print("error unmarshalling  %s", err)
+				log.Printf("error unmarshalling  %s", err)
+				continue
+			}
+			if dat == nil {
+				log.Print("dat object is nil")
 				continue
 			}
 			token := dat["token"]
@@ -268,4 +284,77 @@ func DeleteArgocdApplicationNoCascade(dryRun bool, applicationName, argocdAuthTo
 	if err != nil {
 		log.Panicf("error: curl app delete failed %s", err)
 	}
+}
+
+func ApplyRegistry(dryRun bool) error {
+	config := configs.ReadConfig()
+	if viper.GetBool("argocd.registry.applied") {
+		log.Println("skipped ApplyRegistry - ")
+		return nil
+	}
+	if !dryRun {
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-base.yaml", config.K1FolderPath))
+		if err != nil {
+			log.Printf("failed to execute kubectl apply of registry-base: %s", err)
+			return err
+		}
+		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-github.yaml", config.K1FolderPath))
+		if err != nil {
+			log.Printf("failed to execute kubectl apply of registry-github: %s", err)
+			return err
+		}
+
+		time.Sleep(45 * time.Second)
+		viper.Set("argocd.registry.applied", true)
+		viper.WriteConfig()
+	}
+	return nil
+}
+
+//ConfigRepo - Sample config struct
+type ConfigRepo struct {
+	Configs struct {
+		Repositories struct {
+			RepoGitops struct {
+				URL      string `yaml:"url"`
+				Insecure bool   `yaml:"insecure"`
+				Type     string `yaml:"type"`
+				Name     string `yaml:"name"`
+			} `yaml:"github-serve-gitops"`
+		} `yaml:"repositories"`
+		CredentialTemplates struct {
+			SSHCreds struct {
+				URL           string `yaml:"url"`
+				SSHPrivateKey string `yaml:"sshPrivateKey"`
+			} `yaml:"ssh-creds"`
+		} `yaml:"credentialTemplates"`
+	} `yaml:"configs"`
+}
+
+//  CreateInitalArgoRepository - Fill and create argocd-init-values.yaml for Github installs
+func CreateInitalArgoRepository(githubURL string) error {
+	config := configs.ReadConfig()
+
+	privateKey := viper.GetString("botprivatekey")
+
+	argoConfig := ConfigRepo{}
+	argoConfig.Configs.Repositories.RepoGitops.URL = githubURL
+	argoConfig.Configs.Repositories.RepoGitops.Insecure = false
+	argoConfig.Configs.Repositories.RepoGitops.Type = "git"
+	argoConfig.Configs.Repositories.RepoGitops.Name = "github-gitops"
+	argoConfig.Configs.CredentialTemplates.SSHCreds.URL = "ssh://github.com:22"
+	argoConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = privateKey
+
+	argoYaml, err := yaml2.Marshal(&argoConfig)
+	if err != nil {
+		log.Printf("error: marsheling yaml for argo config %s", err)
+		return err
+	}
+
+	err = ioutil.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoYaml, 0644)
+	if err != nil {
+		log.Printf("error: could not write argocd-init-values.yaml %s", err)
+		return err
+	}
+	return nil
 }

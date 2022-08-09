@@ -4,13 +4,12 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/kubefirst/kubefirst/configs"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/kubefirst/kubefirst/configs"
 
 	"github.com/spf13/viper"
 )

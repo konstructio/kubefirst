@@ -6,10 +6,12 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // githubPopulateCmd represents the githubPopulate command
@@ -34,6 +36,20 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			return err
 		}
+		dryrun, err := cmd.Flags().GetBool("dry-run")
+		if err != nil {
+			return err
+		}
+		log.Println("dry-run:", dryrun)
+
+		if viper.GetBool("github.repo.populated") {
+			log.Println("github.repo.populated already executed, skiped")
+			return nil
+		}
+		if dryrun {
+			log.Printf("[#99] Dry-run mode, githubPopulateCmd skipped.")
+			return nil
+		}
 
 		//sourceFolder := fmt.Sprintf("%s/sample", config.K1FolderPath)
 		sourceFolder, err := gitClient.CloneRepoAndDetokenize(config.GitopsTemplateURL, "gitops", "main")
@@ -49,12 +65,16 @@ to quickly create a Cobra application.`,
 		fmt.Println("githubPopulate:", sourceFolder)
 		gitClient.PopulateRepoWithToken(owner, "metaphor", sourceFolder, githubHost)
 
+		viper.Set("github.repo.populated", true)
+		viper.WriteConfig()
 		return nil
 	},
 }
 
 func init() {
 	actionCmd.AddCommand(githubPopulateCmd)
-	githubPopulateCmd.Flags().String("github-owner", "", "Github Owner of repos")
-	githubPopulateCmd.Flags().String("github-host", "github.com", "Github repo, usally github.com, but it can change on enterprise customers.")
+	currentCommand := githubPopulateCmd
+	currentCommand.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
+	currentCommand.Flags().String("github-owner", "", "Github Owner of repos")
+	currentCommand.Flags().String("github-host", "github.com", "Github repo, usally github.com, but it can change on enterprise customers.")
 }

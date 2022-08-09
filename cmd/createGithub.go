@@ -5,7 +5,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"bytes"
 	"crypto/tls"
 	"fmt"
 	"log"
@@ -21,13 +20,9 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/reports"
-	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
-	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // createGithubCmd represents the createGithub command
@@ -64,37 +59,42 @@ var createGithubCmd = &cobra.Command{
 			informUser("Telemetry Disabled")
 		}
 
+		informUser("Creating gitops/metaphor repos")
 		err = githubAddCmd.RunE(cmd, args)
 		if err != nil {
 			return err
 		}
 
+		informUser("populating gitops/metaphor repos")
 		err = githubPopulateCmd.RunE(cmd, args)
 		if err != nil {
 			return err
 		}
 
-		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
-		informUser("Creating K8S Cluster")
-		terraform.ApplyBaseTerraform(dryRun, directory)
-		progressPrinter.IncrementTracker("step-terraform", 1)
+		//directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
+		//informUser("Creating K8S Cluster")
+		//terraform.ApplyBaseTerraform(dryRun, directory)
 
-		restoreSSLCmd.Run(cmd, args)
+		//progressPrinter.IncrementTracker("step-terraform", 1)
 
-		kubeconfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
+		informUser("Attempt to recycle certs")
+		//restoreSSLCmd.Run(cmd, args)
+
+		/*
+
+			progressPrinter.AddTracker("step-argo", "Deploy CI/CD ", 5)
+			informUser("Deploy ArgoCD")
+			progressPrinter.IncrementTracker("step-argo", 1)
+		*/
+		argocd.CreateInitalArgoRepository("git@github.com:kxdroid/gitops.git")
+
+		return nil
+
+		clientset, err := k8s.GetClientSet()
 		if err != nil {
-			panic(err.Error())
+			log.Printf("Failed to get clientset for k8s : %s", err)
+			return err
 		}
-		clientset, err := kubernetes.NewForConfig(kubeconfig)
-		if err != nil {
-			panic(err.Error())
-		}
-
-		//! soft-serve steps removed
-
-		progressPrinter.AddTracker("step-argo", "Deploy CI/CD ", 5)
-		informUser("Deploy ArgoCD")
-		progressPrinter.IncrementTracker("step-argo", 1)
 		helm.InstallArgocd(dryRun)
 
 		//! argocd was just helm installed
@@ -103,19 +103,8 @@ var createGithubCmd = &cobra.Command{
 		informUser("ArgoCD Ready")
 		progressPrinter.IncrementTracker("step-argo", 1)
 
-		if !dryRun {
-			var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer
-			kPortForwardArgocd = exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
-			kPortForwardArgocd.Stdout = &kPortForwardArgocdOutb
-			kPortForwardArgocd.Stderr = &kPortForwardArgocdErrb
-			err = kPortForwardArgocd.Start()
-			defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
-			if err != nil {
-				log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
-				log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
-				log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
-			}
-		}
+		kPortForwardArgocd, err = k8s.K8sPortForward(dryRun, "argocd", "svc/argocd-server", "8080:80")
+		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 
 		// log.Println("sleeping for 45 seconds, hurry up jared")
 		// time.Sleep(45 * time.Second)
@@ -131,18 +120,7 @@ var createGithubCmd = &cobra.Command{
 		token := argocd.GetArgocdAuthToken(dryRun)
 		progressPrinter.IncrementTracker("step-argo", 1)
 
-		if !dryRun {
-			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-base.yaml", config.K1FolderPath))
-			if err != nil {
-				log.Panicf("failed to execute kubectl apply of registry-base: %s", err)
-			}
-			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-github.yaml", config.K1FolderPath))
-			if err != nil {
-				log.Panicf("failed to execute kubectl apply of registry-github: %s", err)
-			}
-
-			time.Sleep(45 * time.Second)
-		}
+		argocd.ApplyRegistry(dryRun)
 
 		informUser("Syncing the registry application")
 
@@ -166,6 +144,10 @@ var createGithubCmd = &cobra.Command{
 		}
 
 		progressPrinter.IncrementTracker("step-argo", 1)
+
+		return nil
+
+		//!- Cesar Stops here
 		// todo, need to stall until the registry has synced, then get to ui asap
 
 		//! skip this if syncing from argocd and not helm installing
@@ -179,26 +161,15 @@ var createGithubCmd = &cobra.Command{
 		informUser("Waiting vault to be ready")
 		waitVaultToBeRunning(dryRun)
 		progressPrinter.IncrementTracker("step-github", 1)
-		if !dryRun {
-			var kPortForwardVaultOutb, kPortForwardVaultErrb bytes.Buffer
-			kPortForwardVault := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
-			kPortForwardVault.Stdout = &kPortForwardVaultOutb
-			kPortForwardVault.Stderr = &kPortForwardVaultErrb
-			err = kPortForwardVault.Start()
-			defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
-			if err != nil {
-				// If it doesn't error, we kinda don't care much.
-				log.Printf("Commad Execution STDOUT: %s", kPortForwardVaultOutb.String())
-				log.Printf("Commad Execution STDERR: %s", kPortForwardVaultErrb.String())
-				log.Panicf("error: failed to port-forward to vault in main thread %s", err)
-			}
-		}
+		kPortForwardVault, err := k8s.K8sPortForward(dryRun, "vault", "svc/vault", "8200:8200")
+		defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
+
 		loopUntilPodIsReady(dryRun)
 		initializeVaultAndAutoUnseal(dryRun)
 		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")))
 		progressPrinter.IncrementTracker("step-github", 1)
 
-		if !skipVault {
+		if !true { //skipVault
 
 			progressPrinter.AddTracker("step-vault", "Configure Vault", 2)
 			informUser("waiting for vault unseal")
@@ -271,23 +242,11 @@ var createGithubCmd = &cobra.Command{
 			waitArgoCDToBeReady(dryRun)
 
 			informUser("Port forwarding to new argocd-server pod")
-			if !dryRun {
-				time.Sleep(time.Second * 20)
-				var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer
-				config := configs.ReadConfig()
-				kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
-				kPortForwardArgocd.Stdout = &kPortForwardArgocdOutb
-				kPortForwardArgocd.Stderr = &kPortForwardArgocdErrb
-				err = kPortForwardArgocd.Start()
-				defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
-				if err != nil {
-					log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
-					log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
-					log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
-				}
-				log.Println("sleeping for 40 seconds")
-				time.Sleep(40 * time.Second)
-			}
+			time.Sleep(time.Second * 20)
+			kPortForwardArgocd, err = k8s.K8sPortForward(dryRun, "argocd", "svc/argocd-server", "8080:80")
+			defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+			log.Println("sleeping for 40 seconds")
+			time.Sleep(40 * time.Second)
 
 			informUser("Syncing the registry application")
 			token := argocd.GetArgocdAuthToken(dryRun)
@@ -372,7 +331,6 @@ var createGithubCmd = &cobra.Command{
 		progressPrinter.GetInstance()
 		progressPrinter.SetupProgress(4)
 		//config := configs.ReadConfig()
-		log.Printf(config.AwsProfile)
 		infoCmd.Run(cmd, args)
 
 		progressPrinter.AddTracker("step-0", "Test Installer ", 4)
@@ -385,11 +343,6 @@ var createGithubCmd = &cobra.Command{
 
 		//gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
 		// make a github version of it
-
-		err := githubAddCmd.RunE(cmd, args)
-		if err != nil {
-			return err
-		}
 
 		informUser("Created Github Repo - gitops/metaphor")
 
@@ -431,4 +384,11 @@ func init() {
 	currentCommand.Flags().String("github-org", "", "Github Org of repos")
 	currentCommand.Flags().String("github-owner", "", "Github Owner of repos")
 	currentCommand.Flags().String("github-host", "github.com", "Github repo, usally github.com, but it can change on enterprise customers.")
+	// todo: make this an optional switch and check for it or viper
+	currentCommand.Flags().Bool("destroy", false, "destroy resources")
+	currentCommand.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
+	currentCommand.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
+	currentCommand.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
+	currentCommand.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
+
 }

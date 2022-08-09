@@ -2,11 +2,12 @@ version: "3"
 
 services:
 
-  kubefirst-dev:
+  kubefirst:
     platform: linux/amd64
     build:
-      context: ./build
-    container_name: kubefirst-dev
+      context: .
+      dockerfile: ./build/Dockerfile
+    container_name: kubefirst
     environment:
       TERM: xterm-256color
     ports:
@@ -14,5 +15,12 @@ services:
       - "8888:8888" # GitLab
       - "8200:8200" # Vault
     volumes:
-      - ./:/home/developer/kubefirst
-    command: sh -c "./scripts/kubefirst-dev.sh"
+      - ./:/opt/kubefirst
+      # AWS credentials are strictly used to provision the Kubefirst in your AWS account
+      - $HOME/.aws:/home/developer/.aws
+    command: sh -c "./scripts/kubefirst.sh"
+    dns:
+      - 208.67.222.222 #Cisco DNS
+      - 1.1.1.1 #Cloudflare DNS
+      - 1.0.0.1 #Cloudflare DNS
+      - 8.8.8.8 #Google DNS

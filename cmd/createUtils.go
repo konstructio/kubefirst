@@ -10,12 +10,11 @@ import (
 	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/telemetry"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // todo: move it to internals/ArgoCD
@@ -27,19 +26,16 @@ func setArgocdCreds(dryRun bool) {
 		viper.WriteConfig()
 		return
 	}
-
-	cfg := configs.ReadConfig()
-	config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
-	if err != nil {
-		panic(err.Error())
-	}
-	clientset, err := kubernetes.NewForConfig(config)
+	clientset, err := k8s.GetClientSet()
 	if err != nil {
 		panic(err.Error())
 	}
 	argocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
 	argocdPassword := getSecretValue(argocdSecretClient, "argocd-initial-admin-secret", "password")
+	if argocdPassword == "" {
+		log.Panicf("Missing argocdPassword")
+	}
 
 	viper.Set("argocd.admin.password", argocdPassword)
 	viper.Set("argocd.admin.username", "admin")

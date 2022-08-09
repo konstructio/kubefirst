@@ -33,6 +33,14 @@ var githubRemoveCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		err = gitWrapper.RemoveSSHKey(viper.GetInt64("github.ssh.keyId"))
+		if err != nil {
+			return err
+		}
+
+		viper.Set("github.repo.added", false)
+		viper.Set("github.repo.populated", false)
+		viper.WriteConfig()
 		return nil
 	},
 }
@@ -40,10 +48,12 @@ var githubRemoveCmd = &cobra.Command{
 func init() {
 	actionCmd.AddCommand(githubRemoveCmd)
 
-	githubRemoveCmd.Flags().String("github-owner", "", "Github Owner of repos")
-	viper.BindPFlag("github.owner", githubRemoveCmd.Flags().Lookup("github.owner"))
-	githubRemoveCmd.MarkFlagRequired("github.owner")
+	currentCommand := githubRemoveCmd
+	currentCommand.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
+	currentCommand.Flags().String("github-owner", "", "Github Owner of repos")
+	viper.BindPFlag("github.owner", currentCommand.Flags().Lookup("github.owner"))
+	currentCommand.MarkFlagRequired("github.owner")
 
-	githubRemoveCmd.Flags().String("github-org", "", "Github Org of repos")
-	viper.BindPFlag("github.org", githubRemoveCmd.Flags().Lookup("github-org"))
+	currentCommand.Flags().String("github-org", "", "Github Org of repos")
+	viper.BindPFlag("github.org", currentCommand.Flags().Lookup("github-org"))
 }
