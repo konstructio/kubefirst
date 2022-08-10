@@ -70,20 +70,20 @@ var createGithubCmd = &cobra.Command{
 			return err
 		}
 
+		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
+		informUser("Creating K8S Cluster")
+		terraform.ApplyBaseTerraform(dryRun, directory)
+
 		informUser("populating gitops/metaphor repos")
 		err = githubPopulateCmd.RunE(cmd, args)
 		if err != nil {
 			return err
 		}
 
-		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
-		informUser("Creating K8S Cluster")
-		terraform.ApplyBaseTerraform(dryRun, directory)
-
 		//progressPrinter.IncrementTracker("step-terraform", 1)
 
-		//informUser("Attempt to recycle certs")
-		//restoreSSLCmd.Run(cmd, args)
+		informUser("Attempt to recycle certs")
+		restoreSSLCmd.Run(cmd, args)
 
 		/*
 

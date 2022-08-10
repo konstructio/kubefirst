@@ -27,10 +27,6 @@ to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("githubPopulate called")
 		config := configs.ReadConfig()
-		owner, err := cmd.Flags().GetString("github-owner")
-		if err != nil {
-			return err
-		}
 
 		githubHost, err := cmd.Flags().GetString("github-host")
 		if err != nil {
@@ -40,8 +36,6 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			return err
 		}
-		viper.Set("github.owner", owner)
-		viper.WriteConfig()
 
 		log.Println("dry-run:", dryrun)
 
@@ -54,19 +48,13 @@ to quickly create a Cobra application.`,
 			return nil
 		}
 
+		owner := viper.GetString("github.owner")
 		//sourceFolder := fmt.Sprintf("%s/sample", config.K1FolderPath)
-		sourceFolder, err := gitClient.CloneRepoAndDetokenize(config.GitopsTemplateURL, "gitops", "main")
-		if err != nil {
-			return err
-		}
-		fmt.Println("githubPopulate:", sourceFolder)
-		gitClient.PopulateRepoWithToken(owner, "gitops", sourceFolder, githubHost)
-		sourceFolder, err = gitClient.CloneRepoAndDetokenize(config.MetaphorTemplateURL, "metaphor", "main")
-		if err != nil {
-			return err
-		}
-		fmt.Println("githubPopulate:", sourceFolder)
-		gitClient.PopulateRepoWithToken(owner, "metaphor", sourceFolder, githubHost)
+		fmt.Println("githubPopulate: gitops")
+		gitClient.PopulateRepoWithToken(owner, "gitops", fmt.Sprintf("%s/%s", config.K1FolderPath, "gitops"), githubHost)
+
+		fmt.Println("githubPopulate: metaphor")
+		gitClient.PopulateRepoWithToken(owner, "metaphor", fmt.Sprintf("%s/%s", config.K1FolderPath, "metaphor"), githubHost)
 		viper.Set("github.metaphor-pushed", true)
 
 		viper.Set("github.repo.populated", true)

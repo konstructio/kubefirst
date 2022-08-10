@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -20,6 +22,14 @@ var githubAddCmd = &cobra.Command{
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("githubAddCmd called")
+		config := configs.ReadConfig()
+		owner, err := cmd.Flags().GetString("github-owner")
+		if err != nil {
+			return err
+		}
+		viper.Set("github.owner", owner)
+		viper.WriteConfig()
+
 		org, err := cmd.Flags().GetString("github-org")
 		if err != nil {
 			return err
@@ -51,6 +61,15 @@ var githubAddCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
+		}
+
+		_, err = gitClient.CloneRepoAndDetokenize(config.GitopsTemplateURL, "gitops", "main")
+		if err != nil {
+			return err
+		}
+		_, err = gitClient.CloneRepoAndDetokenize(config.MetaphorTemplateURL, "metaphor", "main")
+		if err != nil {
+			return err
 		}
 		viper.Set("github.enabled", true)
 		viper.Set("github.repo.added", true)
