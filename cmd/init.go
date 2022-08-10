@@ -219,7 +219,7 @@ to quickly create a Cobra application.`,
 		log.Printf("cloning and detokenizing the metaphor-go-template repository")
 		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor-go", "main")
 		log.Println("clone and detokenization of metaphor-go-template repository complete")
-		trackers[pkg.CloneAndDetokenizeMetaphorJsTemplate].Tracker.Increment(int64(1))
+		trackers[pkg.CloneAndDetokenizeMetaphorGoTemplate].Tracker.Increment(int64(1))
 
 		metricName = "kubefirst.init.completed"
 

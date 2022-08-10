@@ -40,7 +40,7 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 		if err != nil {
 			log.Panic(err)
 		}
-	} else {
+	} else if err != nil {
 		log.Panic(err)
 	}
 
