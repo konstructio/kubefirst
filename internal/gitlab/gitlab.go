@@ -480,7 +480,6 @@ func PushGitRepo(dryRun bool, config *configs.Config, gitOrigin, repoName string
 		return
 	}
 	repoDir := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
-	// check if there is a repository at the specified location
 	repo, err := git.PlainOpen(repoDir)
 	if err != nil {
 		log.Panicf("error opening repo %s: %s", repoName, err)
@@ -548,7 +547,7 @@ spec:
 		if err != nil {
 			log.Println(err)
 		}
-		defer file.Close()
+		file.Close()
 
 		pkg.Detokenize(repoDir)
 		os.RemoveAll(repoDir + "/terraform/base/.terraform")
