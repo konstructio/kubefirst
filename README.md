@@ -1,22 +1,92 @@
+<p align="center">
+  <img style="width:44%" src="images/kubefirst.svg" alt="Kubefirst Logo"/>
+</p>
+
+<p align="center">
+  GitOps Infrastructure & Application Delivery Platform
+</p>
+
+<p align="center">
+  <a href="https://docs.kubefirst.com/kubefirst/install.html">Install</a>&nbsp;|&nbsp;
+  <a href="https://docs.kubefirst.com/index.html">Documentation</a>&nbsp;|&nbsp;
+  <a href="https://twitter.com/kubefirst">Twitter</a>&nbsp;|&nbsp;
+  <a href="https://join.slack.com/t/kubefirst/shared_invite/zt-r0r9cfts-OVnH0ooELDLm9n9p2aU7fw">Slack</a>&nbsp;|&nbsp;
+  <a href="https://kubeshop.io/blog-projects/kubefirst">Blog</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/kubefirst/kubefirst/releases"><img title="Release" src="https://img.shields.io/github/v/release/kubefirst/kubefirst"/></a>
+  <!-- <a href=""><img title="Docker builds" src="https://img.shields.io/docker/automated/kubeshop/tracetest"/></a> -->
+  <a href="https://github.com/kubefirst/kubefirst/releases"><img title="Release date" src="https://img.shields.io/github/release-date/kubefirst/kubefirst"/></a>
+</p>
+
+
+---
+
 # Kubefirst CLI
 
-Kubefirst CLI is a cloud provisioning tool. With simple setup and few CLI calls, we spin up a full AWS cluster with full
-GitOps integration, secrets management, production and development Kubernetes environments ready to be consumed.
+The Kubefirst CLI is a cloud provisioning tool. With simple setup and two CLI commands, we create a kubernetes cluster managed with automated Infrastructure as Code, GitOps asset management and application delivery, secrets management, a sample application delivered to development, staging, and production, and so much more. It's an open source platform ready to be customized to suit your company's needs.
 
-- [Setup](#setup)
-- [Start the container](#start-the-container)
+- [DNS Setup](#dns-setup)
+- [Clone the Repository](#clone-the-repository)
+- [Start the Container](#start-the-container)
+- [Connect to the Container](#connect-to-the-container)
 - [Initialization](#initialization)
 - [Creation](#creation)
 - [Access ArgoCD](#access-argocd)
 - [Destroy](#destroy)
-- [Available Commands]()
+- [Available Commands](#available-commands)
 
-## Start the container
+![kubefirst architecture diagram](/images/kubefirst-arch.png)
 
-We run everything on isolation with Docker, for that, start the container with:
+## DNS Setup
+
+In order to install Kubefirst it's required to have a public domain. For root domains, setting the `--hosted-zone-name`
+is enough, in case you want to use subdomains, and the domain is hosted on AWS, please follow the
+[AWS documentation](https://aws.amazon.com/premiumsupport/knowledge-center/create-subdomain-route-53/).
+
+Provisioned services on root domain will be hosted as:
 
 ```bash
-docker-compose up kubefirst-dev
+argocd.example.com
+gitlab.example.com
+...
+```
+
+Provisioned services on subdomains will be hosted as:
+
+```bash
+argocd.subdomain.example.com
+gitlab.subdomain.example.com
+...
+```
+
+## Clone the repository
+
+Clone the repository to have the latest `main` branch content
+
+```bash
+# via HTTPS
+git clone https://github.com/kubefirst/kubefirst.git
+
+# via SSH
+git clone git@github.com:kubefirst/kubefirst.git
+```
+
+## Start the Container
+
+We run everything in isolation with Docker, for that, start the container with:
+
+```bash
+docker-compose up kubefirst
+```
+
+## Connect to the Container
+
+Open a new terminal to connect to the container to run kubefirst
+
+```bash
+docker exec -it kubefirst bash
 ```
 
 ## Initialization
@@ -24,22 +94,27 @@ docker-compose up kubefirst-dev
 Some process requires previous initialization, for that, run:
 
 ```bash
-mkdir -p ~/.kubefirst
-go run . init --admin-email email@example.com --cloud aws --hosted-zone-name example.com --region eu-central-1 --profile default
+kubefirst init \
+--cloud aws \
+--profile default \
+--region eu-central-1 \
+--admin-email user@example.com \
+--cluster-name your_cluster_name \
+--hosted-zone-name domain.example
 ```
 
 ## Creation
 
-At this point, everything is ready to start provisioning the cloud services, and for that we can run:
+At this point, everything is ready to start provisioning the cloud services, and for that run:
 
 ```bash
-go run . cluster create
+kubefirst cluster create
 ```
 
 ## Access ArgoCD
 
 ```bash
-aws eks update-kubeconfig --name kubefirst
+aws eks update-kubeconfig --name your_cluster_name
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 kubectl -n argocd port-forward svc/argocd-server 8080:80
 ```
@@ -49,28 +124,26 @@ kubectl -n argocd port-forward svc/argocd-server 8080:80
 It will destroy the kubefirst management cluster, and clean up every change made in the cloud.
 
 ```bash
-
-go run . destroy
-rm -rf ~/.kubefirst
-rm ~/.flare
+kubefirst destroy
 ```
 
 ## Available Commands
 
 Kubefirst provides extra tooling for handling the provisioning work.
 
-| Command    | Description                                               |
-|:------------|:-----------------------------------------------------------|
+| Command        | Description                                               |
+|:---------------|:----------------------------------------------------------|
 | argocdSync     | Request ArgoCD to synchronize applications                |
 | checktools     | use to check compatibility of .kubefirst/tools            |
 | clean          | removes all kubefirst resources locally for new execution |
 | cluster create | create a kubefirst management cluster                     |
-| destroy    | destroy the kubefirst management cluster                  |
-| info       | provides general Kubefirst setup data                     |
-| init       | initialize your local machine to execute `create`         |
-| version    | print the version number for kubefirst-cli"               |
+| destroy        | destroy the kubefirst management cluster                  |
+| info           | provides general Kubefirst setup data                     |
+| init           | initialize your local machine to execute `create`         |
+| version        | print the version number for kubefirst-cli"               |
 
-#### Notes:
+---
 
-added gitlab.yaml to registry  
-pushing local to soft origin
+## The Provisioning Process
+
+![kubefirst provisioning diagram](/images/provisioning.png)

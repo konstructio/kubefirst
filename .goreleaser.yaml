@@ -28,3 +28,9 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+brews:
+- name: kubefirst
+  homepage: https://github.com/kubefirst/kubefirst
+  tap:
+    owner: kubefirst
+    name: homebrew-tools

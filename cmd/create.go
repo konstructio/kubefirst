@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"log"
 	"os"
+	"net/http"
 	"os/exec"
 	"syscall"
 	"time"
@@ -37,6 +39,8 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		progressPrinter.GetInstance()
+		progressPrinter.SetupProgress(4)
 
 		var kPortForwardArgocd *exec.Cmd
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
@@ -51,6 +55,11 @@ to quickly create a Cobra application.`,
 			log.Panic(err)
 		}
 		dryRun, err := cmd.Flags().GetBool("dry-run")
+		if err != nil {
+			log.Panic(err)
+		}
+
+		useTelemetry, err := cmd.Flags().GetBool("use-telemetry")
 		if err != nil {
 			log.Panic(err)
 		}
@@ -72,13 +81,26 @@ to quickly create a Cobra application.`,
 		progressPrinter.IncrementTracker("step-0", 1)
 
 		progressPrinter.AddTracker("step-softserve", "Prepare Temporary Repo ", 4)
-		sendStartedInstallTelemetry(dryRun)
+		sendStartedInstallTelemetry(dryRun, useTelemetry)
 		progressPrinter.IncrementTracker("step-softserve", 1)
-
+		if !useTelemetry {
+			informUser("Telemetry Disabled")
+		}
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 		informUser("Creating K8S Cluster")
 		terraform.ApplyBaseTerraform(dryRun, directory)
 		progressPrinter.IncrementTracker("step-softserve", 1)
+
+		restoreSSLCmd.Run(cmd, args)
+
+		kubeconfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
+		if err != nil {
+			panic(err.Error())
+		}
+		clientset, err := kubernetes.NewForConfig(kubeconfig)
+		if err != nil {
+			panic(err.Error())
+		}
 
 		//! soft-serve was just applied
 
@@ -118,6 +140,7 @@ to quickly create a Cobra application.`,
 
 		//! argocd was just helm installed
 		waitArgoCDToBeReady(dryRun)
+
 		informUser("ArgoCD Ready")
 		progressPrinter.IncrementTracker("step-argo", 1)
 
@@ -146,7 +169,7 @@ to quickly create a Cobra application.`,
 		progressPrinter.IncrementTracker("step-argo", 1)
 
 		informUser("Getting an argocd auth token")
-		token := argocd.GetArgocdAuthToken(dryRun)
+
 		progressPrinter.IncrementTracker("step-argo", 1)
 		if !dryRun {
 			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry.yaml", config.K1FolderPath))
@@ -155,17 +178,7 @@ to quickly create a Cobra application.`,
 			}
 			time.Sleep(45 * time.Second)
 		}
-		//TODO: ensure argocd is in a good heathy state before syncing the registry application
-
-		informUser("Syncing the registry application")
-		argocd.SyncArgocdApplication(dryRun, "registry", token)
 		progressPrinter.IncrementTracker("step-argo", 1)
-
-		// todo, need to stall until the registry has synced, then get to ui asap
-
-		//! skip this if syncing from argocd and not helm installing
-		// log.Printf("sleeping for 30 seconds, hurry up jared sign into argocd %s", viper.GetString("argocd.admin.password"))
-		// time.Sleep(30 * time.Second)
 
 		//!
 		//* we need to stop here and wait for the vault namespace to exist and the vault pod to be ready
@@ -235,7 +248,7 @@ to quickly create a Cobra application.`,
 			informUser("waiting for vault unseal")
 
 			log.Println("configuring vault")
-			vault.ConfigureVault(dryRun)
+			vault.ConfigureVault(dryRun, true)
 			informUser("Vault configured")
 			progressPrinter.IncrementTracker("step-vault", 1)
 
@@ -268,22 +281,11 @@ to quickly create a Cobra application.`,
 			viper.WriteConfig()
 		}
 		if !dryRun && !viper.GetBool("argocd.oidc-patched") {
-			cfg := configs.ReadConfig()
-			config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
-			if err != nil {
-				panic(err.Error())
-			}
-			clientset, err := kubernetes.NewForConfig(config)
-			if err != nil {
-				panic(err.Error())
-			}
-
 			argocdSecretClient = clientset.CoreV1().Secrets("argocd")
 			patchSecret(argocdSecretClient, "argocd-secret", "oidc.gitlab.clientSecret", viper.GetString("gitlab.oidc.argocd.secret"))
 
 			argocdPodClient := clientset.CoreV1().Pods("argocd")
-			argocdPodName := k8s.GetPodNameByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
-			k8s.DeletePodByName(argocdPodClient, argocdPodName)
+			k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
 			viper.Set("argocd.oidc-patched", true)
 			viper.WriteConfig()
 		}
@@ -314,20 +316,10 @@ to quickly create a Cobra application.`,
 			// informUser("Waiting for argocd host to resolve")
 			// gitlab.AwaitHost("argocd", dryRun)
 			if !dryRun {
-				cfg := configs.ReadConfig()
-				config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
-				if err != nil {
-					panic(err.Error())
-				}
-				clientset, err := kubernetes.NewForConfig(config)
-				if err != nil {
-					panic(err.Error())
-				}
 				argocdPodClient := clientset.CoreV1().Pods("argocd")
-				argocdPodName := k8s.GetPodNameByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
 				kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 				informUser("deleting argocd-server pod")
-				k8s.DeletePodByName(argocdPodClient, argocdPodName)
+				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
 			}
 			informUser("waiting for argocd to be ready")
 			waitArgoCDToBeReady(dryRun)
@@ -353,13 +345,57 @@ to quickly create a Cobra application.`,
 
 			informUser("Syncing the registry application")
 			token := argocd.GetArgocdAuthToken(dryRun)
-			argocd.SyncArgocdApplication(dryRun, "registry", token)
+
+			if dryRun {
+				log.Printf("[#99] Dry-run mode, Sync ArgoCD skipped")
+			} else {
+				// todo: create ArgoCD struct, and host dependencies (like http client)
+				customTransport := http.DefaultTransport.(*http.Transport).Clone()
+				customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+				httpClient := http.Client{Transport: customTransport}
+
+				// retry to sync ArgoCD application until reaches the maximum attempts
+				argoCDIsReady, err := argocd.SyncRetry(&httpClient, 120, 5, "registry", token)
+				if err != nil {
+					log.Printf("something went wrong during ArgoCD sync step, error is: %v", err)
+				}
+
+				if !argoCDIsReady {
+					log.Println("unable to sync ArgoCD application, continuing...")
+				}
+			}
 
 			viper.Set("gitlab.registered", true)
 			viper.WriteConfig()
 		}
 
-		sendCompleteInstallTelemetry(dryRun)
+		//!--
+		// Wait argocd cert to work, or force restart
+		argocdPodClient := clientset.CoreV1().Pods("argocd")
+		for i := 1; i < 15; i++ {
+			argoCDHostReady := gitlab.AwaitHostNTimes("argocd", dryRun, 20)
+			if argoCDHostReady {
+				informUser("ArgoCD DNS is ready")
+				break
+			} else {
+				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+			}
+		}
+
+		//!--
+
+		if !skipVault {
+			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
+			log.Println("configuring vault backend")
+			vault.ConfigureVault(dryRun, false)
+			informUser("Vault backend configured")
+			progressPrinter.IncrementTracker("step-vault-be", 1)
+		}
+
+
+
+
+		sendCompleteInstallTelemetry(dryRun, useTelemetry)
 		time.Sleep(time.Millisecond * 100)
 
 		// prepare data for the handoff report
@@ -408,6 +444,7 @@ func init() {
 	createCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	createCmd.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
 	createCmd.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
+	createCmd.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
 
 	initCmd.Flags().String("profile", "", "the profile to provision the cloud resources in. The profile data is collected from ~/.aws/config")
 	err := initCmd.MarkFlagRequired("profile")

@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -33,6 +35,16 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Panic(err)
 		}
+
+		useTelemetry, err := cmd.Flags().GetBool("use-telemetry")
+		if err != nil {
+			log.Panic(err)
+		}
+
+		if !useTelemetry {
+			log.Println("telemetry is disabled")
+		}
+
 		log.Println("dry run enabled:", dryRun)
 
 		arnRole, err := cmd.Flags().GetString("aws-assume-role")
@@ -62,13 +74,23 @@ to quickly create a Cobra application.`,
 		trackers[pkg.CreateSSHKey] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CreateSSHKey, 1)}
 		trackers[pkg.CreateBuckets] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CreateBuckets, 1)}
 		trackers[pkg.SendTelemetry] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.SendTelemetry, 1)}
+
+		k1Dir := fmt.Sprintf("%s", config.K1FolderPath)
+		if _, err := os.Stat(k1Dir); errors.Is(err, os.ErrNotExist) {
+			if err := os.Mkdir(k1Dir, os.ModePerm); err != nil {
+				log.Panicf("info: could not create directory %q - error: %s", config.K1FolderPath, err)
+			}
+		} else {
+			log.Printf("info: %s already exist", k1Dir)
+		}
+
 		infoCmd.Run(cmd, args)
 		hostedZoneName, _ := cmd.Flags().GetString("hosted-zone-name")
 		metricName := "kubefirst.init.started"
 		metricDomain := hostedZoneName
 
 		if !dryRun {
-			telemetry.SendTelemetry(metricDomain, metricName)
+			telemetry.SendTelemetry(useTelemetry, metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
@@ -134,6 +156,13 @@ to quickly create a Cobra application.`,
 		viper.Set("version-gitops", versionGitOps)
 		log.Println("version-gitops:", versionGitOps)
 
+		bucketRand, err := cmd.Flags().GetString("s3-suffix")
+		if err != nil {
+			log.Panic(err)
+		}
+		viper.Set("bucket.rand", bucketRand)
+		log.Println("s3-suffix:", clusterName)
+
 		viper.WriteConfig()
 
 		//! tracker 0
@@ -175,7 +204,7 @@ to quickly create a Cobra application.`,
 		//* for state and artifacts on open source?
 		//* hitting a bucket limit on an install might deter someone
 		log.Println("creating buckets for state and artifacts")
-		aws.BucketRand(dryRun, trackers)
+		aws.BucketRand(dryRun)
 		trackers[pkg.CreateBuckets].Tracker.Increment(1)
 		log.Println("BucketRand() complete")
 
@@ -205,7 +234,7 @@ to quickly create a Cobra application.`,
 		metricName = "kubefirst.init.completed"
 
 		if !dryRun {
-			telemetry.SendTelemetry(metricDomain, metricName)
+			telemetry.SendTelemetry(useTelemetry, metricDomain, metricName)
 		} else {
 			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
 		}
@@ -236,7 +265,7 @@ func init() {
 	if err != nil {
 		log.Panic(err)
 	}
-	initCmd.Flags().String("region", "", "the region to provision the cloud resources in")
+	initCmd.Flags().String("region", "eu-west-1", "the region to provision the cloud resources in")
 	err = initCmd.MarkFlagRequired("region")
 	if err != nil {
 		log.Panic(err)
@@ -248,6 +277,12 @@ func init() {
 		log.Panic(err)
 	}
 
+
+	initCmd.Flags().String("profile", "default", "AWS profile located at ~/.aws/config")
+	err = initCmd.MarkFlagRequired("profile")
+	if err != nil {
+		log.Panic(err)
+	}
 	initCmd.Flags().Bool("clean", false, "delete any local kubefirst content ~/.kubefirst, ~/.k1")
 
 	log.SetPrefix("LOG: ")
@@ -257,8 +292,10 @@ func init() {
 	log.Println("init started")
 
 	initCmd.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
+	initCmd.Flags().String("s3-suffix", "", "unique identifier for s3 buckets")
 	initCmd.Flags().String("version-gitops", "main", "version/branch used on git clone")
 
 	// AWS assume role
 	initCmd.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")
+	initCmd.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
 }

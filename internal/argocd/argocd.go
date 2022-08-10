@@ -6,49 +6,104 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"net/http"
 
-	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/spf13/viper"
+
 	"strings"
 	"time"
+
+	"github.com/kubefirst/kubefirst/pkg"
 )
-
-// kSyncArgocdApplication request ArgoCD to manual sync an application. Expected parameters are the ArgoCD application
-// name and ArgoCD token with enough permission to perform the request against Argo API. When the http request returns
-// status 200 it means a successful request/true, any other http status response return false.
-func kSyncArgocdApplication(applicationName, argocdAuthToken string) (bool, error) {
-
-	// todo: instantiate a new client on every http request is bad idea, we might need to set a new architecture to avoid
-	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	httpClient := http.Client{Transport: customTransport}
-
-	// todo: url values can be stored on .env files, and consumed when necessary to avoid hardcode urls
-	url := fmt.Sprintf("https://localhost:8081/api/v1/applications/%s/sync", applicationName)
-	req, err := http.NewRequest(http.MethodPost, url, nil)
-	if err != nil {
-		log.Println(err)
-		return false, err
-	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", argocdAuthToken))
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		log.Printf("error sending POST request to ArgoCD for syncing application (%s)\n", applicationName)
-		return false, err
-	}
-
-	if resp.StatusCode == http.StatusOK {
-		return true, nil
-	}
-	return false, nil
-}
 
 type ArgoCDConfig struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+type SyncResponse struct {
+	Status struct {
+		Sync struct {
+			Status string `json:"status"`
+		} `json:"sync"`
+	}
+}
+
+// SyncRetry tries to Sync ArgoCD as many times as requested by the attempts' parameter. On successful request, returns
+// true and no error, on error, returns false and the reason it fails.
+// Possible values for the ArgoCD status are Unknown and Synced, Unknown means the application has some error, and Synced
+// means the application was synced successfully.
+func SyncRetry(httpClient pkg.HTTPDoer, attempts int, interval int, applicationName string, token string) (bool, error) {
+
+	for i := 0; i < attempts; i++ {
+
+		httpCode, syncStatus, err := Sync(httpClient, applicationName, token)
+		if err != nil {
+			log.Println(err)
+			return false, fmt.Errorf("unable to request ArgoCD Sync, error is: %v", err)
+		}
+
+		// success! ArgoCD is synced!
+		if syncStatus == "Synced" {
+			log.Println("ArgoCD application is synced")
+			return true, nil
+		}
+
+		// keep trying
+		if httpCode == http.StatusBadRequest {
+			log.Println("another operation is already in progress")
+		}
+
+		log.Printf(
+			"(%d/%d) sleeping %d seconds before trying to ArgoCD sync again, last Sync status is: %q",
+			i+1,
+			attempts,
+			interval,
+			syncStatus,
+		)
+		time.Sleep(time.Duration(interval) * time.Second)
+	}
+	return false, nil
+}
+
+// Sync request ArgoCD to manual sync an application.
+func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (httpCodeResponse int, syncStatus string, Error error) {
+
+	url := fmt.Sprintf("%s/api/v1/applications/%s/sync", viper.GetString("argocd.local.service"), applicationName)
+	log.Println(url)
+	req, err := http.NewRequest(http.MethodPost, url, nil)
+	if err != nil {
+		log.Println(err)
+		return 0, "", err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", argoCDToken))
+	res, err := httpClient.Do(req)
+	if err != nil {
+		log.Printf("error sending POST request to ArgoCD for syncing application (%s)\n", applicationName)
+		log.Println(err)
+		return res.StatusCode, "", err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		log.Printf("ArgoCD Sync response http code is: %d", res.StatusCode)
+		return res.StatusCode, "", nil
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return res.StatusCode, "", err
+	}
+
+	var syncResponse SyncResponse
+	err = json.Unmarshal(body, &syncResponse)
+	if err != nil {
+		return res.StatusCode, "", err
+	}
+
+	return res.StatusCode, syncResponse.Status.Sync.Status, nil
 }
 
 // getArgoCDToken expects ArgoCD username and password, and returns a ArgoCD Bearer Token.
@@ -117,6 +172,7 @@ func getArgoCDToken(username string, password string) (string, error) {
 	return token, nil
 }
 
+// todo: replace this functions with getArgoCDToken
 func GetArgocdAuthToken(dryRun bool) string {
 
 	if dryRun {
@@ -143,17 +199,22 @@ func GetArgocdAuthToken(dryRun bool) string {
 		},
 	}
 
-	x := 3
+	x := 20
 	for i := 0; i < x; i++ {
-		log.Print("requesting auth token from argocd: attempt %s of %s", i, x)
-		time.Sleep(1 * time.Second)
+		log.Printf("requesting auth token from argocd: attempt %d of %d", i+1, x)
+		time.Sleep(5 * time.Second)
 		res, err := client.Do(req)
-		
+
 		if err != nil {
 			log.Print("error requesting auth token from argocd", err)
 			continue
-		} else {	
-			defer res.Body.Close()		
+		} else {
+			defer res.Body.Close()
+			log.Printf("Request ArgoCD Token: Result HTTP Status %d", res.StatusCode)
+			if res.StatusCode != http.StatusOK {
+				log.Print("HTTP status NOK")
+				continue
+			}
 			body, err := ioutil.ReadAll(res.Body)
 			if err != nil {
 				log.Print("error sending POST request to get argocd auth token:", err)
@@ -161,9 +222,16 @@ func GetArgocdAuthToken(dryRun bool) string {
 			}
 
 			var dat map[string]interface{}
-
+			if body == nil {
+				log.Print("body object is nil")
+				continue
+			}
 			if err := json.Unmarshal(body, &dat); err != nil {
-				log.Print("error unmarshalling  %s", err)
+				log.Printf("error unmarshalling  %s", err)
+				continue
+			}
+			if dat == nil {
+				log.Print("dat object is nil")
 				continue
 			}
 			token := dat["token"]
@@ -176,7 +244,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 	}
 	log.Panic("Fail to get a token")
 	// This code is unreacheble, as in absence of token we want to fail the install.
-	// I kept is to avoid compiler to complain. 
+	// I kept is to avoid compiler to complain.
 	return ""
 }
 

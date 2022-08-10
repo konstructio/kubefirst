@@ -1,15 +1,15 @@
 package pkg
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"github.com/kubefirst/kubefirst/configs"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/kubefirst/kubefirst/configs"
 
 	"github.com/spf13/viper"
 )
@@ -132,4 +132,45 @@ func SetupViper(config *configs.Config) error {
 	log.Println("Using config file:", viper.ConfigFileUsed())
 
 	return nil
+}
+
+func CreateFile(fileName string, fileContent []byte) error {
+	file, err := os.Create(fileName)
+	if err != nil {
+		return fmt.Errorf("error creating file: %s", err)
+	}
+	defer file.Close()
+	_, err = file.Write(fileContent)
+	if err != nil {
+		return fmt.Errorf("unable to write the file: %s", err)
+	}
+	return nil
+}
+
+func CreateFullPath(p string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(p), 0777); err != nil {
+		return nil, err
+	}
+	return os.Create(p)
+}
+
+func AskForConfirmation(s string) bool {
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Printf("%s [y/n]: ", s)
+
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		response = strings.ToLower(strings.TrimSpace(response))
+
+		if response == "y" || response == "yes" {
+			return true
+		} else if response == "n" || response == "no" {
+			return false
+		}
+	}
 }
