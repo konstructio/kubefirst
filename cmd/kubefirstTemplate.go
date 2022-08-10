@@ -34,6 +34,7 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
 	})
+
 	if err == git.ErrRepositoryAlreadyExists {
 		log.Printf("github repository %s-template was previously cloned from github. warning: %s", repoName, err)
 		repo, err = git.PlainOpen(directory)
