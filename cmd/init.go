@@ -218,7 +218,7 @@ to quickly create a Cobra application.`,
 		//! tracker 8
 		log.Printf("cloning and detokenizing the metaphor-go-template repository")
 		// todo: move it to main branch
-		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor-go", "deploy_metaphor_go")
+		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor-go", "add_argo_workflows")
 		log.Println("clone and detokenization of metaphor-go-template repository complete")
 		trackers[pkg.CloneAndDetokenizeMetaphorGoTemplate].Tracker.Increment(int64(1))
 

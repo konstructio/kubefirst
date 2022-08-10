@@ -243,7 +243,7 @@ to quickly create a Cobra application.`,
 			informUser("Vault  secret created")
 			progressPrinter.IncrementTracker("step-vault", 1)
 		}
-		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 5)
+		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 6)
 		if !viper.GetBool("gitlab.oidc-created") {
 			vault.AddGitlabOidcApplications(dryRun)
 			informUser("Added Gitlab OIDC")
@@ -284,6 +284,17 @@ to quickly create a Cobra application.`,
 			viper.Set("gitlab.metaphor-pushed", true)
 			viper.WriteConfig()
 		}
+
+		if !viper.GetBool("gitlab.metaphor-go-pushed") {
+			informUser("Pushing metaphor-go repo to origin gitlab")
+			gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor-go")
+			progressPrinter.IncrementTracker("step-post-gitlab", 1)
+			// todo: keep one of the two git push functions, they're similar, but not exactly the same
+			//gitlab.PushGitOpsToGitLab(dryRun)
+			viper.Set("gitlab.metaphor-go-pushed", true)
+			viper.WriteConfig()
+		}
+
 		if !viper.GetBool("gitlab.registered") {
 			// informUser("Getting ArgoCD auth token")
 			// token := argocd.GetArgocdAuthToken(dryRun)
@@ -369,7 +380,7 @@ to quickly create a Cobra application.`,
 		}
 
 		//!--
-		
+
 		if !skipVault {
 			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
 			log.Println("configuring vault backend")
@@ -377,9 +388,6 @@ to quickly create a Cobra application.`,
 			informUser("Vault backend configured")
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
-
-
-
 
 		sendCompleteInstallTelemetry(dryRun, useTelemetry)
 		time.Sleep(time.Millisecond * 100)

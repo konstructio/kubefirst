@@ -32,9 +32,12 @@ type CreateHandOff struct {
 
 	ChartMuseumUrl string
 
-	MetaphorDevUrl        string
-	MetaphorStageUrl      string
-	MetaphorProductionUrl string
+	MetaphorDevUrl          string
+	MetaphorStageUrl        string
+	MetaphorProductionUrl   string
+	MetaphorGoDevUrl        string
+	MetaphorGoStageUrl      string
+	MetaphorGoProductionUrl string
 }
 
 func BuildCreateHandOffReport(clusterData CreateHandOff) bytes.Buffer {
