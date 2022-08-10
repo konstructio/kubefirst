@@ -28,6 +28,7 @@ var githubAddCmd = &cobra.Command{
 			return err
 		}
 		viper.Set("github.owner", owner)
+		viper.Set("github.enabled", true)
 		viper.WriteConfig()
 
 		org, err := cmd.Flags().GetString("github-org")
@@ -71,7 +72,7 @@ var githubAddCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		viper.Set("github.enabled", true)
+
 		viper.Set("github.repo.added", true)
 		viper.WriteConfig()
 		return nil

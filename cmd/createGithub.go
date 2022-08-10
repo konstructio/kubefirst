@@ -135,7 +135,7 @@ var createGithubCmd = &cobra.Command{
 			httpClient := http.Client{Transport: customTransport}
 
 			// retry to sync ArgoCD application until reaches the maximum attempts
-			argoCDIsReady, err := argocd.SyncRetry(&httpClient, 60, 5, "registry", token)
+			argoCDIsReady, err := argocd.SyncRetry(&httpClient, 20, 5, "registry", token)
 			if err != nil {
 				log.Printf("something went wrong during ArgoCD sync step, error is: %v", err)
 			}
@@ -169,7 +169,7 @@ var createGithubCmd = &cobra.Command{
 		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")))
 		//progressPrinter.IncrementTracker("step-github", 1)
 
-		if skipVault { //skipVault
+		if !skipVault { //skipVault
 
 			//progressPrinter.AddTracker("step-vault", "Configure Vault", 2)
 			informUser("waiting for vault unseal")
