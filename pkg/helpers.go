@@ -69,13 +69,10 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubRepoOwner := viper.GetString(("github.owner"))
 
 		if gitlabConfigured {
-			log.Println("Detokinze in gitlab mode")
 			newContents = strings.Replace(string(read), "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename")), -1)
 		} else if githubConfigured {
-			log.Println("Detokinze in github mode")
 			newContents = strings.Replace(string(read), "https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops", "git@github.com:"+githubRepoOwner+"/"+"gitops", -1)
 		} else {
-			log.Println("Detokinze in generic mode")
 			newContents = strings.Replace(string(read), "https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops.git", "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", -1)
 		}
 
