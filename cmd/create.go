@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
-	"os"
 	"net/http"
 	"os/exec"
 	"syscall"
@@ -63,19 +62,6 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Panic(err)
 		}
-
-		// set profile
-		profile, err := cmd.Flags().GetString("profile")
-		if err != nil {
-			log.Panicf("unable to get region values from viper")
-		}
-		viper.Set("aws.profile", profile)
-		// propagate it to local environment
-		err = os.Setenv("AWS_PROFILE", profile)
-		if err != nil {
-			log.Panicf("unable to set environment variable AWS_PROFILE, error is: %v", err)
-		}
-		log.Println("profile:", profile)
 
 		infoCmd.Run(cmd, args)
 		progressPrinter.IncrementTracker("step-0", 1)
@@ -392,9 +378,6 @@ to quickly create a Cobra application.`,
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
 
-
-
-
 		sendCompleteInstallTelemetry(dryRun, useTelemetry)
 		time.Sleep(time.Millisecond * 100)
 
@@ -446,12 +429,4 @@ func init() {
 	createCmd.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
 	createCmd.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
 
-	initCmd.Flags().String("profile", "", "the profile to provision the cloud resources in. The profile data is collected from ~/.aws/config")
-	err := initCmd.MarkFlagRequired("profile")
-	if err != nil {
-		log.Panic(err)
-	}
-
-	progressPrinter.GetInstance()
-	progressPrinter.SetupProgress(4)
 }

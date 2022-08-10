@@ -3,17 +3,16 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"log"
-	"os/exec"
-	"syscall"
-	"time"
-
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
+	"log"
+	"os/exec"
+	"syscall"
+	"time"
 )
 
 // destroyCmd represents the destroy command
@@ -43,38 +42,9 @@ if the registry has already been deleted.`,
 		if err != nil {
 			log.Panic(err)
 		}
-		destroyBuckets, err := cmd.Flags().GetBool("destroy-buckets")
+		dryRun, err := cmd.Flags().GetBool("dry-run")
 		if err != nil {
 			log.Panic(err)
-		}
-
-		// set profile
-		profile, err := cmd.Flags().GetString("profile")
-		if err != nil {
-			log.Panicf("unable to get region values from viper")
-		}
-		viper.Set("aws.profile", profile)
-		// propagate it to local environment
-		err = os.Setenv("AWS_PROFILE", profile)
-		if err != nil {
-			log.Panicf("unable to set environment variable AWS_PROFILE, error is: %v", err)
-		}
-		log.Println("profile:", profile)
-
-		arnRole, err := cmd.Flags().GetString("aws-assume-role")
-		if err != nil {
-			log.Println("unable to use the provided AWS IAM role for AssumeRole feature")
-			return
-		}
-
-		if len(arnRole) > 0 {
-			log.Println("calling assume role")
-			err := aws.AssumeRole(arnRole)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			log.Printf("assuming new AWS credentials based on role %q", arnRole)
 		}
 
 		if dryRun {
@@ -170,9 +140,5 @@ func init() {
 	destroyCmd.Flags().Bool("skip-gitlab-terraform", false, "whether to skip the terraform destroy against gitlab - note: if you already deleted registry it doesnt exist")
 	destroyCmd.Flags().Bool("skip-delete-register", false, "whether to skip deletion of register application ")
 	destroyCmd.Flags().Bool("skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
-	destroyCmd.Flags().Bool("destroy-buckets", false, "remove created aws buckets, not empty buckets are not cleaned")
 	destroyCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
-
-	// AWS assume role
-	destroyCmd.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")
 }

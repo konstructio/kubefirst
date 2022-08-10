@@ -271,13 +271,6 @@ func init() {
 		log.Panic(err)
 	}
 
-	initCmd.Flags().String("profile", "", "the profile to provision the cloud resources in. The profile data is collected from ~/.aws/config")
-	err = initCmd.MarkFlagRequired("profile")
-	if err != nil {
-		log.Panic(err)
-	}
-
-
 	initCmd.Flags().String("profile", "default", "AWS profile located at ~/.aws/config")
 	err = initCmd.MarkFlagRequired("profile")
 	if err != nil {
