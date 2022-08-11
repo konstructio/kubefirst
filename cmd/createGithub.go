@@ -62,7 +62,7 @@ var createGithubCmd = &cobra.Command{
 		informUser("Creating gitops/metaphor repos")
 		err = githubAddCmd.RunE(cmd, args)
 		if err != nil {
-			log.Println("Error running githubAddCmd")
+			log.Println("Error running:", githubAddCmd.Name())
 			return err
 		}
 		err = loadTemplateCmd.RunE(cmd, args)
@@ -93,7 +93,8 @@ var createGithubCmd = &cobra.Command{
 			informUser("Deploy ArgoCD")
 			progressPrinter.IncrementTracker("step-argo", 1)
 		*/
-		argocd.CreateInitalArgoRepository("git@github.com:kxdroid/gitops.git")
+		gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
+		argocd.CreateInitalArgoRepository(gitopsRepo)
 
 		clientset, err := k8s.GetClientSet()
 		if err != nil {
