@@ -21,7 +21,7 @@ to quickly create a Cobra application.`,
 		fmt.Println("restoreSSL called")
 		err := ssl.RestoreSSL()
 		if err != nil {
-			fmt.Println("Bucket not found, missing SSL backup, assuming first installation")
+			fmt.Printf("Bucket not found, missing SSL backup, assuming first installation, error is: %v", err)
 		}
 	},
 }

@@ -2,6 +2,7 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -426,8 +427,7 @@ func DownloadBucket(bucket string, destFolder string) error {
 	})
 
 	if err != nil {
-		log.Printf("Couldn't list bucket contents")
-		return fmt.Errorf("Couldn't list bucket contents")
+		return errors.New("couldn't list bucket contents")
 	}
 
 	for _, object := range listObjsResponse.Contents {

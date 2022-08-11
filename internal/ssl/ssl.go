@@ -142,7 +142,10 @@ func RestoreSSL() error {
 		}
 	}
 	bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
-	aws.DownloadBucket(bucketName, config.CertsPath)
+	err := aws.DownloadBucket(bucketName, config.CertsPath)
+	if err != nil {
+		return err
+	}
 	//! We need apply secrets firstly than other resources, accordingly with cert-manager docs
 	//pathsRestored := []string{"secrets", "certs", "clusterissuers"}
 	//! At this moment, we dont have the crds certs/clusterissuers installed on cluster
