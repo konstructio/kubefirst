@@ -1,5 +1,7 @@
 package aws
 
+// todo: refactor is necessary to use AWS SDK v2 only
+
 import (
 	"context"
 	"fmt"
@@ -21,8 +23,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	stsV1 "github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/cip8/autoname"
+	"github.com/google/uuid"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
@@ -316,8 +320,9 @@ func GetAWSSession() *session.Session {
 		Profile: viper.GetString("aws.profile"),
 	})
 	if err != nil {
-		log.Panicf("failed to get session ", err.Error())
+		log.Panicf("failed to get session %s", err.Error())
 	}
+
 	return sess
 }
 
@@ -334,6 +339,51 @@ func DestroyBucketsInUse(destroyBuckets bool) {
 	} else {
 		log.Println("Skip: DestroyBucketsInUse")
 	}
+}
+
+// AssumeRole receives a AWS IAM Role, and instead of using regular AWS credentials, it generates new AWS credentials
+// based on the provided role. New AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN are provided. The
+// new AWS credentials has expiration time set.
+func AssumeRole(roleArn string) error {
+
+	sess := GetAWSSession()
+
+	svc := stsV1.New(sess)
+
+	// Use the role session name to uniquely identify a session when the same role is assumed by different principals
+	// or for different reasons.
+	roleSessionName, err := uuid.NewUUID()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	assumeRoleInput := stsV1.AssumeRoleInput{
+		RoleArn:         aws.String(roleArn),
+		RoleSessionName: aws.String(roleSessionName.String()),
+		DurationSeconds: aws.Int64(60 * 60 * 1),
+	}
+
+	result, err := svc.AssumeRole(&assumeRoleInput)
+	if err != nil {
+		fmt.Printf("unable to assume role, %v\n", err)
+		return err
+	}
+
+	// update AWS keys
+	if err := os.Setenv("AWS_ACCESS_KEY_ID", *result.Credentials.AccessKeyId); err != nil {
+		fmt.Printf("unable to set AWS_ACCESS_KEY_ID environment variable. Err: %v", err)
+	}
+
+	if err := os.Setenv("AWS_SECRET_ACCESS_KEY", *result.Credentials.SecretAccessKey); err != nil {
+		fmt.Printf("unable to set AWS_SECRET_ACCESS_KEY environment variable. Err: %v", err)
+	}
+
+	if err := os.Setenv("AWS_SESSION_TOKEN", *result.Credentials.SessionToken); err != nil {
+		fmt.Printf("unable to set AWS_SESSION_TOKEN environment variable. Err: %v", err)
+	}
+
+	return nil
 }
 
 func CreateBucket(dryRun bool, name string) {

@@ -369,7 +369,7 @@ to quickly create a Cobra application.`,
 		}
 
 		//!--
-		
+
 		if !skipVault {
 			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
 			log.Println("configuring vault backend")
@@ -377,9 +377,6 @@ to quickly create a Cobra application.`,
 			informUser("Vault backend configured")
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
-
-
-
 
 		sendCompleteInstallTelemetry(dryRun, useTelemetry)
 		time.Sleep(time.Millisecond * 100)
