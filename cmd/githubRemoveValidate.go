@@ -9,7 +9,6 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // githubRemoveValidateCmd represents the githubRemoveValidate command
@@ -50,8 +49,6 @@ var githubRemoveValidateCmd = &cobra.Command{
 
 func init() {
 	actionCmd.AddCommand(githubRemoveValidateCmd)
-
-	githubRemoveValidateCmd.Flags().String("github-owner", "", "Github Owner of repos")
-	viper.BindPFlag("github.owner", githubRemoveValidateCmd.Flags().Lookup("github.owner"))
+	defineGithubCmdFlags(githubRemoveValidateCmd)
 	githubRemoveValidateCmd.MarkFlagRequired("github.owner")
 }

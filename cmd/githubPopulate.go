@@ -27,34 +27,34 @@ to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("githubPopulate called")
 		config := configs.ReadConfig()
-
-		githubHost, err := cmd.Flags().GetString("github-host")
+		flags, err := processGithubAddCmdFlags(cmd)
 		if err != nil {
 			return err
 		}
-		dryrun, err := cmd.Flags().GetBool("dry-run")
+		globalFlags, err := processGlobalFlags(cmd)
 		if err != nil {
 			return err
 		}
 
-		log.Println("dry-run:", dryrun)
+		log.Println("dry-run:", globalFlags.DryRun)
 
 		if viper.GetBool("github.repo.populated") {
 			log.Println("github.repo.populated already executed, skiped")
 			return nil
 		}
-		if dryrun {
+		if globalFlags.DryRun {
 			log.Printf("[#99] Dry-run mode, githubPopulateCmd skipped.")
 			return nil
 		}
 
 		owner := viper.GetString("github.owner")
-		//sourceFolder := fmt.Sprintf("%s/sample", config.K1FolderPath)
+
 		fmt.Println("githubPopulate: gitops")
-		gitClient.PopulateRepoWithToken(owner, "gitops", fmt.Sprintf("%s/%s", config.K1FolderPath, "gitops"), githubHost)
+		gitClient.PopulateRepoWithToken(owner, "gitops", fmt.Sprintf("%s/%s", config.K1FolderPath, "gitops"), flags.GithubHost)
+		viper.Set("github.gitops-pushed", true)
 
 		fmt.Println("githubPopulate: metaphor")
-		gitClient.PopulateRepoWithToken(owner, "metaphor", fmt.Sprintf("%s/%s", config.K1FolderPath, "metaphor"), githubHost)
+		gitClient.PopulateRepoWithToken(owner, "metaphor", fmt.Sprintf("%s/%s", config.K1FolderPath, "metaphor"), flags.GithubHost)
 		viper.Set("github.metaphor-pushed", true)
 
 		viper.Set("github.repo.populated", true)
@@ -66,7 +66,7 @@ to quickly create a Cobra application.`,
 func init() {
 	actionCmd.AddCommand(githubPopulateCmd)
 	currentCommand := githubPopulateCmd
-	currentCommand.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
-	currentCommand.Flags().String("github-owner", "", "Github Owner of repos")
-	currentCommand.Flags().String("github-host", "github.com", "Github repo, usally github.com, but it can change on enterprise customers.")
+	defineGlobalFlags(currentCommand)
+	defineGithubCmdFlags(currentCommand)
+
 }

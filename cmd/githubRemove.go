@@ -19,17 +19,17 @@ var githubRemoveCmd = &cobra.Command{
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("githubRemove called")
-		owner, err := cmd.Flags().GetString("github-owner")
+		flags, err := processGithubAddCmdFlags(cmd)
 		if err != nil {
 			return err
 		}
-		fmt.Println("Owner used:", owner)
+		fmt.Println("Owner used:", flags.GithubOwner)
 		gitWrapper := githubWrapper.New()
-		err = gitWrapper.RemoveRepo(owner, "gitops")
+		err = gitWrapper.RemoveRepo(flags.GithubOwner, "gitops")
 		if err != nil {
 			return err
 		}
-		err = gitWrapper.RemoveRepo(owner, "metaphor")
+		err = gitWrapper.RemoveRepo(flags.GithubOwner, "metaphor")
 		if err != nil {
 			return err
 		}
@@ -47,13 +47,8 @@ var githubRemoveCmd = &cobra.Command{
 
 func init() {
 	actionCmd.AddCommand(githubRemoveCmd)
-
 	currentCommand := githubRemoveCmd
-	currentCommand.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
-	currentCommand.Flags().String("github-owner", "", "Github Owner of repos")
-	viper.BindPFlag("github.owner", currentCommand.Flags().Lookup("github.owner"))
-	currentCommand.MarkFlagRequired("github.owner")
-
-	currentCommand.Flags().String("github-org", "", "Github Org of repos")
-	viper.BindPFlag("github.org", currentCommand.Flags().Lookup("github-org"))
+	defineGithubCmdFlags(currentCommand)
+	defineGlobalFlags(currentCommand)
+	currentCommand.MarkFlagRequired("github-owner")
 }
