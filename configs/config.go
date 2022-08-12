@@ -75,7 +75,7 @@ func ReadConfig() *Config {
 	// todo adopt latest helmVersion := "v3.9.0"
 	config.HelmVersion = "v3.2.1"
 
-	config.KubefirstVersion = "1.8.4"
+	config.KubefirstVersion = "1.8.5"
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
