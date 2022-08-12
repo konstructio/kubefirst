@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/spf13/cobra"
@@ -35,7 +36,7 @@ var githubRemoveCmd = &cobra.Command{
 		}
 		err = gitWrapper.RemoveSSHKey(viper.GetInt64("github.ssh.keyId"))
 		if err != nil {
-			return err
+			log.Println("Trying to remove key failed:", err)
 		}
 
 		viper.Set("github.repo.added", false)
@@ -50,5 +51,4 @@ func init() {
 	currentCommand := githubRemoveCmd
 	defineGithubCmdFlags(currentCommand)
 	defineGlobalFlags(currentCommand)
-	currentCommand.MarkFlagRequired("github-owner")
 }

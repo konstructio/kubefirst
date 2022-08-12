@@ -20,7 +20,6 @@ var githubAddCmd = &cobra.Command{
 	Long:  `Prepate github account to be used for Kubefirst installation `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("githubAddCmd called")
-
 		flags, err := processGithubAddCmdFlags(cmd)
 		if err != nil {
 			return err
