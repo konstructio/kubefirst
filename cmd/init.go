@@ -140,6 +140,13 @@ to quickly create a Cobra application.`,
 		}
 		log.Println("profile:", profile)
 
+		nodes_spot, err := cmd.Flags().GetBool("aws-nodes-spot")
+		if err != nil {
+			log.Panic(err)
+		}
+		viper.Set("aws.nodes_spot", nodes_spot)
+		log.Println("aws.nodes_spot: ", nodes_spot)
+
 		// cluster name
 		clusterName, err := cmd.Flags().GetString("cluster-name")
 		if err != nil {
@@ -291,4 +298,5 @@ func init() {
 	// AWS assume role
 	initCmd.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")
 	initCmd.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
+	initCmd.Flags().Bool("aws-nodes-spot", false, "nodes spot on AWS EKS compute nodes")
 }

@@ -28,6 +28,13 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 
+		nodes_spot := viper.GetBool("aws.nodes_spot")
+		if nodes_spot {
+			envs["TF_VAR_lifecycle_nodes"] = "SPOT"
+		}
+
+		log.Printf("tf env vars: ", envs)
+
 		err := os.Chdir(directory)
 		if err != nil {
 			log.Panicf("error, directory does not exist - did you `kubefirst init`?: %s \nerror: %v", directory, err)
@@ -38,7 +45,7 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		}
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
 		if err != nil {
-			log.Panic(fmt.Sprintf("error: terraform init failed %v", err))
+			log.Panic(fmt.Sprintf("error: terraform apply failed %v", err))
 		}
 
 		var keyOut bytes.Buffer
@@ -76,6 +83,11 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
+
+		nodes_spot := viper.GetBool("aws.nodes_spot")
+		if nodes_spot {
+			envs["TF_VAR_capacity_type"] = "SPOT"
+		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if err != nil {
