@@ -3,17 +3,16 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"log"
-	"os/exec"
-	"syscall"
-	"time"
-
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
+	"log"
+	"os/exec"
+	"syscall"
+	"time"
 )
 
 // destroyCmd represents the destroy command
@@ -141,6 +140,5 @@ func init() {
 	destroyCmd.Flags().Bool("skip-gitlab-terraform", false, "whether to skip the terraform destroy against gitlab - note: if you already deleted registry it doesnt exist")
 	destroyCmd.Flags().Bool("skip-delete-register", false, "whether to skip deletion of register application ")
 	destroyCmd.Flags().Bool("skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
-	destroyCmd.Flags().Bool("destroy-buckets", false, "remove created aws buckets, not empty buckets are not cleaned")
 	destroyCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 }

@@ -167,7 +167,7 @@ var createGithubCmd = &cobra.Command{
 			informUser("waiting for vault unseal")
 
 			log.Println("configuring vault")
-			vault.ConfigureVault(globalFlags.DryRun)
+			vault.ConfigureVault(globalFlags.DryRun, true)
 			informUser("Vault configured")
 			//progressPrinter.IncrementTracker("step-vault", 1)
 
@@ -188,6 +188,16 @@ var createGithubCmd = &cobra.Command{
 			} else {
 				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
 			}
+		}
+
+		//TODO: Do we need this?
+		//From changes on create
+		if !skipVault {
+			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
+			log.Println("configuring vault backend")
+			vault.ConfigureVault(globalFlags.DryRun, false)
+			informUser("Vault backend configured")
+			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
 
 		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)

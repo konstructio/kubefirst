@@ -234,7 +234,7 @@ to quickly create a Cobra application.`,
 			informUser("waiting for vault unseal")
 
 			log.Println("configuring vault")
-			vault.ConfigureVault(dryRun)
+			vault.ConfigureVault(dryRun, true)
 			informUser("Vault configured")
 			progressPrinter.IncrementTracker("step-vault", 1)
 
@@ -369,6 +369,14 @@ to quickly create a Cobra application.`,
 		}
 
 		//!--
+
+		if !skipVault {
+			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
+			log.Println("configuring vault backend")
+			vault.ConfigureVault(dryRun, false)
+			informUser("Vault backend configured")
+			progressPrinter.IncrementTracker("step-vault-be", 1)
+		}
 
 		sendCompleteInstallTelemetry(dryRun, useTelemetry)
 		time.Sleep(time.Millisecond * 100)

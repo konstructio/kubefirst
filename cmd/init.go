@@ -47,6 +47,22 @@ to quickly create a Cobra application.`,
 
 		log.Println("dry run enabled:", dryRun)
 
+		arnRole, err := cmd.Flags().GetString("aws-assume-role")
+		if err != nil {
+			log.Println("unable to use the provided AWS IAM role for AssumeRole feature")
+			return
+		}
+
+		if len(arnRole) > 0 {
+			log.Println("calling assume role")
+			err := aws.AssumeRole(arnRole)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			log.Printf("assuming new AWS credentials based on role %q", arnRole)
+		}
+
 		pkg.SetupProgress(10)
 		trackers := pkg.GetTrackers()
 		trackers[pkg.DownloadDependencies] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.DownloadDependencies, 3)}
@@ -98,10 +114,10 @@ to quickly create a Cobra application.`,
 		log.Println("adminEmail:", adminEmail)
 		viper.Set("adminemail", adminEmail)
 
-		// profile
+		// set region
 		region, err := cmd.Flags().GetString("region")
 		if err != nil {
-			log.Println(err)
+			log.Panicf("unable to get region values from viper")
 		}
 		viper.Set("aws.region", region)
 		// propagate it to local environment
@@ -111,9 +127,10 @@ to quickly create a Cobra application.`,
 		}
 		log.Println("region:", region)
 
+		// set profile
 		profile, err := cmd.Flags().GetString("profile")
 		if err != nil {
-			log.Println(err)
+			log.Panicf("unable to get region values from viper")
 		}
 		viper.Set("aws.profile", profile)
 		// propagate it to local environment
@@ -122,6 +139,13 @@ to quickly create a Cobra application.`,
 			log.Panicf("unable to set environment variable AWS_PROFILE, error is: %v", err)
 		}
 		log.Println("profile:", profile)
+
+		nodes_spot, err := cmd.Flags().GetBool("aws-nodes-spot")
+		if err != nil {
+			log.Panic(err)
+		}
+		viper.Set("aws.nodes_spot", nodes_spot)
+		log.Println("aws.nodes_spot: ", nodes_spot)
 
 		// cluster name
 		clusterName, err := cmd.Flags().GetString("cluster-name")
@@ -270,5 +294,9 @@ func init() {
 	initCmd.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
 	initCmd.Flags().String("s3-suffix", "", "unique identifier for s3 buckets")
 	initCmd.Flags().String("version-gitops", "main", "version/branch used on git clone")
+
+	// AWS assume role
+	initCmd.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")
 	initCmd.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
+	initCmd.Flags().Bool("aws-nodes-spot", false, "nodes spot on AWS EKS compute nodes")
 }
