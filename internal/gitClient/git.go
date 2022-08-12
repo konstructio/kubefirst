@@ -25,15 +25,19 @@ func CloneRepoAndDetokenize(repoUrl string, folderName string, branch string) (s
 	}
 
 	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, folderName)
-	log.Println("git clone -b ", branch, repoUrl, directory)
+	err := os.RemoveAll(directory)
+	if err != nil {
+		log.Println("Error removing dir(expected if dir not present):", err)
+	}
 
-	_, err := git.PlainClone(directory, false, &git.CloneOptions{
+	log.Println("git clone -b ", branch, repoUrl, directory)
+	_, err = git.PlainClone(directory, false, &git.CloneOptions{
 		URL:           repoUrl,
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
 	})
 	if err != nil {
-		log.Println("error cloning %s repository from github %s", folderName, err)
+		log.Printf("error cloning %s repository from github %s", folderName, err)
 		return directory, err
 	}
 	viper.Set(fmt.Sprintf("init.repos.%s.cloned", folderName), true)
@@ -66,13 +70,16 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 		return fmt.Errorf("missing github token")
 	}
 	directory := fmt.Sprintf("%s/push-%s", config.K1FolderPath, repo)
-
+	err := os.RemoveAll(directory)
+	if err != nil {
+		log.Println("Error removing dir(expected if dir not present):", err)
+	}
 	url := fmt.Sprintf("https://%s@%s/%s/%s.git", token, gitHost, owner, repo)
 	gitRepo, err := git.PlainClone(directory, false, &git.CloneOptions{
 		URL: url,
 	})
 	if err != nil {
-		log.Println("Error clonning git")
+		log.Println("Error clonning git:", err)
 		return err
 	}
 
@@ -81,7 +88,13 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 
 	opt := cp.Options{
 		Skip: func(src string) (bool, error) {
-			return strings.HasSuffix(src, ".git"), nil
+			if strings.HasSuffix(src, ".git") {
+				return true, nil
+			} else if strings.Index(src, "/.terraform") > 0 {
+				return true, nil
+			}
+			return false, nil
+
 		},
 	}
 	err = cp.Copy(sourceFolder, directory, opt)

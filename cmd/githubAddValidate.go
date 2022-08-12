@@ -9,7 +9,6 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // githubAddValidate represents the githubValidate command
@@ -49,9 +48,6 @@ var githubAddValidate = &cobra.Command{
 
 func init() {
 	actionCmd.AddCommand(githubAddValidate)
-
-	githubAddValidate.Flags().String("github-owner", "", "Github Owner of repos")
-	viper.BindPFlag("github.owner", githubAddValidate.Flags().Lookup("github.owner"))
-	githubAddValidate.MarkFlagRequired("github.owner")
+	defineGithubCmdFlags(githubAddValidate)
 
 }

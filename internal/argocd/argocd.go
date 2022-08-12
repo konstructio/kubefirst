@@ -316,10 +316,9 @@ type ConfigRepo struct {
 	Configs struct {
 		Repositories struct {
 			RepoGitops struct {
-				URL      string `yaml:"url"`
-				Insecure bool   `yaml:"insecure"`
-				Type     string `yaml:"type"`
-				Name     string `yaml:"name"`
+				URL  string `yaml:"url"`
+				Type string `yaml:"type"`
+				Name string `yaml:"name"`
 			} `yaml:"github-serve-gitops"`
 		} `yaml:"repositories"`
 		CredentialTemplates struct {
@@ -339,10 +338,9 @@ func CreateInitalArgoRepository(githubURL string) error {
 
 	argoConfig := ConfigRepo{}
 	argoConfig.Configs.Repositories.RepoGitops.URL = githubURL
-	argoConfig.Configs.Repositories.RepoGitops.Insecure = false
 	argoConfig.Configs.Repositories.RepoGitops.Type = "git"
 	argoConfig.Configs.Repositories.RepoGitops.Name = "github-gitops"
-	argoConfig.Configs.CredentialTemplates.SSHCreds.URL = "ssh://github.com:22"
+	argoConfig.Configs.CredentialTemplates.SSHCreds.URL = githubURL
 	argoConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = privateKey
 
 	argoYaml, err := yaml2.Marshal(&argoConfig)
