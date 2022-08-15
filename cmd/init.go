@@ -49,6 +49,12 @@ to quickly create a Cobra application.`,
 			return err
 		}
 
+		githubFlags, err := flagset.ProcessGithubAddCmdFlags(cmd)
+		if err != nil {
+			return err
+		}
+
+		log.Println("github:", githubFlags.GithubHost)
 		log.Println("dry run enabled:", globalFlags.DryRun)
 
 		if len(awsFlags.AssumeRole) > 0 {
@@ -81,9 +87,9 @@ to quickly create a Cobra application.`,
 		}
 
 		infoCmd.Run(cmd, args)
-		hostedZoneName, _ := cmd.Flags().GetString("hosted-zone-name")
+
 		metricName := "kubefirst.init.started"
-		metricDomain := hostedZoneName
+		metricDomain := awsFlags.HostedZoneName
 
 		if !globalFlags.DryRun {
 			telemetry.SendTelemetry(globalFlags.UseTelemetry, metricDomain, metricName)
@@ -96,11 +102,11 @@ to quickly create a Cobra application.`,
 		// hosted zone name:
 		// name of the hosted zone to be used for the kubefirst install
 		// if suffixed with a dot (eg. kubefirst.com.), the dot will be stripped
-		if strings.HasSuffix(hostedZoneName, ".") {
-			hostedZoneName = hostedZoneName[:len(hostedZoneName)-1]
+		if strings.HasSuffix(awsFlags.HostedZoneName, ".") {
+			awsFlags.HostedZoneName = awsFlags.HostedZoneName[:len(awsFlags.HostedZoneName)-1]
 		}
-		log.Println("hostedZoneName:", hostedZoneName)
-		viper.Set("aws.hostedzonename", hostedZoneName)
+		log.Println("hostedZoneName:", awsFlags.HostedZoneName)
+
 		viper.Set("argocd.local.service", "http://localhost:8080")
 		viper.Set("gitlab.local.service", "http://localhost:8888")
 		viper.Set("vault.local.service", "http://localhost:8200")
@@ -129,7 +135,7 @@ to quickly create a Cobra application.`,
 		//! tracker 2
 		// hosted zone id
 		// So we don't have to keep looking it up from the domain name to use it
-		hostedZoneId := aws.GetDNSInfo(hostedZoneName)
+		hostedZoneId := aws.GetDNSInfo(awsFlags.HostedZoneName)
 		// viper values set in above function
 		log.Println("hostedZoneId:", hostedZoneId)
 		progressPrinter.IncrementTracker("step-dns", 1)
@@ -138,7 +144,7 @@ to quickly create a Cobra application.`,
 		// todo: this doesn't default to testing the dns check
 		skipHostedZoneCheck := viper.GetBool("init.hostedzonecheck.enabled")
 		if !skipHostedZoneCheck {
-			aws.TestHostedZoneLiveness(globalFlags.DryRun, hostedZoneName, hostedZoneId)
+			aws.TestHostedZoneLiveness(globalFlags.DryRun, awsFlags.HostedZoneName, hostedZoneId)
 		} else {
 			log.Println("skipping hosted zone check")
 		}
