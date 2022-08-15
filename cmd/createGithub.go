@@ -212,7 +212,7 @@ var createGithubCmd = &cobra.Command{
 func init() {
 	clusterCmd.AddCommand(createGithubCmd)
 	currentCommand := createGithubCmd
-	defineGithubCmdFlags(currentCommand)
+	flagset.DefineGithubCmdFlags(currentCommand)
 	flagset.DefineGlobalFlags(currentCommand)
 	// todo: make this an optional switch and check for it or viper
 	currentCommand.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")

@@ -28,7 +28,7 @@ to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("githubPopulate called")
 		config := configs.ReadConfig()
-		flags, err := processGithubAddCmdFlags(cmd)
+		flags, err := flagset.ProcessGithubAddCmdFlags(cmd)
 		if err != nil {
 			return err
 		}
@@ -68,6 +68,6 @@ func init() {
 	actionCmd.AddCommand(githubPopulateCmd)
 	currentCommand := githubPopulateCmd
 	flagset.DefineGlobalFlags(currentCommand)
-	defineGithubCmdFlags(currentCommand)
+	flagset.DefineGithubCmdFlags(currentCommand)
 
 }

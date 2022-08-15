@@ -21,7 +21,7 @@ func DefineAWSFlags(currentCommand *cobra.Command) {
 	currentCommand.MarkFlagRequired("region")
 }
 
-type awsFlags struct {
+type AwsFlags struct {
 	Profile         string
 	Region          string
 	S3Suffix        string
@@ -30,8 +30,8 @@ type awsFlags struct {
 	HostedZoneName  string
 }
 
-func ProcessAwsFlags(cmd *cobra.Command) (awsFlags, error) {
-	flags := awsFlags{}
+func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
+	flags := AwsFlags{}
 	repoGitOps, err := cmd.Flags().GetString("repo-gitops")
 	defer viper.WriteConfig()
 	if err != nil {

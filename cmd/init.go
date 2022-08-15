@@ -39,7 +39,7 @@ to quickly create a Cobra application.`,
 			return err
 		}
 
-		installerFlags, err := processInstallerGenericFlags(cmd)
+		installerFlags, err := flagset.ProcessInstallerGenericFlags(cmd)
 		if err != nil {
 			return err
 		}
@@ -206,7 +206,7 @@ func init() {
 
 	//Group Flags
 	flagset.DefineGlobalFlags(currentCommand)
-	defineGithubCmdFlags(currentCommand)
+	flagset.DefineGithubCmdFlags(currentCommand)
 	flagset.DefineAWSFlags(currentCommand)
-	defineInstallerGenericFlags(currentCommand)
+	flagset.DefineInstallerGenericFlags(currentCommand)
 }
