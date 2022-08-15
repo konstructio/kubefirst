@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -24,7 +25,7 @@ var githubAddCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		globalFlags, err := processGlobalFlags(cmd)
+		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
 			return err
 		}
@@ -70,6 +71,6 @@ func init() {
 	actionCmd.AddCommand(githubAddCmd)
 	currentCommand := githubAddCmd
 	defineGithubCmdFlags(currentCommand)
-	defineGlobalFlags(currentCommand)
+	flagset.DefineGlobalFlags(currentCommand)
 
 }

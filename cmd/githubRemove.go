@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -50,5 +51,5 @@ func init() {
 	actionCmd.AddCommand(githubRemoveCmd)
 	currentCommand := githubRemoveCmd
 	defineGithubCmdFlags(currentCommand)
-	defineGlobalFlags(currentCommand)
+	flagset.DefineGlobalFlags(currentCommand)
 }

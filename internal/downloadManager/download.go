@@ -6,8 +6,6 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/pkg"
 	"io"
 	"io/fs"
 	"log"
@@ -15,9 +13,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
 )
 
-func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracker) error {
+func DownloadTools(config *configs.Config) error {
 
 	toolsDirPath := fmt.Sprintf("%s/tools", config.K1FolderPath)
 
@@ -91,8 +92,6 @@ func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracke
 		return err
 	}
 	os.RemoveAll(fmt.Sprintf("%s/terraform.zip", toolsDirPath))
-
-	trackers[pkg.DownloadDependencies].Tracker.Increment(int64(1))
 
 	helmVersion := config.HelmVersion
 	helmDownloadUrl := fmt.Sprintf(

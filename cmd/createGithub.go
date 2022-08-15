@@ -15,6 +15,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k8s"
@@ -39,7 +40,7 @@ var createGithubCmd = &cobra.Command{
 		var kPortForwardArgocd *exec.Cmd
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 		config := configs.ReadConfig()
-		globalFlags, err := processGlobalFlags(cmd)
+		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
 			return err
 		}
@@ -212,7 +213,7 @@ func init() {
 	clusterCmd.AddCommand(createGithubCmd)
 	currentCommand := createGithubCmd
 	defineGithubCmdFlags(currentCommand)
-	defineGlobalFlags(currentCommand)
+	flagset.DefineGlobalFlags(currentCommand)
 	// todo: make this an optional switch and check for it or viper
 	currentCommand.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
 	currentCommand.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")

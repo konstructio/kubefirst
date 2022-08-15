@@ -9,6 +9,7 @@ import (
 	"log"
 
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -31,7 +32,7 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			return err
 		}
-		globalFlags, err := processGlobalFlags(cmd)
+		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
 			return err
 		}
@@ -66,7 +67,7 @@ to quickly create a Cobra application.`,
 func init() {
 	actionCmd.AddCommand(githubPopulateCmd)
 	currentCommand := githubPopulateCmd
-	defineGlobalFlags(currentCommand)
+	flagset.DefineGlobalFlags(currentCommand)
 	defineGithubCmdFlags(currentCommand)
 
 }

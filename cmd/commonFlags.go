@@ -7,9 +7,78 @@ import (
 	"github.com/spf13/viper"
 )
 
-func defineGlobalFlags(currentCommand *cobra.Command) {
-	currentCommand.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
-	currentCommand.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
+func defineInstallerGenericFlags(currentCommand *cobra.Command) {
+	//Gewneric Installer flags:
+	currentCommand.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
+	currentCommand.Flags().String("admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
+	currentCommand.MarkFlagRequired("admin-email")
+	currentCommand.Flags().String("cloud", "", "the cloud to provision infrastructure in")
+	currentCommand.MarkFlagRequired("cloud")
+	currentCommand.Flags().String("version-gitops", "main", "version/branch used on git clone")
+	currentCommand.Flags().String("repo-gitops", "https://github.com/kubefirst/gitops-template-gh.git", "version/branch used on git clone")
+}
+
+type InstallerGenericFlags struct {
+	ClusterName  string
+	AdminEmail   string
+	Cloud        string
+	BranchGitops string //former: "version-gitops"
+	RepoGitops   string //To support forks
+}
+
+func processInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, error) {
+	flags := InstallerGenericFlags{}
+	defer viper.WriteConfig()
+
+	adminEmail, err := cmd.Flags().GetString("admin-email")
+	if err != nil {
+		return flags, err
+	}
+	flags.AdminEmail = adminEmail
+	log.Println("adminEmail:", adminEmail)
+	viper.Set("adminemail", adminEmail)
+
+	clusterName, err := cmd.Flags().GetString("cluster-name")
+	if err != nil {
+		return flags, err
+	}
+	viper.Set("cluster-name", clusterName)
+	log.Println("cluster-name:", clusterName)
+	flags.ClusterName = clusterName
+
+	cloud, err := cmd.Flags().GetString("cloud")
+	if err != nil {
+		return flags, err
+	}
+	viper.Set("cloud", cloud)
+	log.Println("cloud:", cloud)
+	flags.Cloud = cloud
+
+	branchGitOps, err := cmd.Flags().GetString("branch-gitops")
+	if err != nil {
+		return flags, err
+	}
+	viper.Set("branch-gitops", branchGitOps)
+	log.Println("branch-gitops:", branchGitOps)
+	flags.BranchGitops = branchGitOps
+
+	repoGitOps, err := cmd.Flags().GetString("repo-gitops")
+	if err != nil {
+		return flags, err
+	}
+	viper.Set("repo-gitops", repoGitOps)
+	log.Println("repo-gitops:", repoGitOps)
+	flags.RepoGitops = branchGitOps
+
+	return flags, nil
+}
+
+// GithubAddCmdFlags - Struct with flags used by githubAddCmd
+type GithubAddCmdFlags struct {
+	GithubOwner string
+	GithubUser  string
+	GithubOrg   string
+	GithubHost  string
 }
 
 func defineGithubCmdFlags(currentCommand *cobra.Command) {
@@ -23,14 +92,6 @@ func defineGithubCmdFlags(currentCommand *cobra.Command) {
 	viper.BindPFlag("github.owner", githubAddCmd.Flags().Lookup("github-owner"))
 	viper.BindPFlag("github.owner", githubAddCmd.Flags().Lookup("github-owner"))
 
-}
-
-// GithubAddCmdFlags - Struct with flags used by githubAddCmd
-type GithubAddCmdFlags struct {
-	GithubOwner string
-	GithubUser  string
-	GithubOrg   string
-	GithubHost  string
 }
 
 func processGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
@@ -70,32 +131,6 @@ func processGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 	flags.GithubOwner = owner
 	flags.GithubOrg = org
 	flags.GithubUser = user
-	return flags, nil
-
-}
-
-type GlobalFlags struct {
-	DryRun       bool
-	UseTelemetry bool
-}
-
-func processGlobalFlags(cmd *cobra.Command) (GlobalFlags, error) {
-	flags := GlobalFlags{}
-
-	dryrun, err := cmd.Flags().GetBool("dry-run")
-	if err != nil {
-		log.Println("Error Processing - dry-run flag")
-		return flags, err
-	}
-	flags.DryRun = dryrun
-
-	useTelemetry, err := cmd.Flags().GetBool("use-telemetry")
-	if err != nil {
-		log.Println("Error Processing - use-telemetry flag")
-		return flags, err
-	}
-	flags.UseTelemetry = useTelemetry
-
 	return flags, nil
 
 }
