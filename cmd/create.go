@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bytes"
 	"crypto/tls"
 	"fmt"
 	"log"
@@ -37,7 +36,7 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		progressPrinter.GetInstance()
 		progressPrinter.SetupProgress(4)
 
@@ -53,28 +52,24 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Panic(err)
 		}
-		dryRun, err := cmd.Flags().GetBool("dry-run")
-		if err != nil {
-			log.Panic(err)
-		}
 
-		useTelemetry, err := cmd.Flags().GetBool("use-telemetry")
+		globalFlags, err := processGlobalFlags(cmd)
 		if err != nil {
-			log.Panic(err)
+			return err
 		}
 
 		infoCmd.Run(cmd, args)
 		progressPrinter.IncrementTracker("step-0", 1)
 
 		progressPrinter.AddTracker("step-softserve", "Prepare Temporary Repo ", 4)
-		sendStartedInstallTelemetry(dryRun, useTelemetry)
+		sendStartedInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
 		progressPrinter.IncrementTracker("step-softserve", 1)
-		if !useTelemetry {
+		if !globalFlags.UseTelemetry {
 			informUser("Telemetry Disabled")
 		}
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 		informUser("Creating K8S Cluster")
-		terraform.ApplyBaseTerraform(dryRun, directory)
+		terraform.ApplyBaseTerraform(globalFlags.DryRun, directory)
 		progressPrinter.IncrementTracker("step-softserve", 1)
 
 		restoreSSLCmd.Run(cmd, args)
@@ -90,58 +85,47 @@ to quickly create a Cobra application.`,
 
 		//! soft-serve was just applied
 
-		softserve.CreateSoftServe(dryRun, config.KubeConfigPath)
+		softserve.CreateSoftServe(globalFlags.DryRun, config.KubeConfigPath)
 		informUser("Created Softserve")
 		progressPrinter.IncrementTracker("step-softserve", 1)
 		informUser("Waiting Softserve")
-		waitForNamespaceandPods(dryRun, config, "soft-serve", "app=soft-serve")
+		waitForNamespaceandPods(globalFlags.DryRun, config, "soft-serve", "app=soft-serve")
 		progressPrinter.IncrementTracker("step-softserve", 1)
 		// todo this should be replaced with something more intelligent
 		log.Println("Waiting for soft-serve installation to complete...")
-		if !dryRun {
-			var kPortForwardSoftServeOutb, kPortForwardSoftServeErrb bytes.Buffer
-			time.Sleep(60 * time.Second)
-			kPortForwardSoftServe := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "soft-serve", "port-forward", "svc/soft-serve", "8022:22")
-			kPortForwardSoftServe.Stdout = &kPortForwardSoftServeOutb
-			kPortForwardSoftServe.Stderr = &kPortForwardSoftServeErrb
-			err = kPortForwardSoftServe.Start()
+		if !globalFlags.DryRun {
+			kPortForwardSoftServe, err := k8s.K8sPortForward(globalFlags.DryRun, "soft-serve", "svc/soft-serve", "8022:22")
 			defer kPortForwardSoftServe.Process.Signal(syscall.SIGTERM)
 			if err != nil {
-				// If it doesn't error, we kinda don't care much.
-				log.Printf("Commad Execution STDOUT: %s", kPortForwardSoftServeOutb.String())
-				log.Printf("Commad Execution STDERR: %s", kPortForwardSoftServeErrb.String())
-				log.Panicf("error: failed to port-forward to soft-serve %s", err)
+				log.Println("Error creating port-forward")
+				return err
 			}
 			time.Sleep(20 * time.Second)
 		}
 
 		informUser("Softserve Update")
-		softserve.ConfigureSoftServeAndPush(dryRun)
+		softserve.ConfigureSoftServeAndPush(globalFlags.DryRun)
 		progressPrinter.IncrementTracker("step-softserve", 1)
 
 		progressPrinter.AddTracker("step-argo", "Deploy CI/CD ", 5)
 		informUser("Deploy ArgoCD")
 		progressPrinter.IncrementTracker("step-argo", 1)
-		helm.InstallArgocd(dryRun)
+		helm.InstallArgocd(globalFlags.DryRun)
 
 		//! argocd was just helm installed
-		waitArgoCDToBeReady(dryRun)
+		waitArgoCDToBeReady(globalFlags.DryRun)
 
 		informUser("ArgoCD Ready")
 		progressPrinter.IncrementTracker("step-argo", 1)
 
-		if !dryRun {
-			var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer
-			kPortForwardArgocd = exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
-			kPortForwardArgocd.Stdout = &kPortForwardArgocdOutb
-			kPortForwardArgocd.Stderr = &kPortForwardArgocdErrb
-			err = kPortForwardArgocd.Start()
+		if !globalFlags.DryRun {
+			kPortForwardArgocd, err = k8s.K8sPortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 			defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 			if err != nil {
-				log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
-				log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
-				log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
+				log.Println("Error creating port-forward")
+				return err
 			}
+
 		}
 
 		// log.Println("sleeping for 45 seconds, hurry up jared")
@@ -151,13 +135,13 @@ to quickly create a Cobra application.`,
 		progressPrinter.IncrementTracker("step-argo", 1)
 
 		informUser("Setting argocd credentials")
-		setArgocdCreds(dryRun)
+		setArgocdCreds(globalFlags.DryRun)
 		progressPrinter.IncrementTracker("step-argo", 1)
 
 		informUser("Getting an argocd auth token")
 
 		progressPrinter.IncrementTracker("step-argo", 1)
-		if !dryRun {
+		if !globalFlags.DryRun {
 			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry.yaml", config.K1FolderPath))
 			if err != nil {
 				log.Panicf("failed to call execute kubectl apply of argocd patch to adopt gitlab: %s", err)
@@ -171,46 +155,35 @@ to quickly create a Cobra application.`,
 		//!
 		progressPrinter.AddTracker("step-gitlab", "Setup Gitlab", 6)
 		informUser("Waiting vault to be ready")
-		waitVaultToBeRunning(dryRun)
+		waitVaultToBeRunning(globalFlags.DryRun)
 		progressPrinter.IncrementTracker("step-gitlab", 1)
-		if !dryRun {
-			var kPortForwardVaultOutb, kPortForwardVaultErrb bytes.Buffer
-			kPortForwardVault := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
-			kPortForwardVault.Stdout = &kPortForwardVaultOutb
-			kPortForwardVault.Stderr = &kPortForwardVaultErrb
-			err = kPortForwardVault.Start()
+		if !globalFlags.DryRun {
+			kPortForwardVault, err := k8s.K8sPortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
 			defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
 			if err != nil {
-				// If it doesn't error, we kinda don't care much.
-				log.Printf("Commad Execution STDOUT: %s", kPortForwardVaultOutb.String())
-				log.Printf("Commad Execution STDERR: %s", kPortForwardVaultErrb.String())
-				log.Panicf("error: failed to port-forward to vault in main thread %s", err)
+				log.Println("Error creating port-forward")
+				return err
 			}
+
 		}
-		loopUntilPodIsReady(dryRun)
-		initializeVaultAndAutoUnseal(dryRun)
+		loopUntilPodIsReady(globalFlags.DryRun)
+		initializeVaultAndAutoUnseal(globalFlags.DryRun)
 		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")))
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 
 		informUser("Waiting gitlab to be ready")
-		waitGitlabToBeReady(dryRun)
+		waitGitlabToBeReady(globalFlags.DryRun)
 		log.Println("waiting for gitlab")
-		waitForGitlab(dryRun, config)
+		waitForGitlab(globalFlags.DryRun, config)
 		log.Println("gitlab is ready!")
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 
-		if !dryRun {
-			var kPortForwardGitlabOutb, kPortForwardGitlabErrb bytes.Buffer
-			kPortForwardGitlab := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "port-forward", "svc/gitlab-webservice-default", "8888:8080")
-			kPortForwardGitlab.Stdout = &kPortForwardGitlabOutb
-			kPortForwardGitlab.Stderr = &kPortForwardGitlabErrb
-			err = kPortForwardGitlab.Start()
+		if !globalFlags.DryRun {
+			kPortForwardGitlab, err := k8s.K8sPortForward(globalFlags.DryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
 			defer kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
 			if err != nil {
-				// If it doesn't error, we kinda don't care much.
-				log.Printf("Commad Execution STDOUT: %s", kPortForwardGitlabOutb.String())
-				log.Printf("Commad Execution STDERR: %s", kPortForwardGitlabErrb.String())
-				log.Panicf("error: failed to port-forward to gitlab in main thread %s", err)
+				log.Println("Error creating port-forward")
+				return err
 			}
 		}
 		informUser(fmt.Sprintf("Gitlab available at %s", viper.GetString("gitlab.local.service")))
@@ -220,11 +193,11 @@ to quickly create a Cobra application.`,
 			// TODO: Confirm if we need to waitgit lab to be ready
 			// OR something, too fast the secret will not be there.
 			informUser("Gitlab setup tokens")
-			gitlab.ProduceGitlabTokens(dryRun)
+			gitlab.ProduceGitlabTokens(globalFlags.DryRun)
 			progressPrinter.IncrementTracker("step-gitlab", 1)
 			informUser("Gitlab terraform")
-			gitlab.ApplyGitlabTerraform(dryRun, directory)
-			gitlab.GitlabKeyUpload(dryRun)
+			gitlab.ApplyGitlabTerraform(globalFlags.DryRun, directory)
+			gitlab.GitlabKeyUpload(globalFlags.DryRun)
 			informUser("Gitlab ready")
 			progressPrinter.IncrementTracker("step-gitlab", 1)
 		}
@@ -234,23 +207,23 @@ to quickly create a Cobra application.`,
 			informUser("waiting for vault unseal")
 
 			log.Println("configuring vault")
-			vault.ConfigureVault(dryRun, true)
+			vault.ConfigureVault(globalFlags.DryRun, true)
 			informUser("Vault configured")
 			progressPrinter.IncrementTracker("step-vault", 1)
 
 			log.Println("creating vault configured secret")
-			createVaultConfiguredSecret(dryRun, config)
+			createVaultConfiguredSecret(globalFlags.DryRun, config)
 			informUser("Vault  secret created")
 			progressPrinter.IncrementTracker("step-vault", 1)
 		}
 		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 5)
 		if !viper.GetBool("gitlab.oidc-created") {
-			vault.AddGitlabOidcApplications(dryRun)
+			vault.AddGitlabOidcApplications(globalFlags.DryRun)
 			informUser("Added Gitlab OIDC")
 			progressPrinter.IncrementTracker("step-post-gitlab", 1)
 
 			informUser("Waiting for Gitlab dns to propagate before continuing")
-			gitlab.AwaitHost("gitlab", dryRun)
+			gitlab.AwaitHost("gitlab", globalFlags.DryRun)
 			progressPrinter.IncrementTracker("step-post-gitlab", 1)
 
 			informUser("Pushing gitops repo to origin gitlab")
@@ -259,14 +232,14 @@ to quickly create a Cobra application.`,
 			viper.WriteConfig()
 		}
 		if !viper.GetBool("gitlab.gitops-pushed") {
-			gitlab.PushGitRepo(dryRun, config, "gitlab", "gitops") // todo: need to handle if this was already pushed, errors on failure)
+			gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "gitops") // todo: need to handle if this was already pushed, errors on failure)
 			progressPrinter.IncrementTracker("step-post-gitlab", 1)
 			// todo: keep one of the two git push functions, they're similar, but not exactly the same
-			//gitlab.PushGitOpsToGitLab(dryRun)
+			//gitlab.PushGitOpsToGitLab(globalFlags.DryRun)
 			viper.Set("gitlab.gitops-pushed", true)
 			viper.WriteConfig()
 		}
-		if !dryRun && !viper.GetBool("argocd.oidc-patched") {
+		if !globalFlags.DryRun && !viper.GetBool("argocd.oidc-patched") {
 			argocdSecretClient = clientset.CoreV1().Secrets("argocd")
 			patchSecret(argocdSecretClient, "argocd-secret", "oidc.gitlab.clientSecret", viper.GetString("gitlab.oidc.argocd.secret"))
 
@@ -277,62 +250,56 @@ to quickly create a Cobra application.`,
 		}
 		if !viper.GetBool("gitlab.metaphor-pushed") {
 			informUser("Pushing metaphor repo to origin gitlab")
-			gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
+			gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "metaphor")
 			progressPrinter.IncrementTracker("step-post-gitlab", 1)
 			// todo: keep one of the two git push functions, they're similar, but not exactly the same
-			//gitlab.PushGitOpsToGitLab(dryRun)
+			//gitlab.PushGitOpsToGitLab(globalFlags.DryRun)
 			viper.Set("gitlab.metaphor-pushed", true)
 			viper.WriteConfig()
 		}
 		if !viper.GetBool("gitlab.registered") {
 			// informUser("Getting ArgoCD auth token")
-			// token := argocd.GetArgocdAuthToken(dryRun)
+			// token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
 			// progressPrinter.IncrementTracker("step-post-gitlab", 1)
 
 			// informUser("Detaching the registry application from softserve")
-			// argocd.DeleteArgocdApplicationNoCascade(dryRun, "registry", token)
+			// argocd.DeleteArgocdApplicationNoCascade(globalFlags.DryRun, "registry", token)
 			// progressPrinter.IncrementTracker("step-post-gitlab", 1)
 
 			informUser("Adding the registry application registered against gitlab")
-			gitlab.ChangeRegistryToGitLab(dryRun)
+			gitlab.ChangeRegistryToGitLab(globalFlags.DryRun)
 			progressPrinter.IncrementTracker("step-post-gitlab", 1)
 			// todo triage / force apply the contents adjusting
 			// todo kind: Application .repoURL:
 
 			// informUser("Waiting for argocd host to resolve")
-			// gitlab.AwaitHost("argocd", dryRun)
-			if !dryRun {
+			// gitlab.AwaitHost("argocd", globalFlags.DryRun)
+			if !globalFlags.DryRun {
 				argocdPodClient := clientset.CoreV1().Pods("argocd")
 				kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 				informUser("deleting argocd-server pod")
 				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
 			}
 			informUser("waiting for argocd to be ready")
-			waitArgoCDToBeReady(dryRun)
+			waitArgoCDToBeReady(globalFlags.DryRun)
 
 			informUser("Port forwarding to new argocd-server pod")
-			if !dryRun {
+			if !globalFlags.DryRun {
 				time.Sleep(time.Second * 20)
-				var kPortForwardArgocdOutb, kPortForwardArgocdErrb bytes.Buffer
-				config := configs.ReadConfig()
-				kPortForwardArgocd := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "port-forward", "svc/argocd-server", "8080:80")
-				kPortForwardArgocd.Stdout = &kPortForwardArgocdOutb
-				kPortForwardArgocd.Stderr = &kPortForwardArgocdErrb
-				err = kPortForwardArgocd.Start()
+				kPortForwardArgocd, err = k8s.K8sPortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 				defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 				if err != nil {
-					log.Printf("Commad Execution STDOUT: %s", kPortForwardArgocdOutb.String())
-					log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
-					log.Panicf("error: failed to port-forward to argocd in main thread %s", err)
+					log.Println("Error creating port-forward")
+					return err
 				}
 				log.Println("sleeping for 40 seconds")
 				time.Sleep(40 * time.Second)
 			}
 
 			informUser("Syncing the registry application")
-			token := argocd.GetArgocdAuthToken(dryRun)
+			token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
 
-			if dryRun {
+			if globalFlags.DryRun {
 				log.Printf("[#99] Dry-run mode, Sync ArgoCD skipped")
 			} else {
 				// todo: create ArgoCD struct, and host dependencies (like http client)
@@ -359,7 +326,7 @@ to quickly create a Cobra application.`,
 		// Wait argocd cert to work, or force restart
 		argocdPodClient := clientset.CoreV1().Pods("argocd")
 		for i := 1; i < 15; i++ {
-			argoCDHostReady := gitlab.AwaitHostNTimes("argocd", dryRun, 20)
+			argoCDHostReady := gitlab.AwaitHostNTimes("argocd", globalFlags.DryRun, 20)
 			if argoCDHostReady {
 				informUser("ArgoCD DNS is ready")
 				break
@@ -373,60 +340,25 @@ to quickly create a Cobra application.`,
 		if !skipVault {
 			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
 			log.Println("configuring vault backend")
-			vault.ConfigureVault(dryRun, false)
+			vault.ConfigureVault(globalFlags.DryRun, false)
 			informUser("Vault backend configured")
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
 
-		sendCompleteInstallTelemetry(dryRun, useTelemetry)
+		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
 		time.Sleep(time.Millisecond * 100)
-
-		// prepare data for the handoff report
-		clusterData := reports.CreateHandOff{
-			AwsAccountId:      viper.GetString("aws.accountid"),
-			AwsHostedZoneName: viper.GetString("aws.hostedzonename"),
-			AwsRegion:         viper.GetString("aws.region"),
-			ClusterName:       viper.GetString("cluster-name"),
-
-			GitlabURL:      fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename")),
-			GitlabUser:     "root",
-			GitlabPassword: viper.GetString("gitlab.root.password"),
-
-			RepoGitops:   fmt.Sprintf("https://gitlab.%s/kubefirst/gitops", viper.GetString("aws.hostedzonename")),
-			RepoMetaphor: fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor", viper.GetString("aws.hostedzonename")),
-
-			VaultUrl:   fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename")),
-			VaultToken: viper.GetString("vault.token"),
-
-			ArgoCDUrl:      fmt.Sprintf("https://argocd.%s", viper.GetString("aws.hostedzonename")),
-			ArgoCDUsername: viper.GetString("argocd.admin.username"),
-			ArgoCDPassword: viper.GetString("argocd.admin.password"),
-
-			ArgoWorkflowsUrl: fmt.Sprintf("https://argo.%s", viper.GetString("aws.hostedzonename")),
-			AtlantisUrl:      fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename")),
-			ChartMuseumUrl:   fmt.Sprintf("https://chartmuseum.%s", viper.GetString("aws.hostedzonename")),
-
-			MetaphorDevUrl:        fmt.Sprintf("https://metaphor-development.%s", viper.GetString("aws.hostedzonename")),
-			MetaphorStageUrl:      fmt.Sprintf("https://metaphor-staging.%s", viper.GetString("aws.hostedzonename")),
-			MetaphorProductionUrl: fmt.Sprintf("https://metaphor-production.%s", viper.GetString("aws.hostedzonename")),
-		}
-
-		// build the string that will be sent to the report
-		handOffData := reports.BuildCreateHandOffReport(clusterData)
-		// call handoff report and apply style
-		reports.CommandSummary(handOffData)
-
+		reports.HandoffScreen()
+		return nil
 	},
 }
 
 func init() {
 	clusterCmd.AddCommand(createCmd)
-
+	currentCommand := createCmd
 	// todo: make this an optional switch and check for it or viper
 	createCmd.Flags().Bool("destroy", false, "destroy resources")
-	createCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	createCmd.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
 	createCmd.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
-	createCmd.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
+	defineGlobalFlags(currentCommand)
 
 }
