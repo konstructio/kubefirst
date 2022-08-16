@@ -156,6 +156,14 @@ to quickly create a Cobra application.`,
 		viper.Set("version-gitops", versionGitOps)
 		log.Println("version-gitops:", versionGitOps)
 
+		// version-gitops
+		templateTag, err := cmd.Flags().GetString("template-tags")
+		if err != nil {
+			log.Panic(err)
+		}
+		viper.Set("templateTag", templateTag)
+		log.Println("template-tags:", templateTag)
+
 		bucketRand, err := cmd.Flags().GetString("s3-suffix")
 		if err != nil {
 			log.Panic(err)
@@ -221,13 +229,13 @@ to quickly create a Cobra application.`,
 		if gitopsTemplateGithubOrgOverride != "" {
 			log.Printf("using --gitops-template-gh-org=%s", gitopsTemplateGithubOrgOverride)
 		}
-		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops", viper.GetString("version-gitops"))
+		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops", viper.GetString("version-gitops"), viper.GetString("templateTag"))
 		log.Println("clone and detokenization of gitops-template repository complete")
 		trackers[pkg.CloneAndDetokenizeGitOpsTemplate].Tracker.Increment(int64(1))
 
 		//! tracker 7
 		log.Printf("cloning and detokenizing the metaphor-template repository")
-		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor", "main")
+		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor", "", viper.GetString("templateTag"))
 		log.Println("clone and detokenization of metaphor-template repository complete")
 		trackers[pkg.CloneAndDetokenizeMetaphorTemplate].Tracker.Increment(int64(1))
 
@@ -248,8 +256,11 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	rootCmd.AddCommand(initCmd)
+	config := configs.ReadConfig()
 
+	currentVersion := fmt.Sprintf("v%s", config.KubefirstVersion)
+
+	rootCmd.AddCommand(initCmd)
 	initCmd.Flags().String("hosted-zone-name", "", "the domain to provision the kubefirst platform in")
 	err := initCmd.MarkFlagRequired("hosted-zone-name")
 	if err != nil {
@@ -286,7 +297,9 @@ func init() {
 
 	initCmd.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
 	initCmd.Flags().String("s3-suffix", "", "unique identifier for s3 buckets")
-	initCmd.Flags().String("version-gitops", "main", "version/branch used on git clone")
+	//We should try to synch this with newer naming
+	initCmd.Flags().String("version-gitops", "", "version/branch used on git clone")
+	initCmd.Flags().String("template-tags", currentVersion, "version/branch used on git clone")
 
 	// AWS assume role
 	initCmd.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")

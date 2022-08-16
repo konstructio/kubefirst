@@ -18,10 +18,24 @@ import (
 	"github.com/spf13/viper"
 )
 
-func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName string, branch string) {
+func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName string, branch string, tag string) {
 
-	if branch == "" {
+	isMainBranch := true
+	if branch == "" && tag == "" {
 		branch = "main"
+	}
+	var source plumbing.ReferenceName
+	if branch == "" && tag != "" {
+		source = plumbing.NewTagReferenceName(tag)
+	} else if branch != "" && tag == "" {
+		source = plumbing.NewBranchReferenceName(branch)
+	} else {
+		//Erroring out
+		log.Panicf("It must must be select a branch or a tag as source, both are not supported")
+	}
+
+	if branch != "main" {
+		isMainBranch = false
 	}
 
 	repoUrl := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)
@@ -31,12 +45,13 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 
 	repo, err := git.PlainClone(directory, false, &git.CloneOptions{
 		URL:           repoUrl,
-		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		ReferenceName: source,
 		SingleBranch:  true,
 	})
 	if err != nil {
 		log.Panicf("error cloning %s-template repository from github %s", repoName, err)
 	}
+
 	viper.Set(fmt.Sprintf("init.repos.%s.cloned", repoName), true)
 	viper.WriteConfig()
 
@@ -66,6 +81,19 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 	}
 
 	w, _ := repo.Worktree()
+	if !isMainBranch {
+		branchName := plumbing.NewBranchReferenceName("main")
+		headRef, err := repo.Head()
+		if err != nil {
+			log.Panicf("Error Setting reference: %s, %s", repoName, err)
+		}
+		ref := plumbing.NewHashReference(branchName, headRef.Hash())
+		err = repo.Storer.SetReference(ref)
+		if err != nil {
+			log.Panicf("error Storing reference: %s, %s", repoName, err)
+		}
+		err = w.Checkout(&git.CheckoutOptions{Branch: ref.Name()})
+	}
 
 	log.Println(fmt.Sprintf("committing detokenized %s content", repoName))
 	w.Add(".")
