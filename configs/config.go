@@ -31,6 +31,7 @@ type Config struct {
 	TerraformPath           string
 
 	KubectlVersion   string `env:"KUBECTL_VERSION" envDefault:"v1.20.0"`
+	KubectlVersionM1 string
 	TerraformVersion string
 	HelmVersion      string
 
@@ -73,7 +74,8 @@ func ReadConfig() *Config {
 	config.TerraformVersion = "1.0.11"
 	config.ArgoCDChartHelmVersion = "4.10.5"
 	// todo adopt latest helmVersion := "v3.9.0"
-	config.HelmVersion = "v3.2.1"
+	config.HelmVersion = "v3.6.1"
+	config.KubectlVersionM1 = "v1.21.14"
 
 	config.KubefirstVersion = "1.8.5"
 

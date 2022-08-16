@@ -6,8 +6,6 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/pkg"
 	"io"
 	"io/fs"
 	"log"
@@ -15,6 +13,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
 )
 
 func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracker) error {
@@ -29,13 +30,18 @@ func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracke
 		}
 	}
 
+	kVersion := config.KubectlVersion
+	if config.LocalOs == "darwin" && config.LocalArchitecture == "arm64" {
+		kVersion = config.KubectlVersionM1
+	}
+
 	kubectlDownloadUrl := fmt.Sprintf(
 		"https://dl.k8s.io/release/%s/bin/%s/%s/kubectl",
-		config.KubectlVersion,
+		kVersion,
 		config.LocalOs,
 		config.LocalArchitecture,
 	)
-
+	log.Printf("Downloading kubectl from: %s", kubectlDownloadUrl)
 	err := downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
 	if err != nil {
 		return err
@@ -70,7 +76,7 @@ func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracke
 		config.LocalOs,
 		config.LocalArchitecture,
 	)
-
+	log.Printf("Downloading terraform from %s", terraformDownloadUrl)
 	terraformDownloadZipPath := fmt.Sprintf("%s/tools/terraform.zip", config.K1FolderPath)
 	err = downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
 	if err != nil {
@@ -101,7 +107,7 @@ func DownloadTools(config *configs.Config, trackers map[string]*pkg.ActionTracke
 		config.LocalOs,
 		config.LocalArchitecture,
 	)
-
+	log.Printf("Downloading terraform from %s", helmDownloadUrl)
 	helmDownloadTarGzPath := fmt.Sprintf("%s/tools/helm.tar.gz", config.K1FolderPath)
 	err = downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
 	if err != nil {
