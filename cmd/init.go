@@ -157,12 +157,12 @@ to quickly create a Cobra application.`,
 		log.Println("version-gitops:", versionGitOps)
 
 		// version-gitops
-		templateTag, err := cmd.Flags().GetString("template-tags")
+		templateTag, err := cmd.Flags().GetString("template-tag")
 		if err != nil {
 			log.Panic(err)
 		}
 		viper.Set("template.tag", templateTag)
-		log.Println("template-tags:", templateTag)
+		log.Println("template-tag:", templateTag)
 
 		bucketRand, err := cmd.Flags().GetString("s3-suffix")
 		if err != nil {
@@ -297,7 +297,9 @@ func init() {
 	initCmd.Flags().String("s3-suffix", "", "unique identifier for s3 buckets")
 	//We should try to synch this with newer naming
 	initCmd.Flags().String("version-gitops", "", "version/branch used on git clone")
-	initCmd.Flags().String("template-tags", config.KubefirstVersion, "version/branch used on git clone")
+	initCmd.Flags().String("template-tag", config.KubefirstVersion, `fallback tag used on git clone.
+Details: if "version-gitops" is provided, branch("version-gitops") has precedence and installer will attempt to clone branch("version-gitops") first,
+if it fails, then fallback it will attempt to clone the tag provided at "template-tag" flag`)
 
 	// AWS assume role
 	initCmd.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")
