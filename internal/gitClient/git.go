@@ -124,7 +124,7 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 			log.Printf("error cloning %s-template repository from github %s at tag %s", repoName, err, fallbackTag)
 		} else {
 			isRepoClone = true
-			viper.Set(fmt.Sprintf("git.clone.%s.tag", repoName), branch)
+			viper.Set(fmt.Sprintf("git.clone.%s.tag", repoName), fallbackTag)
 		}
 	}
 

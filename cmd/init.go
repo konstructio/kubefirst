@@ -161,7 +161,7 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Panic(err)
 		}
-		viper.Set("templateTag", templateTag)
+		viper.Set("template.tag", templateTag)
 		log.Println("template-tags:", templateTag)
 
 		bucketRand, err := cmd.Flags().GetString("s3-suffix")
@@ -229,13 +229,13 @@ to quickly create a Cobra application.`,
 		if gitopsTemplateGithubOrgOverride != "" {
 			log.Printf("using --gitops-template-gh-org=%s", gitopsTemplateGithubOrgOverride)
 		}
-		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops", viper.GetString("version-gitops"), viper.GetString("templateTag"))
+		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops", viper.GetString("version-gitops"), viper.GetString("template.tag"))
 		log.Println("clone and detokenization of gitops-template repository complete")
 		trackers[pkg.CloneAndDetokenizeGitOpsTemplate].Tracker.Increment(int64(1))
 
 		//! tracker 7
 		log.Printf("cloning and detokenizing the metaphor-template repository")
-		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor", "", viper.GetString("templateTag"))
+		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor", "", viper.GetString("template.tag"))
 		log.Println("clone and detokenization of metaphor-template repository complete")
 		trackers[pkg.CloneAndDetokenizeMetaphorTemplate].Tracker.Increment(int64(1))
 
