@@ -258,8 +258,6 @@ to quickly create a Cobra application.`,
 func init() {
 	config := configs.ReadConfig()
 
-	currentVersion := fmt.Sprintf("v%s", config.KubefirstVersion)
-
 	rootCmd.AddCommand(initCmd)
 	initCmd.Flags().String("hosted-zone-name", "", "the domain to provision the kubefirst platform in")
 	err := initCmd.MarkFlagRequired("hosted-zone-name")
@@ -299,7 +297,7 @@ func init() {
 	initCmd.Flags().String("s3-suffix", "", "unique identifier for s3 buckets")
 	//We should try to synch this with newer naming
 	initCmd.Flags().String("version-gitops", "", "version/branch used on git clone")
-	initCmd.Flags().String("template-tags", currentVersion, "version/branch used on git clone")
+	initCmd.Flags().String("template-tags", config.KubefirstVersion, "version/branch used on git clone")
 
 	// AWS assume role
 	initCmd.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")

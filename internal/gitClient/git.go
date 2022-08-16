@@ -38,7 +38,6 @@ func CloneGitOpsRepo() {
 }
 
 func PushGitopsToSoftServe() {
-
 	cfg := configs.ReadConfig()
 	directory := fmt.Sprintf("%s/gitops", cfg.K1FolderPath)
 
@@ -80,5 +79,74 @@ func PushGitopsToSoftServe() {
 	if err != nil {
 		log.Panicf("error pushing to remote", err)
 	}
+
+}
+
+// CloneTemplateRepoWithFallBack - Tries to clone branch, if defined, else try to clone Tag
+// In the absence of matching tag/branch function will fail
+func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory string, branch string, fallbackTag string) error {
+	defer viper.WriteConfig()
+
+	repoURL := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)
+
+	isMainBranch := true
+	isRepoClone := false
+	if branch != "main" {
+		isMainBranch = false
+	}
+	//Clone branch if defined
+	//Clone tag if defined
+	var repo *git.Repository
+	var err error
+	if branch != "" {
+		log.Printf("Trying to clone branch(%s):%s ", branch, repoURL)
+		repo, err = git.PlainClone(directory, false, &git.CloneOptions{
+			URL:           repoURL,
+			ReferenceName: plumbing.NewBranchReferenceName(branch),
+			SingleBranch:  true,
+		})
+		if err != nil {
+			log.Printf("error cloning %s-template repository from github %s at branch %s", repoName, err, branch)
+		} else {
+			isRepoClone = true
+			viper.Set(fmt.Sprintf("git.clone.%s.branch", repoName), branch)
+		}
+	}
+
+	if !isRepoClone && fallbackTag != "" {
+		log.Printf("Trying to clone tag(%s):%s ", branch, fallbackTag)
+		repo, err = git.PlainClone(directory, false, &git.CloneOptions{
+			URL:           repoURL,
+			ReferenceName: plumbing.NewTagReferenceName(fallbackTag),
+			SingleBranch:  true,
+		})
+		if err != nil {
+			log.Printf("error cloning %s-template repository from github %s at tag %s", repoName, err, fallbackTag)
+		} else {
+			isRepoClone = true
+			viper.Set(fmt.Sprintf("git.clone.%s.tag", repoName), branch)
+		}
+	}
+
+	if !isRepoClone {
+		log.Printf("Error cloning template of repos, code not found on Branch(%s) or Tag(%s) of repo: %s", branch, fallbackTag, repoURL)
+		return fmt.Errorf("Error cloning template, No templates found on branch or tag")
+	}
+
+	w, _ := repo.Worktree()
+	if !isMainBranch {
+		branchName := plumbing.NewBranchReferenceName("main")
+		headRef, err := repo.Head()
+		if err != nil {
+			log.Panicf("Error Setting reference: %s, %s", repoName, err)
+		}
+		ref := plumbing.NewHashReference(branchName, headRef.Hash())
+		err = repo.Storer.SetReference(ref)
+		if err != nil {
+			log.Panicf("error Storing reference: %s, %s", repoName, err)
+		}
+		err = w.Checkout(&git.CheckoutOptions{Branch: ref.Name()})
+	}
+	return nil
 
 }
