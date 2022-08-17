@@ -32,12 +32,15 @@ type CreateHandOff struct {
 
 	ChartMuseumUrl string
 
-	MetaphorDevUrl          string
-	MetaphorStageUrl        string
-	MetaphorProductionUrl   string
-	MetaphorGoDevUrl        string
-	MetaphorGoStageUrl      string
-	MetaphorGoProductionUrl string
+	MetaphorJsDevUrl              string
+	MetaphorJsStageUrl            string
+	MetaphorJsProductionUrl       string
+	MetaphorGoDevUrl              string
+	MetaphorGoStageUrl            string
+	MetaphorGoProductionUrl       string
+	MetaphorFrontendDevUrl        string
+	MetaphorFrontendStageUrl      string
+	MetaphorFrontendProductionUrl string
 }
 
 func BuildCreateHandOffReport(clusterData CreateHandOff) bytes.Buffer {
@@ -96,11 +99,25 @@ func BuildCreateHandOffReport(clusterData CreateHandOff) bytes.Buffer {
 	handOffData.WriteString(" see vault for credentials ")
 	//handOffData.WriteString(strings.Repeat("-", 70))
 
-	handOffData.WriteString("\n--- Metaphor ")
+	handOffData.WriteString("\n--- Metaphor JS")
 	handOffData.WriteString(strings.Repeat("-", 57))
-	handOffData.WriteString(fmt.Sprintf("\n Development: %s", clusterData.MetaphorDevUrl))
-	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", clusterData.MetaphorStageUrl))
-	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", clusterData.MetaphorProductionUrl))
+	handOffData.WriteString(fmt.Sprintf("\n Development: %s", clusterData.MetaphorJsDevUrl))
+	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", clusterData.MetaphorJsStageUrl))
+	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", clusterData.MetaphorJsProductionUrl))
+	handOffData.WriteString(strings.Repeat("-", 70))
+
+	handOffData.WriteString("\n--- Metaphor Go")
+	handOffData.WriteString(strings.Repeat("-", 57))
+	handOffData.WriteString(fmt.Sprintf("\n Development: %s", clusterData.MetaphorGoDevUrl))
+	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", clusterData.MetaphorGoStageUrl))
+	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", clusterData.MetaphorGoProductionUrl))
+	handOffData.WriteString(strings.Repeat("-", 70))
+
+	handOffData.WriteString("\n--- Metaphor Frontend")
+	handOffData.WriteString(strings.Repeat("-", 57))
+	handOffData.WriteString(fmt.Sprintf("\n Development: %s", clusterData.MetaphorFrontendDevUrl))
+	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", clusterData.MetaphorFrontendStageUrl))
+	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", clusterData.MetaphorFrontendProductionUrl))
 	handOffData.WriteString(strings.Repeat("-", 70))
 
 	return handOffData

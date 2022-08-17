@@ -433,9 +433,17 @@ to quickly create a Cobra application.`,
 			AtlantisUrl:      fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename")),
 			ChartMuseumUrl:   fmt.Sprintf("https://chartmuseum.%s", viper.GetString("aws.hostedzonename")),
 
-			MetaphorDevUrl:        fmt.Sprintf("https://metaphor-development.%s", viper.GetString("aws.hostedzonename")),
-			MetaphorStageUrl:      fmt.Sprintf("https://metaphor-staging.%s", viper.GetString("aws.hostedzonename")),
-			MetaphorProductionUrl: fmt.Sprintf("https://metaphor-production.%s", viper.GetString("aws.hostedzonename")),
+			MetaphorJsDevUrl:        fmt.Sprintf("https://metaphor-development.%s", viper.GetString("aws.hostedzonename")),
+			MetaphorJsStageUrl:      fmt.Sprintf("https://metaphor-staging.%s", viper.GetString("aws.hostedzonename")),
+			MetaphorJsProductionUrl: fmt.Sprintf("https://metaphor-production.%s", viper.GetString("aws.hostedzonename")),
+
+			MetaphorGoDevUrl:        fmt.Sprintf("https://metaphor-go-development.%s", viper.GetString("aws.hostedzonename")),
+			MetaphorGoStageUrl:      fmt.Sprintf("https://metaphor-go-staging.%s", viper.GetString("aws.hostedzonename")),
+			MetaphorGoProductionUrl: fmt.Sprintf("https://metaphor-go-production.%s", viper.GetString("aws.hostedzonename")),
+
+			MetaphorFrontendDevUrl:        fmt.Sprintf("https://metaphor-frontend-development.%s", viper.GetString("aws.hostedzonename")),
+			MetaphorFrontendStageUrl:      fmt.Sprintf("https://metaphor-frontend-staging.%s", viper.GetString("aws.hostedzonename")),
+			MetaphorFrontendProductionUrl: fmt.Sprintf("https://metaphor-frontend-production.%s", viper.GetString("aws.hostedzonename")),
 		}
 
 		// build the string that will be sent to the report
