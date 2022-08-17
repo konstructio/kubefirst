@@ -243,7 +243,7 @@ to quickly create a Cobra application.`,
 			informUser("Vault  secret created")
 			progressPrinter.IncrementTracker("step-vault", 1)
 		}
-		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 6)
+		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 7)
 		if !viper.GetBool("gitlab.oidc-created") {
 			vault.AddGitlabOidcApplications(dryRun)
 			informUser("Added Gitlab OIDC")
@@ -258,6 +258,8 @@ to quickly create a Cobra application.`,
 			viper.Set("gitlab.oidc-created", true)
 			viper.WriteConfig()
 		}
+
+		// GitOps template
 		if !viper.GetBool("gitlab.gitops-pushed") {
 			gitlab.PushGitRepo(dryRun, config, "gitlab", "gitops") // todo: need to handle if this was already pushed, errors on failure)
 			progressPrinter.IncrementTracker("step-post-gitlab", 1)
@@ -275,6 +277,8 @@ to quickly create a Cobra application.`,
 			viper.Set("argocd.oidc-patched", true)
 			viper.WriteConfig()
 		}
+
+		// JS template
 		if !viper.GetBool("gitlab.metaphor-pushed") {
 			informUser("Pushing metaphor repo to origin gitlab")
 			gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
@@ -285,6 +289,7 @@ to quickly create a Cobra application.`,
 			viper.WriteConfig()
 		}
 
+		// Go template
 		if !viper.GetBool("gitlab.metaphor-go-pushed") {
 			informUser("Pushing metaphor-go repo to origin gitlab")
 			gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor-go")
@@ -292,6 +297,17 @@ to quickly create a Cobra application.`,
 			// todo: keep one of the two git push functions, they're similar, but not exactly the same
 			//gitlab.PushGitOpsToGitLab(dryRun)
 			viper.Set("gitlab.metaphor-go-pushed", true)
+			viper.WriteConfig()
+		}
+
+		// Frontend template
+		if !viper.GetBool("gitlab.metaphor-frontend-pushed") {
+			informUser("Pushing metaphor-go repo to origin gitlab")
+			gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor-frontend")
+			progressPrinter.IncrementTracker("step-post-gitlab", 1)
+			// todo: keep one of the two git push functions, they're similar, but not exactly the same
+			//gitlab.PushGitOpsToGitLab(dryRun)
+			viper.Set("gitlab.metaphor-frontend-pushed", true)
 			viper.WriteConfig()
 		}
 

@@ -56,6 +56,7 @@ to quickly create a Cobra application.`,
 		trackers[pkg.CloneAndDetokenizeGitOpsTemplate] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CloneAndDetokenizeGitOpsTemplate, 1)}
 		trackers[pkg.CloneAndDetokenizeMetaphorJsTemplate] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CloneAndDetokenizeMetaphorJsTemplate, 1)}
 		trackers[pkg.CloneAndDetokenizeMetaphorGoTemplate] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CloneAndDetokenizeMetaphorGoTemplate, 1)}
+		trackers[pkg.CloneAndDetokenizeMetaphorFrontendTemplate] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CloneAndDetokenizeMetaphorFrontendTemplate, 1)}
 		trackers[pkg.CreateSSHKey] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CreateSSHKey, 1)}
 		trackers[pkg.CreateBuckets] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.CreateBuckets, 1)}
 		trackers[pkg.SendTelemetry] = &pkg.ActionTracker{Tracker: pkg.CreateTracker(pkg.SendTelemetry, 1)}
@@ -202,9 +203,6 @@ to quickly create a Cobra application.`,
 		// TODO: get the below line added as a legit flag, don't merge with any value except kubefirst
 		gitopsTemplateGithubOrgOverride := "kubefirst" // <-- discussion point
 		log.Printf("cloning and detokenizing the gitops-template repository")
-		if gitopsTemplateGithubOrgOverride != "" {
-			log.Printf("using --gitops-template-gh-org=%s", gitopsTemplateGithubOrgOverride)
-		}
 		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops", viper.GetString("version-gitops"))
 		log.Println("clone and detokenization of gitops-template repository complete")
 		trackers[pkg.CloneAndDetokenizeGitOpsTemplate].Tracker.Increment(int64(1))
@@ -218,9 +216,16 @@ to quickly create a Cobra application.`,
 		//! tracker 8
 		log.Printf("cloning and detokenizing the metaphor-go-template repository")
 		// todo: move it to main branch
-		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor-go", "add_argo_workflows")
+		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor-go", "main")
 		log.Println("clone and detokenization of metaphor-go-template repository complete")
 		trackers[pkg.CloneAndDetokenizeMetaphorGoTemplate].Tracker.Increment(int64(1))
+
+		//! tracker 9
+		log.Printf("cloning and detokenizing the metaphor-frontend-template repository")
+		// todo: move it to main branch
+		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor-frontend", "main")
+		log.Println("clone and detokenization of metaphor-go-template repository complete")
+		trackers[pkg.CloneAndDetokenizeMetaphorFrontendTemplate].Tracker.Increment(int64(1))
 
 		metricName = "kubefirst.init.completed"
 

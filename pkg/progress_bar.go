@@ -17,6 +17,7 @@ const TestHostedZoneLiveness = "Test Domain Liveness"
 const CloneAndDetokenizeGitOpsTemplate = "Clone and Detokenize (GitOps)"
 const CloneAndDetokenizeMetaphorJsTemplate = "Clone and Detokenize (Metaphor Js)"
 const CloneAndDetokenizeMetaphorGoTemplate = "Clone and Detokenize (Metaphor Go)"
+const CloneAndDetokenizeMetaphorFrontendTemplate = "Clone and Detokenize (Metaphor Frontend)"
 const CreateSSHKey = "Create SSH keys"
 const CreateBuckets = "Create Buckets"
 const SendTelemetry = "Send Telemetry"
@@ -56,8 +57,8 @@ func SetupProgress(numTrackers int) {
 	// instantiate a Progress Writer and set up the options
 	pw = progress.NewWriter()
 	pw.SetAutoStop(false)
-	pw.SetTrackerLength(40)
-	pw.SetMessageWidth(39)
+	pw.SetTrackerLength(42)
+	pw.SetMessageWidth(41)
 	pw.SetNumTrackersExpected(numTrackers)
 	pw.SetSortBy(progress.SortByPercentDsc)
 	pw.SetStyle(progress.StyleDefault)
