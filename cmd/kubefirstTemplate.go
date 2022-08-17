@@ -11,31 +11,19 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
 
-func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName string, branch string) {
+func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName string, branch string, tag string) {
 
-	if branch == "" {
-		branch = "main"
-	}
-
-	repoUrl := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)
 	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
-	log.Println("git clone", repoUrl, directory)
-	log.Println("git clone -b ", branch, repoUrl, directory)
-
-	repo, err := git.PlainClone(directory, false, &git.CloneOptions{
-		URL:           repoUrl,
-		ReferenceName: plumbing.NewBranchReferenceName(branch),
-		SingleBranch:  true,
-	})
+	err := gitClient.CloneTemplateRepoWithFallBack(githubOrg, repoName, directory, branch, tag)
 	if err != nil {
-		log.Panicf("error cloning %s-template repository from github %s", repoName, err)
+		log.Panicf("Error cloning repo with fallback: %s", err)
 	}
 	viper.Set(fmt.Sprintf("init.repos.%s.cloned", repoName), true)
 	viper.WriteConfig()
@@ -52,6 +40,10 @@ func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName st
 	domain := viper.GetString("aws.hostedzonename")
 	log.Printf("creating git remote gitlab")
 	log.Println("git remote add gitlab at url ", fmt.Sprintf("https://gitlab.%s/kubefirst/%s.git", domain, repoName))
+	repo, err := git.PlainOpen(directory)
+	if err != nil {
+		log.Panicf("error opening the directory %s:  %s", directory, err)
+	}
 	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
 		Name: "gitlab",
 		URLs: []string{fmt.Sprintf("https://gitlab.%s/kubefirst/%s.git", domain, repoName)},

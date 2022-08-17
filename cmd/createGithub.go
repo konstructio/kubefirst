@@ -11,15 +11,14 @@ import (
 	"net/http"
 	"os/exec"
 	"syscall"
-	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
-	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/spf13/cobra"
@@ -39,7 +38,7 @@ var createGithubCmd = &cobra.Command{
 		var kPortForwardArgocd *exec.Cmd
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 		config := configs.ReadConfig()
-		globalFlags, err := processGlobalFlags(cmd)
+		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
 			return err
 		}
@@ -52,13 +51,9 @@ var createGithubCmd = &cobra.Command{
 		infoCmd.Run(cmd, args)
 		progressPrinter.IncrementTracker("step-0", 1)
 
-		progressPrinter.AddTracker("step-telemetry", "Send Telemetry", 4)
-		sendStartedInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
-		progressPrinter.IncrementTracker("step-telemetry", 1)
 		if !globalFlags.UseTelemetry {
 			informUser("Telemetry Disabled")
 		}
-
 		informUser("Creating gitops/metaphor repos")
 		err = githubAddCmd.RunE(cmd, args)
 		if err != nil {
@@ -200,10 +195,6 @@ var createGithubCmd = &cobra.Command{
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
 
-		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
-		time.Sleep(time.Millisecond * 100)
-		reports.HandoffScreen()
-		time.Sleep(time.Millisecond * 2000)
 		return nil
 	},
 }
@@ -211,8 +202,8 @@ var createGithubCmd = &cobra.Command{
 func init() {
 	clusterCmd.AddCommand(createGithubCmd)
 	currentCommand := createGithubCmd
-	defineGithubCmdFlags(currentCommand)
-	defineGlobalFlags(currentCommand)
+	flagset.DefineGithubCmdFlags(currentCommand)
+	flagset.DefineGlobalFlags(currentCommand)
 	// todo: make this an optional switch and check for it or viper
 	currentCommand.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
 	currentCommand.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")

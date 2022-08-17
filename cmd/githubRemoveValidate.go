@@ -49,6 +49,4 @@ var githubRemoveValidateCmd = &cobra.Command{
 
 func init() {
 	actionCmd.AddCommand(githubRemoveValidateCmd)
-	defineGithubCmdFlags(githubRemoveValidateCmd)
-	githubRemoveValidateCmd.MarkFlagRequired("github.owner")
 }

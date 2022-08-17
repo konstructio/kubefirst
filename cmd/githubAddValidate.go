@@ -7,6 +7,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/spf13/cobra"
 )
@@ -48,6 +49,6 @@ var githubAddValidate = &cobra.Command{
 
 func init() {
 	actionCmd.AddCommand(githubAddValidate)
-	defineGithubCmdFlags(githubAddValidate)
+	flagset.DefineGithubCmdFlags(githubAddValidate)
 
 }

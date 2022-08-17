@@ -9,6 +9,7 @@ import (
 	"log"
 
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -27,15 +28,10 @@ to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("githubPopulate called")
 		config := configs.ReadConfig()
-		flags, err := processGithubAddCmdFlags(cmd)
+		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
 			return err
 		}
-		globalFlags, err := processGlobalFlags(cmd)
-		if err != nil {
-			return err
-		}
-
 		log.Println("dry-run:", globalFlags.DryRun)
 
 		if viper.GetBool("github.repo.populated") {
@@ -50,11 +46,11 @@ to quickly create a Cobra application.`,
 		owner := viper.GetString("github.owner")
 
 		fmt.Println("githubPopulate: gitops")
-		gitClient.PopulateRepoWithToken(owner, "gitops", fmt.Sprintf("%s/%s", config.K1FolderPath, "gitops"), flags.GithubHost)
+		gitClient.PopulateRepoWithToken(owner, "gitops", fmt.Sprintf("%s/%s", config.K1FolderPath, "gitops"), viper.GetString("github.host"))
 		viper.Set("github.gitops-pushed", true)
 
 		fmt.Println("githubPopulate: metaphor")
-		gitClient.PopulateRepoWithToken(owner, "metaphor", fmt.Sprintf("%s/%s", config.K1FolderPath, "metaphor"), flags.GithubHost)
+		gitClient.PopulateRepoWithToken(owner, "metaphor", fmt.Sprintf("%s/%s", config.K1FolderPath, "metaphor"), viper.GetString("github.host"))
 		viper.Set("github.metaphor-pushed", true)
 
 		viper.Set("github.repo.populated", true)
@@ -66,7 +62,6 @@ to quickly create a Cobra application.`,
 func init() {
 	actionCmd.AddCommand(githubPopulateCmd)
 	currentCommand := githubPopulateCmd
-	defineGlobalFlags(currentCommand)
-	defineGithubCmdFlags(currentCommand)
+	flagset.DefineGlobalFlags(currentCommand)
 
 }

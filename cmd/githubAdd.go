@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -20,19 +21,14 @@ var githubAddCmd = &cobra.Command{
 	Long:  `Prepate github account to be used for Kubefirst installation `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("githubAddCmd called")
-		flags, err := processGithubAddCmdFlags(cmd)
-		if err != nil {
-			return err
-		}
-		globalFlags, err := processGlobalFlags(cmd)
+		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
 			return err
 		}
 
-		log.Println("Org used:", flags.GithubOrg)
+		log.Println("Org used:", viper.GetString("github.org"))
 		log.Println("dry-run:", globalFlags.DryRun)
-		viper.Set("github.owner", flags.GithubOwner)
-		viper.Set("github.enabled", true)
+		viper.Set("github.owner", viper.GetString("github.owner"))
 		viper.WriteConfig()
 
 		if viper.GetBool("github.repo.added") {
@@ -44,8 +40,8 @@ var githubAddCmd = &cobra.Command{
 			return nil
 		}
 		gitWrapper := githubWrapper.New()
-		gitWrapper.CreatePrivateRepo(flags.GithubOrg, "gitops", "Kubefirst Gitops")
-		gitWrapper.CreatePrivateRepo(flags.GithubOrg, "metaphor", "Sample Kubefirst App")
+		gitWrapper.CreatePrivateRepo(viper.GetString("github.org"), "gitops", "Kubefirst Gitops")
+		gitWrapper.CreatePrivateRepo(viper.GetString("github.org"), "metaphor", "Sample Kubefirst App")
 
 		//Add Github SSHPublic key
 		if viper.GetString("botPublicKey") != "" {
@@ -69,7 +65,6 @@ var githubAddCmd = &cobra.Command{
 func init() {
 	actionCmd.AddCommand(githubAddCmd)
 	currentCommand := githubAddCmd
-	defineGithubCmdFlags(currentCommand)
-	defineGlobalFlags(currentCommand)
+	flagset.DefineGlobalFlags(currentCommand)
 
 }
