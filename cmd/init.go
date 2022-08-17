@@ -166,19 +166,13 @@ to quickly create a Cobra application.`,
 		progressPrinter.IncrementTracker("step-ssh", 1)
 
 		//! tracker 6
-		// TODO: get the below line added as a legit flag, don't merge with any value except kubefirst
-		gitopsTemplateGithubOrgOverride := "kubefirst" // <-- discussion point
-		log.Printf("cloning and detokenizing the gitops-template repository")
-		if gitopsTemplateGithubOrgOverride != "" {
-			log.Printf("using --gitops-template-gh-org=%s", gitopsTemplateGithubOrgOverride)
-		}
-		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops", viper.GetString("branch-gitops"), viper.GetString("template.tag"))
+		prepareKubefirstTemplateRepo(config, viper.GetString("gitops.owner"), viper.GetString("gitops.repo"), viper.GetString("gitops.branch"), viper.GetString("template.tag"))
 		log.Println("clone and detokenization of gitops-template repository complete")
 		progressPrinter.IncrementTracker("step-gitops", 1)
 
 		//! tracker 7
 		log.Printf("cloning and detokenizing the metaphor-template repository")
-		prepareKubefirstTemplateRepo(config, "kubefirst", "metaphor", "", viper.GetString("template.tag"))
+		prepareKubefirstTemplateRepo(config, viper.GetString("gitops.owner"), "metaphor", "", viper.GetString("template.tag"))
 		log.Println("clone and detokenization of metaphor-template repository complete")
 		progressPrinter.IncrementTracker("step-metaphor", 1)
 

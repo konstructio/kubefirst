@@ -19,7 +19,7 @@ import (
 )
 
 // CloneRepoAndDetokenizeTemplate - clone repo using CloneRepoAndDetokenizeTemplate that uses fallback rule to try to capture version
-func CloneRepoAndDetokenizeTemplate(githubOrg, repoName, folderName string, branch string, tag string) (string, error) {
+func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, branch string, tag string) (string, error) {
 	config := configs.ReadConfig()
 
 	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, folderName)
@@ -28,7 +28,7 @@ func CloneRepoAndDetokenizeTemplate(githubOrg, repoName, folderName string, bran
 		log.Println("Error removing dir(expected if dir not present):", err)
 	}
 
-	err = CloneTemplateRepoWithFallBack(githubOrg, repoName, directory, branch, tag)
+	err = CloneTemplateRepoWithFallBack(githubOwner, repoName, directory, branch, tag)
 	if err != nil {
 		log.Panicf("Error cloning repo with fallback: %s", err)
 	}
@@ -123,7 +123,7 @@ func CloneGitOpsRepo() {
 	url := "https://github.com/kubefirst/gitops-template"
 	directory := fmt.Sprintf("%s/gitops", config.K1FolderPath)
 
-	versionGitOps := viper.GetString("branch-gitops")
+	versionGitOps := viper.GetString("gitops.branch")
 
 	log.Println("git clone -b ", versionGitOps, url, directory)
 

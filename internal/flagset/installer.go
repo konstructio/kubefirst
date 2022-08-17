@@ -14,10 +14,11 @@ func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
 	currentCommand.Flags().String("admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
 	currentCommand.Flags().String("cloud", "", "the cloud to provision infrastructure in")
-	currentCommand.Flags().String("repo-gitops", "https://github.com/kubefirst/gitops-template-gh.git", "version/branch used on git clone")
-	currentCommand.Flags().String("branch-gitops", "", "version/branch used on git clone - former: version-gitops flag")
+	currentCommand.Flags().String("gitops-owner", "kubefirst", "git owner of gitops, this may be a user or a org to support forks for testing")
+	currentCommand.Flags().String("gitops-repo", "gitops", "version/branch used on git clone")
+	currentCommand.Flags().String("gitops-branch", "", "version/branch used on git clone - former: version-gitops flag")
 	currentCommand.Flags().String("template-tag", config.KubefirstVersion, `fallback tag used on git clone.
-  Details: if "branch-gitops" is provided, branch("branch-gitops") has precedence and installer will attempt to clone branch("branch-gitops") first,
+  Details: if "gitops-branch" is provided, branch("gitops-branch") has precedence and installer will attempt to clone branch("gitops-branch") first,
   if it fails, then fallback it will attempt to clone the tag provided at "template-tag" flag`)
 }
 
@@ -25,6 +26,7 @@ type InstallerGenericFlags struct {
 	ClusterName  string
 	AdminEmail   string
 	Cloud        string
+	OrgGitops    string
 	BranchGitops string //former: "version-gitops"
 	RepoGitops   string //To support forks
 	TemplateTag  string //To support forks
@@ -58,21 +60,29 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	log.Println("cloud:", cloud)
 	flags.Cloud = cloud
 
-	branchGitOps, err := cmd.Flags().GetString("branch-gitops")
+	branchGitOps, err := cmd.Flags().GetString("gitops-branch")
 	if err != nil {
 		return flags, err
 	}
-	viper.Set("branch-gitops", branchGitOps)
-	log.Println("branch-gitops:", branchGitOps)
+	viper.Set("gitops.branch", branchGitOps)
+	log.Println("gitops.branch:", branchGitOps)
 	flags.BranchGitops = branchGitOps
 
-	repoGitOps, err := cmd.Flags().GetString("repo-gitops")
+	repoGitOps, err := cmd.Flags().GetString("gitops-repo")
 	if err != nil {
 		return flags, err
 	}
-	viper.Set("repo-gitops", repoGitOps)
-	log.Println("repo-gitops:", repoGitOps)
-	flags.RepoGitops = branchGitOps
+	viper.Set("gitops.repo", repoGitOps)
+	log.Println("gitops.repo:", repoGitOps)
+	flags.RepoGitops = repoGitOps
+
+	ownerGitOps, err := cmd.Flags().GetString("gitops-owner")
+	if err != nil {
+		return flags, err
+	}
+	viper.Set("gitops.owner", ownerGitOps)
+	log.Println("gitops.owner:", ownerGitOps)
+	flags.RepoGitops = ownerGitOps
 
 	templateTag, err := cmd.Flags().GetString("template-tag")
 	if err != nil {

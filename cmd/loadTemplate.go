@@ -25,7 +25,7 @@ var loadTemplateCmd = &cobra.Command{
 			return err
 		}
 		log.Println("tag:", installerFlags.TemplateTag)
-		_, err = gitClient.CloneRepoAndDetokenizeTemplate("kubefirst", "gitops", "gitops", viper.GetString("branch-gitops"), viper.GetString("template.tag"))
+		_, err = gitClient.CloneRepoAndDetokenizeTemplate(viper.GetString("gitops.owner"), viper.GetString("gitops.repo"), "gitops", viper.GetString("gitops.branch"), viper.GetString("template.tag"))
 		if err != nil {
 			log.Printf("Error clonning and detokizing repo %s", "gitops")
 			return err
