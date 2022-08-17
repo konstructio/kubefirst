@@ -201,7 +201,10 @@ to quickly create a Cobra application.`,
 		// todo: this doesn't default to testing the dns check
 		skipHostedZoneCheck := viper.GetBool("init.hostedzonecheck.enabled")
 		if !skipHostedZoneCheck {
-			aws.TestHostedZoneLiveness(dryRun, hostedZoneName, hostedZoneId)
+			hostedZoneLiveness := aws.TestHostedZoneLiveness(dryRun, hostedZoneName, hostedZoneId)
+			if !hostedZoneLiveness {
+				log.Panic("Fail to check the Liveness of HostedZone, we need a valid public HostedZone on the same AWS account that Kubefirst will be installed.")
+			}
 		} else {
 			log.Println("skipping hosted zone check")
 		}
