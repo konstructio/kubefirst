@@ -263,8 +263,6 @@ to quickly create a Cobra application.`,
 		if !viper.GetBool("gitlab.gitops-pushed") {
 			gitlab.PushGitRepo(dryRun, config, "gitlab", "gitops") // todo: need to handle if this was already pushed, errors on failure)
 			progressPrinter.IncrementTracker("step-post-gitlab", 1)
-			// todo: keep one of the two git push functions, they're similar, but not exactly the same
-			//gitlab.PushGitOpsToGitLab(dryRun)
 			viper.Set("gitlab.gitops-pushed", true)
 			viper.WriteConfig()
 		}
@@ -283,8 +281,6 @@ to quickly create a Cobra application.`,
 			informUser("Pushing metaphor repo to origin gitlab")
 			gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor")
 			progressPrinter.IncrementTracker("step-post-gitlab", 1)
-			// todo: keep one of the two git push functions, they're similar, but not exactly the same
-			//gitlab.PushGitOpsToGitLab(dryRun)
 			viper.Set("gitlab.metaphor-pushed", true)
 			viper.WriteConfig()
 		}
@@ -294,8 +290,6 @@ to quickly create a Cobra application.`,
 			informUser("Pushing metaphor-go repo to origin gitlab")
 			gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor-go")
 			progressPrinter.IncrementTracker("step-post-gitlab", 1)
-			// todo: keep one of the two git push functions, they're similar, but not exactly the same
-			//gitlab.PushGitOpsToGitLab(dryRun)
 			viper.Set("gitlab.metaphor-go-pushed", true)
 			viper.WriteConfig()
 		}
@@ -305,8 +299,6 @@ to quickly create a Cobra application.`,
 			informUser("Pushing metaphor-go repo to origin gitlab")
 			gitlab.PushGitRepo(dryRun, config, "gitlab", "metaphor-frontend")
 			progressPrinter.IncrementTracker("step-post-gitlab", 1)
-			// todo: keep one of the two git push functions, they're similar, but not exactly the same
-			//gitlab.PushGitOpsToGitLab(dryRun)
 			viper.Set("gitlab.metaphor-frontend-pushed", true)
 			viper.WriteConfig()
 		}
