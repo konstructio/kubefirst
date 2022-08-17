@@ -106,3 +106,8 @@ func BuildCreateHandOffReport(clusterData CreateHandOff) bytes.Buffer {
 	return handOffData
 
 }
+
+func BuildSection() bytes.Buffer {
+	var handOffData bytes.Buffer
+	return handOffData
+}

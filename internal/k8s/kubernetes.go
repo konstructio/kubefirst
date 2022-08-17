@@ -5,13 +5,16 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package k8s
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
+	"os/exec"
 	"time"
 
 	"github.com/itchyny/gojq"
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
@@ -20,7 +23,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 var vaultRootToken string
@@ -184,4 +189,43 @@ func GetResourcesByJq(dynamic dynamic.Interface, ctx context.Context, group stri
 		}
 	}
 	return resources, nil
+}
+
+func GetClientSet() (*kubernetes.Clientset, error) {
+	config := configs.ReadConfig()
+
+	kubeconfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
+	if err != nil {
+		log.Printf("Error getting kubeconfig: %s", err)
+		return nil, err
+	}
+	clientset, err := kubernetes.NewForConfig(kubeconfig)
+	if err != nil {
+		log.Printf("Error getting clientset: %s", err)
+		return clientset, err
+	}
+
+	return clientset, nil
+}
+
+func K8sPortForward(dryRun bool, namespace string, filter string, ports string) (*exec.Cmd, error) {
+	config := configs.ReadConfig()
+
+	if !dryRun {
+		var kPortForwardOutb, kPortForwardErrb bytes.Buffer
+		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "port-forward", filter, ports)
+		kPortForward.Stdout = &kPortForwardOutb
+		kPortForward.Stderr = &kPortForwardErrb
+		err := kPortForward.Start()
+		//defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			// If it doesn't error, we kinda don't care much.
+			log.Printf("Commad Execution STDOUT: %s", kPortForwardOutb.String())
+			log.Printf("Commad Execution STDERR: %s", kPortForwardErrb.String())
+			log.Printf("error: failed to port-forward to %s in main thread %s", filter, err)
+			return kPortForward, err
+		}
+		return kPortForward, nil
+	}
+	return nil, nil
 }
