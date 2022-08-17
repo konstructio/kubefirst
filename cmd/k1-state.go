@@ -6,6 +6,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"log"
 	"os"
 )
@@ -59,6 +60,14 @@ var k1state = &cobra.Command{
 		}
 
 		if pull {
+
+			// at this point user doesn't have kubefirst config file and no aws.region
+			viper.Set("aws.region", region)
+			if err := viper.WriteConfig(); err != nil {
+				log.Println(err)
+				return
+			}
+
 			err := aws.DownloadS3File(bucketName, config.KubefirstConfigFileName)
 			if err != nil {
 				fmt.Println(err)
