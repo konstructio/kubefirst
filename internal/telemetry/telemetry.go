@@ -6,10 +6,13 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/kubefirst/kubefirst/configs"
 )
 
 // SendTelemetry post telemetry data
 func SendTelemetry(useTelemetry bool, domain string, metricName string) {
+	config := configs.ReadConfig()
 	defer func() {
 		if r := recover(); r != nil {
 			log.Println("Error sending telemetry. Error:\n", r)
@@ -26,7 +29,7 @@ func SendTelemetry(useTelemetry bool, domain string, metricName string) {
 	url := "https://telemetry.kubefirst.com/telemetry"
 	method := "POST"
 
-	payload := strings.NewReader(fmt.Sprintf(`{"domain": "%s","name": "%s"}`, domain, metricName))
+	payload := strings.NewReader(fmt.Sprintf(`{"domain": "%s","name": "%s", "cliVersion": "%s"}`, domain, metricName, config.KubefirstVersion))
 
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, payload)
