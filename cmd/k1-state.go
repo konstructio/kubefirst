@@ -30,8 +30,18 @@ var k1state = &cobra.Command{
 			log.Println(err)
 		}
 
+		region, err := cmd.Flags().GetString("region")
+		if err != nil {
+			log.Println(err)
+		}
+
 		if !push && !pull {
 			fmt.Println(cmd.Help())
+			return
+		}
+
+		if pull && len(region) == 0 {
+			fmt.Println("region is required when pulling Kubefirst config, please add --region <region-name>")
 			return
 		}
 
@@ -71,6 +81,7 @@ func init() {
 
 	k1state.Flags().Bool("push", false, "push Kubefirst config file to the S3 bucket")
 	k1state.Flags().Bool("pull", false, "pull Kubefirst config file to the S3 bucket")
+	k1state.Flags().String("region", "", "set S3 bucket region")
 	k1state.Flags().String("bucket-name", "", "set the bucket name to store the Kubefirst config file")
 	err := k1state.MarkFlagRequired("bucket-name")
 	if err != nil {
