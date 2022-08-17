@@ -98,7 +98,11 @@ func GetBackupCertificates() (string, error) {
 	for _, cert := range certificates {
 		fullPath := strings.Replace(cert, config.CertsPath, "/certs", 1)
 		log.Println(fullPath)
-		aws.UploadFile(bucketName, fullPath, cert)
+		err = aws.UploadFile(bucketName, fullPath, cert)
+		if err != nil {
+			log.Println("there is an issue to uploaded your certificate to the S3 bucket")
+			log.Panic(err)
+		}
 	}
 
 	log.Println("getting secrets")
@@ -138,7 +142,10 @@ func RestoreSSL() error {
 		}
 	}
 	bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
-	aws.DownloadBucket(bucketName, config.CertsPath)
+	err := aws.DownloadBucket(bucketName, config.CertsPath)
+	if err != nil {
+		return err
+	}
 	//! We need apply secrets firstly than other resources, accordingly with cert-manager docs
 	//pathsRestored := []string{"secrets", "certs", "clusterissuers"}
 	//! At this moment, we dont have the crds certs/clusterissuers installed on cluster
