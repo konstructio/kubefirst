@@ -3,12 +3,14 @@ package flagset
 import (
 	"log"
 
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
 	//Gewneric Installer flags:
+	config := configs.ReadConfig()
 	currentCommand.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
 	currentCommand.Flags().String("admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
 	currentCommand.MarkFlagRequired("admin-email")
@@ -16,6 +18,10 @@ func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
 	currentCommand.MarkFlagRequired("cloud")
 	currentCommand.Flags().String("version-gitops", "main", "version/branch used on git clone")
 	currentCommand.Flags().String("repo-gitops", "https://github.com/kubefirst/gitops-template-gh.git", "version/branch used on git clone")
+	currentCommand.Flags().String("version-gitops", "", "version/branch used on git clone")
+	currentCommand.Flags().String("template-tag", config.KubefirstVersion, `fallback tag used on git clone.
+  Details: if "version-gitops" is provided, branch("version-gitops") has precedence and installer will attempt to clone branch("version-gitops") first,
+  if it fails, then fallback it will attempt to clone the tag provided at "template-tag" flag`)
 }
 
 type InstallerGenericFlags struct {
@@ -24,6 +30,7 @@ type InstallerGenericFlags struct {
 	Cloud        string
 	BranchGitops string //former: "version-gitops"
 	RepoGitops   string //To support forks
+	TemplateTag  string //To support forks
 }
 
 func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, error) {
@@ -69,6 +76,14 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	viper.Set("repo-gitops", repoGitOps)
 	log.Println("repo-gitops:", repoGitOps)
 	flags.RepoGitops = branchGitOps
+
+	templateTag, err := cmd.Flags().GetString("template-tag")
+	if err != nil {
+		return flags, err
+	}
+	viper.Set("template.tag", templateTag)
+	log.Println("template.tag", templateTag)
+	flags.TemplateTag = templateTag
 
 	return flags, nil
 }

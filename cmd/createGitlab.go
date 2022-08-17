@@ -27,8 +27,6 @@ import (
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // createGitlabCmd represents the createGitlab command
@@ -75,11 +73,7 @@ var createGitlabCmd = &cobra.Command{
 
 		restoreSSLCmd.Run(cmd, args)
 
-		kubeconfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
-		if err != nil {
-			panic(err.Error())
-		}
-		clientset, err := kubernetes.NewForConfig(kubeconfig)
+		clientset, err := k8s.GetClientSet()
 		if err != nil {
 			panic(err.Error())
 		}
