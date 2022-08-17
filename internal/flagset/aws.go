@@ -14,11 +14,8 @@ func DefineAWSFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")
 	currentCommand.Flags().Bool("aws-nodes-spot", false, "nodes spot on AWS EKS compute nodes")
 	currentCommand.Flags().String("profile", "default", "AWS profile located at ~/.aws/config")
-	currentCommand.MarkFlagRequired("profile")
 	currentCommand.Flags().String("hosted-zone-name", "", "the domain to provision the kubefirst platform in")
-	currentCommand.MarkFlagRequired("hosted-zone-name")
 	currentCommand.Flags().String("region", "eu-west-1", "the region to provision the cloud resources in")
-	currentCommand.MarkFlagRequired("region")
 }
 
 type AwsFlags struct {

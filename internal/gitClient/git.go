@@ -18,11 +18,9 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func CloneRepoAndDetokenize(repoUrl string, folderName string, branch string) (string, error) {
+// CloneRepoAndDetokenizeTemplate - clone repo using CloneRepoAndDetokenizeTemplate that uses fallback rule to try to capture version
+func CloneRepoAndDetokenizeTemplate(githubOrg, repoName, folderName string, branch string, tag string) (string, error) {
 	config := configs.ReadConfig()
-	if branch == "" {
-		branch = "main"
-	}
 
 	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, folderName)
 	err := os.RemoveAll(directory)
@@ -30,12 +28,10 @@ func CloneRepoAndDetokenize(repoUrl string, folderName string, branch string) (s
 		log.Println("Error removing dir(expected if dir not present):", err)
 	}
 
-	log.Println("git clone -b ", branch, repoUrl, directory)
-	_, err = git.PlainClone(directory, false, &git.CloneOptions{
-		URL:           repoUrl,
-		ReferenceName: plumbing.NewBranchReferenceName(branch),
-		SingleBranch:  true,
-	})
+	err = CloneTemplateRepoWithFallBack(githubOrg, repoName, directory, branch, tag)
+	if err != nil {
+		log.Panicf("Error cloning repo with fallback: %s", err)
+	}
 	if err != nil {
 		log.Printf("error cloning %s repository from github %s", folderName, err)
 		return directory, err
@@ -127,7 +123,7 @@ func CloneGitOpsRepo() {
 	url := "https://github.com/kubefirst/gitops-template"
 	directory := fmt.Sprintf("%s/gitops", config.K1FolderPath)
 
-	versionGitOps := viper.GetString("version-gitops")
+	versionGitOps := viper.GetString("branch-gitops")
 
 	log.Println("git clone -b ", versionGitOps, url, directory)
 

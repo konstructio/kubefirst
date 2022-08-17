@@ -172,7 +172,7 @@ to quickly create a Cobra application.`,
 		if gitopsTemplateGithubOrgOverride != "" {
 			log.Printf("using --gitops-template-gh-org=%s", gitopsTemplateGithubOrgOverride)
 		}
-		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops", viper.GetString("version-gitops"), viper.GetString("template.tag"))
+		prepareKubefirstTemplateRepo(config, gitopsTemplateGithubOrgOverride, "gitops", viper.GetString("branch-gitops"), viper.GetString("template.tag"))
 		log.Println("clone and detokenization of gitops-template repository complete")
 		progressPrinter.IncrementTracker("step-gitops", 1)
 
@@ -215,4 +215,11 @@ func init() {
 	flagset.DefineGithubCmdFlags(currentCommand)
 	flagset.DefineAWSFlags(currentCommand)
 	flagset.DefineInstallerGenericFlags(currentCommand)
+
+	currentCommand.MarkFlagRequired("admin-email")
+	currentCommand.MarkFlagRequired("cloud")
+	currentCommand.MarkFlagRequired("hosted-zone-name")
+	currentCommand.MarkFlagRequired("region")
+	currentCommand.MarkFlagRequired("profile")
+
 }
