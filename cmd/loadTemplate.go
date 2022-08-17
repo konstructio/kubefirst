@@ -7,7 +7,6 @@ package cmd
 import (
 	"log"
 
-	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -20,12 +19,7 @@ var loadTemplateCmd = &cobra.Command{
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Println("loadTemplate called")
-		installerFlags, err := flagset.ProcessInstallerGenericFlags(cmd)
-		if err != nil {
-			return err
-		}
-		log.Println("tag:", installerFlags.TemplateTag)
-		_, err = gitClient.CloneRepoAndDetokenizeTemplate(viper.GetString("gitops.owner"), viper.GetString("gitops.repo"), "gitops", viper.GetString("gitops.branch"), viper.GetString("template.tag"))
+		_, err := gitClient.CloneRepoAndDetokenizeTemplate(viper.GetString("gitops.owner"), viper.GetString("gitops.repo"), "gitops", viper.GetString("gitops.branch"), viper.GetString("template.tag"))
 		if err != nil {
 			log.Printf("Error clonning and detokizing repo %s", "gitops")
 			return err
@@ -43,5 +37,4 @@ var loadTemplateCmd = &cobra.Command{
 
 func init() {
 	actionCmd.AddCommand(loadTemplateCmd)
-	flagset.DefineInstallerGenericFlags(loadTemplateCmd)
 }

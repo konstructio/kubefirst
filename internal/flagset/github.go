@@ -22,10 +22,9 @@ func DefineGithubCmdFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("github-host", "github.com", "Github URL")
 	currentCommand.Flags().String("github-user", "", "Github user")
 
-	viper.BindPFlag("github.host", currentCommand.Flags().Lookup("github-host"))
 	viper.BindPFlag("github.org", currentCommand.Flags().Lookup("github-org"))
-	viper.BindPFlag("github.owner", currentCommand.Flags().Lookup("github-owner"))
-	viper.BindPFlag("github.owner", currentCommand.Flags().Lookup("github-owner"))
+	viper.BindPFlag("github.host", currentCommand.Flags().Lookup("github-host"))
+	viper.BindPFlag("github.user", currentCommand.Flags().Lookup("github-user"))
 
 }
 
@@ -67,10 +66,11 @@ func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 	if owner != "" {
 		flags.GithubEnable = true
 	}
-	viper.Set("github.enabled", flags.GithubEnable)
 	flags.GithubOwner = owner
 	flags.GithubOrg = org
 	flags.GithubUser = user
+	viper.Set("github.owner", flags.GithubOwner)
+	viper.Set("github.enabled", flags.GithubEnable)
 	return flags, nil
 
 }

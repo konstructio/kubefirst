@@ -21,17 +21,13 @@ var githubRemoveCmd = &cobra.Command{
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("githubRemove called")
-		flags, err := flagset.ProcessGithubAddCmdFlags(cmd)
-		if err != nil {
-			return err
-		}
-		fmt.Println("Owner used:", flags.GithubOwner)
+		fmt.Println("Owner used:", viper.GetString("github.owner"))
 		gitWrapper := githubWrapper.New()
-		err = gitWrapper.RemoveRepo(flags.GithubOwner, "gitops")
+		err := gitWrapper.RemoveRepo(viper.GetString("github.owner"), "gitops")
 		if err != nil {
 			return err
 		}
-		err = gitWrapper.RemoveRepo(flags.GithubOwner, "metaphor")
+		err = gitWrapper.RemoveRepo(viper.GetString("github.owner"), "metaphor")
 		if err != nil {
 			return err
 		}
@@ -50,6 +46,5 @@ var githubRemoveCmd = &cobra.Command{
 func init() {
 	actionCmd.AddCommand(githubRemoveCmd)
 	currentCommand := githubRemoveCmd
-	flagset.DefineGithubCmdFlags(currentCommand)
 	flagset.DefineGlobalFlags(currentCommand)
 }

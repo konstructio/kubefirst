@@ -7,7 +7,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/spf13/cobra"
 )
@@ -50,6 +49,4 @@ var githubRemoveValidateCmd = &cobra.Command{
 
 func init() {
 	actionCmd.AddCommand(githubRemoveValidateCmd)
-	flagset.DefineGithubCmdFlags(githubRemoveValidateCmd)
-	githubRemoveValidateCmd.MarkFlagRequired("github.owner")
 }
