@@ -24,8 +24,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	stsV1 "github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	stsV1 "github.com/aws/aws-sdk-go/service/sts"
 	"github.com/cip8/autoname"
 	"github.com/google/uuid"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -120,10 +120,10 @@ func GetAccountInfo() {
 	viper.WriteConfig()
 }
 
-func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
+func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) bool {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, TestHostedZoneLiveness skipped.")
-		return
+		return true
 	}
 	//tracker := progress.Tracker{Message: "testing hosted zone", Total: 25}
 
@@ -168,6 +168,7 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 		})
 		if err != nil {
 			log.Println(err)
+			return false
 		}
 		log.Println("record creation status is ", record.ChangeInfo.Status)
 	} else {
@@ -203,6 +204,7 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 			log.Panicf("unable to resolve hosted zone dns record. please check your domain registrar")
 		}
 	}
+	return true
 	// todo delete route53 record
 
 	// recordDelete, err := route53Client.ChangeResourceRecordSets(context.TODO(), &route53.ChangeResourceRecordSetsInput{
