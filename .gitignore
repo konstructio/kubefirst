@@ -18,3 +18,4 @@ logs/
 lint_log.txt
 credentials
 kubefirst
+.idea
