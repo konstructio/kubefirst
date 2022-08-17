@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/aws"
 	"log"
 	"net/http"
 	"os/exec"
@@ -377,6 +378,14 @@ to quickly create a Cobra application.`,
 			informUser("Vault backend configured")
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
+
+		// upload kubefirst config to user state S3 bucket
+		stateStoreBucket := viper.GetString("bucket.state-store.name")
+		err = aws.UploadFile(stateStoreBucket, config.KubefirstConfigFileName, config.KubefirstConfigFilePath)
+		if err != nil {
+			log.Printf("unable to upload Kubefirst cofiguration file to the S3 bucket, error is: %v", err)
+		}
+		log.Printf("Kubefirst configuration file was upload to AWS S3 at %q bucket name", stateStoreBucket)
 
 		sendCompleteInstallTelemetry(dryRun, useTelemetry)
 		time.Sleep(time.Millisecond * 100)
