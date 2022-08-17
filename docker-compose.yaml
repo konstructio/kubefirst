@@ -6,7 +6,7 @@ services:
     platform: linux/amd64
     build:
       context: .
-      dockerfile: ./build/Dockerfile
+      dockerfile: ./dev/Dockerfile
     container_name: kubefirst
     environment:
       TERM: xterm-256color

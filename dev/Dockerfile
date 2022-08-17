@@ -1,7 +1,6 @@
-FROM --platform=linux/amd64 buildpack-deps:bullseye-scm
-# we are using buidlpack-deps:bullseye-scm https://github.com/docker-library/golang/blob/8d0fa6028120904e16fe761f095bd0620b68eab2/1.18/bullseye/Dockerfile
+FROM --platform=linux/amd64 golang:1.18
 
-ARG KUBEFIRST_VERSION=1.8.5
+WORKDIR /opt/kubefirst-install
 
 RUN apt-get update && \
     apt-get install -y unzip curl jq vim unzip less \
@@ -29,15 +28,19 @@ RUN curl -LO https://s3.us-west-2.amazonaws.com/amazon-eks/1.21.2/2021-07-05/bin
     chmod +x aws-iam-authenticator && \
     mv aws-iam-authenticator /usr/local/bin/
 
-# Kubefirst cli
-RUN curl -LO https://github.com/kubefirst/kubefirst/releases/download/$KUBEFIRST_VERSION/kubefirst-$KUBEFIRST_VERSION-linux-amd64.tar.gz && \
-    tar -xvzf kubefirst-$KUBEFIRST_VERSION-linux-amd64.tar.gz -C /usr/local/bin/ && \
-    chmod +x /usr/local/bin/kubefirst && \
-    rm kubefirst-$KUBEFIRST_VERSION-linux-amd64.tar.gz
 
 # setup user
 RUN useradd -ms /bin/bash developer
 USER developer
 WORKDIR /home/developer/kubefirst
 
+COPY --chown=developer:developer . .
+
+# download dependencies and prepare fresh installation
+RUN go mod download &&  \
+    go build
+
+USER root
+RUN  mv ./kubefirst /usr/local/bin/ && chmod 777 /usr/local/bin/kubefirst
+USER developer
 RUN kubefirst clean

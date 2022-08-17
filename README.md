@@ -61,33 +61,23 @@ gitlab.subdomain.example.com
 ...
 ```
 
-## Clone the repository
-
-Clone the repository to have the latest `main` branch content
+## Getting the binary
 
 ```bash
-# via HTTPS
-git clone https://github.com/kubefirst/kubefirst.git
+#Check the release page:
+#https://github.com/kubefirst/kubefirst/releases
 
-# via SSH
-git clone git@github.com:kubefirst/kubefirst.git
+export KUBEFIRST_VERSION=1.8.5
+curl -LO https://github.com/kubefirst/kubefirst/releases/download/$KUBEFIRST_VERSION/kubefirst-$KUBEFIRST_VERSION-linux-amd64.tar.gz
+
+tar -xvzf kubefirst-$KUBEFIRST_VERSION-linux-amd64.tar.gz -C /usr/local/bin/
+chmod +x /usr/local/bin/kubefirst
+
+kubefirst info
 ```
 
-## Start the Container
-
-We run everything in isolation with Docker, for that, start the container with:
-
-```bash
-docker-compose up kubefirst
-```
-
-## Connect to the Container
-
-Open a new terminal to connect to the container to run kubefirst
-
-```bash
-docker exec -it kubefirst bash
-```
+## In case your OS is not supported or you want to build and run:
+[Running in a Container](./build/README.md)
 
 ## Initialization
 
