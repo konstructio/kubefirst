@@ -9,10 +9,11 @@ import (
 
 // GithubAddCmdFlags - Struct with flags used by githubAddCmd
 type GithubAddCmdFlags struct {
-	GithubOwner string
-	GithubUser  string
-	GithubOrg   string
-	GithubHost  string
+	GithubOwner  string
+	GithubUser   string
+	GithubOrg    string
+	GithubHost   string
+	GithubEnable bool
 }
 
 func DefineGithubCmdFlags(currentCommand *cobra.Command) {
@@ -30,6 +31,7 @@ func DefineGithubCmdFlags(currentCommand *cobra.Command) {
 
 func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 	flags := GithubAddCmdFlags{}
+	flags.GithubEnable = false
 	user, err := cmd.Flags().GetString("github-user")
 	if err != nil {
 		log.Println("Error Processing - github-user flag")
@@ -62,6 +64,10 @@ func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 		}
 
 	}
+	if owner != "" {
+		flags.GithubEnable = true
+	}
+	viper.Set("github.enabled", flags.GithubEnable)
 	flags.GithubOwner = owner
 	flags.GithubOrg = org
 	flags.GithubUser = user

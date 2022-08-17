@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os/exec"
 	"syscall"
-	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
@@ -20,7 +19,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
-	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/spf13/cobra"
@@ -53,13 +51,9 @@ var createGithubCmd = &cobra.Command{
 		infoCmd.Run(cmd, args)
 		progressPrinter.IncrementTracker("step-0", 1)
 
-		progressPrinter.AddTracker("step-telemetry", "Send Telemetry", 4)
-		sendStartedInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
-		progressPrinter.IncrementTracker("step-telemetry", 1)
 		if !globalFlags.UseTelemetry {
 			informUser("Telemetry Disabled")
 		}
-
 		informUser("Creating gitops/metaphor repos")
 		err = githubAddCmd.RunE(cmd, args)
 		if err != nil {
@@ -201,10 +195,6 @@ var createGithubCmd = &cobra.Command{
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
 
-		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
-		time.Sleep(time.Millisecond * 100)
-		reports.HandoffScreen()
-		time.Sleep(time.Millisecond * 2000)
 		return nil
 	},
 }

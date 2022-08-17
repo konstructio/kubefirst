@@ -33,7 +33,6 @@ var githubAddCmd = &cobra.Command{
 		log.Println("Org used:", flags.GithubOrg)
 		log.Println("dry-run:", globalFlags.DryRun)
 		viper.Set("github.owner", flags.GithubOwner)
-		viper.Set("github.enabled", true)
 		viper.WriteConfig()
 
 		if viper.GetBool("github.repo.added") {

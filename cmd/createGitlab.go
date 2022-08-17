@@ -20,7 +20,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
-	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/softserve"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
@@ -61,7 +60,6 @@ var createGitlabCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-0", 1)
 
 		progressPrinter.AddTracker("step-softserve", "Prepare Temporary Repo ", 4)
-		sendStartedInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
 		progressPrinter.IncrementTracker("step-softserve", 1)
 		if !globalFlags.UseTelemetry {
 			informUser("Telemetry Disabled")
@@ -339,10 +337,6 @@ var createGitlabCmd = &cobra.Command{
 			informUser("Vault backend configured")
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
-
-		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
-		time.Sleep(time.Millisecond * 100)
-		reports.HandoffScreen()
 		return nil
 	},
 }
