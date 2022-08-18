@@ -120,6 +120,31 @@ func PrintSectionMetaphor() []byte {
 
 	return handOffData.Bytes()
 }
+func PrintSectionMetaphorGo() []byte {
+	var handOffData bytes.Buffer
+
+	handOffData.WriteString("\n--- Metaphor Go")
+	handOffData.WriteString(strings.Repeat("-", 55))
+	handOffData.WriteString(fmt.Sprintf("\n Development: %s", fmt.Sprintf("https://metaphor-go-development.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", fmt.Sprintf("https://metaphor-go-staging.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", fmt.Sprintf("https://metaphor-go-production.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(strings.Repeat("-", 70))
+
+	return handOffData.Bytes()
+}
+
+func PrintSectionMetaphorFrontend() []byte {
+	var handOffData bytes.Buffer
+
+	handOffData.WriteString("\n--- Metaphor Frontend")
+	handOffData.WriteString(strings.Repeat("-", 49))
+	handOffData.WriteString(fmt.Sprintf("\n Development: %s", fmt.Sprintf("https://metaphor-frontend-development.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", fmt.Sprintf("https://metaphor-frontend-staging.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", fmt.Sprintf("https://metaphor-frontend-production.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(strings.Repeat("-", 70))
+
+	return handOffData.Bytes()
+}
 
 func HandoffScreen() {
 	// prepare data for the handoff report
@@ -137,6 +162,8 @@ func HandoffScreen() {
 	handOffData.Write(PrintSectionArgoWorkflows())
 	handOffData.Write(PrintSectionAtlantis())
 	handOffData.Write(PrintSectionMuseum())
+	handOffData.Write(PrintSectionMetaphorFrontend())
+	handOffData.Write(PrintSectionMetaphorGo())
 	handOffData.Write(PrintSectionMetaphor())
 
 	CommandSummary(handOffData)

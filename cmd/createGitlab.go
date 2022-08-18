@@ -241,15 +241,14 @@ var createGitlabCmd = &cobra.Command{
 			viper.Set("argocd.oidc-patched", true)
 			viper.WriteConfig()
 		}
-		if !viper.GetBool("gitlab.metaphor-pushed") {
-			informUser("Pushing metaphor repo to origin gitlab")
-			gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "metaphor")
-			progressPrinter.IncrementTracker("step-post-gitlab", 1)
-			// todo: keep one of the two git push functions, they're similar, but not exactly the same
-			//gitlab.PushGitOpsToGitLab(globalFlags.DryRun)
-			viper.Set("gitlab.metaphor-pushed", true)
-			viper.WriteConfig()
+		informUser("Deploying metaphor applications")
+		err = deployMetaphorCmd.RunE(cmd, args)
+		if err != nil {
+			informUser("Error deploy metaphor applications")
+			log.Println("Error running deployMetaphorCmd")
+			return err
 		}
+
 		if !viper.GetBool("gitlab.registered") {
 			// informUser("Getting ArgoCD auth token")
 			// token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
