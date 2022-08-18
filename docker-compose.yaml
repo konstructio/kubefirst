@@ -18,3 +18,5 @@ services:
       - 1.1.1.1 #Cloudflare DNS
       - 1.0.0.1 #Cloudflare DNS
       - 8.8.8.8 #Google DNS
+    command: sh -c "./scripts/kubefirst.sh"
+
