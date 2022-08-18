@@ -96,7 +96,7 @@ func configureSoftServe() {
 		log.Panic(err)
 	}
 
-	println("re-wrote config.yaml", config.K1FolderPath, "/config")
+	log.Printf("re-wrote config.yaml at %s/config folder", config.K1FolderPath)
 
 	w, _ := repo.Worktree()
 
