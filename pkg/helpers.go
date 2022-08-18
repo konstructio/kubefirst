@@ -67,6 +67,11 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		clusterName := viper.GetString("cluster-name")
 		argocdOidcClientId := viper.GetString(("gitlab.oidc.argocd.applicationid"))
 		githubRepoOwner := viper.GetString(("github.owner"))
+		githubRepoHost := viper.GetString(("github.host"))
+		//TODO: Make this more clear
+		isGithubMode := viper.GetBool("github.enabled")
+		//todo: get from viper
+		gitopsRepo := "gitops"
 
 		if gitlabConfigured {
 			newContents = strings.Replace(string(read), "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename")), -1)
@@ -74,6 +79,15 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(string(read), "https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops", "git@github.com:"+githubRepoOwner+"/"+"gitops", -1)
 		} else {
 			newContents = strings.Replace(string(read), "https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops.git", "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", -1)
+		}
+
+		if isGithubMode {
+			newContents = strings.Replace(newContents, "<FULL_REPO_GITOPS_URL_HTTPS>", "https://"+githubRepoHost+"/"+githubRepoOwner+"/"+gitopsRepo, -1)
+			newContents = strings.Replace(newContents, "<FULL_REPO_GITOPS_URL_SSH>", "git@"+githubRepoHost+"/"+githubRepoOwner+"/"+gitopsRepo, -1)
+		} else {
+			newContents = strings.Replace(newContents, "<FULL_REPO_GITOPS_URL_HTTPS>", "https://gitlab."+hostedZoneName+"/kubefirst/"+gitopsRepo, -1)
+			newContents = strings.Replace(newContents, "<FULL_REPO_GITOPS_URL_SSH>", "git@gitlab."+hostedZoneName+"/kubefirst/"+gitopsRepo, -1)
+
 		}
 
 		newContents = strings.Replace(newContents, "<SOFT_SERVE_INITIAL_ADMIN_PUBLIC_KEY>", strings.TrimSpace(botPublicKey), -1)
