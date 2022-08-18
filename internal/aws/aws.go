@@ -18,7 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
-	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/cip8/autoname"
@@ -54,7 +54,7 @@ func BucketRand(dryRun bool) {
 		log.Println(err)
 	}
 
-	s3Client := s3v2.NewFromConfig(awsConfig)
+	s3Client := s3.NewFromConfig(awsConfig)
 
 	randomName := viper.GetString("bucket.rand")
 	if randomName == "" {
@@ -76,13 +76,13 @@ func BucketRand(dryRun bool) {
 				if regionName == "us-east-1" {
 					_, err = s3Client.CreateBucket(
 						context.Background(),
-						&s3v2.CreateBucketInput{
+						&s3.CreateBucketInput{
 							Bucket: &bucketName,
 						})
 				} else {
 					_, err = s3Client.CreateBucket(
 						context.Background(),
-						&s3v2.CreateBucketInput{
+						&s3.CreateBucketInput{
 							Bucket: &bucketName,
 							CreateBucketConfiguration: &s3Types.CreateBucketConfiguration{
 								LocationConstraint: s3Types.BucketLocationConstraint(regionName),
@@ -94,7 +94,7 @@ func BucketRand(dryRun bool) {
 					os.Exit(1)
 				}
 
-				versionConfigInput := &s3v2.PutBucketVersioningInput{
+				versionConfigInput := &s3.PutBucketVersioningInput{
 					Bucket: aws.String(bucketName),
 					VersioningConfiguration: &s3Types.VersioningConfiguration{
 						Status: s3Types.BucketVersioningStatusEnabled,
@@ -353,7 +353,7 @@ func CreateBucket(dryRun bool, bucketName string) {
 		os.Exit(1)
 	}
 
-	s3Client := s3v2.NewFromConfig(awsClient)
+	s3Client := s3.NewFromConfig(awsClient)
 
 	log.Println("creating bucket: ", bucketName)
 
@@ -362,13 +362,13 @@ func CreateBucket(dryRun bool, bucketName string) {
 
 	if regionName == "us-east-1" {
 		_, err = s3Client.CreateBucket(
-			context.Background(), &s3v2.CreateBucketInput{
+			context.Background(), &s3.CreateBucketInput{
 				Bucket: &bucketName,
 			})
 	} else {
 		_, err = s3Client.CreateBucket(
 			context.Background(),
-			&s3v2.CreateBucketInput{
+			&s3.CreateBucketInput{
 				Bucket: &bucketName,
 				CreateBucketConfiguration: &s3Types.CreateBucketConfiguration{
 					LocationConstraint: s3Types.BucketLocationConstraint(regionName),
@@ -408,7 +408,7 @@ func UploadFile(bucketName string, remoteFilename string, localFilename string) 
 		log.Println(err)
 	}
 
-	s3Client := manager.NewUploader(s3v2.NewFromConfig(awsConfig))
+	s3Client := manager.NewUploader(s3.NewFromConfig(awsConfig))
 
 	f, err := os.Open(localFilename)
 	if err != nil {
@@ -418,7 +418,7 @@ func UploadFile(bucketName string, remoteFilename string, localFilename string) 
 	// Upload file to S3
 	result, err := s3Client.Upload(
 		context.Background(),
-		&s3v2.PutObjectInput{
+		&s3.PutObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String(remoteFilename),
 			Body:   f,
@@ -439,13 +439,13 @@ func DownloadBucket(bucket string, destFolder string) error {
 		log.Println(err)
 	}
 
-	s3Client := s3v2.NewFromConfig(awsConfig)
+	s3Client := s3.NewFromConfig(awsConfig)
 
-	downloader := manager.NewDownloader(s3v2.NewFromConfig(awsConfig))
+	downloader := manager.NewDownloader(s3.NewFromConfig(awsConfig))
 
 	log.Println("Listing the objects in the bucket:")
 	listObjsResponse, err := s3Client.ListObjectsV2(context.Background(),
-		&s3v2.ListObjectsV2Input{
+		&s3.ListObjectsV2Input{
 			Bucket: aws.String(bucket),
 			Prefix: aws.String(""),
 		})
@@ -465,7 +465,7 @@ func DownloadBucket(bucket string, destFolder string) error {
 		// Write the contents of S3 Object to the file
 		_, err = downloader.Download(context.Background(),
 			f,
-			&s3v2.GetObjectInput{
+			&s3.GetObjectInput{
 				Bucket: aws.String(bucket),
 				Key:    aws.String(*object.Key),
 			})
@@ -484,9 +484,9 @@ func PutTagKubefirstOnBuckets(bucketName string, clusterName string) {
 
 	log.Printf("tagging bucket... %s:%s", bucketName, clusterName)
 
-	s3Client := s3v2.New(s3v2.Options{})
+	s3Client := s3.New(s3.Options{})
 
-	input := &s3v2.PutBucketTaggingInput{
+	input := &s3.PutBucketTaggingInput{
 		Bucket: aws.String(bucketName),
 		Tagging: &s3Types.Tagging{
 			TagSet: []s3Types.Tag{
@@ -526,11 +526,11 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 		return err
 	}
 
-	client := s3v2.NewFromConfig(awsConfig)
+	client := s3.NewFromConfig(awsConfig)
 
 	deleteObject := func(bucket, key, versionId *string) {
 		log.Printf("Object: %s/%s\n", *key, aws.ToString(versionId))
-		_, err := client.DeleteObject(context.Background(), &s3v2.DeleteObjectInput{
+		_, err := client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
 			Bucket:    bucket,
 			Key:       key,
 			VersionId: versionId,
@@ -540,7 +540,7 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 		}
 	}
 
-	in := &s3v2.ListObjectsV2Input{Bucket: &bucket}
+	in := &s3.ListObjectsV2Input{Bucket: &bucket}
 	for {
 		out, err := client.ListObjectsV2(context.Background(), in)
 		if err != nil {
@@ -559,7 +559,7 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 		}
 	}
 
-	inVer := &s3v2.ListObjectVersionsInput{Bucket: &bucket}
+	inVer := &s3.ListObjectVersionsInput{Bucket: &bucket}
 	for {
 		out, err := client.ListObjectVersions(context.Background(), inVer)
 		if err != nil {
@@ -583,7 +583,7 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 		}
 	}
 
-	_, err = client.DeleteBucket(context.Background(), &s3v2.DeleteBucketInput{Bucket: &bucket})
+	_, err = client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: &bucket})
 	if err != nil {
 		log.Printf("Failed to delete bucket: %v", err)
 	}
@@ -604,11 +604,11 @@ func DownloadS3File(bucketName string, filename string) error {
 		return err
 	}
 
-	s3Client := manager.NewDownloader(s3v2.NewFromConfig(awsConfig))
+	s3Client := manager.NewDownloader(s3.NewFromConfig(awsConfig))
 	numBytes, err := s3Client.Download(
 		context.Background(),
 		file,
-		&s3v2.GetObjectInput{
+		&s3.GetObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String(filename),
 		},
