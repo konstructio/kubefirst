@@ -10,7 +10,7 @@ services:
     environment:
       TERM: xterm-256color
     volumes:
-      - ./:/opt/kubefirst
+      - ./:/home/developer/kubefirst
       # AWS credentials are strictly used to provision the Kubefirst in your AWS account
       - $HOME/.aws:/home/developer/.aws
     dns:
