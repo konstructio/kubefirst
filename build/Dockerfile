@@ -1,7 +1,7 @@
 FROM --platform=linux/amd64 buildpack-deps:bullseye-scm
 # we are using buidlpack-deps:bullseye-scm https://github.com/docker-library/golang/blob/8d0fa6028120904e16fe761f095bd0620b68eab2/1.18/bullseye/Dockerfile
 
-ARG KUBEFIRST_VERSION=1.8.5
+ARG KUBEFIRST_VERSION=1.8.6
 
 RUN apt-get update && \
     apt-get install -y unzip curl jq vim unzip less \

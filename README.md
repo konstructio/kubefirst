@@ -28,7 +28,7 @@
 The Kubefirst CLI is a cloud provisioning tool. With simple setup and two CLI commands, we create a kubernetes cluster managed with automated Infrastructure as Code, GitOps asset management and application delivery, secrets management, a sample application delivered to development, staging, and production, and so much more. It's an open source platform ready to be customized to suit your company's needs.
 
 - [DNS Setup](#dns-setup)
-- [Getting the binary](#getting-the-binary)
+- [Installing the CLI](#installing-the-cli)
 - [Initialization](#initialization)
 - [Creation](#creation)
 - [Access ArgoCD](#access-argocd)
@@ -59,23 +59,14 @@ gitlab.subdomain.example.com
 ...
 ```
 
-## Getting the binary
+## Installing the CLI
 
-```bash
-#Check the release page:
-#https://github.com/kubefirst/kubefirst/releases
-
-export KUBEFIRST_VERSION=1.8.5
-curl -LO https://github.com/kubefirst/kubefirst/releases/download/$KUBEFIRST_VERSION/kubefirst-$KUBEFIRST_VERSION-linux-amd64.tar.gz
-
-tar -xvzf kubefirst-$KUBEFIRST_VERSION-linux-amd64.tar.gz -C /usr/local/bin/
-chmod +x /usr/local/bin/kubefirst
-
-kubefirst info
+```bash 
+brew install kubefirst/tools/kubefirst
 ```
+## Other installation techniques:
 
-## In case your OS is not supported or you want to build and run:
-[Running in a Container](./build/README.md)
+[Details Here](./build/README.md)
 
 ## Initialization
 
@@ -99,20 +90,27 @@ At this point, everything is ready to start provisioning the cloud services, and
 kubefirst cluster create
 ```
 
-## Access ArgoCD
-
-```bash
-aws eks update-kubeconfig --name your_cluster_name
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-kubectl -n argocd port-forward svc/argocd-server 8080:80
-```
-
 ## Destroy
 
 It will destroy the kubefirst management cluster, and clean up every change made in the cloud.
 
 ```bash
 kubefirst destroy
+```
+
+# What to do next
+
+[Learn More - Getting Started](https://docs.kubefirst.com/kubefirst/getting-started.html)
+
+
+# If you want learn more 
+
+## Access ArgoCD
+
+```bash
+aws eks update-kubeconfig --name your_cluster_name
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+kubectl -n argocd port-forward svc/argocd-server 8080:80
 ```
 
 ## Available Commands

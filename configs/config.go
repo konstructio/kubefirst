@@ -77,7 +77,7 @@ func ReadConfig() *Config {
 	config.HelmVersion = "v3.6.1"
 	config.KubectlVersionM1 = "v1.21.14"
 
-	config.KubefirstVersion = "1.8.5"
+	config.KubefirstVersion = "1.8.6"
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
