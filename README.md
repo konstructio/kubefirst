@@ -28,9 +28,7 @@
 The Kubefirst CLI is a cloud provisioning tool. With simple setup and two CLI commands, we create a kubernetes cluster managed with automated Infrastructure as Code, GitOps asset management and application delivery, secrets management, a sample application delivered to development, staging, and production, and so much more. It's an open source platform ready to be customized to suit your company's needs.
 
 - [DNS Setup](#dns-setup)
-- [Clone the Repository](#clone-the-repository)
-- [Start the Container](#start-the-container)
-- [Connect to the Container](#connect-to-the-container)
+- [Getting the binary](#getting-the-binary)
 - [Initialization](#initialization)
 - [Creation](#creation)
 - [Access ArgoCD](#access-argocd)
