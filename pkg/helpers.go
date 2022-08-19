@@ -82,11 +82,19 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		}
 
 		if isGithubMode {
+			//for enforcing HTTPS
 			newContents = strings.Replace(newContents, "<FULL_REPO_GITOPS_URL_HTTPS>", "https://"+githubRepoHost+"/"+githubRepoOwner+"/"+gitopsRepo, -1)
+			//for enforcing SSH
 			newContents = strings.Replace(newContents, "<FULL_REPO_GITOPS_URL_SSH>", "git@"+githubRepoHost+"/"+githubRepoOwner+"/"+gitopsRepo, -1)
+			//Github prefer ssh  - for general use
+			newContents = strings.Replace(newContents, "<FULL_REPO_GITOPS_URL>", "git@"+githubRepoHost+"/"+githubRepoOwner+"/"+gitopsRepo, -1)
 		} else {
+			//for enforcing HTTPS
 			newContents = strings.Replace(newContents, "<FULL_REPO_GITOPS_URL_HTTPS>", "https://gitlab."+hostedZoneName+"/kubefirst/"+gitopsRepo, -1)
+			//for enforcing SSH
 			newContents = strings.Replace(newContents, "<FULL_REPO_GITOPS_URL_SSH>", "git@gitlab."+hostedZoneName+"/kubefirst/"+gitopsRepo, -1)
+			//gitlab prefer HTTPS - for general use
+			newContents = strings.Replace(newContents, "<FULL_REPO_GITOPS_URL>", "https://gitlab."+hostedZoneName+"/kubefirst/"+gitopsRepo, -1)
 
 		}
 
