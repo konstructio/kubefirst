@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -30,116 +31,135 @@ func DownloadTools(config *configs.Config) error {
 		}
 	}
 
-	kVersion := config.KubectlVersion
-	if config.LocalOs == "darwin" && config.LocalArchitecture == "arm64" {
-		kVersion = config.KubectlVersionM1
-	}
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go func() {
+		kVersion := config.KubectlVersion
+		if config.LocalOs == "darwin" && config.LocalArchitecture == "arm64" {
+			kVersion = config.KubectlVersionM1
+		}
 
-	kubectlDownloadUrl := fmt.Sprintf(
-		"https://dl.k8s.io/release/%s/bin/%s/%s/kubectl",
-		kVersion,
-		config.LocalOs,
-		config.LocalArchitecture,
-	)
-	log.Printf("Downloading kubectl from: %s", kubectlDownloadUrl)
-	err := downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
-	if err != nil {
-		return err
-	}
+		kubectlDownloadUrl := fmt.Sprintf(
+			"https://dl.k8s.io/release/%s/bin/%s/%s/kubectl",
+			kVersion,
+			config.LocalOs,
+			config.LocalArchitecture,
+		)
+		log.Printf("Downloading kubectl from: %s", kubectlDownloadUrl)
+		err := downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
+		if err != nil {
+			//return err
+		}
 
-	err = os.Chmod(config.KubectlClientPath, 0755)
-	if err != nil {
-		return err
-	}
+		err = os.Chmod(config.KubectlClientPath, 0755)
+		if err != nil {
+			//return err
+		}
 
-	// todo: this kubeconfig is not available to us until we have run the terraform in base/
-	err = os.Setenv("KUBECONFIG", config.KubeConfigPath)
-	if err != nil {
-		return err
-	}
+		// todo: this kubeconfig is not available to us until we have run the terraform in base/
+		err = os.Setenv("KUBECONFIG", config.KubeConfigPath)
+		if err != nil {
+			//return err
+		}
 
-	log.Println("going to print the kubeconfig env in runtime", os.Getenv("KUBECONFIG"))
+		log.Println("going to print the kubeconfig env in runtime", os.Getenv("KUBECONFIG"))
 
-	kubectlStdOut, kubectlStdErr, errKubectl := pkg.ExecShellReturnStrings(config.KubectlClientPath, "version", "--client", "--short")
-	log.Printf("-> kubectl version:\n\t%s\n\t%s\n", kubectlStdOut, kubectlStdErr)
-	if errKubectl != nil {
-		log.Panicf("failed to call kubectlVersionCmd.Run(): %v", err)
-	}
+		kubectlStdOut, kubectlStdErr, errKubectl := pkg.ExecShellReturnStrings(config.KubectlClientPath, "version", "--client", "--short")
+		log.Printf("-> kubectl version:\n\t%s\n\t%s\n", kubectlStdOut, kubectlStdErr)
+		if errKubectl != nil {
+			log.Panicf("failed to call kubectlVersionCmd.Run(): %v", err)
+		}
+		wg.Done()
+	}()
 
-	// todo: adopt latest helmVersion := "v3.9.0"
-	terraformVersion := config.TerraformVersion
+	go func() {
+		// todo: adopt latest helmVersion := "v3.9.0"
+		terraformVersion := config.TerraformVersion
 
-	terraformDownloadUrl := fmt.Sprintf(
-		"https://releases.hashicorp.com/terraform/%s/terraform_%s_%s_%s.zip",
-		terraformVersion,
-		terraformVersion,
-		config.LocalOs,
-		config.LocalArchitecture,
-	)
-	log.Printf("Downloading terraform from %s", terraformDownloadUrl)
-	terraformDownloadZipPath := fmt.Sprintf("%s/tools/terraform.zip", config.K1FolderPath)
-	err = downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
-	if err != nil {
-		log.Println("error reading terraform file")
-		return err
-	}
+		terraformDownloadUrl := fmt.Sprintf(
+			"https://releases.hashicorp.com/terraform/%s/terraform_%s_%s_%s.zip",
+			terraformVersion,
+			terraformVersion,
+			config.LocalOs,
+			config.LocalArchitecture,
+		)
+		log.Printf("Downloading terraform from %s", terraformDownloadUrl)
+		terraformDownloadZipPath := fmt.Sprintf("%s/tools/terraform.zip", config.K1FolderPath)
+		err := downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
+		if err != nil {
+			log.Println("error reading terraform file")
+			//return err
+		}
 
-	unzipDirectory := fmt.Sprintf("%s/tools", config.K1FolderPath)
-	unzip(terraformDownloadZipPath, unzipDirectory)
+		unzipDirectory := fmt.Sprintf("%s/tools", config.K1FolderPath)
+		unzip(terraformDownloadZipPath, unzipDirectory)
 
-	err = os.Chmod(unzipDirectory, 0777)
-	if err != nil {
-		return err
-	}
+		err = os.Chmod(unzipDirectory, 0777)
+		if err != nil {
+			//return err
+		}
 
-	err = os.Chmod(fmt.Sprintf("%s/terraform", unzipDirectory), 0755)
-	if err != nil {
-		return err
-	}
-	os.RemoveAll(fmt.Sprintf("%s/terraform.zip", toolsDirPath))
+		err = os.Chmod(fmt.Sprintf("%s/terraform", unzipDirectory), 0755)
+		if err != nil {
+			//return err
+		}
+		os.RemoveAll(fmt.Sprintf("%s/terraform.zip", toolsDirPath))
 
-	helmVersion := config.HelmVersion
-	helmDownloadUrl := fmt.Sprintf(
-		"https://get.helm.sh/helm-%s-%s-%s.tar.gz",
-		helmVersion,
-		config.LocalOs,
-		config.LocalArchitecture,
-	)
-	log.Printf("Downloading terraform from %s", helmDownloadUrl)
-	helmDownloadTarGzPath := fmt.Sprintf("%s/tools/helm.tar.gz", config.K1FolderPath)
-	err = downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
-	if err != nil {
-		return err
-	}
+		wg.Done()
 
-	helmTarDownload, err := os.Open(helmDownloadTarGzPath)
-	if err != nil {
-		log.Panicf("could not read helm download content")
-	}
+	}()
 
-	extractFileFromTarGz(
-		helmTarDownload,
-		fmt.Sprintf("%s-%s/helm", config.LocalOs, config.LocalArchitecture),
-		config.HelmClientPath,
-	)
-	err = os.Chmod(config.HelmClientPath, 0755)
-	if err != nil {
-		return err
-	}
+	go func() {
 
-	helmStdOut, helmStdErr, errHelm := pkg.ExecShellReturnStrings(
-		config.HelmClientPath,
-		"version",
-		"--client",
-		"--short",
-	)
+		helmVersion := config.HelmVersion
+		helmDownloadUrl := fmt.Sprintf(
+			"https://get.helm.sh/helm-%s-%s-%s.tar.gz",
+			helmVersion,
+			config.LocalOs,
+			config.LocalArchitecture,
+		)
 
-	log.Printf("-> kubectl version:\n\t%s\n\t%s\n", helmStdOut, helmStdErr)
-	// currently argocd init values is generated by kubefirst ssh
-	// todo helm install argocd --create-namespace --wait --values ~/.kubefirst/argocd-init-values.yaml argo/argo-cd
-	if errHelm != nil {
-		log.Panicf("error executing helm version command: %v", err)
-	}
+		log.Printf("Downloading terraform from %s", helmDownloadUrl)
+
+		helmDownloadTarGzPath := fmt.Sprintf("%s/tools/helm.tar.gz", config.K1FolderPath)
+
+		err := downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
+		if err != nil {
+			//return err
+		}
+		helmTarDownload, err := os.Open(helmDownloadTarGzPath)
+		if err != nil {
+			log.Panicf("could not read helm download content")
+		}
+
+		extractFileFromTarGz(
+			helmTarDownload,
+			fmt.Sprintf("%s-%s/helm", config.LocalOs, config.LocalArchitecture),
+			config.HelmClientPath,
+		)
+		err = os.Chmod(config.HelmClientPath, 0755)
+		if err != nil {
+			//return err
+		}
+
+		helmStdOut, helmStdErr, errHelm := pkg.ExecShellReturnStrings(
+			config.HelmClientPath,
+			"version",
+			"--client",
+			"--short",
+		)
+
+		log.Printf("-> kubectl version:\n\t%s\n\t%s\n", helmStdOut, helmStdErr)
+		// currently argocd init values is generated by kubefirst ssh
+		// todo helm install argocd --create-namespace --wait --values ~/.kubefirst/argocd-init-values.yaml argo/argo-cd
+		if errHelm != nil {
+			log.Panicf("error executing helm version command: %v", err)
+		}
+
+		wg.Done()
+	}()
+
+	log.Println("download step finished!")
 
 	return nil
 }
