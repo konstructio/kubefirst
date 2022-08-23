@@ -94,7 +94,8 @@ func ConfigureVault(dryRun bool, bootstrapOnly bool) {
 	envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 	envs["TF_VAR_vault_token"] = vaultToken
 	envs["TF_VAR_vault_redirect_uris"] = viper.GetString("vault.oidc_redirect_uris")
-	
+	envs["TF_VAR_git_provider"] = viper.GetString("git.mode")
+
 	directory := fmt.Sprintf("%s/gitops/terraform/vault", config.K1FolderPath)
 	err = os.Chdir(directory)
 	if err != nil {
