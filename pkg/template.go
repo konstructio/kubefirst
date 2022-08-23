@@ -4,16 +4,12 @@ import (
 	"encoding/base64"
 	"fmt"
 	"html/template"
-	"io"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"path"
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 
 	"gopkg.in/yaml.v2"
 )
@@ -117,7 +113,7 @@ func base64encode(v string) string {
 	return base64.StdEncoding.EncodeToString([]byte(v))
 }
 
-func dfault(d interface{}, given ...interface{}) interface{} {
+func defaultVal(d interface{}, given ...interface{}) interface{} {
 
 	if empty(given) || empty(given[0]) {
 		return d
@@ -125,14 +121,12 @@ func dfault(d interface{}, given ...interface{}) interface{} {
 	return given[0]
 }
 
-// empty returns true if the given value has the zero value for its type.
 func empty(given interface{}) bool {
 	g := reflect.ValueOf(given)
 	if !g.IsValid() {
 		return true
 	}
 
-	// Basically adapted from text/template.isTrue
 	switch g.Kind() {
 	default:
 		return g.IsNil()
@@ -278,51 +272,19 @@ func leftUniqueSlice(s1, s2 []string) []string {
 	return diff
 }
 
-func getFromURL(url, username, password string) (io.ReadCloser, error) {
-	httpClient := http.Client{
-		Timeout: 30 * time.Second,
-	}
-	req, err := http.NewRequest("GET", url, nil)
-	if len(username) >= 1 && len(password) >= 0 {
-		req.SetBasicAuth(username, password)
-	}
-	if err != nil {
-		return nil, err
-	}
-	response, err := httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	return response.Body, nil
-}
-
-func getYamlFromURL(url, username, password string) interface{} {
-	if len(url) == 0 {
-		var t interface{}
-		return t
-	}
-	r, err := getFromURL(url, username, password)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-	var t interface{}
-
-	//todo IOUTIL is deprecated
-	y, err := ioutil.ReadAll(r)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	err = yaml.Unmarshal(y, &t)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	return t
-}
-
 func replace(old, new, src string) string {
 	return strings.Replace(src, old, new, -1)
+}
+
+func envToMap() map[string]string {
+	envMap := make(map[string]string)
+
+	for _, v := range os.Environ() {
+		envVar := strings.Split(v, "=")
+		envMap[envVar[0]] = os.Getenv(envVar[0])
+	}
+
+	return envMap
 }
 
 func Template(templateFile, renderedFile string) {
@@ -345,13 +307,12 @@ func Template(templateFile, renderedFile string) {
 		"keys":            keys,
 		"b64dec":          base64decode,
 		"b64enc":          base64encode,
-		"default":         dfault,
+		"default":         defaultVal,
 		"empty":           empty,
 		"toyaml":          toYaml,
 		"uniqueSlice":     uniqueSlice,
 		"leftUniqueSlice": leftUniqueSlice,
 		"listLen":         listLength,
-		"getYamlFromURL":  getYamlFromURL,
 		"replace":         replace,
 	}
 
@@ -364,15 +325,4 @@ func Template(templateFile, renderedFile string) {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-}
-
-func envToMap() map[string]string {
-	envMap := make(map[string]string)
-
-	for _, v := range os.Environ() {
-		envVar := strings.Split(v, "=")
-		envMap[envVar[0]] = os.Getenv(envVar[0])
-	}
-
-	return envMap
 }
