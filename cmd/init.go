@@ -31,10 +31,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		/**
-		BLOCK 1
-		*/
-		startTime := time.Now()
+
 		config := configs.ReadConfig()
 		infoCmd.Run(cmd, args)
 
@@ -227,8 +224,6 @@ to quickly create a Cobra application.`,
 		//! tracker 8
 		progressPrinter.IncrementTracker("step-telemetry", 1)
 		time.Sleep(time.Millisecond * 100)
-
-		fmt.Printf("total init command elapsed time: %.2f", time.Since(startTime).Seconds())
 
 		return nil
 	},
