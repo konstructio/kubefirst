@@ -1,11 +1,10 @@
 package aws
 
-// todo: refactor is necessary to use AWS SDK v2 only
-
 import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"log"
 	"net"
 	"os"
@@ -14,39 +13,48 @@ import (
 	"strings"
 	"time"
 
-	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
-	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	stsV1 "github.com/aws/aws-sdk-go/service/sts"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/cip8/autoname"
-	"github.com/google/uuid"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
 
-func BucketRand(dryRun bool) {
+// newAws instantiate a new AWS configuration. This function is used to provide initial connection to AWS services.
+// todo: update AWS functions in this file to work as methods of AWS struct, example:
+// DestroyBucketsInUse will have its function signature updated to (awsConfig AWSStruct) DestroyBucketsInUse(param type)
+// and AWSStruct will be used as instanceOfAws.DestroyBucketsInUse(param type)
+func newAws() (aws.Config, error) {
 
-	sess, err := session.NewSessionWithOptions(session.Options{
-		Config: aws.Config{
-			Region: aws.String(viper.GetString("aws.region")),
-		},
-		Profile: viper.GetString("aws.profile"),
-	})
-
+	region := viper.GetString("aws.region")
+	profile := viper.GetString("aws.profile")
+	awsClient, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithRegion(region),
+		config.WithSharedConfigProfile(profile),
+	)
 	if err != nil {
-		log.Println("failed to attempt bucket creation ", err.Error())
-		os.Exit(1)
+		return aws.Config{}, fmt.Errorf("unable to initialize AWS service, error: %v", err)
 	}
 
-	s3Client := s3.New(sess)
+	return awsClient, nil
+}
+
+func BucketRand(dryRun bool) {
+
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := newAws()
+	if err != nil {
+		log.Println(err)
+	}
+
+	s3Client := s3.NewFromConfig(awsConfig)
 
 	randomName := viper.GetString("bucket.rand")
 	if randomName == "" {
@@ -66,29 +74,34 @@ func BucketRand(dryRun bool) {
 			log.Println("region is ", regionName)
 			if !dryRun {
 				if regionName == "us-east-1" {
-					_, err = s3Client.CreateBucket(&s3.CreateBucketInput{
-						Bucket: &bucketName,
-					})
+					_, err = s3Client.CreateBucket(
+						context.Background(),
+						&s3.CreateBucketInput{
+							Bucket: &bucketName,
+						})
 				} else {
-					_, err = s3Client.CreateBucket(&s3.CreateBucketInput{
-						Bucket: &bucketName,
-						CreateBucketConfiguration: &s3.CreateBucketConfiguration{
-							LocationConstraint: aws.String(regionName),
-						},
-					})
+					_, err = s3Client.CreateBucket(
+						context.Background(),
+						&s3.CreateBucketInput{
+							Bucket: &bucketName,
+							CreateBucketConfiguration: &s3Types.CreateBucketConfiguration{
+								LocationConstraint: s3Types.BucketLocationConstraint(regionName),
+							},
+						})
 				}
 				if err != nil {
 					log.Println("failed to create bucket "+bucketName, err.Error())
 					os.Exit(1)
 				}
-				vc := &s3.VersioningConfiguration{}
-				vc.Status = aws.String(s3.BucketVersioningStatusEnabled)
+
 				versionConfigInput := &s3.PutBucketVersioningInput{
-					Bucket:                  aws.String(bucketName),
-					VersioningConfiguration: vc,
+					Bucket: aws.String(bucketName),
+					VersioningConfiguration: &s3Types.VersioningConfiguration{
+						Status: s3Types.BucketVersioningStatusEnabled,
+					},
 				}
 				log.Printf("[DEBUG] S3 put bucket versioning: %#v", versionConfigInput)
-				_, err := s3Client.PutBucketVersioning(versionConfigInput)
+				_, err := s3Client.PutBucketVersioning(context.Background(), versionConfigInput)
 				if err != nil {
 					log.Panicf("Error putting S3 versioning: %s", err)
 				}
@@ -98,42 +111,54 @@ func BucketRand(dryRun bool) {
 			}
 			viper.Set(fmt.Sprintf("bucket.%s.created", bucket), true)
 			viper.Set(fmt.Sprintf("bucket.%s.name", bucket), bucketName)
-			viper.WriteConfig()
+			if err = viper.WriteConfig(); err != nil {
+				log.Println(err)
+			}
 		}
 		log.Printf("bucket %s exists", viper.GetString(fmt.Sprintf("bucket.%s.name", bucket)))
 	}
 }
 
+// GetAccountInfo collect IAM and roles data. Collected data like (account id and ARN) are stored in viper.
 func GetAccountInfo() {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := newAws()
 	if err != nil {
 		log.Panicf("failed to load configuration, error: %s", err)
 	}
-	stsClient := sts.NewFromConfig(cfg)
-	iamCaller, err := stsClient.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
+
+	stsClient := sts.NewFromConfig(awsConfig)
+	iamCaller, err := stsClient.GetCallerIdentity(
+		context.Background(),
+		&sts.GetCallerIdentityInput{},
+	)
 	if err != nil {
 		log.Panicf("error: could not get caller identity %s", err)
 	}
 
 	viper.Set("aws.accountid", *iamCaller.Account)
 	viper.Set("aws.userarn", *iamCaller.Arn)
-	viper.WriteConfig()
+	if err = viper.WriteConfig(); err != nil {
+		log.Println(err)
+	}
 }
 
+// TestHostedZoneLiveness check Route53 for liveness entry, and check if it's responding/live
 func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, TestHostedZoneLiveness skipped.")
 		return
 	}
-	//tracker := progress.Tracker{Message: "testing hosted zone", Total: 25}
 
-	// todo need to create single client and pass it
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := newAws()
 	if err != nil {
 		log.Println("failed to load configuration, error:", err)
 	}
+
 	// https://aws.github.io/aws-sdk-go-v2/docs/making-requests/#overriding-configuration
-	route53Client := route53.NewFromConfig(cfg)
+	route53Client := route53.NewFromConfig(awsConfig)
 
 	// todo when checking to see if hosted zone exists print ns records for user to verity in dns registrar
 	route53RecordName := fmt.Sprintf("kubefirst-liveness.%s", hostedZoneName)
@@ -142,8 +167,9 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 	log.Println("checking to see if record", route53RecordName, "exists")
 	log.Println("hostedZoneId", hostedZoneId)
 	log.Println("route53RecordName", route53RecordName)
-	if !dryRun {
-		record, err := route53Client.ChangeResourceRecordSets(context.TODO(), &route53.ChangeResourceRecordSetsInput{
+	record, err := route53Client.ChangeResourceRecordSets(
+		context.Background(),
+		&route53.ChangeResourceRecordSetsInput{
 			ChangeBatch: &types.ChangeBatch{
 				Changes: []types.Change{
 					{
@@ -166,20 +192,15 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 			},
 			HostedZoneId: aws.String(hostedZoneId),
 		})
-		if err != nil {
-			log.Println(err)
-		}
-		log.Println("record creation status is ", record.ChangeInfo.Status)
-	} else {
-		log.Printf("[#99] Dry-run mode, route53 creation/update skipped:  %s", route53RecordName)
+	if err != nil {
+		log.Println(err)
 	}
+	log.Println("record creation status is ", record.ChangeInfo.Status)
 	count := 0
 	// todo need to exit after n number of minutes and tell them to check ns records
 	// todo this logic sucks
 	for count <= 100 {
 		count++
-		//tracker.Increment(1)
-		//log.Println(text.Faint.Sprintf("[INFO] dns test %d of 25", count))
 
 		log.Println(route53RecordName)
 		ips, err := net.LookupTXT(route53RecordName)
@@ -193,61 +214,33 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 			for _, ip := range ips {
 				// todo check ip against route53RecordValue in some capacity so we can pivot the value for testing
 				log.Println(fmt.Sprintf("%s. in TXT record value: %s\n", route53RecordName, ip))
-				//tracker.MarkAsDone()
 				count = 101
 			}
 		}
 		if count == 100 {
-			//tracker.MarkAsErrored()
-			//pw.Stop()
 			log.Panicf("unable to resolve hosted zone dns record. please check your domain registrar")
 		}
 	}
-	// todo delete route53 record
-
-	// recordDelete, err := route53Client.ChangeResourceRecordSets(context.TODO(), &route53.ChangeResourceRecordSetsInput{
-	// 	ChangeBatch: &types.ChangeBatch{
-	// 		Changes: []types.Change{
-	// 			{
-	// 				Action: "DELETE",
-	// 				ResourceRecordSet: &types.ResourceRecordSet{
-	// 					Name: aws.String(route53RecordName),
-	// 					Type: "A",
-	// 					ResourceRecords: []types.ResourceRecord{
-	// 						{
-	// 							Value: aws.String(route53RecordValue),
-	// 						},
-	// 					},
-	// 					TTL:           aws.Int64(10),
-	// 					Weight:        aws.Int64(100),
-	// 					SetIdentifier: aws.String("CREATE sanity check for kubefirst installation"),
-	// 				},
-	// 			},
-	// 		},
-	// 		Comment: aws.String("CREATE sanity check dns record."),
-	// 	},
-	// 	HostedZoneId: aws.String(hostedZoneId),
-	// })
-	// if err != nil {
-	// 	log.Println("error deleting route 53 record after liveness test")
-	// }
-	// log.Println("record deletion status is ", *&recordDelete.ChangeInfo.Status)
-
 }
 
+// GetDNSInfo try to reach the provided hosted zone
 func GetDNSInfo(hostedZoneName string) string {
 
 	log.Println("GetDNSInfo (working...)")
 
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := newAws()
 	if err != nil {
 		log.Println("failed to load configuration, error:", err)
 	}
 	// https://aws.github.io/aws-sdk-go-v2/docs/making-requests/#overriding-configuration
-	route53Client := route53.NewFromConfig(cfg)
-	hostedZones, err := route53Client.ListHostedZonesByName(context.TODO(), &route53.ListHostedZonesByNameInput{
-		DNSName: &hostedZoneName,
-	})
+	route53Client := route53.NewFromConfig(awsConfig)
+	hostedZones, err := route53Client.ListHostedZonesByName(
+		context.Background(),
+		&route53.ListHostedZonesByNameInput{
+			DNSName: &hostedZoneName,
+		},
+	)
 	if err != nil {
 		log.Println("oh no error on call", err)
 	}
@@ -255,12 +248,18 @@ func GetDNSInfo(hostedZoneName string) string {
 	var hostedZoneId string
 
 	for _, zone := range hostedZones.HostedZones {
+
 		if *zone.Name == fmt.Sprintf(`%s%s`, hostedZoneName, ".") {
-			hostedZoneId = ReturnHostedZoneId(*zone.Id)
+
+			hostedZoneId = strings.Split(*zone.Id, "/")[2]
+
 			log.Printf(`found entry for user submitted domain %s, using hosted zone id %s`, hostedZoneName, hostedZoneId)
+
 			viper.Set("aws.hostedzonename", hostedZoneName)
 			viper.Set("aws.hostedzoneid", hostedZoneId)
-			viper.WriteConfig()
+			if err = viper.WriteConfig(); err != nil {
+				log.Println(err)
+			}
 		}
 	}
 	log.Println("GetDNSInfo (done)")
@@ -268,11 +267,8 @@ func GetDNSInfo(hostedZoneName string) string {
 
 }
 
-func ReturnHostedZoneId(rawZoneId string) string {
-	return strings.Split(rawZoneId, "/")[2]
-}
-
-func ListBucketsInUse() []string {
+// listBucketsInUse list user active buckets
+func listBucketsInUse() []string {
 	var bucketsInUse []string
 	bucketsConfig := viper.AllKeys()
 	for _, bucketKey := range bucketsConfig {
@@ -285,60 +281,21 @@ func ListBucketsInUse() []string {
 	return bucketsInUse
 }
 
-func DestroyBucket(bucketName string) {
-	s3Client := s3.New(GetAWSSession())
-
-	log.Printf("Attempt to delete: %s", bucketName)
-	_, errHead := s3Client.HeadBucket(&s3.HeadBucketInput{
-		Bucket: &bucketName,
-	})
-	if errHead != nil {
-		if aerr, ok := errHead.(awserr.Error); ok {
-			switch aerr.Code() {
-			case s3.ErrCodeNoSuchBucket:
-				log.Println("Bucket Error:", s3.ErrCodeNoSuchBucket, aerr.Error())
-			default:
-				log.Println("Bucket Error:", aerr.Error())
-			}
-		} else {
-			log.Println(errHead.Error())
-		}
-	} else {
-		_, err := s3Client.DeleteBucket(&s3.DeleteBucketInput{
-			Bucket: &bucketName,
-		})
-		if err != nil {
-			log.Panicf("failed to delete bucket "+bucketName, err.Error())
-		}
-	}
-}
-
-func GetAWSSession() *session.Session {
-	sess, err := session.NewSessionWithOptions(session.Options{
-		Config: aws.Config{
-			Region: aws.String(viper.GetString("aws.region")),
-		},
-		Profile: viper.GetString("aws.profile"),
-	})
-	if err != nil {
-		log.Panicf("failed to get session %s", err.Error())
-	}
-
-	return sess
-}
-
-func DestroyBucketsInUse(destroyBuckets bool) {
-	if destroyBuckets {
-		log.Println("Confirmed: DestroyBucketsInUse")
-		for _, bucket := range ListBucketsInUse() {
-			log.Printf("Deleting versions, objects and bucket: %s:", bucket)
-			err := DestroyBucketObjectsAndVersions(bucket, viper.GetString("aws.region"))
-			if err != nil {
-				log.Panic("Error deleting bucket/objects/version, the resources may have already been removed, please re-run without flag --destroy-buckets and check on console")
-			}
-		}
-	} else {
+// DestroyBucketsInUse receives a list of user active buckets, and try to destroy them
+func DestroyBucketsInUse(dryRun bool) {
+	if dryRun {
 		log.Println("Skip: DestroyBucketsInUse")
+		return
+	}
+
+	log.Println("Confirmed: DestroyBucketsInUse")
+
+	for _, bucket := range listBucketsInUse() {
+		log.Printf("Deleting versions, objects and bucket: %s:", bucket)
+		err := DestroyBucketObjectsAndVersions(bucket, viper.GetString("aws.region"))
+		if err != nil {
+			log.Panic("Error deleting bucket/objects/version, the resources may have already been removed, please re-run without flag --destroy-buckets and check on console")
+		}
 	}
 }
 
@@ -347,134 +304,151 @@ func DestroyBucketsInUse(destroyBuckets bool) {
 // new AWS credentials has expiration time set.
 func AssumeRole(roleArn string) error {
 
-	sess := GetAWSSession()
-
-	svc := stsV1.New(sess)
-
-	// Use the role session name to uniquely identify a session when the same role is assumed by different principals
-	// or for different reasons.
-	roleSessionName, err := uuid.NewUUID()
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := newAws()
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
-	assumeRoleInput := stsV1.AssumeRoleInput{
-		RoleArn:         aws.String(roleArn),
-		RoleSessionName: aws.String(roleSessionName.String()),
-		DurationSeconds: aws.Int64(60 * 60 * 1),
-	}
+	stsClient := sts.NewFromConfig(awsConfig)
 
-	result, err := svc.AssumeRole(&assumeRoleInput)
+	provider := stscreds.NewAssumeRoleProvider(stsClient, roleArn)
+
+	awsConfig.Credentials = aws.NewCredentialsCache(provider)
+
+	credentials, err := awsConfig.Credentials.Retrieve(context.Background())
 	if err != nil {
-		fmt.Printf("unable to assume role, %v\n", err)
 		return err
 	}
 
 	// update AWS keys
-	if err := os.Setenv("AWS_ACCESS_KEY_ID", *result.Credentials.AccessKeyId); err != nil {
+	if err := os.Setenv("AWS_ACCESS_KEY_ID", credentials.AccessKeyID); err != nil {
 		fmt.Printf("unable to set AWS_ACCESS_KEY_ID environment variable. Err: %v", err)
 	}
 
-	if err := os.Setenv("AWS_SECRET_ACCESS_KEY", *result.Credentials.SecretAccessKey); err != nil {
+	if err := os.Setenv("AWS_SECRET_ACCESS_KEY", credentials.SecretAccessKey); err != nil {
 		fmt.Printf("unable to set AWS_SECRET_ACCESS_KEY environment variable. Err: %v", err)
 	}
 
-	if err := os.Setenv("AWS_SESSION_TOKEN", *result.Credentials.SessionToken); err != nil {
+	if err := os.Setenv("AWS_SESSION_TOKEN", credentials.SessionToken); err != nil {
 		fmt.Printf("unable to set AWS_SESSION_TOKEN environment variable. Err: %v", err)
 	}
 
 	return nil
 }
 
-func CreateBucket(dryRun bool, name string) {
+// CreateBucket creates a bucket specified in the bucketName field, and use aws.region set on .kubefirst config file
+func CreateBucket(dryRun bool, bucketName string) {
+
 	log.Println("createBucketCalled")
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, bucket creation skipped:  %s", bucketName)
+		return
+	}
 
-	sess, err := session.NewSessionWithOptions(session.Options{
-		Config: aws.Config{
-			Region: aws.String(viper.GetString("aws.region")),
-		},
-		Profile: viper.GetString("aws.profile"),
-	})
-
+	// todo: use method approach to avoid new AWS client initializations
+	awsClient, err := newAws()
 	if err != nil {
-		log.Println("failed to attempt bucket creation ", err.Error())
+		log.Printf("failed to attempt bucket creation, error: %v ", err)
 		os.Exit(1)
 	}
 
-	s3Client := s3.New(sess)
+	s3Client := s3.NewFromConfig(awsClient)
 
-	log.Println("creating", "bucket", name)
+	log.Println("creating bucket: ", bucketName)
 
 	regionName := viper.GetString("aws.region")
 	log.Println("region is ", regionName)
 
-	if !dryRun {
-		if regionName == "us-east-1" {
-			_, err = s3Client.CreateBucket(&s3.CreateBucketInput{
-				Bucket: &name,
+	if regionName == "us-east-1" {
+		_, err = s3Client.CreateBucket(
+			context.Background(), &s3.CreateBucketInput{
+				Bucket: &bucketName,
 			})
-		} else {
-			_, err = s3Client.CreateBucket(&s3.CreateBucketInput{
-				Bucket: &name,
-				CreateBucketConfiguration: &s3.CreateBucketConfiguration{
-					LocationConstraint: aws.String(regionName),
+	} else {
+		_, err = s3Client.CreateBucket(
+			context.Background(),
+			&s3.CreateBucketInput{
+				Bucket: &bucketName,
+				CreateBucketConfiguration: &s3Types.CreateBucketConfiguration{
+					LocationConstraint: s3Types.BucketLocationConstraint(regionName),
 				},
 			})
-		}
-		if err != nil {
-			if awsErr, ok := err.(awserr.Error); ok {
-				switch awsErr.Code() {
-				case s3.ErrCodeBucketAlreadyExists:
-					log.Println("Bucket already exists " + name)
-					os.Exit(1)
-				case s3.ErrCodeBucketAlreadyOwnedByYou:
-					log.Println("Bucket already exists but OwnedByYou, the process will continue: " + name)
-				}
-			} else {
-				log.Println("failed to create bucket "+name, err.Error())
-				os.Exit(1)
-			}
-		}
-	} else {
-		log.Printf("[#99] Dry-run mode, bucket creation skipped:  %s", name)
 	}
-	viper.Set(fmt.Sprintf("bucket.%s.created", name), true)
-	viper.Set(fmt.Sprintf("bucket.%s.name", name), name)
-	viper.WriteConfig()
+	if err != nil {
+		// todo: redo it using AWS SDK v2 using SDK types
+		//if awsErr, ok := err.(awserr.Error); ok {
+		//	switch awsErr.Code() {
+		//	case s3.ErrCodeBucketAlreadyExists:
+		//		log.Println("Bucket already exists " + bucketName)
+		//		os.Exit(1)
+		//	case s3.ErrCodeBucketAlreadyOwnedByYou:
+		//		log.Println("Bucket already exists but OwnedByYou, the process will continue: " + bucketName)
+		//	}
+		//} else {
+		//	log.Println("failed to create bucket "+bucketName, err.Error())
+		//	os.Exit(1)
+		//}
+		log.Println(err)
+	}
+
+	viper.Set(fmt.Sprintf("bucket.%s.created", bucketName), true)
+	viper.Set(fmt.Sprintf("bucket.%s.name", bucketName), bucketName)
+	if err = viper.WriteConfig(); err != nil {
+		log.Println(err)
+	}
 }
 
 // UploadFile receives a bucket name, a file name and upload it to AWS S3.
 func UploadFile(bucketName string, remoteFilename string, localFilename string) error {
-	uploader := s3manager.NewUploader(GetAWSSession())
+
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := newAws()
+	if err != nil {
+		log.Println(err)
+	}
+
+	s3Client := manager.NewUploader(s3.NewFromConfig(awsConfig))
 
 	f, err := os.Open(localFilename)
 	if err != nil {
 		return fmt.Errorf("failed to open file %q, %v", localFilename, err)
 	}
 
-	// Upload the file to S3.
-	result, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(remoteFilename),
-		Body:   f,
-	})
+	// Upload file to S3
+	result, err := s3Client.Upload(
+		context.Background(),
+		&s3.PutObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(remoteFilename),
+			Body:   f,
+		},
+	)
 	if err != nil {
 		return fmt.Errorf("failed to upload file, %v", err)
 	}
-	log.Printf("file uploaded to, %s\n", result.Location)
+	log.Printf("file succesfully uploaded to, %s\n", result.Location)
 	return nil
 }
 
 func DownloadBucket(bucket string, destFolder string) error {
-	s3Client := s3.New(GetAWSSession())
-	downloader := s3manager.NewDownloader(GetAWSSession())
+
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := newAws()
+	if err != nil {
+		log.Println(err)
+	}
+
+	s3Client := s3.NewFromConfig(awsConfig)
+
+	downloader := manager.NewDownloader(s3.NewFromConfig(awsConfig))
 
 	log.Println("Listing the objects in the bucket:")
-	listObjsResponse, err := s3Client.ListObjectsV2(&s3.ListObjectsV2Input{
-		Bucket: aws.String(bucket),
-		Prefix: aws.String(""),
-	})
+	listObjsResponse, err := s3Client.ListObjectsV2(context.Background(),
+		&s3.ListObjectsV2Input{
+			Bucket: aws.String(bucket),
+			Prefix: aws.String(""),
+		})
 
 	if err != nil {
 		return errors.New("couldn't list bucket contents")
@@ -489,25 +463,33 @@ func DownloadBucket(bucket string, destFolder string) error {
 		}
 
 		// Write the contents of S3 Object to the file
-		_, err = downloader.Download(f, &s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String(*object.Key),
-		})
+		_, err = downloader.Download(context.Background(),
+			f,
+			&s3.GetObjectInput{
+				Bucket: aws.String(bucket),
+				Key:    aws.String(*object.Key),
+			})
 		if err != nil {
 			return fmt.Errorf("failed to download file, %v", err)
 		}
-		f.Close()
+		// close file immediately
+		if err = f.Close(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func PutTagKubefirstOnBuckets(bucketName, clusterName string) {
+func PutTagKubefirstOnBuckets(bucketName string, clusterName string) {
+
 	log.Printf("tagging bucket... %s:%s", bucketName, clusterName)
-	svc := s3.New(session.New())
+
+	s3Client := s3.New(s3.Options{})
+
 	input := &s3.PutBucketTaggingInput{
 		Bucket: aws.String(bucketName),
-		Tagging: &s3.Tagging{
-			TagSet: []*s3.Tag{
+		Tagging: &s3Types.Tagging{
+			TagSet: []s3Types.Tag{
 				{
 					Key:   aws.String("Provisioned-by"),
 					Value: aws.String("Kubefirst"),
@@ -520,30 +502,35 @@ func PutTagKubefirstOnBuckets(bucketName, clusterName string) {
 		},
 	}
 
-	_, err := svc.PutBucketTagging(input)
+	_, err := s3Client.PutBucketTagging(context.Background(), input)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			log.Println(aerr.Error())
-		} else {
-			log.Println(err.Error())
-		}
+		// todo: redo it using AWS SDK v2 using SDK types
+		//if aerr, ok := err.(awserr.Error); ok {
+		//	log.Println(aerr.Error())
+		//} else {
+		//	log.Println(err.Error())
+		//}
+		//return
+		log.Println(err)
 		return
 	}
 	log.Printf("Bucket: %s tagged successfully", bucketName)
 }
 
 func DestroyBucketObjectsAndVersions(bucket, region string) error {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
+
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := newAws()
 	if err != nil {
 		log.Printf("Failed to load config: %v", err)
 		return err
 	}
 
-	client := s3v2.NewFromConfig(cfg)
+	client := s3.NewFromConfig(awsConfig)
 
 	deleteObject := func(bucket, key, versionId *string) {
-		log.Printf("Object: %s/%s\n", *key, awsv2.ToString(versionId))
-		_, err := client.DeleteObject(context.TODO(), &s3v2.DeleteObjectInput{
+		log.Printf("Object: %s/%s\n", *key, aws.ToString(versionId))
+		_, err := client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
 			Bucket:    bucket,
 			Key:       key,
 			VersionId: versionId,
@@ -553,9 +540,9 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 		}
 	}
 
-	in := &s3v2.ListObjectsV2Input{Bucket: &bucket}
+	in := &s3.ListObjectsV2Input{Bucket: &bucket}
 	for {
-		out, err := client.ListObjectsV2(context.TODO(), in)
+		out, err := client.ListObjectsV2(context.Background(), in)
 		if err != nil {
 			log.Printf("Failed to list objects: %v", err)
 			return err
@@ -572,9 +559,9 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 		}
 	}
 
-	inVer := &s3v2.ListObjectVersionsInput{Bucket: &bucket}
+	inVer := &s3.ListObjectVersionsInput{Bucket: &bucket}
 	for {
-		out, err := client.ListObjectVersions(context.TODO(), inVer)
+		out, err := client.ListObjectVersions(context.Background(), inVer)
 		if err != nil {
 			log.Printf("Failed to list version objects: %v", err)
 			return err
@@ -596,7 +583,7 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 		}
 	}
 
-	_, err = client.DeleteBucket(context.TODO(), &s3v2.DeleteBucketInput{Bucket: &bucket})
+	_, err = client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: &bucket})
 	if err != nil {
 		log.Printf("Failed to delete bucket: %v", err)
 	}
@@ -604,18 +591,23 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 }
 
 // DownloadS3File receives a bucket name, filename and download the file at AWS S3
-// todo: this is v1 / refactor to use v2
 func DownloadS3File(bucketName string, filename string) error {
 
-	awsSession := GetAWSSession()
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := newAws()
+	if err != nil {
+		return err
+	}
 
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 
-	downloader := s3manager.NewDownloader(awsSession)
-	numBytes, err := downloader.Download(file,
+	s3Client := manager.NewDownloader(s3.NewFromConfig(awsConfig))
+	numBytes, err := s3Client.Download(
+		context.Background(),
+		file,
 		&s3.GetObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String(filename),
@@ -628,5 +620,4 @@ func DownloadS3File(bucketName string, filename string) error {
 	log.Printf("Downloaded file: %s, file size(bytes): %v", file.Name(), numBytes)
 
 	return nil
-
 }

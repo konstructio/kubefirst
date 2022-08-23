@@ -114,7 +114,9 @@ func GetBackupCertificates() (string, error) {
 	for _, secret := range secrets {
 		fullPath := strings.Replace(secret, config.CertsPath, "/secrets", 1)
 		log.Println(fullPath)
-		aws.UploadFile(bucketName, fullPath, secret)
+		if err = aws.UploadFile(bucketName, fullPath, secret); err != nil {
+			return "", err
+		}
 	}
 
 	emptyNS := []string{""}
@@ -123,13 +125,15 @@ func GetBackupCertificates() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("erro: %s", err)
 	}
-	for _, clusterissuer := range clusterIssuers {
-		fullPath := strings.Replace(clusterissuer, config.CertsPath, "/clusterissuers", 1)
+	for _, clusterIssuer := range clusterIssuers {
+		fullPath := strings.Replace(clusterIssuer, config.CertsPath, "/clusterissuers", 1)
 		log.Println(fullPath)
-		aws.UploadFile(bucketName, fullPath, clusterissuer)
+		if err = aws.UploadFile(bucketName, fullPath, clusterIssuer); err != nil {
+			return "", err
+		}
 	}
 
-	return "Backuped Cert-Manager resources finished successfully!", nil
+	return "Backup Cert-Manager resources finished successfully!", nil
 }
 
 func RestoreSSL() error {
@@ -138,7 +142,7 @@ func RestoreSSL() error {
 	for _, ns := range namespaces {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "create", "ns", ns)
 		if err != nil {
-			log.Print("failed to create ns: %s, assuming that exists...", err)
+			log.Printf("failed to create ns: %s, assuming that exists...", err)
 		}
 	}
 	bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
