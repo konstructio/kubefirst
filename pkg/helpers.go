@@ -122,7 +122,11 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<EMAIL_ADDRESS>", adminEmail, -1)
 		newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
 		newContents = strings.Replace(newContents, "<ORG>", githubRepoOwner, -1)
+		newContents = strings.Replace(newContents, "<GITHUB_HOST>", githubRepoHost, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_OWNER>", githubRepoOwner, -1)
+		newContents = strings.Replace(newContents, "<GITHUB_USER>", githubUser, -1)
+		newContents = strings.Replace(newContents, "<GITHUB_TOKEN>", githubToken, -1)
+
 		newContents = strings.Replace(newContents, "<REPO_GITOPS>", "gitops", -1)
 
 		if kmsKeyId != "" {

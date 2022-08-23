@@ -356,3 +356,22 @@ func CreateInitalArgoRepository(githubURL string) error {
 	}
 	return nil
 }
+
+func AddArgoCDApp(gitopsDir string) error {
+	sourceFile := gitopsDir + "/components/helpers/argocd.yaml"
+	destinationFile := gitopsDir + "/registry/base/argocd.yaml"
+	log.Println("Source file:", sourceFile)
+	input, err := ioutil.ReadFile(sourceFile)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	err = ioutil.WriteFile(destinationFile, input, 0644)
+	if err != nil {
+		log.Println("Error creating", destinationFile)
+		log.Println(err)
+		return err
+	}
+	return nil
+}
