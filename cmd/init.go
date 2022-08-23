@@ -73,7 +73,6 @@ to quickly create a Cobra application.`,
 		progressPrinter.AddTracker("step-dns", pkg.GetDNSInfo, 1)
 		progressPrinter.AddTracker("step-live", pkg.TestHostedZoneLiveness, 1)
 		progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
-		progressPrinter.AddTracker("step-metaphor", pkg.CloneAndDetokenizeMetaphorTemplate, 1)
 		progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
 		progressPrinter.AddTracker("step-buckets", pkg.CreateBuckets, 1)
 		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 1)
@@ -168,12 +167,6 @@ to quickly create a Cobra application.`,
 		prepareKubefirstTemplateRepo(config, viper.GetString("gitops.owner"), viper.GetString("gitops.repo"), viper.GetString("gitops.branch"), viper.GetString("template.tag"))
 		log.Println("clone and detokenization of gitops-template repository complete")
 		progressPrinter.IncrementTracker("step-gitops", 1)
-
-		//! tracker 7
-		log.Printf("cloning and detokenizing the metaphor-template repository")
-		prepareKubefirstTemplateRepo(config, viper.GetString("gitops.owner"), "metaphor", "", viper.GetString("template.tag"))
-		log.Println("clone and detokenization of metaphor-template repository complete")
-		progressPrinter.IncrementTracker("step-metaphor", 1)
 
 		metricName = "kubefirst.init.completed"
 
