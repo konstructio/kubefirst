@@ -1,0 +1,9 @@
+FROM --platform=linux/amd64 golang:1.18
+
+WORKDIR /opt/kubefirst
+
+# install Taskfile
+RUN curl -LO https://github.com/go-task/task/releases/download/v3.14.1/task_linux_amd64.tar.gz \
+    && mkdir /tmp/taskfile \
+    && tar -xvzf task_linux_amd64.tar.gz -C /tmp/taskfile \
+    && mv /tmp/taskfile/task /usr/local/bin
