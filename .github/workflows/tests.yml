@@ -1,0 +1,16 @@
+name: Test CI
+
+on:
+  pull_request:
+    branches: [ '*' ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Running Tests
+      run: docker compose -f docker-compose-test.yaml up --exit-code-from kubefirst-tests
