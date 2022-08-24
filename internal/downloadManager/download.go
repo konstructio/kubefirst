@@ -203,9 +203,9 @@ func extractFileFromTarGz(gzipStream io.Reader, tarAddress string, targetFilePat
 				outFile.Close()
 
 			default:
-				log.Println(
-					"extractTarGz: uknown type: %s in %s",
-					header.Typeflag,
+				log.Printf(
+					"extractTarGz: uknown type: %s in %s\n",
+					string(header.Typeflag),
 					header.Name)
 			}
 

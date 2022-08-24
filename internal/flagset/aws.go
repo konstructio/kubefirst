@@ -39,7 +39,7 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	// propagate it to local environment
 	err = os.Setenv("AWS_PROFILE", profile)
 	if err != nil {
-		log.Println("unable to set environment variable AWS_PROFILE, error is: %v", err)
+		log.Printf("unable to set environment variable AWS_PROFILE, error is: %v\n", err)
 		return flags, err
 	}
 	log.Println("profile:", profile)
@@ -55,7 +55,7 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	// propagate it to local environment
 	err = os.Setenv("AWS_REGION", region)
 	if err != nil {
-		log.Println("unable to set environment variable AWS_REGION, error is: %v", err)
+		log.Printf("unable to set environment variable AWS_REGION, error is: %v\n", err)
 		return flags, err
 	}
 	log.Println("region:", region)

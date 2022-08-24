@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -56,7 +55,7 @@ func waitForVaultUnseal(dryRun bool, config *configs.Config) {
 		k.Stderr = os.Stderr
 		err := k.Run()
 		if err != nil {
-			log.Panicf("failed to execute kubectl wait for vault pods with label vault-initialized=true: %s \n%s", output, err)
+			log.Panicf("failed to execute kubectl wait for vault pods with label vault-initialized=true: %s \n%s", output.String(), err)
 		}
 		log.Printf("the output is: %s", output.String())
 	} else {
@@ -78,7 +77,7 @@ func waitForGitlab(dryRun bool, config *configs.Config) {
 	k.Stderr = os.Stderr
 	err := k.Run()
 	if err != nil {
-		log.Panicf("failed to execute kubectl wait for gitlab pods with label app=webservice: %s \n%s", output, err)
+		log.Panicf("failed to execute kubectl wait for gitlab pods with label app=webservice: %s \n%s", output.String(), err)
 	}
 	log.Printf("the output is: %s", output.String())
 }
