@@ -1,7 +1,7 @@
 version: "3"
 
 services:
-  kubefirst-tests:
+  kubefirst-unit-tests:
     build:
       context: .
       dockerfile: ./build/Dockerfile.ci
@@ -10,3 +10,13 @@ services:
     volumes:
       - ./:/home/developer/kubefirst
     command: sh -c "task unit-test-with-report"
+
+  kubefirst-integration-tests:
+    build:
+      context: .
+      dockerfile: ./build/Dockerfile.ci
+    working_dir: /home/developer/kubefirst
+    platform: linux/amd64
+    volumes:
+      - ./:/home/developer/kubefirst
+    command: sh -c "task integration-test-init"
