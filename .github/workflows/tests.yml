@@ -1,0 +1,26 @@
+name: gotest
+
+on:
+  push:
+    branches: [ feat_unit_test_automate ]
+  pull_request:
+    branches: [ feat_unit_test_automate ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Running Tests
+      run: docker compose -f docker-compose-test.yaml up
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        junit_files: "**/*.xml"
+        nunit_files: "**/*.xml"
+        xunit_files: "**/*.xml"
+        trx_files: "**/*.trx"
