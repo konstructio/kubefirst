@@ -20,6 +20,10 @@ var loadTemplateCmd = &cobra.Command{
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Println("loadTemplate called")
+		if viper.GetBool("github.repo.loaded") {
+			log.Println("github.repo.loaded already executed, skiped")
+			return nil
+		}
 		gitopsDir, err := gitClient.CloneRepoAndDetokenizeTemplate(viper.GetString("gitops.owner"), viper.GetString("gitops.repo"), "gitops", viper.GetString("gitops.branch"), viper.GetString("template.tag"))
 		if err != nil {
 			log.Printf("Error clonning and detokizing repo %s", "gitops")
@@ -32,6 +36,8 @@ var loadTemplateCmd = &cobra.Command{
 			return err
 		}
 		log.Println("loadTemplate executed with success")
+		viper.Set("github.repo.loaded", true)
+		viper.WriteConfig()
 		return nil
 
 	},
