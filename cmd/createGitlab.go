@@ -241,13 +241,6 @@ var createGitlabCmd = &cobra.Command{
 			viper.Set("argocd.oidc-patched", true)
 			viper.WriteConfig()
 		}
-		informUser("Deploying metaphor applications")
-		err = deployMetaphorCmd.RunE(cmd, args)
-		if err != nil {
-			informUser("Error deploy metaphor applications")
-			log.Println("Error running deployMetaphorCmd")
-			return err
-		}
 
 		if !viper.GetBool("gitlab.registered") {
 			// informUser("Getting ArgoCD auth token")

@@ -1,4 +1,4 @@
-package cmd
+package repo
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func prepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName string, branch string, tag string) {
+func PrepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName string, branch string, tag string) {
 
 	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
 	err := gitClient.CloneTemplateRepoWithFallBack(githubOrg, repoName, directory, branch, tag)
