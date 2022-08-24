@@ -15,15 +15,15 @@ import (
 func DeployMetaphorGitlab(globalFlags flagset.GlobalFlags) error {
 	config := configs.ReadConfig()
 	log.Printf("cloning and detokenizing the metaphor-template repository")
-	repo.PrepareKubefirstTemplateRepo(config, viper.GetString("gitops.owner"), "metaphor", "", viper.GetString("template.tag"))
+	repo.PrepareKubefirstTemplateRepo(config, viper.GetString("gitops.owner"), "metaphor", viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
 	log.Println("clone and detokenization of metaphor-template repository complete")
 
 	log.Printf("cloning and detokenizing the metaphor-go-template repository")
-	repo.PrepareKubefirstTemplateRepo(config, viper.GetString("gitops.owner"), "metaphor-go", "", viper.GetString("template.tag"))
+	repo.PrepareKubefirstTemplateRepo(config, viper.GetString("gitops.owner"), "metaphor-go", viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
 	log.Println("clone and detokenization of metaphor-go-template repository complete")
 
 	log.Printf("cloning and detokenizing the metaphor-frontend-template repository")
-	repo.PrepareKubefirstTemplateRepo(config, viper.GetString("gitops.owner"), "metaphor-frontend", "", viper.GetString("template.tag"))
+	repo.PrepareKubefirstTemplateRepo(config, viper.GetString("gitops.owner"), "metaphor-frontend", viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
 	log.Println("clone and detokenization of metaphor-frontend-template repository complete")
 
 	if !viper.GetBool("gitlab.metaphor-pushed") {
@@ -66,7 +66,7 @@ func DeployMetaphorGithub(globalFlags flagset.GlobalFlags) error {
 	for _, element := range repos {
 		log.Printf("Processing Repo:", element)
 		gitWrapper.CreatePrivateRepo(viper.GetString("github.org"), element, "Kubefirst"+element)
-		directory, err := gitClient.CloneRepoAndDetokenizeTemplate("kubefirst", element, element, "", viper.GetString("template.tag"))
+		directory, err := gitClient.CloneRepoAndDetokenizeTemplate("kubefirst", element, element, viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
 		if err != nil {
 			log.Printf("Error clonning and detokizing repo %s", "metaphor")
 			return err
