@@ -1,0 +1,18 @@
+name: gotest
+
+on:
+  push:
+    branches: [ feat_unit_test_automate ]
+  pull_request:
+    branches: [ feat_unit_test_automate ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the Docker image
+      run: docker compose -f docker-compose-test.yaml up
