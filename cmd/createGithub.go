@@ -133,7 +133,7 @@ var createGithubCmd = &cobra.Command{
 			httpClient := http.Client{Transport: customTransport}
 
 			// retry to sync ArgoCD application until reaches the maximum attempts
-			argoCDIsReady, err := argocd.SyncRetry(&httpClient, 20, 5, "registry", token)
+			argoCDIsReady, err := argocd.SyncRetry(&httpClient, 60, 5, "registry", token)
 			if err != nil {
 				log.Printf("something went wrong during ArgoCD sync step, error is: %v", err)
 			}
@@ -186,8 +186,8 @@ var createGithubCmd = &cobra.Command{
 		}
 
 		//TODO: Do we need this?
-		//From changes on create
-		if !skipVault {
+		//From changes on create --> We need to fix once OIDC is ready
+		if false {
 			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
 			log.Println("configuring vault backend")
 			vault.ConfigureVault(globalFlags.DryRun, false)

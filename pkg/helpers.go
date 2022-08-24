@@ -67,6 +67,17 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		clusterName := viper.GetString("cluster-name")
 		argocdOidcClientId := viper.GetString(("gitlab.oidc.argocd.applicationid"))
 		githubRepoOwner := viper.GetString(("github.owner"))
+		githubRepoHost := viper.GetString(("github.host"))
+		githubUser := viper.GetString(("github.user"))
+		//TODO:  We need to fix this
+		githubToken := os.Getenv("GITHUB_AUTH_TOKEN")
+		//TODO: Make this more clear
+		isGithubMode := viper.GetBool("github.enabled")
+		//todo: get from viper
+		gitopsRepo := "gitops"
+
+		newContents = strings.Replace(newContents, "<GITHUB_USER>", githubUser, -1)
+		newContents = strings.Replace(newContents, "<GITHUB_TOKEN>", githubToken, -1)
 
 		if gitlabConfigured {
 			newContents = strings.Replace(string(read), "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename")), -1)
@@ -75,6 +86,30 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		} else {
 			newContents = strings.Replace(string(read), "https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops.git", "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", -1)
 		}
+
+		var repoPathHTTPS string
+		var repoPathSSH string
+		var repoPathPrefered string
+
+		if isGithubMode {
+			repoPathHTTPS = "https://" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
+			repoPathSSH = "git@" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
+			repoPathPrefered = repoPathSSH
+		} else {
+			repoPathHTTPS = "https://gitlab." + hostedZoneName + "/kubefirst/" + gitopsRepo
+			repoPathSSH = "git@gitlab." + hostedZoneName + "/kubefirst/" + gitopsRepo
+			//gitlab prefer HTTPS - for general use
+			repoPathPrefered = repoPathHTTPS
+		}
+		repoPathNoProtocol := strings.Replace(repoPathHTTPS, "https://", "", -1)
+
+		//for enforcing HTTPS
+		newContents = strings.Replace(newContents, "<FULL_REPO_GITOPS_URL_HTTPS>", repoPathHTTPS, -1)
+		newContents = strings.Replace(newContents, "<FULL_REPO_GITOPS_URL_NO_HTTPS>", repoPathNoProtocol, -1)
+		//for enforcing SSH
+		newContents = strings.Replace(newContents, "<FULL_REPO_GITOPS_URL_SSH>", repoPathSSH, -1)
+		//gitlab prefer HTTPS - for general use
+		newContents = strings.Replace(newContents, "<FULL_REPO_GITOPS_URL>", repoPathPrefered, -1)
 
 		newContents = strings.Replace(newContents, "<SOFT_SERVE_INITIAL_ADMIN_PUBLIC_KEY>", strings.TrimSpace(botPublicKey), -1)
 		newContents = strings.Replace(newContents, "<TF_STATE_BUCKET>", bucketStateStore, -1)
@@ -87,7 +122,11 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<EMAIL_ADDRESS>", adminEmail, -1)
 		newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
 		newContents = strings.Replace(newContents, "<ORG>", githubRepoOwner, -1)
+		newContents = strings.Replace(newContents, "<GITHUB_HOST>", githubRepoHost, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_OWNER>", githubRepoOwner, -1)
+		newContents = strings.Replace(newContents, "<GITHUB_USER>", githubUser, -1)
+		newContents = strings.Replace(newContents, "<GITHUB_TOKEN>", githubToken, -1)
+
 		newContents = strings.Replace(newContents, "<REPO_GITOPS>", "gitops", -1)
 
 		if kmsKeyId != "" {
