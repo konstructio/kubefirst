@@ -147,7 +147,7 @@ func PushGitopsToSoftServe() {
 
 	repo, err := git.PlainOpen(directory)
 	if err != nil {
-		log.Panicf("error opening the directory ", directory, err)
+		log.Panic("error opening the directory ", directory, err)
 	}
 
 	log.Println("gitClient remote add origin ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops")
@@ -179,7 +179,7 @@ func PushGitopsToSoftServe() {
 		Auth:       auth,
 	})
 	if err != nil {
-		log.Panicf("error pushing to remote", err)
+		log.Panic("error pushing to remote", err)
 	}
 
 }
@@ -232,7 +232,7 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 
 	if !isRepoClone {
 		log.Printf("Error cloning template of repos, code not found on Branch(%s) or Tag(%s) of repo: %s", branch, fallbackTag, repoURL)
-		return fmt.Errorf("Error cloning template, No templates found on branch or tag")
+		return fmt.Errorf("error cloning template, No templates found on branch or tag")
 	}
 
 	w, _ := repo.Worktree()

@@ -33,7 +33,7 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 			envs["TF_VAR_lifecycle_nodes"] = "SPOT"
 		}
 
-		log.Printf("tf env vars: ", envs)
+		log.Println("tf env vars: ", envs)
 
 		err := os.Chdir(directory)
 		if err != nil {
