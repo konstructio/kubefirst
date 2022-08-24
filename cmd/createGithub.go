@@ -186,8 +186,8 @@ var createGithubCmd = &cobra.Command{
 		}
 
 		//TODO: Do we need this?
-		//From changes on create
-		if !skipVault {
+		//From changes on create --> We need to fix once OIDC is ready
+		if false {
 			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
 			log.Println("configuring vault backend")
 			vault.ConfigureVault(globalFlags.DryRun, false)
