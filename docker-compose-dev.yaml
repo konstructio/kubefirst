@@ -5,8 +5,8 @@ services:
     platform: linux/amd64
     build:
       context: .
-      dockerfile: ./build/Dockerfile
-    container_name: kubefirst
+      dockerfile: ./build/dev/Dockerfile
+    container_name: kubefirst-dev
     environment:
       TERM: xterm-256color
     volumes:
@@ -19,4 +19,3 @@ services:
       - 1.0.0.1 #Cloudflare DNS
       - 8.8.8.8 #Google DNS
     command: sh -c "./scripts/kubefirst.sh"
-
