@@ -31,6 +31,14 @@ var githubRemoveCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		err = gitWrapper.RemoveRepo(viper.GetString("github.owner"), "metaphor-go")
+		if err != nil {
+			return err
+		}
+		err = gitWrapper.RemoveRepo(viper.GetString("github.owner"), "metaphor-frontend")
+		if err != nil {
+			return err
+		}
 		err = gitWrapper.RemoveSSHKey(viper.GetInt64("github.ssh.keyId"))
 		if err != nil {
 			log.Println("Trying to remove key failed:", err)

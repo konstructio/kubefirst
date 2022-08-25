@@ -31,18 +31,11 @@ var githubAddValidate = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		repoMetaphor, err := gitWrapper.GetRepo(owner, "metaphor")
-		if err != nil {
-			return err
-		}
 
 		if repoGitops.GetName() != "gitops" {
 			return fmt.Errorf("error validating repo: %s ", repoGitops.GetName())
 		}
 
-		if repoMetaphor.GetName() != "metaphor" {
-			return fmt.Errorf("error validating repo: %s ", repoGitops.GetName())
-		}
 		return nil
 	},
 }

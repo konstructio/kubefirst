@@ -17,19 +17,21 @@ func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("gitops-owner", "kubefirst", "git owner of gitops, this may be a user or a org to support forks for testing")
 	currentCommand.Flags().String("gitops-repo", "gitops", "version/branch used on git clone")
 	currentCommand.Flags().String("gitops-branch", "", "version/branch used on git clone - former: version-gitops flag")
+	currentCommand.Flags().String("metaphor-branch", "", "version/branch used on git clone - former: version-gitops flag")
 	currentCommand.Flags().String("template-tag", config.KubefirstVersion, `fallback tag used on git clone.
   Details: if "gitops-branch" is provided, branch("gitops-branch") has precedence and installer will attempt to clone branch("gitops-branch") first,
   if it fails, then fallback it will attempt to clone the tag provided at "template-tag" flag`)
 }
 
 type InstallerGenericFlags struct {
-	ClusterName  string
-	AdminEmail   string
-	Cloud        string
-	OrgGitops    string
-	BranchGitops string //former: "version-gitops"
-	RepoGitops   string //To support forks
-	TemplateTag  string //To support forks
+	ClusterName    string
+	AdminEmail     string
+	Cloud          string
+	OrgGitops      string
+	BranchGitops   string //former: "version-gitops"
+	BranchMetaphor string
+	RepoGitops     string //To support forks
+	TemplateTag    string //To support forks
 }
 
 func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, error) {
@@ -67,6 +69,14 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	viper.Set("gitops.branch", branchGitOps)
 	log.Println("gitops.branch:", branchGitOps)
 	flags.BranchGitops = branchGitOps
+
+	metaphorGitOps, err := cmd.Flags().GetString("metaphor-branch")
+	if err != nil {
+		return flags, err
+	}
+	viper.Set("metaphor.branch", metaphorGitOps)
+	log.Println("metaphor.branch:", metaphorGitOps)
+	flags.BranchMetaphor = metaphorGitOps
 
 	repoGitOps, err := cmd.Flags().GetString("gitops-repo")
 	if err != nil {
