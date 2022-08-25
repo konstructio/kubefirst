@@ -65,7 +65,7 @@ func DeployMetaphorGithub(globalFlags flagset.GlobalFlags) error {
 	repos := [3]string{"metaphor", "metaphor-go", "metaphor-frontend"}
 	for _, element := range repos {
 		log.Printf("Processing Repo:", element)
-		gitWrapper.CreatePrivateRepo(viper.GetString("github.org"), element, "Kubefirst"+element)
+		gitWrapper.CreatePrivateRepo(viper.GetString("github.org"), element, "Kubefirst "+element)
 		directory, err := gitClient.CloneRepoAndDetokenizeTemplate("kubefirst", element, element, viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
 		if err != nil {
 			log.Printf("Error clonning and detokizing repo %s", "metaphor")
