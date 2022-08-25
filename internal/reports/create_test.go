@@ -18,7 +18,7 @@ func TestBuildCreateHandOffReport(t *testing.T) {
 	}
 	got := BuildCreateHandOffReport(handOffData)
 
-	if strings.Contains(got.String(), mockUsername) {
+	if !strings.Contains(got.String(), mockUsername) {
 		t.Errorf("built buffer doesn't contain %q", mockUsername)
 	}
 
