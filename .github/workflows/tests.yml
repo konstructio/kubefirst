@@ -13,4 +13,4 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Running Tests
-      run: docker compose -f docker-compose-test.yaml up --exit-code-from   kubefirst-unit-tests
+      run: docker-compose -f docker-compose-test.yaml build --no-cache && docker compose -f docker-compose-test.yaml up --exit-code-from kubefirst-unit-tests
