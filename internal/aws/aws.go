@@ -285,9 +285,13 @@ func listBucketsInUse() []string {
 }
 
 // DestroyBucketsInUse receives a list of user active buckets, and try to destroy them
-func DestroyBucketsInUse(dryRun bool) {
+func DestroyBucketsInUse(dryRun bool, executeConfirmation bool) {
 	if dryRun {
-		log.Println("Skip: DestroyBucketsInUse")
+		log.Println("Skip: DestroyBucketsInUse - Dry-run mode")
+		return
+	}
+	if !executeConfirmation {
+		log.Println("Skip: DestroyBucketsInUse - Not provided confirmation")
 		return
 	}
 

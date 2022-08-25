@@ -42,7 +42,7 @@ re-create all Kubefirst files. To destroy cloud resources you need to specify ad
 			}
 		}
 
-		aws.DestroyBucketsInUse(destroyBuckets && destroyConfirm)
+		aws.DestroyBucketsInUse(false, destroyBuckets && destroyConfirm)
 
 		// command line flags
 		rmLogsFolder, err := cmd.Flags().GetBool("rm-logs")
