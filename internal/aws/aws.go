@@ -26,11 +26,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-// newAws instantiate a new AWS configuration. This function is used to provide initial connection to AWS services.
+// NewAws instantiate a new AWS configuration. This function is used to provide initial connection to AWS services.
 // todo: update AWS functions in this file to work as methods of AWS struct, example:
 // DestroyBucketsInUse will have its function signature updated to (awsConfig AWSStruct) DestroyBucketsInUse(param type)
 // and AWSStruct will be used as instanceOfAws.DestroyBucketsInUse(param type)
-func newAws() (aws.Config, error) {
+func NewAws() (aws.Config, error) {
 
 	region := viper.GetString("aws.region")
 	profile := viper.GetString("aws.profile")
@@ -49,7 +49,7 @@ func newAws() (aws.Config, error) {
 func BucketRand(dryRun bool) {
 
 	// todo: use method approach to avoid new AWS client initializations
-	awsConfig, err := newAws()
+	awsConfig, err := NewAws()
 	if err != nil {
 		log.Println(err)
 	}
@@ -123,7 +123,7 @@ func BucketRand(dryRun bool) {
 func GetAccountInfo() {
 
 	// todo: use method approach to avoid new AWS client initializations
-	awsConfig, err := newAws()
+	awsConfig, err := NewAws()
 	if err != nil {
 		log.Panicf("failed to load configuration, error: %s", err)
 	}
@@ -152,7 +152,7 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 	}
 
 	// todo: use method approach to avoid new AWS client initializations
-	awsConfig, err := newAws()
+	awsConfig, err := NewAws()
 	if err != nil {
 		log.Println("failed to load configuration, error:", err)
 	}
@@ -229,7 +229,7 @@ func GetDNSInfo(hostedZoneName string) string {
 	log.Println("GetDNSInfo (working...)")
 
 	// todo: use method approach to avoid new AWS client initializations
-	awsConfig, err := newAws()
+	awsConfig, err := NewAws()
 	if err != nil {
 		log.Println("failed to load configuration, error:", err)
 	}
@@ -267,8 +267,8 @@ func GetDNSInfo(hostedZoneName string) string {
 
 }
 
-// listBucketsInUse list user active buckets
-func listBucketsInUse() []string {
+// ListBucketsInUse list user active buckets
+func ListBucketsInUse() []string {
 	var bucketsInUse []string
 	bucketsConfig := viper.AllKeys()
 	for _, bucketKey := range bucketsConfig {
@@ -290,7 +290,7 @@ func DestroyBucketsInUse(dryRun bool) {
 
 	log.Println("Confirmed: DestroyBucketsInUse")
 
-	for _, bucket := range listBucketsInUse() {
+	for _, bucket := range ListBucketsInUse() {
 		log.Printf("Deleting versions, objects and bucket: %s:", bucket)
 		err := DestroyBucketObjectsAndVersions(bucket, viper.GetString("aws.region"))
 		if err != nil {
@@ -305,7 +305,7 @@ func DestroyBucketsInUse(dryRun bool) {
 func AssumeRole(roleArn string) error {
 
 	// todo: use method approach to avoid new AWS client initializations
-	awsConfig, err := newAws()
+	awsConfig, err := NewAws()
 	if err != nil {
 		return err
 	}
@@ -347,7 +347,7 @@ func CreateBucket(dryRun bool, bucketName string) {
 	}
 
 	// todo: use method approach to avoid new AWS client initializations
-	awsClient, err := newAws()
+	awsClient, err := NewAws()
 	if err != nil {
 		log.Printf("failed to attempt bucket creation, error: %v ", err)
 		os.Exit(1)
@@ -403,7 +403,7 @@ func CreateBucket(dryRun bool, bucketName string) {
 func UploadFile(bucketName string, remoteFilename string, localFilename string) error {
 
 	// todo: use method approach to avoid new AWS client initializations
-	awsConfig, err := newAws()
+	awsConfig, err := NewAws()
 	if err != nil {
 		log.Println(err)
 	}
@@ -434,7 +434,7 @@ func UploadFile(bucketName string, remoteFilename string, localFilename string) 
 func DownloadBucket(bucket string, destFolder string) error {
 
 	// todo: use method approach to avoid new AWS client initializations
-	awsConfig, err := newAws()
+	awsConfig, err := NewAws()
 	if err != nil {
 		log.Println(err)
 	}
@@ -520,7 +520,7 @@ func PutTagKubefirstOnBuckets(bucketName string, clusterName string) {
 func DestroyBucketObjectsAndVersions(bucket, region string) error {
 
 	// todo: use method approach to avoid new AWS client initializations
-	awsConfig, err := newAws()
+	awsConfig, err := NewAws()
 	if err != nil {
 		log.Printf("Failed to load config: %v", err)
 		return err
@@ -594,7 +594,7 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 func DownloadS3File(bucketName string, filename string) error {
 
 	// todo: use method approach to avoid new AWS client initializations
-	awsConfig, err := newAws()
+	awsConfig, err := NewAws()
 	if err != nil {
 		return err
 	}
