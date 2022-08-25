@@ -2,12 +2,13 @@ name: Test CI
 
 on:
   pull_request:
-    branches: [ 'feat_unit_test_automate' ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 1
     - name: Running Tests
       run: git branch --show-current && docker-compose -f docker-compose-test.yaml build --no-cache && docker compose -f docker-compose-test.yaml up --exit-code-from kubefirst-unit-tests
