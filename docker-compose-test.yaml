@@ -9,7 +9,7 @@ services:
     platform: linux/amd64
     volumes:
       - ./:/home/developer/kubefirst
-    command: sh -c "task unit-test-with-report"
+    command: sh -c "task unit-test"
 
   kubefirst-integration-tests:
     build:

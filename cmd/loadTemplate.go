@@ -30,11 +30,6 @@ var loadTemplateCmd = &cobra.Command{
 			return err
 		}
 		argocd.AddArgoCDApp(gitopsDir)
-		_, err = gitClient.CloneRepoAndDetokenizeTemplate("kubefirst", "metaphor", "metaphor", "", viper.GetString("template.tag"))
-		if err != nil {
-			log.Printf("Error clonning and detokizing repo %s", "metaphor")
-			return err
-		}
 		log.Println("loadTemplate executed with success")
 		viper.Set("github.repo.loaded", true)
 		viper.WriteConfig()

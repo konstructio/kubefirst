@@ -38,6 +38,13 @@ var createCmd = &cobra.Command{
 			}
 
 		}
+		informUser("Deploying metaphor applications")
+		err = deployMetaphorCmd.RunE(cmd, args)
+		if err != nil {
+			informUser("Error deploy metaphor applications")
+			log.Println("Error running deployMetaphorCmd")
+			return err
+		}
 		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
 		reports.HandoffScreen()
 		time.Sleep(time.Millisecond * 2000)

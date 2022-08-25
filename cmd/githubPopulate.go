@@ -49,10 +49,6 @@ to quickly create a Cobra application.`,
 		gitClient.PopulateRepoWithToken(owner, "gitops", fmt.Sprintf("%s/%s", config.K1FolderPath, "gitops"), viper.GetString("github.host"))
 		viper.Set("github.gitops-pushed", true)
 
-		fmt.Println("githubPopulate: metaphor")
-		gitClient.PopulateRepoWithToken(owner, "metaphor", fmt.Sprintf("%s/%s", config.K1FolderPath, "metaphor"), viper.GetString("github.host"))
-		viper.Set("github.metaphor-pushed", true)
-
 		viper.Set("github.repo.populated", true)
 		viper.WriteConfig()
 		return nil
