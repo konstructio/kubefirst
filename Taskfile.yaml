@@ -4,5 +4,8 @@ tasks:
   unit-test:
     - go test -v ./...
   unit-test-with-report:
-    - go test -v ./... -coverpkg=./... -coverprofile cover.out
+    - export GOPATH="$HOME/go/"
+    - export PATH=$PATH:$GOPATH/bin
+    - go install github.com/jstemmer/go-junit-report@latest
+    - go test -v ./... -coverpkg=./... -coverprofile cover.out | go-junit-report -set-exit-code > report.xml
     - go tool cover -html cover.out -o coverage.html
