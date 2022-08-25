@@ -2,8 +2,6 @@ name: Test CI
 
 on:
   pull_request:
-    branches: [ '*' ]
-
 jobs:
 
   build:
@@ -12,5 +10,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: 'feat_unit_test_automate'
     - name: Running Tests
       run: docker-compose -f docker-compose-test.yaml build --no-cache && docker compose -f docker-compose-test.yaml up --exit-code-from kubefirst-unit-tests
