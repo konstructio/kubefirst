@@ -1,0 +1,9 @@
+version: '3'
+
+tasks:
+  unit-test:
+    - git branch --show-current
+    - go test -v ./...
+  unit-test-with-report:
+    - go test -v ./... -coverpkg=./... -coverprofile cover.out
+    - go tool cover -html cover.out -o coverage.html
