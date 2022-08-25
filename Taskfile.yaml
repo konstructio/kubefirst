@@ -2,7 +2,7 @@ version: '3'
 
 tasks:
   unit-test:
-    - go test -v ./...
+    - go test -v -short ./...
   unit-test-with-report:
     - go test -v ./... -coverpkg=./... -coverprofile cover.out
     - go tool cover -html cover.out -o coverage.html
