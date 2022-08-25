@@ -133,3 +133,9 @@ Kubefirst provides extra tooling for handling the provisioning work.
 ## The Provisioning Process
 
 ![kubefirst provisioning diagram](/images/provisioning.png)
+
+## Feed K-ray
+
+Did you know that our beloved kubefirst mascot K-ray lives on a healthy diet of github stars? If you think we've earned it, log into your github account and feed K-ray a github star by starring this repo! They're free and K-ray gets sooooo hungry!!
+
+[![Star History Chart](https://api.star-history.com/svg?repos=kubefirst/kubefirst&type=Date)](https://star-history.com/#kubefirst/kubefirst&Date)
