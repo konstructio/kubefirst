@@ -5,7 +5,6 @@ import (
 	"testing"
 )
 
-// todo: test all conditions using table test table
 // TestBuildCreateHandOffReport test if the built string is consuming the required data
 func TestBuildCreateHandOffReport(t *testing.T) {
 	mockURL := "mock-url"

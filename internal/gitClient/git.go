@@ -3,6 +3,8 @@ package gitClient
 import (
 	"fmt"
 	"log"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -11,9 +13,109 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
+	cp "github.com/otiai10/copy"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 )
+
+// CloneRepoAndDetokenizeTemplate - clone repo using CloneRepoAndDetokenizeTemplate that uses fallback rule to try to capture version
+func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, branch string, tag string) (string, error) {
+	config := configs.ReadConfig()
+
+	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, folderName)
+	err := os.RemoveAll(directory)
+	if err != nil {
+		log.Println("Error removing dir(expected if dir not present):", err)
+	}
+
+	err = CloneTemplateRepoWithFallBack(githubOwner, repoName, directory, branch, tag)
+	if err != nil {
+		log.Panicf("Error cloning repo with fallback: %s", err)
+	}
+	if err != nil {
+		log.Printf("error cloning %s repository from github %s", folderName, err)
+		return directory, err
+	}
+	viper.Set(fmt.Sprintf("init.repos.%s.cloned", folderName), true)
+	viper.WriteConfig()
+
+	log.Printf("cloned %s-template repository to directory %s/%s", folderName, config.K1FolderPath, folderName)
+
+	log.Printf("detokenizing %s/%s", config.K1FolderPath, folderName)
+	pkg.Detokenize(directory)
+	log.Printf("detokenization of %s/%s complete", config.K1FolderPath, folderName)
+
+	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", folderName), true)
+	viper.WriteConfig()
+	return directory, nil
+}
+
+// Polupate a git host, such as github using a token auth with content of a folder.
+// Use copy to flat the history
+func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHost string) error {
+
+	//Clone Repo
+	//Replace Content
+	//Commit
+	//Push
+
+	config := configs.ReadConfig()
+	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	if token == "" {
+		log.Println("Unauthorized: No token present")
+		return fmt.Errorf("missing github token")
+	}
+	directory := fmt.Sprintf("%s/push-%s", config.K1FolderPath, repo)
+	err := os.RemoveAll(directory)
+	if err != nil {
+		log.Println("Error removing dir(expected if dir not present):", err)
+	}
+	url := fmt.Sprintf("https://%s@%s/%s/%s.git", token, gitHost, owner, repo)
+	gitRepo, err := git.PlainClone(directory, false, &git.CloneOptions{
+		URL: url,
+	})
+	if err != nil {
+		log.Println("Error clonning git:", err)
+		return err
+	}
+
+	w, _ := gitRepo.Worktree()
+	log.Println("Committing new changes...")
+
+	opt := cp.Options{
+		Skip: func(src string) (bool, error) {
+			if strings.HasSuffix(src, ".git") {
+				return true, nil
+			} else if strings.Index(src, "/.terraform") > 0 {
+				return true, nil
+			}
+			return false, nil
+
+		},
+	}
+	err = cp.Copy(sourceFolder, directory, opt)
+	if err != nil {
+		log.Println("Error populating git")
+		return err
+	}
+	w.Add(".")
+	w.Commit("Populate Repo", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "kubefirst-bot",
+			Email: "kubefirst-bot@kubefirst.com",
+			When:  time.Now(),
+		},
+	})
+
+	err = gitRepo.Push(&git.PushOptions{
+		RemoteName: "origin",
+	})
+	if err != nil {
+		log.Println("error pushing to remote", err)
+		return err
+	}
+	return nil
+}
 
 func CloneGitOpsRepo() {
 
@@ -21,7 +123,7 @@ func CloneGitOpsRepo() {
 	url := "https://github.com/kubefirst/gitops-template"
 	directory := fmt.Sprintf("%s/gitops", config.K1FolderPath)
 
-	versionGitOps := viper.GetString("version-gitops")
+	versionGitOps := viper.GetString("gitops.branch")
 
 	log.Println("git clone -b ", versionGitOps, url, directory)
 
@@ -45,7 +147,7 @@ func PushGitopsToSoftServe() {
 
 	repo, err := git.PlainOpen(directory)
 	if err != nil {
-		log.Panicf("error opening the directory ", directory, err)
+		log.Panic("error opening the directory ", directory, err)
 	}
 
 	log.Println("gitClient remote add origin ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops")
@@ -77,7 +179,7 @@ func PushGitopsToSoftServe() {
 		Auth:       auth,
 	})
 	if err != nil {
-		log.Panicf("error pushing to remote", err)
+		log.Panic("error pushing to remote", err)
 	}
 
 }
@@ -130,7 +232,7 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 
 	if !isRepoClone {
 		log.Printf("Error cloning template of repos, code not found on Branch(%s) or Tag(%s) of repo: %s", branch, fallbackTag, repoURL)
-		return fmt.Errorf("Error cloning template, No templates found on branch or tag")
+		return fmt.Errorf("error cloning template, No templates found on branch or tag")
 	}
 
 	w, _ := repo.Worktree()

@@ -26,8 +26,6 @@ import (
 	"github.com/spf13/viper"
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -188,12 +186,7 @@ func ProduceGitlabTokens(dryRun bool) {
 		return
 	}
 	//TODO: Should this step be skipped if already executed?
-	config := configs.ReadConfig()
-	k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
-	if err != nil {
-		log.Panic(err.Error())
-	}
-	clientset, err := kubernetes.NewForConfig(k8sConfig)
+	clientset, err := k8s.GetClientSet()
 	if err != nil {
 		log.Panic(err.Error())
 	}
@@ -361,7 +354,7 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 
 	envs["GITLAB_BASE_URL"] = viper.GetString("gitlab.local.service")
 
-	if !skipGitlabTerraform {
+	if !skipGitlabTerraform && !viper.GetBool("github.enabled") {
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if err != nil {
 			log.Panicf("failed to terraform init gitlab %s", err)
@@ -400,11 +393,7 @@ func ChangeRegistryToGitLab(dryRun bool) {
 
 		creds := ArgocdGitCreds{PersonalAccessToken: pat, URL: url, FullURL: fullurl}
 
-		k8sConfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
-		if err != nil {
-			log.Panicf("error getting client from kubeconfig")
-		}
-		clientset, err := kubernetes.NewForConfig(k8sConfig)
+		clientset, err := k8s.GetClientSet()
 		if err != nil {
 			log.Panicf("error getting kubeconfig for clientset")
 		}

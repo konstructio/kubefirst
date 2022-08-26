@@ -15,7 +15,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
+	yaml2 "gopkg.in/yaml.v2"
 )
 
 type ArgoCDConfig struct {
@@ -282,4 +284,94 @@ func DeleteArgocdApplicationNoCascade(dryRun bool, applicationName, argocdAuthTo
 	if err != nil {
 		log.Panicf("error: curl app delete failed %s", err)
 	}
+}
+
+func ApplyRegistry(dryRun bool) error {
+	config := configs.ReadConfig()
+	if viper.GetBool("argocd.registry.applied") {
+		log.Println("skipped ApplyRegistry - ")
+		return nil
+	}
+	if !dryRun {
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-base.yaml", config.K1FolderPath))
+		if err != nil {
+			log.Printf("failed to execute kubectl apply of registry-base: %s", err)
+			return err
+		}
+		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-github.yaml", config.K1FolderPath))
+		if err != nil {
+			log.Printf("failed to execute kubectl apply of registry-github: %s", err)
+			return err
+		}
+
+		time.Sleep(45 * time.Second)
+		viper.Set("argocd.registry.applied", true)
+		viper.WriteConfig()
+	}
+	return nil
+}
+
+//ConfigRepo - Sample config struct
+type ConfigRepo struct {
+	Configs struct {
+		Repositories struct {
+			RepoGitops struct {
+				URL  string `yaml:"url"`
+				Type string `yaml:"type"`
+				Name string `yaml:"name"`
+			} `yaml:"github-serve-gitops"`
+		} `yaml:"repositories"`
+		CredentialTemplates struct {
+			SSHCreds struct {
+				URL           string `yaml:"url"`
+				SSHPrivateKey string `yaml:"sshPrivateKey"`
+			} `yaml:"ssh-creds"`
+		} `yaml:"credentialTemplates"`
+	} `yaml:"configs"`
+}
+
+//  CreateInitalArgoRepository - Fill and create argocd-init-values.yaml for Github installs
+func CreateInitalArgoRepository(githubURL string) error {
+	config := configs.ReadConfig()
+
+	privateKey := viper.GetString("botprivatekey")
+
+	argoConfig := ConfigRepo{}
+	argoConfig.Configs.Repositories.RepoGitops.URL = githubURL
+	argoConfig.Configs.Repositories.RepoGitops.Type = "git"
+	argoConfig.Configs.Repositories.RepoGitops.Name = "github-gitops"
+	argoConfig.Configs.CredentialTemplates.SSHCreds.URL = githubURL
+	argoConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = privateKey
+
+	argoYaml, err := yaml2.Marshal(&argoConfig)
+	if err != nil {
+		log.Printf("error: marsheling yaml for argo config %s", err)
+		return err
+	}
+
+	err = ioutil.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoYaml, 0644)
+	if err != nil {
+		log.Printf("error: could not write argocd-init-values.yaml %s", err)
+		return err
+	}
+	return nil
+}
+
+func AddArgoCDApp(gitopsDir string) error {
+	sourceFile := gitopsDir + "/components/helpers/argocd.yaml"
+	destinationFile := gitopsDir + "/registry/base/argocd.yaml"
+	log.Println("Source file:", sourceFile)
+	input, err := ioutil.ReadFile(sourceFile)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	err = ioutil.WriteFile(destinationFile, input, 0644)
+	if err != nil {
+		log.Println("Error creating", destinationFile)
+		log.Println(err)
+		return err
+	}
+	return nil
 }
