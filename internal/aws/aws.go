@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"log"
 	"net"
 	"os"
@@ -12,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -145,10 +146,10 @@ func GetAccountInfo() {
 }
 
 // TestHostedZoneLiveness check Route53 for liveness entry, and check if it's responding/live
-func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
+func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) bool {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, TestHostedZoneLiveness skipped.")
-		return
+		return true
 	}
 
 	// todo: use method approach to avoid new AWS client initializations
@@ -194,6 +195,7 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 		})
 	if err != nil {
 		log.Println(err)
+		return false
 	}
 	log.Println("record creation status is ", record.ChangeInfo.Status)
 	count := 0
@@ -221,6 +223,7 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) {
 			log.Panicf("unable to resolve hosted zone dns record. please check your domain registrar")
 		}
 	}
+	return true
 }
 
 // GetDNSInfo try to reach the provided hosted zone
@@ -282,9 +285,13 @@ func listBucketsInUse() []string {
 }
 
 // DestroyBucketsInUse receives a list of user active buckets, and try to destroy them
-func DestroyBucketsInUse(dryRun bool) {
+func DestroyBucketsInUse(dryRun bool, executeConfirmation bool) {
 	if dryRun {
-		log.Println("Skip: DestroyBucketsInUse")
+		log.Println("Skip: DestroyBucketsInUse - Dry-run mode")
+		return
+	}
+	if !executeConfirmation {
+		log.Println("Skip: DestroyBucketsInUse - Not provided confirmation")
 		return
 	}
 
