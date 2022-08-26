@@ -131,6 +131,8 @@ func TestVPCByTagIntegration(t *testing.T) {
 	}
 }
 
+// todo: this test will be called when cluster is up AND when cluster is down, we must update the condition,
+// based on what we want
 func TestLoadBalancerByTagIntegration(t *testing.T) {
 
 	if testing.Short() {
@@ -181,6 +183,7 @@ func TestLoadBalancerByTagIntegration(t *testing.T) {
 			}
 		}
 	}
+
 	if !loadBalancerIsLive {
 		t.Errorf("unable to find a load balancer tagged with cluster name %q", clusterName)
 	}
