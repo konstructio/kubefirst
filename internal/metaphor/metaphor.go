@@ -64,7 +64,7 @@ func DeployMetaphorGithub(globalFlags flagset.GlobalFlags) error {
 	//repos := [2]string{"metaphor-go", "metaphor-frontend"}
 	repos := [3]string{"metaphor", "metaphor-go", "metaphor-frontend"}
 	for _, element := range repos {
-		log.Printf("Processing Repo:", element)
+		log.Println("Processing Repo:", element)
 		gitWrapper.CreatePrivateRepo(viper.GetString("github.org"), element, "Kubefirst "+element)
 		directory, err := gitClient.CloneRepoAndDetokenizeTemplate("kubefirst", element, element, viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
 		if err != nil {
