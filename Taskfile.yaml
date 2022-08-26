@@ -8,3 +8,4 @@ tasks:
     - go tool cover -html cover.out -o coverage.html
   integration-test-init:
     - go run . clean
+    - go test -v -run TestAreS3BucketsDestroyedIntegration ./internal/aws

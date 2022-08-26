@@ -11,7 +11,7 @@ services:
       - ./:/home/developer/kubefirst
     command: sh -c "task unit-test"
 
-  kubefirst-integration-tests:
+  kubefirst-integration-test-init:
     build:
       context: .
       dockerfile: ./build/Dockerfile.ci
