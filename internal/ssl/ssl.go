@@ -136,8 +136,19 @@ func GetBackupCertificates() (string, error) {
 	return "Backup Cert-Manager resources finished successfully!", nil
 }
 
-func RestoreSSL() error {
+// RestoreSSL - Restore Cluster certs from a previous install
+func RestoreSSL(dryRun bool) error {
 	config := configs.ReadConfig()
+
+	if viper.GetBool("create.state.ssl.restored") {
+		log.Printf("Step already executed before, RestoreSSL skipped.")
+		return nil
+	}
+
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, RestoreSSL skipped.")
+		return nil
+	}
 	namespaces := getNamespacesToBackupSSL()
 	for _, ns := range namespaces {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "create", "ns", ns)
@@ -209,5 +220,7 @@ func RestoreSSL() error {
 			log.Printf("failed to apply %s: %s, assuming that exists...", path, err)
 		}
 	}
+	viper.Set("create.state.ssl.restored", true)
+	viper.WriteConfig()
 	return nil
 }

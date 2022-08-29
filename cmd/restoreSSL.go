@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/spf13/cobra"
 )
@@ -10,22 +11,25 @@ import (
 // restoreSSLCmd represents the restoreSSL command
 var restoreSSLCmd = &cobra.Command{
 	Use:   "restoreSSL",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Short: "Restore SSL certificates from a previous install",
+	Long:  `TBD`,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("restoreSSL called")
-		err := ssl.RestoreSSL()
+		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
+		if err != nil {
+			return err
+		}
+
+		err = ssl.RestoreSSL(globalFlags.DryRun)
 		if err != nil {
 			fmt.Printf("Bucket not found, missing SSL backup, assuming first installation, error is: %v", err)
+			return err
 		}
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(restoreSSLCmd)
+	flagset.DefineGlobalFlags(restoreSSLCmd)
 }

@@ -193,7 +193,7 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(initCmd)
 	currentCommand := initCmd
-	log.Println("init started")
+	log.Println("kubefirst started")
 	log.SetPrefix("LOG: ")
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
 
