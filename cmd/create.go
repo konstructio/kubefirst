@@ -1,10 +1,10 @@
 package cmd
 
 import (
+	"github.com/kubefirst/kubefirst/internal/state"
 	"log"
 	"time"
 
-	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/spf13/cobra"
@@ -46,7 +46,10 @@ var createCmd = &cobra.Command{
 			log.Println("Error running deployMetaphorCmd")
 			return err
 		}
-		aws.UploadKubefirstToStateStore(globalFlags.DryRun)
+		err = state.UploadKubefirstToStateStore(globalFlags.DryRun)
+		if err != nil {
+			log.Println(err)
+		}
 
 		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
 		reports.HandoffScreen(globalFlags.DryRun)

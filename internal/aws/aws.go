@@ -23,7 +23,6 @@ import (
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/cip8/autoname"
-	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
@@ -628,21 +627,4 @@ func DownloadS3File(bucketName string, filename string) error {
 	log.Printf("Downloaded file: %s, file size(bytes): %v", file.Name(), numBytes)
 
 	return nil
-}
-
-//UploadKubefirstToStateStore - Send kubefirst file to state store
-func UploadKubefirstToStateStore(dryRun bool) {
-	if dryRun {
-		log.Printf("[#99] Dry-run mode, UploadKubefirstToStateStore skipped.")
-		return
-	}
-	config := configs.ReadConfig()
-	// upload kubefirst config to user state S3 bucket
-	stateStoreBucket := viper.GetString("bucket.state-store.name")
-	err := UploadFile(stateStoreBucket, config.KubefirstConfigFileName, config.KubefirstConfigFilePath)
-	if err != nil {
-		log.Printf("unable to upload Kubefirst cofiguration file to the S3 bucket, error is: %v", err)
-	}
-	log.Printf("Kubefirst configuration file was upload to AWS S3 at %q bucket name", stateStoreBucket)
-
 }
