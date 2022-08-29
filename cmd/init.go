@@ -123,7 +123,9 @@ to quickly create a Cobra application.`,
 			return err
 		}
 		log.Println("dependency installation complete")
-		progressPrinter.IncrementTracker("step-download", 2)
+		progressPrinter.IncrementTracker("step-download", 1)
+		//Fix incomplete bar, please don't remove it.
+		progressPrinter.IncrementTracker("step-download", 1)
 
 		//! tracker 1
 		log.Println("getting aws account information")
@@ -168,7 +170,7 @@ to quickly create a Cobra application.`,
 		progressPrinter.IncrementTracker("step-ssh", 1)
 
 		//! tracker 6
-		repo.PrepareKubefirstTemplateRepo(config, viper.GetString("gitops.owner"), viper.GetString("gitops.repo"), viper.GetString("gitops.branch"), viper.GetString("template.tag"))
+		repo.PrepareKubefirstTemplateRepo(globalFlags.DryRun, config, viper.GetString("gitops.owner"), viper.GetString("gitops.repo"), viper.GetString("gitops.branch"), viper.GetString("template.tag"))
 		log.Println("clone and detokenization of gitops-template repository complete")
 		progressPrinter.IncrementTracker("step-gitops", 1)
 

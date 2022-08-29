@@ -14,8 +14,13 @@ import (
 	"github.com/spf13/viper"
 )
 
-func PrepareKubefirstTemplateRepo(config *configs.Config, githubOrg, repoName string, branch string, tag string) {
+//PrepareKubefirstTemplateRepo - Prepare template repo to be used by installer
+func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg, repoName string, branch string, tag string) {
 
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, PrepareKubefirstTemplateRepo skipped.")
+		return
+	}
 	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
 	err := gitClient.CloneTemplateRepoWithFallBack(githubOrg, repoName, directory, branch, tag)
 	if err != nil {

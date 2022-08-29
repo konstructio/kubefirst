@@ -71,7 +71,7 @@ var createGitlabCmd = &cobra.Command{
 
 		restoreSSLCmd.RunE(cmd, args)
 
-		clientset, err := k8s.GetClientSet()
+		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -87,7 +87,7 @@ var createGitlabCmd = &cobra.Command{
 		// todo this should be replaced with something more intelligent
 		log.Println("Waiting for soft-serve installation to complete...")
 		if !globalFlags.DryRun {
-			kPortForwardSoftServe, err := k8s.K8sPortForward(globalFlags.DryRun, "soft-serve", "svc/soft-serve", "8022:22")
+			kPortForwardSoftServe, err := k8s.PortForward(globalFlags.DryRun, "soft-serve", "svc/soft-serve", "8022:22")
 			defer kPortForwardSoftServe.Process.Signal(syscall.SIGTERM)
 			if err != nil {
 				log.Println("Error creating port-forward")
@@ -112,7 +112,7 @@ var createGitlabCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-argo", 1)
 
 		if !globalFlags.DryRun {
-			kPortForwardArgocd, err = k8s.K8sPortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
+			kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 			defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 			if err != nil {
 				log.Println("Error creating port-forward")
@@ -151,7 +151,7 @@ var createGitlabCmd = &cobra.Command{
 		waitVaultToBeRunning(globalFlags.DryRun)
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 		if !globalFlags.DryRun {
-			kPortForwardVault, err := k8s.K8sPortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
+			kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
 			defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
 			if err != nil {
 				log.Println("Error creating port-forward")
@@ -172,7 +172,7 @@ var createGitlabCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 
 		if !globalFlags.DryRun {
-			kPortForwardGitlab, err := k8s.K8sPortForward(globalFlags.DryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
+			kPortForwardGitlab, err := k8s.PortForward(globalFlags.DryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
 			defer kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
 			if err != nil {
 				log.Println("Error creating port-forward")
@@ -209,29 +209,27 @@ var createGitlabCmd = &cobra.Command{
 			informUser("Vault  secret created")
 			progressPrinter.IncrementTracker("step-vault", 1)
 		}
-		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 5)
+		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 3)
 		if !viper.GetBool("gitlab.oidc-created") {
 			vault.AddGitlabOidcApplications(globalFlags.DryRun)
 			informUser("Added Gitlab OIDC")
-			progressPrinter.IncrementTracker("step-post-gitlab", 1)
 
 			informUser("Waiting for Gitlab dns to propagate before continuing")
 			gitlab.AwaitHost("gitlab", globalFlags.DryRun)
-			progressPrinter.IncrementTracker("step-post-gitlab", 1)
-
 			informUser("Pushing gitops repo to origin gitlab")
 			// refactor: sounds like a new functions, should PushGitOpsToGitLab be renamed/update signature?
 			viper.Set("gitlab.oidc-created", true)
 			viper.WriteConfig()
 		}
+		progressPrinter.IncrementTracker("step-post-gitlab", 1)
 		if !viper.GetBool("gitlab.gitops-pushed") {
 			gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "gitops") // todo: need to handle if this was already pushed, errors on failure)
-			progressPrinter.IncrementTracker("step-post-gitlab", 1)
 			// todo: keep one of the two git push functions, they're similar, but not exactly the same
 			//gitlab.PushGitOpsToGitLab(globalFlags.DryRun)
 			viper.Set("gitlab.gitops-pushed", true)
 			viper.WriteConfig()
 		}
+		progressPrinter.IncrementTracker("step-post-gitlab", 1)
 		if !globalFlags.DryRun && !viper.GetBool("argocd.oidc-patched") {
 			argocdSecretClient = clientset.CoreV1().Secrets("argocd")
 			patchSecret(argocdSecretClient, "argocd-secret", "oidc.gitlab.clientSecret", viper.GetString("gitlab.oidc.argocd.secret"))
@@ -245,15 +243,12 @@ var createGitlabCmd = &cobra.Command{
 		if !viper.GetBool("gitlab.registered") {
 			// informUser("Getting ArgoCD auth token")
 			// token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
-			// progressPrinter.IncrementTracker("step-post-gitlab", 1)
 
 			// informUser("Detaching the registry application from softserve")
 			// argocd.DeleteArgocdApplicationNoCascade(globalFlags.DryRun, "registry", token)
-			// progressPrinter.IncrementTracker("step-post-gitlab", 1)
 
 			informUser("Adding the registry application registered against gitlab")
 			gitlab.ChangeRegistryToGitLab(globalFlags.DryRun)
-			progressPrinter.IncrementTracker("step-post-gitlab", 1)
 			// todo triage / force apply the contents adjusting
 			// todo kind: Application .repoURL:
 
@@ -271,7 +266,7 @@ var createGitlabCmd = &cobra.Command{
 			informUser("Port forwarding to new argocd-server pod")
 			if !globalFlags.DryRun {
 				time.Sleep(time.Second * 20)
-				kPortForwardArgocd, err = k8s.K8sPortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
+				kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 				defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 				if err != nil {
 					log.Println("Error creating port-forward")
@@ -306,17 +301,19 @@ var createGitlabCmd = &cobra.Command{
 			viper.Set("gitlab.registered", true)
 			viper.WriteConfig()
 		}
-
+		progressPrinter.IncrementTracker("step-post-gitlab", 1)
 		//!--
 		// Wait argocd cert to work, or force restart
-		argocdPodClient := clientset.CoreV1().Pods("argocd")
-		for i := 1; i < 15; i++ {
-			argoCDHostReady := gitlab.AwaitHostNTimes("argocd", globalFlags.DryRun, 20)
-			if argoCDHostReady {
-				informUser("ArgoCD DNS is ready")
-				break
-			} else {
-				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+		if !globalFlags.DryRun {
+			argocdPodClient := clientset.CoreV1().Pods("argocd")
+			for i := 1; i < 15; i++ {
+				argoCDHostReady := gitlab.AwaitHostNTimes("argocd", globalFlags.DryRun, 20)
+				if argoCDHostReady {
+					informUser("ArgoCD DNS is ready")
+					break
+				} else {
+					k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+				}
 			}
 		}
 

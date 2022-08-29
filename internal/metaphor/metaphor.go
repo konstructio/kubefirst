@@ -12,18 +12,23 @@ import (
 	"github.com/spf13/viper"
 )
 
+// DeployMetaphorGitlab - Deploy metaphor applications on gitlab install
 func DeployMetaphorGitlab(globalFlags flagset.GlobalFlags) error {
 	config := configs.ReadConfig()
+	if globalFlags.DryRun {
+		log.Printf("[#99] Dry-run mode, DeployMetaphorGitlab skipped.")
+		return nil
+	}
 	log.Printf("cloning and detokenizing the metaphor-template repository")
-	repo.PrepareKubefirstTemplateRepo(config, viper.GetString("gitops.owner"), "metaphor", viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
+	repo.PrepareKubefirstTemplateRepo(globalFlags.DryRun, config, viper.GetString("gitops.owner"), "metaphor", viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
 	log.Println("clone and detokenization of metaphor-template repository complete")
 
 	log.Printf("cloning and detokenizing the metaphor-go-template repository")
-	repo.PrepareKubefirstTemplateRepo(config, viper.GetString("gitops.owner"), "metaphor-go", viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
+	repo.PrepareKubefirstTemplateRepo(globalFlags.DryRun, config, viper.GetString("gitops.owner"), "metaphor-go", viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
 	log.Println("clone and detokenization of metaphor-go-template repository complete")
 
 	log.Printf("cloning and detokenizing the metaphor-frontend-template repository")
-	repo.PrepareKubefirstTemplateRepo(config, viper.GetString("gitops.owner"), "metaphor-frontend", viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
+	repo.PrepareKubefirstTemplateRepo(globalFlags.DryRun, config, viper.GetString("gitops.owner"), "metaphor-frontend", viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
 	log.Println("clone and detokenization of metaphor-frontend-template repository complete")
 
 	if !viper.GetBool("gitlab.metaphor-pushed") {
@@ -52,9 +57,13 @@ func DeployMetaphorGitlab(globalFlags flagset.GlobalFlags) error {
 	return nil
 }
 
+// DeployMetaphorGithub - Deploy metaphor applications on github install
 func DeployMetaphorGithub(globalFlags flagset.GlobalFlags) error {
 	owner := viper.GetString("github.owner")
-
+	if globalFlags.DryRun {
+		log.Printf("[#99] Dry-run mode, DeployMetaphorGithub skipped.")
+		return nil
+	}
 	if viper.GetBool("github.metaphor-pushed") {
 		log.Println("github.metaphor-pushed already executed, skiped")
 		return nil

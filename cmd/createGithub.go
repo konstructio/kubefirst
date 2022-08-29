@@ -94,7 +94,7 @@ var createGithubCmd = &cobra.Command{
 		gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
 		argocd.CreateInitalArgoRepository(gitopsRepo)
 
-		clientset, err := k8s.GetClientSet()
+		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
 		if err != nil {
 			log.Printf("Failed to get clientset for k8s : %s", err)
 			return err
@@ -107,7 +107,7 @@ var createGithubCmd = &cobra.Command{
 		waitArgoCDToBeReady(globalFlags.DryRun)
 		informUser("ArgoCD Ready")
 
-		kPortForwardArgocd, err = k8s.K8sPortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
+		kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")))
 
@@ -143,7 +143,7 @@ var createGithubCmd = &cobra.Command{
 
 		informUser("Waiting vault to be ready")
 		waitVaultToBeRunning(globalFlags.DryRun)
-		kPortForwardVault, err := k8s.K8sPortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
+		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
 		defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
 
 		loopUntilPodIsReady(globalFlags.DryRun)

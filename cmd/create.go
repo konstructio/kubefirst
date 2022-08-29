@@ -4,7 +4,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/reports"
@@ -18,7 +17,6 @@ var createCmd = &cobra.Command{
 	Short: "create a kubefirst management cluster",
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		config := configs.ReadConfig()
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
 			return err
@@ -48,16 +46,10 @@ var createCmd = &cobra.Command{
 			log.Println("Error running deployMetaphorCmd")
 			return err
 		}
-		// upload kubefirst config to user state S3 bucket
-		stateStoreBucket := viper.GetString("bucket.state-store.name")
-		err = aws.UploadFile(stateStoreBucket, config.KubefirstConfigFileName, config.KubefirstConfigFilePath)
-		if err != nil {
-			log.Printf("unable to upload Kubefirst cofiguration file to the S3 bucket, error is: %v", err)
-		}
-		log.Printf("Kubefirst configuration file was upload to AWS S3 at %q bucket name", stateStoreBucket)
+		aws.UploadKubefirstToStateStore(globalFlags.DryRun)
 
 		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
-		reports.HandoffScreen()
+		reports.HandoffScreen(globalFlags.DryRun)
 		time.Sleep(time.Millisecond * 2000)
 		log.Println("End of creation run")
 		return nil
