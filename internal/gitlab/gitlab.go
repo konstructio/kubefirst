@@ -186,7 +186,7 @@ func ProduceGitlabTokens(dryRun bool) {
 		return
 	}
 	//TODO: Should this step be skipped if already executed?
-	clientset, err := k8s.GetClientSet()
+	clientset, err := k8s.GetClientSet(dryRun)
 	if err != nil {
 		log.Panic(err.Error())
 	}
@@ -393,7 +393,7 @@ func ChangeRegistryToGitLab(dryRun bool) {
 
 		creds := ArgocdGitCreds{PersonalAccessToken: pat, URL: url, FullURL: fullurl}
 
-		clientset, err := k8s.GetClientSet()
+		clientset, err := k8s.GetClientSet(dryRun)
 		if err != nil {
 			log.Panicf("error getting kubeconfig for clientset")
 		}

@@ -3,6 +3,7 @@ package reports
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -146,8 +147,13 @@ func PrintSectionMetaphorFrontend() []byte {
 	return handOffData.Bytes()
 }
 
-func HandoffScreen() {
+//HandoffScreen - prints the handoff screen
+func HandoffScreen(dryRun bool) {
 	// prepare data for the handoff report
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, HandoffScreen skipped.")
+		return
+	}
 
 	var handOffData bytes.Buffer
 	handOffData.Write(PrintSectionOverview())

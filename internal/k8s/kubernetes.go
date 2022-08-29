@@ -191,7 +191,12 @@ func GetResourcesByJq(dynamic dynamic.Interface, ctx context.Context, group stri
 	return resources, nil
 }
 
-func GetClientSet() (*kubernetes.Clientset, error) {
+//GetClientSet - Get reference to k8s credentials to use APIS
+func GetClientSet(dryRun bool) (*kubernetes.Clientset, error) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, GetClientSet skipped.")
+		return nil, nil
+	}
 	config := configs.ReadConfig()
 
 	kubeconfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
@@ -208,24 +213,26 @@ func GetClientSet() (*kubernetes.Clientset, error) {
 	return clientset, nil
 }
 
-func K8sPortForward(dryRun bool, namespace string, filter string, ports string) (*exec.Cmd, error) {
+//PortForward - opens port-forward to services
+func PortForward(dryRun bool, namespace string, filter string, ports string) (*exec.Cmd, error) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, K8sPortForward skipped.")
+		return nil, nil
+	}
 	config := configs.ReadConfig()
 
-	if !dryRun {
-		var kPortForwardOutb, kPortForwardErrb bytes.Buffer
-		kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "port-forward", filter, ports)
-		kPortForward.Stdout = &kPortForwardOutb
-		kPortForward.Stderr = &kPortForwardErrb
-		err := kPortForward.Start()
-		//defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			// If it doesn't error, we kinda don't care much.
-			log.Printf("Commad Execution STDOUT: %s", kPortForwardOutb.String())
-			log.Printf("Commad Execution STDERR: %s", kPortForwardErrb.String())
-			log.Printf("error: failed to port-forward to %s in main thread %s", filter, err)
-			return kPortForward, err
-		}
-		return kPortForward, nil
+	var kPortForwardOutb, kPortForwardErrb bytes.Buffer
+	kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "port-forward", filter, ports)
+	kPortForward.Stdout = &kPortForwardOutb
+	kPortForward.Stderr = &kPortForwardErrb
+	err := kPortForward.Start()
+	//defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
+	if err != nil {
+		// If it doesn't error, we kinda don't care much.
+		log.Printf("Commad Execution STDOUT: %s", kPortForwardOutb.String())
+		log.Printf("Commad Execution STDERR: %s", kPortForwardErrb.String())
+		log.Printf("error: failed to port-forward to %s in main thread %s", filter, err)
+		return kPortForward, err
 	}
-	return nil, nil
+	return kPortForward, nil
 }

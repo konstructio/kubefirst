@@ -26,7 +26,7 @@ func setArgocdCreds(dryRun bool) {
 		viper.WriteConfig()
 		return
 	}
-	clientset, err := k8s.GetClientSet()
+	clientset, err := k8s.GetClientSet(dryRun)
 	if err != nil {
 		panic(err.Error())
 	}
