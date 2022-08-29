@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.27
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.54.0
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.14.12
+	github.com/aws/aws-sdk-go-v2/service/kms v1.18.5
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.20.5
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.13
 	github.com/caarlos0/env/v6 v6.9.3

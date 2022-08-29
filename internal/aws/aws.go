@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing"
 	"log"
 	"net"
 	"os"
@@ -18,7 +16,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
-	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -631,90 +628,4 @@ func DownloadS3File(bucketName string, filename string) error {
 	log.Printf("Downloaded file: %s, file size(bytes): %v", file.Name(), numBytes)
 
 	return nil
-}
-
-// DescribeVPCDataByTag  ...
-// todo: move it to the correct place
-func DescribeVPCDataByTag() (bool, error) {
-
-	//clusterName := viper.GetString("cluster-name")
-	clusterName := "6zray_kubefast_com"
-
-	awsConfig, err := NewAws()
-	if err != nil {
-		log.Println(err)
-	}
-
-	ec2Client := ec2.NewFromConfig(awsConfig)
-
-	filterType := "tag:ClusterName"
-	vpcData, err := ec2Client.DescribeVpcs(context.Background(), &ec2.DescribeVpcsInput{
-		Filters: []ec2Types.Filter{
-			{
-				Name:   &filterType,
-				Values: []string{clusterName},
-			},
-		},
-	})
-	if err != nil {
-		log.Println(err)
-		return false, err
-	}
-
-	if len(vpcData.Vpcs) == 0 {
-		fmt.Println("errror llalala..")
-	}
-	fmt.Println(len(vpcData.Vpcs))
-	for _, v := range vpcData.Vpcs {
-		if v.State == "available" {
-			fmt.Println("vpc is live")
-			return true, nil
-		}
-	}
-
-	return false, err
-
-}
-
-func OtherStuff() {
-
-	awsConfig, err := NewAws()
-	if err != nil {
-		//t.Error(err)
-	}
-
-	elb := elasticloadbalancing.NewFromConfig(awsConfig)
-
-	loadBalancers, err := elb.DescribeLoadBalancers(context.Background(), &elasticloadbalancing.DescribeLoadBalancersInput{})
-	if err != nil {
-		//t.Error(err)
-	}
-
-	var tmp []string
-	for _, v := range loadBalancers.LoadBalancerDescriptions {
-		tmp = append(tmp, *v.LoadBalancerName)
-	}
-
-	// load tags
-	loadBalancersTags, err := elb.DescribeTags(context.Background(), &elasticloadbalancing.DescribeTagsInput{
-		LoadBalancerNames: tmp,
-	})
-	if err != nil {
-	}
-
-	if len(loadBalancersTags.TagDescriptions) == 0 {
-		//t.er
-		fmt.Println("error ...")
-	}
-
-	for _, v := range loadBalancersTags.TagDescriptions {
-		for _, b := range v.Tags {
-			if strings.Contains(*b.Key, "your-company-io") {
-				fmt.Println("achou!")
-			} else {
-				fmt.Println("nao achou")
-			}
-		}
-	}
-
 }

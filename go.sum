@@ -128,6 +128,8 @@ github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.12 h1:7iPTTX4SA
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.12/go.mod h1:1TODGhheLWjpQWSuhYuAUWYTCKwEjx2iblIFKDHjeTc=
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.12 h1:QFjSOmHSb77qRTv7KI9UFon9X5wLWY5/M+6la3dTcZc=
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.12/go.mod h1:MADjAN0GHFDuc5lRa5Y5ki+oIO/w7X4qczHy+OUx0IA=
+github.com/aws/aws-sdk-go-v2/service/kms v1.18.5 h1:bgIax/BQB8/U8qXavwKFOPzbnSAAQjPQ5hDM4FwN2gA=
+github.com/aws/aws-sdk-go-v2/service/kms v1.18.5/go.mod h1:WG8HUJKtDqXJM3+CNZeN+2wvdcJb5vprKo01fr1KQW4=
 github.com/aws/aws-sdk-go-v2/service/route53 v1.20.5 h1:Vex6D07/CmahT0LIaiRk+j9xyVAsvQxBa8iv38p3Ajc=
 github.com/aws/aws-sdk-go-v2/service/route53 v1.20.5/go.mod h1:QZWV7sxHUg/qsPJcAtAI9JyLPKZ78weHmdILmYMCqEE=
 github.com/aws/aws-sdk-go-v2/service/s3 v1.27.5 h1:h9qqTedYnA9JcWjKyLV6UYIMSdp91ExLCUbjbpDLH7A=

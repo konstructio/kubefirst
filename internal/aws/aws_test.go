@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/kubefirst/kubefirst/configs"
@@ -132,7 +133,7 @@ func TestVPCByTagIntegration(t *testing.T) {
 }
 
 // todo: this test will be called when cluster is up AND when cluster is down, we must update the condition,
-// based on what we want
+// based on what we want. This test requires AWS_REGION and CLUSTER_NAME.
 func TestLoadBalancerByTagIntegration(t *testing.T) {
 
 	if testing.Short() {
@@ -187,5 +188,45 @@ func TestLoadBalancerByTagIntegration(t *testing.T) {
 	if !loadBalancerIsLive {
 		t.Errorf("unable to find a load balancer tagged with cluster name %q", clusterName)
 	}
+}
+
+func TestKMSKeyAliasIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	awsConfig, err := aws.NewAws()
+	if err != nil {
+		t.Error(err)
+	}
+	kmsClient := kms.NewFromConfig(awsConfig)
+
+	//var kid = "880cded9-0e3a-4e5f-949e-eb4a886947cc"
+	k, err := kmsClient.ListAliases(context.Background(), &kms.ListAliasesInput{})
+	//x, err := kmsClient.DescribeKey(context.Background(), &kms.DescribeKeyInput{
+	//	KeyId: &kid,
+	//})
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println(k)
+	// working here
+
+	//var storeName string = "vault_barbekubes-com"
+	//var keyId string = "0564b8ab-6cec-46d8-bfee-87d3c9f8377e"
+	//stores, err := kmsClient.DescribeCustomKeyStores(
+	//	context.Background(),
+	//	//&kms.DescribeCustomKeyStoresInput{
+	//	&kms.customer
+	//		//CustomKeyStoreName: aws.String(""),
+	//		//CustomKeyStoreName: &storeName,
+	//		CustomKeyStoreId: &keyId,
+	//	},
+	//)
+	//if err != nil {
+	//	t.Error(err)
+	//}
+	//fmt.Println(stores)
 
 }
