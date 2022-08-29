@@ -88,7 +88,7 @@ var createGithubCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-github", 1)
 
 		informUser("Attempt to recycle certs")
-		restoreSSLCmd.Run(cmd, args)
+		restoreSSLCmd.RunE(cmd, args)
 		progressPrinter.IncrementTracker("step-base", 1)
 
 		gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))

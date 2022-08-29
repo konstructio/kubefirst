@@ -69,7 +69,7 @@ var createGitlabCmd = &cobra.Command{
 		terraform.ApplyBaseTerraform(globalFlags.DryRun, directory)
 		progressPrinter.IncrementTracker("step-softserve", 1)
 
-		restoreSSLCmd.Run(cmd, args)
+		restoreSSLCmd.RunE(cmd, args)
 
 		clientset, err := k8s.GetClientSet()
 		if err != nil {
