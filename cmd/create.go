@@ -49,7 +49,6 @@ var createCmd = &cobra.Command{
 		err = state.UploadKubefirstToStateStore(globalFlags.DryRun)
 		if err != nil {
 			log.Println(err)
-			return err
 		}
 
 		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
