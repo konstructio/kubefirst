@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/eks"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -226,15 +227,91 @@ func TestKMSKeyAliasIntegration(t *testing.T) {
 		t.Errorf("unable to find CMKS for the cluster %q", clusterName)
 	}
 
-	x, err := kmsClient.DescribeKey(context.Background(), &kms.DescribeKeyInput{
+	ckmsKey, err := kmsClient.DescribeKey(context.Background(), &kms.DescribeKeyInput{
 		KeyId: &activeCKMS,
 	})
 
-	if !x.KeyMetadata.Enabled {
+	if !ckmsKey.KeyMetadata.Enabled {
 		t.Error("wanted CKMS to be enabled, but got it disabled")
 	}
 
-	if !strings.Contains(*x.KeyMetadata.Arn, awsRegion) {
+	if !strings.Contains(*ckmsKey.KeyMetadata.Arn, awsRegion) {
 		t.Errorf("unable to find CKMS at the desired region (%s) for the cluster %q", awsRegion, clusterName)
+	}
+}
+
+func TestKMSIntegration(t *testing.T) {
+
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	clusterName := os.Getenv("CLUSTER_NAME")
+	awsRegion := os.Getenv("AWS_REGION")
+
+	if len(clusterName) == 0 || len(awsRegion) == 0 {
+		t.Error("environment variables CLUSTER_NAME and AWS_REGION must be informed")
+		return
+	}
+
+	awsConfig, err := aws.NewAws()
+	if err != nil {
+		t.Error(err)
+	}
+
+	eksClient := eks.NewFromConfig(awsConfig)
+
+	eksData, err := eksClient.DescribeCluster(context.Background(), &eks.DescribeClusterInput{
+		Name: &clusterName,
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if *eksData.Cluster.Name != clusterName {
+		t.Errorf("unable to find cluster with cluster name %q", clusterName)
+	}
+}
+
+func TestEC2Volumes(t *testing.T) {
+
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	awsRegion := os.Getenv("AWS_REGION")
+	if len(awsRegion) == 0 {
+		t.Error("environment variables AWS_REGION must be informed")
+		return
+	}
+
+	awsConfig, err := aws.NewAws()
+	if err != nil {
+		t.Error(err)
+	}
+
+	ec2Client := ec2.NewFromConfig(awsConfig)
+
+	ec2Volumes, err := ec2Client.DescribeVolumes(context.Background(), &ec2.DescribeVolumesInput{})
+	if err != nil {
+		t.Error(err)
+	}
+
+	isVolumeActive := false
+	for _, volume := range ec2Volumes.Volumes {
+		for _, tag := range volume.Tags {
+			if *tag.Value == "owned" &&
+				strings.HasSuffix(*tag.Key, "joao_kubefirst_tech") &&
+				volume.State == "available" &&
+				strings.Contains(*volume.AvailabilityZone, awsRegion) {
+
+				isVolumeActive = true
+			}
+		}
+	}
+
+	if !isVolumeActive {
+		t.Error("it should have at least one active volume for the current installation, but got none")
 	}
 }
