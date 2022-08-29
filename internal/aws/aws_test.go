@@ -191,8 +191,17 @@ func TestLoadBalancerByTagIntegration(t *testing.T) {
 }
 
 func TestKMSKeyAliasIntegration(t *testing.T) {
+
 	if testing.Short() {
 		t.Skip("skipping integration test")
+	}
+
+	clusterName := os.Getenv("CLUSTER_NAME")
+	awsRegion := os.Getenv("AWS_REGION")
+
+	if len(clusterName) == 0 || len(awsRegion) == 0 {
+		t.Error("environment variables CLUSTER_NAME and AWS_REGION must be informed")
+		return
 	}
 
 	awsConfig, err := aws.NewAws()
@@ -201,32 +210,31 @@ func TestKMSKeyAliasIntegration(t *testing.T) {
 	}
 	kmsClient := kms.NewFromConfig(awsConfig)
 
-	//var kid = "880cded9-0e3a-4e5f-949e-eb4a886947cc"
-	k, err := kmsClient.ListAliases(context.Background(), &kms.ListAliasesInput{})
-	//x, err := kmsClient.DescribeKey(context.Background(), &kms.DescribeKeyInput{
-	//	KeyId: &kid,
-	//})
+	keyList, err := kmsClient.ListAliases(context.Background(), &kms.ListAliasesInput{})
 	if err != nil {
 		t.Error(err)
 	}
 
-	fmt.Println(k)
-	// working here
+	var activeCKMS string
+	for _, ckms := range keyList.Aliases {
+		if strings.HasSuffix(*ckms.AliasName, clusterName) {
+			activeCKMS = *ckms.TargetKeyId
+		}
+	}
 
-	//var storeName string = "vault_barbekubes-com"
-	//var keyId string = "0564b8ab-6cec-46d8-bfee-87d3c9f8377e"
-	//stores, err := kmsClient.DescribeCustomKeyStores(
-	//	context.Background(),
-	//	//&kms.DescribeCustomKeyStoresInput{
-	//	&kms.customer
-	//		//CustomKeyStoreName: aws.String(""),
-	//		//CustomKeyStoreName: &storeName,
-	//		CustomKeyStoreId: &keyId,
-	//	},
-	//)
-	//if err != nil {
-	//	t.Error(err)
-	//}
-	//fmt.Println(stores)
+	if len(activeCKMS) == 0 {
+		t.Errorf("unable to find CMKS for the cluster %q", clusterName)
+	}
 
+	x, err := kmsClient.DescribeKey(context.Background(), &kms.DescribeKeyInput{
+		KeyId: &activeCKMS,
+	})
+
+	if !x.KeyMetadata.Enabled {
+		t.Error("wanted CKMS to be enabled, but got it disabled")
+	}
+
+	if !strings.Contains(*x.KeyMetadata.Arn, awsRegion) {
+		t.Errorf("unable to find CKMS at the desired region (%s) for the cluster %q", awsRegion, clusterName)
+	}
 }
