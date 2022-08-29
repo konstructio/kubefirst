@@ -93,14 +93,14 @@ func TestAreS3BucketsDestroyedIntegration(t *testing.T) {
 	}
 }
 
+// this is called after cluster destruction, and will fail if VPC is still active
 func TestVPCByTagIntegration(t *testing.T) {
 
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
 
-	//clusterName := viper.GetString("cluster-name")
-	clusterName := "jessica_kube1st_com"
+	clusterName := os.Getenv("CLUSTER_NAME")
 
 	awsConfig, err := aws.NewAws()
 	if err != nil {
@@ -141,9 +141,7 @@ func TestLoadBalancerByTagIntegration(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	// todo: set env vars when calling tests
 	clusterName := os.Getenv("CLUSTER_NAME")
-	//clusterName := "your-company-io"
 
 	awsConfig, err := aws.NewAws()
 	if err != nil {
@@ -240,7 +238,7 @@ func TestKMSKeyAliasIntegration(t *testing.T) {
 	}
 }
 
-func TestKMSIntegration(t *testing.T) {
+func TestEKSIntegration(t *testing.T) {
 
 	if testing.Short() {
 		t.Skip("skipping integration test")

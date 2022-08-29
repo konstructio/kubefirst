@@ -9,6 +9,7 @@ import (
 	"testing"
 )
 
+// this is called when GitLab should be up and running
 func TestApplyGitlabTerraform(t *testing.T) {
 
 	if testing.Short() {

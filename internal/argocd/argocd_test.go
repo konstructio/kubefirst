@@ -9,6 +9,7 @@ import (
 	"testing"
 )
 
+// this is called when ArgoCD is up and running
 func TestArgoCDLivenessIntegration(t *testing.T) {
 
 	if testing.Short() {
@@ -38,6 +39,7 @@ func TestArgoCDLivenessIntegration(t *testing.T) {
 	}
 }
 
+// this is called when Argo Workflow is up and running
 func TestArgoWorkflowLivenessIntegration(t *testing.T) {
 
 	if testing.Short() {

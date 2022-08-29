@@ -9,6 +9,7 @@ import (
 	"testing"
 )
 
+// this is called when we want to make sure Metaphors are up and running
 func TestMetaphorsLivenessIntegration(t *testing.T) {
 
 	if testing.Short() {
