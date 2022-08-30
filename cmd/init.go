@@ -194,6 +194,8 @@ to quickly create a Cobra application.`,
 		progressPrinter.IncrementTracker("step-telemetry", 1)
 		time.Sleep(time.Millisecond * 100)
 
+		informUser("init is done!\n", globalFlags.SilentMode)
+
 		return nil
 	},
 }

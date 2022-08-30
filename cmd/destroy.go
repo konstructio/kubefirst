@@ -75,7 +75,7 @@ if the registry has already been deleted.`,
 			log.Printf("Commad Execution STDERR: %s", kPortForwardErrb.String())
 
 		}
-		informUser("Open gitlab port-forward", false)
+		informUser("Open gitlab port-forward", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-prepare", 1)
 
 		if !skipDeleteRegistryApplication {
@@ -93,7 +93,7 @@ if the registry has already been deleted.`,
 				log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
 			}
 		}
-		informUser("Open argocd port-forward", false)
+		informUser("Open argocd port-forward", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-prepare", 1)
 
 		var kPortForwardVaultOutb, kPortForwardVaultErrb bytes.Buffer
@@ -109,14 +109,14 @@ if the registry has already been deleted.`,
 			log.Printf("Commad Execution STDOUT: %s", kPortForwardVaultOutb.String())
 			log.Printf("Commad Execution STDERR: %s", kPortForwardVaultErrb.String())
 		}
-		informUser("Open vault port-forward", false)
+		informUser("Open vault port-forward", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-prepare", 1)
 
 		log.Println("destroying gitlab terraform")
 
 		progressPrinter.AddTracker("step-destroy", "Destroy Cloud", 4)
 		progressPrinter.IncrementTracker("step-destroy", 1)
-		informUser("Destroying Gitlab", false)
+		informUser("Destroying Gitlab", globalFlags.SilentMode)
 		gitlab.DestroyGitlabTerraform(skipGitlabTerraform)
 		progressPrinter.IncrementTracker("step-destroy", 1)
 
@@ -124,15 +124,15 @@ if the registry has already been deleted.`,
 		log.Println("deleting registry application in argocd")
 
 		// delete argocd registry
-		informUser("Destroying Registry Application", false)
+		informUser("Destroying Registry Application", globalFlags.SilentMode)
 		k8s.DeleteRegistryApplication(skipDeleteRegistryApplication)
 		progressPrinter.IncrementTracker("step-destroy", 1)
 		log.Println("registry application deleted")
 		log.Println("terraform destroy base")
-		informUser("Destroying Cluster", false)
+		informUser("Destroying Cluster", globalFlags.SilentMode)
 		terraform.DestroyBaseTerraform(skipBaseTerraform)
 		progressPrinter.IncrementTracker("step-destroy", 1)
-		informUser("All Destroyed", false)
+		informUser("All Destroyed", globalFlags.SilentMode)
 
 		log.Println("terraform base destruction complete")
 		fmt.Println("End of execution destroy")
