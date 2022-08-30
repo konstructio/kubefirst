@@ -239,10 +239,10 @@ var createGitlabCmd = &cobra.Command{
 		}
 
 		if !viper.GetBool("gitlab.registered") {
-			// informUser("Getting ArgoCD auth tglobalFlags.SilentMode")
+			// informUser("Getting ArgoCD auth token
 			// token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
 
-			// informUser("Detaching the registry application from softsglobalFlags.SilentMode")
+			// informUser("Detaching the registry application from softserve
 			// argocd.DeleteArgocdApplicationNoCascade(globalFlags.DryRun, "registry", token)
 
 			informUser("Adding the registry application registered against gitlab", globalFlags.SilentMode)
@@ -250,7 +250,7 @@ var createGitlabCmd = &cobra.Command{
 			// todo triage / force apply the contents adjusting
 			// todo kind: Application .repoURL:
 
-			// informUser("Waiting for argocd host to resglobalFlags.SilentMode")
+			// informUser("Waiting for argocd host to resolve
 			// gitlab.AwaitHost("argocd", globalFlags.DryRun)
 			if !globalFlags.DryRun {
 				argocdPodClient := clientset.CoreV1().Pods("argocd")

@@ -148,5 +148,6 @@ func init() {
 	destroyCmd.Flags().Bool("skip-delete-register", false, "whether to skip deletion of register application ")
 	destroyCmd.Flags().Bool("skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
 	destroyCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
-	destroyCmd.Flags().Bool("silent", false, "...")
+	destroyCmd.Flags().Bool("silent", false, "enable silent mode will make the UI return less content to the screen")
+
 }
