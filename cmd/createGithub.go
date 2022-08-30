@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -32,16 +31,6 @@ var createGithubCmd = &cobra.Command{
 	Long:  `Create a kubefirst cluster using github as the Git Repo and setup integrations`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		progressPrinter.GetInstance()
-		progressPrinter.SetupProgress(4)
-
-		infoCmd.Run(cmd, args)
-		var kPortForwardArgocd *exec.Cmd
-		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
-		progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
-		progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
-		progressPrinter.AddTracker("step-apps", "Install apps to cluster", 6)
-
 		config := configs.ReadConfig()
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
@@ -53,29 +42,39 @@ var createGithubCmd = &cobra.Command{
 			log.Panic(err)
 		}
 
+		progressPrinter.GetInstance()
+		progressPrinter.SetupProgress(4, globalFlags.SilentMode)
+
+		infoCmd.Run(cmd, args)
+		var kPortForwardArgocd *exec.Cmd
+		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
+		progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
+		progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
+		progressPrinter.AddTracker("step-apps", "Install apps to cluster", 6)
+
 		progressPrinter.IncrementTracker("step-0", 1)
 
 		if !globalFlags.UseTelemetry {
-			informUser("Telemetry Disabled")
+			informUser("Telemetry Disabled", false)
 		}
-		informUser("Creating gitops/metaphor repos")
+		informUser("Creating gitops/metaphor repos", false)
 		err = githubAddCmd.RunE(cmd, args)
 		if err != nil {
 			log.Println("Error running:", githubAddCmd.Name())
 			return err
 		}
-		informUser("Create Github Repos")
+		informUser("Create Github Repos", false)
 		progressPrinter.IncrementTracker("step-github", 1)
 		err = loadTemplateCmd.RunE(cmd, args)
 		if err != nil {
 			log.Println("Error running loadTemplateCmd")
 			return err
 		}
-		informUser("Load Templates")
+		informUser("Load Templates", false)
 		progressPrinter.IncrementTracker("step-github", 1)
 
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
-		informUser("Creating K8S Cluster")
+		informUser("Creating K8S Cluster", false)
 		terraform.ApplyBaseTerraform(globalFlags.DryRun, directory)
 		progressPrinter.IncrementTracker("step-base", 1)
 
@@ -84,10 +83,10 @@ var createGithubCmd = &cobra.Command{
 			log.Println("Error running githubPopulateCmd")
 			return err
 		}
-		informUser("Populate Repos")
+		informUser("Populate Repos", false)
 		progressPrinter.IncrementTracker("step-github", 1)
 
-		informUser("Attempt to recycle certs")
+		informUser("Attempt to recycle certs", false)
 		restoreSSLCmd.RunE(cmd, args)
 		progressPrinter.IncrementTracker("step-base", 1)
 
@@ -100,24 +99,24 @@ var createGithubCmd = &cobra.Command{
 			return err
 		}
 		helm.InstallArgocd(globalFlags.DryRun)
-		informUser("Install ArgoCD")
+		informUser("Install ArgoCD", false)
 		progressPrinter.IncrementTracker("step-apps", 1)
 
 		//! argocd was just helm installed
 		waitArgoCDToBeReady(globalFlags.DryRun)
-		informUser("ArgoCD Ready")
+		informUser("ArgoCD Ready", false)
 
 		kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
-		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")))
+		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")), false)
 
-		informUser("Setting argocd credentials")
+		informUser("Setting argocd credentials", false)
 		setArgocdCreds(globalFlags.DryRun)
-		informUser("Getting an argocd auth token")
+		informUser("Getting an argocd auth token", false)
 		token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
 		argocd.ApplyRegistry(globalFlags.DryRun)
-		informUser("Syncing the registry application")
-		informUser("Setup ArgoCD")
+		informUser("Syncing the registry application", false)
+		informUser("Setup ArgoCD", false)
 		progressPrinter.IncrementTracker("step-apps", 1)
 
 		if globalFlags.DryRun {
@@ -138,31 +137,31 @@ var createGithubCmd = &cobra.Command{
 				log.Println("unable to sync ArgoCD application, continuing...")
 			}
 		}
-		informUser("Setup ArgoCD")
+		informUser("Setup ArgoCD", false)
 		progressPrinter.IncrementTracker("step-apps", 1)
 
-		informUser("Waiting vault to be ready")
+		informUser("Waiting vault to be ready", false)
 		waitVaultToBeRunning(globalFlags.DryRun)
 		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
 		defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
 
 		loopUntilPodIsReady(globalFlags.DryRun)
 		initializeVaultAndAutoUnseal(globalFlags.DryRun)
-		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")))
-		informUser("Setup Vault")
+		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")), false)
+		informUser("Setup Vault", false)
 		progressPrinter.IncrementTracker("step-apps", 1)
 
 		if !skipVault { //skipVault
-			informUser("waiting for vault unseal")
+			informUser("waiting for vault unseal", false)
 			log.Println("configuring vault")
 			vault.ConfigureVault(globalFlags.DryRun, true)
-			informUser("Vault configured")
+			informUser("Vault configured", false)
 
 			log.Println("creating vault configured secret")
 			createVaultConfiguredSecret(globalFlags.DryRun, config)
-			informUser("Vault  secret created")
+			informUser("Vault  secret created", false)
 		}
-		informUser("Terraform Vault")
+		informUser("Terraform Vault", false)
 		progressPrinter.IncrementTracker("step-apps", 1)
 
 		//gitlab oidc removed
@@ -171,7 +170,7 @@ var createGithubCmd = &cobra.Command{
 		for i := 1; i < 15; i++ {
 			argoCDHostReady := gitlab.AwaitHostNTimes("argocd", globalFlags.DryRun, 20)
 			if argoCDHostReady {
-				informUser("ArgoCD DNS is ready")
+				informUser("ArgoCD DNS is ready", false)
 				break
 			} else {
 				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
@@ -184,7 +183,7 @@ var createGithubCmd = &cobra.Command{
 			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
 			log.Println("configuring vault backend")
 			vault.ConfigureVault(globalFlags.DryRun, false)
-			informUser("Vault backend configured")
+			informUser("Vault backend configured", false)
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
 		progressPrinter.IncrementTracker("step-apps", 1)

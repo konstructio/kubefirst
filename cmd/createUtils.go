@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -286,8 +287,17 @@ func waitGitlabToBeReady(dryRun bool) {
 
 }
 
-//Notify user in the STOUT and also logfile
-func informUser(message string) {
+// Notify user in the STOUT and also logfile
+func informUser(message string, silentMode bool) {
+	// if in silent mode, send message to the screen
+	// silent mode will silent most of the messages, this function is not frequently called
+	if silentMode {
+		_, err := fmt.Fprintf(os.Stdout, message)
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
 	log.Println(message)
 	progressPrinter.LogMessage(fmt.Sprintf("- %s", message))
 }
