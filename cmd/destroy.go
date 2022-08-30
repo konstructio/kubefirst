@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
@@ -25,8 +26,6 @@ and all of the components in kubernetes.
 Optional: skip gitlab terraform 
 if the registry has already been deleted.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		progressPrinter.GetInstance()
-		progressPrinter.SetupProgress(2)
 
 		config := configs.ReadConfig()
 
@@ -46,6 +45,14 @@ if the registry has already been deleted.`,
 		if err != nil {
 			log.Panic(err)
 		}
+
+		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
+		if err != nil {
+			log.Println(err)
+		}
+
+		progressPrinter.GetInstance()
+		progressPrinter.SetupProgress(2, globalFlags.SilentMode)
 
 		if dryRun {
 			skipGitlabTerraform = true
@@ -68,7 +75,7 @@ if the registry has already been deleted.`,
 			log.Printf("Commad Execution STDERR: %s", kPortForwardErrb.String())
 
 		}
-		informUser("Open gitlab port-forward")
+		informUser("Open gitlab port-forward", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-prepare", 1)
 
 		if !skipDeleteRegistryApplication {
@@ -86,7 +93,7 @@ if the registry has already been deleted.`,
 				log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
 			}
 		}
-		informUser("Open argocd port-forward")
+		informUser("Open argocd port-forward", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-prepare", 1)
 
 		var kPortForwardVaultOutb, kPortForwardVaultErrb bytes.Buffer
@@ -102,14 +109,14 @@ if the registry has already been deleted.`,
 			log.Printf("Commad Execution STDOUT: %s", kPortForwardVaultOutb.String())
 			log.Printf("Commad Execution STDERR: %s", kPortForwardVaultErrb.String())
 		}
-		informUser("Open vault port-forward")
+		informUser("Open vault port-forward", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-prepare", 1)
 
 		log.Println("destroying gitlab terraform")
 
 		progressPrinter.AddTracker("step-destroy", "Destroy Cloud", 4)
 		progressPrinter.IncrementTracker("step-destroy", 1)
-		informUser("Destroying Gitlab")
+		informUser("Destroying Gitlab", globalFlags.SilentMode)
 		gitlab.DestroyGitlabTerraform(skipGitlabTerraform)
 		progressPrinter.IncrementTracker("step-destroy", 1)
 
@@ -117,15 +124,15 @@ if the registry has already been deleted.`,
 		log.Println("deleting registry application in argocd")
 
 		// delete argocd registry
-		informUser("Destroying Registry Application")
+		informUser("Destroying Registry Application", globalFlags.SilentMode)
 		k8s.DeleteRegistryApplication(skipDeleteRegistryApplication)
 		progressPrinter.IncrementTracker("step-destroy", 1)
 		log.Println("registry application deleted")
 		log.Println("terraform destroy base")
-		informUser("Destroying Cluster")
+		informUser("Destroying Cluster", globalFlags.SilentMode)
 		terraform.DestroyBaseTerraform(skipBaseTerraform)
 		progressPrinter.IncrementTracker("step-destroy", 1)
-		informUser("All Destroyed")
+		informUser("All Destroyed", globalFlags.SilentMode)
 
 		log.Println("terraform base destruction complete")
 		fmt.Println("End of execution destroy")
@@ -141,4 +148,6 @@ func init() {
 	destroyCmd.Flags().Bool("skip-delete-register", false, "whether to skip deletion of register application ")
 	destroyCmd.Flags().Bool("skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
 	destroyCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
+	destroyCmd.Flags().Bool("silent", false, "enable silent mode will make the UI return less content to the screen")
+
 }

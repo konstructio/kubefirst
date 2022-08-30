@@ -9,7 +9,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/progress"
 )
 
-//Struct used to manage tracker object
+// Struct used to manage tracker object
 // This object may evolve with more properties in th future
 // when we have more fancier UI tools/styles.
 type ActionTracker struct {
@@ -27,8 +27,9 @@ var once sync.Once
 
 // Function used to initialize the component once in the execution.
 // Usually called from the `cmd`  `init` func or as early as possible on the execution.
-// 	import ("github.com/kubefirst/nebulous/pkg")
-// 	func init() {
+//
+//	import ("github.com/kubefirst/nebulous/pkg")
+//	func init() {
 //			progressPrinter.GetInstance()
 //			progressPrinter.SetupProgress(5) // Number of bars for the entire run.
 //	}
@@ -42,11 +43,17 @@ func GetInstance() *progressPrinter {
 
 // SetupProgress prepare the progress bar setting its initial configuration
 // Used for general initialization of tracker object and overall counter
-func SetupProgress(numTrackers int) {
+func SetupProgress(numTrackers int, silentMode bool) {
 	flag.Parse()
 	fmt.Printf("Init actions: %d expected tasks ...\n\n", numTrackers)
 	// instantiate a Progress Writer and set up the options
 	instance.pw = progress.NewWriter()
+
+	// if silent mode, dont show progress bar render
+	if silentMode {
+		return
+	}
+
 	instance.pw.SetAutoStop(false)
 	instance.pw.SetTrackerLength(30)
 	instance.pw.SetMessageWidth(29)
@@ -67,6 +74,7 @@ func SetupProgress(numTrackers int) {
 }
 
 //	Initialise a tracker object
+//
 // Prefer `AddTracker` to create trackers, due to simplicity.
 func CreateTracker(title string, total int64) *progress.Tracker {
 	tracker := &progress.Tracker{
@@ -81,7 +89,8 @@ func CreateTracker(title string, total int64) *progress.Tracker {
 
 // Prints a log message near the current active tracker.
 // Sample of usage:
-//		progressPrinter.LogMessage("- Waiting bootstrap")
+//
+//	progressPrinter.LogMessage("- Waiting bootstrap")
 func LogMessage(message string) {
 	instance.pw.Log(message)
 }
@@ -89,7 +98,9 @@ func LogMessage(message string) {
 // Add Tracker (prefered way)
 // Return a string for the key to be used on future uses
 // Sample of usage:
-//		progressPrinter.AddTracker("step-base", "Apply Base ", 3)
+//
+//	progressPrinter.AddTracker("step-base", "Apply Base ", 3)
+//
 // no need to instanciate, it is a singleton, only one instance already started before use.
 func AddTracker(key string, title string, total int64) string {
 	time.Sleep(1 * time.Second)
@@ -100,7 +111,8 @@ func AddTracker(key string, title string, total int64) string {
 // Increments a tracker based on the provided key
 // if key is unkown it will error out.
 // Sample of usage:
-//		progressPrinter.IncrementTracker("step-base", 1)
+//
+//	progressPrinter.IncrementTracker("step-base", 1)
 func IncrementTracker(key string, value int64) {
 	time.Sleep(1 * time.Second)
 	instance.Trackers[key].Tracker.Increment(int64(1))

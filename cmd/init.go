@@ -32,8 +32,6 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		infoCmd.Run(cmd, args)
-		progressPrinter.GetInstance()
-		progressPrinter.SetupProgress(10)
 		config := configs.ReadConfig()
 
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
@@ -55,6 +53,14 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			return err
 		}
+
+		progressPrinter.GetInstance()
+		progressPrinter.SetupProgress(10, globalFlags.SilentMode)
+
+		informUser(
+			"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
+			globalFlags.SilentMode,
+		)
 
 		log.Println("github:", githubFlags.GithubHost)
 		log.Println("dry run enabled:", globalFlags.DryRun)
@@ -187,6 +193,8 @@ to quickly create a Cobra application.`,
 		//! tracker 8
 		progressPrinter.IncrementTracker("step-telemetry", 1)
 		time.Sleep(time.Millisecond * 100)
+
+		informUser("init is done!\n", globalFlags.SilentMode)
 
 		return nil
 	},
