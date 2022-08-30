@@ -2,8 +2,10 @@ version: '3'
 
 tasks:
   unit-test:
-    - git branch --show-current
-    - go test -v ./...
+    - go test -v -short ./...
   unit-test-with-report:
     - go test -v ./... -coverpkg=./... -coverprofile cover.out
     - go tool cover -html cover.out -o coverage.html
+  integration-test-init:
+    - go run . clean
+    - go test -v -run TestAreS3BucketsDestroyedIntegration ./internal/aws

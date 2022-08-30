@@ -3,9 +3,12 @@ module github.com/kubefirst/kubefirst
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.44.23
 	github.com/aws/aws-sdk-go-v2/config v1.17.1
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.27
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.54.1
+	github.com/aws/aws-sdk-go-v2/service/eks v1.21.9
+	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.14.13
+	github.com/aws/aws-sdk-go-v2/service/kms v1.18.6
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.20.5
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.13
 	github.com/caarlos0/env/v6 v6.9.3
@@ -48,16 +51,16 @@ require (
 	github.com/acomagu/bufpipe v1.0.3 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.16.11
-	github.com/aws/aws-sdk-go-v2/credentials v1.12.14 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.16.12
+	github.com/aws/aws-sdk-go-v2/credentials v1.12.14
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.12 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.18 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.12 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.19 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.13 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.19 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.12 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.5
 	github.com/aws/aws-sdk-go-v2/service/sso v1.11.17 // indirect
-	github.com/aws/smithy-go v1.12.1 // indirect
+	github.com/aws/smithy-go v1.13.0 // indirect
 	github.com/cenkalti/backoff/v3 v3.0.0 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
