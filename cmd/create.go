@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"github.com/kubefirst/kubefirst/internal/state"
 	"log"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/state"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/reports"
@@ -39,10 +40,10 @@ var createCmd = &cobra.Command{
 			}
 
 		}
-		informUser("Deploying metaphor applications", globalFlags.SilentMode)
+		informUser("Deploying metaphor applications")
 		err = deployMetaphorCmd.RunE(cmd, args)
 		if err != nil {
-			informUser("Error deploy metaphor applications", globalFlags.SilentMode)
+			informUser("Error deploy metaphor applications")
 			log.Println("Error running deployMetaphorCmd")
 			return err
 		}

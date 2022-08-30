@@ -46,7 +46,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	adminEmail, err := cmd.Flags().GetString("admin-email")
 	if err != nil {
-		return InstallerGenericFlags{}, err
+		return flags, err
 	}
 	flags.AdminEmail = adminEmail
 	log.Println("adminEmail:", adminEmail)
@@ -54,7 +54,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	clusterName, err := cmd.Flags().GetString("cluster-name")
 	if err != nil {
-		return InstallerGenericFlags{}, err
+		return flags, err
 	}
 	viper.Set("cluster-name", clusterName)
 	log.Println("cluster-name:", clusterName)
@@ -62,7 +62,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	cloud, err := cmd.Flags().GetString("cloud")
 	if err != nil {
-		return InstallerGenericFlags{}, err
+		return flags, err
 	}
 	viper.Set("cloud", cloud)
 	log.Println("cloud:", cloud)
@@ -70,7 +70,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	branchGitOps, err := cmd.Flags().GetString("gitops-branch")
 	if err != nil {
-		return InstallerGenericFlags{}, err
+		return flags, err
 	}
 	viper.Set("gitops.branch", branchGitOps)
 	log.Println("gitops.branch:", branchGitOps)
@@ -78,7 +78,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	metaphorGitOps, err := cmd.Flags().GetString("metaphor-branch")
 	if err != nil {
-		return InstallerGenericFlags{}, err
+		return flags, err
 	}
 	viper.Set("metaphor.branch", metaphorGitOps)
 	log.Println("metaphor.branch:", metaphorGitOps)
@@ -86,7 +86,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	repoGitOps, err := cmd.Flags().GetString("gitops-repo")
 	if err != nil {
-		return InstallerGenericFlags{}, err
+		return flags, err
 	}
 	viper.Set("gitops.repo", repoGitOps)
 	log.Println("gitops.repo:", repoGitOps)
@@ -94,7 +94,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	ownerGitOps, err := cmd.Flags().GetString("gitops-owner")
 	if err != nil {
-		return InstallerGenericFlags{}, err
+		return flags, err
 	}
 	viper.Set("gitops.owner", ownerGitOps)
 	log.Println("gitops.owner:", ownerGitOps)
@@ -102,7 +102,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	templateTag, err := cmd.Flags().GetString("template-tag")
 	if err != nil {
-		return InstallerGenericFlags{}, err
+		return flags, err
 	}
 	viper.Set("template.tag", templateTag)
 	log.Println("template.tag", templateTag)

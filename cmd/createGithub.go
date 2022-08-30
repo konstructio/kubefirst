@@ -46,6 +46,9 @@ var createGithubCmd = &cobra.Command{
 		progressPrinter.SetupProgress(4, globalFlags.SilentMode)
 
 		infoCmd.Run(cmd, args)
+		if globalFlags.SilentMode {
+			informUser("Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n")
+		}
 		var kPortForwardArgocd *exec.Cmd
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 		progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
@@ -55,26 +58,26 @@ var createGithubCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-0", 1)
 
 		if !globalFlags.UseTelemetry {
-			informUser("Telemetry Disabled", globalFlags.SilentMode)
+			informUser("Telemetry Disabled")
 		}
-		informUser("Creating gitops/metaphor repos", globalFlags.SilentMode)
+		informUser("Creating gitops/metaphor repos")
 		err = githubAddCmd.RunE(cmd, args)
 		if err != nil {
 			log.Println("Error running:", githubAddCmd.Name())
 			return err
 		}
-		informUser("Create Github Repos", globalFlags.SilentMode)
+		informUser("Create Github Repos")
 		progressPrinter.IncrementTracker("step-github", 1)
 		err = loadTemplateCmd.RunE(cmd, args)
 		if err != nil {
 			log.Println("Error running loadTemplateCmd")
 			return err
 		}
-		informUser("Load Templates", globalFlags.SilentMode)
+		informUser("Load Templates")
 		progressPrinter.IncrementTracker("step-github", 1)
 
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
-		informUser("Creating K8S Cluster", globalFlags.SilentMode)
+		informUser("Creating K8S Cluster")
 		terraform.ApplyBaseTerraform(globalFlags.DryRun, directory)
 		progressPrinter.IncrementTracker("step-base", 1)
 
@@ -83,10 +86,10 @@ var createGithubCmd = &cobra.Command{
 			log.Println("Error running githubPopulateCmd")
 			return err
 		}
-		informUser("Populate Repos", globalFlags.SilentMode)
+		informUser("Populate Repos")
 		progressPrinter.IncrementTracker("step-github", 1)
 
-		informUser("Attempt to recycle certs", globalFlags.SilentMode)
+		informUser("Attempt to recycle certs")
 		restoreSSLCmd.RunE(cmd, args)
 		progressPrinter.IncrementTracker("step-base", 1)
 
@@ -99,24 +102,24 @@ var createGithubCmd = &cobra.Command{
 			return err
 		}
 		helm.InstallArgocd(globalFlags.DryRun)
-		informUser("Install ArgoCD", globalFlags.SilentMode)
+		informUser("Install ArgoCD")
 		progressPrinter.IncrementTracker("step-apps", 1)
 
 		//! argocd was just helm installed
 		waitArgoCDToBeReady(globalFlags.DryRun)
-		informUser("ArgoCD Ready", globalFlags.SilentMode)
+		informUser("ArgoCD Ready")
 
 		kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
-		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")), globalFlags.SilentMode)
+		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")))
 
-		informUser("Setting argocd credentials", globalFlags.SilentMode)
+		informUser("Setting argocd credentials")
 		setArgocdCreds(globalFlags.DryRun)
-		informUser("Getting an argocd auth token", globalFlags.SilentMode)
+		informUser("Getting an argocd auth token")
 		token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
 		argocd.ApplyRegistry(globalFlags.DryRun)
-		informUser("Syncing the registry application", globalFlags.SilentMode)
-		informUser("Setup ArgoCD", globalFlags.SilentMode)
+		informUser("Syncing the registry application")
+		informUser("Setup ArgoCD")
 		progressPrinter.IncrementTracker("step-apps", 1)
 
 		if globalFlags.DryRun {
@@ -137,31 +140,31 @@ var createGithubCmd = &cobra.Command{
 				log.Println("unable to sync ArgoCD application, continuing...")
 			}
 		}
-		informUser("Setup ArgoCD", globalFlags.SilentMode)
+		informUser("Setup ArgoCD")
 		progressPrinter.IncrementTracker("step-apps", 1)
 
-		informUser("Waiting vault to be ready", globalFlags.SilentMode)
+		informUser("Waiting vault to be ready")
 		waitVaultToBeRunning(globalFlags.DryRun)
 		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
 		defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
 
 		loopUntilPodIsReady(globalFlags.DryRun)
 		initializeVaultAndAutoUnseal(globalFlags.DryRun)
-		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")), globalFlags.SilentMode)
-		informUser("Setup Vault", globalFlags.SilentMode)
+		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")))
+		informUser("Setup Vault")
 		progressPrinter.IncrementTracker("step-apps", 1)
 
 		if !skipVault { //skipVault
-			informUser("waiting for vault unseal", globalFlags.SilentMode)
+			informUser("waiting for vault unseal")
 			log.Println("configuring vault")
 			vault.ConfigureVault(globalFlags.DryRun, true)
-			informUser("Vault configured", globalFlags.SilentMode)
+			informUser("Vault configured")
 
 			log.Println("creating vault configured secret")
 			createVaultConfiguredSecret(globalFlags.DryRun, config)
-			informUser("Vault  secret created", globalFlags.SilentMode)
+			informUser("Vault  secret created")
 		}
-		informUser("Terraform Vault", globalFlags.SilentMode)
+		informUser("Terraform Vault")
 		progressPrinter.IncrementTracker("step-apps", 1)
 
 		//gitlab oidc removed
@@ -170,7 +173,7 @@ var createGithubCmd = &cobra.Command{
 		for i := 1; i < 15; i++ {
 			argoCDHostReady := gitlab.AwaitHostNTimes("argocd", globalFlags.DryRun, 20)
 			if argoCDHostReady {
-				informUser("ArgoCD DNS is ready", globalFlags.SilentMode)
+				informUser("ArgoCD DNS is ready")
 				break
 			} else {
 				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
@@ -183,7 +186,7 @@ var createGithubCmd = &cobra.Command{
 			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
 			log.Println("configuring vault backend")
 			vault.ConfigureVault(globalFlags.DryRun, false)
-			informUser("Vault backend configured", globalFlags.SilentMode)
+			informUser("Vault backend configured")
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
 		progressPrinter.IncrementTracker("step-apps", 1)

@@ -20,6 +20,7 @@ type ActionTracker struct {
 type progressPrinter struct {
 	Trackers map[string]*ActionTracker
 	pw       progress.Writer
+	noTTY    bool
 }
 
 var instance *progressPrinter
@@ -43,15 +44,18 @@ func GetInstance() *progressPrinter {
 
 // SetupProgress prepare the progress bar setting its initial configuration
 // Used for general initialization of tracker object and overall counter
-func SetupProgress(numTrackers int, silentMode bool) {
+func SetupProgress(numTrackers int, noTTY bool) {
 	flag.Parse()
 	fmt.Printf("Init actions: %d expected tasks ...\n\n", numTrackers)
 	// instantiate a Progress Writer and set up the options
 	instance.pw = progress.NewWriter()
 
 	// if silent mode, dont show progress bar render
-	if silentMode {
+	if noTTY {
+		instance.noTTY = true
 		return
+	} else {
+		instance.noTTY = false
 	}
 
 	instance.pw.SetAutoStop(false)
@@ -92,7 +96,12 @@ func CreateTracker(title string, total int64) *progress.Tracker {
 //
 //	progressPrinter.LogMessage("- Waiting bootstrap")
 func LogMessage(message string) {
-	instance.pw.Log(message)
+	if !instance.noTTY {
+		instance.pw.Log(message)
+	} else {
+		fmt.Println(message)
+	}
+
 }
 
 // Add Tracker (prefered way)
@@ -115,5 +124,8 @@ func AddTracker(key string, title string, total int64) string {
 //	progressPrinter.IncrementTracker("step-base", 1)
 func IncrementTracker(key string, value int64) {
 	time.Sleep(1 * time.Second)
-	instance.Trackers[key].Tracker.Increment(int64(1))
+	instance.Trackers[key].Tracker.Increment(int64(value))
+	if instance.noTTY {
+		fmt.Printf("- %s [incremented: %d]\n", instance.Trackers[key].Tracker.Message, value)
+	}
 }

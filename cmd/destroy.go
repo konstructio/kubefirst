@@ -3,6 +3,11 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"os/exec"
+	"syscall"
+	"time"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
@@ -10,10 +15,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
-	"log"
-	"os/exec"
-	"syscall"
-	"time"
 )
 
 // destroyCmd represents the destroy command
@@ -75,7 +76,7 @@ if the registry has already been deleted.`,
 			log.Printf("Commad Execution STDERR: %s", kPortForwardErrb.String())
 
 		}
-		informUser("Open gitlab port-forward", globalFlags.SilentMode)
+		informUser("Open gitlab port-forward")
 		progressPrinter.IncrementTracker("step-prepare", 1)
 
 		if !skipDeleteRegistryApplication {
@@ -93,7 +94,7 @@ if the registry has already been deleted.`,
 				log.Printf("Commad Execution STDERR: %s", kPortForwardArgocdErrb.String())
 			}
 		}
-		informUser("Open argocd port-forward", globalFlags.SilentMode)
+		informUser("Open argocd port-forward")
 		progressPrinter.IncrementTracker("step-prepare", 1)
 
 		var kPortForwardVaultOutb, kPortForwardVaultErrb bytes.Buffer
@@ -109,14 +110,14 @@ if the registry has already been deleted.`,
 			log.Printf("Commad Execution STDOUT: %s", kPortForwardVaultOutb.String())
 			log.Printf("Commad Execution STDERR: %s", kPortForwardVaultErrb.String())
 		}
-		informUser("Open vault port-forward", globalFlags.SilentMode)
+		informUser("Open vault port-forward")
 		progressPrinter.IncrementTracker("step-prepare", 1)
 
 		log.Println("destroying gitlab terraform")
 
 		progressPrinter.AddTracker("step-destroy", "Destroy Cloud", 4)
 		progressPrinter.IncrementTracker("step-destroy", 1)
-		informUser("Destroying Gitlab", globalFlags.SilentMode)
+		informUser("Destroying Gitlab")
 		gitlab.DestroyGitlabTerraform(skipGitlabTerraform)
 		progressPrinter.IncrementTracker("step-destroy", 1)
 
@@ -124,15 +125,15 @@ if the registry has already been deleted.`,
 		log.Println("deleting registry application in argocd")
 
 		// delete argocd registry
-		informUser("Destroying Registry Application", globalFlags.SilentMode)
+		informUser("Destroying Registry Application")
 		k8s.DeleteRegistryApplication(skipDeleteRegistryApplication)
 		progressPrinter.IncrementTracker("step-destroy", 1)
 		log.Println("registry application deleted")
 		log.Println("terraform destroy base")
-		informUser("Destroying Cluster", globalFlags.SilentMode)
+		informUser("Destroying Cluster")
 		terraform.DestroyBaseTerraform(skipBaseTerraform)
 		progressPrinter.IncrementTracker("step-destroy", 1)
-		informUser("All Destroyed", globalFlags.SilentMode)
+		informUser("All Destroyed")
 
 		log.Println("terraform base destruction complete")
 		fmt.Println("End of execution destroy")
