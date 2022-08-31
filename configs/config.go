@@ -30,6 +30,10 @@ type Config struct {
 	HelmClientPath          string
 	TerraformPath           string
 
+	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
+	ClusterName    string `env:"CLUSTER_NAME"`
+	AwsRegion      string `env:"AWS_REGION"`
+
 	KubectlVersion   string `env:"KUBECTL_VERSION" envDefault:"v1.20.0"`
 	KubectlVersionM1 string
 	TerraformVersion string

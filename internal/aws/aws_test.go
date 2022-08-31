@@ -12,7 +12,6 @@ import (
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
-	"github.com/kubefirst/kubefirst/pkg"
 	"log"
 	"os"
 	"strings"
@@ -24,12 +23,6 @@ func TestAreS3BucketsLiveIntegration(t *testing.T) {
 
 	if testing.Short() {
 		t.Skip("skipping integration test")
-	}
-
-	config := configs.ReadConfig()
-	err := pkg.SetupViper(config)
-	if err != nil {
-		t.Error(err)
 	}
 
 	currentInstallationBuckets := aws.ListBucketsInUse()
@@ -64,13 +57,6 @@ func TestAreS3BucketsDestroyedIntegration(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	// todo: add env. var
-	config := configs.ReadConfig()
-	err := pkg.SetupViper(config)
-	if err != nil {
-		t.Error(err)
-	}
-
 	currentInstallationBuckets := aws.ListBucketsInUse()
 
 	awsConfig, err := aws.NewAws()
@@ -91,7 +77,7 @@ func TestAreS3BucketsDestroyedIntegration(t *testing.T) {
 }
 
 // this is called after cluster destruction, and will fail if VPC is still active
-func TestVPCByTagIntegration(t *testing.T) {
+func TestIsVPCByTagDestroyedIntegration(t *testing.T) {
 
 	if testing.Short() {
 		t.Skip("skipping integration test")
@@ -119,12 +105,12 @@ func TestVPCByTagIntegration(t *testing.T) {
 		t.Error(err)
 	}
 
-	if len(vpcData.Vpcs) == 0 {
+	if len(vpcData.Vpcs) > 0 {
 		t.Errorf("there is no VPC for the cluster %q", clusterName)
 	}
 
 	for _, v := range vpcData.Vpcs {
-		if v.State != "available" {
+		if v.State == "available" {
 			t.Errorf("there is a VPC for the %q cluster, but the status is not available", clusterName)
 		}
 	}
@@ -186,16 +172,15 @@ func TestLoadBalancerByTagIntegration(t *testing.T) {
 	}
 }
 
-func TestKMSKeyAliasIntegration(t *testing.T) {
+func TestIsKMSKeyAliasDestroyedIntegration(t *testing.T) {
 
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
 
-	clusterName := os.Getenv("CLUSTER_NAME")
-	awsRegion := os.Getenv("AWS_REGION")
+	config := configs.ReadConfig()
 
-	if len(clusterName) == 0 || len(awsRegion) == 0 {
+	if len(config.ClusterName) == 0 || len(config.AwsRegion) == 0 {
 		t.Error("environment variables CLUSTER_NAME and AWS_REGION must be informed")
 		return
 	}
@@ -213,13 +198,13 @@ func TestKMSKeyAliasIntegration(t *testing.T) {
 
 	var activeCKMS string
 	for _, ckms := range keyList.Aliases {
-		if strings.HasSuffix(*ckms.AliasName, clusterName) {
+		if strings.HasSuffix(*ckms.AliasName, config.ClusterName) {
 			activeCKMS = *ckms.TargetKeyId
 		}
 	}
 
 	if len(activeCKMS) == 0 {
-		t.Errorf("unable to find CMKS for the cluster %q", clusterName)
+		t.Errorf("unable to find CMKS for the cluster %q", config.ClusterName)
 	}
 
 	ckmsKey, err := kmsClient.DescribeKey(context.Background(), &kms.DescribeKeyInput{
@@ -230,21 +215,20 @@ func TestKMSKeyAliasIntegration(t *testing.T) {
 		t.Error("wanted CKMS to be enabled, but got it disabled")
 	}
 
-	if !strings.Contains(*ckmsKey.KeyMetadata.Arn, awsRegion) {
-		t.Errorf("unable to find CKMS at the desired region (%s) for the cluster %q", awsRegion, clusterName)
+	if !strings.Contains(*ckmsKey.KeyMetadata.Arn, config.AwsRegion) {
+		t.Errorf("unable to find CKMS at the desired region (%s) for the cluster %q", config.AwsRegion, config.ClusterName)
 	}
 }
 
-func TestEKSIntegration(t *testing.T) {
+func TestIsEKSDestroyedIntegration(t *testing.T) {
 
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
 
-	clusterName := os.Getenv("CLUSTER_NAME")
-	awsRegion := os.Getenv("AWS_REGION")
+	config := configs.ReadConfig()
 
-	if len(clusterName) == 0 || len(awsRegion) == 0 {
+	if len(config.ClusterName) == 0 || len(config.AwsRegion) == 0 {
 		t.Error("environment variables CLUSTER_NAME and AWS_REGION must be informed")
 		return
 	}
@@ -257,26 +241,26 @@ func TestEKSIntegration(t *testing.T) {
 	eksClient := eks.NewFromConfig(awsConfig)
 
 	eksData, err := eksClient.DescribeCluster(context.Background(), &eks.DescribeClusterInput{
-		Name: &clusterName,
+		Name: &config.ClusterName,
 	})
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	if *eksData.Cluster.Name != clusterName {
-		t.Errorf("unable to find cluster with cluster name %q", clusterName)
+	if *eksData.Cluster.Name != config.ClusterName {
+		t.Errorf("unable to find cluster with cluster name %q", config.ClusterName)
 	}
 }
 
-func TestEC2Volumes(t *testing.T) {
+func TestAreEC2VolumesDestroyedIntegration(t *testing.T) {
 
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
 
-	awsRegion := os.Getenv("AWS_REGION")
-	if len(awsRegion) == 0 {
+	config := configs.ReadConfig()
+	if len(config.AwsRegion) == 0 {
 		t.Error("environment variables AWS_REGION must be informed")
 		return
 	}
@@ -299,7 +283,7 @@ func TestEC2Volumes(t *testing.T) {
 			if *tag.Value == "owned" &&
 				strings.HasSuffix(*tag.Key, "joao_kubefirst_tech") &&
 				volume.State == "available" &&
-				strings.Contains(*volume.AvailabilityZone, awsRegion) {
+				strings.Contains(*volume.AvailabilityZone, config.AwsRegion) {
 
 				isVolumeActive = true
 			}

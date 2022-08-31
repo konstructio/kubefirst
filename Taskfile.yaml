@@ -12,8 +12,8 @@ tasks:
 #    - go run . create
     - go test -v -run TestArgoCDLivenessIntegration ./internal/argocd
     - go test -v -run TestArgoWorkflowLivenessIntegration ./internal/argocd
-    - go test -v -run TestGitLabLivenessIntegration ./internal/argocd
-    - go test -v -run TestMetaphorsLivenessIntegration ./internal/gitlab
+    - go test -v -run TestGitLabLivenessIntegration ./internal/gitlab
+    - go test -v -run TestMetaphorsLivenessIntegration ./internal/metaphor
 #    - go run . destroy
     - go test -v -run TestIsVPCByTagDestroyedIntegration ./internal/aws
     - go test -v -run TestIsLoadBalancerByTagDestroyedIntegration ./internal/aws

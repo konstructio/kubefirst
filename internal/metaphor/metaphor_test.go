@@ -3,8 +3,6 @@ package metaphor_test
 import (
 	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/pkg"
-	"github.com/spf13/viper"
 	"net/http"
 	"testing"
 )
@@ -17,10 +15,6 @@ func TestMetaphorsLivenessIntegration(t *testing.T) {
 	}
 
 	config := configs.ReadConfig()
-	err := pkg.SetupViper(config)
-	if err != nil {
-		t.Error(err)
-	}
 
 	type conditions struct {
 		serviceName    string
@@ -31,17 +25,17 @@ func TestMetaphorsLivenessIntegration(t *testing.T) {
 	testCases := []conditions{
 		{
 			serviceName:    "metaphor-frontend",
-			serviceURL:     fmt.Sprintf("https://metaphor-frontend.%s", viper.GetString("aws.hostedzonename")),
+			serviceURL:     fmt.Sprintf("https://metaphor-frontend.%s", config.HostedZoneName),
 			httpWantedCode: http.StatusOK,
 		},
 		{
 			serviceName:    "metaphor-js",
-			serviceURL:     fmt.Sprintf("https://metaphor-js.%s", viper.GetString("aws.hostedzonename")),
+			serviceURL:     fmt.Sprintf("https://metaphor-js.%s", config.HostedZoneName),
 			httpWantedCode: http.StatusOK,
 		},
 		{
 			serviceName:    "metaphor-go",
-			serviceURL:     fmt.Sprintf("https://metaphor-go.%s", viper.GetString("aws.hostedzonename")),
+			serviceURL:     fmt.Sprintf("https://metaphor-go.%s", config.HostedZoneName),
 			httpWantedCode: http.StatusOK,
 		},
 	}

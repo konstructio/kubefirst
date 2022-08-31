@@ -3,8 +3,6 @@ package gitlab_test
 import (
 	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/pkg"
-	"github.com/spf13/viper"
 	"net/http"
 	"testing"
 )
@@ -17,12 +15,12 @@ func TestGitLabLivenessIntegration(t *testing.T) {
 	}
 
 	config := configs.ReadConfig()
-	err := pkg.SetupViper(config)
-	if err != nil {
-		t.Error(err)
+	if len(config.HostedZoneName) == 0 {
+		t.Error("HOSTED_ZONE_NAME environment variable is not set")
+		return
 	}
 
-	argoURL := fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename"))
+	argoURL := fmt.Sprintf("https://gitlab.%s", config.HostedZoneName)
 
 	req, err := http.NewRequest(http.MethodGet, argoURL, nil)
 	if err != nil {
