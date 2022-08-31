@@ -270,13 +270,14 @@ func GetDNSInfo(hostedZoneName string) string {
 
 }
 
-// listBucketsInUse list user active buckets
-func listBucketsInUse() []string {
+// ListBucketsInUse list user active buckets
+func ListBucketsInUse() []string {
 	var bucketsInUse []string
 	bucketsConfig := viper.AllKeys()
 	for _, bucketKey := range bucketsConfig {
-		match := strings.HasPrefix(bucketKey, "bucket.") && strings.HasSuffix(bucketKey, ".name")
-		if match {
+		if strings.HasPrefix(bucketKey, "bucket.") &&
+			strings.HasSuffix(bucketKey, ".name") &&
+			!strings.Contains(bucketKey, "state-store") {
 			bucketName := viper.GetString(bucketKey)
 			bucketsInUse = append(bucketsInUse, bucketName)
 		}
@@ -285,25 +286,26 @@ func listBucketsInUse() []string {
 }
 
 // DestroyBucketsInUse receives a list of user active buckets, and try to destroy them
-func DestroyBucketsInUse(dryRun bool, executeConfirmation bool) {
+func DestroyBucketsInUse(dryRun bool, executeConfirmation bool) error {
 	if dryRun {
 		log.Println("Skip: DestroyBucketsInUse - Dry-run mode")
-		return
+		return nil
 	}
 	if !executeConfirmation {
 		log.Println("Skip: DestroyBucketsInUse - Not provided confirmation")
-		return
+		return nil
 	}
 
 	log.Println("Confirmed: DestroyBucketsInUse")
 
-	for _, bucket := range listBucketsInUse() {
+	for _, bucket := range ListBucketsInUse() {
 		log.Printf("Deleting versions, objects and bucket: %s:", bucket)
 		err := DestroyBucketObjectsAndVersions(bucket, viper.GetString("aws.region"))
 		if err != nil {
-			log.Panic("Error deleting bucket/objects/version, the resources may have already been removed, please re-run without flag --destroy-buckets and check on console")
+			return errors.New("error deleting bucket/objects/version, the resources may have already been removed, please re-run without flag --destroy-buckets and check on console")
 		}
 	}
+	return nil
 }
 
 // AssumeRole receives a AWS IAM Role, and instead of using regular AWS credentials, it generates new AWS credentials

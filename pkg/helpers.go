@@ -202,7 +202,7 @@ func CreateFullPath(p string) (*os.File, error) {
 	return os.Create(p)
 }
 
-func AskForConfirmation(s string) bool {
+func AskForConfirmation(s string) (bool, error) {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
@@ -210,15 +210,14 @@ func AskForConfirmation(s string) bool {
 
 		response, err := reader.ReadString('\n')
 		if err != nil {
-			log.Fatal(err)
+			return false, err
 		}
 
 		response = strings.ToLower(strings.TrimSpace(response))
 
 		if response == "y" || response == "yes" {
-			return true
-		} else if response == "n" || response == "no" {
-			return false
+			return true, nil
 		}
+		return false, nil
 	}
 }
