@@ -11,7 +11,6 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/reports"
-	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -35,13 +34,7 @@ re-create Kubefirst base files. To destroy cloud resources you need to specify a
 			return err
 		}
 		if destroyBuckets && !destroyConfirm {
-			destroyConfirm, err = pkg.AskForConfirmation("This process will delete cloud buckets and all files inside, do you really want to proceed?")
-			if err != nil {
-				return err
-			}
-			if !destroyConfirm {
-				return errors.New("destroy wasn't confirmed, not destroying buckets")
-			}
+			return errors.New("this process will fully delete cloud buckets, and we would like you to confirm the deletion providing the --destroy-confirm when calling the clean command")
 		}
 
 		err = aws.DestroyBucketsInUse(false, destroyBuckets && destroyConfirm)
