@@ -276,9 +276,8 @@ func ListBucketsInUse() []string {
 	bucketsConfig := viper.AllKeys()
 	for _, bucketKey := range bucketsConfig {
 		if strings.HasPrefix(bucketKey, "bucket.") &&
-			strings.HasSuffix(bucketKey, ".name") &&
-			!strings.Contains(bucketKey, "state-store") {
-		
+			strings.HasSuffix(bucketKey, ".name") {
+
 			bucketName := viper.GetString(bucketKey)
 			bucketsInUse = append(bucketsInUse, bucketName)
 		}
