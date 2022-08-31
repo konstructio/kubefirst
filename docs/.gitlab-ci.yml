@@ -1,0 +1,70 @@
+variables:
+  ARGO_SERVER: 'argo.mgmt.kubefirst.com:443' 
+  ARGO_HTTP1: 'true'  
+  ARGO_SECURE: 'true'
+  ARGO_BASE_HREF: /argo/
+  ARGO_NAMESPACE: argo
+  KUBECONFIG: /dev/null
+  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_TLS_VERIFY: 1
+  DOCKER_CERT_PATH: "${DOCKER_TLS_CERTDIR}/client"
+  BUILDER_IMAGE: "kubefirst/chubbo:0.3"
+
+stages:
+  - publish
+  - development
+  - release
+
+publish:
+  image: "${BUILDER_IMAGE}"
+  stage: publish
+  only:
+    - master
+  script:
+    - echo "commit sha $CI_COMMIT_SHA"
+    - |
+      argo submit .argo/publish.yaml \
+        --generate-name="${CI_PROJECT_NAME}-publish-${CI_COMMIT_SHORT_SHA}" \
+        -p appName="${CI_PROJECT_NAME}" \
+        -p ciCommitSha="${CI_COMMIT_SHA}" \
+        -p branch="${CI_COMMIT_REF_NAME}" \
+        -p gitRepoUrl="${CI_PROJECT_URL}" \
+        -p shortSha="${CI_COMMIT_SHORT_SHA}" \
+        --wait --log
+            
+development:
+  image: "${BUILDER_IMAGE}"
+  stage: development
+  only:
+    - master
+  script:
+    - echo "commit sha $CI_COMMIT_SHA"
+    - |
+      argo submit .argo/deploy.yaml \
+        --generate-name="${CI_PROJECT_NAME}-development-${CI_COMMIT_SHORT_SHA}" \
+        -p appName="${CI_PROJECT_NAME}" \
+        -p ciCommitSha="${CI_COMMIT_SHA}" \
+        -p branch="${CI_COMMIT_REF_NAME}" \
+        -p environment="development" \
+        -p gitRepoUrl="${CI_PROJECT_URL}" \
+        -p shortSha="${CI_COMMIT_SHORT_SHA}" \
+        --wait --log
+
+release:
+  image: "${BUILDER_IMAGE}"
+  stage: release
+  only:
+    - master
+  script:
+    - echo "commit sha $CI_COMMIT_SHA"
+    - |
+      argo submit .argo/release.yaml \
+        --generate-name="${CI_PROJECT_NAME}-release-${CI_COMMIT_SHORT_SHA}" \
+        -p appName="${CI_PROJECT_NAME}" \
+        -p ciCommitSha="${CI_COMMIT_SHA}" \
+        -p branch="${CI_COMMIT_REF_NAME}" \
+        -p environment="production" \
+        -p gitRepoUrl="${CI_PROJECT_URL}" \
+        -p shortSha="${CI_COMMIT_SHORT_SHA}" \
+        --wait --log
+  when: manual

@@ -1,0 +1,89 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: appDir
+      value: /src/{{workflow.parameters.appName}}
+    - name: awsRegion
+      value: "{{workflow.parameters.awsRegion}}"
+      default: us-east-2 # todo figure out where this belongs
+    - name: chartDir
+      value: charts/{{workflow.parameters.appName}}
+    - name: ciCommitSha
+      value: "{{workflow.parameters.ciCommitSha}}"
+    - name: branch
+      value: "{{workflow.parameters.branch}}"
+    - name: environment
+      value: "{{workflow.parameters.environment}}"
+    - name: fullChartPath # todo make this better? or good enough?
+      value: "argocd/apps/{{workflow.parameters.appName}}/us-east-2/{{workflow.parameters.environment}}/Chart.yaml"
+    - name: gitRepoUrl
+      value: "{{workflow.parameters.gitRepoUrl}}"
+    - name: shortSha
+      value: "{{workflow.parameters.shortSha}}"
+  templates:
+  - name: main
+    steps:
+    - - name: checkout
+        templateRef:
+          name: cwft-git
+          template: git-checkout-with-gitops
+          clusterScope: true 
+        arguments:
+          parameters:
+          - name: appDir
+            value: "{{workflow.parameters.appDir}}"
+          - name: branch
+            value: "{{workflow.parameters.branch}}"
+          - name: gitRepoUrl
+            value: "{{workflow.parameters.gitRepoUrl}}"
+    
+    - - name: get-initial-chart-version
+        templateRef:
+          name: cwft-helm
+          template: helm-get-chart-version
+          clusterScope: true 
+        arguments:
+          artifacts:
+          - name: repo-source
+            from: "{{steps.checkout.outputs.artifacts.repo-source}}"
+          parameters:
+          - name: appDir
+            value: "{{workflow.parameters.appDir}}"
+          - name: chartDir
+            value: "{{workflow.parameters.chartDir}}"
+
+    - - name: set-environment-version
+        templateRef:
+          name: cwft-helm
+          template: helm-set-environment-version
+          clusterScope: true 
+        arguments:
+          artifacts:
+          - name: repo-source
+            from: "{{steps.checkout.outputs.artifacts.repo-source}}"
+          parameters:
+          - name: fullChartPath
+            value: "{{workflow.parameters.fullChartPath}}"
+          - name: chartVersion
+            value: "{{steps.get-initial-chart-version.outputs.result}}-rc+{{workflow.parameters.shortSha}}"
+          - name: environment
+            value: "{{workflow.parameters.environment}}"
+          
+    - - name: commit
+        templateRef:
+          name: cwft-git
+          template: git-commit
+          clusterScope: true 
+        arguments:
+          artifacts:
+          - name: repo-source
+            from: "{{steps.set-environment-version.outputs.artifacts.repo-source}}"
+          parameters:
+          - name: appDir
+            value: "/src/gitops"
+          - name: commitMessage
+            value: setting {{workflow.parameters.appName}} {{workflow.parameters.environment}} to chart version {{steps.get-initial-chart-version.outputs.result}}-rc+{{workflow.parameters.shortSha}}
+              
