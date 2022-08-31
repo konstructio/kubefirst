@@ -57,10 +57,12 @@ to quickly create a Cobra application.`,
 		progressPrinter.GetInstance()
 		progressPrinter.SetupProgress(10, globalFlags.SilentMode)
 
-		informUser(
-			"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
-			globalFlags.SilentMode,
-		)
+		if globalFlags.SilentMode {
+			informUser(
+				"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
+				globalFlags.SilentMode,
+			)
+		}
 
 		log.Println("github:", githubFlags.GithubHost)
 		log.Println("dry run enabled:", globalFlags.DryRun)

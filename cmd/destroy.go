@@ -51,6 +51,13 @@ if the registry has already been deleted.`,
 			log.Println(err)
 		}
 
+		if globalFlags.SilentMode {
+			informUser(
+				"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
+				globalFlags.SilentMode,
+			)
+		}
+
 		progressPrinter.GetInstance()
 		progressPrinter.SetupProgress(2, globalFlags.SilentMode)
 

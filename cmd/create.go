@@ -21,6 +21,14 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		if globalFlags.SilentMode {
+			informUser(
+				"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
+				globalFlags.SilentMode,
+			)
+		}
+
 		sendStartedInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
 		if viper.GetBool("github.enabled") {
 			log.Println("Installing Github version of Kubefirst")
