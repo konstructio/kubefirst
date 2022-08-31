@@ -23,23 +23,24 @@ func ProcessGlobalFlags(cmd *cobra.Command) (GlobalFlags, error) {
 
 	dryRun, err := cmd.Flags().GetBool("dry-run")
 	if err != nil {
-		log.Println("Error Processing - dry-run flag")
+		log.Printf("Error Processing - dry-run flag, error: %v", err)
 		return flags, err
 	}
 	flags.DryRun = dryRun
 
 	useTelemetry, err := cmd.Flags().GetBool("use-telemetry")
 	if err != nil {
-		log.Println("Error Processing - use-telemetry flag")
+		log.Printf("Error Processing - use-telemetry flag, error: %v", err)
 		return flags, err
 	}
 	flags.UseTelemetry = useTelemetry
 
 	silentMode, err := cmd.Flags().GetBool("silent")
 	if err != nil {
-		log.Println("Error Processing - use-telemetry flag")
+		log.Printf("Error Processing - use-telemetry flag, error: %v", err)
 		return flags, err
 	}
+
 	flags.SilentMode = silentMode
 
 	return flags, nil

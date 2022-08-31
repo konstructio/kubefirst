@@ -149,5 +149,6 @@ func init() {
 	destroyCmd.Flags().Bool("skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
 	destroyCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	destroyCmd.Flags().Bool("silent", false, "enable silent mode will make the UI return less content to the screen")
+	destroyCmd.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
 
 }
