@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// DefineAWSFlags - define aws flags for CLI
 func DefineAWSFlags(currentCommand *cobra.Command) {
 	// AWS Flags
 	currentCommand.Flags().String("s3-suffix", "", "unique identifier for s3 buckets")
@@ -27,10 +28,11 @@ type AwsFlags struct {
 	HostedZoneName  string
 }
 
+//ProcessAwsFlags - Read values of CLI parameters for aws flags
 func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	flags := AwsFlags{}
 	// set profile
-	profile, err := cmd.Flags().GetString("profile")
+	profile, err := ReadConfigString(cmd, "profile")
 	if err != nil {
 		log.Println("unable to get profile values")
 		return flags, err
@@ -46,7 +48,7 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	flags.Profile = profile
 
 	// set region
-	region, err := cmd.Flags().GetString("region")
+	region, err := ReadConfigString(cmd, "region")
 	if err != nil {
 		log.Println("unable to get region values from viper")
 		return flags, err
@@ -61,7 +63,7 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	log.Println("region:", region)
 	flags.Region = region
 
-	nodesSpot, err := cmd.Flags().GetBool("aws-nodes-spot")
+	nodesSpot, err := ReadConfigBool(cmd, "aws-nodes-spot")
 	if err != nil {
 		log.Println(err)
 		return flags, err
@@ -70,7 +72,7 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	log.Println("aws.nodes_spot: ", nodesSpot)
 	flags.UseSpotInstance = nodesSpot
 
-	bucketRand, err := cmd.Flags().GetString("s3-suffix")
+	bucketRand, err := ReadConfigString(cmd, "s3-suffix")
 	if err != nil {
 		log.Println(err)
 		return flags, err
@@ -78,7 +80,7 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	viper.Set("bucket.rand", bucketRand)
 	flags.S3Suffix = bucketRand
 
-	arnRole, err := cmd.Flags().GetString("aws-assume-role")
+	arnRole, err := ReadConfigString(cmd, "aws-assume-role")
 	if err != nil {
 		log.Println("unable to use the provided AWS IAM role for AssumeRole feature")
 		return flags, err
@@ -86,7 +88,7 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	viper.Set("aws.arn", arnRole)
 	flags.AssumeRole = arnRole
 
-	hostedZoneName, _ := cmd.Flags().GetString("hosted-zone-name")
+	hostedZoneName, _ := ReadConfigString(cmd, "hosted-zone-name")
 	if err != nil {
 		return flags, err
 	}
