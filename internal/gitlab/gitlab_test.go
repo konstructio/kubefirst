@@ -10,7 +10,7 @@ import (
 )
 
 // this is called when GitLab should be up and running
-func TestApplyGitlabTerraform(t *testing.T) {
+func TestGitLabLivenessIntegration(t *testing.T) {
 
 	if testing.Short() {
 		t.Skip("skipping integration test")

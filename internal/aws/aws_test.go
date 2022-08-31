@@ -3,7 +3,6 @@ package aws_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
@@ -43,8 +42,6 @@ func TestAreS3BucketsLiveIntegration(t *testing.T) {
 	s3client := s3.NewFromConfig(awsConfig)
 
 	for _, bucketName := range currentInstallationBuckets {
-
-		fmt.Println(bucketName)
 		_, err = s3client.HeadBucket(context.Background(), &s3.HeadBucketInput{
 			Bucket: &bucketName,
 		})
@@ -67,6 +64,7 @@ func TestAreS3BucketsDestroyedIntegration(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
+	// todo: add env. var
 	config := configs.ReadConfig()
 	err := pkg.SetupViper(config)
 	if err != nil {
@@ -83,7 +81,6 @@ func TestAreS3BucketsDestroyedIntegration(t *testing.T) {
 	s3client := s3.NewFromConfig(awsConfig)
 
 	for _, bucketName := range currentInstallationBuckets {
-
 		_, err = s3client.HeadBucket(context.Background(), &s3.HeadBucketInput{
 			Bucket: &bucketName,
 		})
