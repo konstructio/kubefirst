@@ -270,8 +270,8 @@ func GetDNSInfo(hostedZoneName string) string {
 
 }
 
-// ListBucketsInUse list user active buckets
-func ListBucketsInUse() []string {
+// listBucketsInUse list user active buckets
+func listBucketsInUse() []string {
 	var bucketsInUse []string
 	bucketsConfig := viper.AllKeys()
 	for _, bucketKey := range bucketsConfig {
@@ -298,7 +298,7 @@ func DestroyBucketsInUse(dryRun bool, executeConfirmation bool) error {
 
 	log.Println("Confirmed: DestroyBucketsInUse")
 
-	for _, bucket := range ListBucketsInUse() {
+	for _, bucket := range listBucketsInUse() {
 		log.Printf("Deleting versions, objects and bucket: %s:", bucket)
 		err := DestroyBucketObjectsAndVersions(bucket, viper.GetString("aws.region"))
 		if err != nil {
