@@ -137,6 +137,7 @@ extra_css:
   - stylesheets/extra.css
 
 repo_url: https://github.com/kubefirst/kubefirst
+edit_uri: edit/main/docs/
 
 # Things we need to work through outside of content:
 # publish process needs to be automated (wait for 1.9 so it can be done on github?)
