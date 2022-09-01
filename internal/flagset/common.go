@@ -1,7 +1,6 @@
 package flagset
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -52,11 +51,11 @@ func DefineSource(cmd *cobra.Command, flag string) int {
 	envVarName := GetFlagVarName(flag)
 	_, envExist := os.LookupEnv(envVarName)
 	if envExist {
-		fmt.Printf("Enviroment Variable(%s) set - using this value for Flag(%s)\n", envVarName, flag)
+		log.Printf("Enviroment Variable(%s) set - using this value for Flag(%s)\n", envVarName, flag)
 		return ENV
 	}
 
-	fmt.Printf("Enviroment Variable(%s) not set\n", flag)
+	log.Printf("Enviroment Variable(%s) not set\n", flag)
 	return NONE
 }
 
