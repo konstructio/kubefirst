@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/template"
 	"github.com/spf13/viper"
 )
 
@@ -96,7 +97,8 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
 		}
 
-		err = ioutil.WriteFile(path, []byte(newContents), 0)
+		rendered := template.Render(newContents)
+		err = ioutil.WriteFile(path, []byte(rendered.String()), 0)
 		if err != nil {
 			log.Panic(err)
 		}

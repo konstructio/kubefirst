@@ -1,12 +1,12 @@
-package pkg
+package template
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"html/template"
 	"log"
 	"os"
-	"path"
 	"reflect"
 	"strconv"
 	"strings"
@@ -287,7 +287,7 @@ func envToMap() map[string]string {
 	return envMap
 }
 
-func Template(templateFile, renderedFile string) {
+func Render(input string) bytes.Buffer {
 	envMap := envToMap()
 	funcMap := template.FuncMap{
 		"upper":           strings.ToUpper,
@@ -316,13 +316,17 @@ func Template(templateFile, renderedFile string) {
 		"replace":         replace,
 	}
 
-	fBase := path.Base(templateFile)
-	t, err := template.New(fBase).Funcs(funcMap).ParseFiles(templateFile)
+	// fBase := path.Base(templateFile)
+	fmt.Println("template 320")
+	t, err := template.New("template").Funcs(funcMap).Parse(input)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	err = t.Execute(os.Stdout, envMap)
+	var outb bytes.Buffer
+	err = t.Execute(&outb, envMap)
+
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
+	return outb
 }

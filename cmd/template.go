@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"fmt"
+	"io/ioutil"
 	"log"
 
-	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/kubefirst/kubefirst/internal/template"
 	"github.com/spf13/cobra"
 )
 
@@ -13,15 +15,18 @@ var templateCmd = &cobra.Command{
 	Short: "Inform the template file (input) and rendered file (output)",
 	Long:  `Based on template file, reading values from variables and k1rst file, another file is rendered using go-template`,
 	Run: func(cmd *cobra.Command, args []string) {
-		template, err := cmd.Flags().GetString("template")
+		templateF, err := cmd.Flags().GetString("template")
 		if err != nil {
 			log.Println(err)
 		}
-		rendered, err := cmd.Flags().GetString("rendered")
+
+		read, err := ioutil.ReadFile(templateF)
 		if err != nil {
-			log.Println(err)
+			panic(err)
 		}
-		pkg.Template(template, rendered)
+
+		renderedBuffer := template.Render(string(read))
+		fmt.Print(renderedBuffer.String())
 	},
 }
 
@@ -29,7 +34,6 @@ func init() {
 	rootCmd.AddCommand(templateCmd)
 
 	templateCmd.Flags().String("template", "", "Template file (input)")
-	templateCmd.Flags().String("rendered", "", "Rendered file (output)")
 
 	err := templateCmd.MarkFlagRequired("template")
 	if err != nil {
@@ -37,9 +41,4 @@ func init() {
 		return
 	}
 
-	err = templateCmd.MarkFlagRequired("rendered")
-	if err != nil {
-		log.Println(err)
-		return
-	}
 }
