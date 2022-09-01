@@ -292,7 +292,7 @@ func informUser(message string, silentMode bool) {
 	// if in silent mode, send message to the screen
 	// silent mode will silent most of the messages, this function is not frequently called
 	if silentMode {
-		_, err := fmt.Fprintf(os.Stdout, message)
+		_, err := fmt.Fprintln(os.Stdout, message)
 		if err != nil {
 			log.Println(err)
 		}

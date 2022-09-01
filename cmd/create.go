@@ -63,6 +63,7 @@ var createCmd = &cobra.Command{
 		reports.HandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
 		time.Sleep(time.Millisecond * 2000)
 		log.Println("End of creation run")
+		informUser("End of creation run", globalFlags.SilentMode)
 		return nil
 	},
 }
