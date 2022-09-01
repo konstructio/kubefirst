@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -159,7 +158,7 @@ var createGithubCmd = &cobra.Command{
 			informUser("Vault configured")
 
 			log.Println("creating vault configured secret")
-			createVaultConfiguredSecret(globalFlags.DryRun, config)
+			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
 			informUser("Vault  secret created")
 		}
 		informUser("Terraform Vault")
