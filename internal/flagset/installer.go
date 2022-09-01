@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// DefineInstallerGenericFlags - define installer  flags for CLI
 func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
 	//Gewneric Installer flags:
 	config := configs.ReadConfig()
@@ -34,11 +35,12 @@ type InstallerGenericFlags struct {
 	TemplateTag    string //To support forks
 }
 
+//ProcessInstallerGenericFlags - Read values of CLI parameters for installer flags
 func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, error) {
 	flags := InstallerGenericFlags{}
 	defer viper.WriteConfig()
 
-	adminEmail, err := cmd.Flags().GetString("admin-email")
+	adminEmail, err := ReadConfigString(cmd, "admin-email")
 	if err != nil {
 		return flags, err
 	}
@@ -46,7 +48,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	log.Println("adminEmail:", adminEmail)
 	viper.Set("adminemail", adminEmail)
 
-	clusterName, err := cmd.Flags().GetString("cluster-name")
+	clusterName, err := ReadConfigString(cmd, "cluster-name")
 	if err != nil {
 		return flags, err
 	}
@@ -54,7 +56,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	log.Println("cluster-name:", clusterName)
 	flags.ClusterName = clusterName
 
-	cloud, err := cmd.Flags().GetString("cloud")
+	cloud, err := ReadConfigString(cmd, "cloud")
 	if err != nil {
 		return flags, err
 	}
@@ -62,7 +64,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	log.Println("cloud:", cloud)
 	flags.Cloud = cloud
 
-	branchGitOps, err := cmd.Flags().GetString("gitops-branch")
+	branchGitOps, err := ReadConfigString(cmd, "gitops-branch")
 	if err != nil {
 		return flags, err
 	}
@@ -70,7 +72,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	log.Println("gitops.branch:", branchGitOps)
 	flags.BranchGitops = branchGitOps
 
-	metaphorGitOps, err := cmd.Flags().GetString("metaphor-branch")
+	metaphorGitOps, err := ReadConfigString(cmd, "metaphor-branch")
 	if err != nil {
 		return flags, err
 	}
@@ -78,7 +80,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	log.Println("metaphor.branch:", metaphorGitOps)
 	flags.BranchMetaphor = metaphorGitOps
 
-	repoGitOps, err := cmd.Flags().GetString("gitops-repo")
+	repoGitOps, err := ReadConfigString(cmd, "gitops-repo")
 	if err != nil {
 		return flags, err
 	}
@@ -86,7 +88,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	log.Println("gitops.repo:", repoGitOps)
 	flags.RepoGitops = repoGitOps
 
-	ownerGitOps, err := cmd.Flags().GetString("gitops-owner")
+	ownerGitOps, err := ReadConfigString(cmd, "gitops-owner")
 	if err != nil {
 		return flags, err
 	}
@@ -94,7 +96,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	log.Println("gitops.owner:", ownerGitOps)
 	flags.RepoGitops = ownerGitOps
 
-	templateTag, err := cmd.Flags().GetString("template-tag")
+	templateTag, err := ReadConfigString(cmd, "template-tag")
 	if err != nil {
 		return flags, err
 	}
