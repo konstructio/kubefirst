@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
+	eksTypes "github.com/aws/aws-sdk-go-v2/service/eks/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -128,7 +129,6 @@ func TestIsVPCByTagDestroyedIntegration(t *testing.T) {
 	}
 }
 
-// todo: this test will be called when cluster is up AND when cluster is down, we must update the condition,
 // based on what we want. This test requires AWS_REGION and CLUSTER_NAME.
 func TestLoadBalancerByTagIntegration(t *testing.T) {
 
@@ -184,6 +184,34 @@ func TestLoadBalancerByTagIntegration(t *testing.T) {
 	}
 }
 
+// based on what we want. This test requires AWS_REGION and CLUSTER_NAME.
+func TestIsLoadBalancerByTagDestroyedIntegration(t *testing.T) {
+
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	awsConfig, err := aws.NewAws()
+	if err != nil {
+		t.Error(err)
+	}
+
+	elb := elasticloadbalancing.NewFromConfig(awsConfig)
+
+	loadBalancers, err := elb.DescribeLoadBalancers(
+		context.Background(),
+		&elasticloadbalancing.DescribeLoadBalancersInput{},
+	)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(loadBalancers.LoadBalancerDescriptions) > 0 {
+		t.Error("wanted no active load balancers")
+	}
+
+}
+
 func TestIsKMSKeyAliasDestroyedIntegration(t *testing.T) {
 
 	if testing.Short() {
@@ -215,20 +243,16 @@ func TestIsKMSKeyAliasDestroyedIntegration(t *testing.T) {
 		}
 	}
 
-	if len(activeCKMS) == 0 {
-		t.Errorf("unable to find CMKS for the cluster %q", config.ClusterName)
+	if len(activeCKMS) > 0 {
+		t.Errorf("there is at least one active CMKS for the cluster %q", config.ClusterName)
 	}
 
 	ckmsKey, err := kmsClient.DescribeKey(context.Background(), &kms.DescribeKeyInput{
 		KeyId: &activeCKMS,
 	})
 
-	if !ckmsKey.KeyMetadata.Enabled {
-		t.Error("wanted CKMS to be enabled, but got it disabled")
-	}
-
-	if !strings.Contains(*ckmsKey.KeyMetadata.Arn, config.AwsRegion) {
-		t.Errorf("unable to find CKMS at the desired region (%s) for the cluster %q", config.AwsRegion, config.ClusterName)
+	if ckmsKey.KeyMetadata.Enabled {
+		t.Error("wanted CKMS to be disabled, but got it enabled")
 	}
 }
 
@@ -252,16 +276,16 @@ func TestIsEKSDestroyedIntegration(t *testing.T) {
 
 	eksClient := eks.NewFromConfig(awsConfig)
 
-	eksData, err := eksClient.DescribeCluster(context.Background(), &eks.DescribeClusterInput{
+	_, err = eksClient.DescribeCluster(context.Background(), &eks.DescribeClusterInput{
 		Name: &config.ClusterName,
 	})
-	if err != nil {
-		t.Error(err)
+	var rne *eksTypes.ResourceNotFoundException
+	if errors.As(err, &rne) {
+		log.Println("there is no EKS active for this cluster, and this is expected")
 		return
 	}
-
-	if *eksData.Cluster.Name != config.ClusterName {
-		t.Errorf("unable to find cluster with cluster name %q", config.ClusterName)
+	if err != nil {
+		t.Error(err)
 	}
 }
 
@@ -302,7 +326,7 @@ func TestAreEC2VolumesDestroyedIntegration(t *testing.T) {
 		}
 	}
 
-	if !isVolumeActive {
-		t.Error("it should have at least one active volume for the current installation, but got none")
+	if isVolumeActive {
+		t.Error("it should not have active volumes for the current installation, but got at least one")
 	}
 }
