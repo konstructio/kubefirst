@@ -246,14 +246,6 @@ func TestIsKMSKeyAliasDestroyedIntegration(t *testing.T) {
 	if len(activeCKMS) > 0 {
 		t.Errorf("there is at least one active CMKS for the cluster %q", config.ClusterName)
 	}
-
-	ckmsKey, err := kmsClient.DescribeKey(context.Background(), &kms.DescribeKeyInput{
-		KeyId: &activeCKMS,
-	})
-
-	if ckmsKey.KeyMetadata.Enabled {
-		t.Error("wanted CKMS to be disabled, but got it enabled")
-	}
 }
 
 func TestIsEKSDestroyedIntegration(t *testing.T) {
