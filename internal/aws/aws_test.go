@@ -12,6 +12,7 @@ import (
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/pkg"
 	"log"
 	"os"
 	"strings"
@@ -25,7 +26,18 @@ func TestAreS3BucketsLiveIntegration(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
+	// this is necessary to load the viper file
+	config := configs.ReadConfig()
+	err := pkg.SetupViper(config)
+	if err != nil {
+		t.Error(err)
+	}
+
 	currentInstallationBuckets := aws.ListBucketsInUse()
+
+	if len(currentInstallationBuckets) == 0 {
+		t.Error("there are no available buckets to be validated")
+	}
 
 	awsConfig, err := aws.NewAws()
 	if err != nil {
