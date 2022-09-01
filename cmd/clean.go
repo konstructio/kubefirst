@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -10,55 +11,52 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/reports"
-	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-// todo ask for user input to verify deletion?
-// todo ask for user input to verify?
-// cleanCmd removes all kubefirst resources locally for new execution.
+// cleanCmd removes all kubefirst resources created with the init command
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
-	Short: "removes all kubefirst resources locally for new execution",
+	Short: "removes all kubefirst resources created with the init command",
 	Long: `Kubefirst creates files, folders and cloud buckets during installation at your environment. This command removes and 
-re-create all Kubefirst files. To destroy cloud resources you need to specify aditional flags (--destroy-buckets)`,
-	Run: func(cmd *cobra.Command, args []string) {
+re-create Kubefirst base files. To destroy cloud resources you need to specify additional flags (--destroy-buckets)`,
+	RunE: func(cmd *cobra.Command, args []string) error {
 
 		config := configs.ReadConfig()
 
 		destroyBuckets, err := cmd.Flags().GetBool("destroy-buckets")
 		if err != nil {
-			log.Println(err)
+			return err
 		}
 		destroyConfirm, err := cmd.Flags().GetBool("destroy-confirm")
 		if err != nil {
-			log.Println(err)
+			return err
 		}
 		if destroyBuckets && !destroyConfirm {
-			destroyConfirm = pkg.AskForConfirmation("This process will delete cloud buckets and all files inside, do you really want to proceed?")
-			if !destroyConfirm {
-				os.Exit(130)
-			}
+			return errors.New("this process will fully delete cloud buckets, and we would like you to confirm the deletion providing the --destroy-confirm when calling the clean command")
 		}
 
-		aws.DestroyBucketsInUse(false, destroyBuckets && destroyConfirm)
+		err = aws.DestroyBucketsInUse(false, destroyBuckets && destroyConfirm)
+		if err != nil {
+			return err
+		}
 
 		// command line flags
 		rmLogsFolder, err := cmd.Flags().GetBool("rm-logs")
 		if err != nil {
-			log.Panic(err)
+			return err
 		}
 
 		// delete files and folders
 		err = os.RemoveAll(config.K1FolderPath)
 		if err != nil {
-			log.Panicf("unable to delete %q folder, error is: %s", config.K1FolderPath, err)
+			return fmt.Errorf("unable to delete %q folder, error is: %s", config.K1FolderPath, err)
 		}
 
 		err = os.Remove(config.KubefirstConfigFilePath)
 		if err != nil {
-			log.Panicf("unable to delete %q file, error is: ", err)
+			return fmt.Errorf("unable to delete %q file, error is: ", err)
 		}
 
 		// remove logs folder if flag is enabled
@@ -67,13 +65,13 @@ re-create all Kubefirst files. To destroy cloud resources you need to specify ad
 			logFolderLocation = viper.GetString("log.folder.location")
 			err := os.RemoveAll(logFolderLocation)
 			if err != nil {
-				log.Panicf("unable to delete logs folder at %q", config.KubefirstLogPath)
+				return fmt.Errorf("unable to delete %q file, error is: ", err)
 			}
 		}
 
 		// re-create folder
 		if err := os.Mkdir(fmt.Sprintf("%s", config.K1FolderPath), os.ModePerm); err != nil {
-			log.Panicf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1FolderPath, err)
+			return fmt.Errorf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1FolderPath, err)
 		}
 
 		// re-create base
@@ -99,6 +97,8 @@ re-create all Kubefirst files. To destroy cloud resources you need to specify ad
 		cleanSummary.WriteString(fmt.Sprintf("   %q", config.KubefirstConfigFilePath))
 
 		fmt.Println(reports.StyleMessage(cleanSummary.String()))
+
+		return nil
 	},
 }
 
