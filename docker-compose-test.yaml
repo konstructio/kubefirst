@@ -16,7 +16,7 @@ services:
       - 8.8.8.8 #Google DNS
     command: sh -c "task unit-test"
 
-  kubefirst-integration-test-init:
+  kubefirst-integration-tests:
     build:
       context: .
       dockerfile: ./build/Dockerfile.ci
@@ -30,3 +30,11 @@ services:
       - 1.0.0.1 #Cloudflare DNS
       - 8.8.8.8 #Google DNS
     command: sh -c "task integration-test-init"
+    environment:
+      - AWS_REGION=$AWS_REGION
+      - CLUSTER_NAME=$CLUSTER_NAME
+      - SUFFIX_S3=$SUFFIX_S3
+      - EMAIL=$EMAIL
+      - HOSTED_ZONE_NAME=$HOSTED_ZONE_NAME
+      - GITOPS_BRANCH=$GITOPS_BRANCH
+      - CICD_LOGS_BUCKET=$CICD_LOGS_BUCKET

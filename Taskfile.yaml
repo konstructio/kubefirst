@@ -7,17 +7,18 @@ tasks:
     - go test -v ./... -coverpkg=./... -coverprofile cover.out
     - go tool cover -html cover.out -o coverage.html
   integration-tests:
-#    - go run . init --help # todo: add params
-    - go test -v -run TestAreS3BucketsLiveIntegration ./internal/aws
-#    - go run . create
-    - go test -v -run TestArgoCDLivenessIntegration ./internal/argocd
-    - go test -v -run TestArgoWorkflowLivenessIntegration ./internal/argocd
-    - go test -v -run TestGitLabLivenessIntegration ./internal/gitlab
-    - go test -v -run TestMetaphorsLivenessIntegration ./internal/metaphor
-#    - go run . destroy
-    - go test -v -run TestIsVPCByTagDestroyedIntegration ./internal/aws
-    - go test -v -run TestIsLoadBalancerByTagDestroyedIntegration ./internal/aws
-    - go test -v -run TestAreS3BucketsDestroyedIntegration ./internal/aws
-    - go test -v -run TestIsKMSKeyAliasDestroyedIntegration ./internal/aws
-    - go test -v -run TestIsEKSDestroyedIntegration ./internal/aws
-    - go test -v -run TestAreEC2VolumesDestroyedIntegration ./internal/aws
+    - go run . init --profile default --cloud aws --region $AWS_REGION --aws-nodes-spot --cluster-name $CLUSTER_NAME --s3-suffix $SUFFIX_S3 --admin-email $EMAIL --hosted-zone-name $HOSTED_ZONE_NAME --gitops-branch $GITOPS_BRANCH --silent || echo $?
+    - go test -v -run TestAreS3BucketsLiveIntegration ./internal/aws || echo $?
+    - go run . cluster create --silent || echo $?
+    - go test -v -run TestArgoCDLivenessIntegration ./internal/argocd || echo $?
+    - go test -v -run TestArgoWorkflowLivenessIntegration ./internal/argocd || echo $?
+    - go test -v -run TestGitLabLivenessIntegration ./internal/gitlab || echo $?
+    - go test -v -run TestMetaphorsLivenessIntegration ./internal/metaphor || echo $?
+    - go run . destroy --silent || echo $?
+    - go test -v -run TestIsVPCByTagDestroyedIntegration ./internal/aws || echo $?
+    - go test -v -run TestIsLoadBalancerByTagDestroyedIntegration ./internal/aws || echo $?
+    - go test -v -run TestAreS3BucketsDestroyedIntegration ./internal/aws || echo $?
+    - go test -v -run TestIsKMSKeyAliasDestroyedIntegration ./internal/aws || echo $?
+    - go test -v -run TestIsEKSDestroyedIntegration ./internal/aws || echo $?
+    - go run . clean --destroy-buckets --destroy-confirm || echo $?
+    - aws s3 sync $HOME/kubefirst/logs s3://$CICD_LOGS_BUCKET

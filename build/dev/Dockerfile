@@ -28,6 +28,12 @@ RUN curl -LO https://s3.us-west-2.amazonaws.com/amazon-eks/1.21.2/2021-07-05/bin
     chmod +x aws-iam-authenticator && \
     mv aws-iam-authenticator /usr/local/bin/
 
+# install Taskfile
+RUN curl -LO https://github.com/go-task/task/releases/download/v3.14.1/task_linux_amd64.tar.gz \
+    && mkdir /tmp/taskfile \
+    && tar -xvzf task_linux_amd64.tar.gz -C /tmp/taskfile \
+    && mv /tmp/taskfile/task /usr/local/bin
+
 
 # setup user
 RUN useradd -ms /bin/bash developer
