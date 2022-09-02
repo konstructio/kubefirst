@@ -1,15 +1,11 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
-*/
 package k8s
 
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"time"
 
@@ -28,15 +24,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-var vaultRootToken string
 var gitlabToolboxPodName string
 
-// API client for managing secrets & pods
 var GitlabSecretClient coreV1Types.SecretInterface
-var VaultSecretClient coreV1Types.SecretInterface
-var ArgocdSecretClient coreV1Types.SecretInterface
-
-// var GitlabPodsClient coreV1Types.PodInterface
 
 func GetPodNameByLabel(podsClient coreV1Types.PodInterface, label string) string {
 	pods, err := podsClient.List(context.TODO(), metaV1.ListOptions{LabelSelector: label})
@@ -49,12 +39,6 @@ func GetPodNameByLabel(podsClient coreV1Types.PodInterface, label string) string
 	return gitlabToolboxPodName
 }
 
-func DeletePodByName(podsClient coreV1Types.PodInterface, podName string) {
-	err := podsClient.Delete(context.TODO(), podName, metaV1.DeleteOptions{})
-	if err != nil {
-		log.Println(err)
-	}
-}
 func DeletePodByLabel(podsClient coreV1Types.PodInterface, label string) {
 	err := podsClient.DeleteCollection(context.TODO(), metaV1.DeleteOptions{}, metaV1.ListOptions{LabelSelector: label})
 	if err != nil {
@@ -62,34 +46,6 @@ func DeletePodByLabel(podsClient coreV1Types.PodInterface, label string) {
 	} else {
 		log.Printf("Success delete of pods with label(%s).", label)
 	}
-}
-
-// func CreateRepoSecret() {
-
-// }
-
-// func CreateCredentialsTemplateSecret() {
-
-// }
-
-func getVaultRootToken(vaultSecretClient coreV1Types.SecretInterface) string {
-	name := "vault-unseal-keys"
-	log.Printf("Reading secret %s\n", name)
-	secret, err := vaultSecretClient.Get(context.TODO(), name, metaV1.GetOptions{})
-
-	if err != nil {
-		log.Panic(err.Error())
-	}
-
-	var jsonData map[string]interface{}
-
-	for _, value := range secret.Data {
-		if err := json.Unmarshal(value, &jsonData); err != nil {
-			log.Panic(err)
-		}
-		vaultRootToken = jsonData["root_token"].(string)
-	}
-	return vaultRootToken
 }
 
 func GetSecretValue(k8sClient coreV1Types.SecretInterface, secretName, key string) string {
@@ -191,7 +147,7 @@ func GetResourcesByJq(dynamic dynamic.Interface, ctx context.Context, group stri
 	return resources, nil
 }
 
-//GetClientSet - Get reference to k8s credentials to use APIS
+// GetClientSet - Get reference to k8s credentials to use APIS
 func GetClientSet(dryRun bool) (*kubernetes.Clientset, error) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, GetClientSet skipped.")
@@ -213,7 +169,7 @@ func GetClientSet(dryRun bool) (*kubernetes.Clientset, error) {
 	return clientset, nil
 }
 
-//PortForward - opens port-forward to services
+// PortForward - opens port-forward to services
 func PortForward(dryRun bool, namespace string, filter string, ports string) (*exec.Cmd, error) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, K8sPortForward skipped.")
@@ -235,4 +191,93 @@ func PortForward(dryRun bool, namespace string, filter string, ports string) (*e
 		return kPortForward, err
 	}
 	return kPortForward, nil
+}
+
+func WaitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, podLabel string) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, WaitForNamespaceandPods skipped")
+		return
+	}
+	if !viper.GetBool("create.softserve.ready") {
+		x := 50
+		for i := 0; i < x; i++ {
+			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "get", fmt.Sprintf("namespace/%s", namespace))
+			if err != nil {
+				log.Println(fmt.Sprintf("waiting for %s namespace to create ", namespace))
+				time.Sleep(10 * time.Second)
+			} else {
+				log.Println(fmt.Sprintf("namespace %s found, continuing", namespace))
+				time.Sleep(10 * time.Second)
+				i = 51
+			}
+		}
+		for i := 0; i < x; i++ {
+			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "get", "pods", "-l", podLabel)
+			if err != nil {
+				log.Println(fmt.Sprintf("waiting for %s pods to create ", namespace))
+				time.Sleep(10 * time.Second)
+			} else {
+				log.Println(fmt.Sprintf("%s pods found, continuing", namespace))
+				time.Sleep(10 * time.Second)
+				break
+			}
+		}
+		viper.Set("create.softserve.ready", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("soft-serve is ready, skipping")
+	}
+}
+
+func PatchSecret(k8sClient coreV1Types.SecretInterface, secretName, key, val string) {
+	secret, err := k8sClient.Get(context.TODO(), secretName, metaV1.GetOptions{})
+	if err != nil {
+		log.Println(fmt.Sprintf("error getting key: %s from secret: %s", key, secretName), err)
+	}
+	secret.Data[key] = []byte(val)
+	k8sClient.Update(context.TODO(), secret, metaV1.UpdateOptions{})
+}
+
+func CreateVaultConfiguredSecret(dryRun bool, config *configs.Config) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, CreateVaultConfiguredSecret skipped.")
+		return
+	}
+	if !viper.GetBool("vault.configuredsecret") {
+		var output bytes.Buffer
+		// todo - https://github.com/bcreane/k8sutils/blob/master/utils.go
+		// kubectl create secret generic vault-configured --from-literal=isConfigured=true
+		// the purpose of this command is to let the vault-unseal Job running in kuberenetes know that external secrets store should be able to connect to the configured vault
+		k := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "create", "secret", "generic", "vault-configured", "--from-literal=isConfigured=true")
+		k.Stdout = &output
+		k.Stderr = os.Stderr
+		err := k.Run()
+		if err != nil {
+			log.Panicf("failed to create secret for vault-configured: %s", err)
+		}
+		log.Printf("the secret create output is: %s", output.String())
+
+		viper.Set("vault.configuredsecret", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("vault secret already created")
+	}
+}
+
+func WaitForGitlab(dryRun bool, config *configs.Config) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, WaitForGitlab skipped.")
+		return
+	}
+	var output bytes.Buffer
+	// todo - add a viper.GetBool() check to the beginning of this function
+	// todo write in golang? see here -> https://github.com/bcreane/k8sutils/blob/master/utils.go
+	k := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "wait", "--for=condition=ready", "pod", "-l", "app=webservice", "--timeout=300s")
+	k.Stdout = &output
+	k.Stderr = os.Stderr
+	err := k.Run()
+	if err != nil {
+		log.Panicf("failed to execute kubectl wait for gitlab pods with label app=webservice: %s \n%s", output.String(), err)
+	}
+	log.Printf("the output is: %s", output.String())
 }

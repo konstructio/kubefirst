@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kubefirst/kubefirst/internal/argocd"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
@@ -31,9 +33,9 @@ func setArgocdCreds(dryRun bool) {
 	if err != nil {
 		panic(err.Error())
 	}
-	argocdSecretClient = clientset.CoreV1().Secrets("argocd")
+	argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
-	argocdPassword := getSecretValue(argocdSecretClient, "argocd-initial-admin-secret", "password")
+	argocdPassword := k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
 	if argocdPassword == "" {
 		log.Panicf("Missing argocdPassword")
 	}

@@ -9,7 +9,8 @@ terraform-ssh-key.pub
 kubeconfig_*
 */cypress/screenshots/
 */cypress/videos/
-.DS_Store
+dist/
+**/.DS_Store
 /git
 bin
 .vscode/settings.json

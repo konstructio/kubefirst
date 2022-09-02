@@ -1,0 +1,147 @@
+site_name: Kubefirst Docs
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - content.tabs.link
+  logo: img/site/k-ray-light.png
+  favicon: img/site/k-ray.png
+  icon:
+    admonition:
+      note: octicons/tag-16
+      abstract: octicons/checklist-16
+      info: octicons/info-16
+      tip: octicons/squirrel-16
+      success: octicons/check-16
+      question: octicons/question-16
+      warning: octicons/alert-16
+      failure: octicons/x-circle-16
+      danger: octicons/zap-16
+      bug: octicons/bug-16
+      example: octicons/beaker-16
+      quote: octicons/quote-16
+nav:
+  - Home:
+    - index.md
+    - Kubefirst Platform:
+      - Install: 'kubefirst/install.md'
+      - Getting Started: 'kubefirst/getting-started.md'
+      # - Page: Local Setup: need a new top level doc on connecting to aws and connecting to kubernetes - 1.9 will change the aws access story
+      # - Page: Git Providers: in 1.9 we'll need a new page describing that we support github and gitlab
+      # - Page: User management on kubefirst (changing in 1.9+)
+      - Gitlab: 'kubefirst/gitlab.md'
+        # issues:
+        # need new docs on gitlab oidc configuration
+        # need new automated capability and docs on gitlab backups
+        # need new docs on configuring gitlab to be able to send emails
+      - Gitlab Repositories: 'kubefirst/gitlab-repositories.md'
+        # issues:
+        # new screenshot needed with new url and image
+      # - Page GitHub: in 1.9 we'll need a new page that describes how the users github is set up if they install a github kubefirst stack
+      # - Page GitHub Repositories: in 1.9 we'll need a new page that describes repo management in our terraform IAC
+      - Argo CD: 'kubefirst/argocd.md'
+        # issues:
+        # need more thorough docs on the following:
+        # - app of apps patterns
+        # - sync waves for cluster provisioning
+        # - oidc integration and service accounts
+      - GitOps: 'kubefirst/gitops.md' 
+        # issues: 
+        # need new image for the top
+        # need new video for gitops rollbacks
+        # need new section on how to add an application to the kubefirst platform
+        # need branded image for architecture diagram
+        # need better image that has singular registry
+        # paths in docs need adjustment for open source platform (no east-2, etc)
+        # drop the bottom section (secure registration layer)
+      - Metaphor: 'kubefirst/metaphor.md'
+        # in 1.9 metaphor is expanding to a set of microservices
+      - Terraform & Atlantis: 'kubefirst/terraform.md'
+        # video is enormous here
+        # info on webhooks
+        # info on security measures
+        # info on audit log
+        # info on state object versioning
+        # atlantis in realtime with gitlab
+        # atlantis.yaml
+        # entrypoint walkthroughs
+        # - Page: base
+        # - Page: users
+        # - Page: github
+        # - Page: gitlab
+        # - Page: vault
+      - Vault: 'kubefirst/vault.md'
+        # in 1.9, vault will be our new idp and oidc provider, docs
+        # vault acl policies
+        # how the root vault token works
+        # disaster recovery scenarios with dynamodb point in time recovery
+        # thorough docs on external-secrets describing architecure to remove vault realtime dependency
+      # - Page: nginx ingress controller: docs on ingress
+      # - Page: cert-manager: docs on cert provisioning, integration with ingress, auto renewal, letsdebug, cert backup, cert restore, links to cm docs on debugging
+      # - Page: kubefirst cli: docs on the various capabilities of the kubefirst cli      
+      # - Page: info on security measures and vault's docs on the matter
+      - Credit: 'kubefirst/credit.md'
+        # issues:
+        # check links
+        # remove ghost
+        # add any new tools 
+      - Teardown: 'kubefirst/teardown.md'
+        # add details about kubefirst state command, typo on link
+      - FAQ: 'kubefirst/faq.md'
+        # is this fine? get feedback from devrel
+      # - Page: white glove service
+      # - Pag
+    - Tooling:
+      - Overview: 'tooling/tooling-overview.md'
+      - Argo CD: 'tooling/argocd.md'
+      - Argo Workflows: 'tooling/argo.md'
+      - AWS CLI: 'tooling/aws-cli.md'
+      - Docker: 'tooling/docker.md'
+      - Kubectl:  'tooling/kubectl.md'
+      - Shell Utilities: 'tooling/shell-utilities.md'
+      - Terraform: 'tooling/terraform.md'
+      - Vault CLI: 'tooling/vault-cli.md' 
+    - Community:
+      - Community: 'community/index.md'
+      # - Page: white glove service
+    - Roadmap:
+      - Roadmap: 'roadmap/index.md'
+      # - Page: details about the direction we're heading for each boulder described on the roadmap
+      # - Page: links to our public github repository space, what's there, and how it's to be used
+  - Community:
+    - Community: 'community/index.md'
+  - Roadmap:
+    - Roadmap: 'roadmap/index.md'
+  - Blog:
+    - Blog: 'https://kubeshop.io/blog-projects/kubefirst'
+      # issues:
+      # there's no link back to the docs from the blog
+  - Site:
+    - Site: 'https://kubefirst.io'
+
+google_analytics:
+  - UA-189360136-1
+  - auto 
+markdown_extensions:
+    - attr_list
+    - pymdownx.emoji:
+        emoji_index: !!python/name:materialx.emoji.twemoji
+        emoji_generator: !!python/name:materialx.emoji.to_svg
+    # - admonition
+    # - pymdownx.details
+    # - pymdownx.superfences
+extra_css:
+  - stylesheets/extra.css
+
+repo_url: https://github.com/kubefirst/kubefirst
+edit_uri: edit/main/docs/
+
+# Things we need to work through outside of content:
+# publish process needs to be automated (wait for 1.9 so it can be done on github?)
+# preprod environment needed with auth protection from crawlers
+# need short videos all over the docs
+# need to be able to take full advantage of material's bundled plugins for mkdocs publish in cloudfront
+# need to implement versions

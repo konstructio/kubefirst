@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: appDir
+      value: /src/{{workflow.parameters.appName}}
+    - name: branch
+      value: "{{workflow.parameters.branch}}"
+    - name: gitRepoUrl
+      value: "{{workflow.parameters.gitRepoUrl}}"
+    - name: npmScriptName
+      value: "{{workflow.parameters.npmScriptName}}"
+  templates:
+  - name: main
+    steps:
+    - - name: checkout
+        templateRef:
+          name: cwft-git
+          template: git-checkout-with-gitops
+          clusterScope: true 
+        arguments:
+          parameters:
+          - name: appDir
+            value: "{{workflow.parameters.appDir}}"
+          - name: branch
+            value: "{{workflow.parameters.branch}}"
+          - name: gitRepoUrl
+            value: "{{workflow.parameters.gitRepoUrl}}"
+
+    - - name: npm-install
+        templateRef:
+          name: cwft-npm
+          template: npm-install
+          clusterScope: true 
+        arguments:
+          artifacts:
+          - name: repo-source
+            from: "{{steps.checkout.outputs.artifacts.repo-source}}"
+          parameters:
+          - name: appDir
+            value: "{{workflow.parameters.appDir}}"
+
+    - - name: npm-run
+        templateRef:
+          name: cwft-npm
+          template: npm-run
+          clusterScope: true 
+        arguments:
+          artifacts:
+          - name: repo-source
+            from: "{{steps.npm-install.outputs.artifacts.repo-source}}"
+          parameters:
+          - name: appDir
+            value: "{{workflow.parameters.appDir}}"
+          - name: npmRunScript
+            value: "{{workflow.parameters.npmScriptName}}"
+            
