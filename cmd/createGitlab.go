@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -82,7 +81,7 @@ var createGitlabCmd = &cobra.Command{
 		informUser("Created Softserve")
 		progressPrinter.IncrementTracker("step-softserve", 1)
 		informUser("Waiting Softserve")
-		waitForNamespaceandPods(globalFlags.DryRun, config, "soft-serve", "app=soft-serve")
+		k8s.WaitForNamespaceandPods(globalFlags.DryRun, config, "soft-serve", "app=soft-serve")
 		progressPrinter.IncrementTracker("step-softserve", 1)
 		// todo this should be replaced with something more intelligent
 		log.Println("Waiting for soft-serve installation to complete...")
@@ -167,7 +166,7 @@ var createGitlabCmd = &cobra.Command{
 		informUser("Waiting gitlab to be ready")
 		waitGitlabToBeReady(globalFlags.DryRun)
 		log.Println("waiting for gitlab")
-		waitForGitlab(globalFlags.DryRun, config)
+		k8s.WaitForGitlab(globalFlags.DryRun, config)
 		log.Println("gitlab is ready!")
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 
@@ -205,7 +204,7 @@ var createGitlabCmd = &cobra.Command{
 			progressPrinter.IncrementTracker("step-vault", 1)
 
 			log.Println("creating vault configured secret")
-			createVaultConfiguredSecret(globalFlags.DryRun, config)
+			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
 			informUser("Vault  secret created")
 			progressPrinter.IncrementTracker("step-vault", 1)
 		}
@@ -231,8 +230,8 @@ var createGitlabCmd = &cobra.Command{
 		}
 		progressPrinter.IncrementTracker("step-post-gitlab", 1)
 		if !globalFlags.DryRun && !viper.GetBool("argocd.oidc-patched") {
-			argocdSecretClient = clientset.CoreV1().Secrets("argocd")
-			patchSecret(argocdSecretClient, "argocd-secret", "oidc.gitlab.clientSecret", viper.GetString("gitlab.oidc.argocd.secret"))
+			argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+			k8s.PatchSecret(argocd.ArgocdSecretClient, "argocd-secret", "oidc.gitlab.clientSecret", viper.GetString("gitlab.oidc.argocd.secret"))
 
 			argocdPodClient := clientset.CoreV1().Pods("argocd")
 			k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")

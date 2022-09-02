@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 	"log"
 	"net/http"
 
@@ -32,6 +33,8 @@ type SyncResponse struct {
 		} `json:"sync"`
 	}
 }
+
+var ArgocdSecretClient coreV1Types.SecretInterface
 
 // SyncRetry tries to Sync ArgoCD as many times as requested by the attempts' parameter. On successful request, returns
 // true and no error, on error, returns false and the reason it fails.
@@ -311,7 +314,7 @@ func ApplyRegistry(dryRun bool) error {
 	return nil
 }
 
-//ConfigRepo - Sample config struct
+// ConfigRepo - Sample config struct
 type ConfigRepo struct {
 	Configs struct {
 		Repositories struct {
@@ -330,7 +333,7 @@ type ConfigRepo struct {
 	} `yaml:"configs"`
 }
 
-//  CreateInitalArgoRepository - Fill and create argocd-init-values.yaml for Github installs
+// CreateInitalArgoRepository - Fill and create argocd-init-values.yaml for Github installs
 func CreateInitalArgoRepository(githubURL string) error {
 	config := configs.ReadConfig()
 

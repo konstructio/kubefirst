@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/argocd"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -30,9 +31,9 @@ func setArgocdCreds(dryRun bool) {
 	if err != nil {
 		panic(err.Error())
 	}
-	argocdSecretClient = clientset.CoreV1().Secrets("argocd")
+	argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
-	argocdPassword := getSecretValue(argocdSecretClient, "argocd-initial-admin-secret", "password")
+	argocdPassword := k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
 	if argocdPassword == "" {
 		log.Panicf("Missing argocdPassword")
 	}
@@ -286,7 +287,7 @@ func waitGitlabToBeReady(dryRun bool) {
 
 }
 
-//Notify user in the STOUT and also logfile
+// Notify user in the STOUT and also logfile
 func informUser(message string) {
 	log.Println(message)
 	progressPrinter.LogMessage(fmt.Sprintf("- %s", message))
