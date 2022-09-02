@@ -9,6 +9,7 @@ import (
 	"os/exec"
 )
 
+// ExecShellReturnStrings Exec shell actions returning a string for use by the caller.
 func ExecShellReturnStrings(command string, args ...string) (string, string, error) {
 	var outb, errb bytes.Buffer
 	k := exec.Command(command, args...)
@@ -18,9 +19,9 @@ func ExecShellReturnStrings(command string, args ...string) (string, string, err
 	if err != nil {
 		log.Printf("Error executing command: %v\n", err)
 	}
-	log.Printf("Commad Execution: %s\n", command)
-	log.Printf("Commad Execution STDOUT: %s\n", outb.String())
-	log.Printf("Commad Execution STDERR: %s\n", errb.String())
+	log.Printf("Command Execution: %s\n", command)
+	log.Printf("OUT: %s\n", outb.String())
+	log.Printf("ERR: %s\n", errb.String())
 	return outb.String(), errb.String(), err
 }
 
