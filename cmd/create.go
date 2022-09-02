@@ -21,6 +21,14 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		if globalFlags.SilentMode {
+			informUser(
+				"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
+				globalFlags.SilentMode,
+			)
+		}
+
 		sendStartedInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
 		if viper.GetBool("github.enabled") {
 			log.Println("Installing Github version of Kubefirst")
@@ -39,10 +47,10 @@ var createCmd = &cobra.Command{
 			}
 
 		}
-		informUser("Deploying metaphor applications")
+		informUser("Deploying metaphor applications", globalFlags.SilentMode)
 		err = deployMetaphorCmd.RunE(cmd, args)
 		if err != nil {
-			informUser("Error deploy metaphor applications")
+			informUser("Error deploy metaphor applications", globalFlags.SilentMode)
 			log.Println("Error running deployMetaphorCmd")
 			return err
 		}
@@ -52,9 +60,10 @@ var createCmd = &cobra.Command{
 		}
 
 		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
-		reports.HandoffScreen(globalFlags.DryRun)
+		reports.HandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
 		time.Sleep(time.Millisecond * 2000)
-		log.Println("End of creation run")
+		log.Println("Kubefirst installation finished successfully")
+		informUser("Kubefirst installation finished successfully", globalFlags.SilentMode)
 		return nil
 	},
 }

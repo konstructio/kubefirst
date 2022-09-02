@@ -148,10 +148,15 @@ func PrintSectionMetaphorFrontend() []byte {
 }
 
 //HandoffScreen - prints the handoff screen
-func HandoffScreen(dryRun bool) {
+func HandoffScreen(dryRun bool, silentMode bool) {
 	// prepare data for the handoff report
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, HandoffScreen skipped.")
+		return
+	}
+
+	if silentMode {
+		log.Printf("[#99] Silent mode enabled, HandoffScreen skipped, please check ~/.kubefirst file for your cluster and service credentials.")
 		return
 	}
 

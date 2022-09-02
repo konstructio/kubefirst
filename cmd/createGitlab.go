@@ -1,5 +1,6 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
+
 */
 package cmd
 
@@ -33,14 +34,10 @@ var createGitlabCmd = &cobra.Command{
 	Short: "create a kubefirst management cluster",
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("createGitlab called")
-		progressPrinter.GetInstance()
-		progressPrinter.SetupProgress(4)
 
-		var kPortForwardArgocd *exec.Cmd
-		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 		config := configs.ReadConfig()
 
+		fmt.Println("createGitlab called")
 		skipVault, err := cmd.Flags().GetBool("skip-vault")
 		if err != nil {
 			log.Panic(err)
@@ -55,16 +52,22 @@ var createGitlabCmd = &cobra.Command{
 			return err
 		}
 
+		progressPrinter.GetInstance()
+		progressPrinter.SetupProgress(4, globalFlags.SilentMode)
+
+		var kPortForwardArgocd *exec.Cmd
+		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
+
 		infoCmd.Run(cmd, args)
 		progressPrinter.IncrementTracker("step-0", 1)
 
 		progressPrinter.AddTracker("step-softserve", "Prepare Temporary Repo ", 4)
 		progressPrinter.IncrementTracker("step-softserve", 1)
 		if !globalFlags.UseTelemetry {
-			informUser("Telemetry Disabled")
+			informUser("Telemetry Disabled", globalFlags.SilentMode)
 		}
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
-		informUser("Creating K8S Cluster")
+		informUser("Creating K8S Cluster", globalFlags.SilentMode)
 		terraform.ApplyBaseTerraform(globalFlags.DryRun, directory)
 		progressPrinter.IncrementTracker("step-softserve", 1)
 
@@ -78,9 +81,9 @@ var createGitlabCmd = &cobra.Command{
 		//! soft-serve was just applied
 
 		softserve.CreateSoftServe(globalFlags.DryRun, config.KubeConfigPath)
-		informUser("Created Softserve")
+		informUser("Created Softserve", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-softserve", 1)
-		informUser("Waiting Softserve")
+		informUser("Waiting Softserve", globalFlags.SilentMode)
 		k8s.WaitForNamespaceandPods(globalFlags.DryRun, config, "soft-serve", "app=soft-serve")
 		progressPrinter.IncrementTracker("step-softserve", 1)
 		// todo this should be replaced with something more intelligent
@@ -95,19 +98,19 @@ var createGitlabCmd = &cobra.Command{
 			time.Sleep(20 * time.Second)
 		}
 
-		informUser("Softserve Update")
+		informUser("Softserve Update", globalFlags.SilentMode)
 		softserve.ConfigureSoftServeAndPush(globalFlags.DryRun)
 		progressPrinter.IncrementTracker("step-softserve", 1)
 
 		progressPrinter.AddTracker("step-argo", "Deploy CI/CD ", 5)
-		informUser("Deploy ArgoCD")
+		informUser("Deploy ArgoCD", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-argo", 1)
 		helm.InstallArgocd(globalFlags.DryRun)
 
 		//! argocd was just helm installed
 		waitArgoCDToBeReady(globalFlags.DryRun)
 
-		informUser("ArgoCD Ready")
+		informUser("ArgoCD Ready", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-argo", 1)
 
 		if !globalFlags.DryRun {
@@ -123,14 +126,14 @@ var createGitlabCmd = &cobra.Command{
 		// log.Println("sleeping for 45 seconds, hurry up jared")
 		// time.Sleep(45 * time.Second)
 
-		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")))
+		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")), globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-argo", 1)
 
-		informUser("Setting argocd credentials")
+		informUser("Setting argocd credentials", globalFlags.SilentMode)
 		setArgocdCreds(globalFlags.DryRun)
 		progressPrinter.IncrementTracker("step-argo", 1)
 
-		informUser("Getting an argocd auth token")
+		informUser("Getting an argocd auth token", globalFlags.SilentMode)
 
 		progressPrinter.IncrementTracker("step-argo", 1)
 		if !globalFlags.DryRun {
@@ -146,7 +149,7 @@ var createGitlabCmd = &cobra.Command{
 		//* we need to stop here and wait for the vault namespace to exist and the vault pod to be ready
 		//!
 		progressPrinter.AddTracker("step-gitlab", "Setup Gitlab", 6)
-		informUser("Waiting vault to be ready")
+		informUser("Waiting vault to be ready", globalFlags.SilentMode)
 		waitVaultToBeRunning(globalFlags.DryRun)
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 		if !globalFlags.DryRun {
@@ -160,10 +163,10 @@ var createGitlabCmd = &cobra.Command{
 		}
 		loopUntilPodIsReady(globalFlags.DryRun)
 		initializeVaultAndAutoUnseal(globalFlags.DryRun)
-		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")))
+		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")), globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 
-		informUser("Waiting gitlab to be ready")
+		informUser("Waiting gitlab to be ready", globalFlags.SilentMode)
 		waitGitlabToBeReady(globalFlags.DryRun)
 		log.Println("waiting for gitlab")
 		k8s.WaitForGitlab(globalFlags.DryRun, config)
@@ -178,44 +181,44 @@ var createGitlabCmd = &cobra.Command{
 				return err
 			}
 		}
-		informUser(fmt.Sprintf("Gitlab available at %s", viper.GetString("gitlab.local.service")))
+		informUser(fmt.Sprintf("Gitlab available at %s", viper.GetString("gitlab.local.service")), globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 
 		if !skipGitlab {
 			// TODO: Confirm if we need to waitgit lab to be ready
 			// OR something, too fast the secret will not be there.
-			informUser("Gitlab setup tokens")
+			informUser("Gitlab setup tokens", globalFlags.SilentMode)
 			gitlab.ProduceGitlabTokens(globalFlags.DryRun)
 			progressPrinter.IncrementTracker("step-gitlab", 1)
-			informUser("Gitlab terraform")
+			informUser("Gitlab terraform", globalFlags.SilentMode)
 			gitlab.ApplyGitlabTerraform(globalFlags.DryRun, directory)
 			gitlab.GitlabKeyUpload(globalFlags.DryRun)
-			informUser("Gitlab ready")
+			informUser("Gitlab ready", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-gitlab", 1)
 		}
 		if !skipVault {
 
 			progressPrinter.AddTracker("step-vault", "Configure Vault", 2)
-			informUser("waiting for vault unseal")
+			informUser("waiting for vault unseal", globalFlags.SilentMode)
 
 			log.Println("configuring vault")
 			vault.ConfigureVault(globalFlags.DryRun, true)
-			informUser("Vault configured")
+			informUser("Vault configured", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-vault", 1)
 
 			log.Println("creating vault configured secret")
 			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
-			informUser("Vault  secret created")
+			informUser("Vault  secret created", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-vault", 1)
 		}
 		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 3)
 		if !viper.GetBool("gitlab.oidc-created") {
 			vault.AddGitlabOidcApplications(globalFlags.DryRun)
-			informUser("Added Gitlab OIDC")
+			informUser("Added Gitlab OIDC", globalFlags.SilentMode)
 
-			informUser("Waiting for Gitlab dns to propagate before continuing")
+			informUser("Waiting for Gitlab dns to propagate before continuing", globalFlags.SilentMode)
 			gitlab.AwaitHost("gitlab", globalFlags.DryRun)
-			informUser("Pushing gitops repo to origin gitlab")
+			informUser("Pushing gitops repo to origin gitlab", globalFlags.SilentMode)
 			// refactor: sounds like a new functions, should PushGitOpsToGitLab be renamed/update signature?
 			viper.Set("gitlab.oidc-created", true)
 			viper.WriteConfig()
@@ -240,29 +243,29 @@ var createGitlabCmd = &cobra.Command{
 		}
 
 		if !viper.GetBool("gitlab.registered") {
-			// informUser("Getting ArgoCD auth token")
+			// informUser("Getting ArgoCD auth token
 			// token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
 
-			// informUser("Detaching the registry application from softserve")
+			// informUser("Detaching the registry application from softserve
 			// argocd.DeleteArgocdApplicationNoCascade(globalFlags.DryRun, "registry", token)
 
-			informUser("Adding the registry application registered against gitlab")
+			informUser("Adding the registry application registered against gitlab", globalFlags.SilentMode)
 			gitlab.ChangeRegistryToGitLab(globalFlags.DryRun)
 			// todo triage / force apply the contents adjusting
 			// todo kind: Application .repoURL:
 
-			// informUser("Waiting for argocd host to resolve")
+			// informUser("Waiting for argocd host to resolve
 			// gitlab.AwaitHost("argocd", globalFlags.DryRun)
 			if !globalFlags.DryRun {
 				argocdPodClient := clientset.CoreV1().Pods("argocd")
 				kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
-				informUser("deleting argocd-server pod")
+				informUser("deleting argocd-server pod", globalFlags.SilentMode)
 				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
 			}
-			informUser("waiting for argocd to be ready")
+			informUser("waiting for argocd to be ready", globalFlags.SilentMode)
 			waitArgoCDToBeReady(globalFlags.DryRun)
 
-			informUser("Port forwarding to new argocd-server pod")
+			informUser("Port forwarding to new argocd-server pod", globalFlags.SilentMode)
 			if !globalFlags.DryRun {
 				time.Sleep(time.Second * 20)
 				kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
@@ -275,7 +278,7 @@ var createGitlabCmd = &cobra.Command{
 				time.Sleep(40 * time.Second)
 			}
 
-			informUser("Syncing the registry application")
+			informUser("Syncing the registry application", globalFlags.SilentMode)
 			token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
 
 			if globalFlags.DryRun {
@@ -308,7 +311,7 @@ var createGitlabCmd = &cobra.Command{
 			for i := 1; i < 15; i++ {
 				argoCDHostReady := gitlab.AwaitHostNTimes("argocd", globalFlags.DryRun, 20)
 				if argoCDHostReady {
-					informUser("ArgoCD DNS is ready")
+					informUser("ArgoCD DNS is ready", globalFlags.SilentMode)
 					break
 				} else {
 					k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
@@ -322,7 +325,7 @@ var createGitlabCmd = &cobra.Command{
 			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
 			log.Println("configuring vault backend")
 			vault.ConfigureVault(globalFlags.DryRun, false)
-			informUser("Vault backend configured")
+			informUser("Vault backend configured", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
 		return nil

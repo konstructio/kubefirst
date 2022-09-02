@@ -9,8 +9,19 @@ import (
 )
 
 // DefineInstallerGenericFlags - define installer  flags for CLI
+type InstallerGenericFlags struct {
+	ClusterName    string
+	AdminEmail     string
+	Cloud          string
+	OrgGitops      string
+	BranchGitops   string //former: "version-gitops"
+	BranchMetaphor string
+	RepoGitops     string //To support forks
+	TemplateTag    string //To support forks
+}
+
 func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
-	//Gewneric Installer flags:
+	// Generic Installer flags:
 	config := configs.ReadConfig()
 	currentCommand.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
 	currentCommand.Flags().String("admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
@@ -24,25 +35,19 @@ func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
   if it fails, then fallback it will attempt to clone the tag provided at "template-tag" flag`)
 }
 
-type InstallerGenericFlags struct {
-	ClusterName    string
-	AdminEmail     string
-	Cloud          string
-	OrgGitops      string
-	BranchGitops   string //former: "version-gitops"
-	BranchMetaphor string
-	RepoGitops     string //To support forks
-	TemplateTag    string //To support forks
-}
-
 //ProcessInstallerGenericFlags - Read values of CLI parameters for installer flags
 func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, error) {
 	flags := InstallerGenericFlags{}
-	defer viper.WriteConfig()
+	defer func() {
+		err := viper.WriteConfig()
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 
 	adminEmail, err := ReadConfigString(cmd, "admin-email")
 	if err != nil {
-		return flags, err
+		return InstallerGenericFlags{}, err
 	}
 	flags.AdminEmail = adminEmail
 	log.Println("adminEmail:", adminEmail)
@@ -50,7 +55,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	clusterName, err := ReadConfigString(cmd, "cluster-name")
 	if err != nil {
-		return flags, err
+		return InstallerGenericFlags{}, err
 	}
 	viper.Set("cluster-name", clusterName)
 	log.Println("cluster-name:", clusterName)
@@ -58,7 +63,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	cloud, err := ReadConfigString(cmd, "cloud")
 	if err != nil {
-		return flags, err
+		return InstallerGenericFlags{}, err
 	}
 	viper.Set("cloud", cloud)
 	log.Println("cloud:", cloud)
@@ -66,7 +71,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	branchGitOps, err := ReadConfigString(cmd, "gitops-branch")
 	if err != nil {
-		return flags, err
+		return InstallerGenericFlags{}, err
 	}
 	viper.Set("gitops.branch", branchGitOps)
 	log.Println("gitops.branch:", branchGitOps)
@@ -74,7 +79,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	metaphorGitOps, err := ReadConfigString(cmd, "metaphor-branch")
 	if err != nil {
-		return flags, err
+		return InstallerGenericFlags{}, err
 	}
 	viper.Set("metaphor.branch", metaphorGitOps)
 	log.Println("metaphor.branch:", metaphorGitOps)
@@ -82,7 +87,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	repoGitOps, err := ReadConfigString(cmd, "gitops-repo")
 	if err != nil {
-		return flags, err
+		return InstallerGenericFlags{}, err
 	}
 	viper.Set("gitops.repo", repoGitOps)
 	log.Println("gitops.repo:", repoGitOps)
@@ -90,7 +95,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	ownerGitOps, err := ReadConfigString(cmd, "gitops-owner")
 	if err != nil {
-		return flags, err
+		return InstallerGenericFlags{}, err
 	}
 	viper.Set("gitops.owner", ownerGitOps)
 	log.Println("gitops.owner:", ownerGitOps)
@@ -98,7 +103,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 
 	templateTag, err := ReadConfigString(cmd, "template-tag")
 	if err != nil {
-		return flags, err
+		return InstallerGenericFlags{}, err
 	}
 	viper.Set("template.tag", templateTag)
 	log.Println("template.tag", templateTag)
