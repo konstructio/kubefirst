@@ -29,7 +29,7 @@ services:
       - 1.1.1.1 #Cloudflare DNS
       - 1.0.0.1 #Cloudflare DNS
       - 8.8.8.8 #Google DNS
-    command: sh -c "task integration-test-init"
+    command: sh -c "task integration-tests"
     environment:
       - AWS_REGION=$AWS_REGION
       - CLUSTER_NAME=$CLUSTER_NAME
