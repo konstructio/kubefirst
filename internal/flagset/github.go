@@ -71,6 +71,14 @@ func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 	flags.GithubUser = user
 	viper.Set("github.owner", flags.GithubOwner)
 	viper.Set("github.enabled", flags.GithubEnable)
+	if flags.GithubEnable {
+		addons := []string{"github"}
+		viper.Set("addons", addons)
+	} else {
+		addons := []string{"gitlab"}
+		viper.Set("addons", addons)
+	}
+
 	return flags, nil
 
 }
