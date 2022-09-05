@@ -34,5 +34,5 @@ RUN useradd -ms /bin/bash developer
 USER developer
 WORKDIR /home/developer/kubefirst
 RUN mkdir /home/developer/.aws/
-COPY README.md config[t] /home/developer/.aws/
-COPY README.md credentials[t] /home/developer/.aws/
+COPY README.md config* /home/developer/.aws/
+COPY README.md credentials* /home/developer/.aws/
