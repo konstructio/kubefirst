@@ -11,9 +11,20 @@ import (
 	"strings"
 
 	"github.com/kubefirst/kubefirst/configs"
-
 	"github.com/spf13/viper"
+	"golang.org/x/exp/slices"
+	yaml2 "gopkg.in/yaml.v2"
 )
+
+type RegistryAddon struct {
+	APIVersion string `yaml:"apiVersion"`
+	Kind       string `yaml:"kind"`
+	Metadata   struct {
+		Annotations struct {
+			AddonsKubefirstIoName string `yaml:"addons.kubefirst.io/name"`
+		} `yaml:"annotations"`
+	} `yaml:"metadata"`
+}
 
 func Detokenize(path string) {
 
@@ -47,6 +58,36 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			log.Panic(err)
 		}
+
+		var registryAddon RegistryAddon
+		enableCheck := false
+		removeFile := false
+
+		err = yaml2.Unmarshal(read, &registryAddon)
+		if err != nil {
+			log.Println("trying read the file in yaml format: ", path, err)
+		} else {
+			enableCheck = true
+		}
+
+		//reading the addons list
+		addons := viper.GetStringSlice("addons")
+		log.Println("it is a yaml file, processing: %s", path)
+
+		if enableCheck {
+			if !slices.Contains(addons, registryAddon.Metadata.Annotations.AddonsKubefirstIoName) {
+				log.Println("check if we need remove due unmatch annotation with k1 addons list: ", registryAddon.Metadata.Annotations)
+				r := RegistryAddon{}
+				if registryAddon.Metadata.Annotations != r.Metadata.Annotations {
+					removeFile = true
+					log.Println("yes, this file will be removed")
+				} else {
+					log.Println("no, this file will not be removed")
+				}
+				return nil
+			}
+		}
+
 		// todo should Detokenize be a switch statement based on a value found in viper?
 		gitlabConfigured := viper.GetBool("gitlab.keyuploaded")
 		githubConfigured := viper.GetBool("github.enabled")
@@ -144,9 +185,16 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
 		}
 
-		err = ioutil.WriteFile(path, []byte(newContents), 0)
-		if err != nil {
-			log.Panic(err)
+		if removeFile {
+			err = os.Remove(path)
+			if err != nil {
+				log.Panic(err)
+			}
+		} else {
+			err = ioutil.WriteFile(path, []byte(newContents), 0)
+			if err != nil {
+				log.Panic(err)
+			}
 		}
 
 	}
