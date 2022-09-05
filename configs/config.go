@@ -29,6 +29,7 @@ type Config struct {
 	KubeConfigPath          string
 	HelmClientPath          string
 	TerraformPath           string
+	ConsoleVersion					string
 
 	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
 	ClusterName    string `env:"CLUSTER_NAME"`
@@ -79,6 +80,7 @@ func ReadConfig() *Config {
 	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.TerraformVersion = "1.0.11"
+	config.ConsoleVersion = "0.1.3"
 	config.ArgoCDChartHelmVersion = "4.10.5"
 	// todo adopt latest helmVersion := "v3.9.0"
 	config.HelmVersion = "v3.6.1"

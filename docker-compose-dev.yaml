@@ -19,3 +19,6 @@ services:
       - 1.0.0.1 #Cloudflare DNS
       - 8.8.8.8 #Google DNS
     command: sh -c "./scripts/kubefirst.sh"
+    ports:
+      - "8080:8080"
+
