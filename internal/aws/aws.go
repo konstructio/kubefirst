@@ -279,7 +279,7 @@ func GetDNSInfo(hostedZoneName string) string {
 
 }
 
-// ListBucketsInUse list user active buckets
+// ListBucketsInUse list user active buckets, except the backup bucket
 func ListBucketsInUse() []string {
 	var bucketsInUse []string
 
