@@ -106,5 +106,5 @@ func init() {
 	rootCmd.AddCommand(cleanCmd)
 	cleanCmd.Flags().Bool("rm-logs", false, "remove logs folder")
 	cleanCmd.Flags().Bool("destroy-buckets", false, "destroy buckets created by init cmd")
-	cleanCmd.Flags().Bool("destroy-confirm", false, "confirm destroy operation (to be used during automation")
+	cleanCmd.Flags().Bool("destroy-confirm", false, "when detroy-buckets flag is provided, we must provide this flag as well to confirm the destroy operation")
 }
