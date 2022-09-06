@@ -279,13 +279,17 @@ func GetDNSInfo(hostedZoneName string) string {
 
 }
 
-// ListBucketsInUse list user active buckets
+// ListBucketsInUse list user active buckets, except the backup bucket
 func ListBucketsInUse() []string {
 	var bucketsInUse []string
+
+	backupSSLBucket := "k1-" + viper.GetString("aws.hostedzonename")
+
 	bucketsConfig := viper.AllKeys()
 	for _, bucketKey := range bucketsConfig {
 		if strings.HasPrefix(bucketKey, "bucket.") &&
-			strings.HasSuffix(bucketKey, ".name") {
+			strings.HasSuffix(bucketKey, ".name") &&
+			!strings.Contains(bucketKey, backupSSLBucket) {
 
 			bucketName := viper.GetString(bucketKey)
 			bucketsInUse = append(bucketsInUse, bucketName)
