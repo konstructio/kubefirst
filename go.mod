@@ -12,6 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.20.5
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.13
 	github.com/caarlos0/env/v6 v6.9.3
+	github.com/caarlos0/sshmarshal v0.1.0
 	github.com/charmbracelet/bubbles v0.13.0
 	github.com/charmbracelet/bubbletea v0.22.0
 	github.com/charmbracelet/lipgloss v0.5.0
