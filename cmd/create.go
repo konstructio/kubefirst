@@ -22,6 +22,10 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		createFlags, err := flagset.ProcessCreateFlags(cmd)
+		if err != nil {
+			return err
+		}
 
 		if globalFlags.SilentMode {
 			informUser(
@@ -65,6 +69,12 @@ var createCmd = &cobra.Command{
 		time.Sleep(time.Millisecond * 2000)
 		log.Println("Kubefirst installation finished successfully")
 		informUser("Kubefirst installation finished successfully", globalFlags.SilentMode)
+		if !createFlags.EnableConsole {
+			log.Println("Skiping the presentation of console and api for the handoff screen")
+			return nil
+		}
+
+		log.Println("Starting the presentation of console and api for the handoff screen")
 		go func() {
 			errInThread := api.RunE(cmd, args)
 			if errInThread != nil {
