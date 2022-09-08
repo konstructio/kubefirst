@@ -127,6 +127,20 @@ func DownloadTools(config *configs.Config) error {
 		return err
 	}
 
+	consoleVersion := config.ConsoleVersion
+
+	consoleDownloadUrl := fmt.Sprintf("https://github.com/kubefirst/console/releases/download/%s/%s.zip", consoleVersion, consoleVersion)
+	log.Printf("Downloading console from %s", consoleDownloadUrl)
+	consoleDownloadZipPath := fmt.Sprintf("%s/tools/console.zip", config.K1FolderPath)
+	err = downloadFile(consoleDownloadZipPath, consoleDownloadUrl)
+	if err != nil {
+		log.Println("error reading console file")
+		return err
+	}
+
+	unzipConsoleDirectory := fmt.Sprintf("%s/tools/console", config.K1FolderPath)
+	unzip(consoleDownloadZipPath, unzipConsoleDirectory)
+
 	helmStdOut, helmStdErr, errHelm := pkg.ExecShellReturnStrings(
 		config.HelmClientPath,
 		"version",
@@ -173,6 +187,7 @@ func downloadFile(localFilename string, url string) error {
 
 	return nil
 }
+
 func extractFileFromTarGz(gzipStream io.Reader, tarAddress string, targetFilePath string) {
 	uncompressedStream, err := gzip.NewReader(gzipStream)
 	if err != nil {

@@ -1,0 +1,87 @@
+openapi: 3.0.3
+info:
+  title: Swagger API for Kubefirst - OpenAPI 3.0
+  description: Sample API for Kubefirst UI - Local
+  termsOfService: http://swagger.io/terms/
+  contact:
+    email: kray@kubefrist.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 0.0.1
+externalDocs:
+  description: Find out more abut kubefirst
+  url: https://kubefirst.com
+servers:
+- url: http://localhost
+tags:
+- name: kubefirst
+  description: Everything about your kubefirst
+  externalDocs:
+    description: Find out more
+    url: https://kubefirst.com
+- name: configs
+  description: Viper configs from .kubefirst
+paths:
+  /configs:
+    summary: Gets a set of viper configs
+    get:
+      summary: "This endpoint returns viper config values"
+      description: "This endpoint is being used for the console app in order to consume the config values and build links"
+      operationId: ""
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Config'
+                x-content-type: application/json
+              examples:
+                Config response:
+                  value:
+                  - key: configKey
+                    value: configValue
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Config'
+        "404":
+          description: Not found
+        "500":
+          description: Error Processing
+components:
+  schemas:
+    ConfigList:
+      type: array
+      items:
+        $ref: '#/components/schemas/Config'
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        type:
+          type: string
+        message:
+          type: string
+      xml:
+        name: '##default'
+    Config:
+      type: object
+      properties:
+        key:
+          type: string
+          example: aws.cluster
+        value:
+          type: string
+          example: sample
+      example:
+        value: sample
+        key: aws.cluster
+      xml:
+        name: order

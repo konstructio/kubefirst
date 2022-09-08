@@ -19,3 +19,7 @@ services:
       - 1.0.0.1 #Cloudflare DNS
       - 8.8.8.8 #Google DNS
     command: sh -c "./scripts/kubefirst.sh"
+    ports:
+      - "9094:9094" #Kubefirst console port
+      - "9095:9095" #Kubefirst internal api port
+

@@ -71,3 +71,14 @@ docker exec -it kubefirst bash
 ```
 
 After this step is executed, return to [this step](https://github.com/kubefirst/kubefirst#initialization) to run a `kubefirst info` and other functions.
+
+
+### Running CLI in docker container using DEV
+
+## Start the container
+
+`docker compose -f docker-compose-dev.yaml up`
+
+## Connect to the Container
+
+`docker exec -it kubefirst-dev bash`
