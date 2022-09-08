@@ -41,7 +41,7 @@ func ConfigsGet(w http.ResponseWriter, r *http.Request) {
 			Value: 	viper.GetString("argocd.admin.password"),
 		},
 		{
-			Key: 		"ARGOCD_URL",
+			Key: 	"ARGOCD_URL",
 			Value:	fmt.Sprintf("https://argocd.%s", viper.GetString("aws.hostedzonename")),
 		},
 		{
@@ -69,44 +69,44 @@ func ConfigsGet(w http.ResponseWriter, r *http.Request) {
 			Value: 	fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename")),
 		},
 		{
-			Key:		"ADMIN_EMAIL",
+			Key:	"ADMIN_EMAIL",
 			Value: 	viper.GetString("adminemail"),
 		},
 		{
-			Key:		"METAPHOR_DEV",
+			Key:	"METAPHOR_DEV",
 			Value: 	fmt.Sprintf("https://metaphor-development.%s", viper.GetString("aws.hostedzonename")),
 		},
 		{
-			Key:		"METAPHOR_GO_DEV",
+			Key:	"METAPHOR_GO_DEV",
 			Value: 	fmt.Sprintf("https://metaphor-go-development.%s", viper.GetString("aws.hostedzonename")),
 		},
 		{
-			Key:		"METAPHOR_FRONT_DEV",
+			Key:	"METAPHOR_FRONT_DEV",
 			Value: 	fmt.Sprintf("https://metaphor-frontend-development.%s", viper.GetString("aws.hostedzonename")),
 		},
 		{
-			Key:		"METAPHOR_STAGING",
+			Key:	"METAPHOR_STAGING",
 			Value: 	fmt.Sprintf("https://metaphor-staging.%s", viper.GetString("aws.hostedzonename")),
 		},
 		{
-			Key:		"METAPHOR_GO_STAGING",
+			Key:	"METAPHOR_GO_STAGING",
 			Value: 	fmt.Sprintf("https://metaphor-go-staging.%s", viper.GetString("aws.hostedzonename")),
 		},
 		{
-			Key:		"METAPHOR_FRONT_STAGING",
+			Key:	"METAPHOR_FRONT_STAGING",
 			Value: 	fmt.Sprintf("https://metaphor-frontend-staging.%s", viper.GetString("aws.hostedzonename")),
 		},
 		{
-			Key:		"METAPHOR_PROD",
+			Key:	"METAPHOR_PROD",
 			Value: 	fmt.Sprintf("https://metaphor-production.%s", viper.GetString("aws.hostedzonename")),
 		},
 		{
-			Key:		"METAPHOR_GO_PROD",
+			Key:	"METAPHOR_GO_PROD",
 			Value: 	fmt.Sprintf("https://metaphor-go-production.%s", viper.GetString("aws.hostedzonename")),
 		},
 		{
-			Key:		"METAPHOR_FRONT_PROD",
-			Value: 	fmt.Sprintf("https://metaphor-frontend-production.%s", viper.GetString("aws.hostedzonename")),
+			Key:	"METAPHOR_FRONT_PROD",
+			Value:	fmt.Sprintf("https://metaphor-frontend-production.%s", viper.GetString("aws.hostedzonename")),
 		},
 		{
 			Key:		"ADMIN_EMAIL",
