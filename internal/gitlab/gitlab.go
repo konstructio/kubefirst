@@ -8,13 +8,14 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/argocd"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/argocd"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -576,7 +577,7 @@ spec:
   project: default
   source:
     repoURL: ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops
-    path: components/argocd
+    path: components/argocd-gitlab
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc

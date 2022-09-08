@@ -109,6 +109,8 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubRepoOwner := viper.GetString(("github.owner"))
 		githubRepoHost := viper.GetString(("github.host"))
 		githubUser := viper.GetString(("github.user"))
+		githubOrg := viper.GetString(("github.org"))
+
 		//TODO:  We need to fix this
 		githubToken := os.Getenv("GITHUB_AUTH_TOKEN")
 		//TODO: Make this more clear
@@ -135,11 +137,18 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			repoPathHTTPS = "https://" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
 			repoPathSSH = "git@" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
 			repoPathPrefered = repoPathSSH
+			newContents = strings.Replace(newContents, "<CHECKOUT_CWFT_TEMPLATE>", "git-checkout-with-gitops-ssh", -1)
+			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NS>", "github-runner", -1)
+			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NAME>", "github-runner", -1)
 		} else {
+			//not github = GITLAB
 			repoPathHTTPS = "https://gitlab." + hostedZoneName + "/kubefirst/" + gitopsRepo
 			repoPathSSH = "git@gitlab." + hostedZoneName + "/kubefirst/" + gitopsRepo
 			//gitlab prefer HTTPS - for general use
 			repoPathPrefered = repoPathHTTPS
+			newContents = strings.Replace(newContents, "<CHECKOUT_CWFT_TEMPLATE>", "git-checkout-with-gitops", -1)
+			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NS>", "default", -1)
+			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NAME>", "gitlab-runner", -1)
 		}
 		repoPathNoProtocol := strings.Replace(repoPathHTTPS, "https://", "", -1)
 
@@ -161,7 +170,8 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<AWS_DEFAULT_REGION>", region, -1)
 		newContents = strings.Replace(newContents, "<EMAIL_ADDRESS>", adminEmail, -1)
 		newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
-		newContents = strings.Replace(newContents, "<ORG>", githubRepoOwner, -1)
+		newContents = strings.Replace(newContents, "<ORG>", githubOrg, -1)
+		newContents = strings.Replace(newContents, "<GITHUB_ORG>", githubOrg, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_HOST>", githubRepoHost, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_OWNER>", githubRepoOwner, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_USER>", githubUser, -1)
