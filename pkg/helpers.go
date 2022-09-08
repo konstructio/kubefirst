@@ -71,7 +71,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 
 		//reading the addons list
 		addons := viper.GetStringSlice("addons")
-		log.Println("it is a yaml file, processing: %s", path)
+		log.Println("it is a yaml file, processing:", path)
 
 		if enableCheck {
 			if !slices.Contains(addons, registryAddon.Metadata.Annotations.AddonsKubefirstIoName) {
