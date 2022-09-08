@@ -136,8 +136,6 @@ func generateGitHubKeys() (string, string, error) {
 
 	privateKey := string(pem.EncodeToMemory(pemPrivateKey))
 	publicKey := string(ssh.MarshalAuthorizedKey(ecdsaPublicKey))
-	log.Println(privateKey)
-	log.Println(publicKey)
 
 	return publicKey, privateKey, nil
 }
