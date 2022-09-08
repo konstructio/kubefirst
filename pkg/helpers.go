@@ -25,6 +25,7 @@ type RegistryAddon struct {
 	} `yaml:"metadata"`
 }
 
+// Detokenize - Translate tokens by values on a given path
 func Detokenize(path string) {
 
 	err := filepath.Walk(path, DetokenizeDirectory)
@@ -33,6 +34,7 @@ func Detokenize(path string) {
 	}
 }
 
+// DetokenizeDirectory - Translate tokens by values on a directory level.
 func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	if err != nil {
 		return err
@@ -83,7 +85,6 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 				} else {
 					log.Println("no, this file will not be removed")
 				}
-				return nil
 			}
 		}
 
@@ -239,6 +240,7 @@ func SetupViper(config *configs.Config) error {
 	return nil
 }
 
+//CreateFile - Create a file with its contents
 func CreateFile(fileName string, fileContent []byte) error {
 	file, err := os.Create(fileName)
 	if err != nil {
@@ -252,6 +254,7 @@ func CreateFile(fileName string, fileContent []byte) error {
 	return nil
 }
 
+// CreateFullPath - Create path and its parents
 func CreateFullPath(p string) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(p), 0777); err != nil {
 		return nil, err

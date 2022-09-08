@@ -100,5 +100,6 @@ func init() {
 	createCmd.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
 	createCmd.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
 	flagset.DefineGlobalFlags(currentCommand)
+	flagset.DefineCreateFlags(currentCommand)
 
 }
