@@ -1,0 +1,49 @@
+name: Publish Docs
+on:
+  push:
+    branches: 
+      - release-1-9-docs
+    paths:
+      - docs/**
+jobs:
+  build:
+    name: build docs
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.x
+    - run: pip install mkdocs-material
+    - run: rm -rf ./dist
+    - run: mkdocs build --no-directory-urls -d dist
+
+  deploy-preprod:
+    name: deploy preprod
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/release-1-9-docs'
+    steps:
+    - uses: actions/checkout@master
+    - uses: jakejarvis/s3-sync-action@master
+      with:
+        args: --acl public-read --follow-symlinks --delete
+      env:
+        AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        SOURCE_DIR: 'dist'
+        DEST_DIR: 'preprod'
+
+  deploy-cloudfront:
+    name: deploy cloudfront
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/release-1-9-docs'
+    steps:
+    - uses: actions/checkout@master
+    - uses: awact/cloudfront-action@master
+      env:
+        SOURCE_PATH: '/preprod/*'
+        AWS_REGION: 'us-east-1'
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        DISTRIBUTION_ID: ${{ secrets.DISTRIBUTION_ID }}
