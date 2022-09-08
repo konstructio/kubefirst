@@ -16,7 +16,7 @@ var api = &cobra.Command{
 
 		router := sw.NewRouter()
 	
-		log.Fatal(http.ListenAndServe(":8081", router))
+		log.Panic(http.ListenAndServe(":9095", router))
 
 		return nil
 	},

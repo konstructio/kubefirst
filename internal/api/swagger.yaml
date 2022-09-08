@@ -26,8 +26,8 @@ paths:
   /configs:
     summary: Gets a set of viper configs
     get:
-      summary: ""
-      description: ""
+      summary: "This endpoint returns viper config values"
+      description: "This endpoint is being used for the console app in order to consume the config values and build links"
       operationId: ""
       responses:
         "200":

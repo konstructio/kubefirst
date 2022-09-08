@@ -17,7 +17,6 @@ import (
 )
 
 func ConfigsGet(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("Starting server at port 8081\n")
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
