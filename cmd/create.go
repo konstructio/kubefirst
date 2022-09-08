@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"github.com/kubefirst/kubefirst/internal/state"
 	"log"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/state"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/reports"
@@ -64,6 +65,19 @@ var createCmd = &cobra.Command{
 		time.Sleep(time.Millisecond * 2000)
 		log.Println("Kubefirst installation finished successfully")
 		informUser("Kubefirst installation finished successfully", globalFlags.SilentMode)
+		go func() {
+			errInThread := api.RunE(cmd, args)
+			if errInThread != nil {
+				log.Println(errInThread)
+			}
+		}()
+		go func() {
+			errInThread := console.RunE(cmd, args)
+			if errInThread != nil {
+				log.Println(errInThread)
+			}
+		}()
+		informUser("Kubefirst Console avilable at: http://localhost:9094", globalFlags.SilentMode)
 		return nil
 	},
 }

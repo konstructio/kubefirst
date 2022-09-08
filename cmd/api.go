@@ -3,8 +3,9 @@ package cmd
 import (
 	"log"
 	"net/http"
-	"github.com/spf13/cobra"
+
 	sw "github.com/kubefirst/kubefirst/internal/api"
+	"github.com/spf13/cobra"
 )
 
 var api = &cobra.Command{
@@ -13,12 +14,10 @@ var api = &cobra.Command{
 	Long:  "starts intermal API server",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Printf("Server started")
-
 		router := sw.NewRouter()
-	
-		log.Panic(http.ListenAndServe(":9095", router))
 
-		return nil
+		//In case of error, we need to bubble it up
+		return http.ListenAndServe("127.0.0.1:9095", router)
 	},
 }
 

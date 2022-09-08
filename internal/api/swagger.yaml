@@ -13,7 +13,7 @@ externalDocs:
   description: Find out more abut kubefirst
   url: https://kubefirst.com
 servers:
-- url: http://localhost
+- url: http://localhost:9095
 tags:
 - name: kubefirst
   description: Everything about your kubefirst
