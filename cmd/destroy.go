@@ -27,7 +27,7 @@ and all of the components in kubernetes.
 
 Optional: skip gitlab terraform 
 if the registry has already been deleted.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 
 		config := configs.ReadConfig()
 
@@ -137,19 +137,19 @@ if the registry has already been deleted.`,
 
 		token, err := argocd.GetArgoCDToken(argoCDUsername, argoCDPassword)
 		if err != nil {
-			log.Println(err)
+			return err
 		}
 
 		argoCDApplication, err := argocd.GetArgoCDApplication(token, "registry")
 		if err != nil {
-			log.Println(err)
+			return err
 		}
 
 		// set empty syncPolicy (disable auto-sync)
 		argoCDApplication.Spec.SyncPolicy = struct{}{}
 		err = argocd.PutArgoCDApplication(token, argoCDApplication)
 		if err != nil {
-			log.Println(err)
+			return err
 		}
 
 		log.Println("deleting registry application in argocd")
@@ -168,6 +168,8 @@ if the registry has already been deleted.`,
 		log.Println("terraform base destruction complete")
 		fmt.Println("End of execution destroy")
 		time.Sleep(time.Millisecond * 100)
+	
+		return nil
 	},
 }
 
