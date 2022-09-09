@@ -6,9 +6,11 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"github.com/caarlos0/sshmarshal"
 	goGitSsh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"log"
@@ -16,17 +18,45 @@ import (
 )
 
 func CreateSshKeyPair() {
+
 	config := configs.ReadConfig()
 	publicKey := viper.GetString("botpublickey")
-	if publicKey == "" {
-		log.Println("generating new key pair")
-		publicKey, privateKey, _ := GenerateKey()
-		viper.Set("botPublicKey", publicKey)
-		viper.Set("botPrivateKey", privateKey)
-		err := viper.WriteConfig()
+
+	isGitHubEnabled := viper.GetBool("github.enabled")
+
+	// generate GitLab keys
+	if publicKey == "" && !isGitHubEnabled {
+
+		log.Println("generating new key pair for GitLab")
+		publicKey, privateKey, err := generateGitLabKeys()
+		if err != nil {
+			log.Println(err)
+		}
+
+		viper.Set("botpublickey", publicKey)
+		viper.Set("botprivatekey", privateKey)
+		err = viper.WriteConfig()
 		if err != nil {
 			log.Panicf("error: could not write to viper config")
 		}
+	}
+
+	// generate GitHub keys
+	if publicKey == "" && isGitHubEnabled {
+
+		log.Println("generating new key pair for GitHub")
+		publicKey, privateKey, err := generateGitHubKeys()
+		if err != nil {
+			log.Println(err)
+		}
+
+		viper.Set("botpublickey", publicKey)
+		viper.Set("botprivatekey", privateKey)
+		err = viper.WriteConfig()
+		if err != nil {
+			log.Panicf("error: could not write to viper config")
+		}
+
 	}
 	publicKey = viper.GetString("botpublickey")
 	privateKey := viper.GetString("botprivatekey")
@@ -61,8 +91,9 @@ func PublicKey() (*goGitSsh.PublicKeys, error) {
 	return publicKey, err
 }
 
-// GenerateKey generate public and private keys to be consumed by GitLab.
-func GenerateKey() (string, string, error) {
+// generateGitLabKeys generate public and private keys to be consumed by GitLab. Private Key is encrypted using RSA key with
+// SHA-1
+func generateGitLabKeys() (string, string, error) {
 	reader := rand.Reader
 	bitSize := 2048
 
@@ -86,6 +117,30 @@ func GenerateKey() (string, string, error) {
 	return publicKey, privateKey, nil
 }
 
+// generateGitHubKeys generate Public and Private ED25519 keys for GitHub.
+func generateGitHubKeys() (string, string, error) {
+	pubKey, privKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return "", "", err
+	}
+
+	ecdsaPublicKey, err := ssh.NewPublicKey(pubKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	pemPrivateKey, err := sshmarshal.MarshalPrivateKey(privKey, "kubefirst key")
+	if err != nil {
+		return "", "", err
+	}
+
+	privateKey := string(pem.EncodeToMemory(pemPrivateKey))
+	publicKey := string(ssh.MarshalAuthorizedKey(ecdsaPublicKey))
+
+	return publicKey, privateKey, nil
+}
+
+// todo: function not in use, can we remove it?
 func ModConfigYaml() {
 
 	file, err := ioutil.ReadFile("./config.yaml")
