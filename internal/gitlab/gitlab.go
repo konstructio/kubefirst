@@ -145,7 +145,7 @@ func PushGitOpsToGitLab(dryRun bool) {
 
 }
 
-// AwaitHost - Await for a Host to be avialable, it wait for 200 cycles.
+// AwaitHost - Await for a Host to be available, it waits for 200 cycles.
 // Prefer to use `AwaitHostNTimes` as it provide more control
 func AwaitHost(appName string, dryRun bool) {
 	log.Println("AwaitHost called")
@@ -154,8 +154,10 @@ func AwaitHost(appName string, dryRun bool) {
 
 // AwaitHostNTimes - Wait for a Host to be responsive
 // - To return 200
-// - To return true if host is ready, or false if dont.
-// - Supports to pass numbr of cycles to test
+// - To return true if host is ready, or false if it doesn't
+// - Supports to pass number of cycles to test
+// todo: the function can become a generic function that receives generic parameters, and can live inside pkg/ folder
+// since isn't GitLab specific.
 func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
 	log.Println("AwaitHostNTimes called")
 	if dryRun {

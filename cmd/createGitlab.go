@@ -214,6 +214,13 @@ var createGitlabCmd = &cobra.Command{
 
 			informUser("Waiting for Gitlab dns to propagate before continuing", globalFlags.SilentMode)
 			gitlab.AwaitHost("gitlab", globalFlags.DryRun)
+
+			domain := viper.GetString("aws.hostedzonename")
+			isValidCertificate, err := pkg.AwaitValidLetsEncryptCertificateNTimes(domain, globalFlags.DryRun, 60)
+			if err != nil || !isValidCertificate {
+				log.Println(err)
+			}
+
 			informUser("Pushing gitops repo to origin gitlab", globalFlags.SilentMode)
 			// refactor: sounds like a new functions, should PushGitOpsToGitLab be renamed/update signature?
 			viper.Set("gitlab.oidc-created", true)
