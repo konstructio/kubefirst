@@ -67,26 +67,26 @@ var createCmd = &cobra.Command{
 		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
 		log.Println("Kubefirst installation finished successfully")
 		informUser("Kubefirst installation finished successfully", globalFlags.SilentMode)
-		log.Println("Skiping the presentation of console and api for the handoff screen")
-		if createFlags.EnableConsole {
-			log.Println("Starting the presentation of console and api for the handoff screen")
-			go func() {
-				errInThread := api.RunE(cmd, args)
-				if errInThread != nil {
-					log.Println(errInThread)
-				}
-			}()
-			go func() {
-				errInThread := console.RunE(cmd, args)
-				if errInThread != nil {
-					log.Println(errInThread)
-				}
-			}()
-			informUser("Kubefirst Console avilable at: http://localhost:9094", globalFlags.SilentMode)
-		} else {
-			log.Println("Skipping the presentation of console and api for the handoff screen")
-		}
-
+		/*
+			if createFlags.EnableConsole {
+				log.Println("Starting the presentation of console and api for the handoff screen")
+				go func() {
+					errInThread := api.RunE(cmd, args)
+					if errInThread != nil {
+						log.Println(errInThread)
+					}
+				}()
+				go func() {
+					errInThread := console.RunE(cmd, args)
+					if errInThread != nil {
+						log.Println(errInThread)
+					}
+				}()
+				informUser("Kubefirst Console avilable at: http://localhost:9094", globalFlags.SilentMode)
+			} else {
+				log.Println("Skipping the presentation of console and api for the handoff screen")
+			}
+		*/
 		reports.HandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
 		time.Sleep(time.Millisecond * 2000)
 		return nil
