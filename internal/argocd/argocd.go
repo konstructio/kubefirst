@@ -7,9 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 	"log"
 	"net/http"
+
+	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/spf13/viper"
 
@@ -289,6 +290,7 @@ func DeleteArgocdApplicationNoCascade(dryRun bool, applicationName, argocdAuthTo
 	}
 }
 
+//ApplyRegistry - Apply Registry application
 func ApplyRegistry(dryRun bool) error {
 	config := configs.ReadConfig()
 	if viper.GetBool("argocd.registry.applied") {
@@ -301,12 +303,6 @@ func ApplyRegistry(dryRun bool) error {
 			log.Printf("failed to execute kubectl apply of registry-base: %s", err)
 			return err
 		}
-		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-github.yaml", config.K1FolderPath))
-		if err != nil {
-			log.Printf("failed to execute kubectl apply of registry-github: %s", err)
-			return err
-		}
-
 		time.Sleep(45 * time.Second)
 		viper.Set("argocd.registry.applied", true)
 		viper.WriteConfig()
