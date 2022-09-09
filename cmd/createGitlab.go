@@ -133,7 +133,7 @@ var createGitlabCmd = &cobra.Command{
 
 		progressPrinter.IncrementTracker("step-argo", 1)
 		if !globalFlags.DryRun {
-			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry.yaml", config.K1FolderPath))
+			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-softserve.yaml", config.K1FolderPath))
 			if err != nil {
 				log.Panicf("failed to call execute kubectl apply of argocd patch to adopt gitlab: %s", err)
 			}
