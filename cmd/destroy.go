@@ -3,6 +3,11 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"os/exec"
+	"syscall"
+	"time"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/flagset"
@@ -12,10 +17,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"os/exec"
-	"syscall"
-	"time"
 )
 
 // destroyCmd represents the destroy command
@@ -131,25 +132,28 @@ if the registry has already been deleted.`,
 
 		log.Println("gitlab terraform destruction complete")
 
-		log.Println("disabling ArgoCD auto sync")
-		argoCDUsername := viper.GetString("argocd.admin.username")
-		argoCDPassword := viper.GetString("argocd.admin.password")
+		//This should wrapped into a function, maybe to move to: k8s.DeleteRegistryApplication
+		if !skipDeleteRegistryApplication {
+			log.Println("disabling ArgoCD auto sync")
+			argoCDUsername := viper.GetString("argocd.admin.username")
+			argoCDPassword := viper.GetString("argocd.admin.password")
 
-		token, err := argocd.GetArgoCDToken(argoCDUsername, argoCDPassword)
-		if err != nil {
-			return err
-		}
+			token, err := argocd.GetArgoCDToken(argoCDUsername, argoCDPassword)
+			if err != nil {
+				return err
+			}
 
-		argoCDApplication, err := argocd.GetArgoCDApplication(token, "registry")
-		if err != nil {
-			return err
-		}
+			argoCDApplication, err := argocd.GetArgoCDApplication(token, "registry")
+			if err != nil {
+				return err
+			}
 
-		// set empty syncPolicy (disable auto-sync)
-		argoCDApplication.Spec.SyncPolicy = struct{}{}
-		err = argocd.PutArgoCDApplication(token, argoCDApplication)
-		if err != nil {
-			return err
+			// set empty syncPolicy (disable auto-sync)
+			argoCDApplication.Spec.SyncPolicy = struct{}{}
+			err = argocd.PutArgoCDApplication(token, argoCDApplication)
+			if err != nil {
+				return err
+			}
 		}
 
 		log.Println("deleting registry application in argocd")
@@ -168,7 +172,7 @@ if the registry has already been deleted.`,
 		log.Println("terraform base destruction complete")
 		fmt.Println("End of execution destroy")
 		time.Sleep(time.Millisecond * 100)
-	
+
 		return nil
 	},
 }
