@@ -65,8 +65,6 @@ var createCmd = &cobra.Command{
 		}
 
 		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
-		reports.HandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
-		time.Sleep(time.Millisecond * 2000)
 		log.Println("Kubefirst installation finished successfully")
 		informUser("Kubefirst installation finished successfully", globalFlags.SilentMode)
 		if !createFlags.EnableConsole {
@@ -88,6 +86,8 @@ var createCmd = &cobra.Command{
 			}
 		}()
 		informUser("Kubefirst Console avilable at: http://localhost:9094", globalFlags.SilentMode)
+		reports.HandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
+		time.Sleep(time.Millisecond * 2000)
 		return nil
 	},
 }

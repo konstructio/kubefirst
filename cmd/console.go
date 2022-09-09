@@ -21,7 +21,7 @@ var console = &cobra.Command{
 
 		log.Printf("Starting server at port 9094\n")
 		fmt.Printf("Starting server at port 9094\n")
-		if err := http.ListenAndServe("127.0.0.1:9094", nil); err != nil {
+		if err := http.ListenAndServe(":9094", nil); err != nil {
 			log.Println(err)
 			return err
 		}
