@@ -67,6 +67,7 @@ var createCmd = &cobra.Command{
 		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
 		log.Println("Kubefirst installation finished successfully")
 		informUser("Kubefirst installation finished successfully", globalFlags.SilentMode)
+		log.Println(createFlags.EnableConsole)
 		/*
 			if createFlags.EnableConsole {
 				log.Println("Starting the presentation of console and api for the handoff screen")
