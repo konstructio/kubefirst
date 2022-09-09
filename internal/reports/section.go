@@ -42,7 +42,9 @@ func PrintSectionOverview() []byte {
 	handOffData.WriteString(strings.Repeat("-", 70))
 	handOffData.WriteString(fmt.Sprintf("\nCluster %q is up and running!:", viper.GetString("cluster-name")))
 	handOffData.WriteString(fmt.Sprintf("\nSave this information for future use, once you leave this screen some of this information is lost. "))
+	handOffData.WriteString(fmt.Sprintf("\n\nAccess the Console on your Browser at: http://localhost:9094\n"))
 	handOffData.WriteString(fmt.Sprintf("\nPress ESC to leave this screen and return to shell."))
+
 	return handOffData.Bytes()
 }
 

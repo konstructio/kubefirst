@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/spf13/cobra"
 	"log"
 	"net/http"
+
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/spf13/cobra"
 )
 
 var console = &cobra.Command{
@@ -18,10 +19,11 @@ var console = &cobra.Command{
 		fileServer := http.FileServer(http.Dir(distFolder))
 		http.Handle("/", fileServer)
 
+		log.Printf("Starting server at port 9094\n")
 		fmt.Printf("Starting server at port 9094\n")
-	
 		if err := http.ListenAndServe(":9094", nil); err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			return err
 		}
 		return nil
 	},

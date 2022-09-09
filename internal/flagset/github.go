@@ -16,6 +16,7 @@ type GithubAddCmdFlags struct {
 	GithubEnable bool
 }
 
+// DefineGithubCmdFlags - define github flags
 func DefineGithubCmdFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("github-org", "", "Github Org of repos")
 	currentCommand.Flags().String("github-owner", "", "Github owner of repos")
@@ -28,27 +29,28 @@ func DefineGithubCmdFlags(currentCommand *cobra.Command) {
 
 }
 
+// ProcessGithubAddCmdFlags - Process github flags or vars
 func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 	flags := GithubAddCmdFlags{}
 	flags.GithubEnable = false
-	user, err := cmd.Flags().GetString("github-user")
+	user, err := ReadConfigString(cmd, "github-user")
 	if err != nil {
 		log.Println("Error Processing - github-user flag")
 		return flags, err
 	}
-	org, err := cmd.Flags().GetString("github-org")
+	org, err := ReadConfigString(cmd, "github-org")
 	if err != nil {
 		log.Println("Error Processing - github-org flag")
 		return flags, err
 	}
 
-	owner, err := cmd.Flags().GetString("github-owner")
+	owner, err := ReadConfigString(cmd, "github-owner")
 	if err != nil {
 		log.Println("Error Processing - github-owner flag")
 		return flags, err
 	}
 
-	host, err := cmd.Flags().GetString("github-host")
+	host, err := ReadConfigString(cmd, "github-host")
 	if err != nil {
 		log.Println("Error Processing - github-host flag")
 		return flags, err
