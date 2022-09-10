@@ -88,11 +88,12 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			}
 		}
 
+		//Please, don't remove comments on this file unless you added it
 		// todo should Detokenize be a switch statement based on a value found in viper?
 		gitlabConfigured := viper.GetBool("gitlab.keyuploaded")
-		githubConfigured := viper.GetBool("github.enabled")
+		//githubConfigured := viper.GetBool("github.enabled")
 
-		newContents := ""
+		newContents := string(read)
 
 		botPublicKey := viper.GetString("botpublickey")
 		hostedZoneId := viper.GetString("aws.hostedzoneid")
@@ -118,17 +119,10 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		isGithubMode := viper.GetBool("github.enabled")
 		//todo: get from viper
 		gitopsRepo := "gitops"
+		repoPathHTTPSGitlab := "https://gitlab." + hostedZoneName + "/kubefirst/" + gitopsRepo
 
 		newContents = strings.Replace(newContents, "<GITHUB_USER>", githubUser, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_TOKEN>", githubToken, -1)
-
-		if gitlabConfigured {
-			newContents = strings.Replace(string(read), "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename")), -1)
-		} else if githubConfigured {
-			newContents = strings.Replace(string(read), "https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops", "git@github.com:"+githubRepoOwner+"/"+"gitops", -1)
-		} else {
-			newContents = strings.Replace(string(read), "https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops.git", "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", -1)
-		}
 
 		var repoPathHTTPS string
 		var repoPathSSH string
@@ -143,14 +137,31 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NAME>", "github-runner", -1)
 		} else {
 			//not github = GITLAB
-			repoPathHTTPS = "https://gitlab." + hostedZoneName + "/kubefirst/" + gitopsRepo
+			repoPathHTTPS = repoPathHTTPSGitlab
 			repoPathSSH = "git@gitlab." + hostedZoneName + "/kubefirst/" + gitopsRepo
 			//gitlab prefer HTTPS - for general use
 			repoPathPrefered = repoPathHTTPS
+			if gitlabConfigured {
+				repoPathPrefered = repoPathHTTPSGitlab
+				newContents = strings.Replace(newContents, "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename")), -1)
+			} else {
+				//Default start-soft-serve
+				repoPathPrefered = "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops"
+			}
 			newContents = strings.Replace(newContents, "<CHECKOUT_CWFT_TEMPLATE>", "git-checkout-with-gitops", -1)
 			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NS>", "default", -1)
 			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NAME>", "gitlab-runner", -1)
 		}
+		/*
+			if gitlabConfigured {
+				newContents = strings.Replace(string(read), "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename")), -1)
+			} else if githubConfigured {
+				newContents = strings.Replace(string(read), "https://gitlab.<AWS_HOSTED_ZONE_NAME>/kubefirst/gitops", "git@github.com:"+githubRepoOwner+"/"+"gitops", -1)
+			} else {
+				newContents = strings.Replace(string(read), repoPathHTTPSGitlab, "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops", -1)
+			}
+		*/
+
 		repoPathNoProtocol := strings.Replace(repoPathHTTPS, "https://", "", -1)
 
 		//for enforcing HTTPS

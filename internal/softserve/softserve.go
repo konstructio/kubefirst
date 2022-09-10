@@ -2,6 +2,11 @@ package softserve
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/kubefirst/kubefirst/configs"
@@ -9,10 +14,6 @@ import (
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	ssh2 "golang.org/x/crypto/ssh"
-	"io/ioutil"
-	"log"
-	"strings"
-	"time"
 )
 
 func CreateSoftServe(dryRun bool, kubeconfigPath string) {
