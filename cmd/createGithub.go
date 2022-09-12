@@ -50,6 +50,7 @@ var createGithubCmd = &cobra.Command{
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 		progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 		progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
+		progressPrinter.AddTracker("step-ecr", "Setup ECR/Docker Registries", 4)
 		progressPrinter.AddTracker("step-apps", "Install apps to cluster", 6)
 
 		progressPrinter.IncrementTracker("step-0", 1)
@@ -77,6 +78,11 @@ var createGithubCmd = &cobra.Command{
 		informUser("Creating K8S Cluster", globalFlags.SilentMode)
 		terraform.ApplyBaseTerraform(globalFlags.DryRun, directory)
 		progressPrinter.IncrementTracker("step-base", 1)
+
+		directory = fmt.Sprintf("%s/gitops/terraform/ecr", config.K1FolderPath)
+		informUser("Creating ECR Repos", globalFlags.SilentMode)
+		terraform.ApplyECRTerraform(globalFlags.DryRun, directory)
+		progressPrinter.IncrementTracker("step-ecr", 1)
 
 		err = githubPopulateCmd.RunE(cmd, args)
 		if err != nil {
