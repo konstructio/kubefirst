@@ -26,20 +26,16 @@ func ConfigsGet(w http.ResponseWriter, r *http.Request) {
 
 	configValues := []Config{
 		{
+			Key:   "IS_GITHUB_ENABLED",
+			Value: viper.GetString("github.enabled"),
+		},
+		{
 			Key:   "HOSTED_ZONE_NAME",
 			Value: viper.GetString("aws.hostedzonename"),
 		},
 		{
 			Key:   "ARGO_URL",
 			Value: fmt.Sprintf("https://argo.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "ARGOCD_USERNAME",
-			Value: viper.GetString("argocd.admin.username"),
-		},
-		{
-			Key:   "ARGOCD_PASSWORD",
-			Value: viper.GetString("argocd.admin.password"),
 		},
 		{
 			Key:   "ARGOCD_URL",
@@ -50,20 +46,16 @@ func ConfigsGet(w http.ResponseWriter, r *http.Request) {
 			Value: fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename")),
 		},
 		{
-			Key:   "GITLAB_USERNAME",
-			Value: "root",
+			Key:   "GITHUB_GITOPS",
+			Value: fmt.Sprintf("https://github.com/%s/gitops", viper.GetString("github.owner")),
 		},
 		{
-			Key:   "GITLAB_PASSWORD",
-			Value: viper.GetString("gitlab.root.password"),
+			Key:   "GITHUB_METAPHOR",
+			Value: fmt.Sprintf("https://github.com/%s/metaphor", viper.GetString("github.owner")),
 		},
 		{
 			Key:   "VAULT_URL",
 			Value: fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "VAULT_TOKEN",
-			Value: viper.GetString("vault.token"),
 		},
 		{
 			Key:   "ATLANTIS_URL",
