@@ -163,6 +163,11 @@ if the registry has already been deleted.`,
 		k8s.DeleteRegistryApplication(skipDeleteRegistryApplication)
 		progressPrinter.IncrementTracker("step-destroy", 1)
 		log.Println("registry application deleted")
+
+		// delete ECR when github
+		informUser("Destroy ECR Repos", globalFlags.SilentMode)
+		terraform.DestroyECRTerraform(false)
+
 		log.Println("terraform destroy base")
 		informUser("Destroying Cluster", globalFlags.SilentMode)
 		terraform.DestroyBaseTerraform(skipBaseTerraform)
