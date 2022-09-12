@@ -164,22 +164,37 @@ func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
 		log.Printf("[#99] Dry-run mode, AwaitHost skipped.")
 		return true
 	}
+
 	max := times
 	hostReady := false
+	hostedZone := fmt.Sprintf("https://%s.%s", appName, viper.GetString("aws.hostedzonename"))
+
 	for i := 0; i < max; i++ {
-		hostedZoneName := viper.GetString("aws.hostedzonename")
-		resp, _ := http.Get(fmt.Sprintf("https://%s.%s", appName, hostedZoneName))
-		if resp != nil && resp.StatusCode == 200 {
-			log.Printf("%s host resolved, 30 second grace period required...", appName)
-			time.Sleep(time.Second * 30)
-			i = max
-			hostReady = true
-			return hostReady
-		} else {
+
+		req, err := http.NewRequest(http.MethodGet, hostedZone, nil)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		if res.StatusCode != http.StatusOK {
 			log.Printf("%s host not resolved, sleeping 10s", appName)
 			time.Sleep(time.Second * 10)
+			continue
 		}
+
+		hostReady = true
+		log.Printf("%s host resolved, 30 second grace period required...", appName)
+		time.Sleep(time.Second * 30)
+		break
 	}
+
 	return hostReady
 }
 

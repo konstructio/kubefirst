@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
@@ -13,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 type RegistryAddon struct {
@@ -261,66 +259,4 @@ func CreateFullPath(p string) (*os.File, error) {
 		return nil, err
 	}
 	return os.Create(p)
-}
-
-// AwaitValidLetsEncryptCertificateNTimes do maxTimes attempts until it gets a valid Let's Encrypt certificate.
-func AwaitValidLetsEncryptCertificateNTimes(domain string, dryRun bool, maxTimes int) (bool, error) {
-	log.Println("AwaitValidTLSCertificateNTimes called")
-	if dryRun {
-		log.Printf("[#99] Dry-run mode, AwaitValidTLSCertificateNTimes skipped.")
-		return true, nil
-	}
-	for i := 0; i < maxTimes; i++ {
-		validCertificate, err := IsLetsEncryptCertificateDomain(domain)
-		if err != nil {
-			return false, err
-		}
-
-		if validCertificate {
-			return true, nil
-		}
-
-		log.Printf(
-			"domain (%q) is still not returning a valid Let's Encrypt certificate, attempt(%d of %d)",
-			domain,
-			i,
-			maxTimes,
-		)
-		time.Sleep(time.Second * 10)
-
-	}
-
-	return false, fmt.Errorf("unable to have a valid Let's Encrypt certificate for the domain %q", domain)
-}
-
-// IsLetsEncryptCertificateDomain check if there is a Let's Encrypt certificate for the required domain. It's a simple
-// validation and doesn't check in depth if the certificate is valid or invalid.
-func IsLetsEncryptCertificateDomain(domain string) (bool, error) {
-
-	sslPort := ":443"
-	conn, err := tls.Dial("tcp", domain+sslPort, nil)
-	if err != nil {
-		return false, fmt.Errorf("unable to connect to the required host %q, error is: %v", domain, err)
-	}
-
-	err = conn.VerifyHostname(domain)
-	if err != nil {
-		return false, errors.New("unable to verify hostname")
-	}
-
-	if len(conn.ConnectionState().PeerCertificates) == 0 {
-		return false, errors.New("there isn't a valid certificate to validate")
-	}
-
-	issuer := conn.ConnectionState().PeerCertificates[0].Issuer
-
-	if len(issuer.Organization) == 0 {
-		return false, errors.New("there isn't a valid organization in the certificate to be validated")
-	}
-
-	if issuer.Organization[0] != "Let's Encrypt" {
-		return false, errors.New("certificate issuer isn't Let's Encrypt")
-	}
-
-	return true, nil
 }
