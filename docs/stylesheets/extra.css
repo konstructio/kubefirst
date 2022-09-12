@@ -3,3 +3,7 @@
   --md-primary-fg-color--light: #DF6D5D;
   --md-primary-fg-color--dark:  #81E2B4;
 }
+
+.md-typeset table:not([class]) {
+  border: 0;
+}
