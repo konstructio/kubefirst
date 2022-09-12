@@ -168,6 +168,7 @@ func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
 	max := times
 	hostReady := false
 	hostedZone := fmt.Sprintf("https://%s.%s", appName, viper.GetString("aws.hostedzonename"))
+	httpClient := http.DefaultClient
 
 	for i := 0; i < max; i++ {
 
@@ -177,7 +178,7 @@ func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
 			continue
 		}
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := httpClient.Do(req)
 		if err != nil {
 			log.Println(err)
 			continue
