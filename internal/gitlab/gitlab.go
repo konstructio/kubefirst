@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -563,6 +564,10 @@ func PushGitRepo(dryRun bool, config *configs.Config, gitOrigin, repoName string
 			log.Panicf("error pushing detokenized %s repository to remote at %s", repoName, gitOrigin)
 		}
 		log.Printf("successfully pushed %s to soft-serve", repoName)
+		//TODO: Remove me
+		cmd := exec.Command("cp", "-r", repoDir, repoDir+"-"+gitOrigin)
+		err := cmd.Run()
+		log.Println(err)
 	}
 
 	if gitOrigin == "gitlab" {
@@ -626,6 +631,9 @@ spec:
 			log.Panicf("error pushing detokenized %s repository to remote at %s", repoName, gitOrigin)
 		}
 		log.Printf("successfully pushed %s to gitlab", repoName)
+		cmd := exec.Command("cp", "-r", repoDir, repoDir+"-"+gitOrigin)
+		err = cmd.Run()
+		log.Println(err)
 	}
 
 	viper.Set(fmt.Sprintf("create.repos.%s.%s.pushed", gitOrigin, repoName), true)
@@ -637,7 +645,14 @@ func CommitToRepo(repo *git.Repository, repoName string) {
 	w, _ := repo.Worktree()
 
 	log.Println(fmt.Sprintf("committing detokenized %s kms key id", repoName))
+
 	w.Add(".")
+	//https://github.com/src-d/go-git/issues/1268
+	cmd := exec.Command("git", "add", ".")
+	cmd.Dir = w.Filesystem.Root()
+	err := cmd.Run()
+	log.Println(err)
+
 	w.Commit(fmt.Sprintf("committing detokenized %s kms key id", repoName), &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
