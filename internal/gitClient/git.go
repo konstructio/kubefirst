@@ -248,6 +248,12 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 			log.Panicf("error Storing reference: %s, %s", repoName, err)
 		}
 		err = w.Checkout(&git.CheckoutOptions{Branch: ref.Name()})
+		//remove old branch
+		err = repo.Storer.RemoveReference(plumbing.NewBranchReferenceName(branch))
+		if err != nil {
+			log.Panicf("error removing old branch: %s, %s", repoName, err)
+		}
+
 	}
 	return nil
 

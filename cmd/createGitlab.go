@@ -47,14 +47,15 @@ var createGitlabCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
+		//infoCmd need to be before the bars or it is printed in between bars:
+		//Let's try to not move it on refactors
+		infoCmd.Run(cmd, args)
 		progressPrinter.GetInstance()
 		progressPrinter.SetupProgress(4, globalFlags.SilentMode)
 
 		var kPortForwardArgocd *exec.Cmd
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 
-		infoCmd.Run(cmd, args)
 		progressPrinter.IncrementTracker("step-0", 1)
 
 		progressPrinter.AddTracker("step-softserve", "Prepare Temporary Repo ", 4)
@@ -157,6 +158,18 @@ var createGitlabCmd = &cobra.Command{
 			}
 
 		}
+		/*
+			// Testing gitlab HTTPS creation, vaults needs gitlab
+			for i := 1; i < 15; i++ {
+				hostReady := gitlab.AwaitHostNTimes("gitlab", globalFlags.DryRun, 20)
+				if hostReady {
+					informUser("gitlab DNS is ready", globalFlags.SilentMode)
+					break
+				} else {
+					informUser("gitlab DNS is not ready", globalFlags.SilentMode)
+				}
+			}
+		*/
 		loopUntilPodIsReady(globalFlags.DryRun)
 		initializeVaultAndAutoUnseal(globalFlags.DryRun)
 		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")), globalFlags.SilentMode)
