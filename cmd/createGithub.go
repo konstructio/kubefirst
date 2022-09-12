@@ -84,7 +84,7 @@ var createGithubCmd = &cobra.Command{
 		directory = fmt.Sprintf("%s/gitops/terraform/ecr", config.K1FolderPath)
 		informUser("Creating ECR Repos", globalFlags.SilentMode)
 		terraform.ApplyECRTerraform(globalFlags.DryRun, directory)
-		progressPrinter.IncrementTracker("step-ecr", 1)
+		progressPrinter.IncrementTracker("step-ecr", 4)
 
 		err = githubPopulateCmd.RunE(cmd, args)
 		if err != nil {
