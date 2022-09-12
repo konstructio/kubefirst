@@ -7,7 +7,6 @@ package cmd
 import (
 	"log"
 
-	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -29,8 +28,7 @@ var loadTemplateCmd = &cobra.Command{
 			log.Printf("Error clonning and detokizing repo %s", "gitops")
 			return err
 		}
-		argocd.AddArgoCDApp(gitopsDir)
-		log.Println("loadTemplate executed with success")
+		log.Println("loadTemplate executed with success:", gitopsDir)
 		viper.Set("github.repo.loaded", true)
 		viper.WriteConfig()
 		return nil
