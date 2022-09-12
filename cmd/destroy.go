@@ -3,6 +3,11 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"os/exec"
+	"syscall"
+	"time"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
@@ -10,10 +15,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
-	"log"
-	"os/exec"
-	"syscall"
-	"time"
 )
 
 // destroyCmd represents the destroy command
@@ -135,6 +136,11 @@ if the registry has already been deleted.`,
 		k8s.DeleteRegistryApplication(skipDeleteRegistryApplication)
 		progressPrinter.IncrementTracker("step-destroy", 1)
 		log.Println("registry application deleted")
+
+		// delete ECR when github
+		informUser("Destroy ECR Repos", globalFlags.SilentMode)
+		terraform.DestroyECRTerraform(false)
+
 		log.Println("terraform destroy base")
 		informUser("Destroying Cluster", globalFlags.SilentMode)
 		terraform.DestroyBaseTerraform(skipBaseTerraform)
