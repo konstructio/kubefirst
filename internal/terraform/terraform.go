@@ -159,12 +159,12 @@ func DestroyECRTerraform(skipECRTerraform bool) {
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if err != nil {
-			log.Println("[WARN]: failed to terraform init (destroy) ECR, was the ECR not created(check AWS)?: %v", err)
+			log.Printf("[WARN]: failed to terraform init (destroy) ECR, was the ECR not created(check AWS)?: %s", err)
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "destroy", "-auto-approve")
 		if err != nil {
-			log.Println("[WARN]: failed to terraform destroy ECR, was the ECR not created (check AWS)?: %v", err)
+			log.Printf("[WARN]: failed to terraform destroy ECR, was the ECR not created (check AWS)?: %s", err)
 		}
 		viper.Set("destroy.terraformdestroy.ecr", true)
 		viper.WriteConfig()
