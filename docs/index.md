@@ -16,3 +16,5 @@ cluster, and **GitHub** will be configured to be used for your team on the free 
  |                    [Team Octocat!](./kubefirst/github/install.md)                    |                    [Team Tanuki!](./kubefirst/gitlab/install.md)                     |
 
 </center>
+
+In case you want to know more about Kubefirst does before choosing GitHub or GitLab, you can see it [here](./kubefirst/overview.md).
