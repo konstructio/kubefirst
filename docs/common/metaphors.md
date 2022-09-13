@@ -26,7 +26,7 @@ clusters without impacting the applications that your engineers and users depend
 The **Metaphors** applications are multi-instance load balanced applications. It's deployed to the `development` and 
 `staging` namespaces in the `preprod` cluster, and the `production` namespace in the `production` cluster.
 
-![](../../img/kubefirst/metaphor/metaphor-kubernetes-manifests.png)
+![](../img/kubefirst/metaphor/metaphor-kubernetes-manifests.png)
 
 The kubernetes manifests produced by the **Metaphors** applications CI include a working example of a kubernetes 
 deployment with downstream replicaset and pods, a service account with a security context used, a service to make the 
@@ -86,4 +86,4 @@ metrics, application performance monitoring, dashboard, and alerting.
 
 The **Metaphors** applications leverages hashicorp **Vault** for secrets management. **Vault** runs in the `mgmt` cluster 
 and metaphor runs in `preprod` and `production`, so it serves as an example for secrets management. To read more see our 
-[vault page](../gitlab/vault.md)
+[vault page](gitlab/vault.md)

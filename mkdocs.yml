@@ -27,9 +27,21 @@ nav:
   - Home:
     - index.md
     - Kubefirst Platform:
+      - Overview: 'kubefirst/overview.md'
+      # todo: include metaphors inside installation or resources
+      - Installing: 'kubefirst/installing.md'
+#        todo: how to access resources
+      - Provisioned Resources: 'kubefirst/resources.md'
+      - Destroying: 'kubefirst/destroy.md'
       - GitHub Installation:
-        - Install: 'kubefirst/github/install.md'
+#        getting started
+          #installing
+          #resources
+          #accessing
+          #destroy
         - Getting Started: 'kubefirst/github/getting-started.md'
+        - Install: 'kubefirst/github/installing.md'
+        - Resources: 'kubefirst/github/installing.md'
         # - Page: Local Setup: need a new top level doc on connecting to aws and connecting to kubernetes - 1.9 will change the aws access story
         # - Page: User management on kubefirst (changing in 1.9+)
         - GitHub Repositories: 'kubefirst/github/github-repositories.md'
@@ -67,6 +79,7 @@ nav:
           # - Page: gitlab
           # - Page: vault
         - Vault: 'kubefirst/github/vault.md'
+        - Metaphors: 'common/metaphors.md'
           # in 1.9, vault will be our new idp and oidc provider, docs
           # vault acl policies
           # how the root vault token works
@@ -87,7 +100,7 @@ nav:
         - FAQ: 'kubefirst/github/faq.md'
           # is this fine? get feedback from devrel
       - GitLab Installation:
-        - Install: 'kubefirst/gitlab/install.md'
+        - Install: 'kubefirst/gitlab/installing.md'
         - Getting Started: 'kubefirst/gitlab/getting-started.md'
         # - Page: Local Setup: need a new top level doc on connecting to aws and connecting to kubernetes - 1.9 will change the aws access story
         # - Page: User management on kubefirst (changing in 1.9+)
@@ -131,6 +144,7 @@ nav:
           # - Page: gitlab
           # - Page: vault
         - Vault: 'kubefirst/gitlab/vault.md'
+        - Metaphors: 'common/metaphors.md'
           # in 1.9, vault will be our new idp and oidc provider, docs
           # vault acl policies
           # how the root vault token works
@@ -152,19 +166,17 @@ nav:
           # is this fine? get feedback from devrel
       # - Page: white glove service
       # - Pag
-      - common:
-          - Overview: 'kubefirst/common/overview.md'
-          - Metaphors: 'kubefirst/common/metaphors.md'
     - Tooling:
       - Overview: 'tooling/tooling-overview.md'
+      - Kubefirst CLI: 'tooling/kubefirst-cli.md'
       - Argo CD: 'tooling/argocd.md'
       - Argo Workflows: 'tooling/argo.md'
-      - AWS CLI: 'tooling/aws-cli.md'
+      - AWS CLI: 'tooling/aws-create.md'
       - Docker: 'tooling/docker.md'
       - Kubectl:  'tooling/kubectl.md'
       - Shell Utilities: 'tooling/shell-utilities.md'
       - Terraform: 'tooling/terraform.md'
-      - Vault CLI: 'tooling/vault-cli.md' 
+      - Vault CLI: 'tooling/vault-create.md'
     - Community:
       - Community: 'community/index.md'
       # - Page: white glove service
