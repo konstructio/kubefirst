@@ -52,8 +52,6 @@ nav:
           # need better image that has singular registry
           # paths in docs need adjustment for open source platform (no east-2, etc)
           # drop the bottom section (secure registration layer)
-        - Metaphor: 'kubefirst/github/metaphor.md'
-          # in 1.9 metaphor is expanding to a set of microservices
         - Terraform & Atlantis: 'kubefirst/github/terraform.md'
           # video is enormous here
           # info on webhooks
@@ -118,8 +116,6 @@ nav:
           # need better image that has singular registry
           # paths in docs need adjustment for open source platform (no east-2, etc)
           # drop the bottom section (secure registration layer)
-        - Metaphor: 'kubefirst/gitlab/metaphor.md'
-          # in 1.9 metaphor is expanding to a set of microservices
         - Terraform & Atlantis: 'kubefirst/gitlab/terraform.md'
           # video is enormous here
           # info on webhooks
@@ -156,6 +152,9 @@ nav:
           # is this fine? get feedback from devrel
       # - Page: white glove service
       # - Pag
+      - common:
+          - Overview: 'kubefirst/common/overview.md'
+          - Metaphors: 'kubefirst/common/metaphors.md'
     - Tooling:
       - Overview: 'tooling/tooling-overview.md'
       - Argo CD: 'tooling/argocd.md'
