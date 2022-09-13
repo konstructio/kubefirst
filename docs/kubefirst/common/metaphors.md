@@ -6,10 +6,10 @@ Kubefirst platform following best practices. The demo applications consists of *
 
 ### Best Practices
 
-The **Metaphors** applications provides a demonstration space for application best practices in a tangible way that's easy to
-apply to other projects. When engineers discover good patterns and wish have those patterns adopted in other projects, 
-add that new idea in the most straightforward way possible to the Metaphors applications as well.
-By doing so our engineering team can fully engage with the best application approaches.
+The **Metaphors** applications provides a demonstration space for application best practices in a tangible way that's 
+easy to apply to other projects. When engineers discover good patterns and wish have those patterns adopted in other 
+projects, add that new idea in the most straightforward way possible to the Metaphors applications as well. By doing so 
+our engineering team can fully engage with the best application approaches.
 
 ### CI/CD
 
