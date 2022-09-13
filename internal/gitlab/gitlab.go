@@ -174,13 +174,15 @@ func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
 
 		req, err := http.NewRequest(http.MethodGet, hostedZone, nil)
 		if err != nil {
-			log.Println(err)
+			log.Printf("%s host not resolved with error %q, sleeping 10s", appName, err)
+			time.Sleep(time.Second * 10)
 			continue
 		}
 
 		res, err := httpClient.Do(req)
 		if err != nil {
-			log.Println(err)
+			log.Printf("%s host not resolved with error %q, sleeping 10s", appName, err)
+			time.Sleep(time.Second * 10)
 			continue
 		}
 
