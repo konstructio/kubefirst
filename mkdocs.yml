@@ -90,7 +90,7 @@ nav:
           # check links
           # remove ghost
           # add any new tools 
-        - Teardown: 'kubefirst/github/teardown.md'
+        - Teardown: 'kubefirst/github/destroy.md'
           # add details about kubefirst state command, typo on link
         - FAQ: 'kubefirst/github/faq.md'
           # is this fine? get feedback from devrel
@@ -155,7 +155,7 @@ nav:
           # check links
           # remove ghost
           # add any new tools 
-        - Teardown: 'kubefirst/gitlab/teardown.md'
+        - Teardown: 'kubefirst/gitlab/destroy.md'
           # add details about kubefirst state command, typo on link
         - FAQ: 'kubefirst/gitlab/faq.md'
           # is this fine? get feedback from devrel
@@ -163,12 +163,12 @@ nav:
       # - Pag
     - Tooling:
       - Overview: 'tooling/tooling-overview.md'
-      - Kubefirst CLI: 'tooling/kubefirst-cli.md'
       - Argo CD: 'tooling/argocd.md'
       - Argo Workflows: 'tooling/argo.md'
       - AWS CLI: 'tooling/aws-cli.md'
       - Docker: 'tooling/docker.md'
       - Kubectl:  'tooling/kubectl.md'
+      - Kubefirst CLI: 'tooling/kubefirst-cli.md'
       - Shell Utilities: 'tooling/shell-utilities.md'
       - Terraform: 'tooling/terraform.md'
       - Vault CLI: 'tooling/vault-cli.md'
