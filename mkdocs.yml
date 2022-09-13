@@ -166,12 +166,12 @@ nav:
       - Kubefirst CLI: 'tooling/kubefirst-cli.md'
       - Argo CD: 'tooling/argocd.md'
       - Argo Workflows: 'tooling/argo.md'
-      - AWS CLI: 'tooling/aws-create.md'
+      - AWS CLI: 'tooling/aws-cli.md'
       - Docker: 'tooling/docker.md'
       - Kubectl:  'tooling/kubectl.md'
       - Shell Utilities: 'tooling/shell-utilities.md'
       - Terraform: 'tooling/terraform.md'
-      - Vault CLI: 'tooling/vault-create.md'
+      - Vault CLI: 'tooling/vault-cli.md'
     - Community:
       - Community: 'community/index.md'
       # - Page: white glove service
