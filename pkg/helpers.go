@@ -133,6 +133,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			repoPathSSH = "git@" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
 			repoPathPrefered = repoPathSSH
 			newContents = strings.Replace(newContents, "<CHECKOUT_CWFT_TEMPLATE>", "git-checkout-with-gitops-ssh", -1)
+			newContents = strings.Replace(newContents, "<COMMIT_CWFT_TEMPLATE>", "git-commit-ssh", -1)
 			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NS>", "github-runner", -1)
 			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NAME>", "github-runner", -1)
 		} else {
@@ -149,6 +150,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 				repoPathPrefered = "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops"
 			}
 			newContents = strings.Replace(newContents, "<CHECKOUT_CWFT_TEMPLATE>", "git-checkout-with-gitops", -1)
+			newContents = strings.Replace(newContents, "<COMMIT_CWFT_TEMPLATE>", "git-commit", -1)
 			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NS>", "default", -1)
 			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NAME>", "gitlab-runner", -1)
 		}
