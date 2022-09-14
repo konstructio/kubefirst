@@ -29,14 +29,8 @@ nav:
     - Kubefirst Platform:
       - Overview: 'kubefirst/overview.md'
       - GitHub Installation:
-#        getting started
-          #installing
-          #resources
-          #accessing
-          #destroy
-        - Getting Started: 'kubefirst/github/after-install.md'
-        - Install: 'kubefirst/github/installing.md'
-        - Resources: 'kubefirst/github/installing.md'
+        - Install: 'kubefirst/github/install.md'
+        - After Install: 'kubefirst/github/after-install.md'
         # - Page: Local Setup: need a new top level doc on connecting to aws and connecting to kubernetes - 1.9 will change the aws access story
         # - Page: User management on kubefirst (changing in 1.9+)
         - GitHub Repositories: 'kubefirst/github/github-repositories.md'
@@ -90,7 +84,7 @@ nav:
           # check links
           # remove ghost
           # add any new tools 
-        - Teardown: 'kubefirst/github/destroy.md'
+        - Destroy: 'kubefirst/github/destroy.md'
           # add details about kubefirst state command, typo on link
         - FAQ: 'kubefirst/github/faq.md'
           # is this fine? get feedback from devrel
@@ -155,7 +149,7 @@ nav:
           # check links
           # remove ghost
           # add any new tools 
-        - Teardown: 'kubefirst/gitlab/destroy.md'
+        - Destroy: 'kubefirst/gitlab/destroy.md'
           # add details about kubefirst state command, typo on link
         - FAQ: 'kubefirst/gitlab/faq.md'
           # is this fine? get feedback from devrel

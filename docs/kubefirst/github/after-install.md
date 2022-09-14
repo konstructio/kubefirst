@@ -1,9 +1,5 @@
 # Getting Started
 
-### Prerequesite
-
-To install the Kubefirst Platform see [install](./install.md)
-
 ### After Install
 
 ![](../../img/todo.jpeg)
