@@ -10,14 +10,14 @@ You'll start out in your gitlab server with a couple new gitlab repositories und
 
 The gitops repo houses all of our IAC and all of our gitops configurations. All of the infrastructure that you receive with kubefirst was produced by terraform and all of your applications are delivered with argocd. You will add to this gitops repository as your business needs require additional infrastructure or applications.
 
-`metaphors`
+`metaphor's`
 
-Metaphors are example applications used to showcase certain features of the kubefirst platform. Metaphors has CI/CD that 
-delivers the app to a development, staging, and production namespace in your kubernetes cluster. Its secrets in vault 
-are bound to the metaphor app through the use of external-secrets, a handy kubernetes utility to keep kubernetes secrets
-in sync with the vault source of truth. It also demonstrates how DNS entries automatically will be automatically created 
-in route53 using external-dns. It has auto-renewing short lived certificates generated and auto-renewed as well using 
-cert-manager and the Let's Encrypt cluster-issuer.
+Metaphor's are example applications used to showcase certain features of the kubefirst platform. Metaphors has CI/CD 
+that delivers the app to a development, staging, and production namespace in your kubernetes cluster. Its secrets in 
+vault are bound to the metaphor app through the use of external-secrets, a handy kubernetes utility to keep kubernetes 
+secrets in sync with the vault source of truth. It also demonstrates how DNS entries automatically will be automatically 
+created in route53 using external-dns. It has auto-renewing short-lived certificates generated and auto-renewed as well 
+using cert-manager and the Let's Encrypt cluster-issuer.
 
 The available Metaphors applications are, **metaphor (NodeJS API)**, **Metaphor (Go API)** and **Metaphor Frontend**.
 

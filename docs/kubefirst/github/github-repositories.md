@@ -1,6 +1,6 @@
 # GitHub Repositories
 
-When you install the github version of kubefirst a couple of new repositories will be added to your github organization.
+When you install the GitHub version of Kubefirst a couple of new repositories will be added to your GitHub organization.
 
 ![](../../img/todo.jpeg)
 
@@ -10,20 +10,22 @@ When you install the github version of kubefirst a couple of new repositories wi
 
 `gitops`
 
-The gitops repo houses all of our IAC and all our gitops configurations. All of the infrastructure that you receive with kubefirst was produced by some combination of terraform and argocd. You will add to this repository as your business needs require new infrastructure or new applications.
+The gitops repo houses all of our IAC and all our gitops configurations. All the infrastructure that you receive with kubefirst was produced by some combination of terraform and argocd. You will add to this repository as your business needs require new infrastructure or new applications.
 
-`metaphor`
+`metaphor's`
 
-Metaphor is an example application used to showcase certain features of the kubefirst platform. Metaphor has CI/CD that delivers the app to a development, staging, and production namespace in your kubernetes cluster. Its secrets in vault are bound to the metaphor app through the use of external-secrets, a handy kubernetes utility to keep kubernetes secrets in sync with the vault source of truth. It also demonstrates how dns entries automatically will be automtically created in route53 using external-dns. It has auto-renewing short lived certificates generated and auto-renewed as well using cert-manager and the letsencrypt clusterissuer.
+Metaphor's are example applications used to showcase certain features of the kubefirst platform. Metaphors has CI/CD
+that delivers the app to a development, staging, and production namespace in your kubernetes cluster. Its secrets in
+vault are bound to the metaphor app through the use of external-secrets, a handy kubernetes utility to keep kubernetes
+secrets in sync with the vault source of truth. It also demonstrates how DNS entries automatically will be automatically
+created in route53 using external-dns. It has auto-renewing short-lived certificates generated and auto-renewed as well
+using cert-manager and the Let's Encrypt cluster-issuer.
 
-![](../../img/todo.jpeg)
-
-`todo: how does metaphor story need to be documented in 1.9?`
-
+The available Metaphors applications are, **metaphor (NodeJS API)**, **Metaphor (Go API)** and **Metaphor Frontend**.
 
 ## GitHub Repository Management
 
-These github repositories are being managed in terraform.
+These GitHub repositories are being managed in terraform.
 
 As you need additional gitlab repositories, just add a new section of terraform code to `terraform/github/kubefirst-repos.tf`
 ```
@@ -45,7 +47,7 @@ GitHub's terraform provider provides many more configuration than just these set
 
 Take a look at the `Resources` section of the github provider documentation [](https://registry.terraform.io/providers/integrations/github/latest/docs).
 
-That was just github. Take a look at all of the terraform providers that are available, the list of technologies you can manage in terraform is really impressive. [](https://www.terraform.io/docs/providers/index.html)
+That was just github. Take a look at all the terraform providers that are available, the list of technologies you can manage in terraform is really impressive. [](https://www.terraform.io/docs/providers/index.html)
 
 ## Making Terraform Changes
 
