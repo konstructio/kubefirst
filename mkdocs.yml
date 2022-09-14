@@ -184,7 +184,7 @@ nav:
   - Roadmap:
     - Roadmap: 'roadmap/index.md'
   - Blog:
-    - Blog: 'https://kubeshop.io/blog-projects/kubefirst'
+    - Blog: 'https://kubefirst.io/blog'
       # issues:
       # there's no link back to the docs from the blog
   - Site:
