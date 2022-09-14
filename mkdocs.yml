@@ -67,9 +67,10 @@ nav:
           # - Page: github
           # - Page: gitlab
           # - Page: vault
-        - Vault: 'kubefirst/github/vault.md'
+        - Vault: 'common/vault.md'
         - Metaphors: 'common/metaphors.md'
         - Certificates: 'common/certificates.md'
+        - Security: 'common/security.md'
           # in 1.9, vault will be our new idp and oidc provider, docs
           # vault acl policies
           # how the root vault token works
@@ -133,9 +134,10 @@ nav:
           # - Page: github
           # - Page: gitlab
           # - Page: vault
-        - Vault: 'kubefirst/gitlab/vault.md'
+        - Vault: 'common/vault.md'
         - Metaphors: 'common/metaphors.md'
         - Certificates: 'common/certificates.md'
+        - Security: 'common/security.md'
           # in 1.9, vault will be our new idp and oidc provider, docs
           # vault acl policies
           # how the root vault token works
