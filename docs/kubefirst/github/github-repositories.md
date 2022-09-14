@@ -43,15 +43,20 @@ module "your_repo_name" {
 }
 ```
 
-GitHub's terraform provider provides many more configuration than just these settings. Check them out and add to your default settings once you're comfortable with the platform.
+GitHub's terraform provider provides many more configuration than just these settings. Check them out and add to your 
+default settings once you're comfortable with the platform.
 
-Take a look at the `Resources` section of the github provider documentation [](https://registry.terraform.io/providers/integrations/github/latest/docs).
+Take a look at the `Resources` section of the github provider documentation 
+[](https://registry.terraform.io/providers/integrations/github/latest/docs).
 
-That was just github. Take a look at all the terraform providers that are available, the list of technologies you can manage in terraform is really impressive. [](https://www.terraform.io/docs/providers/index.html)
+That was just github. Take a look at all the terraform providers that are available, the list of technologies you can 
+manage in terraform is really impressive. [](https://www.terraform.io/docs/providers/index.html)
 
 ## Making Terraform Changes
 
-To make infrastructure and configuration changes with terraform, simply open a merge request in the `gitops` repository. Your merge request will automatically provide plans, state locks, and applies, and even comment in the merge request itself. You'll have a simple, peer reviewable, auditable changelog of all infrastructure and configuration changes.
+To make infrastructure and configuration changes with terraform, simply open a merge request in the `gitops` repository.
+Your merge request will automatically provide plans, state locks, and applies, and even comment in the merge request 
+itself. You'll have a simple, peer reviewable, auditable changelog of all infrastructure and configuration changes.
 
 ![](../../img/todo.jpeg)
 
