@@ -643,3 +643,154 @@ func DownloadS3File(bucketName string, filename string) error {
 
 	return nil
 }
+
+// this works
+func DeleteRoute53EntriesTXT(hostedZone string) error {
+	log.Println("deleting hosted zone...")
+
+	awsConfig, err := NewAws()
+	if err != nil {
+		return err
+	}
+
+	route53Client := route53.NewFromConfig(awsConfig)
+
+	routes, err := route53Client.ListHostedZonesByName(
+		context.Background(),
+		&route53.ListHostedZonesByNameInput{
+			DNSName: &hostedZone,
+		})
+	if err != nil {
+		return err
+	}
+
+	var hostedZoneId string
+	for _, dnsEntry := range routes.HostedZones {
+		log.Println("---")
+		log.Println(*dnsEntry.Id)
+		log.Println(*dnsEntry.Name)
+		log.Println("---")
+		if *dnsEntry.Name == hostedZone+"." {
+			hostedZoneId = *dnsEntry.Id
+		}
+	}
+
+	testing := ""
+	recordName := ""
+
+	ttl := int64(300)
+
+	sets, err := route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
+		ChangeBatch: &types.ChangeBatch{
+			Changes: []types.Change{
+				{
+					Action: "DELETE",
+					ResourceRecordSet: &types.ResourceRecordSet{
+						Name: &recordName,
+						Type: "TXT",
+						//Type: "A",
+						TTL: &ttl,
+						ResourceRecords: []types.ResourceRecord{
+							{
+								Value: &testing,
+							},
+						},
+						//MultiValueAnswer: &vvv,
+						//SetIdentifier: &simple,
+						//AliasTarget: {
+						//	HostedZoneId:         hostedZoneId,
+						//	DNSName:              "",
+						//	EvaluateTargetHealth: true,
+						//},
+					},
+				},
+			},
+		},
+		HostedZoneId: &hostedZoneId,
+	})
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(sets)
+
+	return nil
+}
+
+func DeleteRoute53EntriesA(hostedZone string) error {
+	log.Println("deleting hosted zone...")
+
+	awsConfig, err := NewAws()
+	if err != nil {
+		return err
+	}
+
+	route53Client := route53.NewFromConfig(awsConfig)
+
+	routes, err := route53Client.ListHostedZonesByName(
+		context.Background(),
+		&route53.ListHostedZonesByNameInput{
+			DNSName: &hostedZone,
+		})
+	if err != nil {
+		return err
+	}
+
+	var hostedZoneId string
+	for _, dnsEntry := range routes.HostedZones {
+		log.Println("---")
+		log.Println(*dnsEntry.Id)
+		log.Println(*dnsEntry.Name)
+		log.Println("---")
+		if *dnsEntry.Name == hostedZone+"." {
+			hostedZoneId = *dnsEntry.Id
+		}
+	}
+
+	x, err := route53Client.ListResourceRecordSets(context.Background(), &route53.ListResourceRecordSetsInput{
+		HostedZoneId: &hostedZoneId,
+	})
+	if err != nil {
+		log.Println(err)
+	}
+
+	for _, val := range x.ResourceRecordSets {
+		fmt.Println(*val.Name)
+
+		if val.Type == types.RRTypeA {
+			fmt.Println(*val.AliasTarget.HostedZoneId)
+		}
+	}
+
+	//sets, err := route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
+	//	ChangeBatch: &types.ChangeBatch{
+	//		Changes: []types.Change{
+	//			{
+	//				Action: "DELETE",
+	//				ResourceRecordSet: &types.ResourceRecordSet{
+	//					Name: &recordName,
+	//					//Type: "TXT",
+	//					Type: "A",
+	//					TTL:  intPointer,
+	//					//MultiValueAnswer: &vvv,
+	//					//SetIdentifier: &simple,
+	//					AliasTarget: &types.AliasTarget{
+	//						//HostedZoneId:         "&hostedZoneId",
+	//						HostedZoneId:         &hostedZoneIdTESTE,
+	//						DNSName:              &testing,
+	//						EvaluateTargetHealth: true,
+	//					},
+	//				},
+	//			},
+	//		},
+	//	},
+	//	HostedZoneId: &hostedZoneId,
+	//})
+	//if err != nil {
+	//	return err
+	//}
+
+	//fmt.Println(sets)
+
+	return nil
+}
