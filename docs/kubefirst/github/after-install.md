@@ -1,12 +1,8 @@
-# Getting Started
+# After Install
 
-### After Install
+[//]: # (`todo: need new getting started video for github`)
 
-![](../../img/todo.jpeg)
-
-`todo: need new getting started video for github`
-
-<iframe width="784" height="441" src="https://www.youtube.com/embed/KEUOaNMUqOM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[//]: # (<iframe width="784" height="441" src="https://www.youtube.com/embed/KEUOaNMUqOM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>)
 
 The `kubefirst cluster create` execution includes a lot of important information toward the end including URLs and passwords. Do not lose this information. 
 
@@ -33,14 +29,21 @@ You now have an EKS cluster with the following content installed in it:
 
 ![](../../img/kubefirst/getting-started/gitops-assets.png)
 
-### Step 1: Collect Root Credentials
+## Step 1: Console UI
 
-Once you've successfully provisioned your kubefirst platform, you'll be presented with a screen that looks like this
-![](../../img/kubefirst/getting-started/cluster-create-result.png)
+When calling `cluster create` command and adding the flag `--enable-console`, at the end of the installation, a console
+will be available at `http://localhost:9094`, and will give you dashboard to navigate to the different services
+that were previsioned.
+
+![console ui](../../img/kubefirst/console-ui.png)
+
+When the `--enable-console` flag is not set, a terminal handoff screen it presented:
+
+![terminal handoff](../../img/kubefirst/getting-started/cluster-create-result.png)
 
 These are **not your personal credentials**. These are administrator credentials that can be used if you ever need to authenticate and administer your tools if your OIDC provider ever become unavailable. Please protect these secrets and store them in a safe place.
 
-### Step 2: Add Your Team
+## Step 2: Add Your Team
 
 Log into gitlab using the root credentials that were provided to you in your terminal.
 
@@ -77,7 +80,7 @@ Any new users you have created through this process will have their temporary in
 
 ![](../../img/kubefirst/getting-started/vault-users.png)
 
-### Step 3: Deliver Metaphor to Development, Staging, and Production
+## Step 3: Deliver Metaphor to Development, Staging, and Production
 
 Metaphor is our sample application that we use to demonstrate parts of the platform and to test CI changes. It's the other project in the Kubefirst group in GitLab.
 
@@ -95,7 +98,7 @@ To watch this pipeline occur, make any change to the `main` branch of the `metap
 
 You can visit the metaphor development, staging, and production apps in your browser to see the versions change as your releases complete and argocd syncs the apps. The metaphor URLs can be found in your gitops and metaphor project `README.md` files.
 
-### Learning the ropes
+## Learning the ropes
 
 We've tried our best to surface available customizations and patterns of the kubefirst platform here on our docs site. We've also made [links available](./credit.md) to all of our open source tools' own sources of documentation as well.
 

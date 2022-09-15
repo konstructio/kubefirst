@@ -1,6 +1,6 @@
 # Platform Installation with the Kubefirst CLI
 
-`kubefirst` is the name of our command line tool that installs the Kubefirst platform and provides some platform 
+**Kubefirst** is the name of our command line tool that installs the Kubefirst platform and provides some platform 
 conveniences.
 
 It installs a fully automated platform of open source cloud native tools with a simple `init` and `create` command.

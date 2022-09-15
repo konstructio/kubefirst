@@ -21,9 +21,13 @@ that demonstrates how it all pieces together.
 _Note: This infrastructure will run in your AWS cloud and is subject to associated aws fees - it costs about $10/day USD 
 to run. Removal of this infrastructure is also automated with a single kubefirst destroy command._
 
-## Console UI (WIP)
+## Console UI
 
-[//]: # (todo: add description / add screen shot)
+When calling `cluster create` command and adding the flag `--enable-console`, at the end of the installation, a console
+will be available at `http://localhost:9094`, and will give you dashboard to navigate to the different services
+that were previsioned.
+
+![console ui](../img/kubefirst/console-ui.png)
 
 ## Destroying
 

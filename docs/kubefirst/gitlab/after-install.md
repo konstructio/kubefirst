@@ -1,7 +1,5 @@
 # After Install
 
-### After Install
-
 <iframe width="784" height="441" src="https://www.youtube.com/embed/KEUOaNMUqOM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 The `kubefirst cluster create` execution includes a lot of important information toward the end including URLs and passwords. Do not lose this information. 
@@ -31,14 +29,14 @@ You now have an EKS cluster with the following content installed in it:
 ![](../../img/kubefirst/getting-started/gitops-assets.png)
 
 [//]: # (todo: add new console UI)
-### Step 1: Collect Root Credentials
+## Step 1: Collect Root Credentials
 
 Once you've successfully provisioned your kubefirst platform, you'll be presented with a screen that looks like this
 ![](../../img/kubefirst/getting-started/cluster-create-result.png)
 
 These are **not your personal credentials**. These are administrator credentials that can be used if you ever need to authenticate and administer your tools if your OIDC provider ever become unavailable. Please protect these secrets and store them in a safe place.
 
-### Step 2: Add Your Team
+## Step 2: Add Your Team
 
 Log into gitlab using the root credentials that were provided to you in your terminal.
 
@@ -75,7 +73,7 @@ Any new users you have created through this process will have their temporary in
 
 ![](../../img/kubefirst/getting-started/vault-users.png)
 
-### Step 3: Deliver Metaphors to Development, Staging, and Production
+## Step 3: Deliver Metaphors to Development, Staging, and Production
 
 Metaphors are our sample applications that we use to demonstrate parts of the platform and to test CI changes. It's the 
 other project in the Kubefirst group in GitLab.
@@ -101,7 +99,7 @@ releases complete and argocd syncs the apps. The metaphor URLs can be found in y
 
 ![](../../img/kubefirst/metaphor/metaphor-frontend.png)
 
-### Learning the ropes
+## Learning the ropes
 
 We've tried our best to surface available customizations and patterns of the kubefirst platform here on our docs site. We've also made [links available](./credit.md) to all of our open source tools' own sources of documentation as well.
 
