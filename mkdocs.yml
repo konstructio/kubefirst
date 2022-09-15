@@ -67,7 +67,7 @@ nav:
           # - Page: github
           # - Page: gitlab
           # - Page: vault
-        - Vault: 'common/vault.md'
+        - Vault: 'kubefirst/github/vault.md'
         - Metaphors: 'common/metaphors.md'
         - Certificates: 'common/certificates.md'
         - Security: 'common/security.md'
@@ -134,7 +134,7 @@ nav:
           # - Page: github
           # - Page: gitlab
           # - Page: vault
-        - Vault: 'common/vault.md'
+        - Vault: 'kubefirst/gitlab/vault.md'
         - Metaphors: 'common/metaphors.md'
         - Certificates: 'common/certificates.md'
         - Security: 'common/security.md'

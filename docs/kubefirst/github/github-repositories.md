@@ -23,6 +23,9 @@ using cert-manager and the Let's Encrypt cluster-issuer.
 
 The available Metaphors applications are, **metaphor (NodeJS API)**, **Metaphor (Go API)** and **Metaphor Frontend**.
 
+The available Metaphors applications are, **Metaphor (NodeJS API)**, **Metaphor (Go API)** and **Metaphor Frontend**.
+The Metaphor applications are describe in more details [here](../gitlab/metaphors.md).
+
 ## GitHub Repository Management
 
 These GitHub repositories are being managed in terraform.

@@ -121,6 +121,6 @@ uses them as environment variables as shown here
 [using secrets as files on pods](https://kubernetes.io/docs/concepts/configuration/secret/), or 
 [storing your dockerhub login](https://kubernetes.io/docs/concepts/configuration/secret/#docker-config-secrets)
 
-The [Metaphor](../common/metaphors.md) app will show you these secrets when you visit 
+The [Metaphor](../kubefirst/gitlab/metaphors.md) app will show you these secrets when you visit 
 [metaphor](https://metaphor-development.preprod.kubefirst.com/). Now obviously you don't want to actually show your 
 secrets in a web response, but it helps us demonstrate since these metaphor secrets don't need protection.
