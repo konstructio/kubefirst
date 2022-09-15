@@ -2,9 +2,7 @@
 
 When you install the GitHub version of Kubefirst a couple of new repositories will be added to your GitHub organization.
 
-![](../../img/todo.jpeg)
-
-`todo: need image for repos in github`
+![GitHub repositories](../../img/kubefirst/github/github-repositories.png)
 
 ## Repository Summary
 
