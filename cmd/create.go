@@ -63,6 +63,15 @@ var createCmd = &cobra.Command{
 				break
 			}
 		}
+		informUser("Checking if cluster is ready for use by metaphor apps", globalFlags.SilentMode)
+		for i := 1; i < 10; i++ {
+			err = k1ReadyCmd.RunE(cmd, args)
+			if err != nil {
+				log.Println(err)
+			} else {
+				break
+			}
+		}
 		informUser("Deploying metaphor applications", globalFlags.SilentMode)
 		err = deployMetaphorCmd.RunE(cmd, args)
 		if err != nil {
