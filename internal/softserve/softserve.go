@@ -2,8 +2,8 @@ package softserve
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -41,39 +41,75 @@ func CreateSoftServe(dryRun bool, kubeconfigPath string) {
 
 }
 
+// ConfigureSoftServeAndPush calls Configure SoftServer and push gitops repository to GitLab
 func ConfigureSoftServeAndPush(dryRun bool) {
+
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, configureSoftserveAndPush skipped.")
+		return
+	}
+
 	config := configs.ReadConfig()
 
 	configureAndPushFlag := viper.GetBool("create.softserve.configure")
 
-	if !configureAndPushFlag {
-		log.Println("Executing configureSoftserveAndPush")
-		if dryRun {
-			log.Printf("[#99] Dry-run mode, configureSoftserveAndPush skipped.")
-			return
+	// soft serve is already configured, skipping
+	if configureAndPushFlag {
+		log.Println("Skipping: configureSoftserveAndPush")
+		return
+	}
+
+	log.Println("Executing configureSoftserveAndPush")
+
+	success := false
+	totalAttempts := 5
+	for i := 0; i < totalAttempts; i++ {
+
+		log.Printf("Configuring SoftServe, attempt (%d of %d)", i+1, totalAttempts)
+
+		err := configureSoftServe()
+		if err != nil {
+			log.Printf("something went wrong, error is: %v, going to try again...", err)
+			time.Sleep(10 * time.Second)
+			continue
 		}
 
-		configureSoftServe()
-		// refactor: update it
 		gitlab.PushGitRepo(dryRun, config, "soft", "gitops")
 
 		viper.Set("create.softserve.configure", true)
-		viper.WriteConfig()
+		err = viper.WriteConfig()
+		if err != nil {
+			log.Printf("something went wrong, error is: %v, going to try again...", err)
+			time.Sleep(10 * time.Second)
+			continue
+		}
+
+		log.Println("waiting SoftServe to finish configuration, sleeping...")
 		time.Sleep(30 * time.Second)
-	} else {
-		log.Println("Skipping: configureSoftserveAndPush")
+
+		success = true
+		log.Println("SoftServe successfully configured")
 	}
+
+	if !success {
+		log.Panic("we tried hard to setup SoftServe but there were something wrong, please check the logs")
+	}
+
 }
 
-func configureSoftServe() {
+// configureSoftServe clones local repositories, update config.yaml local file and commit push to Soft Serve
+func configureSoftServe() error {
 	config := configs.ReadConfig()
 
-	url := "ssh://127.0.0.1:8022/config"
+	url := pkg.SoftServerURI
 	directory := fmt.Sprintf("%s/config", config.K1FolderPath)
 
 	log.Println("gitClient clone", url, directory)
 
-	auth, _ := pkg.PublicKey()
+	auth, err := pkg.PublicKey()
+	if err != nil {
+		return err
+	}
 
 	auth.HostKeyCallback = ssh2.InsecureIgnoreHostKey()
 
@@ -82,41 +118,52 @@ func configureSoftServe() {
 		Auth: auth,
 	})
 	if err != nil {
-		log.Panicf("error cloning config repository from soft serve")
+		return fmt.Errorf("error cloning config repository from soft serve, error: %v", err)
 	}
 
-	file, err := ioutil.ReadFile(fmt.Sprintf("%s/config.yaml", directory))
+	file, err := os.ReadFile(fmt.Sprintf("%s/config.yaml", directory))
 	if err != nil {
-		log.Panicf("error reading config.yaml file %s", err)
+		return fmt.Errorf("error reading config.yaml file %s", err)
 	}
 
 	newFile := strings.Replace(string(file), "allow-keyless: false", "allow-keyless: true", -1)
 
-	err = ioutil.WriteFile(fmt.Sprintf("%s/config.yaml", directory), []byte(newFile), 0)
+	err = os.WriteFile(fmt.Sprintf("%s/config.yaml", directory), []byte(newFile), 0)
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 
 	log.Printf("re-wrote config.yaml at %s/config folder", config.K1FolderPath)
 
-	w, _ := repo.Worktree()
+	w, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
 
 	log.Println("Committing new changes...")
-	w.Add(".")
-	w.Commit("updating soft-serve server config", &git.CommitOptions{
+	_, err = w.Add(".")
+	if err != nil {
+		return err
+	}
+	_, err = w.Commit("updating soft-serve server config", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
 			Email: config.InstallerEmail,
 			When:  time.Now(),
 		},
 	})
+	if err != nil {
+		return err
+	}
 
 	err = repo.Push(&git.PushOptions{
 		RemoteName: "origin",
 		Auth:       auth,
 	})
 	if err != nil {
-		log.Panic("error pushing to remote", err)
+		return fmt.Errorf("error pushing to remote, error: %v", err)
 	}
+
+	return nil
 
 }
