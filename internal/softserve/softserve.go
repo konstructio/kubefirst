@@ -89,6 +89,7 @@ func ConfigureSoftServeAndPush(dryRun bool) {
 
 		success = true
 		log.Println("SoftServe successfully configured")
+		break
 	}
 
 	if !success {
