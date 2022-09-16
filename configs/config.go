@@ -15,7 +15,7 @@ environment variables and general config data.
 */
 
 // to use with parans ldlfags
-var k1Version string
+var K1Version = "main"
 
 // Config host application configuration
 // todo: some of these values can be moved to the .env
@@ -89,7 +89,7 @@ func ReadConfig() *Config {
 	config.HelmVersion = "v3.6.1"
 	config.KubectlVersionM1 = "v1.21.14"
 
-	config.KubefirstVersion = k1Version
+	config.KubefirstVersion = K1Version
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 

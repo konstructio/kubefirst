@@ -3,7 +3,7 @@ on:
     types: [created]
 
 env:
-  LDFLAGS: "-X github.com/kubefirst/kubefirst/configs.k1Version=${{ github.REF_NAME }}"
+  LDFLAGS: "-X github.com/kubefirst/kubefirst/configs.K1Version=${{ github.REF_NAME }}"
 
 jobs:
   release-linux-amd64:
