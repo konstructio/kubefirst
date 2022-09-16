@@ -28,8 +28,22 @@ You now have an EKS cluster with the following content installed in it:
 
 ![](../../img/kubefirst/getting-started/gitops-assets.png)
 
-[//]: # (todo: add new console UI)
-## Step 1: Collect Root Credentials
+## Step 1: Console UI
+
+When calling `cluster create` command and adding the flag `--enable-console`, at the end of the installation, a console
+will be available at `http://localhost:9094`, and will give you dashboard to navigate to the different services
+that were previsioned.
+
+![console ui](../../img/kubefirst/console-ui.png)
+
+When the `--enable-console` flag is not set, a terminal handoff screen it presented:
+
+![terminal handoff](../../img/kubefirst/getting-started/cluster-create-result.png)
+
+These are **not your personal credentials**. These are administrator credentials that can be used if you ever need to 
+authenticate and administer your tools if your OIDC provider ever become unavailable. Please protect these secrets and 
+store them in a safe place.
+
 
 Once you've successfully provisioned your kubefirst platform, you'll be presented with a screen that looks like this
 ![](../../img/kubefirst/getting-started/cluster-create-result.png)

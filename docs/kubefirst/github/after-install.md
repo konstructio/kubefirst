@@ -41,7 +41,9 @@ When the `--enable-console` flag is not set, a terminal handoff screen it presen
 
 ![terminal handoff](../../img/kubefirst/getting-started/cluster-create-result.png)
 
-These are **not your personal credentials**. These are administrator credentials that can be used if you ever need to authenticate and administer your tools if your OIDC provider ever become unavailable. Please protect these secrets and store them in a safe place.
+These are **not your personal credentials**. These are administrator credentials that can be used if you ever need to 
+authenticate and administer your tools if your OIDC provider ever become unavailable. Please protect these secrets and 
+store them in a safe place.
 
 ## Step 2: Add Your Team
 
