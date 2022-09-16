@@ -14,6 +14,9 @@ This is an initial implementation of Config. Please keep in mind we're still wor
 environment variables and general config data.
 */
 
+// to use with parans ldlfags
+var k1Version string
+
 // Config host application configuration
 // todo: some of these values can be moved to the .env
 type Config struct {
@@ -29,7 +32,7 @@ type Config struct {
 	KubeConfigPath          string
 	HelmClientPath          string
 	TerraformPath           string
-	ConsoleVersion					string
+	ConsoleVersion          string
 
 	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
 	ClusterName    string `env:"CLUSTER_NAME"`
@@ -86,7 +89,7 @@ func ReadConfig() *Config {
 	config.HelmVersion = "v3.6.1"
 	config.KubectlVersionM1 = "v1.21.14"
 
-	config.KubefirstVersion = "1.8.6"
+	config.KubefirstVersion = k1Version
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
