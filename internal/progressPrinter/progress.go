@@ -103,7 +103,6 @@ func LogMessage(message string) {
 //
 // no need to instanciate, it is a singleton, only one instance already started before use.
 func AddTracker(key string, title string, total int64) string {
-	time.Sleep(1 * time.Second)
 	instance.Trackers[key] = &ActionTracker{Tracker: CreateTracker(title, total)}
 	return key
 }
@@ -114,6 +113,5 @@ func AddTracker(key string, title string, total int64) string {
 //
 //	progressPrinter.IncrementTracker("step-base", 1)
 func IncrementTracker(key string, value int64) {
-	time.Sleep(1 * time.Second)
 	instance.Trackers[key].Tracker.Increment(int64(1))
 }
