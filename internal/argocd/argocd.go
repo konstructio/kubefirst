@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/argocdModel"
 	"github.com/kubefirst/kubefirst/pkg"
 	yaml2 "gopkg.in/yaml.v2"
 )
@@ -91,7 +92,7 @@ func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (
 		return res.StatusCode, "", err
 	}
 
-	var syncResponse SyncResponse
+	var syncResponse argocdModel.V1alpha1Application
 	err = json.Unmarshal(body, &syncResponse)
 	if err != nil {
 		return res.StatusCode, "", err
@@ -112,7 +113,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 
 	url := pkg.ArgoCDLocalBaseURL + "/session"
 
-	argoCDConfig := ArgoCDConfig{
+	argoCDConfig := argocdModel.SessionSessionCreateRequest{
 		Username: username,
 		Password: password,
 	}
@@ -369,7 +370,7 @@ func AddArgoCDApp(gitopsDir string) error {
 // GetArgoCDApplication by receiving the ArgoCD token, and the application name, this function returns the full
 // application data Application struct. This can be used when a resource needs to be updated, we firstly collect all
 // Application data, update what is necessary and then request the PUT function to update the resource.
-func GetArgoCDApplication(token string, applicationName string) (Application, error) {
+func GetArgoCDApplication(token string, applicationName string) (argocdModel.V1alpha1Application, error) {
 
 	// todo: instantiate a new client on every http request isn't a good idea, we might want to work with methods and
 	//       provide resources via structs.
@@ -387,20 +388,20 @@ func GetArgoCDApplication(token string, applicationName string) (Application, er
 
 	res, err := httpClient.Do(req)
 	if err != nil {
-		return Application{}, err
+		return argocdModel.V1alpha1Application{}, err
 	}
 
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return Application{}, err
+		return argocdModel.V1alpha1Application{}, err
 	}
 
-	var response Application
+	var response argocdModel.V1alpha1Application
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return Application{}, err
+		return argocdModel.V1alpha1Application{}, err
 	}
 
 	return response, nil
@@ -409,7 +410,7 @@ func GetArgoCDApplication(token string, applicationName string) (Application, er
 // PutArgoCDApplication expects a ArgoCD token and filled Application struct, ArgoCD will receive the request, and
 // update the deltas. Since this functions is calling via PUT http verb, Application needs to be filled properly to
 // be able to reflect the changes. note: PUT is different from PATCH verb.
-func PutArgoCDApplication(token string, argoCDApplication Application) error {
+func PutArgoCDApplication(token string, argoCDApplication argocdModel.V1alpha1Application) error {
 
 	// todo: instantiate a new client on every http request isn't a good idea, we might want to work with methods and
 	//       provide resources via structs.

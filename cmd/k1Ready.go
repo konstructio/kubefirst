@@ -30,10 +30,11 @@ var k1ReadyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		kPortForwardArgocd, err := k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
+		portForwardArgocd, err := k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 		defer func() {
-			if kPortForwardArgocd != nil {
-				_ = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+			if portForwardArgocd != nil {
+				log.Println("Closed argoCD port forward")
+				_ = portForwardArgocd.Process.Signal(syscall.SIGTERM)
 			}
 		}()
 		if err != nil {

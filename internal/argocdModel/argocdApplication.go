@@ -1,23 +1,10 @@
-package argocd
+package argocdModel
 
 import "time"
 
-type ArgoCDConfig struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type SyncResponse struct {
-	Status struct {
-		Sync struct {
-			Status string `json:"status"`
-		} `json:"sync"`
-	}
-}
-
 // Application is required with full specification since ArgoCD needs a PUT to update the syncPolicy, and there is no
 // PATCH available
-type Application struct {
+type V1alpha1Application struct {
 	Metadata struct {
 		Name              string    `json:"name"`
 		Namespace         string    `json:"namespace"`
