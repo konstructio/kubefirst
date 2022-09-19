@@ -9,8 +9,10 @@ import (
 	"log"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/chartMuseum"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/spf13/cobra"
@@ -53,7 +55,8 @@ var k1ReadyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		apps := strings.Fields("registry argocd atlantis cert-manager chartmuseum chartmuseum-components")
+		apps := strings.Fields("registry argocd atlantis cert-manager chartmuseum chartmuseum-components argo-components")
+		// argo-components - as cwft are needed to allow deployments to work.
 		for _, app := range apps {
 			isAppSynched, err := argocd.IsAppSynched(token, app)
 			if err != nil {
@@ -65,7 +68,21 @@ var k1ReadyCmd = &cobra.Command{
 				return fmt.Errorf("app %s is is not ready, synch status: %v", app, isAppSynched)
 			}
 		}
-		return nil
+
+		//Check chartMuseum repository
+		// issue: 386
+		for i := 0; i < 30; i++ {
+			isCMReady, err := chartMuseum.IsChartMuseumReady()
+			log.Printf("Checking status of chartMuseum: %v", isCMReady)
+			if err == nil && isCMReady {
+				log.Printf("chartMuseum is Ready - 30 secs grace period")
+				time.Sleep(30 * time.Second)
+				return nil
+			}
+			time.Sleep(10 * time.Second)
+		}
+		return fmt.Errorf("ChartMuseum was not detected as ready")
+
 	},
 }
 
