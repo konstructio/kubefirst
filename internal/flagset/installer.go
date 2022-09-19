@@ -22,7 +22,6 @@ type InstallerGenericFlags struct {
 
 func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
 	// Generic Installer flags:
-	config := configs.ReadConfig()
 	currentCommand.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
 	currentCommand.Flags().String("admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
 	currentCommand.Flags().String("cloud", "", "the cloud to provision infrastructure in")
@@ -30,12 +29,12 @@ func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("gitops-repo", "gitops", "version/branch used on git clone")
 	currentCommand.Flags().String("gitops-branch", "", "version/branch used on git clone - former: version-gitops flag")
 	currentCommand.Flags().String("metaphor-branch", "", "version/branch used on git clone - former: version-gitops flag")
-	currentCommand.Flags().String("template-tag", config.KubefirstVersion, `fallback tag used on git clone.
+	currentCommand.Flags().String("template-tag", configs.K1Version, `fallback tag used on git clone.
   Details: if "gitops-branch" is provided, branch("gitops-branch") has precedence and installer will attempt to clone branch("gitops-branch") first,
   if it fails, then fallback it will attempt to clone the tag provided at "template-tag" flag`)
 }
 
-//ProcessInstallerGenericFlags - Read values of CLI parameters for installer flags
+// ProcessInstallerGenericFlags - Read values of CLI parameters for installer flags
 func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, error) {
 	flags := InstallerGenericFlags{}
 	defer func() {
