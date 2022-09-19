@@ -5,7 +5,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
@@ -20,7 +19,7 @@ var githubAddCmd = &cobra.Command{
 	Short: "Setup github for kubefirst install",
 	Long:  `Prepate github account to be used for Kubefirst installation `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("githubAddCmd called")
+
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
 			return err
