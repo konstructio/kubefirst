@@ -29,7 +29,7 @@ type Config struct {
 	KubeConfigPath          string
 	HelmClientPath          string
 	TerraformPath           string
-	ConsoleVersion					string
+	ConsoleVersion          string
 
 	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
 	ClusterName    string `env:"CLUSTER_NAME"`
@@ -48,6 +48,8 @@ type Config struct {
 
 	MetaphorTemplateURL string
 	GitopsTemplateURL   string
+
+	GitHubPersonalAccessToken string `env:"GITHUB_AUTH_TOKEN"`
 }
 
 func ReadConfig() *Config {
