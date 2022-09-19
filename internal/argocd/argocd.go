@@ -668,7 +668,11 @@ func PutArgoCDApplication(token string, argoCDApplication Application) error {
 	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	httpClient := http.Client{Transport: customTransport}
 
-	url := pkg.ArgoCDLocalBaseURL + "/applications/shockshop?validate=false"
+	url := fmt.Sprintf(
+		"%s/%s?validate=false",
+		pkg.ArgoCDLocalBaseURL,
+		argoCDApplication.Metadata.Name,
+	)
 
 	payload, err := json.Marshal(argoCDApplication)
 	if err != nil {
