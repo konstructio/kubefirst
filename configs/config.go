@@ -89,8 +89,6 @@ func ReadConfig() *Config {
 	config.HelmVersion = "v3.6.1"
 	config.KubectlVersionM1 = "v1.21.14"
 
-	config.KubefirstVersion = K1Version
-
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
 	config.MetaphorTemplateURL = "https://github.com/kubefirst/metaphor-template.git"
