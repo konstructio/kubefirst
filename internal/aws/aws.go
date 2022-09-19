@@ -110,7 +110,7 @@ func BucketRand(dryRun bool) {
 						Status: s3Types.BucketVersioningStatusEnabled,
 					},
 				}
-				log.Printf("[DEBUG] S3 put bucket versioning: %#v", versionConfigInput)
+
 				_, err := s3Client.PutBucketVersioning(context.Background(), versionConfigInput)
 				if err != nil {
 					log.Panicf("Error putting S3 versioning: %s", err)
@@ -506,7 +506,11 @@ func PutTagKubefirstOnBuckets(bucketName string, clusterName string) {
 
 	log.Printf("tagging bucket... %s:%s", bucketName, clusterName)
 
-	s3Client := s3.New(s3.Options{})
+	awsConfig, err := NewAws()
+	if err != nil {
+		log.Println(err)
+	}
+	s3Client := s3.NewFromConfig(awsConfig)
 
 	input := &s3.PutBucketTaggingInput{
 		Bucket: aws.String(bucketName),
@@ -524,7 +528,7 @@ func PutTagKubefirstOnBuckets(bucketName string, clusterName string) {
 		},
 	}
 
-	_, err := s3Client.PutBucketTagging(context.Background(), input)
+	_, err = s3Client.PutBucketTagging(context.Background(), input)
 	if err != nil {
 		// todo: redo it using AWS SDK v2 using SDK types
 		//if aerr, ok := err.(awserr.Error); ok {

@@ -15,8 +15,8 @@ import (
 // awsWhoamiCmd represents the awsWhoami command
 var awsWhoamiCmd = &cobra.Command{
 	Use:   "aws-whoami",
-	Short: "A brief description of your command",
-	Long:  `TBD`,
+	Short: "List the AWS ARN and Account ID",
+	Long:  `This command lists the ARN and Account ID used by kubefirst at the time of execution`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("awsWhoami called")
 		aws.GetAccountInfo()
