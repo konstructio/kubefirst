@@ -23,6 +23,12 @@ You now have an EKS cluster with the following content installed in it:
 | Metaphor Development     | Development instance of sample application  |
 | Metaphor Staging         | Staging instance of sample application      |
 | Metaphor Production      | Production instance of sample application   |
+| Metaphor-go Development     | Development instance of sample go application  |
+| Metaphor-go Staging         | Staging instance of sample go application      |
+| Metaphor-go Production      | Production instance of sample go application   |
+| Metaphor-frontend Development     | Development instance of sample frontend application  |
+| Metaphor-frontend Staging         | Staging instance of sample frontend application      |
+| Metaphor-frontend Production      | Production instance of sample frontend application   |
 
 - These apps are all managed by Argo CD and the app configurations are in the `gitops` repo's `registry` folder.
 - The AWS infrastructure is terraform - that's also in your `gitops` repo, but in your `terraform` folder.
