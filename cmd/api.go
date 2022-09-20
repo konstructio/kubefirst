@@ -11,9 +11,9 @@ import (
 var api = &cobra.Command{
 	Use:   "api",
 	Short: "starts API server",
-	Long:  "starts intermal API server",
+	Long:  "starts internal API server that is consumed by the console UI",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Printf("Server started")
+		log.Printf("Console UI API started")
 		router := sw.NewRouter()
 
 		//In case of error, we need to bubble it up
