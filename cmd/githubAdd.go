@@ -44,7 +44,7 @@ var githubAddCmd = &cobra.Command{
 
 		atlantisHookUrl := "https://atlantis." + viper.GetString("aws.hostedzonename") + "/events"
 		atlantisHookEvents := []string{"pull_request_review", "push", "issue_comment", "pull_request"}
-		atlantisHookSecret := pkg.Random(6)
+		atlantisHookSecret := pkg.Random(10)
 		viper.Set("github.secret-webhook", atlantisHookSecret)
 		viper.WriteConfig()
 		gitWrapper.CreateWebhookRepo(viper.GetString("github.org"), "gitops", "atlantis", atlantisHookUrl, atlantisHookSecret, atlantisHookEvents)
