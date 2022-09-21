@@ -10,8 +10,10 @@ import (
 )
 
 // InstallArgocd - install argoCd in a cluster
+// it has a retry embeded logic to mitigate network issues when trying to install argoCD
 func InstallArgocd(dryRun bool) error {
 	config := configs.ReadConfig()
+	message := "error installing argo-cd: unexpected state"
 	if !viper.GetBool("create.argocd.helm") {
 		if dryRun {
 			log.Printf("[#99] Dry-run mode, helmInstallArgocd skipped.")
@@ -25,31 +27,35 @@ func InstallArgocd(dryRun bool) error {
 			_, _, err := pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
 			if err != nil {
 				log.Printf("error: could not run helm repo add %s", err)
-				return fmt.Errorf("error installing argo-cd: add repo")
+				message = "error installing argo-cd: add repo"
+				continue
 			}
 
 			_, _, err = pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "repo", "update")
 			if err != nil {
 				log.Printf("error: could not helm repo update %s", err)
-				return fmt.Errorf("error installing argo-cd: update repo")
+				message = "error installing argo-cd: update repo"
+				continue
 			}
 
 			_, _, err = pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "upgrade", "--install", "argocd", "--namespace", "argocd", "--create-namespace", "--version", config.ArgoCDChartHelmVersion, "--wait", "--values", fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), "argo/argo-cd")
 			if err != nil {
 				log.Printf("error: could not helm install argocd command %s", err)
-				return fmt.Errorf("error installing argo-cd: install argo-cd")
+				message = "error installing argo-cd: install argo-cd"
+				continue
 			}
 
 			viper.Set("create.argocd.helm", true)
 			err = viper.WriteConfig()
 			if err != nil {
 				log.Printf("error: could not write to viper config")
-				return fmt.Errorf("error installing argo-cd: update config")
+				message = "error installing argo-cd: update config"
+				continue
 			}
 			if viper.GetBool("create.argocd.helm") {
 				return nil
 			}
 		}
 	}
-	return fmt.Errorf("error installing argo-cd: unexpected state")
+	return fmt.Errorf(message)
 }
