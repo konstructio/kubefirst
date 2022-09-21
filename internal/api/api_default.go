@@ -47,11 +47,11 @@ func ConfigsGet(w http.ResponseWriter, r *http.Request) {
 		},
 		{
 			Key:   "GITHUB_GITOPS",
-			Value: fmt.Sprintf("https://github.com/%s/gitops", viper.GetString("github.owner")),
+			Value: fmt.Sprintf("https://%s/%s/gitops", viper.GetString("github.host"), viper.GetString("github.owner")),
 		},
 		{
 			Key:   "GITHUB_METAPHOR",
-			Value: fmt.Sprintf("https://github.com/%s/metaphor", viper.GetString("github.owner")),
+			Value: fmt.Sprintf("https://%s/%s/metaphor", viper.GetString("github.host"), viper.GetString("github.owner")),
 		},
 		{
 			Key:   "VAULT_URL",
