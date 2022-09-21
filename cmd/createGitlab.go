@@ -85,24 +85,43 @@ var createGitlabCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-softserve", 1)
 		// todo this should be replaced with something more intelligent
 		log.Println("Waiting for soft-serve installation to complete...")
-		if !globalFlags.DryRun {
-			kPortForwardSoftServe, err := k8s.PortForward(globalFlags.DryRun, "soft-serve", "svc/soft-serve", "8022:22")
-			defer kPortForwardSoftServe.Process.Signal(syscall.SIGTERM)
+
+		totalAttempts := 10
+		var kPortForwardSoftServe *exec.Cmd
+		for i := 0; i < totalAttempts; i++ {
+
+			kPortForwardSoftServe, err = k8s.PortForward(globalFlags.DryRun, "soft-serve", "svc/soft-serve", "8022:22")
+			defer func() {
+				_ = kPortForwardSoftServe.Process.Signal(syscall.SIGTERM)
+			}()
 			if err != nil {
 				log.Println("Error creating port-forward")
 				return err
 			}
 			time.Sleep(20 * time.Second)
-		}
 
+			err = softserve.ConfigureSoftServeAndPush(globalFlags.DryRun)
+			if viper.GetBool("create.softserve.configure") || err == nil {
+				log.Println("Soft-serve configured")
+				break
+			} else {
+				log.Println("Soft-serve not configured - waiting before trying again")
+				log.Println("Soft-serve not configured - Re-creating Port-forward deails at: https://github.com/kubefirst/kubefirst/issues/429")
+				time.Sleep(20 * time.Second)
+				_ = kPortForwardSoftServe.Process.Signal(syscall.SIGTERM)
+			}
+		}
 		informUser("Softserve Update", globalFlags.SilentMode)
-		softserve.ConfigureSoftServeAndPush(globalFlags.DryRun)
 		progressPrinter.IncrementTracker("step-softserve", 1)
 
 		progressPrinter.AddTracker("step-argo", "Deploy CI/CD ", 5)
 		informUser("Deploy ArgoCD", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-argo", 1)
-		helm.InstallArgocd(globalFlags.DryRun)
+		err = helm.InstallArgocd(globalFlags.DryRun)
+		if err != nil {
+			log.Println("Error installing argocd")
+			return err
+		}
 
 		//! argocd was just helm installed
 		waitArgoCDToBeReady(globalFlags.DryRun)
