@@ -12,13 +12,12 @@ import (
 func PrintSectionRepoGithub() []byte {
 	var handOffData bytes.Buffer
 
-	githubHost := "github.com"
 	handOffData.WriteString("\n--- Github ")
 	handOffData.WriteString(strings.Repeat("-", 59))
 	handOffData.WriteString(fmt.Sprintf("\n owner: %s", viper.GetString("github.owner")))
 	handOffData.WriteString("\n Repos: ")
-	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/gitops", githubHost, viper.GetString("github.owner"))))
-	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor", githubHost, viper.GetString("github.owner"))))
+	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/gitops", viper.GetString("github.host"), viper.GetString("github.owner"))))
+	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor", viper.GetString("github.host"), viper.GetString("github.owner"))))
 
 	return handOffData.Bytes()
 }
