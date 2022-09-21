@@ -8,21 +8,21 @@ The `kubefirst cluster create` execution includes a lot of important information
 
 You now have an EKS cluster with the following content installed in it:
 
-| Application              | Description                                 |
-|--------------------------|---------------------------------------------|
-| Nginx Ingress Controller | Ingress Controller                          |
-| Cert Manager             | Certificate Automation Utility              |
-| Certificate Issuers      | Let's Encrypt browser-trusted certificates  |
-| Argo CD                  | GitOps Continuous Delivery                  |
-| Argo Workflows           | Application Continuous Integration          |
-| GitHub Action Runner     | GitHub CI Executor                          |
-| Vault                    | Secrets Management                          |
-| Atlantis                 | Terraform Workflow Automation               |
-| External Secrets         | Syncs Kubernetes secrets with Vault secrets |
-| Chart Museum             | Helm Chart Registry                         |
-| Metaphor Development     | Development instance of sample application  |
-| Metaphor Staging         | Staging instance of sample application      |
-| Metaphor Production      | Production instance of sample application   |
+| Application                  | Description                                                                |
+|------------------------------|----------------------------------------------------------------------------|
+| Nginx Ingress Controller     | Ingress Controller                                                         |
+| Cert Manager                 | Certificate Automation Utility                                             |
+| Certificate Issuers          | Let's Encrypt browser-trusted certificates                                 |
+| Argo CD                      | GitOps Continuous Delivery                                                 |
+| Argo Workflows               | Application Continuous Integration                                         |
+| GitHub Action Runner         | GitHub CI Executor                                                         |
+| Vault                        | Secrets Management                                                         |
+| Atlantis                     | Terraform Workflow Automation                                              |
+| External Secrets             | Syncs Kubernetes secrets with Vault secrets                                |
+| Chart Museum                 | Helm Chart Registry                                                        |
+| Metaphor JS API              | (development, staging, production) instance of sample application          |
+| Metaphor Go API              | (development, staging, production) instance of sample go application       |
+| Metaphor Frontend            | (development, staging, production) instance of sample frontend application |
 
 - These apps are all managed by Argo CD and the app configurations are in the `gitops` repo's `registry` folder.
 - The AWS infrastructure is terraform - that's also in your `gitops` repo, but in your `terraform` folder.

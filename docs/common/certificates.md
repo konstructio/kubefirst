@@ -14,14 +14,24 @@ certificate, if not, ArgoCD will use his power to do it's best to resolve the ce
 Certificates are limited, and Kubefirst can also help on that regard! We have two features to 
 [backupSSL](../tooling/kubefirst-cli.md) and [restoreSSL](../tooling/kubefirst-cli.md) certificates. When a new 
 installation is started, one of the functionalities is to backup your SSL certificates at your AWS account on a S3 
-bucket following with `k1 + your-cluster-name`.
-
-At any point after the installation, the user can restore the certificates using 
-[restoreSSL](../tooling/kubefirst-cli.md) command.
+bucket following with `k1 + your-domain-name`.
 
 **Practical use case scenario:**
 
-1. user finish Kubefirst installation
-2. user destroyed the Kubefirst installation
-3. user wants to start a fresh new installation but wants to use the previously created certificates
-4. user call this sequence of commands: `kubefirst clean`, `kubefirst init + <args>`, `kubefirst restoreSSL`, and `kubefirst cluster create`
+1. you finished Kubefirst installation
+2. you destroyed the Kubefirst installation
+3. you want to start a fresh new installation but wants to use the previously created certificates
+4. at this point you can call this sequence of commands: 
+
+```bash
+# backup your SSL certificates at S3 bucket name "k1-your-domain-name"
+kubefirst backupSSL
+# clean previous installation
+kubefirst clean
+# prepare a new installation
+kubefirst init + <args>
+# during Kubefirst installation process,
+# the installation will load the backup certificates and use it to avoid issuing new certificates.
+# no manual changes are necessary for certificate backup restore
+kubefirst cluster create`
+```
