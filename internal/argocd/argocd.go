@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 	"log"
 	"net/http"
 
@@ -21,6 +22,8 @@ import (
 	"github.com/kubefirst/kubefirst/pkg"
 	yaml2 "gopkg.in/yaml.v2"
 )
+
+var ArgocdSecretClient coreV1Types.SecretInterface
 
 // ConfigRepo - Sample config struct
 type ConfigRepo struct {

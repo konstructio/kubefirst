@@ -3,7 +3,6 @@ package cmd
 import (
 	"crypto/tls"
 	"fmt"
-	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 	"log"
 	"net/http"
 	"os/exec"
@@ -243,24 +242,13 @@ var createGitlabCmd = &cobra.Command{
 		}
 		progressPrinter.IncrementTracker("step-post-gitlab", 1)
 		if !globalFlags.DryRun && !viper.GetBool("argocd.oidc-patched") {
-
-			var k8sSecretInterface coreV1Types.SecretInterface
-			k8sSecretInterface = clientset.CoreV1().Secrets("argocd")
-
-			k8s.PatchSecret(
-				k8sSecretInterface,
-				"argocd-secret",
-				"oidc.gitlab.clientSecret",
-				viper.GetString("gitlab.oidc.argocd.secret"),
-			)
+			argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+			k8s.PatchSecret(argocd.ArgocdSecretClient, "argocd-secret", "oidc.gitlab.clientSecret", viper.GetString("gitlab.oidc.argocd.secret"))
 
 			argocdPodClient := clientset.CoreV1().Pods("argocd")
 			k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
 			viper.Set("argocd.oidc-patched", true)
-			err := viper.WriteConfig()
-			if err != nil {
-				return err
-			}
+			viper.WriteConfig()
 		}
 
 		if !viper.GetBool("gitlab.registered") {
