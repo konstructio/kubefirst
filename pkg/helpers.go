@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/viper"
@@ -24,6 +26,8 @@ type RegistryAddon struct {
 		} `yaml:"annotations"`
 	} `yaml:"metadata"`
 }
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 // Detokenize - Translate tokens by values on a given path
 func Detokenize(path string) {
@@ -253,7 +257,7 @@ func SetupViper(config *configs.Config) error {
 	return nil
 }
 
-//CreateFile - Create a file with its contents
+// CreateFile - Create a file with its contents
 func CreateFile(fileName string, fileContent []byte) error {
 	file, err := os.Create(fileName)
 	if err != nil {
@@ -273,4 +277,17 @@ func CreateFullPath(p string) (*os.File, error) {
 		return nil, err
 	}
 	return os.Create(p)
+}
+
+func randSeq(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
+
+func Random(seq int) string {
+	rand.Seed(time.Now().UnixNano())
+	return randSeq(seq)
 }
