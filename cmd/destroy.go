@@ -9,14 +9,12 @@ import (
 	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // destroyCmd represents the destroy command
@@ -129,35 +127,9 @@ if the registry has already been deleted.`,
 		informUser("Destroying Gitlab", globalFlags.SilentMode)
 		gitlab.DestroyGitlabTerraform(skipGitlabTerraform)
 		progressPrinter.IncrementTracker("step-destroy", 1)
-
 		log.Println("gitlab terraform destruction complete")
 
-		//This should wrapped into a function, maybe to move to: k8s.DeleteRegistryApplication
-		if !skipDeleteRegistryApplication {
-			log.Println("disabling ArgoCD auto sync")
-			argoCDUsername := viper.GetString("argocd.admin.username")
-			argoCDPassword := viper.GetString("argocd.admin.password")
-
-			token, err := argocd.GetArgoCDToken(argoCDUsername, argoCDPassword)
-			if err != nil {
-				return err
-			}
-
-			argoCDApplication, err := argocd.GetArgoCDApplication(token, "registry")
-			if err != nil {
-				return err
-			}
-
-			// set empty syncPolicy (disable auto-sync)
-			argoCDApplication.Spec.SyncPolicy = struct{}{}
-			err = argocd.PutArgoCDApplication(token, argoCDApplication)
-			if err != nil {
-				return err
-			}
-		}
-
 		log.Println("deleting registry application in argocd")
-
 		// delete argocd registry
 		informUser("Destroying Registry Application", globalFlags.SilentMode)
 		k8s.DeleteRegistryApplication(skipDeleteRegistryApplication)

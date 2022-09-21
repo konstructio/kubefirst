@@ -11,8 +11,6 @@ import (
 	"log"
 	"net/http"
 
-	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
-
 	"github.com/spf13/viper"
 
 	"strings"
@@ -24,7 +22,24 @@ import (
 	yaml2 "gopkg.in/yaml.v2"
 )
 
-var ArgocdSecretClient coreV1Types.SecretInterface
+// ConfigRepo - Sample config struct
+type ConfigRepo struct {
+	Configs struct {
+		Repositories struct {
+			RepoGitops struct {
+				URL  string `yaml:"url"`
+				Type string `yaml:"type"`
+				Name string `yaml:"name"`
+			} `yaml:"github-serve-gitops"`
+		} `yaml:"repositories"`
+		CredentialTemplates struct {
+			SSHCreds struct {
+				URL           string `yaml:"url"`
+				SSHPrivateKey string `yaml:"sshPrivateKey"`
+			} `yaml:"ssh-creds"`
+		} `yaml:"credentialTemplates"`
+	} `yaml:"configs"`
+}
 
 // SyncRetry tries to Sync ArgoCD as many times as requested by the attempts' parameter. On successful request, returns
 // true and no error, on error, returns false and the reason it fails.
@@ -167,8 +182,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 
 // GetArgocdAuthToken issue token and retry in case of failure.
 // todo: call the retry from outside of the function, and use GetArgoCDToken function to get token. At the moment there
-//
-//	are two functions issuing tokens.
+// are two functions issuing tokens.
 func GetArgocdAuthToken(dryRun bool) string {
 
 	if dryRun {
@@ -262,25 +276,7 @@ func SyncArgocdApplication(dryRun bool, applicationName, argocdAuthToken string)
 	}
 }
 
-func DeleteArgocdApplicationNoCascade(dryRun bool, applicationName, argocdAuthToken string) {
-	if dryRun {
-		log.Printf("[#99] Dry-run mode, SyncArgocdApplication skipped.")
-		return
-	}
-
-	// todo need to replace this with a curl wrapper and see if it WORKS
-
-	url := fmt.Sprintf("https://localhost:8080/api/v1/applications/%s?cascade=false", applicationName)
-	var outb bytes.Buffer
-
-	_, _, err := pkg.ExecShellReturnStrings("curl", "-k", "-L", "-X", "DELETE", url, "-H", fmt.Sprintf("Authorization: Bearer %s", argocdAuthToken))
-	log.Println("the value from the curl command to delete registry in argocd is:", outb.String())
-	if err != nil {
-		log.Panicf("error: curl app delete failed %s", err)
-	}
-}
-
-//ApplyRegistry - Apply Registry application
+// ApplyRegistry - Apply Registry application
 func ApplyRegistry(dryRun bool) error {
 	config := configs.ReadConfig()
 	if viper.GetBool("argocd.registry.applied") {
@@ -298,25 +294,6 @@ func ApplyRegistry(dryRun bool) error {
 		viper.WriteConfig()
 	}
 	return nil
-}
-
-// ConfigRepo - Sample config struct
-type ConfigRepo struct {
-	Configs struct {
-		Repositories struct {
-			RepoGitops struct {
-				URL  string `yaml:"url"`
-				Type string `yaml:"type"`
-				Name string `yaml:"name"`
-			} `yaml:"github-serve-gitops"`
-		} `yaml:"repositories"`
-		CredentialTemplates struct {
-			SSHCreds struct {
-				URL           string `yaml:"url"`
-				SSHPrivateKey string `yaml:"sshPrivateKey"`
-			} `yaml:"ssh-creds"`
-		} `yaml:"credentialTemplates"`
-	} `yaml:"configs"`
 }
 
 // CreateInitalArgoRepository - Fill and create argocd-init-values.yaml for Github installs
@@ -341,27 +318,6 @@ func CreateInitalArgoRepository(githubURL string) error {
 	err = ioutil.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoYaml, 0644)
 	if err != nil {
 		log.Printf("error: could not write argocd-init-values.yaml %s", err)
-		return err
-	}
-	return nil
-}
-
-// AddArgoCDApp - Create argoCD app by adding it to register folder
-// todo: make it generic function at pkg/ folder, it isn't a ArgoCD domain function
-func AddArgoCDApp(gitopsDir string) error {
-	sourceFile := gitopsDir + "/components/helpers/argocd.yaml"
-	destinationFile := gitopsDir + "/registry/base/argocd.yaml"
-	log.Println("Source file:", sourceFile)
-	input, err := ioutil.ReadFile(sourceFile)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	err = ioutil.WriteFile(destinationFile, input, 0644)
-	if err != nil {
-		log.Println("Error creating", destinationFile)
-		log.Println(err)
 		return err
 	}
 	return nil
@@ -419,7 +375,7 @@ func PutArgoCDApplication(token string, argoCDApplication argocdModel.V1alpha1Ap
 	httpClient := http.Client{Transport: customTransport}
 
 	url := fmt.Sprintf(
-		"%s/%s?validate=false",
+		"%s/applications/%s?validate=false",
 		pkg.ArgoCDLocalBaseURL,
 		argoCDApplication.Metadata.Name,
 	)
