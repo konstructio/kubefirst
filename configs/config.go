@@ -14,8 +14,11 @@ This is an initial implementation of Config. Please keep in mind we're still wor
 environment variables and general config data.
 */
 
+// K1Version - Version of CLI based on tag in play
 // to use with parans ldlfags
-var K1Version = "main"
+// Check documentation to know how to use on development mode
+// https://blog.cloudflare.com/setting-go-variables-at-compile-time/
+var K1Version = ""
 
 // Config host application configuration
 // todo: some of these values can be moved to the .env
@@ -55,6 +58,7 @@ type Config struct {
 	GitHubPersonalAccessToken string `env:"GITHUB_AUTH_TOKEN"`
 }
 
+// ReadConfig - load default values from kubefirst installer
 func ReadConfig() *Config {
 	config := Config{}
 

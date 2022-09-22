@@ -36,6 +36,12 @@ var infoCmd = &cobra.Command{
 		infoSummary.WriteString(fmt.Sprintf("Terraform path: %s\n", config.TerraformPath))
 		infoSummary.WriteString(fmt.Sprintf("Kubeconfig path: %s\n", config.KubeConfigPath))
 
+		infoSummary.WriteString(fmt.Sprintf("Kubefirst Version: %s\n", configs.K1Version))
+		if configs.K1Version == "" {
+			infoSummary.WriteString("Warning: It seems you are running kubefirst in development mode,")
+			infoSummary.WriteString("  please use LDFLAGS to ensure you use the proper template version and avoid unexpected behavior")
+		}
+
 		err := configs.CheckKubefirstConfigFile(config)
 		if err != nil {
 			log.Println("Config file check:", err)
