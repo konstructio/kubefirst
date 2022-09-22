@@ -14,6 +14,9 @@ This is an initial implementation of Config. Please keep in mind we're still wor
 environment variables and general config data.
 */
 
+// to use with parans ldlfags
+var K1Version = "main"
+
 // Config host application configuration
 // todo: some of these values can be moved to the .env
 type Config struct {
@@ -87,8 +90,6 @@ func ReadConfig() *Config {
 	// todo adopt latest helmVersion := "v3.9.0"
 	config.HelmVersion = "v3.6.1"
 	config.KubectlVersionM1 = "v1.21.14"
-
-	config.KubefirstVersion = "1.8.6"
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
