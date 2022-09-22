@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/viper"
@@ -253,7 +255,7 @@ func SetupViper(config *configs.Config) error {
 	return nil
 }
 
-//CreateFile - Create a file with its contents
+// CreateFile - Create a file with its contents
 func CreateFile(fileName string, fileContent []byte) error {
 	file, err := os.Create(fileName)
 	if err != nil {
@@ -273,4 +275,18 @@ func CreateFullPath(p string) (*os.File, error) {
 		return nil, err
 	}
 	return os.Create(p)
+}
+
+func randSeq(n int) string {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
+
+func Random(seq int) string {
+	rand.Seed(time.Now().UnixNano())
+	return randSeq(seq)
 }
