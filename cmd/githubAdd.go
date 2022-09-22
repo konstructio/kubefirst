@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -9,6 +8,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -40,6 +40,13 @@ var githubAddCmd = &cobra.Command{
 		}
 		gitWrapper := githubWrapper.New()
 		gitWrapper.CreatePrivateRepo(viper.GetString("github.org"), "gitops", "Kubefirst Gitops")
+
+		atlantisHookUrl := "https://atlantis." + viper.GetString("aws.hostedzonename") + "/events"
+		atlantisHookEvents := []string{"pull_request_review", "push", "issue_comment", "pull_request"}
+		atlantisHookSecret := pkg.Random(10)
+		viper.Set("github.secret-webhook", atlantisHookSecret)
+		viper.WriteConfig()
+		gitWrapper.CreateWebhookRepo(viper.GetString("github.org"), "gitops", "atlantis", atlantisHookUrl, atlantisHookSecret, atlantisHookEvents)
 
 		//Add Github SSHPublic key
 		if viper.GetString("botPublicKey") != "" {
