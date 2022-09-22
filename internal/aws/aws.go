@@ -29,9 +29,11 @@ import (
 
 // TXTRecord stores Route53 TXT record data
 type TXTRecord struct {
-	Name  string
-	Value string
-	TTL   int64
+	Name          string
+	Value         string
+	SetIdentifier string
+	Weight        int64
+	TTL           int64
 }
 
 // ARecord stores Route53 A record data
@@ -711,15 +713,17 @@ func Route53ListTXTRecords(hostedZoneId string) ([]TXTRecord, error) {
 
 	var txtRecords []TXTRecord
 
-	for _, val := range recordSets.ResourceRecordSets {
-		fmt.Println("Record Name: ", *val.Name)
+	for _, recordSet := range recordSets.ResourceRecordSets {
+		fmt.Println("Record Name: ", *recordSet.Name)
 
-		if val.Type == route53Types.RRTypeTxt {
-			for _, resourceRecord := range val.ResourceRecords {
+		if recordSet.Type == route53Types.RRTypeTxt {
+			for _, resourceRecord := range recordSet.ResourceRecords {
 				record := TXTRecord{
-					Name:  *val.Name,
-					Value: *resourceRecord.Value,
-					TTL:   *val.TTL,
+					Name:          *recordSet.Name,
+					Value:         *resourceRecord.Value,
+					SetIdentifier: *recordSet.SetIdentifier,
+					TTL:           *recordSet.TTL,
+					Weight:        *recordSet.Weight,
 				}
 				txtRecords = append(txtRecords, record)
 			}
@@ -753,11 +757,10 @@ func Route53ListARecords(hostedZoneId string) ([]ARecord, error) {
 
 		if recordSet.Type == route53Types.RRTypeA {
 
-			// todo: TTL is hardcoded, make it load from AWS
 			record := ARecord{
 				Name:       *recordSet.Name,
 				RecordType: "A",
-				TTL:        int64(300),
+				TTL:        *recordSet.TTL,
 				AliasTarget: &route53Types.AliasTarget{
 					HostedZoneId:         recordSet.AliasTarget.HostedZoneId,
 					DNSName:              recordSet.AliasTarget.DNSName,
@@ -773,7 +776,12 @@ func Route53ListARecords(hostedZoneId string) ([]ARecord, error) {
 }
 
 // Route53DeleteTXTRecords receives a list of DNS TXT records []TXTRecord, and delete the records contained in the list.
-func Route53DeleteTXTRecords(hostedZoneId string, txtRecords []TXTRecord) error {
+func Route53DeleteTXTRecords(
+	hostedZoneId string,
+	hostedZoneName string,
+	keepLivenessRecord bool,
+	txtRecords []TXTRecord,
+) error {
 
 	// todo: use method approach to avoid new AWS client initializations
 	awsConfig, err := NewAws()
@@ -783,21 +791,30 @@ func Route53DeleteTXTRecords(hostedZoneId string, txtRecords []TXTRecord) error 
 
 	route53Client := route53.NewFromConfig(awsConfig)
 
+	livenessRecordName := fmt.Sprintf("%s.%s.", "kubefirst-liveness", hostedZoneName)
+
 	for _, record := range txtRecords {
 
-		fmt.Println("going to delete a TXT record...", record.Name)
-		time.Sleep(2 * time.Second)
+		if keepLivenessRecord && record.Name == livenessRecordName {
+			fmt.Printf("%s record not deleted\n", record.Name)
+			continue
+		}
 
-		// this deletes a TXT record
-		_, err = route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
+		fmt.Println("going to delete a TXT record...", record.Name)
+		time.Sleep(1 * time.Second)
+
+		//this deletes a TXT record
+		_, err := route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
 			ChangeBatch: &route53Types.ChangeBatch{
 				Changes: []route53Types.Change{
 					{
 						Action: "DELETE",
 						ResourceRecordSet: &route53Types.ResourceRecordSet{
-							Name: &record.Name,
-							Type: "TXT",
-							TTL:  &record.TTL,
+							Name:          &record.Name,
+							Type:          "TXT",
+							TTL:           &record.TTL,
+							SetIdentifier: &record.SetIdentifier,
+							Weight:        &record.Weight,
 							ResourceRecords: []route53Types.ResourceRecord{
 								{
 									Value: &record.Value,
@@ -812,7 +829,7 @@ func Route53DeleteTXTRecords(hostedZoneId string, txtRecords []TXTRecord) error 
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Route53 TXT record deleted: %q", record.Name)
+		fmt.Printf("Route53 TXT record deleted: %q\n", record.Name)
 	}
 
 	return nil
@@ -832,16 +849,6 @@ func Route53DeleteARecords(hostedZoneId string, aRecords []ARecord) error {
 	route53Client := route53.NewFromConfig(awsConfig)
 
 	for _, record := range aRecords {
-
-		fmt.Println("going to delete A record: ", record.Name)
-		time.Sleep(1 * time.Second)
-		//continue
-
-		fmt.Println("---debug---")
-		fmt.Println(record.Name)
-		fmt.Println(*record.AliasTarget.HostedZoneId)
-		fmt.Println(*record.AliasTarget.DNSName)
-		fmt.Println("---debug---")
 
 		_, err := route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
 			ChangeBatch: &route53Types.ChangeBatch{
@@ -866,9 +873,36 @@ func Route53DeleteARecords(hostedZoneId string, aRecords []ARecord) error {
 			return err
 		}
 
-		fmt.Println("sleeping...")
-		time.Sleep(10 * time.Second)
+		fmt.Printf("Route53 A record deleted: %q\n", record.Name)
 	}
+
+	return nil
+}
+
+// Route53DeleteHostedZone deletes the HostedZone. Route53DeleteHostedZone can be called only when there are no hosted
+// zones records available (except NS and SOA records). When there are still hosted zone records available, the deletion
+// will fail with the error description coming from AWS library.
+func Route53DeleteHostedZone(hostedZoneId string, hostedZoneName string) error {
+	awsConfig, err := NewAws()
+
+	if err != nil {
+		return err
+	}
+
+	route53Client := route53.NewFromConfig(awsConfig)
+
+	hostedZoneInput := route53.DeleteHostedZoneInput{
+		Id: &hostedZoneId,
+	}
+
+	fmt.Printf("trying to delete hosted zone id %q, hosted zone name %q\n", hostedZoneId, hostedZoneName)
+
+	_, err = route53Client.DeleteHostedZone(context.Background(), &hostedZoneInput)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("deleted hosted zone id %q, hosted zone name %q\n", hostedZoneId, hostedZoneName)
 
 	return nil
 }
