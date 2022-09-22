@@ -11,10 +11,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/chartMuseum"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -27,6 +29,7 @@ var k1ReadyCmd = &cobra.Command{
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Println("argocdAppStatus called")
+		config := configs.ReadConfig()
 
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
@@ -67,6 +70,24 @@ var k1ReadyCmd = &cobra.Command{
 				log.Println("App", app, "is is not ready, synch status:", isAppSynched)
 				return fmt.Errorf("app %s is is not ready, synch status: %v", app, isAppSynched)
 			}
+		}
+
+		//Check cluster: To collect extra info from the cluster
+		//To confirm if cluster is in ready state or some node is not there yet.
+		stateOfNodesOut, stateOfNodesErr, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "kube-system", "get", "ds", "kube-proxy")
+		log.Printf("Result:\n\t%s\n\t%s\n", stateOfNodesOut, stateOfNodesErr)
+		if err != nil {
+			log.Printf("error: failed to get state of cluster %s", err)
+		}
+		stateOfNodesOut, stateOfNodesErr, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "kube-system", "get", "ds", "aws-node")
+		log.Printf("Result:\n\t%s\n\t%s\n", stateOfNodesOut, stateOfNodesErr)
+		if err != nil {
+			log.Printf("error: failed to get state of cluster %s", err)
+		}
+		stateOfNodesOut, stateOfNodesErr, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "nodes")
+		log.Printf("Result:\n\t%s\n\t%s\n", stateOfNodesOut, stateOfNodesErr)
+		if err != nil {
+			log.Printf("error: failed to get state of cluster %s", err)
 		}
 
 		//Check chartMuseum repository
