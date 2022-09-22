@@ -56,6 +56,9 @@ func InstallArgocd(dryRun bool) error {
 				return nil
 			}
 		}
+	} else {
+		log.Printf("[#99] Already created before, helmInstallArgocd skipped.")
+		return nil
 	}
 	return fmt.Errorf(message)
 }
