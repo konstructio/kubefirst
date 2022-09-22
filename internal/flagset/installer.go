@@ -18,6 +18,7 @@ type InstallerGenericFlags struct {
 	BranchMetaphor string
 	RepoGitops     string //To support forks
 	TemplateTag    string //To support forks
+	SkipMetaphor   bool
 }
 
 func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
@@ -33,6 +34,7 @@ func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("template-tag", config.KubefirstVersion, `fallback tag used on git clone.
   Details: if "gitops-branch" is provided, branch("gitops-branch") has precedence and installer will attempt to clone branch("gitops-branch") first,
   if it fails, then fallback it will attempt to clone the tag provided at "template-tag" flag`)
+	currentCommand.Flags().Bool("skip-metaphor-services", false, "whether to skip the deployment of metaphor micro-services demo applications")
 }
 
 //ProcessInstallerGenericFlags - Read values of CLI parameters for installer flags
@@ -108,6 +110,14 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	viper.Set("template.tag", templateTag)
 	log.Println("template.tag", templateTag)
 	flags.TemplateTag = templateTag
+
+	skipMetaphor, err := ReadConfigBool(cmd, "skip-metaphor-services")
+	if err != nil {
+		return InstallerGenericFlags{}, err
+	}
+	viper.Set("option.metaphor.skip", skipMetaphor)
+	log.Println("option.metaphor.skip", skipMetaphor)
+	flags.SkipMetaphor = skipMetaphor
 
 	return flags, nil
 }
