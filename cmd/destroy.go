@@ -6,7 +6,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
@@ -27,8 +26,6 @@ and all of the components in kubernetes.
 Optional: skip gitlab terraform 
 if the registry has already been deleted.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-
-		config := configs.ReadConfig()
 
 		skipGitlabTerraform, err := cmd.Flags().GetBool("skip-gitlab-terraform")
 		if err != nil {
@@ -158,12 +155,8 @@ if the registry has already been deleted.`,
 func init() {
 
 	rootCmd.AddCommand(destroyCmd)
-
-	destroyCmd.Flags().Bool("skip-gitlab-terraform", false, "whether to skip the terraform destroy against gitlab - note: if you already deleted registry it doesnt exist")
-	destroyCmd.Flags().Bool("skip-delete-register", false, "whether to skip deletion of register application ")
-	destroyCmd.Flags().Bool("skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
-	destroyCmd.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
-	destroyCmd.Flags().Bool("silent", false, "enable silent mode will make the UI return less content to the screen")
-	destroyCmd.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
+	currentCommand := destroyCmd
+	flagset.DefineGlobalFlags(currentCommand)
+	flagset.DefineDestroyFlags(currentCommand)
 
 }
