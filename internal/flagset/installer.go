@@ -142,6 +142,9 @@ func experimentalModeTweaks(flags InstallerGenericFlags) InstallerGenericFlags {
 		flags.BranchGitops = "main"
 		log.Println("[W1] Warning: Fallback mechanism was disabled due to the use of experimental mode, be sure this was the intented action.")
 		log.Println("[W1] Warning: IF you are development mode, please check documentation on how to do this via LDFLAGS to avoid unexpected actions")
+		viper.Set("gitops.branch", flags.BranchGitops)
+		log.Println("[W1]  Warning: Overrride gitops.branch:", flags.BranchGitops)
+
 	}
 	if flags.ExperimentalMode && configs.K1Version == "" && flags.BranchMetaphor == "" {
 		//no branch or tag will be set, failing action of cloning templates.
@@ -149,6 +152,9 @@ func experimentalModeTweaks(flags InstallerGenericFlags) InstallerGenericFlags {
 		flags.BranchMetaphor = "main"
 		log.Println("[W1] Warning: Fallback mechanism was disabled due to the use of experimental mode, be sure this was the intented action.")
 		log.Println("[W1] Warning: IF you are development mode, please check documentation on how to do this via LDFLAGS to avoid unexpected actions")
+		viper.Set("metaphor.branch", flags.BranchMetaphor)
+		log.Println("[W1]  Warning: Overrride metaphor.branch:", flags.BranchMetaphor)
+
 	}
 	return flags
 }

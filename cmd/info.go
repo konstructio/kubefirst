@@ -38,7 +38,7 @@ var infoCmd = &cobra.Command{
 
 		infoSummary.WriteString(fmt.Sprintf("Kubefirst Version: %s\n", configs.K1Version))
 		if configs.K1Version == "" {
-			infoSummary.WriteString("Warning: It seems you are running kubefirst in development mode,")
+			infoSummary.WriteString("\n\nWarning: It seems you are running kubefirst in development mode,")
 			infoSummary.WriteString("  please use LDFLAGS to ensure you use the proper template version and avoid unexpected behavior")
 		}
 
