@@ -366,48 +366,6 @@ func GetArgoCDApplication(token string, applicationName string) (argocdModel.V1a
 	return response, nil
 }
 
-// PutArgoCDApplication expects a ArgoCD token and filled Application struct, ArgoCD will receive the request, and
-// update the deltas. Since this functions is calling via PUT http verb, Application needs to be filled properly to
-// be able to reflect the changes. note: PUT is different from PATCH verb.
-func PutArgoCDApplication(token string, argoCDApplication argocdModel.V1alpha1Application) error {
-
-	// todo: instantiate a new client on every http request isn't a good idea, we might want to work with methods and
-	//       provide resources via structs.
-	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	httpClient := http.Client{Transport: customTransport}
-
-	url := fmt.Sprintf(
-		"%s/applications/%s?validate=false",
-		pkg.ArgoCDLocalBaseURL,
-		argoCDApplication.Metadata.Name,
-	)
-
-	payload, err := json.Marshal(argoCDApplication)
-	if err != nil {
-		log.Println(err)
-	}
-
-	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(payload))
-	if err != nil {
-		log.Println(err)
-	}
-
-	req.Header.Add("Content-Type", pkg.JSONContentType)
-	req.Header.Add("Authorization", "Bearer "+token)
-
-	res, err := httpClient.Do(req)
-	if err != nil {
-		log.Println(err)
-	}
-
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("unable to update ArgoCD application, http response code is %d", res.StatusCode)
-	}
-
-	return nil
-}
-
 // IsAppSynched - Verify if ArgoCD Application is in synch state
 func IsAppSynched(token string, applicationName string) (bool, error) {
 	app, err := GetArgoCDApplication(token, applicationName)
