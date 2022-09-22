@@ -5,7 +5,7 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/metaphor"
@@ -19,7 +19,13 @@ var deployMetaphorCmd = &cobra.Command{
 	Short: "Add metaphor applications to the cluster",
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("deployMetaphor called")
+		log.Println("deployMetaphor called")
+
+		if viper.GetBool("option.metaphor.skip") {
+			log.Println("[99] Deployment of metpahor microservices skiped")
+			return nil
+		}
+
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
 			return err
