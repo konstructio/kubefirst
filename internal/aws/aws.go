@@ -18,7 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
-	"github.com/aws/aws-sdk-go-v2/service/route53/types"
+	route53Types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
@@ -26,6 +26,21 @@ import (
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
+
+// TXTRecord stores Route53 TXT record data
+type TXTRecord struct {
+	Name  string
+	Value string
+	TTL   int64
+}
+
+// ARecord stores Route53 A record data
+type ARecord struct {
+	Name        string
+	RecordType  string
+	TTL         int64
+	AliasTarget *route53Types.AliasTarget
+}
 
 // NewAws instantiate a new AWS configuration. This function is used to provide initial connection to AWS services.
 // todo: update AWS functions in this file to work as methods of AWS struct
@@ -180,14 +195,14 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) bo
 	record, err := route53Client.ChangeResourceRecordSets(
 		context.Background(),
 		&route53.ChangeResourceRecordSetsInput{
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{
+			ChangeBatch: &route53Types.ChangeBatch{
+				Changes: []route53Types.Change{
 					{
 						Action: "UPSERT",
-						ResourceRecordSet: &types.ResourceRecordSet{
+						ResourceRecordSet: &route53Types.ResourceRecordSet{
 							Name: aws.String(route53RecordName),
 							Type: "TXT",
-							ResourceRecords: []types.ResourceRecord{
+							ResourceRecords: []route53Types.ResourceRecord{
 								{
 									Value: aws.String(strconv.Quote(route53RecordValue)),
 								},
@@ -644,13 +659,13 @@ func DownloadS3File(bucketName string, filename string) error {
 	return nil
 }
 
-// this works
-func DeleteRoute53EntriesTXT(hostedZone string) error {
-	log.Println("deleting hosted zone...")
+// Route53GetHostedZoneId translates a Hosted Zone into Name into a Hosted Zone Id.
+func Route53GetHostedZoneId(hostedZone string) (string, error) {
 
+	// todo: use method approach to avoid new AWS client initializations
 	awsConfig, err := NewAws()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	route53Client := route53.NewFromConfig(awsConfig)
@@ -661,65 +676,154 @@ func DeleteRoute53EntriesTXT(hostedZone string) error {
 			DNSName: &hostedZone,
 		})
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	var hostedZoneId string
 	for _, dnsEntry := range routes.HostedZones {
-		log.Println("---")
-		log.Println(*dnsEntry.Id)
-		log.Println(*dnsEntry.Name)
-		log.Println("---")
 		if *dnsEntry.Name == hostedZone+"." {
 			hostedZoneId = *dnsEntry.Id
 		}
 	}
 
-	testing := ""
-	recordName := ""
+	return hostedZoneId, nil
+}
 
-	ttl := int64(300)
+// Route53ListTXTRecords retrieve all DNS TXT record type for a specific Host Zone Id.
+func Route53ListTXTRecords(hostedZoneId string) ([]TXTRecord, error) {
 
-	sets, err := route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
-		ChangeBatch: &types.ChangeBatch{
-			Changes: []types.Change{
-				{
-					Action: "DELETE",
-					ResourceRecordSet: &types.ResourceRecordSet{
-						Name: &recordName,
-						Type: "TXT",
-						//Type: "A",
-						TTL: &ttl,
-						ResourceRecords: []types.ResourceRecord{
-							{
-								Value: &testing,
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := NewAws()
+	if err != nil {
+		return []TXTRecord{}, err
+	}
+
+	route53Client := route53.NewFromConfig(awsConfig)
+
+	log.Printf("hosted zone found! Hosted Zone id: %s\n", hostedZoneId)
+
+	recordSets, err := route53Client.ListResourceRecordSets(context.Background(), &route53.ListResourceRecordSetsInput{
+		HostedZoneId: &hostedZoneId,
+	})
+	if err != nil {
+		return []TXTRecord{}, err
+	}
+
+	var txtRecords []TXTRecord
+
+	for _, val := range recordSets.ResourceRecordSets {
+		fmt.Println("Record Name: ", *val.Name)
+
+		if val.Type == route53Types.RRTypeTxt {
+			for _, resourceRecord := range val.ResourceRecords {
+				record := TXTRecord{
+					Name:  *val.Name,
+					Value: *resourceRecord.Value,
+					TTL:   *val.TTL,
+				}
+				txtRecords = append(txtRecords, record)
+			}
+		}
+	}
+
+	return txtRecords, nil
+}
+
+// Route53ListARecords retrieve all DNS A record type for a specific Host Zone Id.
+func Route53ListARecords(hostedZoneId string) ([]ARecord, error) {
+
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := NewAws()
+	if err != nil {
+		return []ARecord{}, err
+	}
+
+	route53Client := route53.NewFromConfig(awsConfig)
+
+	recordSets, err := route53Client.ListResourceRecordSets(context.Background(), &route53.ListResourceRecordSetsInput{
+		HostedZoneId: &hostedZoneId,
+	})
+	if err != nil {
+		return []ARecord{}, err
+	}
+
+	var aRecords []ARecord
+
+	for _, recordSet := range recordSets.ResourceRecordSets {
+
+		if recordSet.Type == route53Types.RRTypeA {
+
+			// todo: TTL is hardcoded, make it load from AWS
+			record := ARecord{
+				Name:       *recordSet.Name,
+				RecordType: "A",
+				TTL:        int64(300),
+				AliasTarget: &route53Types.AliasTarget{
+					HostedZoneId:         recordSet.AliasTarget.HostedZoneId,
+					DNSName:              recordSet.AliasTarget.DNSName,
+					EvaluateTargetHealth: true,
+				},
+			}
+			aRecords = append(aRecords, record)
+		}
+	}
+
+	return aRecords, nil
+
+}
+
+// Route53DeleteTXTRecords receives a list of DNS TXT records []TXTRecord, and delete the records contained in the list.
+func Route53DeleteTXTRecords(hostedZoneId string, txtRecords []TXTRecord) error {
+
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := NewAws()
+	if err != nil {
+		return err
+	}
+
+	route53Client := route53.NewFromConfig(awsConfig)
+
+	for _, record := range txtRecords {
+
+		fmt.Println("going to delete a TXT record...", record.Name)
+		time.Sleep(2 * time.Second)
+
+		// this deletes a TXT record
+		_, err = route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
+			ChangeBatch: &route53Types.ChangeBatch{
+				Changes: []route53Types.Change{
+					{
+						Action: "DELETE",
+						ResourceRecordSet: &route53Types.ResourceRecordSet{
+							Name: &record.Name,
+							Type: "TXT",
+							TTL:  &record.TTL,
+							ResourceRecords: []route53Types.ResourceRecord{
+								{
+									Value: &record.Value,
+								},
 							},
 						},
-						//MultiValueAnswer: &vvv,
-						//SetIdentifier: &simple,
-						//AliasTarget: {
-						//	HostedZoneId:         hostedZoneId,
-						//	DNSName:              "",
-						//	EvaluateTargetHealth: true,
-						//},
 					},
 				},
 			},
-		},
-		HostedZoneId: &hostedZoneId,
-	})
-	if err != nil {
-		return err
+			HostedZoneId: &hostedZoneId,
+		})
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Route53 TXT record deleted: %q", record.Name)
 	}
 
-	fmt.Println(sets)
-
 	return nil
+
 }
 
-func DeleteRoute53EntriesA(hostedZone string) error {
-	log.Println("deleting hosted zone...")
+// Route53DeleteARecords receives a slice of DNS A Record []ARecord, and delete all Route 53 records contained in the
+// list.
+func Route53DeleteARecords(hostedZoneId string, aRecords []ARecord) error {
 
+	// todo: use method approach to avoid new AWS client initializations
 	awsConfig, err := NewAws()
 	if err != nil {
 		return err
@@ -727,70 +831,44 @@ func DeleteRoute53EntriesA(hostedZone string) error {
 
 	route53Client := route53.NewFromConfig(awsConfig)
 
-	routes, err := route53Client.ListHostedZonesByName(
-		context.Background(),
-		&route53.ListHostedZonesByNameInput{
-			DNSName: &hostedZone,
+	for _, record := range aRecords {
+
+		fmt.Println("going to delete A record: ", record.Name)
+		time.Sleep(1 * time.Second)
+		//continue
+
+		fmt.Println("---debug---")
+		fmt.Println(record.Name)
+		fmt.Println(*record.AliasTarget.HostedZoneId)
+		fmt.Println(*record.AliasTarget.DNSName)
+		fmt.Println("---debug---")
+
+		_, err := route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
+			ChangeBatch: &route53Types.ChangeBatch{
+				Changes: []route53Types.Change{
+					{
+						Action: "DELETE",
+						ResourceRecordSet: &route53Types.ResourceRecordSet{
+							Name: &record.Name,
+							Type: "A",
+							AliasTarget: &route53Types.AliasTarget{
+								HostedZoneId:         record.AliasTarget.HostedZoneId,
+								DNSName:              record.AliasTarget.DNSName,
+								EvaluateTargetHealth: true,
+							},
+						},
+					},
+				},
+			},
+			HostedZoneId: &hostedZoneId,
 		})
-	if err != nil {
-		return err
-	}
-
-	var hostedZoneId string
-	for _, dnsEntry := range routes.HostedZones {
-		log.Println("---")
-		log.Println(*dnsEntry.Id)
-		log.Println(*dnsEntry.Name)
-		log.Println("---")
-		if *dnsEntry.Name == hostedZone+"." {
-			hostedZoneId = *dnsEntry.Id
+		if err != nil {
+			return err
 		}
+
+		fmt.Println("sleeping...")
+		time.Sleep(10 * time.Second)
 	}
-
-	x, err := route53Client.ListResourceRecordSets(context.Background(), &route53.ListResourceRecordSetsInput{
-		HostedZoneId: &hostedZoneId,
-	})
-	if err != nil {
-		log.Println(err)
-	}
-
-	for _, val := range x.ResourceRecordSets {
-		fmt.Println(*val.Name)
-
-		if val.Type == types.RRTypeA {
-			fmt.Println(*val.AliasTarget.HostedZoneId)
-		}
-	}
-
-	//sets, err := route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
-	//	ChangeBatch: &types.ChangeBatch{
-	//		Changes: []types.Change{
-	//			{
-	//				Action: "DELETE",
-	//				ResourceRecordSet: &types.ResourceRecordSet{
-	//					Name: &recordName,
-	//					//Type: "TXT",
-	//					Type: "A",
-	//					TTL:  intPointer,
-	//					//MultiValueAnswer: &vvv,
-	//					//SetIdentifier: &simple,
-	//					AliasTarget: &types.AliasTarget{
-	//						//HostedZoneId:         "&hostedZoneId",
-	//						HostedZoneId:         &hostedZoneIdTESTE,
-	//						DNSName:              &testing,
-	//						EvaluateTargetHealth: true,
-	//					},
-	//				},
-	//			},
-	//		},
-	//	},
-	//	HostedZoneId: &hostedZoneId,
-	//})
-	//if err != nil {
-	//	return err
-	//}
-
-	//fmt.Println(sets)
 
 	return nil
 }
