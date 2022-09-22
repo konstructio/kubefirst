@@ -10,14 +10,16 @@ import (
 
 // DefineInstallerGenericFlags - define installer  flags for CLI
 type InstallerGenericFlags struct {
-	ClusterName    string
-	AdminEmail     string
-	Cloud          string
-	OrgGitops      string
-	BranchGitops   string //former: "version-gitops"
-	BranchMetaphor string
-	RepoGitops     string //To support forks
-	TemplateTag    string //To support forks
+	ClusterName      string
+	AdminEmail       string
+	Cloud            string
+	OrgGitops        string
+	BranchGitops     string //former: "version-gitops"
+	BranchMetaphor   string
+	RepoGitops       string //To support forks
+	TemplateTag      string //To support forks
+	SkipMetaphor     bool
+	ExperimentalMode bool
 }
 
 func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
@@ -32,6 +34,9 @@ func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("template-tag", configs.K1Version, `fallback tag used on git clone.
   Details: if "gitops-branch" is provided, branch("gitops-branch") has precedence and installer will attempt to clone branch("gitops-branch") first,
   if it fails, then fallback it will attempt to clone the tag provided at "template-tag" flag`)
+	currentCommand.Flags().Bool("skip-metaphor-services", false, "whether to skip the deployment of metaphor micro-services demo applications")
+	currentCommand.Flags().Bool("experimental-mode", false, `whether to allow experimental behavior or developer mode of installer, 
+  not recommended for most use cases, as it may mix versions and create unexpected behavior.`)
 }
 
 // ProcessInstallerGenericFlags - Read values of CLI parameters for installer flags
@@ -108,5 +113,48 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	log.Println("template.tag", templateTag)
 	flags.TemplateTag = templateTag
 
-	return flags, nil
+	skipMetaphor, err := ReadConfigBool(cmd, "skip-metaphor-services")
+	if err != nil {
+		log.Println("Error processing skip-metaphor-services:", err)
+		return InstallerGenericFlags{}, err
+	}
+	viper.Set("option.metaphor.skip", skipMetaphor)
+	log.Println("option.metaphor.skip", skipMetaphor)
+	flags.SkipMetaphor = skipMetaphor
+
+	experimentalMode, err := ReadConfigBool(cmd, "experimental-mode")
+	if err != nil {
+		log.Println("Error processing experimental-mode:", err)
+		return InstallerGenericFlags{}, err
+	}
+	viper.Set("option.kubefirst.experimental", experimentalMode)
+	log.Println("option.kubefirst.experimental", experimentalMode)
+	flags.ExperimentalMode = experimentalMode
+
+	return experimentalModeTweaks(flags), nil
+}
+
+func experimentalModeTweaks(flags InstallerGenericFlags) InstallerGenericFlags {
+	//Handling the scenario there is no fallback tag, in development mode.
+	if flags.ExperimentalMode && configs.K1Version == "" && flags.BranchGitops == "" {
+		//no branch or tag will be set, failing action of cloning templates.
+		//forcing main as branch
+		flags.BranchGitops = "main"
+		log.Println("[W1] Warning: Fallback mechanism was disabled due to the use of experimental mode, be sure this was the intented action.")
+		log.Println("[W1] Warning: IF you are development mode, please check documentation on how to do this via LDFLAGS to avoid unexpected actions")
+		viper.Set("gitops.branch", flags.BranchGitops)
+		log.Println("[W1]  Warning: Overrride gitops.branch:", flags.BranchGitops)
+
+	}
+	if flags.ExperimentalMode && configs.K1Version == "" && flags.BranchMetaphor == "" {
+		//no branch or tag will be set, failing action of cloning templates.
+		//forcing main as branch
+		flags.BranchMetaphor = "main"
+		log.Println("[W1] Warning: Fallback mechanism was disabled due to the use of experimental mode, be sure this was the intented action.")
+		log.Println("[W1] Warning: IF you are development mode, please check documentation on how to do this via LDFLAGS to avoid unexpected actions")
+		viper.Set("metaphor.branch", flags.BranchMetaphor)
+		log.Println("[W1]  Warning: Overrride metaphor.branch:", flags.BranchMetaphor)
+
+	}
+	return flags
 }
