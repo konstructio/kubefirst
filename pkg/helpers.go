@@ -27,8 +27,6 @@ type RegistryAddon struct {
 	} `yaml:"metadata"`
 }
 
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
 // Detokenize - Translate tokens by values on a given path
 func Detokenize(path string) {
 
@@ -280,6 +278,7 @@ func CreateFullPath(p string) (*os.File, error) {
 }
 
 func randSeq(n int) string {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	b := make([]rune, n)
 	for i := range b {
 		b[i] = letters[rand.Intn(len(letters))]
