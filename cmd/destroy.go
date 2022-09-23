@@ -6,14 +6,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // destroyCmd represents the destroy command
@@ -92,30 +90,7 @@ if the registry has already been deleted.`,
 			}()
 			informUser("Open argocd port-forward", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-prepare", 1)
-			log.Println("disabling ArgoCD auto sync")
-			argoCDUsername := viper.GetString("argocd.admin.username")
-			argoCDPassword := viper.GetString("argocd.admin.password")
 
-			token, err := argocd.GetArgoCDToken(argoCDUsername, argoCDPassword)
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-
-			argoCDApplication, err := argocd.GetArgoCDApplication(token, "registry")
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-
-			// set empty syncPolicy (disable auto-sync)
-			argoCDApplication.Spec.SyncPolicy = struct{}{}
-			err = argocd.PutArgoCDApplication(token, argoCDApplication)
-			if err != nil {
-				log.Println(err)
-				// Do nothing, only log until we fix how to disable autho-synch of registry.
-				//return err
-			}
 			log.Println("deleting registry application in argocd")
 			// delete argocd registry
 			informUser("Destroying Registry Application", globalFlags.SilentMode)
