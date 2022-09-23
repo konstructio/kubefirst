@@ -791,6 +791,7 @@ func Route53ListARecords(hostedZoneId string) ([]ARecord, error) {
 }
 
 // Route53DeleteTXTRecords receives a list of DNS TXT records []TXTRecord, and delete the records contained in the list.
+// todo: improve logging
 func Route53DeleteTXTRecords(
 	hostedZoneId string,
 	hostedZoneName string,
@@ -819,33 +820,60 @@ func Route53DeleteTXTRecords(
 		time.Sleep(1 * time.Second)
 
 		//this deletes a TXT record
+		// todo: this big IF is funky, I'll update it before merge
+		// if I merged it like this, you're allowed to kick me :P
 		if record.SetIdentifier != nil && record.Weight != nil {
-
-		}
-		_, err := route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
-			ChangeBatch: &route53Types.ChangeBatch{
-				Changes: []route53Types.Change{
-					{
-						Action: "DELETE",
-						ResourceRecordSet: &route53Types.ResourceRecordSet{
-							Name: &record.Name,
-							Type: "TXT",
-							TTL:  &record.TTL,
-							//SetIdentifier: &record.SetIdentifier,
-							//Weight:        &record.Weight,
-							ResourceRecords: []route53Types.ResourceRecord{
-								{
-									Value: &record.Value,
+			_, err = route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
+				ChangeBatch: &route53Types.ChangeBatch{
+					Changes: []route53Types.Change{
+						{
+							Action: "DELETE",
+							ResourceRecordSet: &route53Types.ResourceRecordSet{
+								Name:          &record.Name,
+								Type:          "TXT",
+								TTL:           &record.TTL,
+								SetIdentifier: record.SetIdentifier,
+								Weight:        record.Weight,
+								ResourceRecords: []route53Types.ResourceRecord{
+									{
+										Value: &record.Value,
+									},
 								},
 							},
 						},
 					},
 				},
-			},
-			HostedZoneId: &hostedZoneId,
-		})
-		if err != nil {
-			return err
+				HostedZoneId: &hostedZoneId,
+			})
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err = route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
+				ChangeBatch: &route53Types.ChangeBatch{
+					Changes: []route53Types.Change{
+						{
+							Action: "DELETE",
+							ResourceRecordSet: &route53Types.ResourceRecordSet{
+								Name:          &record.Name,
+								Type:          "TXT",
+								TTL:           &record.TTL,
+								SetIdentifier: record.SetIdentifier,
+								Weight:        record.Weight,
+								ResourceRecords: []route53Types.ResourceRecord{
+									{
+										Value: &record.Value,
+									},
+								},
+							},
+						},
+					},
+				},
+				HostedZoneId: &hostedZoneId,
+			})
+			if err != nil {
+				return err
+			}
 		}
 		fmt.Printf("Route53 TXT record deleted: %q\n", record.Name)
 	}
