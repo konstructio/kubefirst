@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/state"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
@@ -51,6 +52,25 @@ var createCmd = &cobra.Command{
 				return err
 			}
 
+		}
+		// Relates to issue: https://github.com/kubefirst/kubefirst/issues/386
+		// Metaphor needs chart museum for CI works
+		informUser("Waiting chartmuseum", globalFlags.SilentMode)
+		for i := 1; i < 10; i++ {
+			chartMuseum := gitlab.AwaitHostNTimes("chartmuseum", globalFlags.DryRun, 20)
+			if chartMuseum {
+				informUser("Chartmuseum DNS is ready", globalFlags.SilentMode)
+				break
+			}
+		}
+		informUser("Checking if cluster is ready for use by metaphor apps", globalFlags.SilentMode)
+		for i := 1; i < 10; i++ {
+			err = k1ReadyCmd.RunE(cmd, args)
+			if err != nil {
+				log.Println(err)
+			} else {
+				break
+			}
 		}
 		informUser("Deploying metaphor applications", globalFlags.SilentMode)
 		err = deployMetaphorCmd.RunE(cmd, args)

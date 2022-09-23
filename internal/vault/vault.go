@@ -100,6 +100,8 @@ func ConfigureVault(dryRun bool, bootstrapOnly bool) {
 	//Escaping newline to allow certs to be loaded properly by terraform
 	envs["TF_VAR_ssh_private_key"] = strings.Replace(viper.GetString("botprivatekey"), "\n", "\\n", -1)
 
+	envs["TF_VAR_atlantis_github_webhook_token"] = viper.GetString("github.secret-webhook")
+
 	directory := fmt.Sprintf("%s/gitops/terraform/vault", config.K1FolderPath)
 	err = os.Chdir(directory)
 	if err != nil {

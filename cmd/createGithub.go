@@ -106,7 +106,12 @@ var createGithubCmd = &cobra.Command{
 			log.Printf("Failed to get clientset for k8s : %s", err)
 			return err
 		}
-		helm.InstallArgocd(globalFlags.DryRun)
+		err = helm.InstallArgocd(globalFlags.DryRun)
+		if err != nil {
+			log.Println("Error installing argocd")
+			return err
+		}
+
 		informUser("Install ArgoCD", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
 

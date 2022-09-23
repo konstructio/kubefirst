@@ -8,10 +8,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 	"log"
 	"net/http"
-
-	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/spf13/viper"
 
@@ -19,263 +18,31 @@ import (
 	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/argocdModel"
 	"github.com/kubefirst/kubefirst/pkg"
 	yaml2 "gopkg.in/yaml.v2"
 )
 
-type ArgoCDConfig struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type SyncResponse struct {
-	Status struct {
-		Sync struct {
-			Status string `json:"status"`
-		} `json:"sync"`
-	}
-}
-
-// Application is required with full specification since ArgoCD needs a PUT to update the syncPolicy, and there is no
-// PATCH available
-type Application struct {
-	Metadata struct {
-		Name              string    `json:"name"`
-		Namespace         string    `json:"namespace"`
-		Uid               string    `json:"uid"`
-		ResourceVersion   string    `json:"resourceVersion"`
-		Generation        int       `json:"generation"`
-		CreationTimestamp time.Time `json:"creationTimestamp"`
-		ManagedFields     []struct {
-			Manager    string    `json:"manager"`
-			Operation  string    `json:"operation"`
-			ApiVersion string    `json:"apiVersion"`
-			Time       time.Time `json:"time"`
-			FieldsType string    `json:"fieldsType"`
-			FieldsV1   struct {
-				FSpec struct {
-					Field1 struct {
-					} `json:"."`
-					FDestination struct {
-						Field1 struct {
-						} `json:"."`
-						FNamespace struct {
-						} `json:"f:namespace"`
-						FServer struct {
-						} `json:"f:server"`
-					} `json:"f:destination"`
-					FProject struct {
-					} `json:"f:project"`
-					FSource struct {
-						Field1 struct {
-						} `json:"."`
-						FPath struct {
-						} `json:"f:path"`
-						FRepoURL struct {
-						} `json:"f:repoURL"`
-					} `json:"f:source"`
-					FSyncPolicy struct {
-					} `json:"f:syncPolicy"`
-				} `json:"f:spec,omitempty"`
-				FStatus struct {
-					Field1 struct {
-					} `json:".,omitempty"`
-					FHealth struct {
-						FStatus struct {
-						} `json:"f:status,omitempty"`
-					} `json:"f:health"`
-					FSummary struct {
-						FImages struct {
-						} `json:"f:images,omitempty"`
-					} `json:"f:summary"`
-					FSync struct {
-						Field1 struct {
-						} `json:".,omitempty"`
-						FComparedTo struct {
-							Field1 struct {
-							} `json:".,omitempty"`
-							FDestination struct {
-								FNamespace struct {
-								} `json:"f:namespace,omitempty"`
-								FServer struct {
-								} `json:"f:server,omitempty"`
-							} `json:"f:destination"`
-							FSource struct {
-								FPath struct {
-								} `json:"f:path,omitempty"`
-								FRepoURL struct {
-								} `json:"f:repoURL,omitempty"`
-							} `json:"f:source"`
-						} `json:"f:comparedTo"`
-						FRevision struct {
-						} `json:"f:revision,omitempty"`
-						FStatus struct {
-						} `json:"f:status,omitempty"`
-					} `json:"f:sync"`
-					FHistory struct {
-					} `json:"f:history,omitempty"`
-					FOperationState struct {
-						Field1 struct {
-						} `json:"."`
-						FFinishedAt struct {
-						} `json:"f:finishedAt"`
-						FMessage struct {
-						} `json:"f:message"`
-						FOperation struct {
-							Field1 struct {
-							} `json:"."`
-							FInitiatedBy struct {
-								Field1 struct {
-								} `json:"."`
-								FUsername struct {
-								} `json:"f:username"`
-							} `json:"f:initiatedBy"`
-							FRetry struct {
-							} `json:"f:retry"`
-							FSync struct {
-								Field1 struct {
-								} `json:"."`
-								FRevision struct {
-								} `json:"f:revision"`
-								FSyncStrategy struct {
-									Field1 struct {
-									} `json:"."`
-									FHook struct {
-									} `json:"f:hook"`
-								} `json:"f:syncStrategy"`
-							} `json:"f:sync"`
-						} `json:"f:operation"`
-						FPhase struct {
-						} `json:"f:phase"`
-						FStartedAt struct {
-						} `json:"f:startedAt"`
-						FSyncResult struct {
-							Field1 struct {
-							} `json:"."`
-							FResources struct {
-							} `json:"f:resources"`
-							FRevision struct {
-							} `json:"f:revision"`
-							FSource struct {
-								Field1 struct {
-								} `json:"."`
-								FPath struct {
-								} `json:"f:path"`
-								FRepoURL struct {
-								} `json:"f:repoURL"`
-							} `json:"f:source"`
-						} `json:"f:syncResult"`
-					} `json:"f:operationState,omitempty"`
-					FReconciledAt struct {
-					} `json:"f:reconciledAt,omitempty"`
-					FResources struct {
-					} `json:"f:resources,omitempty"`
-					FSourceType struct {
-					} `json:"f:sourceType,omitempty"`
-				} `json:"f:status"`
-			} `json:"fieldsV1"`
-		} `json:"managedFields"`
-	} `json:"metadata"`
-	Spec struct {
-		Source struct {
-			RepoURL string `json:"repoURL"`
-			Path    string `json:"path"`
-		} `json:"source"`
-		Destination struct {
-			Server    string `json:"server"`
-			Namespace string `json:"namespace"`
-		} `json:"destination"`
-		Project    string `json:"project"`
-		SyncPolicy struct {
-		} `json:"syncPolicy"`
-	} `json:"spec"`
-	Status struct {
-		Resources []struct {
-			Version   string `json:"version"`
-			Kind      string `json:"kind"`
-			Namespace string `json:"namespace"`
-			Name      string `json:"name"`
-			Status    string `json:"status"`
-			Health    struct {
-				Status  string `json:"status"`
-				Message string `json:"message,omitempty"`
-			} `json:"health"`
-			Group string `json:"group,omitempty"`
-		} `json:"resources"`
-		Sync struct {
-			Status     string `json:"status"`
-			ComparedTo struct {
-				Source struct {
-					RepoURL string `json:"repoURL"`
-					Path    string `json:"path"`
-				} `json:"source"`
-				Destination struct {
-					Server    string `json:"server"`
-					Namespace string `json:"namespace"`
-				} `json:"destination"`
-			} `json:"comparedTo"`
-			Revision string `json:"revision"`
-		} `json:"sync"`
-		Health struct {
-			Status string `json:"status"`
-		} `json:"health"`
-		History []struct {
-			Revision   string    `json:"revision"`
-			DeployedAt time.Time `json:"deployedAt"`
-			Id         int       `json:"id"`
-			Source     struct {
-				RepoURL string `json:"repoURL"`
-				Path    string `json:"path"`
-			} `json:"source"`
-			DeployStartedAt time.Time `json:"deployStartedAt"`
-		} `json:"history"`
-		ReconciledAt   time.Time `json:"reconciledAt"`
-		OperationState struct {
-			Operation struct {
-				Sync struct {
-					Revision     string `json:"revision"`
-					SyncStrategy struct {
-						Hook struct {
-						} `json:"hook"`
-					} `json:"syncStrategy"`
-				} `json:"sync"`
-				InitiatedBy struct {
-					Username string `json:"username"`
-				} `json:"initiatedBy"`
-				Retry struct {
-				} `json:"retry"`
-			} `json:"operation"`
-			Phase      string `json:"phase"`
-			Message    string `json:"message"`
-			SyncResult struct {
-				Resources []struct {
-					Group     string `json:"group"`
-					Version   string `json:"version"`
-					Kind      string `json:"kind"`
-					Namespace string `json:"namespace"`
-					Name      string `json:"name"`
-					Status    string `json:"status"`
-					Message   string `json:"message"`
-					HookPhase string `json:"hookPhase"`
-					SyncPhase string `json:"syncPhase"`
-				} `json:"resources"`
-				Revision string `json:"revision"`
-				Source   struct {
-					RepoURL string `json:"repoURL"`
-					Path    string `json:"path"`
-				} `json:"source"`
-			} `json:"syncResult"`
-			StartedAt  time.Time `json:"startedAt"`
-			FinishedAt time.Time `json:"finishedAt"`
-		} `json:"operationState"`
-		SourceType string `json:"sourceType"`
-		Summary    struct {
-			Images []string `json:"images"`
-		} `json:"summary"`
-	} `json:"status"`
-}
-
 var ArgocdSecretClient coreV1Types.SecretInterface
+
+// ConfigRepo - Sample config struct
+type ConfigRepo struct {
+	Configs struct {
+		Repositories struct {
+			RepoGitops struct {
+				URL  string `yaml:"url"`
+				Type string `yaml:"type"`
+				Name string `yaml:"name"`
+			} `yaml:"github-serve-gitops"`
+		} `yaml:"repositories"`
+		CredentialTemplates struct {
+			SSHCreds struct {
+				URL           string `yaml:"url"`
+				SSHPrivateKey string `yaml:"sshPrivateKey"`
+			} `yaml:"ssh-creds"`
+		} `yaml:"credentialTemplates"`
+	} `yaml:"configs"`
+}
 
 // SyncRetry tries to Sync ArgoCD as many times as requested by the attempts' parameter. On successful request, returns
 // true and no error, on error, returns false and the reason it fails.
@@ -343,7 +110,7 @@ func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (
 		return res.StatusCode, "", err
 	}
 
-	var syncResponse SyncResponse
+	var syncResponse argocdModel.V1alpha1Application
 	err = json.Unmarshal(body, &syncResponse)
 	if err != nil {
 		return res.StatusCode, "", err
@@ -364,7 +131,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 
 	url := pkg.ArgoCDLocalBaseURL + "/session"
 
-	argoCDConfig := ArgoCDConfig{
+	argoCDConfig := argocdModel.SessionSessionCreateRequest{
 		Username: username,
 		Password: password,
 	}
@@ -418,8 +185,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 
 // GetArgocdAuthToken issue token and retry in case of failure.
 // todo: call the retry from outside of the function, and use GetArgoCDToken function to get token. At the moment there
-//
-//	are two functions issuing tokens.
+// are two functions issuing tokens.
 func GetArgocdAuthToken(dryRun bool) string {
 
 	if dryRun {
@@ -513,25 +279,7 @@ func SyncArgocdApplication(dryRun bool, applicationName, argocdAuthToken string)
 	}
 }
 
-func DeleteArgocdApplicationNoCascade(dryRun bool, applicationName, argocdAuthToken string) {
-	if dryRun {
-		log.Printf("[#99] Dry-run mode, SyncArgocdApplication skipped.")
-		return
-	}
-
-	// todo need to replace this with a curl wrapper and see if it WORKS
-
-	url := fmt.Sprintf("https://localhost:8080/api/v1/applications/%s?cascade=false", applicationName)
-	var outb bytes.Buffer
-
-	_, _, err := pkg.ExecShellReturnStrings("curl", "-k", "-L", "-X", "DELETE", url, "-H", fmt.Sprintf("Authorization: Bearer %s", argocdAuthToken))
-	log.Println("the value from the curl command to delete registry in argocd is:", outb.String())
-	if err != nil {
-		log.Panicf("error: curl app delete failed %s", err)
-	}
-}
-
-//ApplyRegistry - Apply Registry application
+// ApplyRegistry - Apply Registry application
 func ApplyRegistry(dryRun bool) error {
 	config := configs.ReadConfig()
 	if viper.GetBool("argocd.registry.applied") {
@@ -549,25 +297,6 @@ func ApplyRegistry(dryRun bool) error {
 		viper.WriteConfig()
 	}
 	return nil
-}
-
-// ConfigRepo - Sample config struct
-type ConfigRepo struct {
-	Configs struct {
-		Repositories struct {
-			RepoGitops struct {
-				URL  string `yaml:"url"`
-				Type string `yaml:"type"`
-				Name string `yaml:"name"`
-			} `yaml:"github-serve-gitops"`
-		} `yaml:"repositories"`
-		CredentialTemplates struct {
-			SSHCreds struct {
-				URL           string `yaml:"url"`
-				SSHPrivateKey string `yaml:"sshPrivateKey"`
-			} `yaml:"ssh-creds"`
-		} `yaml:"credentialTemplates"`
-	} `yaml:"configs"`
 }
 
 // CreateInitalArgoRepository - Fill and create argocd-init-values.yaml for Github installs
@@ -597,30 +326,10 @@ func CreateInitalArgoRepository(githubURL string) error {
 	return nil
 }
 
-// todo: make it generic function at pkg/ folder, it isn't a ArgoCD domain function
-func AddArgoCDApp(gitopsDir string) error {
-	sourceFile := gitopsDir + "/components/helpers/argocd.yaml"
-	destinationFile := gitopsDir + "/registry/base/argocd.yaml"
-	log.Println("Source file:", sourceFile)
-	input, err := ioutil.ReadFile(sourceFile)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	err = ioutil.WriteFile(destinationFile, input, 0644)
-	if err != nil {
-		log.Println("Error creating", destinationFile)
-		log.Println(err)
-		return err
-	}
-	return nil
-}
-
 // GetArgoCDApplication by receiving the ArgoCD token, and the application name, this function returns the full
 // application data Application struct. This can be used when a resource needs to be updated, we firstly collect all
 // Application data, update what is necessary and then request the PUT function to update the resource.
-func GetArgoCDApplication(token string, applicationName string) (Application, error) {
+func GetArgoCDApplication(token string, applicationName string) (argocdModel.V1alpha1Application, error) {
 
 	// todo: instantiate a new client on every http request isn't a good idea, we might want to work with methods and
 	//       provide resources via structs.
@@ -638,59 +347,36 @@ func GetArgoCDApplication(token string, applicationName string) (Application, er
 
 	res, err := httpClient.Do(req)
 	if err != nil {
-		return Application{}, err
+		return argocdModel.V1alpha1Application{}, err
 	}
 
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return Application{}, err
+		return argocdModel.V1alpha1Application{}, err
 	}
 
-	var response Application
+	var response argocdModel.V1alpha1Application
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return Application{}, err
+		return argocdModel.V1alpha1Application{}, err
 	}
 
 	return response, nil
 }
 
-// PutArgoCDApplication expects a ArgoCD token and filled Application struct, ArgoCD will receive the request, and
-// update the deltas. Since this functions is calling via PUT http verb, Application needs to be filled properly to
-// be able to reflect the changes. note: PUT is different from PATCH verb.
-func PutArgoCDApplication(token string, argoCDApplication Application) error {
-
-	// todo: instantiate a new client on every http request isn't a good idea, we might want to work with methods and
-	//       provide resources via structs.
-	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	httpClient := http.Client{Transport: customTransport}
-
-	url := pkg.ArgoCDLocalBaseURL + "/applications/shockshop?validate=false"
-
-	payload, err := json.Marshal(argoCDApplication)
+// IsAppSynched - Verify if ArgoCD Application is in synch state
+func IsAppSynched(token string, applicationName string) (bool, error) {
+	app, err := GetArgoCDApplication(token, applicationName)
 	if err != nil {
 		log.Println(err)
+		return false, fmt.Errorf("IsAppSynched - Error checking if arcoCD app is synched")
 	}
+	log.Println("App status:", app.Status.Sync.Status)
 
-	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(payload))
-	if err != nil {
-		log.Println(err)
+	if app.Status.Sync.Status == "Synced" {
+		return true, nil
 	}
-
-	req.Header.Add("Content-Type", pkg.JSONContentType)
-	req.Header.Add("Authorization", "Bearer "+token)
-
-	res, err := httpClient.Do(req)
-	if err != nil {
-		log.Println(err)
-	}
-
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("unable to update ArgoCD application, http response code is %d", res.StatusCode)
-	}
-
-	return nil
+	return false, nil
 }

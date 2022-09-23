@@ -14,6 +14,12 @@ This is an initial implementation of Config. Please keep in mind we're still wor
 environment variables and general config data.
 */
 
+// K1Version - Version of CLI based on tag in play
+// to use with parans ldlfags
+// Check documentation to know how to use on development mode
+// https://blog.cloudflare.com/setting-go-variables-at-compile-time/
+var K1Version = ""
+
 // Config host application configuration
 // todo: some of these values can be moved to the .env
 type Config struct {
@@ -29,7 +35,7 @@ type Config struct {
 	KubeConfigPath          string
 	HelmClientPath          string
 	TerraformPath           string
-	ConsoleVersion					string
+	ConsoleVersion          string
 
 	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
 	ClusterName    string `env:"CLUSTER_NAME"`
@@ -48,8 +54,11 @@ type Config struct {
 
 	MetaphorTemplateURL string
 	GitopsTemplateURL   string
+
+	GitHubPersonalAccessToken string `env:"GITHUB_AUTH_TOKEN"`
 }
 
+// ReadConfig - load default values from kubefirst installer
 func ReadConfig() *Config {
 	config := Config{}
 
@@ -80,13 +89,11 @@ func ReadConfig() *Config {
 	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.TerraformVersion = "1.0.11"
-	config.ConsoleVersion = "0.1.5"
+	config.ConsoleVersion = "0.1.6"
 	config.ArgoCDChartHelmVersion = "4.10.5"
 	// todo adopt latest helmVersion := "v3.9.0"
 	config.HelmVersion = "v3.6.1"
 	config.KubectlVersionM1 = "v1.21.14"
-
-	config.KubefirstVersion = "1.8.6"
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 

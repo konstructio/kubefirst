@@ -182,7 +182,15 @@ func PortForward(dryRun bool, namespace string, filter string, ports string) (*e
 	kPortForward.Stdout = &kPortForwardOutb
 	kPortForward.Stderr = &kPortForwardErrb
 	err := kPortForward.Start()
+	log.Printf("PF started (%s)", filter)
 	//defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
+
+	//Please, don't remove this sleep, pf takes a while to be ready to search calls.
+	//So, if next command is called to curl this address it will get connection refused.
+	//this sleep protects that.
+	//Please, don't remove this comment either.
+	time.Sleep(time.Second * 5)
+	log.Println(config.KubectlClientPath, " ", "--kubeconfig", " ", config.KubeConfigPath, " ", "-n", " ", namespace, " ", "port-forward", " ", filter, " ", ports)
 	if err != nil {
 		// If it doesn't error, we kinda don't care much.
 		log.Printf("Commad Execution STDOUT: %s", kPortForwardOutb.String())
@@ -190,6 +198,7 @@ func PortForward(dryRun bool, namespace string, filter string, ports string) (*e
 		log.Printf("error: failed to port-forward to %s in main thread %s", filter, err)
 		return kPortForward, err
 	}
+
 	return kPortForward, nil
 }
 
