@@ -32,15 +32,13 @@ var setupCiCmd = &cobra.Command{
 			return err
 		}
 
-		if viper.GetBool("github.enabled") {
-			//return metaphor.DeployMetaphorGithub(globalFlags)
-		} else {
-			return ciTools.DeployGitlab(globalFlags)
-		}
-
 		bucketName, err := ciTools.CreateBucket()
 		if err != nil {
 			return err
+		}
+
+		if !viper.GetBool("github.enabled") {
+			ciTools.DeployGitlab(globalFlags, bucketName)
 		}
 
 		ciTools.ApplyCITerraform(globalFlags.DryRun, bucketName)

@@ -14,10 +14,10 @@ func ApplyCITerraform(dryRun bool, bucketName string) {
 
 	config := configs.ReadConfig()
 
-	if !viper.GetBool("create.terraformapplied.ecr") {
-		log.Println("Executing applyECRTerraform")
+	if !viper.GetBool("create.terraformapplied.ci") {
+		log.Println("Executing applyCITerraform")
 		if dryRun {
-			log.Printf("[#99] Dry-run mode, applyECRTerraform skipped.")
+			log.Printf("[#99] Dry-run mode, applyCITerraform skipped.")
 			return
 		}
 
@@ -36,23 +36,23 @@ func ApplyCITerraform(dryRun bool, bucketName string) {
 		}
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if err != nil {
-			log.Panicf("error: terraform init for ecr failed %s", err)
+			log.Panicf("error: terraform init for ci failed %s", err)
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
 		if err != nil {
-			log.Panicf("error: terraform apply for ecr failed %s", err)
+			log.Panicf("error: terraform apply for ci failed %s", err)
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 
 	} else {
-		log.Println("Skipping: applyECRTerraform")
+		log.Println("Skipping: applyCITerraform")
 	}
 }
 
-func DestroyCITerraform(skipECRTerraform bool) {
+func DestroyCITerraform(skipCITerraform bool) {
 	config := configs.ReadConfig()
-	if !skipECRTerraform {
+	if !skipCITerraform {
 		directory := fmt.Sprintf("%s/ci/terraform/base", config.K1FolderPath)
 		err := os.Chdir(directory)
 		if err != nil {
@@ -64,14 +64,14 @@ func DestroyCITerraform(skipECRTerraform bool) {
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if err != nil {
-			log.Printf("[WARN]: failed to terraform init (destroy) ECR, was the ECR not created(check AWS)?: %s", err)
+			log.Printf("[WARN]: failed to terraform init (destroy) CI, was the CI not created(check AWS)?: %s", err)
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "destroy", "-auto-approve")
 		if err != nil {
-			log.Printf("[WARN]: failed to terraform destroy ECR, was the ECR not created (check AWS)?: %s", err)
+			log.Printf("[WARN]: failed to terraform destroy CI, was the CI not created (check AWS)?: %s", err)
 		}
-		viper.Set("destroy.terraformdestroy.ecr", true)
+		viper.Set("destroy.terraformdestroy.ci", true)
 		viper.WriteConfig()
 	} else {
 		log.Println("skip:  destroyBaseTerraform")
