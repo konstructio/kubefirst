@@ -230,9 +230,12 @@ var createGitlabCmd = &cobra.Command{
 			informUser("waiting for vault unseal", globalFlags.SilentMode)
 
 			log.Println("configuring vault")
-			vault.ConfigureVault(globalFlags.DryRun, true)
+			vault.ConfigureVault(globalFlags.DryRun)
 			informUser("Vault configured", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-vault", 1)
+
+			// vault.GetOidcClientCredentials(globalFlags.Dr) //*
+			// vault.GetOidcClientCredentials(globalFlags.Dr) //*
 
 			log.Println("creating vault configured secret")
 			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
@@ -241,8 +244,8 @@ var createGitlabCmd = &cobra.Command{
 		}
 		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 3)
 		if !viper.GetBool("gitlab.oidc-created") {
-			vault.AddGitlabOidcApplications(globalFlags.DryRun)
-			informUser("Added Gitlab OIDC", globalFlags.SilentMode)
+			// vault.AddGitlabOidcApplications(globalFlags.DryRun)
+			// informUser("Added Gitlab OIDC", globalFlags.SilentMode)
 
 			informUser("Waiting for Gitlab dns to propagate before continuing", globalFlags.SilentMode)
 			gitlab.AwaitHost("gitlab", globalFlags.DryRun)
@@ -262,7 +265,7 @@ var createGitlabCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-post-gitlab", 1)
 		if !globalFlags.DryRun && !viper.GetBool("argocd.oidc-patched") {
 			argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
-			k8s.PatchSecret(argocd.ArgocdSecretClient, "argocd-secret", "oidc.gitlab.clientSecret", viper.GetString("gitlab.oidc.argocd.secret"))
+			k8s.PatchSecret(argocd.ArgocdSecretClient, "argocd-secret", "oidc.vault.clientSecret", viper.GetString("gitlab.oidc.argocd.secret")) // todo vault.oidc.secret
 
 			argocdPodClient := clientset.CoreV1().Pods("argocd")
 			k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
@@ -352,7 +355,7 @@ var createGitlabCmd = &cobra.Command{
 		if !skipVault {
 			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
 			log.Println("configuring vault backend")
-			vault.ConfigureVault(globalFlags.DryRun, false)
+			vault.ConfigureVault(globalFlags.DryRun)
 			informUser("Vault backend configured", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}

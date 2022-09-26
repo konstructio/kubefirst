@@ -167,7 +167,7 @@ var createGithubCmd = &cobra.Command{
 		if !skipVault { //skipVault
 			informUser("waiting for vault unseal", globalFlags.SilentMode)
 			log.Println("configuring vault")
-			vault.ConfigureVault(globalFlags.DryRun, true)
+			vault.ConfigureVault(globalFlags.DryRun)
 			informUser("Vault configured", globalFlags.SilentMode)
 
 			log.Println("creating vault configured secret")
@@ -195,7 +195,7 @@ var createGithubCmd = &cobra.Command{
 		if false {
 			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
 			log.Println("configuring vault backend")
-			vault.ConfigureVault(globalFlags.DryRun, false)
+			vault.ConfigureVault(globalFlags.DryRun)
 			informUser("Vault backend configured", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
