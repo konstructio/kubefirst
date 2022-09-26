@@ -234,8 +234,7 @@ var createGitlabCmd = &cobra.Command{
 			informUser("Vault configured", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-vault", 1)
 
-			// vault.GetOidcClientCredentials(globalFlags.Dr) //*
-			// vault.GetOidcClientCredentials(globalFlags.Dr) //*
+			vault.GetOidcClientCredentials(globalFlags.DryRun)
 
 			log.Println("creating vault configured secret")
 			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)

@@ -137,12 +137,16 @@ func addVaultSecret(secretPath string, secretData map[string]interface{}) {
 	}
 }
 
-func GetOidcClientCredentials() {
+func GetOidcClientCredentials(dryRun bool) {
 
-	gitHubEnabled := viper.GetBool("github.enabled")
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, GetOidcClientCredentials skipped.")
+		return
+	}
+
 	oidcApps := []string{"argo", "argocd"}
 
-	if !gitHubEnabled {
+	if !viper.GetBool("github.enabled") {
 		oidcApps = append(oidcApps, "gitlab")
 	}
 
