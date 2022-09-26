@@ -1,32 +1,32 @@
 # Metaphor
 
-**Metaphors** are Kubefirst demo applications to demonstrate how a regular application can be integrated into the 
-Kubefirst platform following best practices. The demo applications consists of **Metaphor frontend**, 
+**Metaphor** is a suite of demo microservice applications to demonstrate how an application can be integrated into the 
+Kubefirst platform following best practices. The demo applications consists of a **Metaphor frontend**, 
 **Metaphor Go API**, and **Metaphor NodeJS API**.
 
 ### Best Practices
 
-The **Metaphors** applications provides a demonstration space for application best practices in a tangible way that's 
+The **Metaphor** applications provides a demonstration space for application best practices in a tangible way that's 
 easy to apply to other projects. When engineers discover good patterns and wish have those patterns adopted in other 
-projects, add that new idea in the most straightforward way possible to the Metaphors applications as well. By doing so 
+projects, add that new idea in the most straightforward way possible to the Metaphor applications as well. By doing so 
 our engineering team can fully engage with the best application approaches.
 
 ### CI/CD
 
-The **Metaphors** applications has a complete CI/CD process with automated builds, container creation, container 
-publishing, linting, tests, deployment to `preprod` and `production`, release management, version management, and 
-hotfixes. It serves as an excellent proving ground for changes to the CI/CD layer.
+The **Metaphor** applications come with complete CI/CD process including automated builds, container hand helm chart creation, container 
+and helm chart publishing, linting, tests, gitops deployments to `development`, `staging`, and `production` namespaces, 
+release management, version management, and hotfixes. It serves as an excellent proving ground for changes to the CI/CD layer.
 
-When a new version of our CI is needed, it's best to adopt that new version of the CI in the **Metaphors** application
+When a new version of our CI is needed, it's best to adopt that new version of the CI in a **Metaphor** application
 first. Run through the adjustments to your automation and test it through all of your environments and kubernetes 
 clusters without impacting the applications that your engineers and users depend on.
 
 ### Kubernetes Representations
 
-The **Metaphors** applications are multi-instance load balanced applications. It's deployed to the `development` and 
-`staging` namespaces in the `preprod` cluster, and the `production` namespace in the `production` cluster.
+The **Metaphors** applications are multi-instance load balanced applications. It's deployed to the `development`, 
+`staging`, and `production` namespaces in your `kubefirst` cluster.
 
-![](../../img/kubefirst/metaphor/metaphor-kubernetes-manifests.png)
+![](../img/kubefirst/metaphor/metaphor-kubernetes-manifests.png)
 
 The kubernetes manifests produced by the **Metaphors** applications CI include a working example of a kubernetes 
 deployment with downstream replicaset and pods, a service account with a security context used, a service to make the 

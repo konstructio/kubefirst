@@ -1,17 +1,18 @@
 # SSL Certificates
 
-Kubefirst takes advance of a variety of security layers to make the platform safe and secure for our users. One
-important and significant layer are the SSL certificates Kubefirst make use to protect https requests. 
-[Let's Encrypt](https://letsencrypt.org) is the chose tool to manage the services installed via Kubefirst installation.
+Kubefirst takes advantage of a variety of security layers to make the platform is safe and secure for our users. One
+important and significant layer is the SSL certificates Kubefirst leverages to protect https requests. 
+[Let's Encrypt](https://letsencrypt.org) is the certificate authority used to manage the certificates used for our
+ingressed services.
 
 During the installation process, ArgoCD applications are instantiated, applying the application manifest, and one of the
-manifest steps trigger the creation and management of the SSL certificates using Let's Encrypt. Let's encrypt than 
-initialize a challenge, and after the challenge is solved, the SSL certificate is confirmed via Let's Encrypt as a valid
-certificate, if not, ArgoCD will use his power to do it's best to resolve the certificate challenge.
+manifest steps trigger the creation and management of the SSL certificates using Let's Encrypt. Let's Encrypt then 
+initializes a challenge, and after the challenge is solved, the SSL certificate is confirmed via Let's Encrypt as a valid
+certificate.
 
 ## Backup and Restore certificates
 
-Certificates are limited, and Kubefirst can also help on that regard! We have two features to 
+Certificates requests for certs provided by LetsEncrypty are rate limited, and Kubefirst can also help on that regard! We have two features to 
 [backupSSL](../tooling/kubefirst-cli.md) and [restoreSSL](../tooling/kubefirst-cli.md) certificates. When a new 
 installation is started, one of the functionalities is to backup your SSL certificates at your AWS account on a S3 
 bucket following with `k1 + your-domain-name`.
