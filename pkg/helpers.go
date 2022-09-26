@@ -109,7 +109,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		awsAccountId := viper.GetString("aws.accountid")
 		kmsKeyId := viper.GetString("vault.kmskeyid")
 		clusterName := viper.GetString("cluster-name")
-		argocdOidcClientId := viper.GetString(("gitlab.oidc.argocd.applicationid"))
+		argocdOidcClientId := viper.GetString(("vault.oidc.argocd.client_id"))
 		githubRepoOwner := viper.GetString(("github.owner"))
 		githubRepoHost := viper.GetString(("github.host"))
 		githubUser := viper.GetString(("github.user"))

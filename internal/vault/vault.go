@@ -139,14 +139,12 @@ func addVaultSecret(secretPath string, secretData map[string]interface{}) {
 
 func GetOidcClientCredentials() {
 
-	// installer := "gitlab"
-	// oidcApps := []string
+	gitHubEnabled := viper.GetBool("github.enabled")
+	oidcApps := []string{"argo", "argocd"}
 
-	// if installer == "gitlab" {
-	// 	oidcApps := []string{"argo", "argocd", "gitlab"}
-	// } else {
-	// 	oidcApps := []string{"argo", "argocd"}
-	// }
+	if !gitHubEnabled {
+		oidcApps = append(oidcApps, "gitlab")
+	}
 
 	config := vault.DefaultConfig()
 	// config.Address = viper.GetString("vault.local.service")
@@ -159,9 +157,29 @@ func GetOidcClientCredentials() {
 
 	client.SetToken(viper.GetString("vault.token"))
 
-	data, err := client.Logical().Read("secret/data/oidc/argo")
+	for _, app := range oidcApps {
 
-	for _, thing := range data.Data {
-		log.Println(thing)
+		secret, err := client.KVv2("secret").Get(context.TODO(), fmt.Sprintf("oidc/%s", app))
+		if err != nil {
+			log.Panic(
+				"Unable to read the oidc secrets from vault: ",
+				err,
+			)
+		}
+
+		clientId, ok := secret.Data["client_id"].(string)
+		clientSecret, ok := secret.Data["client_secret"].(string)
+
+		if !ok {
+			log.Fatalf(
+				"value type assertion failed: %T %#v",
+				secret.Data["client_id"],
+				secret.Data["client_secret"],
+			)
+		}
+		viper.Set(fmt.Sprintf("vault.oidc.%s.client_id", app), clientId)
+		viper.Set(fmt.Sprintf("vault.oidc.%s.client_secret", app), clientSecret)
 	}
+	viper.WriteConfig()
+
 }

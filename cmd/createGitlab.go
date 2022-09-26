@@ -265,7 +265,7 @@ var createGitlabCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-post-gitlab", 1)
 		if !globalFlags.DryRun && !viper.GetBool("argocd.oidc-patched") {
 			argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
-			k8s.PatchSecret(argocd.ArgocdSecretClient, "argocd-secret", "oidc.vault.clientSecret", viper.GetString("gitlab.oidc.argocd.secret")) // todo vault.oidc.secret
+			k8s.PatchSecret(argocd.ArgocdSecretClient, "argocd-secret", "oidc.vault.clientSecret", viper.GetString("vault.oidc.argocd.client_secret"))
 
 			argocdPodClient := clientset.CoreV1().Pods("argocd")
 			k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
