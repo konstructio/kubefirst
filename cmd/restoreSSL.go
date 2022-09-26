@@ -20,7 +20,12 @@ var restoreSSLCmd = &cobra.Command{
 			return err
 		}
 
-		err = ssl.RestoreSSL(globalFlags.DryRun)
+		includeMetaphorApps, err := cmd.Flags().GetBool("include-metaphor")
+		if err != nil {
+			return err
+		}
+
+		err = ssl.RestoreSSL(globalFlags.DryRun, includeMetaphorApps)
 		if err != nil {
 			fmt.Printf("Bucket not found, missing SSL backup, assuming first installation, error is: %v", err)
 			return err
@@ -31,5 +36,6 @@ var restoreSSLCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(restoreSSLCmd)
+	restoreSSLCmd.Flags().Bool("include-metaphor", false, "Include Metaphor Apps in process")
 	flagset.DefineGlobalFlags(restoreSSLCmd)
 }

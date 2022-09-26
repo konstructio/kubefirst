@@ -25,6 +25,10 @@ func getNamespacesToBackupSSL() (ns []string) {
 	return []string{"argo", "argocd", "atlantis", "chartmuseum", "gitlab", "vault"}
 }
 
+func getNSToBackupSSLMetaphorApps() (ns []string) {
+	return []string{"staging", "development", "production"}
+}
+
 func getItemsToBackup(apiGroup string, apiVersion string, resourceType string, namespaces []string, jqQuery string) ([]string, error) {
 	config := configs.ReadConfig()
 
@@ -81,7 +85,7 @@ func getItemsToBackup(apiGroup string, apiVersion string, resourceType string, n
 }
 
 // GetBackupCertificates create a backup of Certificates on AWS S3 in yaml files
-func GetBackupCertificates() (string, error) {
+func GetBackupCertificates(includeMetaphorApps bool) (string, error) {
 	log.Println("GetBackupCertificates called")
 
 	bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
@@ -89,6 +93,11 @@ func GetBackupCertificates() (string, error) {
 
 	config := configs.ReadConfig()
 	namespaces := getNamespacesToBackupSSL()
+
+	if includeMetaphorApps {
+		log.Println("Including Certificates from Metaphor Apps")
+		namespaces = append(namespaces, getNSToBackupSSLMetaphorApps()...)
+	}
 
 	log.Println("getting certificates")
 	certificates, err := getItemsToBackup("cert-manager.io", "v1", "certificates", namespaces, "")
@@ -137,7 +146,7 @@ func GetBackupCertificates() (string, error) {
 }
 
 // RestoreSSL - Restore Cluster certs from a previous install
-func RestoreSSL(dryRun bool) error {
+func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 	config := configs.ReadConfig()
 
 	if viper.GetBool("create.state.ssl.restored") {
@@ -150,6 +159,10 @@ func RestoreSSL(dryRun bool) error {
 		return nil
 	}
 	namespaces := getNamespacesToBackupSSL()
+	if includeMetaphorApps {
+		log.Println("Including Certificates from Metaphor Apps")
+		namespaces = append(namespaces, getNSToBackupSSLMetaphorApps()...)
+	}
 	for _, ns := range namespaces {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "create", "ns", ns)
 		if err != nil {
