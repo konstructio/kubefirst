@@ -40,7 +40,7 @@ type TXTRecord struct {
 type ARecord struct {
 	Name        string
 	RecordType  string
-	TTL         int64
+	TTL         *int64
 	AliasTarget *route53Types.AliasTarget
 }
 
@@ -718,7 +718,7 @@ func Route53ListTXTRecords(hostedZoneId string) ([]TXTRecord, error) {
 	var txtRecords []TXTRecord
 
 	for _, recordSet := range recordSets.ResourceRecordSets {
-		fmt.Println("Record Name: ", *recordSet.Name)
+		log.Println("Record Name: ", *recordSet.Name)
 
 		if recordSet.Type == route53Types.RRTypeTxt {
 			for _, resourceRecord := range recordSet.ResourceRecords {
@@ -775,7 +775,6 @@ func Route53ListARecords(hostedZoneId string) ([]ARecord, error) {
 			record := ARecord{
 				Name:       *recordSet.Name,
 				RecordType: "A",
-				TTL:        *recordSet.TTL,
 				AliasTarget: &route53Types.AliasTarget{
 					HostedZoneId:         recordSet.AliasTarget.HostedZoneId,
 					DNSName:              recordSet.AliasTarget.DNSName,
@@ -792,6 +791,8 @@ func Route53ListARecords(hostedZoneId string) ([]ARecord, error) {
 
 // Route53DeleteTXTRecords receives a list of DNS TXT records []TXTRecord, and delete the records contained in the list.
 // todo: improve logging
+// todo: record deletion should use a function that receives the TXT parameters, and deletes the record. Not doing it
+// now since handler/methods needs to be implemented first.
 func Route53DeleteTXTRecords(
 	hostedZoneId string,
 	hostedZoneName string,
@@ -812,16 +813,13 @@ func Route53DeleteTXTRecords(
 	for _, record := range txtRecords {
 
 		if keepLivenessRecord && record.Name == livenessRecordName {
-			fmt.Printf("%s record not deleted\n", record.Name)
+			log.Printf("%s record not deleted\n", record.Name)
 			continue
 		}
 
-		fmt.Println("going to delete a TXT record...", record.Name)
-		time.Sleep(1 * time.Second)
+		log.Println("deleting TXT record...", record.Name)
 
 		//this deletes a TXT record
-		// todo: this big IF is funky, I'll update it before merge
-		// if I merged it like this, you're allowed to kick me :P
 		if record.SetIdentifier != nil && record.Weight != nil {
 			_, err = route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
 				ChangeBatch: &route53Types.ChangeBatch{
@@ -855,11 +853,9 @@ func Route53DeleteTXTRecords(
 						{
 							Action: "DELETE",
 							ResourceRecordSet: &route53Types.ResourceRecordSet{
-								Name:          &record.Name,
-								Type:          "TXT",
-								TTL:           &record.TTL,
-								SetIdentifier: record.SetIdentifier,
-								Weight:        record.Weight,
+								Name: &record.Name,
+								Type: "TXT",
+								TTL:  &record.TTL,
 								ResourceRecords: []route53Types.ResourceRecord{
 									{
 										Value: &record.Value,
@@ -875,7 +871,7 @@ func Route53DeleteTXTRecords(
 				return err
 			}
 		}
-		fmt.Printf("Route53 TXT record deleted: %q\n", record.Name)
+		log.Printf("Route53 TXT record deleted: %q\n", record.Name)
 	}
 
 	return nil
@@ -919,7 +915,7 @@ func Route53DeleteARecords(hostedZoneId string, aRecords []ARecord) error {
 			return err
 		}
 
-		fmt.Printf("Route53 A record deleted: %q\n", record.Name)
+		log.Printf("Route53 A record deleted: %q\n", record.Name)
 	}
 
 	return nil
@@ -941,14 +937,14 @@ func Route53DeleteHostedZone(hostedZoneId string, hostedZoneName string) error {
 		Id: &hostedZoneId,
 	}
 
-	fmt.Printf("trying to delete hosted zone id %q, hosted zone name %q\n", hostedZoneId, hostedZoneName)
+	log.Printf("trying to delete hosted zone id %q, hosted zone name %q\n", hostedZoneId, hostedZoneName)
 
 	_, err = route53Client.DeleteHostedZone(context.Background(), &hostedZoneInput)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("deleted hosted zone id %q, hosted zone name %q\n", hostedZoneId, hostedZoneName)
+	log.Printf("deleted hosted zone id %q, hosted zone name %q\n", hostedZoneId, hostedZoneName)
 
 	return nil
 }
