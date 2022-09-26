@@ -5,7 +5,7 @@
 
 ### After Install
 
-![](../img/todo.jpeg)
+![](../../img/todo.jpeg)
 
 `todo: metaphor secrets and external-secrets-operator need current details`
 
@@ -29,7 +29,7 @@ Let's explore how this works in our demo application Metaphor Go.
 
 First, let's look in your [vault kv store](https://vault.mgmt.kubefirst.com/ui/vault/secrets/secret/show/development/metaphor).
 
-![](../img/kubefirst/vault/vault-secret-example.png)
+![](../../img/kubefirst/vault/vault-secret-example.png)
 
 Here you can see we have two secrets stored at `secret/development/metaphor` named `SECRET_ONE` and `SECRET_TWO`.
 
@@ -115,12 +115,12 @@ my-super-secret%
 Now that you have native kubernetes secrets available, you can just use them however you choose. Our metaphor example 
 uses them as environment variables as shown here
 
-![](../img/kubefirst/vault/metaphor-secret-use.png)
+![](../../img/kubefirst/vault/metaphor-secret-use.png)
 
 > Note: there are a ton of other ways secrets can be leveraged in your app, like 
 [using secrets as files on pods](https://kubernetes.io/docs/concepts/configuration/secret/), or 
 [storing your dockerhub login](https://kubernetes.io/docs/concepts/configuration/secret/#docker-config-secrets)
 
-The [Metaphor](../kubefirst/gitlab/metaphors.md) app will show you these secrets when you visit 
+The [Metaphor](../../common/metaphors.md) app will show you these secrets when you visit 
 [metaphor](https://metaphor-development.preprod.kubefirst.com/). Now obviously you don't want to actually show your 
 secrets in a web response, but it helps us demonstrate since these metaphor secrets don't need protection.
