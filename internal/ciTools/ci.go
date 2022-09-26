@@ -13,11 +13,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-// DeployGitlab - Deploy CI applications on gitlab install
-func DeployGitlab(globalFlags flagset.GlobalFlags, bucketName string) error {
+// DeployOnGitlab - Deploy CI applications on gitlab install
+func DeployOnGitlab(globalFlags flagset.GlobalFlags, bucketName string) error {
 	config := configs.ReadConfig()
 	if globalFlags.DryRun {
-		log.Printf("[#99] Dry-run mode, DeployGitlab skipped.")
+		log.Printf("[#99] Dry-run mode, DeployOnGitlab skipped.")
 		return nil
 	}
 	log.Printf("cloning and detokenizing the ci-template repository")
