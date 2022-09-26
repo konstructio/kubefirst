@@ -27,9 +27,10 @@ nav:
   - Home:
     - index.md
     - Kubefirst Platform:
+      - Overview: 'kubefirst/overview.md'
       - GitHub Installation:
         - Install: 'kubefirst/github/install.md'
-        - Getting Started: 'kubefirst/github/getting-started.md'
+        - After Install: 'kubefirst/github/after-install.md'
         # - Page: Local Setup: need a new top level doc on connecting to aws and connecting to kubernetes - 1.9 will change the aws access story
         # - Page: User management on kubefirst (changing in 1.9+)
         - GitHub Repositories: 'kubefirst/github/github-repositories.md'
@@ -52,8 +53,6 @@ nav:
           # need better image that has singular registry
           # paths in docs need adjustment for open source platform (no east-2, etc)
           # drop the bottom section (secure registration layer)
-        - Metaphor: 'kubefirst/github/metaphor.md'
-          # in 1.9 metaphor is expanding to a set of microservices
         - Terraform & Atlantis: 'kubefirst/github/terraform.md'
           # video is enormous here
           # info on webhooks
@@ -69,6 +68,9 @@ nav:
           # - Page: gitlab
           # - Page: vault
         - Vault: 'kubefirst/github/vault.md'
+        - Metaphors: 'common/metaphors.md'
+        - Certificates: 'common/certificates.md'
+        - Security: 'common/security.md'
           # in 1.9, vault will be our new idp and oidc provider, docs
           # vault acl policies
           # how the root vault token works
@@ -84,13 +86,13 @@ nav:
           # check links
           # remove ghost
           # add any new tools 
-        - Teardown: 'kubefirst/github/teardown.md'
+        - Destroy: 'kubefirst/github/destroy.md'
           # add details about kubefirst state command, typo on link
         - FAQ: 'kubefirst/github/faq.md'
           # is this fine? get feedback from devrel
       - GitLab Installation:
         - Install: 'kubefirst/gitlab/install.md'
-        - Getting Started: 'kubefirst/gitlab/getting-started.md'
+        - After Install: 'kubefirst/gitlab/after-install.md'
         # - Page: Local Setup: need a new top level doc on connecting to aws and connecting to kubernetes - 1.9 will change the aws access story
         # - Page: User management on kubefirst (changing in 1.9+)
         - Gitlab: 'kubefirst/gitlab/gitlab.md'
@@ -118,8 +120,6 @@ nav:
           # need better image that has singular registry
           # paths in docs need adjustment for open source platform (no east-2, etc)
           # drop the bottom section (secure registration layer)
-        - Metaphor: 'kubefirst/gitlab/metaphor.md'
-          # in 1.9 metaphor is expanding to a set of microservices
         - Terraform & Atlantis: 'kubefirst/gitlab/terraform.md'
           # video is enormous here
           # info on webhooks
@@ -135,6 +135,9 @@ nav:
           # - Page: gitlab
           # - Page: vault
         - Vault: 'kubefirst/gitlab/vault.md'
+        - Metaphors: 'common/metaphors.md'
+        - Certificates: 'common/certificates.md'
+        - Security: 'common/security.md'
           # in 1.9, vault will be our new idp and oidc provider, docs
           # vault acl policies
           # how the root vault token works
@@ -150,7 +153,7 @@ nav:
           # check links
           # remove ghost
           # add any new tools 
-        - Teardown: 'kubefirst/gitlab/teardown.md'
+        - Destroy: 'kubefirst/gitlab/destroy.md'
           # add details about kubefirst state command, typo on link
         - FAQ: 'kubefirst/gitlab/faq.md'
           # is this fine? get feedback from devrel
@@ -163,9 +166,10 @@ nav:
       - AWS CLI: 'tooling/aws-cli.md'
       - Docker: 'tooling/docker.md'
       - Kubectl:  'tooling/kubectl.md'
+      - Kubefirst CLI: 'tooling/kubefirst-cli.md'
       - Shell Utilities: 'tooling/shell-utilities.md'
       - Terraform: 'tooling/terraform.md'
-      - Vault CLI: 'tooling/vault-cli.md' 
+      - Vault CLI: 'tooling/vault-cli.md'
     - Community:
       - Community: 'community/index.md'
       # - Page: white glove service
@@ -178,7 +182,7 @@ nav:
   - Roadmap:
     - Roadmap: 'roadmap/index.md'
   - Blog:
-    - Blog: 'https://kubeshop.io/blog-projects/kubefirst'
+    - Blog: 'https://kubefirst.io/blog'
       # issues:
       # there's no link back to the docs from the blog
   - Site:

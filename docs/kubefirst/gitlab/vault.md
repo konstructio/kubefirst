@@ -1,21 +1,31 @@
 # Vault
 
-[Vault](https://www.vaultproject.io/) is our secrets manager. It runs in kubernetes with a dynamodb backend that's encrypted with kms.
+[Vault](https://www.vaultproject.io/) is our secrets manager. It runs in Kubernetes with a 
+[DynamoDB](https://aws.amazon.com/dynamodb/) backend that's encrypted with kms.
+
+### After Install
+
+![](../../img/todo.jpeg)
+
+`todo: metaphor secrets and external-secrets-operator need current details`
 
 ## Authentication
 
-Your infrastructure will be set up with Vault running in the eks cluster. The `external-secrets` app is preconfigured to be able to pull secrets from your cluster's vault instance.
+Your infrastructure will be set up with Vault running in the eks cluster. The `external-secrets` app is preconfigured 
+to be able to pull secrets from your cluster's vault instance.
 
 There are numerous other authentication schemes available to you as well:
 [https://www.vaultproject.io/docs/auth](https://www.vaultproject.io/docs/auth)
 
 ## Secrets Setup for Applications
 
-There's an [external-secrets](https://github.com/external-secrets/kubernetes-external-secrets) pod running in each of our clusters. `external-secrets` is able to keep kubernetes secrets in sync with the values in vault so your kubernetes apps can use them.
+There's an [external-secrets](https://github.com/external-secrets/kubernetes-external-secrets) pod running in each of 
+our clusters. `external-secrets` is able to keep kubernetes secrets in sync with the values in vault so your kubernetes 
+apps can use them.
 
-Let's explore how this works. 
+Let's explore how this works in our demo application Metaphor Go. 
 
-#### Storing Secrets in Vault
+### Storing secrets in Vault
 
 First, let's look in your [vault kv store](https://vault.mgmt.kubefirst.com/ui/vault/secrets/secret/show/development/metaphor).
 
@@ -23,9 +33,14 @@ First, let's look in your [vault kv store](https://vault.mgmt.kubefirst.com/ui/v
 
 Here you can see we have two secrets stored at `secret/development/metaphor` named `SECRET_ONE` and `SECRET_TWO`.
 
-#### Creating Kubernetes Secrets From Vault Secrets
+### Creating Kubernetes Secrets From Vault Secrets
 
-Now let's visit metaphor's [external secrets definition] `/kubernetes/metaphor/external-secrets.yaml`. We can see here that we've defined an external-secrets manifest which will collect secrets from the vault path `secret/data/development/metaphor` (be mindful of the `/data/` that vault imposes on your paths). It will take the values from those paths and produce a secret named metaphor-envs with a `secret-one` and `secret-two` derived from vault's `SECRET_ONE` and `SECRET_TWO` property.
+Now let's visit metaphor [external secrets definition] `/kubernetes/metaphor/external-secrets.yaml`. We can see 
+here that we've defined an external-secrets manifest which will collect secrets from the vault path 
+`secret/data/development/metaphor` (be mindful of the `/data/` that Vault imposes on your paths). It will take the 
+values from those paths and produce a secret named metaphor-envs with a `secret-one` and `secret-two` derived from 
+vault's `SECRET_ONE` and `SECRET_TWO` property.
+
 > note: the below `<values>` are token values replaced via helm templating
 ```
 apiVersion: "kubernetes-client.io/v1"
@@ -46,11 +61,13 @@ spec:
       property: SECRET_TWO
 ```
 
-#### Confirming Your Kubernetes Secrets
+### Confirming Your Kubernetes Secrets
 
-Applying the above ExternalSecret resource to your kubernetes namespace is enough to produce a kubernetes secret which will stay in sync with Vault's values. Let's confirm:
+Applying the above ExternalSecret resource to your kubernetes namespace is enough to produce a kubernetes secret which 
+will stay in sync with Vault's values. Let's confirm:
 
-1. get all secrets in the development namespace:
+#### 1. get all secrets in the development namespace:
+
 ```
 (⎈ |k8s-preprod:development) % kubectl -n development get secrets
 NAME                      TYPE                                  DATA   AGE
@@ -61,7 +78,8 @@ metaphor-sa-token-w4lht   kubernetes.io/service-account-token   3      26d
 metaphor-tls              kubernetes.io/tls                     2      26d
 ```
 
-2. get the yaml of the one named `metaphor-envs`:
+#### 2. get the yaml of the one named `metaphor-envs`:
+
 ```
 (⎈ |k8s-preprod:development) % kubectl -n development get secret metaphor-envs -oyaml
 apiVersion: v1
@@ -85,7 +103,8 @@ metadata:
 type: Opaque
 ```
 
-3. confirm that it's your value from vault:
+### 3. confirm that it's your value from vault:
+
 ```
 (⎈ |k8s-preprod:development) % echo "bXktc3VwZXItc2VjcmV0" | base64 -d
 my-super-secret%                                   
@@ -93,10 +112,15 @@ my-super-secret%
 
 #### Using Those Secrets in Your App
 
-Now that you have native kubernetes secrets available, you can just use them however you choose. Our metaphor example uses them as environment variables as shown here
+Now that you have native kubernetes secrets available, you can just use them however you choose. Our metaphor example 
+uses them as environment variables as shown here
 
 ![](../../img/kubefirst/vault/metaphor-secret-use.png)
 
-> Note: there are a ton of other ways secrets can be leveraged in your app, like [using secrets as files on pods](https://kubernetes.io/docs/concepts/configuration/secret/), or [storing your dockerhub login](https://kubernetes.io/docs/concepts/configuration/secret/#docker-config-secrets)
+> Note: there are a ton of other ways secrets can be leveraged in your app, like 
+[using secrets as files on pods](https://kubernetes.io/docs/concepts/configuration/secret/), or 
+[storing your dockerhub login](https://kubernetes.io/docs/concepts/configuration/secret/#docker-config-secrets)
 
-The metaphor app will show you these secrets when you visit [metaphor](https://metaphor-development.preprod.kubefirst.com/). Now obviously you don't want to actually show your secrets in a web response, but it helps us demonstrate since these metaphor secrets don't need protection.
+The [Metaphor](../../common/metaphors.md) app will show you these secrets when you visit 
+[metaphor](https://metaphor-development.preprod.kubefirst.com/). Now obviously you don't want to actually show your 
+secrets in a web response, but it helps us demonstrate since these metaphor secrets don't need protection.

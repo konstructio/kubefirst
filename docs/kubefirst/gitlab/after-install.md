@@ -1,14 +1,4 @@
-# Getting Started
-
-### Prerequesite
-
-To install the Kubefirst Platform see [install](./install.md)
-
-### After Install
-
-![](../../img/todo.jpeg)
-
-`todo: need new getting started video for github`
+# After Install
 
 <iframe width="784" height="441" src="https://www.youtube.com/embed/KEUOaNMUqOM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
@@ -23,7 +13,8 @@ You now have an EKS cluster with the following content installed in it:
 | Certificate Issuers      | Let's Encrypt browser-trusted certificates  |
 | Argo CD                  | GitOps Continuous Delivery                  |
 | Argo Workflows           | Application Continuous Integration          |
-| GitHub Action Runner     | GitHub CI Executor                          |
+| GitLab                   | GitLab Server                               |
+| GitLab Runner            | GitLab CI Executor                          |
 | Vault                    | Secrets Management                          |
 | Atlantis                 | Terraform Workflow Automation               |
 | External Secrets         | Syncs Kubernetes secrets with Vault secrets |
@@ -37,14 +28,23 @@ You now have an EKS cluster with the following content installed in it:
 
 ![](../../img/kubefirst/getting-started/gitops-assets.png)
 
-### Step 1: Collect Root Credentials
+## Step 1: Console UI
 
-Once you've successfully provisioned your kubefirst platform, you'll be presented with a screen that looks like this
-![](../../img/kubefirst/getting-started/cluster-create-result.png)
+When calling `cluster create` command and adding the flag `--enable-console`, at the end of the installation, a console
+will be available at `http://localhost:9094`, and will give you dashboard to navigate to the different services
+that were previsioned.
 
-These are **not your personal credentials**. These are administrator credentials that can be used if you ever need to authenticate and administer your tools if your OIDC provider ever become unavailable. Please protect these secrets and store them in a safe place.
+![console ui](../../img/kubefirst/console-ui.png)
 
-### Step 2: Add Your Team
+When the `--enable-console` flag is not set, a terminal handoff screen it presented:
+
+![terminal handoff](../../img/kubefirst/getting-started/cluster-create-result.png)
+
+These are **not your personal credentials**. These are administrator credentials that can be used if you ever need to 
+authenticate and administer your tools if your OIDC provider ever become unavailable. Please protect these secrets and 
+store them in a safe place.
+
+## Step 2: Add Your Team
 
 Log into gitlab using the root credentials that were provided to you in your terminal.
 
@@ -81,11 +81,13 @@ Any new users you have created through this process will have their temporary in
 
 ![](../../img/kubefirst/getting-started/vault-users.png)
 
-### Step 3: Deliver Metaphor to Development, Staging, and Production
+## Step 3: Deliver Metaphors to Development, Staging, and Production
 
-Metaphor is our sample application that we use to demonstrate parts of the platform and to test CI changes. It's the other project in the Kubefirst group in GitLab.
+Metaphors are our sample applications that we use to demonstrate parts of the platform and to test CI changes. It's the 
+other project in the Kubefirst group in GitLab.
 
-If you visit its `.gitlab-ci.yml` in the metaphor repo root, you'll see it's sending some workflows to argo. Those workflows are also in the `metaphor` repo in the `.argo` directory.
+If you visit its `.gitlab-ci.yml` in the metaphors repositories root, you'll see it's sending some workflows to argo. 
+Those workflows are also in the `metaphors` repo in the `.argo` directory.
 
 The metaphor pipeline will:
 
@@ -95,11 +97,17 @@ The metaphor pipeline will:
 - the release stage of the pipeline will republish the chart, this time without the release candidate notation making it an officially released version, and prepare the metaphor application chart for the next release version
 - the officially released chart will be set as the desired helm chart for production
 
-To watch this pipeline occur, make any change to the `main` branch of the `metaphor` repo. If you're not feeling creative, we put a file at `.argo/ci-files/trigger.txt` that you can use. Once a file in `main` is changed, navigate to metaphor's CI/CD in GitLab to see the workflows get submitted to argo workflows.
+To watch this pipeline occur, make any change to the `main` branch of the `metaphors` repo. If you're not feeling 
+creative, we put a file at `.argo/ci-files/trigger.txt` that you can use. Once a file in `main` is changed, navigate to 
+metaphor's CI/CD in GitLab to see the workflows get submitted to argo workflows.
 
-You can visit the metaphor development, staging, and production apps in your browser to see the versions change as your releases complete and argocd syncs the apps. The metaphor URLs can be found in your gitops and metaphor project `README.md` files.
+You can visit the metaphor development, staging, and production apps in your browser to see the versions change as your 
+releases complete and argocd syncs the apps. The metaphor URLs can be found in your gitops and metaphor project 
+`README.md` files.
 
-### Learning the ropes
+![](../../img/kubefirst/metaphor/metaphor-frontend.png)
+
+## Learning the ropes
 
 We've tried our best to surface available customizations and patterns of the kubefirst platform here on our docs site. We've also made [links available](./credit.md) to all of our open source tools' own sources of documentation as well.
 

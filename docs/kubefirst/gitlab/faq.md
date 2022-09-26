@@ -11,7 +11,7 @@ Open an issue against the kubefirst/kubefirst repo on github. We'll gladly work 
 
 ## How do I tear it all down when I'm done checking it out?
 
-See [./teardowm.md](./teardown.md)
+See [./destroy.md](./destroy.md)
 
 ## Don't you guys slack?
 
