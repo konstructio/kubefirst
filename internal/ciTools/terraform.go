@@ -61,6 +61,7 @@ func DestroyCITerraform(skipCITerraform bool) {
 
 		envs := map[string]string{}
 		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if err != nil {
