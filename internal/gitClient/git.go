@@ -193,6 +193,7 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 
 	isMainBranch := true
 	isRepoClone := false
+	source := ""
 	if branch != "main" {
 		isMainBranch = false
 	}
@@ -211,6 +212,7 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 			log.Printf("error cloning %s-template repository from github %s at branch %s", repoName, err, branch)
 		} else {
 			isRepoClone = true
+			source = "branch"
 			viper.Set(fmt.Sprintf("git.clone.%s.branch", repoName), branch)
 		}
 	}
@@ -226,6 +228,7 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 			log.Printf("error cloning %s-template repository from github %s at tag %s", repoName, err, fallbackTag)
 		} else {
 			isRepoClone = true
+			source = "tag"
 			viper.Set(fmt.Sprintf("git.clone.%s.tag", repoName), fallbackTag)
 		}
 	}
@@ -251,7 +254,13 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 		//remove old branch
 		err = repo.Storer.RemoveReference(plumbing.NewBranchReferenceName(branch))
 		if err != nil {
-			log.Panicf("error removing old branch: %s, %s", repoName, err)
+			if source == "branch" {
+				log.Panicf("error removing old branch: %s, %s", repoName, err)
+			} else {
+				//this code will probably fail from a tag sourced clone
+				//post-1.9.0 tag some tests will be done to ensure the final logic.
+				log.Printf("[101] error removing old branch: %s, %s", repoName, err)
+			}
 		}
 
 	}
