@@ -34,8 +34,8 @@ func ExecShellWithVars(osvars map[string]string, command string, args ...string)
 	log.Printf("INFO: Running %s", command)
 	for k, v := range osvars {
 		os.Setenv(k, v)
-		supressedValue := strings.Repeat("*", len(v))
-		log.Printf(" export %s = %s", k, supressedValue)
+		suppressedValue := strings.Repeat("*", len(v))
+		log.Printf(" export %s = %s", k, suppressedValue)
 	}
 	cmd := exec.Command(command, args...)
 	cmdReaderOut, err := cmd.StdoutPipe()
