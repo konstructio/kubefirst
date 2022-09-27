@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 // ExecShellReturnStrings Exec shell actions returning a string for use by the caller.
@@ -33,7 +34,8 @@ func ExecShellWithVars(osvars map[string]string, command string, args ...string)
 	log.Printf("INFO: Running %s", command)
 	for k, v := range osvars {
 		os.Setenv(k, v)
-		log.Printf(" export %s = %s", k, v)
+		supressedValue := strings.Repeat("*", len(v))
+		log.Printf(" export %s = %s", k, supressedValue)
 	}
 	cmd := exec.Command(command, args...)
 	cmdReaderOut, err := cmd.StdoutPipe()
