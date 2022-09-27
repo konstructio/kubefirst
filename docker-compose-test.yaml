@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: ./build/Dockerfile.ci
     working_dir: /home/developer/kubefirst
-    platform: linux/amd64
+    # platform: linux/amd64 # enable this to run local tests on Mac M1
     volumes:
       - ./:/home/developer/kubefirst
     dns:
@@ -16,25 +16,3 @@ services:
       - 8.8.8.8 #Google DNS
     command: sh -c "task unit-test"
 
-  kubefirst-integration-tests:
-    build:
-      context: .
-      dockerfile: ./build/Dockerfile.ci
-    working_dir: /home/developer/kubefirst
-    platform: linux/amd64
-    volumes:
-      - ./:/home/developer/kubefirst
-    dns:
-      - 208.67.222.222 #Cisco DNS
-      - 1.1.1.1 #Cloudflare DNS
-      - 1.0.0.1 #Cloudflare DNS
-      - 8.8.8.8 #Google DNS
-    command: sh -c "task integration-tests"
-    environment:
-      - AWS_REGION=$AWS_REGION
-      - CLUSTER_NAME=$CLUSTER_NAME
-      - SUFFIX_S3=$SUFFIX_S3
-      - EMAIL=$EMAIL
-      - HOSTED_ZONE_NAME=$HOSTED_ZONE_NAME
-      - GITOPS_BRANCH=$GITOPS_BRANCH
-      - CICD_LOGS_BUCKET=$CICD_LOGS_BUCKET

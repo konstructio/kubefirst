@@ -18,7 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
-	"github.com/aws/aws-sdk-go-v2/service/route53/types"
+	route53Types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
@@ -26,6 +26,23 @@ import (
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
+
+// TXTRecord stores Route53 TXT record data
+type TXTRecord struct {
+	Name          string
+	Value         string
+	SetIdentifier *string
+	Weight        *int64
+	TTL           int64
+}
+
+// ARecord stores Route53 A record data
+type ARecord struct {
+	Name        string
+	RecordType  string
+	TTL         *int64
+	AliasTarget *route53Types.AliasTarget
+}
 
 // NewAws instantiate a new AWS configuration. This function is used to provide initial connection to AWS services.
 // todo: update AWS functions in this file to work as methods of AWS struct
@@ -180,14 +197,14 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) bo
 	record, err := route53Client.ChangeResourceRecordSets(
 		context.Background(),
 		&route53.ChangeResourceRecordSetsInput{
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{
+			ChangeBatch: &route53Types.ChangeBatch{
+				Changes: []route53Types.Change{
 					{
 						Action: "UPSERT",
-						ResourceRecordSet: &types.ResourceRecordSet{
+						ResourceRecordSet: &route53Types.ResourceRecordSet{
 							Name: aws.String(route53RecordName),
 							Type: "TXT",
-							ResourceRecords: []types.ResourceRecord{
+							ResourceRecords: []route53Types.ResourceRecord{
 								{
 									Value: aws.String(strconv.Quote(route53RecordValue)),
 								},
@@ -644,6 +661,290 @@ func DownloadS3File(bucketName string, filename string) error {
 	}
 
 	log.Printf("Downloaded file: %s, file size(bytes): %v", file.Name(), numBytes)
+
+	return nil
+}
+
+// Route53GetHostedZoneId translates a Hosted Zone into Name into a Hosted Zone Id.
+func Route53GetHostedZoneId(hostedZone string) (string, error) {
+
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := NewAws()
+	if err != nil {
+		return "", err
+	}
+
+	route53Client := route53.NewFromConfig(awsConfig)
+
+	routes, err := route53Client.ListHostedZonesByName(
+		context.Background(),
+		&route53.ListHostedZonesByNameInput{
+			DNSName: &hostedZone,
+		})
+	if err != nil {
+		return "", err
+	}
+
+	var hostedZoneId string
+	for _, dnsEntry := range routes.HostedZones {
+		if *dnsEntry.Name == hostedZone+"." {
+			hostedZoneId = *dnsEntry.Id
+		}
+	}
+
+	return hostedZoneId, nil
+}
+
+// Route53ListTXTRecords retrieve all DNS TXT record type for a specific Host Zone Id.
+func Route53ListTXTRecords(hostedZoneId string) ([]TXTRecord, error) {
+
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := NewAws()
+	if err != nil {
+		return []TXTRecord{}, err
+	}
+
+	route53Client := route53.NewFromConfig(awsConfig)
+
+	log.Printf("hosted zone found! Hosted Zone id: %s\n", hostedZoneId)
+
+	recordSets, err := route53Client.ListResourceRecordSets(context.Background(), &route53.ListResourceRecordSetsInput{
+		HostedZoneId: &hostedZoneId,
+	})
+	if err != nil {
+		return []TXTRecord{}, err
+	}
+
+	var txtRecords []TXTRecord
+
+	for _, recordSet := range recordSets.ResourceRecordSets {
+		log.Println("Record Name: ", *recordSet.Name)
+
+		if recordSet.Type == route53Types.RRTypeTxt {
+			for _, resourceRecord := range recordSet.ResourceRecords {
+
+				if recordSet.SetIdentifier != nil && recordSet.Weight != nil {
+					record := TXTRecord{
+						Name:          *recordSet.Name,
+						Value:         *resourceRecord.Value,
+						SetIdentifier: recordSet.SetIdentifier,
+						TTL:           *recordSet.TTL,
+						Weight:        recordSet.Weight,
+					}
+					txtRecords = append(txtRecords, record)
+					continue
+				}
+
+				record := TXTRecord{
+					Name:  *recordSet.Name,
+					Value: *resourceRecord.Value,
+					TTL:   *recordSet.TTL,
+				}
+				txtRecords = append(txtRecords, record)
+			}
+		}
+	}
+
+	return txtRecords, nil
+}
+
+// Route53ListARecords retrieve all DNS A record type for a specific Host Zone Id.
+func Route53ListARecords(hostedZoneId string) ([]ARecord, error) {
+
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := NewAws()
+	if err != nil {
+		return []ARecord{}, err
+	}
+
+	route53Client := route53.NewFromConfig(awsConfig)
+
+	recordSets, err := route53Client.ListResourceRecordSets(context.Background(), &route53.ListResourceRecordSetsInput{
+		HostedZoneId: &hostedZoneId,
+	})
+	if err != nil {
+		return []ARecord{}, err
+	}
+
+	var aRecords []ARecord
+
+	for _, recordSet := range recordSets.ResourceRecordSets {
+
+		if recordSet.Type == route53Types.RRTypeA {
+
+			record := ARecord{
+				Name:       *recordSet.Name,
+				RecordType: "A",
+				AliasTarget: &route53Types.AliasTarget{
+					HostedZoneId:         recordSet.AliasTarget.HostedZoneId,
+					DNSName:              recordSet.AliasTarget.DNSName,
+					EvaluateTargetHealth: true,
+				},
+			}
+			aRecords = append(aRecords, record)
+		}
+	}
+
+	return aRecords, nil
+
+}
+
+// Route53DeleteTXTRecords receives a list of DNS TXT records []TXTRecord, and delete the records contained in the list.
+// todo: improve logging
+// todo: record deletion should use a function that receives the TXT parameters, and deletes the record. Not doing it
+// now since handler/methods needs to be implemented first.
+func Route53DeleteTXTRecords(
+	hostedZoneId string,
+	hostedZoneName string,
+	keepLivenessRecord bool,
+	txtRecords []TXTRecord,
+) error {
+
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := NewAws()
+	if err != nil {
+		return err
+	}
+
+	route53Client := route53.NewFromConfig(awsConfig)
+
+	livenessRecordName := fmt.Sprintf("%s.%s.", "kubefirst-liveness", hostedZoneName)
+
+	for _, record := range txtRecords {
+
+		if keepLivenessRecord && record.Name == livenessRecordName {
+			log.Printf("%s record not deleted\n", record.Name)
+			continue
+		}
+
+		log.Println("deleting TXT record...", record.Name)
+
+		//this deletes a TXT record
+		if record.SetIdentifier != nil && record.Weight != nil {
+			_, err = route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
+				ChangeBatch: &route53Types.ChangeBatch{
+					Changes: []route53Types.Change{
+						{
+							Action: "DELETE",
+							ResourceRecordSet: &route53Types.ResourceRecordSet{
+								Name:          &record.Name,
+								Type:          "TXT",
+								TTL:           &record.TTL,
+								SetIdentifier: record.SetIdentifier,
+								Weight:        record.Weight,
+								ResourceRecords: []route53Types.ResourceRecord{
+									{
+										Value: &record.Value,
+									},
+								},
+							},
+						},
+					},
+				},
+				HostedZoneId: &hostedZoneId,
+			})
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err = route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
+				ChangeBatch: &route53Types.ChangeBatch{
+					Changes: []route53Types.Change{
+						{
+							Action: "DELETE",
+							ResourceRecordSet: &route53Types.ResourceRecordSet{
+								Name: &record.Name,
+								Type: "TXT",
+								TTL:  &record.TTL,
+								ResourceRecords: []route53Types.ResourceRecord{
+									{
+										Value: &record.Value,
+									},
+								},
+							},
+						},
+					},
+				},
+				HostedZoneId: &hostedZoneId,
+			})
+			if err != nil {
+				return err
+			}
+		}
+		log.Printf("Route53 TXT record deleted: %q\n", record.Name)
+	}
+
+	return nil
+
+}
+
+// Route53DeleteARecords receives a slice of DNS A Record []ARecord, and delete all Route 53 records contained in the
+// list.
+func Route53DeleteARecords(hostedZoneId string, aRecords []ARecord) error {
+
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := NewAws()
+	if err != nil {
+		return err
+	}
+
+	route53Client := route53.NewFromConfig(awsConfig)
+
+	for _, record := range aRecords {
+
+		_, err := route53Client.ChangeResourceRecordSets(context.Background(), &route53.ChangeResourceRecordSetsInput{
+			ChangeBatch: &route53Types.ChangeBatch{
+				Changes: []route53Types.Change{
+					{
+						Action: "DELETE",
+						ResourceRecordSet: &route53Types.ResourceRecordSet{
+							Name: &record.Name,
+							Type: "A",
+							AliasTarget: &route53Types.AliasTarget{
+								HostedZoneId:         record.AliasTarget.HostedZoneId,
+								DNSName:              record.AliasTarget.DNSName,
+								EvaluateTargetHealth: true,
+							},
+						},
+					},
+				},
+			},
+			HostedZoneId: &hostedZoneId,
+		})
+		if err != nil {
+			return err
+		}
+
+		log.Printf("Route53 A record deleted: %q\n", record.Name)
+	}
+
+	return nil
+}
+
+// Route53DeleteHostedZone deletes the HostedZone. Route53DeleteHostedZone can be called only when there are no hosted
+// zones records available (except NS and SOA records). When there are still hosted zone records available, the deletion
+// will fail with the error description coming from AWS library.
+func Route53DeleteHostedZone(hostedZoneId string, hostedZoneName string) error {
+	awsConfig, err := NewAws()
+
+	if err != nil {
+		return err
+	}
+
+	route53Client := route53.NewFromConfig(awsConfig)
+
+	hostedZoneInput := route53.DeleteHostedZoneInput{
+		Id: &hostedZoneId,
+	}
+
+	log.Printf("trying to delete hosted zone id %q, hosted zone name %q\n", hostedZoneId, hostedZoneName)
+
+	_, err = route53Client.DeleteHostedZone(context.Background(), &hostedZoneInput)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("deleted hosted zone id %q, hosted zone name %q\n", hostedZoneId, hostedZoneName)
 
 	return nil
 }
