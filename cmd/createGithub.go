@@ -178,7 +178,7 @@ var createGithubCmd = &cobra.Command{
 
 			log.Println("creating vault configured secret")
 			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
-			informUser("Vault  secret created", globalFlags.SilentMode)
+			informUser("Vault secret created", globalFlags.SilentMode)
 		}
 		informUser("Terraform Vault", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
