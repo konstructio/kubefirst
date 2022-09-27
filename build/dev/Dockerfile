@@ -13,14 +13,14 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.21.3/b
 
 # AWS cli
 RUN curl -LO https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip && \
-    unzip -q awscli-exe-linux-x86_64.zip && \
+    unzip awscli-exe-linux-x86_64.zip && \
     ./aws/install && \
     rm -r aws && \
     rm awscli-exe-linux-x86_64.zip
 
 # AWS EKS cli
 RUN curl -LO https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_linux_amd64.tar.gz && \
-    tar -xzf eksctl_linux_amd64.tar.gz -C /usr/local/bin/ && \
+    tar -xvzf eksctl_linux_amd64.tar.gz -C /usr/local/bin/ && \
     rm eksctl_linux_amd64.tar.gz
 
 # AWS IAM Authenticator tool
@@ -31,7 +31,7 @@ RUN curl -LO https://s3.us-west-2.amazonaws.com/amazon-eks/1.21.2/2021-07-05/bin
 # install Taskfile
 RUN curl -LO https://github.com/go-task/task/releases/download/v3.14.1/task_linux_amd64.tar.gz \
     && mkdir /tmp/taskfile \
-    && tar -xzf task_linux_amd64.tar.gz -C /tmp/taskfile \
+    && tar -xvzf task_linux_amd64.tar.gz -C /tmp/taskfile \
     && mv /tmp/taskfile/task /usr/local/bin
 
 
