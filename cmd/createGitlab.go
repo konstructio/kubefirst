@@ -272,16 +272,16 @@ var createGitlabCmd = &cobra.Command{
 			viper.WriteConfig()
 		}
 		progressPrinter.IncrementTracker("step-post-gitlab", 1)
-		if !globalFlags.DryRun && !viper.GetBool("argocd.oidc-patched") {
-			argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
-			k8s.PatchSecret(argocd.ArgocdSecretClient, "argocd-secret", "oidc.vault.clientSecret", viper.GetString("vault.oidc.argocd.client_secret"))
+		// todo - new external secret added to registry to remove this code
+		// if !globalFlags.DryRun && !viper.GetBool("argocd.oidc-patched") {
+		// 	argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+		// 	k8s.PatchSecret(argocd.ArgocdSecretClient, "argocd-secret", "oidc.vault.clientSecret", viper.GetString("vault.oidc.argocd.client_secret"))
 
-			argocdPodClient := clientset.CoreV1().Pods("argocd")
-			k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
-			viper.Set("argocd.oidc-patched", true)
-			viper.WriteConfig()
-		}
-
+		// 	argocdPodClient := clientset.CoreV1().Pods("argocd")
+		// 	k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+		// 	viper.Set("argocd.oidc-patched", true)
+		// 	viper.WriteConfig()
+		// }
 		if !viper.GetBool("gitlab.registered") {
 			// informUser("Getting ArgoCD auth token
 			// token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
