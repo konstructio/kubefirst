@@ -14,5 +14,5 @@ jobs:
         ref: ${{ github.ref }}
     - name: Running Tests
       run: |
-        docker-compose -f docker-compose-test.yaml build --no-cache \
-        && docker compose -f docker-compose-test.yaml run kubefirst-unit-tests
+        DOCKER_DEFAULT_PLATFORM=linux/amd64 docker-compose -f docker-compose-test.yaml build --no-cache \
+        && DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose -f docker-compose-test.yaml run kubefirst-unit-tests
