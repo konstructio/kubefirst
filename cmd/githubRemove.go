@@ -20,6 +20,7 @@ var githubRemoveCmd = &cobra.Command{
 	Short: "Undo github setup",
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// todo je terraform destroy
 		fmt.Println("githubRemove called")
 		fmt.Println("Owner used:", viper.GetString("github.owner"))
 		gitWrapper := githubWrapper.New()

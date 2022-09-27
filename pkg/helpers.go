@@ -66,7 +66,6 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		}
 		return nil
 	}
-	
 
 	matched, err := filepath.Match("*", fi.Name())
 
