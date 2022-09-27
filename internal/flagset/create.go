@@ -13,7 +13,7 @@ type CreateFlags struct {
 
 // DefineCreateFlags - Define create flags of non-default behaviors or experimental features
 func DefineCreateFlags(currentCommand *cobra.Command) {
-	currentCommand.Flags().Bool("enable-console", false, "If hand-off screen will be presented on a browser UI")
+	currentCommand.Flags().Bool("enable-console", true, "If hand-off screen will be presented on a browser UI")
 }
 
 // ProcessCreateFlags - process create flags for experimental features
