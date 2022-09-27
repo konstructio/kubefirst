@@ -25,7 +25,10 @@
 
 # Kubefirst CLI
 
-The Kubefirst CLI is a cloud provisioning tool. With simple setup and two CLI commands, we create a kubernetes cluster managed with automated Infrastructure as Code, GitOps asset management and application delivery, secrets management, a sample application delivered to development, staging, and production, and so much more. It's an open source platform ready to be customized to suit your company's needs.
+The Kubefirst CLI is a cloud provisioning tool. With simple setup and two CLI commands, we create a kubernetes cluster 
+managed with automated Infrastructure as Code, GitOps asset management and application delivery, secrets management, a 
+sample application delivered to development, staging, and production, and so much more. It's an open source platform 
+ready to be customized to suit your company's needs.
 
 - [DNS Setup](#dns-setup)
 - [Installing the CLI](#installing-the-cli)
@@ -70,7 +73,10 @@ brew install kubefirst/tools/kubefirst
 
 ## Initialization
 
-Some process requires previous initialization, for that, run:
+Since Kubefirst 1.9 version, GitHub is also available as a Git platform provider alongside GitLab.
+
+### GitLab
+To prepare the installation using GitLab you can:
 
 ```bash
 kubefirst init \
@@ -80,6 +86,24 @@ kubefirst init \
 --admin-email user@example.com \
 --cluster-name your_cluster_name \
 --hosted-zone-name domain.example
+```
+
+### GitHub
+
+To prepare the installation using GitHub you can:
+
+```bash
+kubefirst init \
+--admin-email email@example.com.com \
+--cloud aws \
+--hosted-zone-name example.com \
+--region eu-central-1 \
+--cluster-name example_com \
+--profile default \
+--github-user example-github-username \
+--github-org example-organization \
+--gitops-branch main \
+--metaphor-branch main
 ```
 
 ## Creation
@@ -119,8 +143,6 @@ Kubefirst provides extra tooling for handling the provisioning work.
 
 | Command        | Description                                               |
 |:---------------|:----------------------------------------------------------|
-| argocdSync     | Request ArgoCD to synchronize applications                |
-| checktools     | use to check compatibility of .kubefirst/tools            |
 | clean          | removes all kubefirst resources locally for new execution |
 | cluster create | create a kubefirst management cluster                     |
 | destroy        | destroy the kubefirst management cluster                  |
