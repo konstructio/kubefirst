@@ -30,13 +30,10 @@ You now have an EKS cluster with the following content installed in it:
 
 ## Step 1: Console UI
 
-When calling `cluster create` command and adding the flag `--enable-console`, at the end of the installation, a console
-will be available at `http://localhost:9094`, and will give you dashboard to navigate to the different services
-that were previsioned.
+Once you run `cluster create` command at the end of the installation will open a new browser tab with the Console UI at
+`http://localhost:9094` to provide you a dashboard to navigate through the different services that were previsioned.
 
 ![console ui](../../img/kubefirst/console-ui.png)
-
-When the `--enable-console` flag is not set, a terminal handoff screen it presented:
 
 ![terminal handoff](../../img/kubefirst/getting-started/cluster-create-result.png)
 
