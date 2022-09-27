@@ -70,6 +70,15 @@ var createGitlabCmd = &cobra.Command{
 
 		restoreSSLCmd.RunE(cmd, args)
 
+		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "create", "namespace", "gitlab")
+		if err != nil {
+			log.Println("error creating gitlab namespace")
+		}
+		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "create", "secret", "generic", "-n", "gitlab", "gitlab-vault-oidc", fmt.Sprintf("--from-file=provider=%s/gitops/components/gitlab/gitlab-vault-oidc-provider.yaml", config.K1FolderPath))
+		if err != nil {
+			log.Println("error creating gitlab-vault-oidc initial secret")
+		}
+
 		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
 		if err != nil {
 			panic(err.Error())
