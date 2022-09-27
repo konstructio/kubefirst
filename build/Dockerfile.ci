@@ -2,10 +2,6 @@ FROM --platform=linux/amd64 golang:1.18
 
 WORKDIR /opt/kubefirst
 
-RUN apt-get update && \
-    apt-get install -y unzip curl jq vim unzip less \
-     && rm -rf /var/lib/apt/lists/*
-
 # install Taskfile
 RUN curl -LO https://github.com/go-task/task/releases/download/v3.14.1/task_linux_amd64.tar.gz \
     && mkdir /tmp/taskfile \
