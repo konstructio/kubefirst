@@ -288,7 +288,7 @@ var createGitlabCmd = &cobra.Command{
 
 			// informUser("Detaching the registry application from softserve
 			// argocd.DeleteArgocdApplicationNoCascade(globalFlags.DryRun, "registry", token)
-			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "delete", "-l", "app=gitlab")
+			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "delete", "-l", "release=gitlab")
 			if err != nil {
 				log.Println("error deleting gitlab to adopt new gitlab-vault-oidc secret")
 			}
