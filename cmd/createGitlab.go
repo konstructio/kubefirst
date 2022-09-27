@@ -236,21 +236,22 @@ var createGitlabCmd = &cobra.Command{
 
 			vault.GetOidcClientCredentials(globalFlags.DryRun)
 
+			repoDir := fmt.Sprintf("%s/%s", config.K1FolderPath, "gitops")
+			pkg.Detokenize(repoDir)
+
 			log.Println("creating vault configured secret")
 			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
-			informUser("Vault  secret created", globalFlags.SilentMode)
+			informUser("Vault secret created", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-vault", 1)
 		}
 		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 3)
-		if !viper.GetBool("gitlab.oidc-created") {
-			// vault.AddGitlabOidcApplications(globalFlags.DryRun)
-			// informUser("Added Gitlab OIDC", globalFlags.SilentMode)
+		if !viper.GetBool("vault.oidc-created") { //! need to fix names of flags here
 
 			informUser("Waiting for Gitlab dns to propagate before continuing", globalFlags.SilentMode)
 			gitlab.AwaitHost("gitlab", globalFlags.DryRun)
 			informUser("Pushing gitops repo to origin gitlab", globalFlags.SilentMode)
 			// refactor: sounds like a new functions, should PushGitOpsToGitLab be renamed/update signature?
-			viper.Set("gitlab.oidc-created", true)
+			viper.Set("vault.oidc-created", true)
 			viper.WriteConfig()
 		}
 		progressPrinter.IncrementTracker("step-post-gitlab", 1)
