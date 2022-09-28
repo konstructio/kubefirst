@@ -23,7 +23,8 @@ var restoreSSLCmd = &cobra.Command{
 			return err
 		}
 
-		includeMetaphorApps, err := cmd.Flags().GetBool("include-metaphor")
+		//includeMetaphorApps, err := cmd.Flags().GetBool("include-metaphor")
+		includeMetaphorApps := true
 		if err != nil {
 			log.Println("Error restoreSSL:", err)
 			return err
@@ -41,6 +42,6 @@ var restoreSSLCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(restoreSSLCmd)
-	restoreSSLCmd.Flags().Bool("include-metaphor", false, "Include Metaphor Apps in process")
+	//restoreSSLCmd.Flags().Bool("include-metaphor", false, "Include Metaphor Apps in process")
 	flagset.DefineGlobalFlags(restoreSSLCmd)
 }
