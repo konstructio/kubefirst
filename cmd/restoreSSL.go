@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/ssl"
@@ -14,16 +15,20 @@ var restoreSSLCmd = &cobra.Command{
 	Short: "Restore SSL certificates from a previous install",
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		log.Println("Started restoreSSL")
 		fmt.Println("restoreSSL called")
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
+			log.Println("Error restoreSSL global flags:", err)
 			return err
 		}
 
 		includeMetaphorApps, err := cmd.Flags().GetBool("include-metaphor")
 		if err != nil {
+			log.Println("Error restoreSSL:", err)
 			return err
 		}
+		log.Println("RestoreSSL includeMetaphorApps:", includeMetaphorApps)
 
 		err = ssl.RestoreSSL(globalFlags.DryRun, includeMetaphorApps)
 		if err != nil {
