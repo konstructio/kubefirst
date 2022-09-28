@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 	"log"
 	"net/http"
+
+	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"github.com/kubefirst/kubefirst/internal/k8s"
 
 	"github.com/spf13/viper"
 
@@ -379,4 +382,18 @@ func IsAppSynched(token string, applicationName string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func RemoveSelfSignedCert() error {
+	_, err := k8s.ClearSecretField("argocd", "argo-secret", "/data/tls.crt")
+	if err != nil {
+		log.Printf("err removing tls.crt from argo-secret: %s", err)
+		return err
+	}
+	_, err = k8s.ClearSecretField("argocd", "argo-secret", "/data/tls.key")
+	if err != nil {
+		log.Printf("err removing tls.crt from argo-secret: %s", err)
+		return err
+	}
+	return nil
 }
