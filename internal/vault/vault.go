@@ -151,7 +151,7 @@ func GetOidcClientCredentials(dryRun bool) {
 	}
 
 	config := vault.DefaultConfig()
-	// config.Address = viper.GetString("vault.local.service")
+	config.Address = viper.GetString("vault.local.service")
 
 	client, err := vault.NewClient(config)
 	if err != nil {
