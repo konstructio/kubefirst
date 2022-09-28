@@ -303,8 +303,22 @@ func WaitForGitlab(dryRun bool, config *configs.Config) {
 	log.Printf("the output is: %s", output.String())
 }
 
+func RemoveSelfSignedCertArgoCD() error {
+	err := clearSecretField("argocd", "argo-secret", "/data/tls.crt")
+	if err != nil {
+		log.Printf("err removing tls.crt from argo-secret: %s", err)
+		return err
+	}
+	err = clearSecretField("argocd", "argo-secret", "/data/tls.key")
+	if err != nil {
+		log.Printf("err removing tls.crt from argo-secret: %s", err)
+		return err
+	}
+	return nil
+}
+
 // remove field from k8s secret using sdk
-func ClearSecretField(namespace, name, field string) error {
+func clearSecretField(namespace, name, field string) error {
 
 	secret := secret{
 		namespace: namespace,
@@ -330,7 +344,7 @@ func ClearSecretField(namespace, name, field string) error {
 	return nil
 }
 
-func (p *secret) patchSecret(k8sClient *kubernetes.Clientset, path string, payload PatchJson) error {
+func (p *secret) patchSecret(k8sClient *kubernetes.Clientset, payload []PatchJson) error {
 
 	payloadBytes, _ := json.Marshal(payload)
 

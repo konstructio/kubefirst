@@ -7,6 +7,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/state"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
+	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -59,7 +60,7 @@ var createCmd = &cobra.Command{
 		}
 
 		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
-		err = argocd.RemoveSelfSignedCert()
+		err = k8s.RemoveSelfSignedCertArgoCD()
 		if err != nil {
 			log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
 			return err
