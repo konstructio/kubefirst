@@ -71,7 +71,7 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 		log.Println("Error removing dir(expected if dir not present):", err)
 	}
 	url := fmt.Sprintf("https://%s@%s/%s/%s.git", token, gitHost, owner, repo)
-	gitRepo, err := git.PlainClone(directory, false, &git.CloneOptions{
+	gitRepo, err := git.PlainClone(directory, true, &git.CloneOptions{
 		URL: url,
 	})
 	if err != nil {
@@ -193,6 +193,7 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 
 	isMainBranch := true
 	isRepoClone := false
+	source := ""
 	if branch != "main" {
 		isMainBranch = false
 	}
@@ -202,7 +203,7 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 	var err error
 	if branch != "" {
 		log.Printf("Trying to clone branch(%s):%s ", branch, repoURL)
-		repo, err = git.PlainClone(directory, false, &git.CloneOptions{
+		repo, err = git.PlainClone(directory, true, &git.CloneOptions{
 			URL:           repoURL,
 			ReferenceName: plumbing.NewBranchReferenceName(branch),
 			SingleBranch:  true,
@@ -211,13 +212,14 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 			log.Printf("error cloning %s-template repository from github %s at branch %s", repoName, err, branch)
 		} else {
 			isRepoClone = true
+			source = "branch"
 			viper.Set(fmt.Sprintf("git.clone.%s.branch", repoName), branch)
 		}
 	}
 
 	if !isRepoClone && fallbackTag != "" {
 		log.Printf("Trying to clone tag(%s):%s ", branch, fallbackTag)
-		repo, err = git.PlainClone(directory, false, &git.CloneOptions{
+		repo, err = git.PlainClone(directory, true, &git.CloneOptions{
 			URL:           repoURL,
 			ReferenceName: plumbing.NewTagReferenceName(fallbackTag),
 			SingleBranch:  true,
@@ -226,6 +228,7 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 			log.Printf("error cloning %s-template repository from github %s at tag %s", repoName, err, fallbackTag)
 		} else {
 			isRepoClone = true
+			source = "tag"
 			viper.Set(fmt.Sprintf("git.clone.%s.tag", repoName), fallbackTag)
 		}
 	}
@@ -251,7 +254,13 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 		//remove old branch
 		err = repo.Storer.RemoveReference(plumbing.NewBranchReferenceName(branch))
 		if err != nil {
-			log.Panicf("error removing old branch: %s, %s", repoName, err)
+			if source == "branch" {
+				log.Panicf("error removing old branch: %s, %s", repoName, err)
+			} else {
+				//this code will probably fail from a tag sourced clone
+				//post-1.9.0 tag some tests will be done to ensure the final logic.
+				log.Printf("[101] error removing old branch: %s, %s", repoName, err)
+			}
 		}
 
 	}

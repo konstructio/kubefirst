@@ -7,7 +7,9 @@ import (
 	"log"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
+	"github.com/kubefirst/kubefirst/internal/github"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
+	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -27,27 +29,32 @@ var githubAddCmd = &cobra.Command{
 
 		log.Println("Org used:", viper.GetString("github.org"))
 		log.Println("dry-run:", globalFlags.DryRun)
-		viper.Set("github.owner", viper.GetString("github.owner"))
-		viper.WriteConfig()
 
-		if viper.GetBool("github.repo.added") {
-			log.Println("github.repo.added already executed, skiped")
-			return nil
+		if !viper.GetBool("create.terraformapplied.github") {
+			atlantisWebhookSecret := pkg.Random(20)
+			viper.Set("github.atlantis.webhook.secret", atlantisWebhookSecret)
+			viper.WriteConfig()
+
+			progressPrinter.IncrementTracker("step-github", 1)
+			informUser("GitHub terraform", globalFlags.SilentMode)
+			github.ApplyGitHubTerraform(globalFlags.DryRun, atlantisWebhookSecret)
+			informUser("GitHub ready", globalFlags.SilentMode)
+			progressPrinter.IncrementTracker("step-github", 1)
+			viper.Set("create.terraformapplied.github", true)
+			viper.WriteConfig()
 		}
+
+		// todo - evaluate previous terraform
+		// if viper.GetBool("github.repo.added") {
+		// 	log.Println("github.repo.added already executed, skiped")
+		// 	return nil
+		// }
 		if globalFlags.DryRun {
 			log.Printf("[#99] Dry-run mode, githubAddCmd skipped.")
 			return nil
 		}
+
 		gitWrapper := githubWrapper.New()
-		gitWrapper.CreatePrivateRepo(viper.GetString("github.org"), "gitops", "Kubefirst Gitops")
-
-		atlantisHookUrl := "https://atlantis." + viper.GetString("aws.hostedzonename") + "/events"
-		atlantisHookEvents := []string{"pull_request_review", "push", "issue_comment", "pull_request"}
-		atlantisHookSecret := pkg.Random(10)
-		viper.Set("github.secret-webhook", atlantisHookSecret)
-		viper.WriteConfig()
-		gitWrapper.CreateWebhookRepo(viper.GetString("github.org"), "gitops", "atlantis", atlantisHookUrl, atlantisHookSecret, atlantisHookEvents)
-
 		//Add Github SSHPublic key
 		if viper.GetString("botPublicKey") != "" {
 			key, err := gitWrapper.AddSSHKey("kubefirst-bot", viper.GetString("botPublicKey"))

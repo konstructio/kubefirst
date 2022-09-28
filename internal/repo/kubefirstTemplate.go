@@ -22,7 +22,6 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 		return
 	}
 	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
-	branch = "vault-oidc-upgrade"
 	err := gitClient.CloneTemplateRepoWithFallBack(githubOrg, repoName, directory, branch, tag)
 	if err != nil {
 		log.Panicf("Error cloning repo with fallback: %s", err)

@@ -2,27 +2,24 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-	"syscall"
-	"time"
-
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
+	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"log"
+	"syscall"
+	"time"
 )
 
 // destroyCmd represents the destroy command
 var destroyCmd = &cobra.Command{
 	Use:   "destroy",
-	Short: "destroy the kubefirst management cluster",
-	Long: `destory the kubefirst management cluster
-and all of the components in kubernetes.
-
-Optional: skip gitlab terraform 
-if the registry has already been deleted.`,
+	Short: "destroy Kubefirst management cluster",
+	Long:  "destroy all the resources installed via Kubefirst installer",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		destroyFlags, err := flagset.ProcessDestroyFlags(cmd)
@@ -107,6 +104,18 @@ if the registry has already been deleted.`,
 		informUser("Destroying Cluster", globalFlags.SilentMode)
 		terraform.DestroyBaseTerraform(destroyFlags.SkipBaseTerraform)
 		progressPrinter.IncrementTracker("step-destroy", 1)
+
+		// destroy hosted zone
+		if destroyFlags.HostedZoneDelete {
+			hostedZone := viper.GetString("aws.hostedzonename")
+			awsHandler := handlers.NewAwsHandler(hostedZone, destroyFlags)
+			err := awsHandler.HostedZoneDelete()
+			if err != nil {
+				// if error, just log it
+				log.Println(err)
+			}
+		}
+
 		informUser("All Destroyed", globalFlags.SilentMode)
 
 		log.Println("terraform base destruction complete")

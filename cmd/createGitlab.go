@@ -70,6 +70,15 @@ var createGitlabCmd = &cobra.Command{
 
 		restoreSSLCmd.RunE(cmd, args)
 
+		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "create", "namespace", "gitlab")
+		if err != nil {
+			log.Println("error creating gitlab namespace")
+		}
+		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "create", "secret", "generic", "-n", "gitlab", "gitlab-vault-oidc", fmt.Sprintf("--from-file=provider=%s/gitops/components/gitlab/gitlab-vault-oidc-provider.yaml", config.K1FolderPath))
+		if err != nil {
+			log.Println("error creating gitlab-vault-oidc initial secret")
+		}
+
 		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
 		if err != nil {
 			panic(err.Error())
@@ -234,24 +243,24 @@ var createGitlabCmd = &cobra.Command{
 			informUser("Vault configured", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-vault", 1)
 
-			// vault.GetOidcClientCredentials(globalFlags.Dr) //*
-			// vault.GetOidcClientCredentials(globalFlags.Dr) //*
+			vault.GetOidcClientCredentials(globalFlags.DryRun)
+
+			repoDir := fmt.Sprintf("%s/%s", config.K1FolderPath, "gitops")
+			pkg.Detokenize(repoDir)
 
 			log.Println("creating vault configured secret")
 			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
-			informUser("Vault  secret created", globalFlags.SilentMode)
+			informUser("Vault secret created", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-vault", 1)
 		}
 		progressPrinter.AddTracker("step-post-gitlab", "Finalize Gitlab updates", 3)
-		if !viper.GetBool("gitlab.oidc-created") {
-			// vault.AddGitlabOidcApplications(globalFlags.DryRun)
-			// informUser("Added Gitlab OIDC", globalFlags.SilentMode)
+		if !viper.GetBool("vault.oidc-created") { //! need to fix names of flags here
 
 			informUser("Waiting for Gitlab dns to propagate before continuing", globalFlags.SilentMode)
 			gitlab.AwaitHost("gitlab", globalFlags.DryRun)
 			informUser("Pushing gitops repo to origin gitlab", globalFlags.SilentMode)
 			// refactor: sounds like a new functions, should PushGitOpsToGitLab be renamed/update signature?
-			viper.Set("gitlab.oidc-created", true)
+			viper.Set("vault.oidc-created", true)
 			viper.WriteConfig()
 		}
 		progressPrinter.IncrementTracker("step-post-gitlab", 1)
@@ -263,22 +272,26 @@ var createGitlabCmd = &cobra.Command{
 			viper.WriteConfig()
 		}
 		progressPrinter.IncrementTracker("step-post-gitlab", 1)
-		if !globalFlags.DryRun && !viper.GetBool("argocd.oidc-patched") {
-			argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
-			k8s.PatchSecret(argocd.ArgocdSecretClient, "argocd-secret", "oidc.vault.clientSecret", viper.GetString("vault.oidc.argocd.client_secret"))
+		// todo - new external secret added to registry to remove this code
+		// if !globalFlags.DryRun && !viper.GetBool("argocd.oidc-patched") {
+		// 	argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+		// 	k8s.PatchSecret(argocd.ArgocdSecretClient, "argocd-secret", "oidc.vault.clientSecret", viper.GetString("vault.oidc.argocd.client_secret"))
 
-			argocdPodClient := clientset.CoreV1().Pods("argocd")
-			k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
-			viper.Set("argocd.oidc-patched", true)
-			viper.WriteConfig()
-		}
-
+		// 	argocdPodClient := clientset.CoreV1().Pods("argocd")
+		// 	k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+		// 	viper.Set("argocd.oidc-patched", true)
+		// 	viper.WriteConfig()
+		// }
 		if !viper.GetBool("gitlab.registered") {
 			// informUser("Getting ArgoCD auth token
 			// token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
 
 			// informUser("Detaching the registry application from softserve
 			// argocd.DeleteArgocdApplicationNoCascade(globalFlags.DryRun, "registry", token)
+			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "delete", "-l", "release=gitlab")
+			if err != nil {
+				log.Println("error deleting gitlab to adopt new gitlab-vault-oidc secret")
+			}
 
 			informUser("Adding the registry application registered against gitlab", globalFlags.SilentMode)
 			gitlab.ChangeRegistryToGitLab(globalFlags.DryRun)
