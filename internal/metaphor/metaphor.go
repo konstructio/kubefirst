@@ -6,7 +6,6 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
-	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/repo"
 	"github.com/spf13/viper"
@@ -69,12 +68,11 @@ func DeployMetaphorGithub(globalFlags flagset.GlobalFlags) error {
 		return nil
 	}
 
-	gitWrapper := githubWrapper.New()
+	// gitWrapper := githubWrapper.New()
 	//repos := [2]string{"metaphor-go", "metaphor-frontend"}
 	repos := [3]string{"metaphor", "metaphor-go", "metaphor-frontend"}
 	for _, element := range repos {
 		log.Println("Processing Repo:", element)
-		gitWrapper.CreatePrivateRepo(viper.GetString("github.org"), element, "Kubefirst "+element)
 		directory, err := gitClient.CloneRepoAndDetokenizeTemplate("kubefirst", element, element, viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
 		if err != nil {
 			log.Printf("Error clonning and detokizing repo %s", "metaphor")

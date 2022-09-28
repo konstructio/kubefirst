@@ -20,6 +20,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -167,12 +168,17 @@ var createGithubCmd = &cobra.Command{
 		if !skipVault { //skipVault
 			informUser("waiting for vault unseal", globalFlags.SilentMode)
 			log.Println("configuring vault")
-			vault.ConfigureVault(globalFlags.DryRun, true)
+			vault.ConfigureVault(globalFlags.DryRun)
 			informUser("Vault configured", globalFlags.SilentMode)
+
+			vault.GetOidcClientCredentials(globalFlags.DryRun)
+
+			repoDir := fmt.Sprintf("%s/%s", config.K1FolderPath, "gitops")
+			pkg.Detokenize(repoDir)
 
 			log.Println("creating vault configured secret")
 			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
-			informUser("Vault  secret created", globalFlags.SilentMode)
+			informUser("Vault secret created", globalFlags.SilentMode)
 		}
 		informUser("Terraform Vault", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
@@ -195,7 +201,7 @@ var createGithubCmd = &cobra.Command{
 		if false {
 			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
 			log.Println("configuring vault backend")
-			vault.ConfigureVault(globalFlags.DryRun, false)
+			vault.ConfigureVault(globalFlags.DryRun)
 			informUser("Vault backend configured", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}

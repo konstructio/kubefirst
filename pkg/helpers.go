@@ -50,6 +50,23 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		return nil
 	}
 
+	if viper.GetBool("github.enabled") && strings.Contains(path, "-gitlab.tf") {
+		log.Println("github is enabled, removing gitlab terraform file:", path)
+		err = os.Remove(path)
+		if err != nil {
+			log.Panic(err)
+		}
+		return nil
+	}
+	if !viper.GetBool("github.enabled") && strings.Contains(path, "-github.tf") {
+		log.Println("gitlab is enabled, removing github terraform file:", path)
+		err = os.Remove(path)
+		if err != nil {
+			log.Panic(err)
+		}
+		return nil
+	}
+
 	matched, err := filepath.Match("*", fi.Name())
 
 	if err != nil {
@@ -109,7 +126,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		awsAccountId := viper.GetString("aws.accountid")
 		kmsKeyId := viper.GetString("vault.kmskeyid")
 		clusterName := viper.GetString("cluster-name")
-		argocdOidcClientId := viper.GetString(("gitlab.oidc.argocd.applicationid"))
+		argocdOidcClientId := viper.GetString(("vault.oidc.argocd.client_id"))
 		githubRepoOwner := viper.GetString(("github.owner"))
 		githubRepoHost := viper.GetString(("github.host"))
 		githubUser := viper.GetString(("github.user"))

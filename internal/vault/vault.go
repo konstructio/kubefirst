@@ -15,7 +15,6 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
-	gitlab "github.com/xanzy/go-gitlab"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 )
@@ -40,7 +39,7 @@ func GetVaultRootToken(vaultSecretClient coreV1Types.SecretInterface) (string, e
 	return vaultRootToken, nil
 }
 
-func ConfigureVault(dryRun bool, bootstrapOnly bool) {
+func ConfigureVault(dryRun bool) {
 	config := configs.ReadConfig()
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, configureVault skipped.")
@@ -58,12 +57,8 @@ func ConfigureVault(dryRun bool, bootstrapOnly bool) {
 	// "TF_VAR_vault_addr": "${var.vault_addr}",
 	// ```
 	// ... obviously keep the sensitive values bound to vars
-
-	if bootstrapOnly {
-		viper.Set("vault.oidc_redirect_uris", "[\"will-be-patched-later\"]")
-		viper.WriteConfig()
-	}
-
+	viper.Set("vault.oidc_redirect_uris", "[\"will-be-patched-later\"]") //! todo need to remove this value, no longer used anywhere
+	viper.WriteConfig()
 	vaultToken := viper.GetString("vault.token")
 	var kPortForwardOutb, kPortForwardErrb bytes.Buffer
 	kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
@@ -112,97 +107,14 @@ func ConfigureVault(dryRun bool, bootstrapOnly bool) {
 	if err != nil {
 		log.Panicf("error: terraform init failed %s", err)
 	}
-	if bootstrapOnly {
-		if !viper.GetBool("create.terraformapplied.vault") {
-			err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-target", "module.bootstrap", "-auto-approve")
-			if err != nil {
-				log.Panicf("error: terraform apply failed %s", err)
-			}
-			viper.Set("create.terraformapplied.vault", true)
+	if !viper.GetBool("create.terraformapplied.vaultbackend") {
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
+		if err != nil {
+			log.Panicf("error: terraform apply failed %s", err)
 		}
-	} else {
-		if !viper.GetBool("create.terraformapplied.vaultbackend") {
-			err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
-			if err != nil {
-				log.Panicf("error: terraform apply failed %s", err)
-			}
-		}
-		viper.Set("create.terraformapplied.vaultbackend", true)
-	}
-	viper.WriteConfig()
-}
-
-func AddGitlabOidcApplications(dryRun bool) {
-
-	//TODO: Should this skipped if already executed.
-	if dryRun {
-		log.Printf("[#99] Dry-run mode, addGitlabOidcApplications skipped.")
-		return
-	}
-	domain := viper.GetString("aws.hostedzonename")
-	git, err := gitlab.NewClient(
-		viper.GetString("gitlab.token"),
-		gitlab.WithBaseURL(fmt.Sprintf("%s/api/v4", viper.GetString("gitlab.local.service"))),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	apps := []string{"argo", "argocd", "vault"}
-	cb := make(map[string]string)
-	cb["argo"] = fmt.Sprintf("https://argo.%s/oauth2/callback", domain)
-	cb["argocd"] = fmt.Sprintf("https://argocd.%s/auth/callback", domain)
-	cb["vault"] = fmt.Sprintf("https://vault.%s:8250/oidc/callback http://localhost:8250/oidc/callback https://vault.%s/ui/vault/auth/oidc/oidc/callback http://localhost:8200/ui/vault/auth/oidc/oidc/callback", domain, domain)
-
-	viper.Set("vault.oidc_redirect_uris", fmt.Sprintf("[\"https://vault.%s:8250/oidc/callback\", \"http://localhost:8250/oidc/callback\", \"https://vault.%s/ui/vault/auth/oidc/oidc/callback\", \"http://localhost:8200/ui/vault/auth/oidc/oidc/callback\"]", domain, domain))
-	viper.WriteConfig()
-
-	for _, app := range apps {
-		log.Println("checking to see if", app, "oidc application needs to be created in gitlab")
-		appId := viper.GetString(fmt.Sprintf("gitlab.oidc.%s.applicationid", app))
-		if appId == "" {
-
-			// Create an application
-			opts := &gitlab.CreateApplicationOptions{
-				Name:        gitlab.String(app),
-				RedirectURI: gitlab.String(cb[app]),
-				Scopes:      gitlab.String("read_user openid email"),
-			}
-			createdApp, _, err := git.Applications.CreateApplication(opts)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			// List all applications
-			existingApps, _, err := git.Applications.ListApplications(&gitlab.ListApplicationsOptions{})
-			if err != nil {
-				log.Panicf("error: could not list applications from gitlab")
-			}
-
-			created := false
-			for _, existingApp := range existingApps {
-				if existingApp.ApplicationName == app {
-					created = true
-				}
-			}
-			if created {
-				log.Println("created gitlab oidc application with applicationid", createdApp.ApplicationID)
-				viper.Set(fmt.Sprintf("gitlab.oidc.%s.applicationid", app), createdApp.ApplicationID)
-				viper.Set(fmt.Sprintf("gitlab.oidc.%s.secret", app), createdApp.Secret)
-
-				secretData := map[string]interface{}{
-					"data": map[string]interface{}{
-						"application_id": createdApp.ApplicationID,
-						"secret":         createdApp.Secret,
-					},
-				}
-				secretPath := fmt.Sprintf("secret/data/oidc/%s", app)
-				addVaultSecret(secretPath, secretData)
-				viper.WriteConfig()
-			} else {
-				log.Panicf("could not create gitlab oidc application %s", app)
-			}
-		}
+		viper.Set("create.terraformapplied.vault", true)
+		// viper.Set("create.terraformapplied.vaultbackend", true)
+		viper.WriteConfig()
 	}
 }
 
@@ -223,4 +135,54 @@ func addVaultSecret(secretPath string, secretData map[string]interface{}) {
 	} else {
 		log.Println("secret successfully written to path: ", secretPath)
 	}
+}
+
+func GetOidcClientCredentials(dryRun bool) {
+
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, GetOidcClientCredentials skipped.")
+		return
+	}
+
+	oidcApps := []string{"argo", "argocd"}
+
+	if !viper.GetBool("github.enabled") {
+		oidcApps = append(oidcApps, "gitlab")
+	}
+
+	config := vault.DefaultConfig()
+	config.Address = viper.GetString("vault.local.service")
+
+	client, err := vault.NewClient(config)
+	if err != nil {
+		log.Panicf("unable to initialize vault client %s", err)
+	}
+
+	client.SetToken(viper.GetString("vault.token"))
+
+	for _, app := range oidcApps {
+
+		secret, err := client.KVv2("secret").Get(context.TODO(), fmt.Sprintf("oidc/%s", app))
+		if err != nil {
+			log.Panic(
+				"Unable to read the oidc secrets from vault: ",
+				err,
+			)
+		}
+
+		clientId, ok := secret.Data["client_id"].(string)
+		clientSecret, ok := secret.Data["client_secret"].(string)
+
+		if !ok {
+			log.Fatalf(
+				"value type assertion failed: %T %#v",
+				secret.Data["client_id"],
+				secret.Data["client_secret"],
+			)
+		}
+		viper.Set(fmt.Sprintf("vault.oidc.%s.client_id", app), clientId)
+		viper.Set(fmt.Sprintf("vault.oidc.%s.client_secret", app), clientSecret)
+	}
+	viper.WriteConfig()
+
 }
