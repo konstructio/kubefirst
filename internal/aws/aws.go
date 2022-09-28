@@ -490,6 +490,7 @@ func DownloadBucket(bucket string, destFolder string) error {
 		})
 
 	if err != nil {
+		log.Println("Error DownloadBucket:", err)
 		return errors.New("couldn't list bucket contents")
 	}
 
@@ -498,6 +499,7 @@ func DownloadBucket(bucket string, destFolder string) error {
 
 		f, err := pkg.CreateFullPath(filepath.Join(destFolder, *object.Key))
 		if err != nil {
+			log.Println("Error DownloadBucket:", err)
 			return fmt.Errorf("failed to create file %q, %v", *object.Key, err)
 		}
 
@@ -509,10 +511,12 @@ func DownloadBucket(bucket string, destFolder string) error {
 				Key:    aws.String(*object.Key),
 			})
 		if err != nil {
+			log.Println("Error DownloadBucket:", err)
 			return fmt.Errorf("failed to download file, %v", err)
 		}
 		// close file immediately
 		if err = f.Close(); err != nil {
+			log.Println("Error DownloadBucket:", err)
 			return err
 		}
 	}
