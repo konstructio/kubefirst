@@ -71,7 +71,7 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 		log.Println("Error removing dir(expected if dir not present):", err)
 	}
 	url := fmt.Sprintf("https://%s@%s/%s/%s.git", token, gitHost, owner, repo)
-	gitRepo, err := git.PlainClone(directory, true, &git.CloneOptions{
+	gitRepo, err := git.PlainClone(directory, false, &git.CloneOptions{
 		URL: url,
 	})
 	if err != nil {
@@ -203,7 +203,7 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 	var err error
 	if branch != "" {
 		log.Printf("Trying to clone branch(%s):%s ", branch, repoURL)
-		repo, err = git.PlainClone(directory, true, &git.CloneOptions{
+		repo, err = git.PlainClone(directory, false, &git.CloneOptions{
 			URL:           repoURL,
 			ReferenceName: plumbing.NewBranchReferenceName(branch),
 			SingleBranch:  true,
@@ -219,7 +219,7 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 
 	if !isRepoClone && fallbackTag != "" {
 		log.Printf("Trying to clone tag(%s):%s ", branch, fallbackTag)
-		repo, err = git.PlainClone(directory, true, &git.CloneOptions{
+		repo, err = git.PlainClone(directory, false, &git.CloneOptions{
 			URL:           repoURL,
 			ReferenceName: plumbing.NewTagReferenceName(fallbackTag),
 			SingleBranch:  true,
