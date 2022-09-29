@@ -22,7 +22,7 @@ bucket following with `k1 + your-domain-name`.
 1. You finished the Kubefirst installation.
 2. You destroyed the Kubefirst installation.
 3. You want to start a fresh installation but want to use the previously created certificates.
-4. at this point you can call this sequence of commands: 
+4. At this point you can call this sequence of commands: 
 
 ```bash
 # Backup your SSL certificates at S3 bucket name "k1-your-domain-name":
