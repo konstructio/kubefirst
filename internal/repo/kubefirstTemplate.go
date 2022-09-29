@@ -40,7 +40,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 
 	repo, err := git.PlainOpen(directory)
 
-	if viper.GetString("git.mode") == "github" {
+	if viper.GetBool("github.enabled") {
 		githubHost := viper.GetString("github.host")
 		githubOwner := viper.GetString("github.owner")
 
