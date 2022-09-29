@@ -21,4 +21,4 @@ kms encryption, or things of that nature. Each service account on the platform c
 granular and controlled access to cloud resources on the platform.
 
 ## Additional Layers of Security
-GitLab, Vault, Atlantis, and External Secrets Operator, have had additional security measures implemented in accordance with the respective app's own security guidelines. Each of these have been implemented to provide reasonable starting points on top of a solid security posture for your core application dependencies.
+GitLab, Vault, Atlantis, and External Secrets Operator have had additional security measures implemented in accordance with the respective applications own security guidelines. Each of these have been implemented to provide reasonable starting points on top of a solid security posture for your core application dependencies.
