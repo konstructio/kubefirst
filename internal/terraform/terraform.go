@@ -192,6 +192,8 @@ func ApplyUsersTerraform(dryRun bool, directory string) {
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["VAULT_TOKEN"] = viper.GetString("vault.token")
 		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
+		envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
+		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 
 		err := os.Chdir(directory)
 		if err != nil {
