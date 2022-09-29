@@ -74,7 +74,7 @@ spec:
 The **Metaphors** applications also include a working example of how to leverage a multi-environment secrets management
 paradigm powered by **Vault** and `external-secrets`.
 
-There's also a configmap implementation to demonstrate how to leverage non-sensitive configuration values.
+There is also a ConfigMap implementation to demonstrate how to leverage non-sensitive configuration values.
 
 ## Datadog Integrations
 
