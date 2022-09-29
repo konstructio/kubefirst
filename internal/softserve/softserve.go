@@ -138,9 +138,17 @@ func configureSoftServe() error {
 	}
 
 	log.Println("Committing new changes...")
-	_, err = w.Add(".")
+	status, err := w.Status()
 	if err != nil {
-		return err
+		log.Println("error getting worktree status", err)
+	}
+
+	for file, s := range status {
+		log.Printf("the file is %s the status is %v", file, s.Worktree)
+		_, err = w.Add(file)
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
 	}
 	_, err = w.Commit("updating soft-serve server config", &git.CommitOptions{
 		Author: &object.Signature{
