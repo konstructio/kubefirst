@@ -82,7 +82,7 @@ The **Metaphors** applications are set up to provide cloud and container observa
 with **Datadog**. It demonstrates using **Datadog** for **Metaphors** application logs, container statistics, application 
 metrics, application performance monitoring, dashboard, and alerting.
 
-### Secrets Management
+## Secrets Management
 
 The **Metaphors** applications leverages hashicorp **Vault** for secrets management. **Vault** runs in the `mgmt` cluster 
 and metaphor runs in `preprod` and `production`, so it serves as an example for secrets management. To read more see our 
