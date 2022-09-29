@@ -1,6 +1,6 @@
 # SSL Certificates
 
-Kubefirst takes advantage of a variety of security layers to make the platform is safe and secure for our users. One
+Kubefirst takes advantage of a variety of security layers to make sure the platform is safe and secure for our users. One
 important and significant layer is the SSL certificates Kubefirst leverages to protect https requests. 
 [Let's Encrypt](https://letsencrypt.org) is the certificate authority used to manage the certificates used for our
 ingressed services.
