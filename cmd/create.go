@@ -48,6 +48,14 @@ var createCmd = &cobra.Command{
 			}
 
 		}
+
+		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
+		err = k8s.RemoveSelfSignedCertArgoCD()
+		if err != nil {
+			log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
+			return err
+		}
+
 		// Relates to issue: https://github.com/kubefirst/kubefirst/issues/386
 		// Metaphor needs chart museum for CI works
 		informUser("Waiting chartmuseum", globalFlags.SilentMode)
@@ -57,13 +65,6 @@ var createCmd = &cobra.Command{
 				informUser("Chartmuseum DNS is ready", globalFlags.SilentMode)
 				break
 			}
-		}
-
-		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
-		err = k8s.RemoveSelfSignedCertArgoCD()
-		if err != nil {
-			log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
-			return err
 		}
 
 		informUser("Checking if cluster is ready for use by metaphor apps", globalFlags.SilentMode)
