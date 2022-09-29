@@ -125,7 +125,7 @@ Usage:
 kubefirst restoreSSL [flags]
 
 Flags:
---dry-run         set to dry-run mode, no changes done on cloud provider selected
+--dry-run         Set to dry-run mode, no changes done on cloud provider selected.
 -h, --help            help for restoreSSL
 --use-telemetry   installer will not send telemetry about this installation (default true)
 ```
