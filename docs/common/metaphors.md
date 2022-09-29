@@ -63,7 +63,7 @@ spec:
         - metaphor-development.your-company.io
 ```
 
-### Some cool automated things to note:
+## Some Cool Automated Things to Note:
 
 - The value specified in `spec.rules.host` will automatically create a route53 CNAME that is bound to the Ingress elastic load balancer.
 - the `cert-manager.io/cluster-issuer` annotation will prompt `cert-manager` to automatically create a certificate for your application, and will store that cert in the `secretName` specified
