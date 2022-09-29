@@ -11,6 +11,7 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	cp "github.com/otiai10/copy"
@@ -266,4 +267,95 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 	}
 	return nil
 
+}
+
+func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName string) {
+	cfg := configs.ReadConfig()
+
+	localDirectory := fmt.Sprintf("%s/%s", cfg.K1FolderPath, localRepo)
+
+	log.Println("opening repository with gitClient: ", localDirectory)
+	repo, err := git.PlainOpen(localDirectory)
+	if err != nil {
+		log.Panic("error opening the localDirectory: ", localDirectory, err)
+	}
+
+	url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, localRepo)
+	log.Printf("git remote add %s %s", remoteName, url)
+	_, err = repo.CreateRemote(&config.RemoteConfig{
+		Name: remoteName,
+		URLs: []string{url},
+	})
+	if err != nil {
+		log.Panicf("Error creating remote %s for repo: %s - %s", remoteName, url, err)
+	}
+	w, _ := repo.Worktree()
+
+	log.Println("Committing new changes...")
+	w.Add(".")
+	w.Commit("setting new remote upstream to github", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "kubefirst-bot",
+			Email: "kubefirst-bot@kubefirst.com",
+			When:  time.Now(),
+		},
+	})
+
+	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	err = repo.Push(&git.PushOptions{
+		RemoteName: remoteName,
+		Auth: &http.BasicAuth{
+			Username: "kubefirst-bot",
+			Password: token,
+		},
+	})
+	if err != nil {
+		log.Panicf("error pushing to remote %s: %s", remoteName, err)
+	}
+	log.Println("successfully pushed detokenized gitops content to github/", viper.GetString("github.owner"))
+	viper.Set("github.gitops.hydrated", true)
+	viper.WriteConfig()
+}
+
+func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string) {
+
+	cfg := configs.ReadConfig()
+
+	localDirectory := fmt.Sprintf("%s/%s", cfg.K1FolderPath, localRepo)
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform", cfg.K1FolderPath))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform.lock.hcl", cfg.K1FolderPath))
+
+	log.Println("opening repository with gitClient: ", localDirectory)
+	repo, err := git.PlainOpen(localDirectory)
+	if err != nil {
+		log.Panic("error opening the localDirectory: ", localDirectory, err)
+	}
+
+	url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, localRepo)
+	log.Printf("git push to  remote: %s url: %s", remoteName, url)
+
+	w, _ := repo.Worktree()
+
+	log.Println("Committing new changes...")
+	w.Add(".")
+	w.Commit("commiting staged changes to remote", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "kubefirst-bot",
+			Email: "kubefirst-bot@kubefirst.com",
+			When:  time.Now(),
+		},
+	})
+
+	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	err = repo.Push(&git.PushOptions{
+		RemoteName: remoteName,
+		Auth: &http.BasicAuth{
+			Username: "kubefirst-bot",
+			Password: token,
+		},
+	})
+	if err != nil {
+		log.Panicf("error pushing to remote %s: %s", remoteName, err)
+	}
+	log.Println("successfully pushed detokenized gitops content to github/", viper.GetString("github.owner"))
 }
