@@ -356,6 +356,4 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 		log.Panicf("error pushing to remote %s: %s", remoteName, err)
 	}
 	log.Println("successfully pushed detokenized gitops content to github/", viper.GetString("github.owner"))
-	viper.Set("github.gitops.hydrated.twice", true)
-	viper.WriteConfig()
 }

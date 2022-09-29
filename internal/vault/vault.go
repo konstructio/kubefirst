@@ -74,6 +74,12 @@ func ConfigureVault(dryRun bool) {
 
 	// Prepare for terraform vault execution
 	envs := map[string]string{}
+
+	if viper.GetString("git.mode") == "gitlab" {
+		envs["TF_VAR_gitlab_runner_token"] = viper.GetString("gitlab.runnertoken")
+		envs["TF_VAR_gitlab_token"] = viper.GetString("gitlab.token")
+	}
+
 	envs["VAULT_ADDR"] = "http://localhost:8200" //Should this come from init?
 	envs["VAULT_TOKEN"] = vaultToken
 	envs["AWS_SDK_LOAD_CONFIG"] = "1"
@@ -84,8 +90,6 @@ func ConfigureVault(dryRun bool) {
 	envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 	envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 	envs["TF_VAR_email_address"] = viper.GetString("adminemail")
-	envs["TF_VAR_gitlab_runner_token"] = viper.GetString("gitlab.runnertoken")
-	envs["TF_VAR_gitlab_token"] = viper.GetString("gitlab.token")
 	envs["TF_VAR_github_token"] = os.Getenv("GITHUB_AUTH_TOKEN")
 	envs["TF_VAR_hosted_zone_id"] = viper.GetString("aws.hostedzoneid") //# TODO: are we using this?
 	envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
@@ -117,6 +121,8 @@ func ConfigureVault(dryRun bool) {
 		viper.Set("create.terraformapplied.vault", true)
 		viper.WriteConfig()
 	}
+	os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
+	os.RemoveAll(fmt.Sprintf("%s/.terraform.lock.hcl", directory))
 }
 
 func addVaultSecret(secretPath string, secretData map[string]interface{}) {
