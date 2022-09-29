@@ -32,7 +32,7 @@ The kubernetes manifests produced by the **Metaphors** applications CI include a
 deployment with downstream ReplicaSet and pods, a service account with a security context used, a service to make the 
 application available to the cluster, and an ingress to make the service available outside the cluster.
 
-### Ingress Integrations
+## Ingress Integrations
 
 The ingress manifest demonstrates integration with our automated approach to DNS management, load balancer management, 
 and TLS/SSL certificate creation and renewal.
