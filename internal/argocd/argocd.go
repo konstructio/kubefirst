@@ -8,9 +8,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 	"log"
 	"net/http"
+
+	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/spf13/viper"
 
