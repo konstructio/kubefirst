@@ -28,7 +28,7 @@ The **Metaphors** applications are multi-instance load balanced applications. It
 
 ![](../img/kubefirst/metaphor/metaphor-kubernetes-manifests.png)
 
-The kubernetes manifests produced by the **Metaphors** applications CI include a working example of a kubernetes 
+The Kubernetes manifests produced by the **Metaphors** applications CI include a working example of a Kubernetes 
 deployment with downstream ReplicaSet and pods, a service account with a security context used, a service to make the 
 application available to the cluster, and an Ingress to make the service available outside the cluster.
 
