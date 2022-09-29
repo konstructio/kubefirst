@@ -322,6 +322,8 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 	cfg := configs.ReadConfig()
 
 	localDirectory := fmt.Sprintf("%s/%s", cfg.K1FolderPath, localRepo)
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform", cfg.K1FolderPath))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform.lock.hcl", cfg.K1FolderPath))
 
 	log.Println("opening repository with gitClient: ", localDirectory)
 	repo, err := git.PlainOpen(localDirectory)

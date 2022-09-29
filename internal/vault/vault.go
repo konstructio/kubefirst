@@ -101,7 +101,7 @@ func ConfigureVault(dryRun bool) {
 	envs["TF_VAR_ssh_private_key"] = strings.Replace(viper.GetString("botprivatekey"), "\n", "\\n", -1)
 
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
-	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botpublickey")
+	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = strings.Replace(viper.GetString("botpublickey"), "\n", "\\n", -1)
 
 	directory := fmt.Sprintf("%s/gitops/terraform/vault", config.K1FolderPath)
 	err = os.Chdir(directory)
@@ -121,8 +121,8 @@ func ConfigureVault(dryRun bool) {
 		viper.Set("create.terraformapplied.vault", true)
 		viper.WriteConfig()
 	}
-	os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
-	os.RemoveAll(fmt.Sprintf("%s/.terraform.lock.hcl", directory))
+	os.RemoveAll(".terraform/")
+	os.RemoveAll(".terraform.lock.hcl")
 }
 
 func addVaultSecret(secretPath string, secretData map[string]interface{}) {

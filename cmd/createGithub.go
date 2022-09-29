@@ -15,13 +15,11 @@ import (
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
-	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
-	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -37,11 +35,6 @@ var createGithubCmd = &cobra.Command{
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
 			return err
-		}
-
-		skipVault, err := cmd.Flags().GetBool("skip-vault")
-		if err != nil {
-			log.Panic(err)
 		}
 
 		progressPrinter.GetInstance()
@@ -63,7 +56,7 @@ var createGithubCmd = &cobra.Command{
 			informUser("Telemetry Disabled", globalFlags.SilentMode)
 		}
 
-		//* create the teams and gitops repo in github
+		//* create github teams in the org and gitops repo
 		informUser("Creating gitops/metaphor repos", globalFlags.SilentMode)
 		err = githubAddCmd.RunE(cmd, args)
 		if err != nil {
@@ -95,7 +88,11 @@ var createGithubCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-base", 1)
 
 		// pushes detokenized KMS_KEY_ID
-		gitClient.PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName)
+		if !viper.GetBool("vault.kms.kms-pushed") {
+			gitClient.PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName)
+			viper.Set("vault.kmskeyid.kms-pushed", true)
+			viper.WriteConfig()
+		}
 
 		progressPrinter.IncrementTracker("step-github", 1)
 
@@ -106,11 +103,11 @@ var createGithubCmd = &cobra.Command{
 		gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
 		argocd.CreateInitalArgoRepository(gitopsRepo)
 
-		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
-		if err != nil {
-			log.Printf("Failed to get clientset for k8s : %s", err)
-			return err
-		}
+		// clientset, err := k8s.GetClientSet(globalFlags.DryRun)
+		// if err != nil {
+		// 	log.Printf("Failed to get clientset for k8s : %s", err)
+		// 	return err
+		// }
 		err = helm.InstallArgocd(globalFlags.DryRun)
 		if err != nil {
 			log.Println("Error installing argocd")
@@ -169,19 +166,14 @@ var createGithubCmd = &cobra.Command{
 		informUser("Setup Vault", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
 
-		if !skipVault { //skipVault
+		if !viper.GetBool("vault.configuredsecret") { //skipVault
 			informUser("waiting for vault unseal", globalFlags.SilentMode)
 			log.Println("configuring vault")
 			vault.ConfigureVault(globalFlags.DryRun)
 			informUser("Vault configured", globalFlags.SilentMode)
 
 			vault.GetOidcClientCredentials(globalFlags.DryRun)
-
-			// pushes detokenized ARGOCD_OIDC_CLIENT_ID
-			gitClient.PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName)
-
-			repoDir := fmt.Sprintf("%s/%s", config.K1FolderPath, "gitops")
-			pkg.Detokenize(repoDir)
+			log.Println("vault oidc clients created")
 
 			log.Println("creating vault configured secret")
 			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
@@ -190,16 +182,17 @@ var createGithubCmd = &cobra.Command{
 		informUser("Terraform Vault", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
 
-		argocdPodClient := clientset.CoreV1().Pods("argocd")
-		for i := 1; i < 15; i++ {
-			argoCDHostReady := gitlab.AwaitHostNTimes("argocd", globalFlags.DryRun, 20)
-			if argoCDHostReady {
-				informUser("ArgoCD DNS is ready", globalFlags.SilentMode)
-				break
-			} else {
-				k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
-			}
-		}
+		// todo move this into a new command `kubefirst testDns --host argocd` ?
+		// argocdPodClient := clientset.CoreV1().Pods("argocd")
+		// for i := 1; i < 15; i++ {
+		// 	argoCDHostReady := gitlab.AwaitHostNTimes("argocd", globalFlags.DryRun, 20)
+		// 	if argoCDHostReady {
+		// 		informUser("ArgoCD DNS is ready", globalFlags.SilentMode)
+		// 		break
+		// 	} else {
+		// 		k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+		// 	}
+		// }
 
 		directory = fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
 		informUser("applying users terraform", globalFlags.SilentMode)
