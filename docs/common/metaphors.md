@@ -1,6 +1,6 @@
 # Metaphor
 
-**Metaphor** is a suite of demo microservice applications to demonstrate how an application can be integrated into the 
+A **Metaphor** is a suite of demo microservice applications to demonstrate how an application can be integrated into the 
 Kubefirst platform following best practices. The demo applications consists of a **Metaphor frontend**, 
 **Metaphor Go API**, and **Metaphor NodeJS API**.
 
