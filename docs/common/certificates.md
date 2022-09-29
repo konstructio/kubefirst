@@ -12,7 +12,7 @@ certificate.
 
 ## Backup and Restore Certificates
 
-Certificates requests for certs provided by LetsEncrypty are rate limited, and Kubefirst can also help on that regard! We have two features to 
+Certificates requests for certs provided by LetsEncrypt are rate limited, and Kubefirst can also help in that regard! We have two features to 
 [backupSSL](../tooling/kubefirst-cli.md) and [restoreSSL](../tooling/kubefirst-cli.md) certificates. When a new 
 installation is started, one of the functionalities is to backup your SSL certificates at your AWS account on a S3 
 bucket following with `k1 + your-domain-name`.
