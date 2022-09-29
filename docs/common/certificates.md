@@ -33,6 +33,7 @@ kubefirst clean
 
 # prepare a new installation
 kubefirst init + <args>
+
 # during Kubefirst installation process,
 # the installation will load the backup certificates and use it to avoid issuing new certificates.
 # no manual changes are necessary for certificate backup restore
