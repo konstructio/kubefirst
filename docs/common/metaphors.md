@@ -65,7 +65,7 @@ spec:
 
 ### Some cool automated things to note:
 
-- the value specified in `spec.rules.host` will automatically create a route53 cname that's bound to the ingress elastic load balancer
+- The value specified in `spec.rules.host` will automatically create a route53 CNAME that is bound to the Ingress elastic load balancer.
 - the `cert-manager.io/cluster-issuer` annotation will prompt `cert-manager` to automatically create a certificate for your application, and will store that cert in the `secretName` specified
 - nginx will automatically route traffic to the **Metaphors** applications service based on the path-based/host-based routing specified in `spec.rules`
 
