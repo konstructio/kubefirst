@@ -53,7 +53,6 @@ var createCmd = &cobra.Command{
 		err = k8s.RemoveSelfSignedCertArgoCD()
 		if err != nil {
 			log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
-			return err
 		}
 
 		// Relates to issue: https://github.com/kubefirst/kubefirst/issues/386
