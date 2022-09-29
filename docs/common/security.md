@@ -7,7 +7,7 @@ leveraging these credentials. We do not embed these personal cloud credentials a
 ## Assume Role
 Kubefirst also provides an approach to run the previsioning process on less privileges strategy via 
 [AWS Assume Role](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html). The idea is to basically 
-configure a AWS role with the permissions you would like to provide to the Kubefirst installer, and provide that role to
+configure a AWS role with the permissions you would like to provide to the Kubefirst installer and provide that role to
 the [Assume Role Kubefirst command](../tooling/kubefirst-cli.md) via de `init` command.
 
 ## TLS Encryption for Ingressed Services
