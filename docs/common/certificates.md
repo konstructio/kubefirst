@@ -21,7 +21,7 @@ bucket following with `k1 + your-domain-name`.
 
 1. You finished the Kubefirst installation.
 2. You destroyed the Kubefirst installation.
-3. you want to start a fresh new installation but wants to use the previously created certificates
+3. You want to start a fresh installation but want to use the previously created certificates.
 4. at this point you can call this sequence of commands: 
 
 ```bash
