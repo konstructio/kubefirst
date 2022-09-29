@@ -13,7 +13,7 @@ the [Assume Role Kubefirst command](../tooling/kubefirst-cli.md) via the `init` 
 ## TLS Encryption for Ingressed Services
 We use different approaches to close any possible attack surface using different technologies and strategies. On the 
 service side, we have Vault to store and encrypt your sensitive data. Every resource that is exposed to the outside 
-world is encrypt using SSL/TLS via Let's Encrypt.
+world is encrypted using SSL/TLS via Let's Encrypt.
 
 ## Granular Kubernetes Service Accounts with Explicit IAM Roles for Cloud Access
 Each of our platform services has the potential to require access to cloud resources to take advantage of artifact storage, database access, 
