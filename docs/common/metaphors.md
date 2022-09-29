@@ -34,7 +34,7 @@ application available to the cluster, and an Ingress to make the service availab
 
 ## Ingress Integrations
 
-The ingress manifest demonstrates integration with our automated approach to DNS management, load balancer management, 
+The Ingress manifest demonstrates integration with our automated approach to DNS management, load balancer management, 
 and TLS/SSL certificate creation and renewal.
 
 ``` yaml
