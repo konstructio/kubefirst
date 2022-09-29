@@ -14,7 +14,7 @@ our engineering team can fully engage with the best application approaches.
 ### CI/CD
 
 The **Metaphor** applications come with complete CI/CD processes including automated builds, container Helm chart creation, container 
-and helm chart publishing, linting, tests, gitops deployments to `development`, `staging`, and `production` namespaces, 
+and Helm chart publishing, linting, tests, GitOps deployments to `development`, `staging`, and `production` namespaces, 
 release management, version management, and hotfixes. It serves as an excellent proving ground for changes to the CI/CD layer.
 
 When a new version of our CI is needed, it's best to adopt that new version of the CI in a **Metaphor** application
