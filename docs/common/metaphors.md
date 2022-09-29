@@ -11,7 +11,7 @@ easy to apply to other projects. When engineers discover good patterns to use in
 projects, they can add that new idea in the most straightforward way possible to the Metaphor applications as well. By doing so 
 our engineering team can fully engage with the best application approaches.
 
-### CI/CD
+## CI/CD
 
 The **Metaphor** applications come with complete CI/CD processes including automated builds, container Helm chart creation, container 
 and Helm chart publishing, linting, tests, GitOps deployments to `development`, `staging`, and `production` namespaces, 
