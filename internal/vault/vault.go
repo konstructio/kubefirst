@@ -118,11 +118,13 @@ func ConfigureVault(dryRun bool) {
 		if err != nil {
 			log.Panicf("error: terraform apply failed %s", err)
 		}
+		log.Println("deleting the files found at", fmt.Sprintf("%s/.terraform/", directory))
+		log.Println("deleting the files found at", fmt.Sprintf("%s/.terraform.lock.hcl", directory))
+		os.RemoveAll(fmt.Sprintf("%s/.terraform/", directory))
+		os.RemoveAll(fmt.Sprintf("%s/.terraform.lock.hcl", directory))
 		viper.Set("create.terraformapplied.vault", true)
 		viper.WriteConfig()
 	}
-	os.RemoveAll(".terraform/")
-	os.RemoveAll(".terraform.lock.hcl")
 }
 
 func addVaultSecret(secretPath string, secretData map[string]interface{}) {
