@@ -17,7 +17,7 @@ world is encrypt using SSL/TLS via Let's Encrypt.
 
 ## Granular Kubernetes Service Accounts with Explicit IAM Roles for Cloud Access
 Each of our platform services has the potential to require access to cloud resources to take advantage of artifact storage, database access, 
-kms encryption, or things of that nature. Each service account on the platform comes with a dedicated least privilege iam policy to grant
+kms encryption, or things of that nature. Each service account on the platform comes with a dedicated least privilege IAM policy to grant
 granular and controlled access to cloud resources on the platform.
 
 ## Additional Layers of Security
