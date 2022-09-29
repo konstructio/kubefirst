@@ -143,6 +143,6 @@ Flags:
 -h, --help                 help for state
 --pull                 pull Kubefirst config file to the S3 bucket
 --push                 push Kubefirst config file to the S3 bucket
---region string        set S3 bucket region
+--region string        Set S3 bucket region.
 ```
 
