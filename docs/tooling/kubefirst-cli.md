@@ -140,7 +140,7 @@ kubefirst state [flags]
 
 Flags:
 --bucket-name string   set the bucket name to store the Kubefirst config file
--h, --help                 help for state
+-h, --help             Help for state.
 --pull                 Pull the Kubefirst config file from the S3 bucket.
 --push                 Push Kubefirst config file to the S3 bucket.
 --region string        Set S3 bucket region.
