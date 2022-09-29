@@ -17,31 +17,35 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 
 	envs := map[string]string{}
 
-	// todo lift common variables into this "global" space
+	//* AWS_SDK_LOAD_CONFIG=1
+	//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
+	envs["AWS_SDK_LOAD_CONFIG"] = "1"
+	envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+	envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 
 	switch terraformEntryPoint {
 	case "base":
-		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
 		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
-		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 
 		nodes_spot := viper.GetBool("aws.nodes_spot")
 		if nodes_spot {
 			envs["TF_VAR_lifecycle_nodes"] = "SPOT"
 		}
+		return envs
 	case "vault":
 		fmt.Println("vault")
+		return envs
 	case "gitlab":
 		fmt.Println("gitlab")
+		return envs
 	case "github":
-		fmt.Println("github")
+		envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
+		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
+		envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
+		envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botPublicKey")
+		return envs
 	case "users":
-		//* AWS_SDK_LOAD_CONFIG=1
-		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
-		envs["AWS_SDK_LOAD_CONFIG"] = "1"
-		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
-		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["VAULT_TOKEN"] = viper.GetString("vault.token")
 		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
 		envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
@@ -49,10 +53,6 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		return envs
 	}
 	return envs
-}
-
-func TerraformOutput(outputName string) {
-
 }
 
 func ApplyBaseTerraform(dryRun bool, directory string) {
