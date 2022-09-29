@@ -21,7 +21,7 @@ When a new version of our CI is needed, it's best to adopt that new version of t
 first. Run through the adjustments to your automation and test it through all of your environments and kubernetes 
 clusters without impacting the applications that your engineers and users depend on.
 
-### Kubernetes Representations
+## Kubernetes Representations
 
 The **Metaphors** applications are multi-instance load balanced applications. It's deployed to the `development`, 
 `staging`, and `production` namespaces in your `kubefirst` cluster.
