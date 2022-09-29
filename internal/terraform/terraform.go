@@ -257,17 +257,17 @@ func ApplyUsersTerraform(dryRun bool, directory string) {
 	}
 }
 
-func InitApplyAutoApprove(dryRun bool, directory, tfEntrypoint string) {
+func initActionAutoApprove(dryRun bool, directory, tfAction, tfEntrypoint string) {
 
 	config := configs.ReadConfig()
-	log.Printf("Entered Apply%sTerraform", strings.Title(tfEntrypoint))
+	log.Printf("Entered Init%s%sTerraform", strings.Title(tfAction), strings.Title(tfEntrypoint))
 
 	kubefirstConfigPath := fmt.Sprintf("terraform.%s.apply.executed", tfEntrypoint)
 
 	if !viper.GetBool(kubefirstConfigPath) {
-		log.Printf("Executing Apply%sTerraform", strings.Title(tfEntrypoint))
+		log.Printf("Executing Init%s%sTerraform", strings.Title(tfAction), strings.Title(tfEntrypoint))
 		if dryRun {
-			log.Printf("[#99] Dry-run mode, Apply%sTerraform skipped", strings.Title(tfEntrypoint))
+			log.Printf("[#99] Dry-run mode, Init%s%sTerraform skipped", strings.Title(tfAction), strings.Title(tfEntrypoint))
 			return
 		}
 
@@ -283,52 +283,42 @@ func InitApplyAutoApprove(dryRun bool, directory, tfEntrypoint string) {
 			log.Panicf("error: terraform init for %s failed %s", tfEntrypoint, err)
 		}
 
-		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, tfAction, "-auto-approve")
 		if err != nil {
-			log.Panicf("error: terraform apply -auto-approve for %s failed %s", tfEntrypoint, err)
+			log.Panicf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform/", directory))
 		viper.Set(kubefirstConfigPath, true)
 		viper.WriteConfig()
 	} else {
-		log.Printf("skipping Apply%sTerraform", strings.Title(tfEntrypoint))
+		log.Printf("skipping Init%s%sTerraform skipped", strings.Title(tfAction), strings.Title(tfEntrypoint))
 	}
 }
 
-// todo need to write something that outputs -json type and can get multiple values
-func OutputSingleValue(directory, outputName string) {
-	config := configs.ReadConfig()
+func InitApplyAutoApprove(dryRun bool, directory, tfEntrypoint string) {
+	tfAction := "apply"
+	initActionAutoApprove(dryRun, directory, tfAction, tfEntrypoint)
+}
 
-	// tfOutputCmd := exec.Command("terraform", "output", "vault_unseal_kms_key")
-	// tfOutputCmd.Stdout = &out
-	// tfOutputCmd.Stderr = os.Stderr
-	// err = tfOutputCmd.Run()
-	// if err != nil {
-	// 	fmt.Println("failed to call tfInitCmd.Run(): %v", err)
-	// }
+func InitDestroyAutoApprove(dryRun bool, directory, tfEntrypoint string) {
+	tfAction := "destroy"
+	initActionAutoApprove(dryRun, directory, tfAction, tfEntrypoint)
+}
+
+// todo need to write something that outputs -json type and can get multiple values
+func OutputSingleValue(dryRun bool, directory, tfEntrypoint, outputName string) {
+
+	config := configs.ReadConfig()
+	os.Chdir(directory)
 
 	var tfOutput bytes.Buffer
-	k8 := exec.Command(config.TerraformPath, "refresh")
-	k8.Stdout = &tfOutput
-	k8.Stderr = os.Stderr
-	errKey := k8.Run()
-	if errKey != nil {
-		log.Panicf("error: terraform output %s failed %v", outputName, errKey)
+	tfOutputCmd := exec.Command(config.TerraformPath, "output", outputName)
+	tfOutputCmd.Stdout = &tfOutput
+	tfOutputCmd.Stderr = os.Stderr
+	err := tfOutputCmd.Run()
+	if err != nil {
+		fmt.Println("failed to call tfOutputCmd.Run(): ", err)
 	}
 
-	k := exec.Command(config.TerraformPath, "output", outputName)
-
-	k.Stdout = &tfOutput
-	k.Stderr = os.Stderr
-	errKey = k.Run()
-	if errKey != nil {
-		log.Panicf("error: terraform output %s failed %v", outputName, errKey)
-	}
-	os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
-	keyIdNoSpace := strings.TrimSpace(tfOutput.String())
-	keyId := keyIdNoSpace[1 : len(keyIdNoSpace)-1]
-	log.Println("keyid is:", keyId)
-	viper.Set("test.test.vault.kmskeyid", keyId)
-	// viper.Set("test.terraformapplied.base", true) // todo
-	viper.WriteConfig()
+	log.Println("tfOutput is: ", tfOutput.String())
 }

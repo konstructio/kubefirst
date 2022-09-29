@@ -31,29 +31,31 @@ var createCmd = &cobra.Command{
 		}
 
 		sendStartedInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
-		if viper.GetBool("github.enabled") {
-			log.Println("Installing Github version of Kubefirst")
-			viper.Set("git.mode", "github")
-			err := createGithubCmd.RunE(cmd, args)
-			if err != nil {
-				return err
-			}
+		if !viper.GetBool("kubefirst.done") {
+			if viper.GetBool("github.enabled") {
+				log.Println("Installing Github version of Kubefirst")
+				viper.Set("git.mode", "github")
+				err := createGithubCmd.RunE(cmd, args)
+				if err != nil {
+					return err
+				}
 
-		} else {
-			log.Println("Installing GitLab version of Kubefirst")
-			viper.Set("git.mode", "gitlab")
-			err := createGitlabCmd.RunE(cmd, args)
-			if err != nil {
-				return err
+			} else {
+				log.Println("Installing GitLab version of Kubefirst")
+				viper.Set("git.mode", "gitlab")
+				err := createGitlabCmd.RunE(cmd, args)
+				if err != nil {
+					return err
+				}
 			}
-
+			viper.Set("kubefirst.done", true)
+			viper.WriteConfig()
 		}
 
 		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
 		err = k8s.RemoveSelfSignedCertArgoCD()
 		if err != nil {
 			log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
-			return err
 		}
 
 		// Relates to issue: https://github.com/kubefirst/kubefirst/issues/386
