@@ -2,7 +2,7 @@
 
 Kubefirst runs against your public cloud provider, and your personal cloud credentials are leveraged in order to conduct the provisioning
 of the Kubefirst platform. We have a tremendous respect when it comes to your personal Cloud provider information and we are very careful about 
-leveraging these credentials. We do not embed these personal cloud credentials anywhere in the kubefirst platform that gets provisioned.
+leveraging these credentials. We do not embed these personal cloud credentials anywhere in the Kubefirst platform that gets provisioned.
 
 ## Assume Role
 Kubefirst also provides an approach to run the previsioning process on less privileges strategy via 
