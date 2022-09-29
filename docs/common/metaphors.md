@@ -4,7 +4,7 @@ A **Metaphor** is a suite of demo microservice applications to demonstrate how a
 Kubefirst platform following best practices. The demo applications consists of a **Metaphor frontend**, 
 **Metaphor Go API**, and **Metaphor NodeJS API**.
 
-### Best Practices
+## Best Practices
 
 The **Metaphor** applications provides a demonstration space for application best practices in a tangible way that's 
 easy to apply to other projects. When engineers discover good patterns and wish have those patterns adopted in other 
