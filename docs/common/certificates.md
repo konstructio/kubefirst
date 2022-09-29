@@ -36,6 +36,6 @@ kubefirst init + <args>
 
 # During the Kubefirst installation process,
 # the installation will load the backup certificates to avoid issuing new certificates.
-# no manual changes are necessary for certificate backup restore
+# No manual changes are necessary for certificate backup restore.
 kubefirst cluster create`
 ```
