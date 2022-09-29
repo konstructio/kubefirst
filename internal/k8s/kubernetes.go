@@ -304,12 +304,17 @@ func WaitForGitlab(dryRun bool, config *configs.Config) {
 }
 
 func RemoveSelfSignedCertArgoCD() error {
-	err := clearSecretField("argocd", "argo-secret", "/data/tls.crt")
+	log.Printf("Removing Self-Signed Certificate from argocd-secret")
+
+	log.Printf("Removing tls.crt")
+	err := clearSecretField("argocd", "argocd-secret", "/data/tls.crt")
 	if err != nil {
 		log.Printf("err removing tls.crt from argo-secret: %s", err)
 		return err
 	}
-	err = clearSecretField("argocd", "argo-secret", "/data/tls.key")
+
+	log.Printf("Removing tls.key")
+	err = clearSecretField("argocd", "argocd-secret", "/data/tls.key")
 	if err != nil {
 		log.Printf("err removing tls.crt from argo-secret: %s", err)
 		return err
@@ -319,7 +324,7 @@ func RemoveSelfSignedCertArgoCD() error {
 
 // remove field from k8s secret using sdk
 func clearSecretField(namespace, name, field string) error {
-
+	log.Printf("Prepare secret to be patched: ns: %s name: %s path: %s", namespace, name, field)
 	secret := secret{
 		namespace: namespace,
 		name:      name,
@@ -332,13 +337,13 @@ func clearSecretField(namespace, name, field string) error {
 
 	clientset, err := GetClientSet(false)
 	if err != nil {
-		log.Panicf("Error creating k8s clientset : %s", err)
+		log.Printf("Error creating k8s clientset : %s", err)
 		return err
 	}
 
 	err = secret.patchSecret(clientset, payload)
 	if err != nil {
-		log.Panicf("Error calling patchSecret : %s", err)
+		log.Printf("Error calling patchSecret : %s", err)
 		return err
 	}
 	return nil
@@ -348,10 +353,11 @@ func (p *secret) patchSecret(k8sClient *kubernetes.Clientset, payload []PatchJso
 
 	payloadBytes, _ := json.Marshal(payload)
 
+	log.Printf("Patching secret on K8S via SDK")
 	_, err := k8sClient.CoreV1().Secrets(p.namespace).Patch(context.TODO(), p.name, k8sTypes.JSONPatchType, payloadBytes, metaV1.PatchOptions{})
 
 	if err != nil {
-		log.Panicf("Error patching secret : %s", err)
+		log.Printf("Error patching secret : %s", err)
 		return err
 	}
 	return nil
