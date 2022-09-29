@@ -99,7 +99,18 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 		log.Println("Error populating git")
 		return err
 	}
-	w.Add(".")
+	status, err := w.Status()
+	if err != nil {
+		log.Println("error getting worktree status", err)
+	}
+
+	for file, s := range status {
+		log.Printf("the file is %s the status is %v", file, s.Worktree)
+		_, err = w.Add(file)
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
+	}
 	w.Commit("Populate Repo", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
@@ -162,7 +173,18 @@ func PushGitopsToSoftServe() {
 	w, _ := repo.Worktree()
 
 	log.Println("Committing new changes...")
-	w.Add(".")
+	status, err := w.Status()
+	if err != nil {
+		log.Println("error getting worktree status", err)
+	}
+
+	for file, s := range status {
+		log.Printf("the file is %s the status is %v", file, s.Worktree)
+		_, err = w.Add(file)
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
+	}
 	w.Commit("setting new remote upstream to soft-serve", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
@@ -280,19 +302,22 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 		log.Panic("error opening the localDirectory: ", localDirectory, err)
 	}
 
-	url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, localRepo)
-	log.Printf("git remote add %s %s", remoteName, url)
-	_, err = repo.CreateRemote(&config.RemoteConfig{
-		Name: remoteName,
-		URLs: []string{url},
-	})
-	if err != nil {
-		log.Panicf("Error creating remote %s for repo: %s - %s", remoteName, url, err)
-	}
 	w, _ := repo.Worktree()
 
-	log.Println("Committing new changes...")
-	w.Add(".")
+	log.Println("Committing new changes... PushLocalRepoToEmptyRemote")
+
+	status, err := w.Status()
+	if err != nil {
+		log.Println("error getting worktree status", err)
+	}
+
+	for file, s := range status {
+		log.Printf("the file is %s the status is %v", file, s.Worktree)
+		_, err = w.Add(file)
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
+	}
 	w.Commit("setting new remote upstream to github", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
@@ -336,8 +361,19 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 
 	w, _ := repo.Worktree()
 
-	log.Println("Committing new changes...")
-	w.Add(".")
+	log.Println("Committing new changes... PushLocalRepoUpdates")
+	status, err := w.Status()
+	if err != nil {
+		log.Println("error getting worktree status", err)
+	}
+
+	for file, s := range status {
+		log.Printf("the file is %s the status is %v", file, s.Worktree)
+		_, err = w.Add(file)
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
+	}
 	w.Commit("commiting staged changes to remote", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",

@@ -115,7 +115,18 @@ func PushGitOpsToGitLab(dryRun bool) {
 	os.RemoveAll(directory + "/terraform/vault/.terraform")
 
 	log.Println("Committing new changes...")
-	w.Add(".")
+	status, err := w.Status()
+	if err != nil {
+		log.Println("error getting worktree status", err)
+	}
+
+	for file, s := range status {
+		log.Printf("the file is %s the status is %v", file, s.Worktree)
+		_, err = w.Add(file)
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
+	}
 	_, err = w.Commit("setting new remote upstream to gitlab", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
@@ -501,7 +512,18 @@ func HydrateGitlabMetaphorRepo(dryRun bool) {
 		w, _ := metaphorTemplateRepo.Worktree()
 
 		log.Println("Committing detokenized metaphor content")
-		w.Add(".")
+		status, err := w.Status()
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
+
+		for file, s := range status {
+			log.Printf("the file is %s the status is %v", file, s.Worktree)
+			_, err = w.Add(file)
+			if err != nil {
+				log.Println("error getting worktree status", err)
+			}
+		}
 		w.Commit("setting new remote upstream to gitlab", &git.CommitOptions{
 			Author: &object.Signature{
 				Name:  "kubefirst-bot",
@@ -646,12 +668,18 @@ func CommitToRepo(repo *git.Repository, repoName string) {
 
 	log.Println(fmt.Sprintf("committing detokenized %s kms key id", repoName))
 
-	w.Add(".")
-	//https://github.com/src-d/go-git/issues/1268
-	cmd := exec.Command("git", "add", ".")
-	cmd.Dir = w.Filesystem.Root()
-	err := cmd.Run()
-	log.Println(err)
+	status, err := w.Status()
+	if err != nil {
+		log.Println("error getting worktree status", err)
+	}
+
+	for file, s := range status {
+		log.Printf("the file is %s the status is %v", file, s.Worktree)
+		_, err = w.Add(file)
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
+	}
 
 	w.Commit(fmt.Sprintf("committing detokenized %s kms key id", repoName), &git.CommitOptions{
 		Author: &object.Signature{
