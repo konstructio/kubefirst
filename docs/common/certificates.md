@@ -20,7 +20,7 @@ bucket following with `k1 + your-domain-name`.
 **Practical use case scenario:**
 
 1. You finished the Kubefirst installation.
-2. you destroyed the Kubefirst installation
+2. You destroyed the Kubefirst installation.
 3. you want to start a fresh new installation but wants to use the previously created certificates
 4. at this point you can call this sequence of commands: 
 
