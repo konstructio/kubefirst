@@ -2,7 +2,7 @@
 
 Argo CD is a GitOps oriented continuous delivery tool for kubernetes. We use it to manage all of our applications across our kubernetes clusters.
 
-Argo CD is really great at providing a straightforward mechanism for you to manage helm charts, their versions, their configuration overrides, and whether their state is in sync with what's running on your clusters.
+Argo CD is really great at providing a straightforward mechanism for you to manage Helm charts, their versions, their configuration overrides, and whether their state is in sync with what is running on your clusters.
 
 ![](../../img/kubefirst/argocd/argocd-apps.png)
 
