@@ -76,7 +76,7 @@ paradigm powered by **Vault** and `external-secrets`.
 
 There's also a configmap implementation to demonstrate how to leverage non-sensitive configuration values.
 
-### Datadog Integrations
+## Datadog Integrations
 
 The **Metaphors** applications are set up to provide cloud and container observability and monitoring best practices 
 with **Datadog**. It demonstrates using **Datadog** for **Metaphors** application logs, container statistics, application 
