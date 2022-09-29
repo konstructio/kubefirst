@@ -31,7 +31,7 @@ kubefirst backupSSL
 # Clean Previous Installation:
 kubefirst clean
 
-# prepare a new installation
+# Prepare a new installation:
 kubefirst init + <args>
 
 # During the Kubefirst installation process,
