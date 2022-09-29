@@ -86,6 +86,5 @@ metrics, application performance monitoring, dashboard, and alerting.
 
 The **Metaphors** applications leverages hashicorp **Vault** for secrets management. **Vault** runs in the `mgmt` cluster 
 and metaphor runs in `preprod` and `production`, so it serves as an example for secrets management. To read more see our 
-
 [//]: # (todo: fix link)
 [Vault page](../kubefirst/gitlab/vault.md)
