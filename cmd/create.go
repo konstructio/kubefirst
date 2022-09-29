@@ -7,6 +7,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/state"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
+	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -47,6 +48,14 @@ var createCmd = &cobra.Command{
 			}
 
 		}
+
+		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
+		err = k8s.RemoveSelfSignedCertArgoCD()
+		if err != nil {
+			log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
+			return err
+		}
+
 		// Relates to issue: https://github.com/kubefirst/kubefirst/issues/386
 		// Metaphor needs chart museum for CI works
 		informUser("Waiting chartmuseum", globalFlags.SilentMode)
@@ -57,6 +66,7 @@ var createCmd = &cobra.Command{
 				break
 			}
 		}
+
 		informUser("Checking if cluster is ready for use by metaphor apps", globalFlags.SilentMode)
 		for i := 1; i < 10; i++ {
 			err = k1ReadyCmd.RunE(cmd, args)
@@ -88,7 +98,7 @@ var createCmd = &cobra.Command{
 			log.Println("Error running postInstallCmd")
 			return err
 		}
-		
+
 		return nil
 	},
 }
