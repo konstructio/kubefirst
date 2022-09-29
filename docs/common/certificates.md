@@ -10,7 +10,7 @@ manifest steps trigger the creation and management of the SSL certificates using
 initializes a challenge and, after the challenge is solved, the SSL certificate is confirmed via Let's Encrypt as a valid
 certificate.
 
-## Backup and Restore certificates
+## Backup and Restore Certificates
 
 Certificates requests for certs provided by LetsEncrypty are rate limited, and Kubefirst can also help on that regard! We have two features to 
 [backupSSL](../tooling/kubefirst-cli.md) and [restoreSSL](../tooling/kubefirst-cli.md) certificates. When a new 
