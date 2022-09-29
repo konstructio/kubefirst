@@ -1,6 +1,6 @@
 # GitHub Repositories
 
-When you install the GitHub version of Kubefirst a couple of new repositories will be added to your GitHub organization.
+When you install the GitHub version of Kubefirst, a couple of new repositories will be added to your GitHub organization.
 
 ![GitHub repositories](../../img/kubefirst/github/github-repositories.png)
 
