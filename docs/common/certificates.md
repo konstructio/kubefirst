@@ -7,7 +7,7 @@ ingressed services.
 
 During the installation process, ArgoCD applications are instantiated, applying the application manifest, and one of the
 manifest steps trigger the creation and management of the SSL certificates using Let's Encrypt. Let's Encrypt then 
-initializes a challenge, and after the challenge is solved, the SSL certificate is confirmed via Let's Encrypt as a valid
+initializes a challenge and, after the challenge is solved, the SSL certificate is confirmed via Let's Encrypt as a valid
 certificate.
 
 ## Backup and Restore certificates
