@@ -118,7 +118,7 @@ Flags:
 
 ### restoreSSL
 
-Restore the backup SSL that is stored in S3 bucket, and avoid re-issuing new certificates.
+Restore the backup SSL that is stored in the S3 bucket and avoid re-issuing new certificates.
 
 ```
 Usage:
