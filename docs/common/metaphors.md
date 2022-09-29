@@ -69,7 +69,7 @@ spec:
 - The `cert-manager.io/cluster-issuer` annotation will prompt `cert-manager` to automatically create a certificate for your application and will store that cert in the `secretName` specified.
 - NGINX will automatically route traffic to the **Metaphors** applications service based on the path-based/host-based routing specified in `spec.rules`.
 
-### Environment Configs and Secrets
+## Environment Configs and Secrets
 
 The **Metaphors** applications also includes a working example of how to leverage a multi-environment secrets management 
 paradigm powered by **Vault** and `external-secrets`.
