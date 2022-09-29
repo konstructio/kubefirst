@@ -25,7 +25,7 @@ bucket following with `k1 + your-domain-name`.
 4. at this point you can call this sequence of commands: 
 
 ```bash
-# backup your SSL certificates at S3 bucket name "k1-your-domain-name"
+# Backup your SSL certificates at S3 bucket name "k1-your-domain-name":
 kubefirst backupSSL
 # clean previous installation
 kubefirst clean
