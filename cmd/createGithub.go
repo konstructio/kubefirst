@@ -14,6 +14,7 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/flagset"
+	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k8s"
@@ -53,7 +54,7 @@ var createGithubCmd = &cobra.Command{
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 		progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 		progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
-		progressPrinter.AddTracker("step-ecr", "Setup ECR/Docker Registries", 1)
+		progressPrinter.AddTracker("step-ecr", "Setup ECR/Docker Registries", 1) // todo remove this step, its baked into github repo
 		progressPrinter.AddTracker("step-apps", "Install apps to cluster", 6)
 
 		progressPrinter.IncrementTracker("step-0", 1)
@@ -61,38 +62,41 @@ var createGithubCmd = &cobra.Command{
 		if !globalFlags.UseTelemetry {
 			informUser("Telemetry Disabled", globalFlags.SilentMode)
 		}
+
+		//* create the teams and gitops repo in github
 		informUser("Creating gitops/metaphor repos", globalFlags.SilentMode)
 		err = githubAddCmd.RunE(cmd, args)
 		if err != nil {
 			log.Println("Error running:", githubAddCmd.Name())
 			return err
 		}
-		informUser("Create Github Repos", globalFlags.SilentMode)
+
+		informUser(fmt.Sprintf("Created GitOps Repo in github.com/%s", viper.GetString("github.owner")), globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-github", 1)
-		err = loadTemplateCmd.RunE(cmd, args)
-		if err != nil {
-			log.Println("Error running loadTemplateCmd")
-			return err
+
+		//* push our locally detokenized gitops repo to remote github
+		githubHost := viper.GetString("github.host")
+		githubOwner := viper.GetString("github.owner")
+		localRepo := "gitops"
+		remoteName := "github"
+		if !viper.GetBool("github.gitops.hydrated") {
+			gitClient.PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName)
+		} else {
+			log.Println("already hydrated the github gitops repository")
 		}
-		informUser("Load Templates", globalFlags.SilentMode)
+
 		progressPrinter.IncrementTracker("step-github", 1)
+
+		//* push our locally detokenized gitops repo to remote github
 
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 		informUser("Creating K8S Cluster", globalFlags.SilentMode)
 		terraform.ApplyBaseTerraform(globalFlags.DryRun, directory)
 		progressPrinter.IncrementTracker("step-base", 1)
 
-		directory = fmt.Sprintf("%s/gitops/terraform/ecr", config.K1FolderPath)
-		informUser("Creating ECR Repos", globalFlags.SilentMode)
-		terraform.ApplyECRTerraform(globalFlags.DryRun, directory)
-		progressPrinter.IncrementTracker("step-ecr", 4)
+		// pushes detokenized KMS_KEY_ID
+		gitClient.PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName)
 
-		err = githubPopulateCmd.RunE(cmd, args)
-		if err != nil {
-			log.Println("Error running githubPopulateCmd")
-			return err
-		}
-		informUser("Populate Repos", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-github", 1)
 
 		informUser("Attempt to recycle certs", globalFlags.SilentMode)
@@ -173,6 +177,9 @@ var createGithubCmd = &cobra.Command{
 
 			vault.GetOidcClientCredentials(globalFlags.DryRun)
 
+			// pushes detokenized ARGOCD_OIDC_CLIENT_ID
+			gitClient.PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName)
+
 			repoDir := fmt.Sprintf("%s/%s", config.K1FolderPath, "gitops")
 			pkg.Detokenize(repoDir)
 
@@ -182,8 +189,6 @@ var createGithubCmd = &cobra.Command{
 		}
 		informUser("Terraform Vault", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
-
-		//gitlab oidc removed
 
 		argocdPodClient := clientset.CoreV1().Pods("argocd")
 		for i := 1; i < 15; i++ {
@@ -196,6 +201,10 @@ var createGithubCmd = &cobra.Command{
 			}
 		}
 
+		directory = fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
+		informUser("applying users terraform", globalFlags.SilentMode)
+		terraform.ApplyUsersTerraform(globalFlags.DryRun, directory)
+		progressPrinter.IncrementTracker("step-base", 1)
 		//TODO: Do we need this?
 		//From changes on create --> We need to fix once OIDC is ready
 		if false {

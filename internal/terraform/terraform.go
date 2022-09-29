@@ -172,3 +172,44 @@ func DestroyECRTerraform(skipECRTerraform bool) {
 		log.Println("skip:  destroyBaseTerraform")
 	}
 }
+
+func ApplyUsersTerraform(dryRun bool, directory string) {
+
+	config := configs.ReadConfig()
+
+	if !viper.GetBool("create.terraformapplied.users") {
+		log.Println("Executing ApplyUsersTerraform")
+		if dryRun {
+			log.Printf("[#99] Dry-run mode, ApplyUsersTerraform skipped.")
+			return
+		}
+
+		//* AWS_SDK_LOAD_CONFIG=1
+		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
+		envs := map[string]string{}
+		envs["AWS_SDK_LOAD_CONFIG"] = "1"
+		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
+		envs["VAULT_TOKEN"] = viper.GetString("vault.token")
+		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
+
+		err := os.Chdir(directory)
+		if err != nil {
+			log.Panic("error: could not change directory to " + directory)
+		}
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
+		if err != nil {
+			log.Panicf("error: terraform init for users failed %s", err)
+		}
+
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
+		if err != nil {
+			log.Panicf("error: terraform apply for users failed %s", err)
+		}
+		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
+		viper.Set("create.terraformapplied.users", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("Skipping: ApplyUsersTerraform")
+	}
+}
