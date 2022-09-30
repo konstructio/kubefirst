@@ -1,5 +1,5 @@
 # The Open Source Tools We Love
-The kubefirst platform uses some of the most popular cloud native projects in the world. This page is dedicated to giving those projects credit for their incredible open source offerings, and to provide you with helpful links to their documentation.
+The Kubefirst platform uses some of the most popular cloud native projects in the world. This page is dedicated to giving those projects credit for their incredible open source offerings, and to provide you with helpful links to their documentation.
 
 ### Argo CD
 site: [https://argoproj.github.io/cd/](https://argoproj.github.io/cd/)
