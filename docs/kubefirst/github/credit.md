@@ -29,7 +29,7 @@ site: [https://docs.github.com/en/actions/learn-github-actions/understanding-git
 
 site: [https://hub.docker.com/r/summerwind/actions-runner](https://hub.docker.com/r/summerwind/actions-runner)
 
-### ingress-nginx
+### Ingress-NGINX
 site: [https://kubernetes.github.io/ingress-nginx/](https://kubernetes.github.io/ingress-nginx/)
 
 available annotations: [https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/)
