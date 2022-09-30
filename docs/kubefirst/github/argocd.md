@@ -6,7 +6,7 @@ Argo CD is really great at providing a straightforward mechanism for you to mana
 
 ![](../../img/kubefirst/argocd/argocd-apps.png)
 
-## Managing apps in ArgoCD
+## Managing Apps in ArgoCD
 
 Our kubernetes apps can be found in our `gitops` repository at path `/registry`
 
