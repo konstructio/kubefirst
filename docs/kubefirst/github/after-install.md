@@ -95,7 +95,7 @@ The metaphor pipeline will:
 
 To watch this pipeline occur, make any change to the `main` branch of the `metaphor` repo. If you're not feeling creative, we put a file at `.argo/ci-files/trigger.txt` that you can use. Once a file in `main` is changed, navigate to metaphor's CI/CD in GitLab to see the workflows get submitted to Argo workflows.
 
-You can visit the metaphor development, staging, and production apps in your browser to see the versions change as your releases complete and argocd syncs the apps. The metaphor URLs can be found in your gitops and metaphor project `README.md` files.
+You can visit the metaphor development, staging, and production apps in your browser to see the versions change as you complete resources and ArgoCD syncs the apps. The metaphor URLs can be found in your GitOps and metaphor project `README.md` files.
 
 ## Learning the ropes
 
