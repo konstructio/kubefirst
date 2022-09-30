@@ -19,7 +19,7 @@ site: [https://chartmuseum.com/docs/](https://chartmuseum.com/docs/)
 ### external-dns
 repo: [https://github.com/kubernetes-sigs/external-dns](https://github.com/kubernetes-sigs/external-dns)
 
-### external-secrets-operator
+### External Secrets Operator
 site: [https://external-secrets.io/](https://external-secrets.io/)
 
 ### GitHub Actions
