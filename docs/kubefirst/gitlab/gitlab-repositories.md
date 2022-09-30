@@ -1,8 +1,8 @@
 # GitLab Repositories
 
 In the GitOps nature, we rely on repositories to have a single source of truth when it comes to project updates. 
-Kubefirst make heavy use of GitOps approach to automate the development and maintenance of applications. On that regard,
-Kubefirst during installation process will brig up few GitLab repositories described bellow.
+Kubefirst makes heavy use of the GitOps approach to automate the development and maintenance of applications. In that regard,
+during the installation process, Kubefirst will bring up few GitLab repositories as described below.
 
 ## Repositories
 
@@ -10,27 +10,27 @@ Kubefirst during installation process will brig up few GitLab repositories descr
 
 `gitops`
 
-The gitops repo houses all of our IAC and all of our gitops configurations. All of the infrastructure that you receive 
-with kubefirst was produced by terraform and all of your applications are delivered with argocd. You will add to this 
-gitops repository as your business needs require additional infrastructure or applications.
+The GitOps repo houses all of our IAC and all of our GitOps configurations. All of the infrastructure that you receive 
+with Kubefirst was produced by Terraform and all of your applications are delivered with Argo CD. You will add to this 
+GitOps repository as your business needs require additional infrastructure or applications.
 
 `metaphors`
 
-Metaphors are example applications used to showcase certain features of the kubefirst platform. Metaphors has CI/CD 
-that delivers the app to a development, staging, and production namespace in your kubernetes cluster. Its secrets in 
-vault are bound to the metaphor app through the use of external-secrets, a handy kubernetes utility to keep kubernetes 
-secrets in sync with the vault source of truth. It also demonstrates how DNS entries automatically will be automatically 
+Metaphors are example applications used to showcase certain features of the Kubefirst platform. Metaphors has CI/CD 
+that delivers the app to a development, staging, and production namespace in your Kubernetes cluster. Its secrets in 
+Vault are bound to the Metaphor app through the use of external-secrets, a handy Kubernetes utility to keep Kubernetes 
+secrets in sync with the Vault source of truth. It also demonstrates how DNS entries will be automatically 
 created in route53 using external-dns. It has auto-renewing short-lived certificates generated and auto-renewed as well 
 using cert-manager and the Let's Encrypt cluster-issuer.
 
-The available Metaphors applications are, **Metaphor (NodeJS API)**, **Metaphor (Go API)** and **Metaphor Frontend**.
+The available Metaphor applications are **Metaphor (NodeJS API)**, **Metaphor (Go API)** and **Metaphor Frontend**.
 The Metaphor applications are describe in more details [here](../../common/metaphors.md).
 
 ## GitLab Repository Management
 
-These GitLab repositories are being managed in terraform.
+These GitLab repositories are being managed in Terraform.
 
-As you need additional GitLab repositories, just add a new section of terraform code to 
+As you need additional GitLab repositories, just add a new section of Terraform code to 
 `terraform/gitlab/kubefirst-repos.tf`
 
 ```
@@ -48,7 +48,7 @@ module "your_repo_name" {
 }
 ```
 
-GitLab's Terraform provider provides many more configuration than just these settings. Check them out and add to your 
+GitLab's Terraform provider provides many more configuration options than just these settings. Check them out and add to your 
 default settings once you're comfortable with the platform.
 
 Take a look at the `Resources` section of the 

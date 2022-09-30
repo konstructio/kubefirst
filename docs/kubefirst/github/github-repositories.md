@@ -16,19 +16,18 @@ The Metaphor suite is a set of example applications used to showcase certain fea
 that deliver each app to a development, staging, and production namespace in your Kubernetes cluster. The metaphor service apps' secrets in
 vault are bound to the metaphor app through the use of external-secrets, a handy Kubernetes utility to keep Kubernetes
 secrets in sync with the vault source of truth. It also demonstrates how DNS entries are automatically
-created in route53 using external-dns. It has auto-renewing short-lived certificates generated and auto-renewed as well
+created in Route 53 using external-dns. It has auto-renewing, short-lived certificates generated and auto-renewed as well,
 using cert-manager and the Let's Encrypt cluster-issuer.
 
-The available Metaphors applications are, **metaphor (NodeJS API)**, **Metaphor (Go API)** and **Metaphor Frontend**.
 
-The available Metaphors applications are, **Metaphor (NodeJS API)**, **Metaphor (Go API)** and **Metaphor Frontend**.
+The available Metaphor applications are, **Metaphor (NodeJS API)**, **Metaphor (Go API)** and **Metaphor Frontend**.
 The Metaphor applications are describe in more details [here](../../common/metaphors.md).
 
 ## GitHub Repository Management
 
-These GitHub repositories are being managed in terraform.
+These GitHub repositories are being managed in Terraform.
 
-As you need additional gitlab repositories, just add a new section of terraform code to `terraform/github/kubefirst-repos.tf`
+As you need additional GitHub repositories, just add a new section of Terraform code to `terraform/github/kubefirst-repos.tf`:
 ```
 module "your_repo_name" {
   depends_on = [
@@ -44,18 +43,18 @@ module "your_repo_name" {
 }
 ```
 
-GitHub's terraform provider provides many more configuration than just these settings. Check them out and add to your 
+GitHub's Terraform provider provides many more configuration options than just these settings. Check them out and add to your 
 default settings once you're comfortable with the platform.
 
-Take a look at the `Resources` section of the github provider documentation 
+Take a look at the `Resources` section of the GitHub provider documentation 
 [](https://registry.terraform.io/providers/integrations/github/latest/docs).
 
-That was just github. Take a look at all the terraform providers that are available, the list of technologies you can 
-manage in terraform is really impressive. [](https://www.terraform.io/docs/providers/index.html)
+That was just GitHub. Take a look at all the Terraform providers that are available; the list of technologies you can 
+manage in Terraform is really impressive. [](https://www.terraform.io/docs/providers/index.html)
 
 ## Making Terraform Changes
 
-To make infrastructure and configuration changes with terraform, simply open a merge request in the `gitops` repository.
+To make infrastructure and configuration changes with Terraform, simply open a merge request in the `gitops` repository.
 Your merge request will automatically provide plans, state locks, and applies, and even comment in the merge request 
 itself. You'll have a simple, peer reviewable, auditable changelog of all infrastructure and configuration changes.
 

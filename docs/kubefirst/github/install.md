@@ -1,6 +1,6 @@
 # Platform Installation with the Kubefirst CLI
 
-**Kubefirst** is the name of our command line tool that installs the kubefirst platform and provides some platform 
+**Kubefirst** is the name of our command line tool that installs the Kubefirst platform and provides some platform 
 conveniences.
 
 It installs a fully automated platform of open source cloud native tools with a simple 
@@ -12,29 +12,29 @@ It installs a fully automated platform of open source cloud native tools with a 
 
 **AWS Prerequisites**
 
-1. Create an AWS account with billing enabled
+1. Create an AWS account with billing enabled.
 
-2. Establish a public hosted zone with dns routing established([docs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zones-working-with.html))
+2. Establish a public hosted zone with dns routing established([docs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zones-working-with.html)).
 
-3. Connect with [AdministratorAccess](https://console.aws.amazon.com/iam/home?#/policies/arn:aws:iam::aws:policy/AdministratorAccessserviceLevelSummary) IAM credentials to your aws account ([docs](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys))
+3. Connect with [AdministratorAccess](https://console.aws.amazon.com/iam/home?#/policies/arn:aws:iam::aws:policy/AdministratorAccessserviceLevelSummary) IAM credentials to your AWS account ([docs](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys)).
 
 **GitHub Prerequisites**
 
-1. Establish a [GitHub organization](https://docs.github.com/en/organizations/collaborating-with-groups-in-organizations/creating-a-new-organization-from-scratch)
+1. Establish a [GitHub organization](https://docs.github.com/en/organizations/collaborating-with-groups-in-organizations/creating-a-new-organization-from-scratch).
 
 ### Step 1 - Download
 
-Download the latest kubefirst cli.
+Download the latest Kubefirst CLI.
 
-**Installation using homebrew**
+**Installation Using Homebrew**
 
 ```
 brew install kubefirst/tools/kubefirst
 ```
 
-**Installation using other methods**
+**Installation Using Other Methods**
 
-There are a number of other ways to install kubefirst for different operating systems, architectures, and containerized environments. Please see our [installation readme](https://github.com/kubefirst/kubefirst/blob/main/build/README.md) for details.
+There are a number of other ways to install Kubefirst for different operating systems, architectures, and containerized environments. Please see our [installation readme](https://github.com/kubefirst/kubefirst/blob/main/build/README.md) for details.
 
 ### Step 2 - Create a user GitHub personal access token
 
@@ -81,7 +81,7 @@ The `init` process produces a directory of utilities, a state file, and some sta
 
 ### Step 3 - `kubefirst cluster create`
 
-Now it's time to create the platform, to do so simply run
+Now it's time to create the platform, to do so, simply run
 
 ```
 kubefirst cluster create
