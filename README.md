@@ -7,8 +7,8 @@
 </p>
 
 <p align="center">
-  <a href="https://docs.kubefirst.com/kubefirst/install.html">Install</a>&nbsp;|&nbsp;
-  <a href="https://docs.kubefirst.com/index.html">Documentation</a>&nbsp;|&nbsp;
+  <a href="https://docs.kubefirst.io/kubefirst/install.html">Install</a>&nbsp;|&nbsp;
+  <a href="https://docs.kubefirst.io/index.html">Documentation</a>&nbsp;|&nbsp;
   <a href="https://twitter.com/kubefirst">Twitter</a>&nbsp;|&nbsp;
   <a href="https://join.slack.com/t/kubefirst/shared_invite/zt-r0r9cfts-OVnH0ooELDLm9n9p2aU7fw">Slack</a>&nbsp;|&nbsp;
   <a href="https://kubeshop.io/blog-projects/kubefirst">Blog</a>
@@ -100,7 +100,7 @@ kubefirst destroy
 
 # What to do next
 
-[Learn More - Getting Started](https://docs.kubefirst.com/kubefirst/getting-started.html)
+[Learn More - Getting Started](https://docs.kubefirst.io/kubefirst/getting-started.html)
 
 
 # If you want learn more 
