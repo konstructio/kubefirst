@@ -42,33 +42,33 @@ kubefirst init [flags]
 Flags:
 --admin-email string        The email address for the administrator as well as for Lets-Encrypt certificate emails.
 --aws-assume-role string    Instead of using AWS IAM user credentials, AWS AssumeRole feature generates role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html.
---aws-nodes-spot            nodes spot on AWS EKS compute nodes
---clean                     delete any local kubefirst content ~/.kubefirst, ~/.k1
---cloud string              the cloud to provision infrastructure in
---cluster-name string       the cluster name, used to identify resources on cloud provider (default "kubefirst")
---dry-run                   set to dry-run mode, no changes done on cloud provider selected
+--aws-nodes-spot            Nodes spot on AWS EKS compute nodes.
+--clean                     Delete any local Kubefirst content ~/.kubefirst, ~/.k1.
+--cloud string              The cloud in which to provision infrastructure.
+--cluster-name string       The cluster name, used to identify resources on cloud provider (default "kubefirst").
+--dry-run                   Set to dry-run mode - no changes done on cloud provider selected.
 --github-host string        Github URL (default "github.com")
 --github-org string         Github Org of repos
 --github-owner string       Github owner of repos
 --github-user string        Github user
---gitops-branch string      version/branch used on git clone - former: version-gitops flag
---gitops-owner string       git owner of gitops, this may be a user or a org to support forks for testing (default "kubefirst")
---gitops-repo string        version/branch used on git clone (default "gitops")
--h, --help                      help for init
---hosted-zone-name string   the domain to provision the kubefirst platform in
---metaphor-branch string    version/branch used on git clone - former: version-gitops flag
---profile string            AWS profile located at ~/.aws/config (default "default")
---region string             the region to provision the cloud resources in (default "eu-west-1")
---s3-suffix string          unique identifier for s3 buckets
---template-tag string       fallback tag used on git clone.
-Details: if "gitops-branch" is provided, branch("gitops-branch") has precedence and installer will attempt to clone branch("gitops-branch") first,
-if it fails, then fallback it will attempt to clone the tag provided at "template-tag" flag (default "1.8.6")
---use-telemetry             installer will not send telemetry about this installation (default true)
+--gitops-branch string      Version/branch used on Git clone - former: version-gitops flag.
+--gitops-owner string       Git owner of GitOps - this may be a user or an org to support forks for testing (default "kubefirst").
+--gitops-repo string        Version/branch used on Git clone (default "gitops").
+-h, --help                  Help for init.
+--hosted-zone-name string   The domain in which to provision the Kubefirst platform.
+--metaphor-branch string    Version/branch used on Git clone - former: version-gitops flag.
+--profile string            AWS profile located at ~/.aws/config (default "default").
+--region string             The region in which to provision the cloud resources (default "eu-west-1").
+--s3-suffix string          Unique identifier for S3 buckets.
+--template-tag string       Fallback tag used on Git clone.
+Details: If "gitops-branch" is provided, branch("gitops-branch") has precedence and the installer will attempt to clone the branch("gitops-branch") first,
+if it fails, then it will attempt to clone the tag provided at "template-tag" flag (default "1.8.6").
+--use-telemetry             Installer will not send telemetry about this installation (default true).
 ```
 
 ### cluster create
 
-Cluster Level operations like create a new cluster provisioned with all kubefirst goodies.
+Cluster Level operations like **create a new cluster** provisioned with all Kubefirst goodies.
 
 ```
 Usage:
@@ -76,44 +76,44 @@ kubefirst cluster [flags]
 kubefirst cluster [command]
 
 Available Commands:
-create        create a kubefirst management cluster
-create-github create a kubefirst management cluster with github as Git Repo
-create-gitlab create a kubefirst management cluster
+create        Create a Kubefirst management cluster.
+create-github Create a Kubefirst management cluster with GitHub as Git Repo.
+create-gitlab Create a Kubefirst management cluster.
 
 Flags:
--h, --help   help for cluster
+-h, --help   Help for cluster.
 
 Use "kubefirst cluster [command] --help" for more information about a command.
 ```
 
 ### destroy
 
-Destroy the kubefirst management cluster and all of the components in kubernetes.
+Destroy the Kubefirst management cluster and all of the components in Kubernetes.
 
-Optional: skip gitlab terraform if the registry has already been deleted.
+Optional: Skip GitLab Terraform if the registry has already been deleted.
 
 ```
 Usage:
 kubefirst destroy [flags]
 
 Flags:
---dry-run                 set to dry-run mode, no changes done on cloud provider selected
--h, --help                    help for destroy
---skip-base-terraform     whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist
---skip-delete-register    whether to skip deletion of register application
---skip-gitlab-terraform   whether to skip the terraform destroy against gitlab - note: if you already deleted registry it doesnt exist
+--dry-run                 Set to dry-run mode, no changes done on cloud provider selected.
+-h, --help                Help for destroy.
+--skip-base-terraform     Whether to skip the Terraform destroy against the base install. Note: If you already deleted the registry, it doesn't exist.
+--skip-delete-register    Whether to skip the deletion of register application.
+--skip-gitlab-terraform   Whether to skip the Terraform destroy against GitLab. Note: If you already deleted the registry, it doesn't exist.
 ```
 
 ### backupSSL
-This command create a backup of secrets from cert manager certificates to bucket named kubefirst-<DOMAIN> where can be 
-used on provisioning phase with the flag --recycle-ssl
+This command creates a backup of secrets from cert manager certificates to a bucket named Kubefirst-<DOMAIN> where secrets can be 
+used on the provisioning phase with the flag --recycle-ssl.
 
 ```
 Usage:
 kubefirst backupSSL [flags]
 
 Flags:
--h, --help   help for backupSSL
+-h, --help   Help for backupSSL.
 ```
 
 ### restoreSSL
@@ -126,8 +126,8 @@ kubefirst restoreSSL [flags]
 
 Flags:
 --dry-run         Set to dry-run mode, no changes done on cloud provider selected.
--h, --help            help for restoreSSL
---use-telemetry   installer will not send telemetry about this installation (default true)
+-h, --help        Help for restoreSSL.
+--use-telemetry   Installer will not send telemetry about this installation (default true).
 ```
 
 ### state
@@ -139,7 +139,7 @@ Usage:
 kubefirst state [flags]
 
 Flags:
---bucket-name string   set the bucket name to store the Kubefirst config file
+--bucket-name string   Set the bucket name to store the Kubefirst config file.
 -h, --help             Help for state.
 --pull                 Pull the Kubefirst config file from the S3 bucket.
 --push                 Push Kubefirst config file to the S3 bucket.
