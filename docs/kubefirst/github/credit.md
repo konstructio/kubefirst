@@ -16,7 +16,7 @@ site: [https://cert-manager.io/docs/](https://cert-manager.io/docs/)
 ### ChartMuseum
 site: [https://chartmuseum.com/docs/](https://chartmuseum.com/docs/)
 
-### external-dns
+### ExternalDNS
 repo: [https://github.com/kubernetes-sigs/external-dns](https://github.com/kubernetes-sigs/external-dns)
 
 ### External Secrets Operator
