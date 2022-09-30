@@ -31,9 +31,9 @@ RUN curl -LO https://s3.us-west-2.amazonaws.com/amazon-eks/1.21.2/2021-07-05/bin
 
 # Kubefirst cli
 RUN curl -LO https://github.com/kubefirst/kubefirst/releases/download/$KUBEFIRST_VERSION/kubefirst_${KUBEFIRST_VERSION}_linux_amd64.tar.gz && \
-    tar -xvzf kubefirst-$KUBEFIRST_VERSION-linux-amd64.tar.gz -C /usr/local/bin/ && \
+    tar -xvzf kubefirst_${KUBEFIRST_VERSION}_linux_amd64.tar.gz -C /usr/local/bin/ && \
     chmod +x /usr/local/bin/kubefirst && \
-    rm kubefirst-$KUBEFIRST_VERSION-linux-amd64.tar.gz
+    rm kubefirst_${KUBEFIRST_VERSION}_linux_amd64.tar.gz
 
 # setup user
 RUN useradd -ms /bin/bash developer
