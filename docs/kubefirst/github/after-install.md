@@ -44,7 +44,7 @@ store them in a safe place.
 
 ## Step 2: Add Your Team
 
-Log into gitlab using the root credentials that were provided to you in your terminal.
+Log into GitLab using the root credentials that were provided to you in your terminal.
 
 Once logged in, navigate to the `gitops` project and edit the file `terraform/users/admin.tf`. In this file, you'll see some blocks that represent admin users:
 
