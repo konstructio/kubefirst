@@ -4,7 +4,7 @@
 
 [//]: # (<iframe width="784" height="441" src="https://www.youtube.com/embed/KEUOaNMUqOM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>)
 
-The `kubefirst cluster create` execution includes a lot of important information toward the end including URLs and passwords. Do not lose this information. 
+The `kubefirst cluster create` execution includes important information toward the end, including URLs and passwords. Please save this information! 
 
 You now have an EKS cluster with the following content installed in it:
 
