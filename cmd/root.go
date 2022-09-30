@@ -12,7 +12,7 @@ var rootCmd = &cobra.Command{
 	Short: "kubefirst management cluster installer base command",
 	Long: `kubefirst management cluster installer provisions an
 	open source application delivery platform in under an hour. 
-	checkout the docs at docs.kubefirst.com.`,
+	checkout the docs at docs.kubefirst.io.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		//log.Println(viper.Get("name"))
 		fmt.Println("To learn more about kubefirst, run:")

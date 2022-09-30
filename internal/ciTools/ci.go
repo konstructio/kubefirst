@@ -4,13 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"strings"
-	"time"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
@@ -35,19 +30,21 @@ func DeployOnGitlab(globalFlags flagset.GlobalFlags, bucketName string) error {
 		return err
 	}
 
-	err = CopyCIYamlToGitlab(globalFlags)
-	if err != nil {
-		log.Panicf("Error copying CI yaml file to gitops repository: %s", err)
-		return err
-	}
+	ciLocation := fmt.Sprintf("%s/ci/components/argo-gitlab/ci.yaml", config.K1FolderPath)
 
-	if !viper.GetBool("gitlab.ci-pushed") {
-		log.Println("Pushing ci repo to origin gitlab")
-		gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "ci")
-		viper.Set("gitlab.ci-pushed", true)
-		viper.WriteConfig()
-		log.Println("clone and detokenization of ci-template repository complete")
-	}
+	DetokenizeCI("<CI_CLUSTER_NAME>", viper.GetString("ci.cluster.name"), ciLocation)
+	DetokenizeCI("<CI_S3_SUFFIX>", viper.GetString("ci.s3.suffix"), ciLocation)
+	DetokenizeCI("<CI_HOSTED_ZONE_NAME>", viper.GetString("ci.hosted.zone.name"), ciLocation)
+
+	gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "ci")
+
+	//if !viper.GetBool("gitlab.ci-pushed") {
+	//	log.Println("Pushing ci repo to origin gitlab")
+	//	gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "ci")
+	//	viper.Set("gitlab.ci-pushed", true)
+	//	viper.WriteConfig()
+	//	log.Println("clone and detokenization of ci-template repository complete")
+	//}
 
 	return nil
 }
@@ -73,83 +70,98 @@ func SedBucketName(old, new string) error {
 	return nil
 }
 
-func CopyCIYamlToGitlab(globalFlags flagset.GlobalFlags) error {
-	cfg := configs.ReadConfig()
-	oldLocation := fmt.Sprintf("%s/ci/components/argo-gitlab/ci.yaml", cfg.K1FolderPath)
+//func CopyCIYamlToGitlab(globalFlags flagset.GlobalFlags) error {
+//	cfg := configs.ReadConfig()
+//
+//	if globalFlags.DryRun {
+//		log.Printf("[#99] Dry-run mode, DeployOnGitlab skipped.")
+//		return nil
+//	}
+//
+//	oldLocation := fmt.Sprintf("%s/ci/components/argo-gitlab/ci.yaml", cfg.K1FolderPath)
+//
+//	DetokenizeCI("<CI_CLUSTER_NAME>", viper.GetString("ci.cluster.name"), oldLocation)
+//	DetokenizeCI("<CI_S3_SUFFIX>", viper.GetString("ci.s3.suffix"), oldLocation)
+//	DetokenizeCI("<CI_HOSTED_ZONE_NAME>", viper.GetString("ci.hosted.zone.name"), oldLocation)
+//
+//	newLocation := fmt.Sprintf("%s/gitops/components/argo-gitlab/ci.yaml", cfg.K1FolderPath)
+//	newRepository := fmt.Sprintf("%s/gitops", cfg.K1FolderPath)
+//	err := os.Rename(oldLocation, newLocation)
+//	if err != nil {
+//		return err
+//	}
+//
+//	repo, err := git.PlainOpen(newRepository)
+//	if err != nil {
+//		log.Printf("error opening the directory %s:  %s", newRepository, err)
+//		return err
+//	}
+//
+//	w, err := repo.Worktree()
+//	if err != nil {
+//		log.Printf("error to make worktree:  %s", err)
+//		return err
+//	}
+//
+//	auth := &gitHttp.BasicAuth{
+//		Username: "root",
+//		Password: viper.GetString("gitlab.token"),
+//	}
+//
+//	err = w.Pull(&git.PullOptions{
+//		RemoteName: "gitlab",
+//		Auth:       auth,
+//	})
+//	if err != nil {
+//		log.Print(err)
+//	}
+//
+//	_, err = w.Add("components/argo-gitlab/ci.yaml")
+//	if err != nil {
+//		log.Printf("error to add:  %s", err)
+//		return err
+//	}
+//	_, err = w.Commit(fmt.Sprint("committing detokenized ci yaml file"), &git.CommitOptions{
+//		Author: &object.Signature{
+//			Name:  "kubefirst-bot",
+//			Email: "kubefirst-bot@kubefirst.com",
+//			When:  time.Now(),
+//		},
+//	})
+//	if err != nil {
+//		log.Printf("error to commit:  %s", err)
+//		return err
+//	}
+//
+//	err = repo.Push(&git.PushOptions{
+//		RemoteName: "gitlab",
+//		Auth:       auth,
+//		Force:      true,
+//	})
+//	if err != nil {
+//		log.Println("error pushing to remote", err)
+//		return err
+//	}
+//	return nil
+//}
 
-	status1, err := os.Stat(oldLocation)
+func DetokenizeCI(old, new, ciLocation string) {
+	ciFile := ciLocation
+
+	fileData, err := ioutil.ReadFile(ciFile)
 	if err != nil {
-		return err
+		//return err
+		log.Println(err)
 	}
 
-	log.Printf("Tamanho do antigo yaml: %d", status1.Size())
+	fileString := string(fileData)
+	fileString = strings.ReplaceAll(fileString, old, new)
+	fileData = []byte(fileString)
 
-	newLocation := fmt.Sprintf("%s/gitops/components/argo-gitlab/ci.yaml", cfg.K1FolderPath)
-
-	newRepository := fmt.Sprintf("%s/gitops", cfg.K1FolderPath)
-	err = os.Rename(oldLocation, newLocation)
+	err = ioutil.WriteFile(ciFile, fileData, 0o600)
 	if err != nil {
-		return err
+		//return err
+		log.Println(err)
 	}
-
-	status, err := os.Stat(newLocation)
-	if err != nil {
-		return err
-	}
-
-	log.Printf("Tamanho do novo yaml: %d", status.Size())
-
-	repo, err := git.PlainOpen(newRepository)
-	if err != nil {
-		log.Printf("error opening the directory %s:  %s", newRepository, err)
-		return err
-	}
-
-	w, err := repo.Worktree()
-	if err != nil {
-		log.Printf("error to make worktree:  %s", err)
-		return err
-	}
-
-	auth := &gitHttp.BasicAuth{
-		Username: "root",
-		Password: viper.GetString("gitlab.token"),
-	}
-
-	err = w.Pull(&git.PullOptions{
-		RemoteName: "gitlab",
-		Auth:       auth,
-	})
-	if err != nil {
-		log.Print(err)
-	}
-
-	_, err = w.Add(".")
-	if err != nil {
-		log.Printf("error to add:  %s", err)
-		return err
-	}
-	_, err = w.Commit(fmt.Sprint("committing detokenized ci yaml file"), &git.CommitOptions{
-		Author: &object.Signature{
-			Name:  "kubefirst-bot",
-			Email: "kubefirst-bot@kubefirst.com",
-			When:  time.Now(),
-		},
-	})
-	if err != nil {
-		log.Printf("error to commit:  %s", err)
-		return err
-	}
-	//gitlab.PushGitRepo(globalFlags.DryRun, cfg, "gitlab", "gitops")
-
-	err = repo.Push(&git.PushOptions{
-		RemoteName: "gitlab",
-		Auth:       auth,
-		Force:      true,
-	})
-	if err != nil {
-		log.Println("error pushing to remote", err)
-		return err
-	}
-	return nil
+	// return nil
 }

@@ -104,7 +104,7 @@ func (g GithubSession) GetRepo(owner string, name string) (*github.Repository, e
 // AddSSHKey - Add ssh keys to a user account to allow kubefirst installer
 // to use its own token during installation
 func (g GithubSession) AddSSHKey(keyTitle string, publicKey string) (*github.Key, error) {
-	log.Printf("Add SSH key to user account on behalf of kubefrist")
+	log.Printf("Add SSH key to user account on behalf of kubefirst")
 	key, _, err := g.gitClient.Users.CreateKey(g.context, &github.Key{Title: &keyTitle, Key: &publicKey})
 	if err != nil {
 		return nil, fmt.Errorf("error add SSH Key: %s", err)

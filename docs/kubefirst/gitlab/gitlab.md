@@ -1,8 +1,8 @@
 # GitLab
 
-![](../img/kubefirst/gitlab/metaphor-in-gl.png)
+![](../../img/kubefirst/gitlab/metaphor-in-gl.png)
 
-### Self Hosted GitLab Server
+## Self Hosted GitLab Server
 
 Our GitLab server runs in kubernetes in the `gitlab` namespace. It's registered in your `gitops` repository at [registry/gitlab.yaml](https://github.com/kubefirst/gitops-template/blob/main/registry/gitlab.yaml)
 
@@ -22,15 +22,15 @@ Unlike all other applications on the kubefirst platform
 
 If you ever run into an issue on a GitLab upgrade or gitops operation that changes GitLab configuration, there's some risk that GitLab will be negatively impacted by the change and become unavailable. Should this occur, you may find that you're in a bit of a GitOps catch-22. Typically in this scenario, you would simply revert the merge request that broke the application, and GitOps (i.e. ArgoCD) would take care of the rollback (by rolling the git revert forward).
 
-However since GitLab **is the git source of truth** for your GitOps, you cannot roll back GitLab by reverting the commit because git itself may be inaccessible to ArgoCD. Should you fall into this condition, to conduct a rollback to a prior state, go to the `gitlab` application in Argo CD and click the `History and Rollback` button in the header.
+However since GitLab **is the Git source of truth** for your GitOps, you cannot roll back GitLab by reverting the commit because Git itself may be inaccessible to Argo CD. To remedy this, conduct a rollback to a prior state, go to the `gitlab` application in Argo CD and click the `History and Rollback` button in the header.
 
-![](../img/kubefirst/gitlab/gitlab-restore-in-argocd.png)
+![](../../img/kubefirst/gitlab/gitlab-restore-in-argocd.png)
 
 This will bring up a window with all versions of GitLab. Presumably, you'll want to restore to the 2nd version in this list, which would represent GitLab's state just prior to the last change that was made through GitOps. Assuming that's the version you want to restore to, click the vertical elipsis and select Rollback.
 
-![](../img/kubefirst/gitlab/restore.png)
+![](../../img/kubefirst/gitlab/restore.png)
 
-This will warn you that you're disabling auto-sync, click confirm
+This will warn you that you're disabling auto-sync, click confirm.
 ```
 Auto-Sync needs to be disabled in order for rollback to occur. Are you sure you want to disable auto-sync and rollback application 'gitlab'?
 ```

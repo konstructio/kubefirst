@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -42,6 +41,12 @@ var addCiCmd = &cobra.Command{
 		}
 
 		ciTools.ApplyCITerraform(globalFlags.DryRun, bucketName)
+
+		//err = ciTools.CopyCIYamlToGitlab(globalFlags)
+		//if err != nil {
+		//	log.Panicf("Error copying CI yaml file to gitops repository: %s", err)
+		//	return err
+		//}
 
 		log.Println(ciFlags)
 		return nil
