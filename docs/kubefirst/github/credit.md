@@ -42,7 +42,7 @@ training: [https://kubernetes.io/training/](https://kubernetes.io/training/)
 ### Material for MkDocs
 site: [https://squidfunk.github.io/mkdocs-material](https://squidfunk.github.io/mkdocs-material)
 
-### soft-serve
+### Soft Serve
 code: [https://github.com/charmbracelet/soft-serve](https://github.com/charmbracelet/soft-serve)
 
 ### Terraform
