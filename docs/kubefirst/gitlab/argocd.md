@@ -12,7 +12,7 @@ Our kubernetes apps can be found in our `gitops` repository at path `/registry`
 
 ![](../../img/kubefirst/gitops/registry.png)
 
-Each of these yaml files will include details regarding the application's source, destination, and helm configuration overrides.
+Each of these yaml files will include details regarding the application's source, destination, and Helm configuration overrides.
 
 ## Applying changes in ArgoCD
 
