@@ -89,7 +89,7 @@ The metaphor pipeline will:
 
 - Publish the metaphor container to your private ECR.
 - add the metaphor image to a release candidate helm chart and publish it to chartmuseum
-- set the metaphor desired helm chart version in the gitops repo for development, then staging
+- set the metaphor with the desired Helm chart version in the GitOps repo for development. Staging
 - the release stage of the pipeline will republish the chart, this time without the release candidate notation making it an officially released version, and prepare the metaphor application chart for the next release version
 - the officially released chart will be set as the desired helm chart for production
 
