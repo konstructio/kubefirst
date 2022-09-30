@@ -11,6 +11,9 @@ builds:
       - linux
       - windows
       - darwin
+    ldflags:
+      - -X github.com/kubefirst/kubefirst/configs.K1Version={{.Version}}
+      
 archives:
   - replacements:
       darwin: Darwin
