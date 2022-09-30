@@ -43,6 +43,7 @@ jobs:
         with:
           push: true
           context: ./build
+          build-args: KUBEFIRST_VERSION=${{ github.REF_NAME }}
           file: ./build/Dockerfile
           tags: kubefirst/kubefirst:${{ github.REF_NAME }},kubefirst/kubefirst:latest
       - name: Update Docker Hub Description
