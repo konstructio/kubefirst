@@ -97,7 +97,7 @@ To watch this pipeline occur, make any change to the `main` branch of the `metap
 
 You can visit the metaphor development, staging, and production apps in your browser to see the versions change as you complete resources and ArgoCD syncs the apps. The metaphor URLs can be found in your GitOps and metaphor project `README.md` files.
 
-## Learning the ropes
+## Learning the Ropes
 
 We've tried our best to provide the available customizations and patterns of the Kubefirst platform here on our docs site. We've also made [links available](./credit.md) to all of our open source tool's sources of documentation.
 
