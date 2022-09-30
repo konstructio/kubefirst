@@ -44,7 +44,7 @@ jobs:
           push: true
           context: ./build
           file: ./build/Dockerfile
-          tags: kubefirst/kubefirst:${{ github.REF_NAME }}
+          tags: kubefirst/kubefirst:${{ github.REF_NAME }},kubefirst/kubefirst:latest
       - name: Update Docker Hub Description
         uses: peter-evans/dockerhub-description@v3
         with:
