@@ -71,7 +71,7 @@ atlantis apply
 
 Doing so will instruct Atlantis to apply the plan. It will report back with the results of the apply within a minute or so.
 
-NOTE: Atlantis merges your Pull Request automatically once an apply is successfully executed. Don't merge terraform merge requests yourself.
+NOTE: Atlantis merges your Pull Request automatically once an apply is successfully executed. Don't merge Terraform merge requests yourself.
 
 Atlantis will always run plans automatically for you when a merge request is opened that changes files mapped in `atlantis.yaml`
 

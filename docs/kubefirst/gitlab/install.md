@@ -11,7 +11,7 @@ It installs a fully automated platform of open source cloud native tools with a 
 
 For your AWS cloud resources to provision we have just a couple prerequisites:    
 
-1. an AWS account with billing enabled
+1. An AWS account with billing enabled.
 
 2. an established publicly routable hosted zone with dns ([docs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zones-working-with.html))
 

@@ -54,7 +54,7 @@ default settings once you're comfortable with the platform.
 Take a look at the `Resources` section of the 
 [GitLab provider documentation](https://registry.terraform.io/providers/gitlabhq/gitlab/latest/docs/resources).
 
-That was just GitLab. Take a look at all of the terraform providers that are available, the list of technologies you 
+That was just GitLab. Take a look at all of the Terraform providers that are available, the list of technologies you 
 can manage in Terraform is really getting impressive. [](https://www.terraform.io/docs/providers/index.html)
 
 ## Making Terraform Changes

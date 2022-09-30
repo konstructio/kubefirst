@@ -1,10 +1,10 @@
 # Kubefirst Command Line
 
 Kubefirst provides a CLI to empower the whole previsioning cluster management process. The basic usage of the CLI is to
-fully create the Kubefirst previsioning process, but there are also many other handful options to backup, validation and
-cluster destroy.
+fully create the Kubefirst provisioning process, but there are also many other helpful options to backup, validate and
+destroy.
 
-## Kubefirst CLI available commands
+## Kubefirst CLI Available Commands
 
 - [clean](#clean)
 - [init](#init)
@@ -17,7 +17,7 @@ cluster destroy.
 ### clean
 
 Kubefirst creates files, folders and cloud buckets during installation at your environment. This command removes and
-re-create Kubefirst base files. To destroy cloud resources you need to specify additional flags (--destroy-buckets)
+re-creates Kubefirst base files. To destroy cloud resources you need to specify additional flags (--destroy-buckets)
 
 ```
 Usage:
@@ -32,16 +32,16 @@ Flags:
 
 ### init
 
-Init command will prepare the installation, and create the initial resources that will support the installation when 
-`kubefirst cluster create` is be called.
+The **init** command will prepare the installation and create the initial resources that will support the installation when 
+`kubefirst cluster create` is called.
 
 ```
 Usage:
 kubefirst init [flags]
 
 Flags:
---admin-email string        the email address for the administrator as well as for lets-encrypt certificate emails
---aws-assume-role string    instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html
+--admin-email string        The email address for the administrator as well as for Lets-Encrypt certificate emails.
+--aws-assume-role string    Instead of using AWS IAM user credentials, AWS AssumeRole feature generates role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html.
 --aws-nodes-spot            nodes spot on AWS EKS compute nodes
 --clean                     delete any local kubefirst content ~/.kubefirst, ~/.k1
 --cloud string              the cloud to provision infrastructure in
