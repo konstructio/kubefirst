@@ -39,7 +39,7 @@ site: [https://kubernetes.io/](https://kubernetes.io/)
 
 training: [https://kubernetes.io/training/](https://kubernetes.io/training/)
 
-### Material for mkdocs
+### Material for MkDocs
 site: [https://squidfunk.github.io/mkdocs-material](https://squidfunk.github.io/mkdocs-material)
 
 ### soft-serve
