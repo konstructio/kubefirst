@@ -15,7 +15,7 @@ The GitOps repo houses all of our IAC and all our GitOps configurations. All the
 The Metaphor suite is a set of example applications used to showcase certain features of the Kubefirst platform. The Metaphor apps have CI/CD
 that deliver each app to a development, staging, and production namespace in your Kubernetes cluster. The metaphor service apps' secrets in
 vault are bound to the metaphor app through the use of external-secrets, a handy Kubernetes utility to keep Kubernetes
-secrets in sync with the vault source of truth. It also demonstrates how DNS entries automatically will be automatically
+secrets in sync with the vault source of truth. It also demonstrates how DNS entries are automatically
 created in route53 using external-dns. It has auto-renewing short-lived certificates generated and auto-renewed as well
 using cert-manager and the Let's Encrypt cluster-issuer.
 
