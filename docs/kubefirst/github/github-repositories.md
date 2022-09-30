@@ -8,7 +8,7 @@ When you install the GitHub version of Kubefirst, a couple of new repositories w
 
 `gitops`
 
-The gitops repo houses all of our IAC and all our gitops configurations. All the infrastructure that you receive with kubefirst was produced by some combination of terraform and argocd. You will add to this repository as your business needs require new infrastructure or new applications.
+The GitOps repo houses all of our IAC and all our GitOps configurations. All the infrastructure that you receive with Kubefirst was produced by some combination of Terraform and ArgoCD. You will add to this repository as your business needs require new infrastructure or new applications.
 
 `metaphor suite`
 
