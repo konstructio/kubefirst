@@ -13,7 +13,7 @@ site: [https://www.runatlantis.io/](https://www.runatlantis.io/)
 ### cert-manager
 site: [https://cert-manager.io/docs/](https://cert-manager.io/docs/)
 
-### Chartmuseum
+### ChartMuseum
 site: [https://chartmuseum.com/docs/](https://chartmuseum.com/docs/)
 
 ### external-dns
