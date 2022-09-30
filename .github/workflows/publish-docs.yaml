@@ -6,7 +6,7 @@ on:
     paths:
       - docs/**
 env:
-  RELEASE_DOCS_BRANCH_REF: 'refs/heads/release-1-9-docs'
+  RELEASE_DOCS_BRANCH_REF: 'refs/heads/main'
 
 jobs:
   build:
