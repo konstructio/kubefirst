@@ -24,7 +24,32 @@ jobs:
         run: gh release create -R kubefirst/metaphor-go-template ${{ github.REF_NAME }} --notes "${{ env.RELEASE_NOTES }}"
       - name: Release kubefirst/metaphor-frontend-template
         run: gh release create -R kubefirst/metaphor-frontend-template ${{ github.REF_NAME }} --notes "${{ env.RELEASE_NOTES }}"
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      -
+        name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '>=1.18.0'
+        
+      -
+        name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v3
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --rm-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}  
+          
   release-docker:
+    needs: goreleaser
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -43,8 +68,9 @@ jobs:
         with:
           push: true
           context: ./build
+          build-args: KUBEFIRST_VERSION=${{ github.REF_NAME }}
           file: ./build/Dockerfile
-          tags: kubefirst/kubefirst:${{ github.REF_NAME }}
+          tags: kubefirst/kubefirst:${{ github.REF_NAME }},kubefirst/kubefirst:latest
       - name: Update Docker Hub Description
         uses: peter-evans/dockerhub-description@v3
         with:
