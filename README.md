@@ -7,8 +7,8 @@
 </p>
 
 <p align="center">
-  <a href="https://docs.kubefirst.com/kubefirst/install.html">Install</a>&nbsp;|&nbsp;
-  <a href="https://docs.kubefirst.com/index.html">Documentation</a>&nbsp;|&nbsp;
+  <a href="https://docs.kubefirst.io/kubefirst/install.html">Install</a>&nbsp;|&nbsp;
+  <a href="https://docs.kubefirst.io/index.html">Documentation</a>&nbsp;|&nbsp;
   <a href="https://twitter.com/kubefirst">Twitter</a>&nbsp;|&nbsp;
   <a href="https://join.slack.com/t/kubefirst/shared_invite/zt-r0r9cfts-OVnH0ooELDLm9n9p2aU7fw">Slack</a>&nbsp;|&nbsp;
   <a href="https://kubeshop.io/blog-projects/kubefirst">Blog</a>
@@ -25,7 +25,10 @@
 
 # Kubefirst CLI
 
-The Kubefirst CLI is a cloud provisioning tool. With simple setup and two CLI commands, we create a kubernetes cluster managed with automated Infrastructure as Code, GitOps asset management and application delivery, secrets management, a sample application delivered to development, staging, and production, and so much more. It's an open source platform ready to be customized to suit your company's needs.
+The Kubefirst CLI is a cloud provisioning tool. With simple setup and two CLI commands, we create a kubernetes cluster 
+managed with automated Infrastructure as Code, GitOps asset management and application delivery, secrets management, a 
+sample application delivered to development, staging, and production, and so much more. It's an open source platform 
+ready to be customized to suit your company's needs.
 
 - [DNS Setup](#dns-setup)
 - [Installing the CLI](#installing-the-cli)
@@ -70,7 +73,10 @@ brew install kubefirst/tools/kubefirst
 
 ## Initialization
 
-Some process requires previous initialization, for that, run:
+Since Kubefirst 1.9 version, GitHub is also available as a Git platform provider alongside GitLab.
+
+### GitLab
+To prepare the installation using GitLab you can:
 
 ```bash
 kubefirst init \
@@ -80,6 +86,24 @@ kubefirst init \
 --admin-email user@example.com \
 --cluster-name your_cluster_name \
 --hosted-zone-name domain.example
+```
+
+### GitHub
+
+To prepare the installation using GitHub you can:
+
+```bash
+kubefirst init \
+--admin-email email@example.com.com \
+--cloud aws \
+--hosted-zone-name example.com \
+--region eu-central-1 \
+--cluster-name example_com \
+--profile default \
+--github-user example-github-username \
+--github-org example-organization \
+--gitops-branch main \
+--metaphor-branch main
 ```
 
 ## Creation
@@ -100,7 +124,7 @@ kubefirst destroy
 
 # What to do next
 
-[Learn More - Getting Started](https://docs.kubefirst.com/kubefirst/getting-started.html)
+[Learn More - Getting Started](https://docs.kubefirst.io/kubefirst/getting-started.html)
 
 
 # If you want learn more 
@@ -119,8 +143,6 @@ Kubefirst provides extra tooling for handling the provisioning work.
 
 | Command        | Description                                               |
 |:---------------|:----------------------------------------------------------|
-| argocdSync     | Request ArgoCD to synchronize applications                |
-| checktools     | use to check compatibility of .kubefirst/tools            |
 | clean          | removes all kubefirst resources locally for new execution |
 | cluster create | create a kubefirst management cluster                     |
 | destroy        | destroy the kubefirst management cluster                  |
@@ -133,6 +155,13 @@ Kubefirst provides extra tooling for handling the provisioning work.
 ## The Provisioning Process
 
 ![kubefirst provisioning diagram](/images/provisioning.png)
+
+
+## Experimental Mode (we discourage it)
+
+If you want to run the main branch (`go run . init ...`, for example), you need to inform the version you are trying to use. To achieve this, you need to pass the `ldflags` in your command: `go run -ldflags="-X github.com/kubefirst/kubefirst/configs.K1Version=1.8.6" . version`. 
+
+We use external repositories during the provisioning process, and the version/tag in these repositories matches with the version of kubefirst cli; due to this approach, you need to perform the steps described above to run the code from the source.
 
 ## Feed K-Ray
 

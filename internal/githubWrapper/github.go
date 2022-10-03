@@ -33,6 +33,29 @@ func New() GithubSession {
 
 }
 
+func (g GithubSession) CreateWebhookRepo(org, repo, hookName, hookUrl, hookSecret string, hookEvents []string) error {
+	input := &github.Hook{
+		Name:   &hookName,
+		Events: hookEvents,
+		Config: map[string]interface{}{
+			"content_type": "json",
+			"insecure_ssl": 0,
+			"url":          hookUrl,
+			"secret":       hookSecret,
+		},
+	}
+
+	hook, _, err := g.gitClient.Repositories.CreateHook(g.context, org, repo, input)
+
+	if err != nil {
+		return fmt.Errorf("error when creating a webhook: %v", err)
+	}
+
+	log.Printf("Successfully created hook (id): %v", hook.GetID())
+
+	return nil
+}
+
 // CreatePrivateRepo - Use github API to create a private repo
 func (g GithubSession) CreatePrivateRepo(org string, name string, description string) error {
 	if name == "" {
@@ -81,7 +104,7 @@ func (g GithubSession) GetRepo(owner string, name string) (*github.Repository, e
 // AddSSHKey - Add ssh keys to a user account to allow kubefirst installer
 // to use its own token during installation
 func (g GithubSession) AddSSHKey(keyTitle string, publicKey string) (*github.Key, error) {
-	log.Printf("Add SSH key to user account on behalf of kubefrist")
+	log.Printf("Add SSH key to user account on behalf of kubefirst")
 	key, _, err := g.gitClient.Users.CreateKey(g.context, &github.Key{Title: &keyTitle, Key: &publicKey})
 	if err != nil {
 		return nil, fmt.Errorf("error add SSH Key: %s", err)

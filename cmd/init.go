@@ -121,6 +121,9 @@ to quickly create a Cobra application.`,
 
 		log.Println("s3-suffix:", installerFlags.ClusterName)
 
+		atlantisWebhookSecret := pkg.Random(20)
+		viper.Set("github.atlantis.webhook.secret", atlantisWebhookSecret)
+
 		viper.WriteConfig()
 
 		//! tracker 0

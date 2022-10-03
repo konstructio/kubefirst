@@ -42,11 +42,11 @@ func CreateSoftServe(dryRun bool, kubeconfigPath string) {
 }
 
 // ConfigureSoftServeAndPush calls Configure SoftServer and push gitops repository to GitLab
-func ConfigureSoftServeAndPush(dryRun bool) {
+func ConfigureSoftServeAndPush(dryRun bool) error {
 
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, configureSoftserveAndPush skipped.")
-		return
+		return nil
 	}
 
 	config := configs.ReadConfig()
@@ -56,12 +56,11 @@ func ConfigureSoftServeAndPush(dryRun bool) {
 	// soft serve is already configured, skipping
 	if configureAndPushFlag {
 		log.Println("Skipping: configureSoftserveAndPush")
-		return
+		return nil
 	}
 
 	log.Println("Executing configureSoftserveAndPush")
 
-	success := false
 	totalAttempts := 5
 	for i := 0; i < totalAttempts; i++ {
 
@@ -87,14 +86,11 @@ func ConfigureSoftServeAndPush(dryRun bool) {
 		log.Println("waiting SoftServe to finish configuration, sleeping...")
 		time.Sleep(30 * time.Second)
 
-		success = true
 		log.Println("SoftServe successfully configured")
-		break
+		return nil
 	}
 
-	if !success {
-		log.Panic("we tried hard to setup SoftServe but there were something wrong, please check the logs")
-	}
+	return fmt.Errorf("we tried hard to setup SoftServe but there were something wrong, please check the logs")
 
 }
 
@@ -142,9 +138,17 @@ func configureSoftServe() error {
 	}
 
 	log.Println("Committing new changes...")
-	_, err = w.Add(".")
+	status, err := w.Status()
 	if err != nil {
-		return err
+		log.Println("error getting worktree status", err)
+	}
+
+	for file, s := range status {
+		log.Printf("the file is %s the status is %v", file, s.Worktree)
+		_, err = w.Add(file)
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
 	}
 	_, err = w.Commit("updating soft-serve server config", &git.CommitOptions{
 		Author: &object.Signature{

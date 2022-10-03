@@ -9,9 +9,52 @@ import (
 	"strings"
 
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
+
+func terraformConfig(terraformEntryPoint string) map[string]string {
+
+	envs := map[string]string{}
+
+	//* AWS_SDK_LOAD_CONFIG=1
+	//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
+	envs["AWS_SDK_LOAD_CONFIG"] = "1"
+	aws.ProfileInjection(&envs)
+	envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
+
+	switch terraformEntryPoint {
+	case "base":
+		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
+		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
+
+		nodes_spot := viper.GetBool("aws.nodes_spot")
+		if nodes_spot {
+			envs["TF_VAR_lifecycle_nodes"] = "SPOT"
+		}
+		return envs
+	case "vault":
+		fmt.Println("vault")
+		return envs
+	case "gitlab":
+		fmt.Println("gitlab")
+		return envs
+	case "github":
+		envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
+		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
+		envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
+		envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botPublicKey")
+		return envs
+	case "users":
+		envs["VAULT_TOKEN"] = viper.GetString("vault.token")
+		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
+		envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
+		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
+		return envs
+	}
+	return envs
+}
 
 func ApplyBaseTerraform(dryRun bool, directory string) {
 	config := configs.ReadConfig()
@@ -23,7 +66,9 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 			return
 		}
 		envs := map[string]string{}
-		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+
+		aws.ProfileInjection(&envs)
+
 		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
@@ -48,16 +93,16 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 			log.Panic(fmt.Sprintf("error: terraform apply failed %v", err))
 		}
 
-		var keyOut bytes.Buffer
+		var terraformOutput bytes.Buffer
 		k := exec.Command(config.TerraformPath, "output", "vault_unseal_kms_key")
-		k.Stdout = &keyOut
+		k.Stdout = &terraformOutput
 		k.Stderr = os.Stderr
 		errKey := k.Run()
 		if errKey != nil {
 			log.Panicf("error: terraform apply failed %v", errKey)
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
-		keyIdNoSpace := strings.TrimSpace(keyOut.String())
+		keyIdNoSpace := strings.TrimSpace(terraformOutput.String())
 		keyId := keyIdNoSpace[1 : len(keyIdNoSpace)-1]
 		log.Println("keyid is:", keyId)
 		viper.Set("vault.kmskeyid", keyId)
@@ -79,7 +124,9 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		}
 
 		envs := map[string]string{}
-		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+
+		aws.ProfileInjection(&envs)
+
 		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
@@ -120,7 +167,9 @@ func ApplyECRTerraform(dryRun bool, directory string) {
 		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 		envs := map[string]string{}
 		envs["AWS_SDK_LOAD_CONFIG"] = "1"
-		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+
+		aws.ProfileInjection(&envs)
+
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 
 		directory = fmt.Sprintf("%s/gitops/terraform/ecr", config.K1FolderPath)
@@ -155,7 +204,8 @@ func DestroyECRTerraform(skipECRTerraform bool) {
 		}
 
 		envs := map[string]string{}
-		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+
+		aws.ProfileInjection(&envs)
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if err != nil {
@@ -171,4 +221,114 @@ func DestroyECRTerraform(skipECRTerraform bool) {
 	} else {
 		log.Println("skip:  destroyBaseTerraform")
 	}
+}
+
+func ApplyUsersTerraform(dryRun bool, directory string) {
+
+	config := configs.ReadConfig()
+
+	if !viper.GetBool("create.terraformapplied.users") {
+		log.Println("Executing ApplyUsersTerraform")
+		if dryRun {
+			log.Printf("[#99] Dry-run mode, ApplyUsersTerraform skipped.")
+			return
+		}
+		//* AWS_SDK_LOAD_CONFIG=1
+		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
+		envs := map[string]string{}
+		envs["AWS_SDK_LOAD_CONFIG"] = "1"
+
+		aws.ProfileInjection(&envs)
+
+		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
+		envs["VAULT_TOKEN"] = viper.GetString("vault.token")
+		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
+		envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
+		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
+
+		err := os.Chdir(directory)
+		if err != nil {
+			log.Panic("error: could not change directory to " + directory)
+		}
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
+		if err != nil {
+			log.Panicf("error: terraform init for users failed %s", err)
+		}
+
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
+		if err != nil {
+			log.Panicf("error: terraform apply for users failed %s", err)
+		}
+		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
+		viper.Set("create.terraformapplied.users", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("Skipping: ApplyUsersTerraform")
+	}
+}
+
+func initActionAutoApprove(dryRun bool, directory, tfAction, tfEntrypoint string) {
+
+	config := configs.ReadConfig()
+	log.Printf("Entered Init%s%sTerraform", strings.Title(tfAction), strings.Title(tfEntrypoint))
+
+	kubefirstConfigPath := fmt.Sprintf("terraform.%s.apply.executed", tfEntrypoint)
+
+	if !viper.GetBool(kubefirstConfigPath) {
+		log.Printf("Executing Init%s%sTerraform", strings.Title(tfAction), strings.Title(tfEntrypoint))
+		if dryRun {
+			log.Printf("[#99] Dry-run mode, Init%s%sTerraform skipped", strings.Title(tfAction), strings.Title(tfEntrypoint))
+			return
+		}
+
+		envs := terraformConfig(tfEntrypoint)
+		log.Println("tf env vars: ", envs)
+
+		err := os.Chdir(directory)
+		if err != nil {
+			log.Panic("error: could not change to directory " + directory)
+		}
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
+		if err != nil {
+			log.Panicf("error: terraform init for %s failed %s", tfEntrypoint, err)
+		}
+
+		err = pkg.ExecShellWithVars(envs, config.TerraformPath, tfAction, "-auto-approve")
+		if err != nil {
+			log.Panicf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
+		}
+		os.RemoveAll(fmt.Sprintf("%s/.terraform/", directory))
+		viper.Set(kubefirstConfigPath, true)
+		viper.WriteConfig()
+	} else {
+		log.Printf("skipping Init%s%sTerraform skipped", strings.Title(tfAction), strings.Title(tfEntrypoint))
+	}
+}
+
+func InitApplyAutoApprove(dryRun bool, directory, tfEntrypoint string) {
+	tfAction := "apply"
+	initActionAutoApprove(dryRun, directory, tfAction, tfEntrypoint)
+}
+
+func InitDestroyAutoApprove(dryRun bool, directory, tfEntrypoint string) {
+	tfAction := "destroy"
+	initActionAutoApprove(dryRun, directory, tfAction, tfEntrypoint)
+}
+
+// todo need to write something that outputs -json type and can get multiple values
+func OutputSingleValue(dryRun bool, directory, tfEntrypoint, outputName string) {
+
+	config := configs.ReadConfig()
+	os.Chdir(directory)
+
+	var tfOutput bytes.Buffer
+	tfOutputCmd := exec.Command(config.TerraformPath, "output", outputName)
+	tfOutputCmd.Stdout = &tfOutput
+	tfOutputCmd.Stderr = os.Stderr
+	err := tfOutputCmd.Run()
+	if err != nil {
+		fmt.Println("failed to call tfOutputCmd.Run(): ", err)
+	}
+
+	log.Println("tfOutput is: ", tfOutput.String())
 }

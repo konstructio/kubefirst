@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/aws"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -115,7 +116,18 @@ func PushGitOpsToGitLab(dryRun bool) {
 	os.RemoveAll(directory + "/terraform/vault/.terraform")
 
 	log.Println("Committing new changes...")
-	w.Add(".")
+	status, err := w.Status()
+	if err != nil {
+		log.Println("error getting worktree status", err)
+	}
+
+	for file, s := range status {
+		log.Printf("the file is %s the status is %v", file, s.Worktree)
+		_, err = w.Add(file)
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
+	}
 	_, err = w.Commit("setting new remote upstream to gitlab", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
@@ -268,7 +280,9 @@ func ApplyGitlabTerraform(dryRun bool, directory string) {
 		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 		envs := map[string]string{}
 		envs["AWS_SDK_LOAD_CONFIG"] = "1"
-		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+
+		aws.ProfileInjection(&envs)
+
 		// Prepare for terraform gitlab execution
 		envs["GITLAB_TOKEN"] = viper.GetString("gitlab.token")
 		envs["GITLAB_BASE_URL"] = viper.GetString("gitlab.local.service")
@@ -339,7 +353,8 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 	config := configs.ReadConfig()
 	envs := map[string]string{}
 
-	envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+	aws.ProfileInjection(&envs)
+
 	envs["AWS_REGION"] = viper.GetString("aws.region")
 	envs["AWS_ACCOUNT_ID"] = viper.GetString("aws.accountid")
 	envs["HOSTED_ZONE_NAME"] = viper.GetString("aws.hostedzonename")
@@ -501,7 +516,18 @@ func HydrateGitlabMetaphorRepo(dryRun bool) {
 		w, _ := metaphorTemplateRepo.Worktree()
 
 		log.Println("Committing detokenized metaphor content")
-		w.Add(".")
+		status, err := w.Status()
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
+
+		for file, s := range status {
+			log.Printf("the file is %s the status is %v", file, s.Worktree)
+			_, err = w.Add(file)
+			if err != nil {
+				log.Println("error getting worktree status", err)
+			}
+		}
 		w.Commit("setting new remote upstream to gitlab", &git.CommitOptions{
 			Author: &object.Signature{
 				Name:  "kubefirst-bot",
@@ -646,12 +672,18 @@ func CommitToRepo(repo *git.Repository, repoName string) {
 
 	log.Println(fmt.Sprintf("committing detokenized %s kms key id", repoName))
 
-	w.Add(".")
-	//https://github.com/src-d/go-git/issues/1268
-	cmd := exec.Command("git", "add", ".")
-	cmd.Dir = w.Filesystem.Root()
-	err := cmd.Run()
-	log.Println(err)
+	status, err := w.Status()
+	if err != nil {
+		log.Println("error getting worktree status", err)
+	}
+
+	for file, s := range status {
+		log.Printf("the file is %s the status is %v", file, s.Worktree)
+		_, err = w.Add(file)
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
+	}
 
 	w.Commit(fmt.Sprintf("committing detokenized %s kms key id", repoName), &git.CommitOptions{
 		Author: &object.Signature{

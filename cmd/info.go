@@ -27,7 +27,6 @@ var infoCmd = &cobra.Command{
 		infoSummary.WriteString("\nInfo summary:\n")
 		infoSummary.WriteString(strings.Repeat("-", 70))
 
-		//infoSummary.WriteString(fmt.Sprintf("Kubefirst CLI version: v%s \n", config.KubefirstVersion))
 		infoSummary.WriteString(fmt.Sprintf("\n\nOperational System: %s\n", config.LocalOs))
 		infoSummary.WriteString(fmt.Sprintf("Architecture: %s\n", config.LocalArchitecture))
 		infoSummary.WriteString(fmt.Sprintf("Go Lang version: v%s \n", runtime.Version()))
@@ -36,6 +35,12 @@ var infoCmd = &cobra.Command{
 		infoSummary.WriteString(fmt.Sprintf("Kubectl path: %s\n", config.KubectlClientPath))
 		infoSummary.WriteString(fmt.Sprintf("Terraform path: %s\n", config.TerraformPath))
 		infoSummary.WriteString(fmt.Sprintf("Kubeconfig path: %s\n", config.KubeConfigPath))
+
+		infoSummary.WriteString(fmt.Sprintf("Kubefirst Version: %s\n", configs.K1Version))
+		if configs.K1Version == "" {
+			infoSummary.WriteString("\n\nWarning: It seems you are running kubefirst in development mode,")
+			infoSummary.WriteString("  please use LDFLAGS to ensure you use the proper template version and avoid unexpected behavior")
+		}
 
 		err := configs.CheckKubefirstConfigFile(config)
 		if err != nil {
