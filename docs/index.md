@@ -1,7 +1,7 @@
 # Choose your adventure
 
 The kubefirst platform now supports both the [GitHub](https://www.github.com) and [GitLab](https://www.gitlab.com) Git providers. 
-The Git provider you choose will host the code for you applications, your new gitops repository, and will be fully confirgured through that gitops repository with some new Terraform that will manage your team and user access to the system.
+The Git provider you choose will host the code for you applications, your new gitops repository, and will be fully configured through that gitops repository with some new Terraform that will manage your team and user access to the system.
 
 If you choose **GitLab**, your Git Provider will be self-hosted, meaning Kubefirst will install **GitLab** into your newly created kubernetes
 cluster. If you choose **GitHub**, the Kubefirst platform will leverage the free **GitHub** system at github.com.
