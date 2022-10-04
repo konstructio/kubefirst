@@ -68,7 +68,10 @@ var createGitlabCmd = &cobra.Command{
 		terraform.ApplyBaseTerraform(globalFlags.DryRun, directory)
 		progressPrinter.IncrementTracker("step-softserve", 1)
 
-		restoreSSLCmd.RunE(cmd, args)
+		err = restoreSSLCmd.RunE(cmd, args)
+		if err != nil {
+			log.Println("Error restoreSSLCmd: ", err)
+		}
 
 		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "create", "namespace", "gitlab")
 		if err != nil {
@@ -288,7 +291,7 @@ var createGitlabCmd = &cobra.Command{
 
 			// informUser("Detaching the registry application from softserve
 			// argocd.DeleteArgocdApplicationNoCascade(globalFlags.DryRun, "registry", token)
-			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "delete", "-l", "release=gitlab")
+			_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "delete", "pod", "-l", "release=gitlab")
 			if err != nil {
 				log.Println("error deleting gitlab to adopt new gitlab-vault-oidc secret")
 			}

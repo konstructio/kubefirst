@@ -172,7 +172,7 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 	bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
 	err := aws.DownloadBucket(bucketName, config.CertsPath)
 	if err != nil {
-		log.Println(err)
+		log.Println("Error RestoreSSL:", err)
 	}
 	//! We need apply secrets firstly than other resources, accordingly with cert-manager docs
 	//pathsRestored := []string{"secrets", "certs", "clusterissuers"}
@@ -184,6 +184,7 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 		//TODO filter yaml extension
 		files, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", filepath.Join(config.CertsPath, path), "/"))
 		if err != nil {
+			log.Println("Error RestoreSSL:", err)
 			return fmt.Errorf("erro: %s", err)
 		}
 
@@ -194,6 +195,7 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 			yfile, err := ioutil.ReadFile(pathyaml)
 
 			if err != nil {
+				log.Println("Error RestoreSSL:", err)
 				return fmt.Errorf("erro: %s", err)
 			}
 
@@ -202,6 +204,7 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 			err = yaml2.Unmarshal(yfile, &data)
 
 			if err != nil {
+				log.Println("Error RestoreSSL:", err)
 				return fmt.Errorf("erro: %s", err)
 			}
 
@@ -215,12 +218,14 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 			dataCleaned, err := yaml2.Marshal(&data)
 
 			if err != nil {
+				log.Println("Error RestoreSSL:", err)
 				return fmt.Errorf("erro: %s", err)
 			}
 
 			err = ioutil.WriteFile(fmt.Sprintf("%s%s", pathyaml, ".clean"), dataCleaned, 0644)
 
 			if err != nil {
+				log.Println("Error RestoreSSL:", err)
 				return fmt.Errorf("erro: %s", err)
 			}
 

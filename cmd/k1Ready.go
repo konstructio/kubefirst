@@ -28,7 +28,13 @@ var k1ReadyCmd = &cobra.Command{
 	Short: "Verify the status of key apps",
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Println("argocdAppStatus called")
+		start := time.Now()
+		defer func() {
+			//The goal of this code is to track execution time
+			duration := time.Since(start)
+			log.Printf("[000] K1-Ready duration is %s", duration)
+
+		}()
 		config := configs.ReadConfig()
 
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)

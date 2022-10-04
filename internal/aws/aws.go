@@ -490,6 +490,7 @@ func DownloadBucket(bucket string, destFolder string) error {
 		})
 
 	if err != nil {
+		log.Println("Error DownloadBucket:", err)
 		return errors.New("couldn't list bucket contents")
 	}
 
@@ -498,6 +499,7 @@ func DownloadBucket(bucket string, destFolder string) error {
 
 		f, err := pkg.CreateFullPath(filepath.Join(destFolder, *object.Key))
 		if err != nil {
+			log.Println("Error DownloadBucket:", err)
 			return fmt.Errorf("failed to create file %q, %v", *object.Key, err)
 		}
 
@@ -509,10 +511,12 @@ func DownloadBucket(bucket string, destFolder string) error {
 				Key:    aws.String(*object.Key),
 			})
 		if err != nil {
+			log.Println("Error DownloadBucket:", err)
 			return fmt.Errorf("failed to download file, %v", err)
 		}
 		// close file immediately
 		if err = f.Close(); err != nil {
+			log.Println("Error DownloadBucket:", err)
 			return err
 		}
 	}
@@ -587,15 +591,22 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 	for {
 		out, err := client.ListObjectsV2(context.Background(), in)
 		if err != nil {
-			log.Printf("Failed to list objects: %v", err)
-			return err
+			bucketNotFound := strings.Contains(err.Error(), "StatusCode: 404")
+			if bucketNotFound {
+				log.Printf("%s has already been removed, proceeding with clean...", bucket)
+			} else {
+				log.Printf("Failed to list objects: %v", err)
+				return err
+			}
 		}
 
-		for _, item := range out.Contents {
-			deleteObject(&bucket, item.Key, nil)
+		if out != nil {
+			for _, item := range out.Contents {
+				deleteObject(&bucket, item.Key, nil)
+			}
 		}
 
-		if out.IsTruncated {
+		if out != nil && out.IsTruncated {
 			in.ContinuationToken = out.ContinuationToken
 		} else {
 			break
@@ -606,19 +617,26 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 	for {
 		out, err := client.ListObjectVersions(context.Background(), inVer)
 		if err != nil {
-			log.Printf("Failed to list version objects: %v", err)
-			return err
+			bucketNotFound := strings.Contains(err.Error(), "StatusCode: 404")
+			if bucketNotFound {
+				log.Printf("%s has already been removed, proceeding with clean...", bucket)
+			} else {
+				log.Printf("Failed to list version objects: %v", err)
+				return err
+			}
 		}
 
-		for _, item := range out.DeleteMarkers {
-			deleteObject(&bucket, item.Key, item.VersionId)
+		if out != nil {
+			for _, item := range out.DeleteMarkers {
+				deleteObject(&bucket, item.Key, item.VersionId)
+			}
+
+			for _, item := range out.Versions {
+				deleteObject(&bucket, item.Key, item.VersionId)
+			}
 		}
 
-		for _, item := range out.Versions {
-			deleteObject(&bucket, item.Key, item.VersionId)
-		}
-
-		if out.IsTruncated {
+		if out != nil && out.IsTruncated {
 			inVer.VersionIdMarker = out.NextVersionIdMarker
 			inVer.KeyMarker = out.NextKeyMarker
 		} else {

@@ -22,25 +22,25 @@ The benefits of defining your desired state in a declarative way in git is enorm
 
 ## Pipelines
 
-![](../img/kubefirst/gitops/gitops-cicd.png)
+![](../../img/kubefirst/gitops/gitops-cicd.png)
 
-Our CI pipelines originate in your privately hosted GitLab with a workflow being submitted to Argo Workflows. The workflows will publish your container with a pre-release helm chart.
+Our CI pipelines originate in your privately hosted GitLab with a workflow being submitted to Argo Workflows. The workflows will publish your container with a pre-release Helm chart.
 
 The pipelines then continue with promotion of the release through the preprod environments.
 
 Once the release is ready, the release chart is published and delivered to production, and the application chart's version will be prepared for the next release.
 
-## GitLab / GitHub Integration with Argo Workflows
+## GitLab Integration with Argo Workflows
 
-![](../img/kubefirst/gitops/gitlab-workflows-integration.png)
+![](../../img/kubefirst/gitops/gitlab-workflows-integration.png)
 
 The integration that we've established between GitLab and Argo Workflows will surface your powerful Argo Workflows engine directly in GitLab's native CI, so that your developers have all of the workflow execution information available directly associated with their commit in their application repository.
 
-This provides all of the CI observability your development team needs directly associated with their change in git.
+This provides all of the CI observability your development team needs directly associated with their change in Git.
 
 ## GitOps Resources
 
-![](../img/kubefirst/gitops/argocd-app-registrations.png)
+![](../../img/kubefirst/gitops/argocd-app-registrations.png)
 
 Our implementation includes GitOps patterns for numerous source types including:
 
@@ -50,7 +50,7 @@ Our implementation includes GitOps patterns for numerous source types including:
 
 The metaphor example application includes an example of how easy it is to set different configuration overrides for your different environments.
 
-To see what it takes to make the `development` instance of `metaphor` different than the others, visit the `gitops` repo and navigate to `/argocd/apps/metaphor/us-east-2/development/values.yaml`
+To see what it takes to make the `development` instance of `metaphor` different than the others, visit the `gitops` repo and navigate to `/components/development/metaphor/values.yaml`.
 
 ```yaml
 metaphor:
@@ -60,20 +60,15 @@ metaphor:
       kubernetes.io/ingress.class: nginx
       cert-manager.io/cluster-issuer: "letsencrypt-prod"
     hosts:
-      - host: metaphor-development.preprod.kubefirst.com
+      - host: metaphor-development.your-company.io
         paths:
           - /
     tls:
     - secretName: metaphor-tls
       hosts:
-        - metaphor-development.preprod.kubefirst.com
-  vaultMountPoint: mgmt-us-east-2
-  vaultSecretPath: mgmt/aws/us-east-2/development/metaphor
+        - metaphor-development.your-company.io
+  vaultMountPoint: kubefirst
+  vaultSecretPath: development/metaphor
 ```
 
-Any helm value that should deviate from the default chart can be set here so your environment overrides are always concise and clear.
-
-## Secure Registration Layer with Argo CD App-of-Apps
-<div class="video-wrapper">
-  <iframe width="1280" height="500" src="https://www.youtube.com/embed/5ks2oZ-qsUs" frameborder="0" allowfullscreen></iframe>
-</div>
+Any Helm value that should deviate from the default chart can be set here so your environment overrides are always concise and clear.

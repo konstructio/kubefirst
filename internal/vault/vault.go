@@ -74,6 +74,12 @@ func ConfigureVault(dryRun bool) {
 
 	// Prepare for terraform vault execution
 	envs := map[string]string{}
+
+	if viper.GetString("git.mode") == "gitlab" {
+		envs["TF_VAR_gitlab_runner_token"] = viper.GetString("gitlab.runnertoken")
+		envs["TF_VAR_gitlab_token"] = viper.GetString("gitlab.token")
+	}
+
 	envs["VAULT_ADDR"] = "http://localhost:8200" //Should this come from init?
 	envs["VAULT_TOKEN"] = vaultToken
 	envs["AWS_SDK_LOAD_CONFIG"] = "1"
@@ -84,8 +90,7 @@ func ConfigureVault(dryRun bool) {
 	envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 	envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 	envs["TF_VAR_email_address"] = viper.GetString("adminemail")
-	envs["TF_VAR_gitlab_runner_token"] = viper.GetString("gitlab.runnertoken")
-	envs["TF_VAR_gitlab_token"] = viper.GetString("gitlab.token")
+	envs["TF_VAR_github_token"] = os.Getenv("GITHUB_AUTH_TOKEN")
 	envs["TF_VAR_hosted_zone_id"] = viper.GetString("aws.hostedzoneid") //# TODO: are we using this?
 	envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 	envs["TF_VAR_vault_token"] = vaultToken
@@ -95,7 +100,8 @@ func ConfigureVault(dryRun bool) {
 	//Escaping newline to allow certs to be loaded properly by terraform
 	envs["TF_VAR_ssh_private_key"] = strings.Replace(viper.GetString("botprivatekey"), "\n", "\\n", -1)
 
-	envs["TF_VAR_atlantis_github_webhook_token"] = viper.GetString("github.secret-webhook")
+	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
+	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = strings.Replace(viper.GetString("botpublickey"), "\n", "\\n", -1)
 
 	directory := fmt.Sprintf("%s/gitops/terraform/vault", config.K1FolderPath)
 	err = os.Chdir(directory)
@@ -112,8 +118,11 @@ func ConfigureVault(dryRun bool) {
 		if err != nil {
 			log.Panicf("error: terraform apply failed %s", err)
 		}
+		log.Println("deleting the files found at", fmt.Sprintf("%s/.terraform/", directory))
+		log.Println("deleting the files found at", fmt.Sprintf("%s/.terraform.lock.hcl", directory))
+		os.RemoveAll(fmt.Sprintf("%s/.terraform/", directory))
+		os.RemoveAll(fmt.Sprintf("%s/.terraform.lock.hcl", directory))
 		viper.Set("create.terraformapplied.vault", true)
-		// viper.Set("create.terraformapplied.vaultbackend", true)
 		viper.WriteConfig()
 	}
 }

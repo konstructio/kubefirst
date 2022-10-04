@@ -1,6 +1,7 @@
 FROM --platform=linux/amd64 golang:1.18
 
 WORKDIR /opt/kubefirst-install
+ARG KUBEFIRST_VERSION=1.9.3
 
 RUN apt-get update && \
     apt-get install -y unzip curl jq vim unzip less \
@@ -43,8 +44,8 @@ WORKDIR /home/developer/kubefirst
 COPY --chown=developer:developer . .
 
 # download dependencies and prepare fresh installation
-RUN go mod download &&  \
-    go build
+RUN go mod download
+RUN go build -ldflags="-X github.com/kubefirst/kubefirst/configs.K1Version=${KUBEFIRST_VERSION}" .
 
 USER root
 RUN  mv ./kubefirst /usr/local/bin/ && chmod 777 /usr/local/bin/kubefirst

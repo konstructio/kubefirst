@@ -1,21 +1,18 @@
-# Welcome
+# Choose your adventure
 
-Kubefirst is a fully automated and operational open source platform that includes some the best tools available in the kubernetes space, all working together from a single command. By running `kubefirst cluster create` against your empty aws cloud account, you'll get a gitops cloud management and application delivery ecosystem complete with automated terraform workflows, vault secrets management, gitlab integrations with argo, and an example app that demonstrates how it all pieces together.
+The kubefirst platform now supports both the [GitHub](https://www.github.com) and [GitLab](https://www.gitlab.com) Git providers. 
+The Git provider you choose will host the code for you applications, your new gitops repository, and will be fully configured through that gitops repository with some new Terraform that will manage your team and user access to the system.
 
-![../img/kubefirst/oss-plat-arch.png](../img/kubefirst/oss-plat-arch.png)
+If you choose **GitLab**, your Git Provider will be self-hosted, meaning Kubefirst will install **GitLab** into your newly created kubernetes
+cluster. If you choose **GitHub**, the Kubefirst platform will leverage the free **GitHub** system at github.com.
 
----
+<center>
 
-## Install Overview
+|                                Kubefirst with GitHub                                 |                          Kubefirst with Self Hosted GitLab                           |
+|:------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------:|
+| [![GitHub](./img/kubefirst/icons/github-200x200.png)](./kubefirst/github/install.md) | [![GitLab](./img/kubefirst/icons/gitlab-200x200.png)](./kubefirst/gitlab/install.md) |
+ |                    [Team Octocat!](./kubefirst/github/install.md)                    |                    [Team Tanuki!](./kubefirst/gitlab/install.md)                     |
 
-- The `kubefirst` cli runs on your localhost and will create an eks cluster that includes gitlab, vault, some argo products, and an example microservice app to demonstrate how everything on the platform works.
-- The install takes about 30 minutes to execute. Day-2 operations can't commonly be done within the same hour of cluster provisioning. Kubefirst is solving this on our open source platform. We really hope that's worth a [github star](https://github.com/kubefirst/kubefirst) to you (top right corner).
-- Your self-hosted gitlab will come preconfigured with two git repositories `kubefirst/gitops` and `kubefirst/metaphor`.
-- All of the infrastructure as code will be in your `gitops` repository in the terraform directory. IAC workflows are fully automated with atlantis by merely opening a merge request against the `gitops` repository.
-- All of the applications running in your kubernetes cluster are registered in the `gitops` repository in the root `/registry` directory.
-- The `metaphor` repository only needs an update to the main branch to deliver the example application to your new development, staging, and production environments. It will hook into your new vault for secrets, demonstrate automated certs, automated dns, and gitops application delivery. Our ci/cd is powered by argo cd, argo workflows, gitlab, gitlab-runner, and vault.
-- The result will be the most comprehensive start to managing a kubernetes-centric cloud entirely on open source that you keep and can adjust as you see fit. It's an exceptional fully functioning starting point, with the most comprehensive scope we've ever seen in open source.
-- We'd love to advise your project on next steps - see our available white glove and commercial services.
+</center>
 
-Note: This infrastructure will run in your AWS cloud and is subject to associated aws fees - it costs about $10/day USD to run. Removal of this infrastructure is also automated with a single `kubefirst destroy` command.
-
+If you want to know more about Kubefirst before choosing GitHub or GitLab, check out our [overview](./kubefirst/overview.md).

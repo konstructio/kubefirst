@@ -8,9 +8,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/github"
-	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
-	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -19,7 +17,7 @@ import (
 var githubAddCmd = &cobra.Command{
 	Use:   "add-github",
 	Short: "Setup github for kubefirst install",
-	Long:  `Prepate github account to be used for Kubefirst installation `,
+	Long:  `Prep github account to be used for Kubefirst installation `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
@@ -27,49 +25,26 @@ var githubAddCmd = &cobra.Command{
 			return err
 		}
 
-		log.Println("Org used:", viper.GetString("github.org"))
-		log.Println("dry-run:", globalFlags.DryRun)
-
-		if !viper.GetBool("create.terraformapplied.github") {
-			atlantisWebhookSecret := pkg.Random(20)
-			viper.Set("github.atlantis.webhook.secret", atlantisWebhookSecret)
-			viper.WriteConfig()
-
-			progressPrinter.IncrementTracker("step-github", 1)
-			informUser("GitHub terraform", globalFlags.SilentMode)
-			github.ApplyGitHubTerraform(globalFlags.DryRun, atlantisWebhookSecret)
-			informUser("GitHub ready", globalFlags.SilentMode)
-			progressPrinter.IncrementTracker("step-github", 1)
-			viper.Set("create.terraformapplied.github", true)
-			viper.WriteConfig()
-		}
-
-		// todo - evaluate previous terraform
-		// if viper.GetBool("github.repo.added") {
-		// 	log.Println("github.repo.added already executed, skiped")
-		// 	return nil
-		// }
 		if globalFlags.DryRun {
 			log.Printf("[#99] Dry-run mode, githubAddCmd skipped.")
 			return nil
 		}
 
-		gitWrapper := githubWrapper.New()
-		//Add Github SSHPublic key
-		if viper.GetString("botPublicKey") != "" {
-			key, err := gitWrapper.AddSSHKey("kubefirst-bot", viper.GetString("botPublicKey"))
-			if err != nil {
-				log.Printf("Error Adding SSH key to github account")
-				return err
-			}
-			viper.Set("github.ssh.keyId", key.GetID())
-		} else {
-			log.Printf("Missing key `botPublicKey` to be added on the account, step skipped.")
+		log.Println("Org used:", viper.GetString("github.org"))
+		log.Println("dry-run:", globalFlags.DryRun)
+
+		if !viper.GetBool("github.terraformapplied.gitops") {
+
+			progressPrinter.IncrementTracker("step-github", 1)
+			informUser("Creating gitops repository with terraform in GitHub", globalFlags.SilentMode)
+
+			github.ApplyGitHubTerraform(globalFlags.DryRun)
+
+			informUser("GitHub terraform applied", globalFlags.SilentMode)
+			progressPrinter.IncrementTracker("step-github", 1)
 		}
 
-		viper.Set("github.repo.added", true)
-		viper.WriteConfig()
-		log.Printf("github.repo.added - Executed with Success")
+		log.Printf("GitHub terraform Executed and uploaded ssh key to user with Success")
 		return nil
 	},
 }

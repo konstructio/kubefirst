@@ -11,6 +11,7 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	cp "github.com/otiai10/copy"
@@ -98,7 +99,18 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 		log.Println("Error populating git")
 		return err
 	}
-	w.Add(".")
+	status, err := w.Status()
+	if err != nil {
+		log.Println("error getting worktree status", err)
+	}
+
+	for file, s := range status {
+		log.Printf("the file is %s the status is %v", file, s.Worktree)
+		_, err = w.Add(file)
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
+	}
 	w.Commit("Populate Repo", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
@@ -161,7 +173,18 @@ func PushGitopsToSoftServe() {
 	w, _ := repo.Worktree()
 
 	log.Println("Committing new changes...")
-	w.Add(".")
+	status, err := w.Status()
+	if err != nil {
+		log.Println("error getting worktree status", err)
+	}
+
+	for file, s := range status {
+		log.Printf("the file is %s the status is %v", file, s.Worktree)
+		_, err = w.Add(file)
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
+	}
 	w.Commit("setting new remote upstream to soft-serve", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
@@ -266,4 +289,109 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 	}
 	return nil
 
+}
+
+func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName string) {
+	cfg := configs.ReadConfig()
+
+	localDirectory := fmt.Sprintf("%s/%s", cfg.K1FolderPath, localRepo)
+
+	log.Println("opening repository with gitClient: ", localDirectory)
+	repo, err := git.PlainOpen(localDirectory)
+	if err != nil {
+		log.Panic("error opening the localDirectory: ", localDirectory, err)
+	}
+
+	w, _ := repo.Worktree()
+
+	log.Println("Committing new changes... PushLocalRepoToEmptyRemote")
+
+	status, err := w.Status()
+	if err != nil {
+		log.Println("error getting worktree status", err)
+	}
+
+	for file, s := range status {
+		log.Printf("the file is %s the status is %v", file, s.Worktree)
+		_, err = w.Add(file)
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
+	}
+	w.Commit("setting new remote upstream to github", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "kubefirst-bot",
+			Email: "kubefirst-bot@kubefirst.com",
+			When:  time.Now(),
+		},
+	})
+
+	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	err = repo.Push(&git.PushOptions{
+		RemoteName: remoteName,
+		Auth: &http.BasicAuth{
+			Username: "kubefirst-bot",
+			Password: token,
+		},
+	})
+	if err != nil {
+		log.Panicf("error pushing to remote %s: %s", remoteName, err)
+	}
+	log.Println("successfully pushed detokenized gitops content to github/", viper.GetString("github.owner"))
+	viper.Set("github.gitops.hydrated", true)
+	viper.WriteConfig()
+}
+
+func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string) {
+
+	cfg := configs.ReadConfig()
+
+	localDirectory := fmt.Sprintf("%s/%s", cfg.K1FolderPath, localRepo)
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform", cfg.K1FolderPath))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform.lock.hcl", cfg.K1FolderPath))
+
+	log.Println("opening repository with gitClient: ", localDirectory)
+	repo, err := git.PlainOpen(localDirectory)
+	if err != nil {
+		log.Panic("error opening the localDirectory: ", localDirectory, err)
+	}
+
+	url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, localRepo)
+	log.Printf("git push to  remote: %s url: %s", remoteName, url)
+
+	w, _ := repo.Worktree()
+
+	log.Println("Committing new changes... PushLocalRepoUpdates")
+	status, err := w.Status()
+	if err != nil {
+		log.Println("error getting worktree status", err)
+	}
+
+	for file, s := range status {
+		log.Printf("the file is %s the status is %v", file, s.Worktree)
+		_, err = w.Add(file)
+		if err != nil {
+			log.Println("error getting worktree status", err)
+		}
+	}
+	w.Commit("commiting staged changes to remote", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "kubefirst-bot",
+			Email: "kubefirst-bot@kubefirst.com",
+			When:  time.Now(),
+		},
+	})
+
+	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	err = repo.Push(&git.PushOptions{
+		RemoteName: remoteName,
+		Auth: &http.BasicAuth{
+			Username: "kubefirst-bot",
+			Password: token,
+		},
+	})
+	if err != nil {
+		log.Panicf("error pushing to remote %s: %s", remoteName, err)
+	}
+	log.Println("successfully pushed detokenized gitops content to github/", viper.GetString("github.owner"))
 }
