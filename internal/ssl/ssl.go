@@ -172,7 +172,7 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 	bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
 	err := aws.DownloadBucket(bucketName, config.CertsPath)
 	if err != nil {
-		return err
+		log.Println(err)
 	}
 	//! We need apply secrets firstly than other resources, accordingly with cert-manager docs
 	//pathsRestored := []string{"secrets", "certs", "clusterissuers"}
