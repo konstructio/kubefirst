@@ -18,7 +18,7 @@ environment variables and general config data.
 // to use with parans ldlfags
 // Check documentation to know how to use on development mode
 // https://blog.cloudflare.com/setting-go-variables-at-compile-time/
-var K1Version = ""
+var K1Version = "development"
 
 // Config host application configuration
 // todo: some of these values can be moved to the .env

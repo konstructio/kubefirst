@@ -1,7 +1,13 @@
 package cmd
 
 import (
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/handlers"
+	"github.com/kubefirst/kubefirst/internal/services"
+	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/segmentio/analytics-go"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/kubefirst/kubefirst/internal/gitlab"
@@ -16,8 +22,9 @@ import (
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "create a kubefirst management cluster",
-	Long:  `TBD`,
+	Short: "Creates a Kubefirst management cluster",
+	Long: `Based on Kubefirst init command, that creates the Kubefirst configuration file, this command start the
+cluster provisioning process spinning up the services, and validates the liveness of the provisioned services.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		start := time.Now()
 		defer func() {
@@ -40,7 +47,24 @@ var createCmd = &cobra.Command{
 			)
 		}
 
-		sendStartedInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
+		// instantiate http client with default values
+		httpClient := http.DefaultClient
+
+		hostedZoneName := viper.GetString("aws.hostedzonename")
+
+		// Instantiates a SegmentIO client to send messages to the segment API.
+		segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
+		telemetryService := services.NewSegmentIoService(segmentIOClient)
+		telemetryHandler := handlers.NewTelemetry(httpClient, telemetryService)
+
+		// todo: confirm K1version works for release go-releaser
+		if globalFlags.UseTelemetry {
+			err = telemetryHandler.SendCountMetric(pkg.MetricMgmtClusterInstallStarted, hostedZoneName, configs.K1Version)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+
 		if !viper.GetBool("kubefirst.done") {
 			if viper.GetBool("github.enabled") {
 				log.Println("Installing Github version of Kubefirst")
@@ -100,7 +124,16 @@ var createCmd = &cobra.Command{
 			log.Println(err)
 		}
 
-		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
+		log.Println("sending mgmt cluster install completed metric")
+		// todo: confirm K1version works for release go-releaser
+
+		if globalFlags.UseTelemetry {
+			err = telemetryHandler.SendCountMetric(pkg.MetricMgmtClusterInstallCompleted, hostedZoneName, configs.K1Version)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+
 		log.Println("Kubefirst installation finished successfully")
 		informUser("Kubefirst installation finished successfully", globalFlags.SilentMode)
 
