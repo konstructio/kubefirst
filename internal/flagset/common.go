@@ -13,7 +13,7 @@ const ENV = 1
 const FLAG = 0
 const NONE = 99
 
-//ReadConfigString - Read a Cobra-CLI flag or env variable of type string, precedence rule (Flags first, envVar second)
+// ReadConfigString - Read a Cobra-CLI flag or env variable of type string, precedence rule (Flags first, envVar second)
 // default value is ""
 // Current version doesn't have error, but we may expect some as the function evolves.
 func ReadConfigString(cmd *cobra.Command, flag string) (string, error) {
@@ -24,7 +24,12 @@ func ReadConfigString(cmd *cobra.Command, flag string) (string, error) {
 	return value, err
 }
 
-//ReadConfigBool - Read a Cobra-CLI flag or env variable of type bool, precedence rule (Flags first, envVar second)
+func ReadConfigStringSlice(cmd *cobra.Command, flag string) ([]string, error) {
+	value, err := cmd.Flags().GetStringSlice(flag)
+	return value, err
+}
+
+// ReadConfigBool - Read a Cobra-CLI flag or env variable of type bool, precedence rule (Flags first, envVar second)
 // default value is ""
 // Current version doesn't have error, but we may expect some as the function evolves.
 func ReadConfigBool(cmd *cobra.Command, flag string) (bool, error) {
@@ -36,7 +41,7 @@ func ReadConfigBool(cmd *cobra.Command, flag string) (bool, error) {
 	return value, err
 }
 
-//DefineSource - Calculate precedence rule for flags and variables
+// DefineSource - Calculate precedence rule for flags and variables
 func DefineSource(cmd *cobra.Command, flag string) int {
 	//Precedence rule:
 	//1st Flag
@@ -59,7 +64,7 @@ func DefineSource(cmd *cobra.Command, flag string) int {
 	return NONE
 }
 
-//GetFlagVarName - Translates a flag name into a enviroment variable name
+// GetFlagVarName - Translates a flag name into a enviroment variable name
 // based on ticket: https://github.com/kubefirst/kubefirst/issues/277
 func GetFlagVarName(flag string) string {
 
