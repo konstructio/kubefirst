@@ -173,7 +173,6 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 	err := aws.DownloadBucket(bucketName, config.CertsPath)
 	if err != nil {
 		log.Println("Error RestoreSSL:", err)
-		return err
 	}
 	//! We need apply secrets firstly than other resources, accordingly with cert-manager docs
 	//pathsRestored := []string{"secrets", "certs", "clusterissuers"}
