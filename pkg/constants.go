@@ -10,7 +10,7 @@ const (
 // SegmentIOWriteKey The write key is the unique identifier for a source that tells Segment which source data comes
 // from, to which workspace the data belongs, and which destinations should receive the data.
 const (
-	SegmentIOWriteKey                 = "ZAeVUYRkV8TTKSuRlTeGzDhs5owGc84t"
+	SegmentIOWriteKey                 = "0gAYkX5RV3vt7s4pqCOOsDb6WHPLT30M"
 	MetricInitStarted                 = "kubefirst.init.started"
 	MetricInitCompleted               = "kubefirst.init.completed"
 	MetricMgmtClusterInstallStarted   = "kubefirst.mgmt_cluster_install.started"
