@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log"
+	"time"
 
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/state"
@@ -18,6 +19,15 @@ var createCmd = &cobra.Command{
 	Short: "create a kubefirst management cluster",
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		start := time.Now()
+		defer func() {
+			//The goal of this code is to track create time, if it works or not.
+			//In the future we can add telemetry signal from these action, to track, success or fail.
+			duration := time.Since(start)
+			log.Printf("[000] Create duration is %s", duration)
+
+		}()
+
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
 			return err

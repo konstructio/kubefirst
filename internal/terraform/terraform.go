@@ -245,7 +245,8 @@ func ApplyUsersTerraform(dryRun bool, directory string) {
 		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
 		envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
 		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
-
+		envs["TF_VAR_initial_password"] = viper.GetString("botpassword")
+		
 		err := os.Chdir(directory)
 		if err != nil {
 			log.Panic("error: could not change directory to " + directory)

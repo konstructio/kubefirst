@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"log"
+	"time"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/metaphor"
@@ -20,6 +21,13 @@ var deployMetaphorCmd = &cobra.Command{
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Println("deployMetaphor called")
+		start := time.Now()
+		defer func() {
+			//The goal of this code is to track execution time
+			duration := time.Since(start)
+			log.Printf("[000] deploy-metaphor duration is %s", duration)
+
+		}()
 
 		if viper.GetBool("option.metaphor.skip") {
 			log.Println("[99] Deployment of metpahor microservices skiped")

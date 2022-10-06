@@ -39,17 +39,17 @@ to quickly create a Cobra application.`,
 			return err
 		}
 
+		githubFlags, err := flagset.ProcessGithubAddCmdFlags(cmd)
+		if err != nil {
+			return err
+		}
+
 		installerFlags, err := flagset.ProcessInstallerGenericFlags(cmd)
 		if err != nil {
 			return err
 		}
 
 		awsFlags, err := flagset.ProcessAwsFlags(cmd)
-		if err != nil {
-			return err
-		}
-
-		githubFlags, err := flagset.ProcessGithubAddCmdFlags(cmd)
 		if err != nil {
 			return err
 		}
