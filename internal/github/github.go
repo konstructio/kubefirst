@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
@@ -23,7 +24,7 @@ func ApplyGitHubTerraform(dryRun bool) {
 	//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 	envs := map[string]string{}
 	envs["AWS_SDK_LOAD_CONFIG"] = "1"
-	envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+	aws.ProfileInjection(&envs)
 	// Prepare for terraform gitlab execution
 	envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
 	envs["GITHUB_OWNER"] = viper.GetString("github.owner")

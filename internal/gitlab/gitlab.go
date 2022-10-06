@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/aws"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -279,7 +280,9 @@ func ApplyGitlabTerraform(dryRun bool, directory string) {
 		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 		envs := map[string]string{}
 		envs["AWS_SDK_LOAD_CONFIG"] = "1"
-		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+
+		aws.ProfileInjection(&envs)
+
 		// Prepare for terraform gitlab execution
 		envs["GITLAB_TOKEN"] = viper.GetString("gitlab.token")
 		envs["GITLAB_BASE_URL"] = viper.GetString("gitlab.local.service")
@@ -350,7 +353,8 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 	config := configs.ReadConfig()
 	envs := map[string]string{}
 
-	envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+	aws.ProfileInjection(&envs)
+
 	envs["AWS_REGION"] = viper.GetString("aws.region")
 	envs["AWS_ACCOUNT_ID"] = viper.GetString("aws.accountid")
 	envs["HOSTED_ZONE_NAME"] = viper.GetString("aws.hostedzonename")

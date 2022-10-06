@@ -13,6 +13,7 @@ import (
 
 	vault "github.com/hashicorp/vault/api"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,7 +84,9 @@ func ConfigureVault(dryRun bool) {
 	envs["VAULT_ADDR"] = "http://localhost:8200" //Should this come from init?
 	envs["VAULT_TOKEN"] = vaultToken
 	envs["AWS_SDK_LOAD_CONFIG"] = "1"
-	envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+
+	aws.ProfileInjection(&envs)
+
 	envs["AWS_DEFAULT_REGION"] = viper.GetString("aws.region")
 
 	envs["TF_VAR_vault_addr"] = fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename"))
