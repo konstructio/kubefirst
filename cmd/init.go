@@ -225,6 +225,5 @@ func init() {
 	currentCommand.MarkFlagRequired("cloud")
 	currentCommand.MarkFlagRequired("hosted-zone-name")
 	currentCommand.MarkFlagRequired("region")
-	//currentCommand.MarkFlagRequired("profile")
 
 }
