@@ -1,7 +1,6 @@
 package flagset
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/kubefirst/kubefirst/configs"
