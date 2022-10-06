@@ -1,6 +1,7 @@
 package flagset
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/kubefirst/kubefirst/configs"
@@ -140,10 +141,9 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	log.Println("option.kubefirst.experimental", experimentalMode)
 	flags.ExperimentalMode = experimentalMode
 
-	// TODO: reintroduce the next 3 lines after #511 is closed
-	//if viper.GetBool("github.enabled") && flags.BotPassword == "" {
-	//	return InstallerGenericFlags{}, fmt.Errorf("must provide bot-password argument for github installations of kubefirst")
-	//}
+	if viper.GetBool("github.enabled") && flags.BotPassword == "" {
+		return InstallerGenericFlags{}, fmt.Errorf("must provide bot-password argument for github installations of kubefirst")
+	}
 
 	return experimentalModeTweaks(flags), nil
 }
