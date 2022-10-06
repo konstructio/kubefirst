@@ -14,10 +14,8 @@ This is an initial implementation of Config. Please keep in mind we're still wor
 environment variables and general config data.
 */
 
-// K1Version - Version of CLI based on tag in play
-// to use with parans ldlfags
-// Check documentation to know how to use on development mode
-// https://blog.cloudflare.com/setting-go-variables-at-compile-time/
+// K1Version is used on version command. The value is dynamically updated on build time via ldflag. Built Kubefirst
+// versions will follow semver value like 1.9.0, when not using the built version, "development" is used.
 var K1Version = "development"
 
 // Config host application configuration
@@ -46,8 +44,6 @@ type Config struct {
 	TerraformVersion string
 	HelmVersion      string
 
-	// todo: move it back
-	KubefirstVersion       string
 	ArgoCDChartHelmVersion string
 
 	CertsPath string
