@@ -98,6 +98,16 @@ validated and configured.`,
 
 		// Instantiates a SegmentIO client to use send messages to the segment API.
 		segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
+
+		// SegmentIO library works with queue that is based on timing, we explicit close the http client connection
+		// to force flush in case there is still some pending message in the SegmentIO library queue.
+		defer func(segmentIOClient analytics.Client) {
+			err := segmentIOClient.Close()
+			if err != nil {
+				log.Println(err)
+			}
+		}(segmentIOClient)
+
 		telemetryService := services.NewSegmentIoService(segmentIOClient)
 		telemetryHandler := handlers.NewTelemetry(httpClient, telemetryService)
 		// todo: confirm K1version works for release go-releaser
@@ -202,13 +212,6 @@ validated and configured.`,
 		viper.WriteConfig()
 
 		//! tracker 8
-		// SegmentIO library works with queue that is based on timing. We explicit close the http client connection
-		// to force flush in case there is still some pending message in the SegmentIO library queue.
-		err = telemetryService.SegmentIOClient.Close()
-		if err != nil {
-			return err
-		}
-
 		progressPrinter.IncrementTracker("step-telemetry", 1)
 		time.Sleep(time.Millisecond * 100)
 
