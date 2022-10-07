@@ -13,6 +13,12 @@ Thanks for participating on our prorject.
 
 # Questions from Developers / General Coding Patterns
 
+As general principle of the code you see on this repo, we share the principle to have a good functional code that achieve the desired behavior, and want to be flexible to several developers styles. 
+
+So, if you see something that could be improved or discussed let us know by:  [Starting a discussion](https://github.com/kubefirst/kubefirst/discussions/new?category=q-a) **or** [creating an Issue](https://github.com/kubefirst/kubefirst/issues/new?labels=enhancement,community%20wishlist&title=Feedback)
+
+
+---
 ## Golang 
 
 Today, `kubefirst` uses `golang` on most of its components/cli implementation of utilities. 
@@ -70,6 +76,19 @@ Key points:
 
 ## Terraform
 
+### Where do we use terraform?
+[On our gitops template](https://github.com/kubefirst/gitops-template/tree/main/terraform)
+
+### Where you can learn more?
+[On our docs](https://docs.kubefirst.com/tooling/terraform.html)
+
+### Do I need to install terraform?
+
+Not really, installer install all the tools needed to execute all installation steps. Some developers have local installs for their tests. 
+
+But you would have one already to use at you `$HOME/.k1/tools/terraform` if you executed `kubefirst init` once. 
+
+That version will be the version we use for installation steps. 
 
 ## Argo/ArgoCD/Argo Workflows
 
@@ -90,3 +109,6 @@ Key points:
 
 
 ### CWFT
+
+
+### K8S
