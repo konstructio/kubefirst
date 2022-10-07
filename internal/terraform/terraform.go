@@ -236,7 +236,7 @@ func ApplyUsersTerraform(dryRun bool, directory string) {
 		envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
 		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 		envs["TF_VAR_initial_password"] = viper.GetString("botpassword")
-		
+
 		err := os.Chdir(directory)
 		if err != nil {
 			log.Panic("error: could not change directory to " + directory)
@@ -322,4 +322,55 @@ func OutputSingleValue(dryRun bool, directory, tfEntrypoint, outputName string) 
 	}
 
 	log.Println("tfOutput is: ", tfOutput.String())
+}
+
+func ApplyUsersTerraformGITLAB(dryRun bool, directory string) {
+
+	config := configs.ReadConfig()
+
+	if viper.GetBool("create.terraformapplied.users") || dryRun {
+		log.Println("skipping: ApplyUsersTerraform")
+		return
+	}
+
+	log.Println("Executing ApplyUsersTerraform")
+
+	//* AWS_SDK_LOAD_CONFIG=1
+	//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
+	envs := map[string]string{}
+	envs["AWS_SDK_LOAD_CONFIG"] = "1"
+	envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+	envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
+	envs["VAULT_TOKEN"] = viper.GetString("vault.token")
+	envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
+	//envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
+	envs["GITLAB_TOKEN"] = viper.GetString("gitlab.token")
+	//envs["GITHUB_OWNER"] = viper.GetString("github.owner")
+	envs["TF_VAR_initial_password"] = viper.GetString("botpassword")
+
+	// NEW stuff
+	//envs["TF_VAR_git_provider"] = viper.GetString("git.mode")
+
+	err := os.Chdir(directory)
+	if err != nil {
+		log.Panic("error: could not change directory to " + directory)
+	}
+	err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
+	if err != nil {
+		log.Panicf("error: terraform init for users failed %s", err)
+	}
+
+	err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
+	if err != nil {
+		log.Panicf("error: terraform apply for users failed %s", err)
+	}
+	err = os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
+	if err != nil {
+		return
+	}
+	viper.Set("create.terraformapplied.users", true)
+	err = viper.WriteConfig()
+	if err != nil {
+		return
+	}
 }
