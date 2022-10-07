@@ -54,7 +54,6 @@ to quickly create a Cobra application.`,
 			return err
 		}
 
-		progressPrinter.GetInstance()
 		progressPrinter.SetupProgress(10, globalFlags.SilentMode)
 
 		if globalFlags.SilentMode {
