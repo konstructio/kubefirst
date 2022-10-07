@@ -15,7 +15,6 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
-	"github.com/kubefirst/kubefirst/internal/telemetry"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
@@ -43,24 +42,6 @@ func setArgocdCreds(dryRun bool) {
 	viper.Set("argocd.admin.password", argocdPassword)
 	viper.Set("argocd.admin.username", "admin")
 	viper.WriteConfig()
-}
-
-func sendStartedInstallTelemetry(dryRun bool, useTelemetry bool) {
-	metricName := "kubefirst.mgmt_cluster_install.started"
-	if !dryRun {
-		telemetry.SendTelemetry(useTelemetry, viper.GetString("aws.hostedzonename"), metricName)
-	} else {
-		log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
-	}
-}
-
-func sendCompleteInstallTelemetry(dryRun bool, useTelemetry bool) {
-	metricName := "kubefirst.mgmt_cluster_install.completed"
-	if !dryRun {
-		telemetry.SendTelemetry(useTelemetry, viper.GetString("aws.hostedzonename"), metricName)
-	} else {
-		log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
-	}
 }
 
 func waitArgoCDToBeReady(dryRun bool) {

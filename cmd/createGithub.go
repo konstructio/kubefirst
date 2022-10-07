@@ -37,7 +37,6 @@ var createGithubCmd = &cobra.Command{
 			return err
 		}
 
-		progressPrinter.GetInstance()
 		progressPrinter.SetupProgress(4, globalFlags.SilentMode)
 
 		//infoCmd need to be before the bars or it is printed in between bars:
