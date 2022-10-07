@@ -3,33 +3,31 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
-	"os"
-	"strings"
-	"time"
-
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/flagset"
+	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/repo"
-	"github.com/kubefirst/kubefirst/internal/telemetry"
+	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/segmentio/analytics-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+	"time"
 )
 
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "initialize your local machine to execute `create`",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Initialize your local machine to execute `create`",
+	Long: `Initialize the required resources to provision a full Cloud environment. At this step initial resources are
+validated and configured.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		infoCmd.Run(cmd, args)
 		config := configs.ReadConfig()
@@ -94,13 +92,29 @@ to quickly create a Cobra application.`,
 			log.Printf("info: %s already exist", k1Dir)
 		}
 
-		metricName := "kubefirst.init.started"
-		metricDomain := awsFlags.HostedZoneName
+		log.Println("sending init started metric")
+		httpClient := http.DefaultClient
 
-		if !globalFlags.DryRun {
-			telemetry.SendTelemetry(globalFlags.UseTelemetry, metricDomain, metricName)
-		} else {
-			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
+		// Instantiates a SegmentIO client to use send messages to the segment API.
+		segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
+
+		// SegmentIO library works with queue that is based on timing, we explicit close the http client connection
+		// to force flush in case there is still some pending message in the SegmentIO library queue.
+		defer func(segmentIOClient analytics.Client) {
+			err := segmentIOClient.Close()
+			if err != nil {
+				log.Println(err)
+			}
+		}(segmentIOClient)
+
+		telemetryService := services.NewSegmentIoService(segmentIOClient)
+		telemetryHandler := handlers.NewTelemetry(httpClient, telemetryService)
+		// todo: confirm K1version works for release go-releaser
+		if globalFlags.UseTelemetry {
+			err = telemetryHandler.SendCountMetric(pkg.MetricInitStarted, awsFlags.HostedZoneName, configs.K1Version)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 
 		// todo need to check flags and create config
@@ -184,12 +198,14 @@ to quickly create a Cobra application.`,
 		log.Println("clone and detokenization of gitops-template repository complete")
 		progressPrinter.IncrementTracker("step-gitops", 1)
 
-		metricName = "kubefirst.init.completed"
+		log.Println("sending init completed metric")
+		// todo: confirm K1version works for release go-releaser
 
-		if !globalFlags.DryRun {
-			telemetry.SendTelemetry(globalFlags.UseTelemetry, metricDomain, metricName)
-		} else {
-			log.Printf("[#99] Dry-run mode, telemetry skipped:  %s", metricName)
+		if globalFlags.UseTelemetry {
+			err = telemetryHandler.SendCountMetric(pkg.MetricInitCompleted, awsFlags.HostedZoneName, configs.K1Version)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 
 		viper.WriteConfig()
