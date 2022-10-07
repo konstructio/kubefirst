@@ -376,9 +376,13 @@ var createGitlabCmd = &cobra.Command{
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
 
-		//directory = fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
-		//informUser("applying users terraform", globalFlags.SilentMode)
-		//terraform.ApplyUsersTerraform(globalFlags.DryRun, directory)
+		directory = fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
+		informUser("applying users terraform", globalFlags.SilentMode)
+		gitProvider := viper.GetString("git.mode")
+		err = terraform.ApplyUsersTerraform(globalFlags.DryRun, directory, gitProvider)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	},
