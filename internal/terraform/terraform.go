@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
@@ -21,7 +22,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 	//* AWS_SDK_LOAD_CONFIG=1
 	//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 	envs["AWS_SDK_LOAD_CONFIG"] = "1"
-	envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+	aws.ProfileInjection(&envs)
 	envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 
 	switch terraformEntryPoint {
@@ -66,7 +67,9 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 			return
 		}
 		envs := map[string]string{}
-		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+
+		aws.ProfileInjection(&envs)
+
 		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
@@ -122,7 +125,9 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		}
 
 		envs := map[string]string{}
-		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+
+		aws.ProfileInjection(&envs)
+
 		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
@@ -163,7 +168,9 @@ func ApplyECRTerraform(dryRun bool, directory string) {
 		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 		envs := map[string]string{}
 		envs["AWS_SDK_LOAD_CONFIG"] = "1"
-		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+
+		aws.ProfileInjection(&envs)
+
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 
 		directory = fmt.Sprintf("%s/gitops/terraform/ecr", config.K1FolderPath)
@@ -198,7 +205,8 @@ func DestroyECRTerraform(skipECRTerraform bool) {
 		}
 
 		envs := map[string]string{}
-		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
+
+		aws.ProfileInjection(&envs)
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if err != nil {
@@ -316,6 +324,7 @@ func ApplyUsersTerraform(dryRun bool, directory string, gitProvider string) erro
 	}
 
 	envs["AWS_SDK_LOAD_CONFIG"] = "1"
+	aws.ProfileInjection(&envs)
 	envs["AWS_PROFILE"] = viper.GetString("aws.profile")
 	envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 	envs["VAULT_TOKEN"] = viper.GetString("vault.token")

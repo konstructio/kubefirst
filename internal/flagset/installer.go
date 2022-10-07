@@ -39,6 +39,8 @@ func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().Bool("skip-metaphor-services", false, "whether to skip the deployment of metaphor micro-services demo applications")
 	currentCommand.Flags().Bool("experimental-mode", false, `whether to allow experimental behavior or developer mode of installer, 
   not recommended for most use cases, as it may mix versions and create unexpected behavior.`)
+	currentCommand.Flags().StringSlice("addons", nil, `the name of addon to enable on create cluster:
+  --addon foo or --addon foo,bar for example`)
 }
 
 // ProcessInstallerGenericFlags - Read values of CLI parameters for installer flags
@@ -130,6 +132,14 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	viper.Set("option.metaphor.skip", skipMetaphor)
 	log.Println("option.metaphor.skip", skipMetaphor)
 	flags.SkipMetaphor = skipMetaphor
+
+	addonsFlag, err := ReadConfigStringSlice(cmd, "addons")
+	if err != nil {
+		log.Println("Error processing addons:", err)
+		return InstallerGenericFlags{}, err
+	}
+	viper.Set("addons", addonsFlag)
+	log.Println("addons", addonsFlag)
 
 	experimentalMode, err := ReadConfigBool(cmd, "experimental-mode")
 	if err != nil {
