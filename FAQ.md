@@ -130,6 +130,14 @@ The idea is to have more generic and universal automation steps that can be shar
 
 ### Gitops Templates
 
+#### How to use addons on your install? 
+
+`Details soon`
+
+#### How to create addons on your install? 
+
+`Details soon`
+
 ### Metaphor Templates
 
 
