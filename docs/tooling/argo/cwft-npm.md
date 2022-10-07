@@ -5,8 +5,8 @@ A set of [Templates](https://github.com/kubefirst/gitops-template/blob/main/comp
 
 ## npm-install
 
-On a current source folder of an nodejs application, execute `npm i` to install dependecies.
+On a current source folder of an nodejs application, execute `npm i` to install dependencies.
 
 # npm-run
 
-On a current source folder of an nodejs application, execute `npm run` to execute an node script.
+On a current source folder of an nodejs application, execute `npm run` to execute a node script.

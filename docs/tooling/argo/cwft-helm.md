@@ -32,7 +32,7 @@ This function returns a chart version.
 
 ## helm-set-environment-version
 
-This function set version as enviroment variable
+This function set version as environment variable
 
 ## helm-increment-chart-patch
 

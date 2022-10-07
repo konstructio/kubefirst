@@ -7,7 +7,7 @@ They are [Argo Workflow Template](https://argoproj.github.io/argo-workflows/clus
 
 ## How they are used on Kubefirst? 
 
-Kubefirst use **CWFT** as building blocks of CI pipelines that used on both of our git providers(github and gitlab). As part of kubefirst we provide a set of demo applications called mataphor, that uses our **CWFTs** tol help users to be inspired to create their onws based on the ones provided and update the existin ones. 
+Kubefirst use **CWFT** as building blocks of CI pipelines that used on both of our git providers(github and gitlab). As part of kubefirst we provide a set of demo applications called [metaphor](https://github.com/kubefirst/metaphor-template), that uses our **CWFTs** to help users to be inspired to create their owns based on the ones provided and update the existing ones. 
 
 
 ## Are they shared between multiple repos? 

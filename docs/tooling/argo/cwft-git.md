@@ -13,7 +13,7 @@ It returns the `short-sha` of a commit to be used on later steps to identify art
 Used by our github installations. 
 
 ### git-checkout-with-gitops-ssh
-Used to checkout an `application` repo and `gitops` repo using SSH keys, used for example on our github type instalations. 
+Used to checkout an `application` repo and `gitops` repo using SSH keys, used for example on our github type installations. 
 
 ### git-commit-ssh
 
@@ -27,7 +27,7 @@ It uses SSH keys to authenticate to push the changes.
 Used by our gitlab installations. 
 
 ### git-checkout-with-gitops
-Used to checkout an `application` repo and `gitops` repo using HTTPS and a Token, used for example on our gitlab type instalations. 
+Used to checkout an `application` repo and `gitops` repo using HTTPS and a Token, used for example on our gitlab type installations. 
 
 ### git-commit
 

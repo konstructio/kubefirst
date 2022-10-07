@@ -5,7 +5,7 @@ A set of [Templates](https://github.com/kubefirst/gitops-template/blob/main/comp
 
 ##  docker-build
 
-This function will used a existing source folder to `build` and `push` an image to a image repository such as **AWS Registry**. 
+This function will used an existing source folder to `build` and `push` an image to an image repository such as **AWS Registry**. 
 
 
 
