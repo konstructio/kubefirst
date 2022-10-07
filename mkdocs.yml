@@ -163,6 +163,13 @@ nav:
       - Overview: 'tooling/tooling-overview.md'
       - Argo CD: 'tooling/argocd.md'
       - Argo Workflows: 'tooling/argo.md'
+      - CWFT:
+        - Overview: 'tooling/argo/cwft-overview.md'
+        - cwft-ci: 'tooling/argo/cwft-ci.md'
+        - cwft-docker: 'tooling/argo/cwft-docker.md'
+        - cwft-git: 'tooling/argo/cwft-git.md'
+        - cwft-helm: 'tooling/argo/cwft-helm.md'
+        - cwft-npm: 'tooling/argo/cwft-npm.md'
       - AWS CLI: 'tooling/aws-cli.md'
       - Docker: 'tooling/docker.md'
       - Kubectl:  'tooling/kubectl.md'
