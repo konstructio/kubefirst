@@ -2,6 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+	"syscall"
+	"time"
+
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/handlers"
@@ -10,9 +14,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"syscall"
-	"time"
 )
 
 // destroyCmd represents the destroy command
@@ -41,7 +42,6 @@ var destroyCmd = &cobra.Command{
 			)
 		}
 
-		progressPrinter.GetInstance()
 		progressPrinter.SetupProgress(2, globalFlags.SilentMode)
 
 		if globalFlags.DryRun {
