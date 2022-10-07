@@ -2,13 +2,13 @@
 
 This page is meant to help developers to be introduced to some knowledge we re-use when improve `kubefirst` tooling. 
 
-We apreciate all contribution provided following our [Contributor Covenant Code of Conduct](https://github.com/kubefirst/kubefirst/blob/main/CODE_OF_CONDUCT.md). 
+We appreciate all contributions provided following our [Contributor Covenant Code of Conduct](https://github.com/kubefirst/kubefirst/blob/main/CODE_OF_CONDUCT.md). 
 
-Some points on this page as the state of today in the code and can be improved as we evolve get exposed to more edge scenarios, theay are not to meant to be rules that are enforced, they are more hints of what we used before and worked better to the situation presented to it. 
+Some points on this page as the state of today in the code and can be improved as we evolve get exposed to more edge scenarios, they are not to meant to be rules that are enforced, they are more hints of what we used before and worked better to the situation presented to it. 
 
-We will add some links for answers that may be open to opnions so we can evolve our understand of more scenarios possibles and try to learn for that. 
+We will add some links for answers that may be open to opinions so we can evolve our understand of more scenarios possibles and try to learn for that. 
 
-Thanks for participating on our prorject. 
+Thanks for participating on our project. 
 
 
 # Questions from Developers / General Coding Patterns
@@ -29,7 +29,7 @@ These are some of the patterns we use:
 
 We use [cobra-cli](https://github.com/spf13/cobra) to create our commands, it has its pro/cons.
 
-If you would like to express some opnions on this, we have [this discussion](https://github.com/kubefirst/kubefirst/discussions/531) for it. 
+If you would like to express some opinions on this, we have [this discussion](https://github.com/kubefirst/kubefirst/discussions/531) for it. 
 
 ### How to create a new command? 
 
@@ -90,18 +90,43 @@ But you would have one already to use at you `$HOME/.k1/tools/terraform` if you 
 
 That version will be the version we use for installation steps. 
 
+## Git Providers
+
+We support at the moment: 
+- `github`: With github we use [github actions](https://github.com/kubefirst/metaphor-template/tree/main/.github/workflows) as a trigger for CI code, but we implement most of the behaviors with `CWFT` and [Argo Workflows](https://github.com/kubefirst/metaphor-template/tree/main/.argo)
+- `gitlab`: With github we use [gitlab ci](https://github.com/kubefirst/metaphor-template/blob/main/.gitlab-ci.yml) as a trigger for CI code, but we implement most of the behaviors with `CWFT` and [Argo Workflows](https://github.com/kubefirst/metaphor-template/tree/main/.argo)
+
+The idea is to have more generic and universal automation steps that can be shared with wider audience and improved together. We want o help users to have the right tool for the problem. 
+
+**Tip:** [This page](https://docs.github.com/en/actions/migrating-to-github-actions/migrating-from-gitlab-cicd-to-github-actions) helps on the bridge.
+
 ## Argo/ArgoCD/Argo Workflows
 
+- TBD
 
 ## Vault
 
+- TBD
 
 ## Atlantis
 
+- TBD
 
 ## Others Tools
 
+- TBD
+
 ## Templates
+
+`kubefirst` has as pattern to use templates with `tokens`that are hydrated by our [detokenization process](https://github.com/kubefirst/kubefirst/blob/main/pkg/helpers.go#L40) to produce repositories on the users `git provider` selected. 
+
+### What are our templates?
+
+- [gitops-template](https://github.com/kubefirst/gitops-template): Terraform and yamls(lot of them).
+- [metaphor-template](https://github.com/kubefirst/metaphor-template): Sample nodejs app using our CI automations as example to onboard users to gitops life. 
+- [metaphor-go-template](https://github.com/kubefirst/metaphor-go-template): Sample go app using our CI automations as example to onboard users to gitops life.
+- [metaphor-frontend-template](https://github.com/kubefirst/metaphor-frontend-template): Sample frontend application to help board users to the applications deployed in the cluster. 
+
 
 ### Gitops Templates
 
@@ -109,6 +134,7 @@ That version will be the version we use for installation steps.
 
 
 ### CWFT
+
 
 
 ### K8S
