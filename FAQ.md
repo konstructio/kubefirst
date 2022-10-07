@@ -25,7 +25,7 @@ We use [cobra-cli](https://github.com/spf13/cobra) to create our commands, it ha
 
 If you would like to express some opnions on this, we have [this discussion](https://github.com/kubefirst/kubefirst/discussions/531) for it. 
 
-#### How to create a new command? 
+### How to create a new command? 
 
 
 This line will add a command under `actionCmd` to create a new `action`. `actionCmd` is special command to be parent of general commands that execute parts of installation or some developers use to test behaviors before creating a function for something. It a nice place to start as a sandbox. 
@@ -34,7 +34,39 @@ This line will add a command under `actionCmd` to create a new `action`. `action
 cobra-cli add myCustomCommand -p 'actionCmd'
 ```
 
+Please, use the CLI to create new commands, we know you can create it manually but we would like to keep the pre-generated style and structure. 
+
 **Tip:** To install it, just run `go install github.com/spf13/cobra-cli@latest` 
+
+### How a command looks like? 
+
+We have as current practice this shape: 
+```golang
+var myActionCmd = &cobra.Command{
+	Use:   "action-with-dash",
+	Short: "...",
+	Long: `...`,
+
+	RunE: func(cmd *cobra.Command, args []string) error {
+		includeMetaphorApps, err := cmd.Flags().GetBool("include-metaphor")
+		if err != nil {
+			return err
+		}
+
+        ...
+		return nil
+	},
+}
+```
+
+Key points: 
+- And command must return and `error` when it fails, so we can exit nicely from and execution that has a single command or a chain commands like [create](https://github.com/kubefirst/kubefirst/blob/main/cmd/create.go)
+- Please, handle errors, and when it is part of the logic in execution and you need to fail the execution send the `error` on the return instead of direct `exit` or `panic`. 
+- Ensure your command is using this signature: `RunE: func(cmd *cobra.Command, args []string) error` - in particular `RunE`. 
+
+> We know, there is panic in the code, we are working to remove and improve error handling to all to be handled as described above. 
+> 
+> We know, there we call commands by `createGithubCmd.RunE(cmd, args)` instead of calling `Execute` when chaining commands. We may improve that later, but for today that produces the desired behavior we search from `cobra` tooling. We just want an easy way to have some functions that are also commands with flags. 
 
 ## Terraform
 
