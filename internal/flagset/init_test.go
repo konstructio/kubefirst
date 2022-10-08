@@ -25,24 +25,24 @@ func FakeInitCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, err := ProcessGlobalFlags(cmd)
 			if err != nil {
-				fmt.Fprintf(cmd.OutOrStdout(), err.Error())
+				fmt.Fprint(cmd.OutOrStdout(), err.Error())
 			}
 
 			_, err = ProcessGithubAddCmdFlags(cmd)
 			if err != nil {
-				fmt.Fprintf(cmd.OutOrStdout(), err.Error())
+				fmt.Fprint(cmd.OutOrStdout(), err.Error())
 			}
 
 			_, err = ProcessInstallerGenericFlags(cmd)
 			if err != nil {
-				fmt.Fprintf(cmd.OutOrStdout(), err.Error())
+				fmt.Fprint(cmd.OutOrStdout(), err.Error())
 			}
 
 			_, err = ProcessAwsFlags(cmd)
 			if err != nil {
-				fmt.Fprintf(cmd.OutOrStdout(), err.Error())
+				fmt.Fprint(cmd.OutOrStdout(), err.Error())
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), success)
+			fmt.Fprint(cmd.OutOrStdout(), success)
 			return nil
 		},
 	}
@@ -60,7 +60,10 @@ func Test_Init_k3d_basic(t *testing.T) {
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
 	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "k3d"})
-	cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
 	out, err := ioutil.ReadAll(b)
 	if err != nil {
 		t.Error(err)
@@ -77,7 +80,10 @@ func Test_Init_aws_basic_missing_hostzone(t *testing.T) {
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
 	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "aws"})
-	cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
 	out, err := ioutil.ReadAll(b)
 	if err != nil {
 		t.Error(err)
@@ -94,7 +100,10 @@ func Test_Init_aws_basic_missing_profile(t *testing.T) {
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
 	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com"})
-	cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
 	out, err := ioutil.ReadAll(b)
 	if err != nil {
 		t.Error(err)
@@ -111,7 +120,10 @@ func Test_Init_aws_basic_with_profile(t *testing.T) {
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
 	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--profile", "default"})
-	cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
 	out, err := ioutil.ReadAll(b)
 	if err != nil {
 		t.Error(err)
@@ -128,7 +140,10 @@ func Test_Init_aws_basic_with_arn(t *testing.T) {
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
 	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--aws-assume-role", "role"})
-	cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
 	out, err := ioutil.ReadAll(b)
 	if err != nil {
 		t.Error(err)
@@ -144,7 +159,10 @@ func Test_Init_aws_basic_with_profile_and_arn(t *testing.T) {
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
 	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--aws-assume-role", "role", "--profile", "default"})
-	cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
 	out, err := ioutil.ReadAll(b)
 	if err != nil {
 		t.Error(err)
@@ -161,7 +179,10 @@ func Test_Init_by_var_k3d(t *testing.T) {
 	os.Setenv("KUBEFIRST_ADMIN_EMAIL", "user@domain.com")
 	os.Setenv("KUBEFIRST_CLOUD", "k3d")
 	cmd.SetOut(b)
-	cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
 	out, err := ioutil.ReadAll(b)
 	if err != nil {
 		t.Error(err)
@@ -182,7 +203,10 @@ func Test_Init_by_var_aws_profile(t *testing.T) {
 	os.Setenv("KUBEFIRST_PROFILE", "default")
 	os.Setenv("KUBEFIRST_HOSTED_ZONE_NAME", "mydomain.com")
 	cmd.SetOut(b)
-	cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
 	out, err := ioutil.ReadAll(b)
 	if err != nil {
 		t.Error(err)
