@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 	"testing"
@@ -39,9 +40,9 @@ func NewRootCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			flagValue, err := ReadConfigString(cmd, "sample")
 			if err != nil {
-				fmt.Fprintf(cmd.OutOrStdout(), err.Error())
+				fmt.Fprint(cmd.OutOrStdout(), err.Error())
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), flagValue)
+			fmt.Fprint(cmd.OutOrStdout(), flagValue)
 			return nil
 		},
 	}
@@ -55,7 +56,10 @@ func Test_DefineSource_set_by_flag(t *testing.T) {
 	os.Unsetenv("KUBEFIRST_SAMPLE")
 	cmd.SetOut(b)
 	cmd.SetArgs([]string{"--sample", "set-by-flag"})
-	cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
 	out, err := ioutil.ReadAll(b)
 	if err != nil {
 		t.Error(err)
@@ -70,7 +74,10 @@ func Test_DefineSource_set_by_var(t *testing.T) {
 	b := bytes.NewBufferString("")
 	os.Setenv("KUBEFIRST_SAMPLE", "set-by-var")
 	cmd.SetOut(b)
-	cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
 	out, err := ioutil.ReadAll(b)
 	if err != nil {
 		t.Error(err)
@@ -85,7 +92,10 @@ func Test_DefineSource_notSet(t *testing.T) {
 	b := bytes.NewBufferString("")
 	os.Unsetenv("KUBEFIRST_SAMPLE")
 	cmd.SetOut(b)
-	cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
 	out, err := ioutil.ReadAll(b)
 	if err != nil {
 		t.Error(err)
@@ -102,9 +112,11 @@ func NewRootCmdBool() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			flagValue, err := ReadConfigBool(cmd, "sample")
 			if err != nil {
-				fmt.Fprintf(cmd.OutOrStdout(), err.Error())
+				log.Println("err:", err)
+				fmt.Fprint(cmd.OutOrStdout(), err.Error())
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), strconv.FormatBool(flagValue))
+			log.Println("flagValue:", flagValue)
+			fmt.Fprint(cmd.OutOrStdout(), strconv.FormatBool(flagValue))
 			return nil
 		},
 	}
@@ -118,7 +130,10 @@ func Test_DefineSource_set_by_flag_bool(t *testing.T) {
 	os.Setenv("KUBEFIRST_SAMPLE", "TRUE")
 	cmd.SetOut(b)
 	cmd.SetArgs([]string{"--sample"})
-	cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
 	out, err := ioutil.ReadAll(b)
 	if err != nil {
 		t.Error(err)

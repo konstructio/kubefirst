@@ -96,18 +96,44 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	viper.Set("aws.hostedzonename", hostedZoneName)
 	flags.HostedZoneName = hostedZoneName
 
+	err = validateAwsFlags()
+	if err != nil {
+		log.Println("Error validateAwsFlags:", err)
+		return AwsFlags{}, err
+	}
+
+	return flags, nil
+}
+
+func validateAwsFlags() error {
+	//Validation:
+	//If you are changind this rules, please ensure to update:
+	// internal/flagset/init_test.go
+	if viper.GetString("cloud") != CloudAws {
+		// To skip later validations
+		// TODO: Create test scenarios for init
+		log.Println("Skipping AWS Validation:", viper.GetString("cloud"))
+		return nil
+	}
+	if len(viper.GetString("aws.hostedzonename")) < 1 {
+		log.Println("Missing flag --hosted-zone-name for aws installation")
+		return errors.New("missing flag --hosted-zone-name for an aws installation")
+	}
+	if len(viper.GetString("aws.region")) < 1 {
+		log.Println("Missing flag --region for aws installation")
+		return errors.New("missing flag --region for an aws installation")
+	}
 	if viper.GetString("aws.arn") == "" && viper.GetString("aws.profile") == "" {
 		log.Println("aws.arn is empty", viper.GetString("aws.arn"))
 		log.Println("aws.profile is empty", viper.GetString("aws.profile"))
-		return AwsFlags{}, errors.New("must provide profile or aws-assume-role argument for aws installations of kubefirst")
+		return errors.New("must provide profile or aws-assume-role argument for aws installations of kubefirst")
 	}
 
 	if viper.GetString("aws.arn") != "" && viper.GetString("aws.profile") != "" {
 		log.Println("aws.arn is ", viper.GetString("aws.arn"))
 		log.Println("aws.profile is: ", viper.GetString("aws.profile"))
 		log.Println("must provide only one of these arguments: profile or aws-assume-role")
-		return AwsFlags{}, errors.New("must provide only one of these arguments: profile or aws-assume-role")
+		return errors.New("must provide only one of these arguments: profile or aws-assume-role")
 	}
-
-	return flags, nil
+	return nil
 }

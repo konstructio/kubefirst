@@ -3,6 +3,12 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
@@ -15,11 +21,6 @@ import (
 	"github.com/segmentio/analytics-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"net/http"
-	"os"
-	"strings"
-	"time"
 )
 
 // initCmd represents the init command
@@ -32,6 +33,8 @@ validated and configured.`,
 		infoCmd.Run(cmd, args)
 		config := configs.ReadConfig()
 
+		//Please don't change the order of this block, wihtout updating
+		// internal/flagset/init_test.go
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
 			return err
@@ -52,7 +55,8 @@ validated and configured.`,
 			return err
 		}
 
-		progressPrinter.SetupProgress(10, globalFlags.SilentMode)
+		//Please don't change the order of this block, wihtout updating
+		// internal/flagset/init_test.go
 
 		if globalFlags.SilentMode {
 			informUser(
@@ -73,15 +77,19 @@ validated and configured.`,
 			}
 			log.Printf("assuming new AWS credentials based on role %q", awsFlags.AssumeRole)
 		}
+		if installerFlags.Cloud == flagset.CloudAws {
+			progressPrinter.AddTracker("step-account", pkg.GetAccountInfo, 1)
+			progressPrinter.AddTracker("step-dns", pkg.GetDNSInfo, 1)
+			progressPrinter.AddTracker("step-live", pkg.TestHostedZoneLiveness, 1)
+			progressPrinter.AddTracker("step-buckets", pkg.CreateBuckets, 1)
+		}
 
 		progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
-		progressPrinter.AddTracker("step-account", pkg.GetAccountInfo, 1)
-		progressPrinter.AddTracker("step-dns", pkg.GetDNSInfo, 1)
-		progressPrinter.AddTracker("step-live", pkg.TestHostedZoneLiveness, 1)
 		progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
 		progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
-		progressPrinter.AddTracker("step-buckets", pkg.CreateBuckets, 1)
 		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 1)
+
+		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
 
 		k1Dir := fmt.Sprintf("%s", config.K1FolderPath)
 		if _, err := os.Stat(k1Dir); errors.Is(err, os.ErrNotExist) {
@@ -151,42 +159,43 @@ validated and configured.`,
 		//Fix incomplete bar, please don't remove it.
 		progressPrinter.IncrementTracker("step-download", 1)
 
-		//! tracker 1
-		log.Println("getting aws account information")
-		aws.GetAccountInfo()
-		log.Printf("aws account id: %s\naws user arn: %s", viper.GetString("aws.accountid"), viper.GetString("aws.userarn"))
-		progressPrinter.IncrementTracker("step-account", 1)
+		if installerFlags.Cloud == flagset.CloudAws {
+			//! tracker 1
+			log.Println("getting aws account information")
+			aws.GetAccountInfo()
+			log.Printf("aws account id: %s\naws user arn: %s", viper.GetString("aws.accountid"), viper.GetString("aws.userarn"))
+			progressPrinter.IncrementTracker("step-account", 1)
 
-		//! tracker 2
-		// hosted zone id
-		// So we don't have to keep looking it up from the domain name to use it
-		hostedZoneId := aws.GetDNSInfo(awsFlags.HostedZoneName)
-		// viper values set in above function
-		log.Println("hostedZoneId:", hostedZoneId)
-		progressPrinter.IncrementTracker("step-dns", 1)
+			//! tracker 2
+			// hosted zone id
+			// So we don't have to keep looking it up from the domain name to use it
+			hostedZoneId := aws.GetDNSInfo(awsFlags.HostedZoneName)
+			// viper values set in above function
+			log.Println("hostedZoneId:", hostedZoneId)
+			progressPrinter.IncrementTracker("step-dns", 1)
 
-		//! tracker 3
-		// todo: this doesn't default to testing the dns check
-		skipHostedZoneCheck := viper.GetBool("init.hostedzonecheck.enabled")
-		if !skipHostedZoneCheck {
-			hostedZoneLiveness := aws.TestHostedZoneLiveness(globalFlags.DryRun, awsFlags.HostedZoneName, hostedZoneId)
-			if !hostedZoneLiveness {
-				log.Panic("Fail to check the Liveness of HostedZone, we need a valid public HostedZone on the same AWS account that Kubefirst will be installed.")
+			//! tracker 3
+			// todo: this doesn't default to testing the dns check
+			skipHostedZoneCheck := viper.GetBool("init.hostedzonecheck.enabled")
+			if !skipHostedZoneCheck {
+				hostedZoneLiveness := aws.TestHostedZoneLiveness(globalFlags.DryRun, awsFlags.HostedZoneName, hostedZoneId)
+				if !hostedZoneLiveness {
+					log.Panic("Fail to check the Liveness of HostedZone, we need a valid public HostedZone on the same AWS account that Kubefirst will be installed.")
+				}
+			} else {
+				log.Println("skipping hosted zone check")
 			}
-		} else {
-			log.Println("skipping hosted zone check")
+			progressPrinter.IncrementTracker("step-live", 1)
+
+			//! tracker 4
+			//* should we consider going down to a single bucket
+			//* for state and artifacts on open source?
+			//* hitting a bucket limit on an install might deter someone
+			log.Println("creating buckets for state and artifacts")
+			aws.BucketRand(globalFlags.DryRun)
+			progressPrinter.IncrementTracker("step-buckets", 1)
+			log.Println("BucketRand() complete")
 		}
-		progressPrinter.IncrementTracker("step-live", 1)
-
-		//! tracker 4
-		//* should we consider going down to a single bucket
-		//* for state and artifacts on open source?
-		//* hitting a bucket limit on an install might deter someone
-		log.Println("creating buckets for state and artifacts")
-		aws.BucketRand(globalFlags.DryRun)
-		progressPrinter.IncrementTracker("step-buckets", 1)
-		log.Println("BucketRand() complete")
-
 		//! tracker 5
 		log.Println("creating an ssh key pair for your new cloud infrastructure")
 		pkg.CreateSshKeyPair()
@@ -236,9 +245,5 @@ func init() {
 	flagset.DefineAWSFlags(currentCommand)
 	flagset.DefineInstallerGenericFlags(currentCommand)
 
-	currentCommand.MarkFlagRequired("admin-email")
-	currentCommand.MarkFlagRequired("cloud")
-	currentCommand.MarkFlagRequired("hosted-zone-name")
-	currentCommand.MarkFlagRequired("region")
-
+	//validations happens on /internal/flagset
 }
