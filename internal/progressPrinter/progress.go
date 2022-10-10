@@ -9,14 +9,14 @@ import (
 	"github.com/jedib0t/go-pretty/v6/progress"
 )
 
-// Struct used to manage tracker object
+//ActionTracker Struct used to manage tracker object
 // This object may evolve with more properties in th future
 // when we have more fancier UI tools/styles.
 type ActionTracker struct {
 	Tracker *progress.Tracker
 }
 
-// General state object
+//progressPrinter General state object
 type progressPrinter struct {
 	Trackers map[string]*ActionTracker
 	pw       progress.Writer
@@ -25,7 +25,7 @@ type progressPrinter struct {
 var instance *progressPrinter
 var once sync.Once
 
-// Function used to initialize the component once in the execution.
+//GetInstance  Function used to initialize the component once in the execution.
 // Usually called from the `cmd`  `init` func or as early as possible on the execution.
 //
 //	import ("github.com/kubefirst/nebulous/pkg")
@@ -37,6 +37,9 @@ func GetInstance() *progressPrinter {
 	once.Do(func() {
 		instance = &progressPrinter{}
 		instance.Trackers = make(map[string]*ActionTracker)
+		// instantiate a Progress Writer and set up the options
+		instance.pw = progress.NewWriter()
+
 	})
 	return instance
 }
@@ -46,9 +49,6 @@ func GetInstance() *progressPrinter {
 func SetupProgress(numTrackers int, silentMode bool) {
 	flag.Parse()
 	fmt.Printf("Init actions: %d expected tasks ...\n\n", numTrackers)
-	// instantiate a Progress Writer and set up the options
-	instance.pw = progress.NewWriter()
-
 	// if silent mode, dont show progress bar render
 	if silentMode {
 		return
@@ -73,7 +73,7 @@ func SetupProgress(numTrackers int, silentMode bool) {
 	go instance.pw.Render()
 }
 
-//	Initialise a tracker object
+//CreateTracker Initialise a tracker object
 //
 // Prefer `AddTracker` to create trackers, due to simplicity.
 func CreateTracker(title string, total int64) *progress.Tracker {
@@ -87,7 +87,7 @@ func CreateTracker(title string, total int64) *progress.Tracker {
 	return tracker
 }
 
-// Prints a log message near the current active tracker.
+// LogMessage Prints a log message near the current active tracker.
 // Sample of usage:
 //
 //	progressPrinter.LogMessage("- Waiting bootstrap")
@@ -95,7 +95,7 @@ func LogMessage(message string) {
 	instance.pw.Log(message)
 }
 
-// Add Tracker (prefered way)
+// AddTracker Add Tracker (prefered way)
 // Return a string for the key to be used on future uses
 // Sample of usage:
 //
@@ -107,7 +107,12 @@ func AddTracker(key string, title string, total int64) string {
 	return key
 }
 
-// Increments a tracker based on the provided key
+//TotalOfTrackers Returns the number of initialized Trackers
+func TotalOfTrackers() int {
+	return len(instance.Trackers)
+}
+
+//IncrementTracker Increments a tracker based on the provided key
 // if key is unkown it will error out.
 // Sample of usage:
 //
