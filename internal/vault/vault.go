@@ -116,7 +116,7 @@ func ConfigureVault(dryRun bool) {
 	if err != nil {
 		log.Panicf("error: terraform init failed %s", err)
 	}
-	if !viper.GetBool("create.terraformapplied.vaultbackend") {
+	if !viper.GetBool("create.terraformapplied.vault") {
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
 		if err != nil {
 			log.Panicf("error: terraform apply failed %s", err)
