@@ -303,7 +303,7 @@ func WaitForGitlab(dryRun bool, config *configs.Config) {
 	log.Printf("the output is: %s", output.String())
 }
 
-func RemoveSelfSignedCertArgoCD() error {
+func RemoveSelfSignedCertArgoCD(argocdPodClient coreV1Types.PodInterface) error {
 	log.Printf("Removing Self-Signed Certificate from argocd-secret")
 
 	log.Printf("Removing tls.crt")
@@ -319,6 +319,10 @@ func RemoveSelfSignedCertArgoCD() error {
 		log.Printf("err removing tls.crt from argo-secret: %s", err)
 		return err
 	}
+
+	// delete argocd-server pod to pickup the new cert-manager cert if ready
+	DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+
 	return nil
 }
 
