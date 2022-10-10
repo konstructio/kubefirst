@@ -143,8 +143,10 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 		log.Println("Error processing addons:", err)
 		return InstallerGenericFlags{}, err
 	}
-	viper.Set("addons", addonsFlag)
-	log.Println("addons", addonsFlag)
+	addons := viper.GetStringSlice("addons")
+	addons = append(addons, addonsFlag...)
+	viper.Set("addons", addons)
+	log.Println("addons", addons)
 
 	experimentalMode, err := ReadConfigBool(cmd, "experimental-mode")
 	if err != nil {
