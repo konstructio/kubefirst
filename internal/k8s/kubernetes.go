@@ -13,7 +13,6 @@ import (
 	"github.com/itchyny/gojq"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
-	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -322,7 +321,7 @@ func RemoveSelfSignedCertArgoCD(argocdPodClient coreV1Types.PodInterface) error 
 	}
 
 	// delete argocd-server pod to pickup the new cert-manager cert if ready
-	k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+	DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
 
 	return nil
 }
