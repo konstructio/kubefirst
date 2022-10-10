@@ -15,9 +15,8 @@ In order for the CLI to work, We assume you gave your [AWS Credentials](https://
 #https://github.com/kubefirst/kubefirst/releases
 
 export KUBEFIRST_VERSION=`curl https://github.com/kubefirst/kubefirst/releases/latest  -Ls -o /dev/null -w %{url_effective} | grep -oE "[^/]+$"`
-curl -LO https://github.com/kubefirst/kubefirst/releases/download/$KUBEFIRST_VERSION/kubefirst-$KUBEFIRST_VERSION-linux-amd64.tar.gz
-
-tar -xvzf kubefirst-$KUBEFIRST_VERSION-linux-amd64.tar.gz -C /usr/local/bin/
+curl -LO https://github.com/kubefirst/kubefirst/releases/download/$KUBEFIRST_VERSION/kubefirst_${KUBEFIRST_VERSION}_linux_amd64.tar.gz
+tar -xvf kubefirst_${KUBEFIRST_VERSION}_linux_amd64.tar.gz  -C /usr/local/bin/
 chmod +x /usr/local/bin/kubefirst
 
 kubefirst info
