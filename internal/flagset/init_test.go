@@ -280,6 +280,7 @@ func Test_Init_Addons_Gitlab(t *testing.T) {
 }
 
 func Test_Init_Addons_Github(t *testing.T) {
+	os.Setenv("GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
 	viper.Set("addons", "")
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
@@ -299,6 +300,7 @@ func Test_Init_Addons_Github(t *testing.T) {
 }
 
 func Test_Init_Addons_Github_Kusk(t *testing.T) {
+	os.Setenv("GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
 	viper.Set("addons", "")
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
