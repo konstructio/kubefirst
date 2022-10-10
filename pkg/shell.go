@@ -27,8 +27,8 @@ func ExecShellReturnStrings(command string, args ...string) (string, string, err
 }
 
 // ExecShellWithVars Exec shell actions supporting:
-// - On-the-fly logging of result
-// - Map of Vars loaded
+//   - On-the-fly logging of result
+//   - Map of Vars loaded
 func ExecShellWithVars(osvars map[string]string, command string, args ...string) error {
 
 	log.Printf("INFO: Running %s", command)
