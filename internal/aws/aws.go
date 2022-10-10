@@ -966,3 +966,12 @@ func Route53DeleteHostedZone(hostedZoneId string, hostedZoneName string) error {
 
 	return nil
 }
+
+func ProfileInjection(envs *map[string]string) {
+	currentRole := viper.GetString("aws.arn")
+	if currentRole == "" {
+		(*envs)["AWS_PROFILE"] = viper.GetString("aws.profile")
+	} else {
+		log.Print("Skipping AWS Profile loading due Assume Role...")
+	}
+}

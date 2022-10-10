@@ -32,19 +32,26 @@ func DeployOnGitlab(globalFlags flagset.GlobalFlags, bucketName string) error {
 
 	ciLocation := fmt.Sprintf("%s/ci/components/argo-gitlab/ci.yaml", config.K1FolderPath)
 
-	DetokenizeCI("<CI_CLUSTER_NAME>", viper.GetString("ci.cluster.name"), ciLocation)
-	DetokenizeCI("<CI_S3_SUFFIX>", viper.GetString("ci.s3.suffix"), ciLocation)
-	DetokenizeCI("<CI_HOSTED_ZONE_NAME>", viper.GetString("ci.hosted.zone.name"), ciLocation)
+	err = DetokenizeCI("<CI_CLUSTER_NAME>", viper.GetString("ci.cluster.name"), ciLocation)
+	if err != nil {
+		log.Println(err)
+	}
+	err = DetokenizeCI("<CI_S3_SUFFIX>", viper.GetString("ci.s3.suffix"), ciLocation)
+	if err != nil {
+		log.Println(err)
+	}
+	err = DetokenizeCI("<CI_HOSTED_ZONE_NAME>", viper.GetString("ci.hosted.zone.name"), ciLocation)
+	if err != nil {
+		log.Println(err)
+	}
 
-	gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "ci")
-
-	//if !viper.GetBool("gitlab.ci-pushed") {
-	//	log.Println("Pushing ci repo to origin gitlab")
-	//	gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "ci")
-	//	viper.Set("gitlab.ci-pushed", true)
-	//	viper.WriteConfig()
-	//	log.Println("clone and detokenization of ci-template repository complete")
-	//}
+	if !viper.GetBool("gitlab.ci-pushed") {
+		log.Println("Pushing ci repo to origin gitlab")
+		gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "ci")
+		viper.Set("gitlab.ci-pushed", true)
+		viper.WriteConfig()
+		log.Println("clone and detokenization of ci-template repository complete")
+	}
 
 	return nil
 }
@@ -70,88 +77,12 @@ func SedBucketName(old, new string) error {
 	return nil
 }
 
-//func CopyCIYamlToGitlab(globalFlags flagset.GlobalFlags) error {
-//	cfg := configs.ReadConfig()
-//
-//	if globalFlags.DryRun {
-//		log.Printf("[#99] Dry-run mode, DeployOnGitlab skipped.")
-//		return nil
-//	}
-//
-//	oldLocation := fmt.Sprintf("%s/ci/components/argo-gitlab/ci.yaml", cfg.K1FolderPath)
-//
-//	DetokenizeCI("<CI_CLUSTER_NAME>", viper.GetString("ci.cluster.name"), oldLocation)
-//	DetokenizeCI("<CI_S3_SUFFIX>", viper.GetString("ci.s3.suffix"), oldLocation)
-//	DetokenizeCI("<CI_HOSTED_ZONE_NAME>", viper.GetString("ci.hosted.zone.name"), oldLocation)
-//
-//	newLocation := fmt.Sprintf("%s/gitops/components/argo-gitlab/ci.yaml", cfg.K1FolderPath)
-//	newRepository := fmt.Sprintf("%s/gitops", cfg.K1FolderPath)
-//	err := os.Rename(oldLocation, newLocation)
-//	if err != nil {
-//		return err
-//	}
-//
-//	repo, err := git.PlainOpen(newRepository)
-//	if err != nil {
-//		log.Printf("error opening the directory %s:  %s", newRepository, err)
-//		return err
-//	}
-//
-//	w, err := repo.Worktree()
-//	if err != nil {
-//		log.Printf("error to make worktree:  %s", err)
-//		return err
-//	}
-//
-//	auth := &gitHttp.BasicAuth{
-//		Username: "root",
-//		Password: viper.GetString("gitlab.token"),
-//	}
-//
-//	err = w.Pull(&git.PullOptions{
-//		RemoteName: "gitlab",
-//		Auth:       auth,
-//	})
-//	if err != nil {
-//		log.Print(err)
-//	}
-//
-//	_, err = w.Add("components/argo-gitlab/ci.yaml")
-//	if err != nil {
-//		log.Printf("error to add:  %s", err)
-//		return err
-//	}
-//	_, err = w.Commit(fmt.Sprint("committing detokenized ci yaml file"), &git.CommitOptions{
-//		Author: &object.Signature{
-//			Name:  "kubefirst-bot",
-//			Email: "kubefirst-bot@kubefirst.com",
-//			When:  time.Now(),
-//		},
-//	})
-//	if err != nil {
-//		log.Printf("error to commit:  %s", err)
-//		return err
-//	}
-//
-//	err = repo.Push(&git.PushOptions{
-//		RemoteName: "gitlab",
-//		Auth:       auth,
-//		Force:      true,
-//	})
-//	if err != nil {
-//		log.Println("error pushing to remote", err)
-//		return err
-//	}
-//	return nil
-//}
-
-func DetokenizeCI(old, new, ciLocation string) {
+func DetokenizeCI(old, new, ciLocation string) error {
 	ciFile := ciLocation
 
 	fileData, err := ioutil.ReadFile(ciFile)
 	if err != nil {
-		//return err
-		log.Println(err)
+		return err
 	}
 
 	fileString := string(fileData)
@@ -160,8 +91,7 @@ func DetokenizeCI(old, new, ciLocation string) {
 
 	err = ioutil.WriteFile(ciFile, fileData, 0o600)
 	if err != nil {
-		//return err
-		log.Println(err)
+		return err
 	}
-	// return nil
+	return nil
 }

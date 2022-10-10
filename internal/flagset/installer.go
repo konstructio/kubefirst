@@ -12,6 +12,7 @@ import (
 type InstallerGenericFlags struct {
 	ClusterName      string
 	AdminEmail       string
+	BotPassword      string
 	Cloud            string
 	OrgGitops        string
 	BranchGitops     string //former: "version-gitops"
@@ -31,12 +32,15 @@ func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("gitops-repo", "gitops", "version/branch used on git clone")
 	currentCommand.Flags().String("gitops-branch", "", "version/branch used on git clone - former: version-gitops flag")
 	currentCommand.Flags().String("metaphor-branch", "", "version/branch used on git clone - former: version-gitops flag")
+	currentCommand.Flags().String("bot-password", "", "initial password to use while establishing the bot account")
 	currentCommand.Flags().String("template-tag", configs.K1Version, `fallback tag used on git clone.
   Details: if "gitops-branch" is provided, branch("gitops-branch") has precedence and installer will attempt to clone branch("gitops-branch") first,
   if it fails, then fallback it will attempt to clone the tag provided at "template-tag" flag`)
 	currentCommand.Flags().Bool("skip-metaphor-services", false, "whether to skip the deployment of metaphor micro-services demo applications")
 	currentCommand.Flags().Bool("experimental-mode", false, `whether to allow experimental behavior or developer mode of installer, 
   not recommended for most use cases, as it may mix versions and create unexpected behavior.`)
+	currentCommand.Flags().StringSlice("addons", nil, `the name of addon to enable on create cluster:
+  --addon foo or --addon foo,bar for example`)
 }
 
 // ProcessInstallerGenericFlags - Read values of CLI parameters for installer flags
@@ -81,6 +85,13 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	log.Println("gitops.branch:", branchGitOps)
 	flags.BranchGitops = branchGitOps
 
+	botPassword, err := ReadConfigString(cmd, "bot-password")
+	if err != nil {
+		return InstallerGenericFlags{}, err
+	}
+	viper.Set("botpassword", botPassword)
+	flags.BotPassword = botPassword
+
 	metaphorGitOps, err := ReadConfigString(cmd, "metaphor-branch")
 	if err != nil {
 		return InstallerGenericFlags{}, err
@@ -122,6 +133,14 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	log.Println("option.metaphor.skip", skipMetaphor)
 	flags.SkipMetaphor = skipMetaphor
 
+	addonsFlag, err := ReadConfigStringSlice(cmd, "addons")
+	if err != nil {
+		log.Println("Error processing addons:", err)
+		return InstallerGenericFlags{}, err
+	}
+	viper.Set("addons", addonsFlag)
+	log.Println("addons", addonsFlag)
+
 	experimentalMode, err := ReadConfigBool(cmd, "experimental-mode")
 	if err != nil {
 		log.Println("Error processing experimental-mode:", err)
@@ -130,6 +149,11 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	viper.Set("option.kubefirst.experimental", experimentalMode)
 	log.Println("option.kubefirst.experimental", experimentalMode)
 	flags.ExperimentalMode = experimentalMode
+
+	// TODO: reintroduce the next 3 lines after #511 is closed
+	//if viper.GetBool("github.enabled") && flags.BotPassword == "" {
+	//	return InstallerGenericFlags{}, fmt.Errorf("must provide bot-password argument for github installations of kubefirst")
+	//}
 
 	return experimentalModeTweaks(flags), nil
 }

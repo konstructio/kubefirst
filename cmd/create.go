@@ -1,7 +1,14 @@
 package cmd
 
 import (
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/handlers"
+	"github.com/kubefirst/kubefirst/internal/services"
+	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/segmentio/analytics-go"
 	"log"
+	"net/http"
+	"time"
 
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/state"
@@ -15,9 +22,19 @@ import (
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "create a kubefirst management cluster",
-	Long:  `TBD`,
+	Short: "Creates a Kubefirst management cluster",
+	Long: `Based on Kubefirst init command, that creates the Kubefirst configuration file, this command start the
+cluster provisioning process spinning up the services, and validates the liveness of the provisioned services.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		start := time.Now()
+		defer func() {
+			//The goal of this code is to track create time, if it works or not.
+			//In the future we can add telemetry signal from these action, to track, success or fail.
+			duration := time.Since(start)
+			log.Printf("[000] Create duration is %s", duration)
+
+		}()
+
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
 			return err
@@ -30,7 +47,34 @@ var createCmd = &cobra.Command{
 			)
 		}
 
-		sendStartedInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
+		hostedZoneName := viper.GetString("aws.hostedzonename")
+
+		// instantiate http client with default values
+		httpClient := http.DefaultClient
+
+		// Instantiates a SegmentIO client to send messages to the segment API.
+		segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
+
+		// SegmentIO library works with queue that is based on timing, we explicit close the http client connection
+		// to force flush in case there is still some pending message in the SegmentIO library queue.
+		defer func(segmentIOClient analytics.Client) {
+			err := segmentIOClient.Close()
+			if err != nil {
+				log.Println(err)
+			}
+		}(segmentIOClient)
+
+		telemetryService := services.NewSegmentIoService(segmentIOClient)
+		telemetryHandler := handlers.NewTelemetry(httpClient, telemetryService)
+
+		// todo: confirm K1version works for release go-releaser
+		if globalFlags.UseTelemetry {
+			err = telemetryHandler.SendCountMetric(pkg.MetricMgmtClusterInstallStarted, hostedZoneName, configs.K1Version)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+
 		if !viper.GetBool("kubefirst.done") {
 			if viper.GetBool("github.enabled") {
 				log.Println("Installing Github version of Kubefirst")
@@ -52,12 +96,6 @@ var createCmd = &cobra.Command{
 			viper.WriteConfig()
 		}
 
-		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
-		err = k8s.RemoveSelfSignedCertArgoCD()
-		if err != nil {
-			log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
-		}
-
 		// Relates to issue: https://github.com/kubefirst/kubefirst/issues/386
 		// Metaphor needs chart museum for CI works
 		informUser("Waiting chartmuseum", globalFlags.SilentMode)
@@ -67,6 +105,18 @@ var createCmd = &cobra.Command{
 				informUser("Chartmuseum DNS is ready", globalFlags.SilentMode)
 				break
 			}
+		}
+		
+		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
+		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
+		if err != nil {
+			log.Printf("Failed to get clientset for k8s : %s", err)
+			return err
+		}
+		argocdPodClient := clientset.CoreV1().Pods("argocd")
+		err = k8s.RemoveSelfSignedCertArgoCD(argocdPodClient)
+		if err != nil {
+			log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
 		}
 
 		informUser("Checking if cluster is ready for use by metaphor apps", globalFlags.SilentMode)
@@ -90,7 +140,16 @@ var createCmd = &cobra.Command{
 			log.Println(err)
 		}
 
-		sendCompleteInstallTelemetry(globalFlags.DryRun, globalFlags.UseTelemetry)
+		log.Println("sending mgmt cluster install completed metric")
+		// todo: confirm K1version works for release go-releaser
+
+		if globalFlags.UseTelemetry {
+			err = telemetryHandler.SendCountMetric(pkg.MetricMgmtClusterInstallCompleted, hostedZoneName, configs.K1Version)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+
 		log.Println("Kubefirst installation finished successfully")
 		informUser("Kubefirst installation finished successfully", globalFlags.SilentMode)
 

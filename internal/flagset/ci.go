@@ -20,9 +20,9 @@ type CIFlags struct {
 func DefineCIFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("ci-branch", "", "version/branch used on git clone for ci setup instruction")
 	currentCommand.Flags().Bool("destroy-bucket", false, "destroy bucket that stores tfstate of CI infra as code")
-	currentCommand.Flags().String("ci-cluster-name", "", "TBD")
-	currentCommand.Flags().String("ci-s3-suffix", "", "TBD")
-	currentCommand.Flags().String("ci-hosted-zone-name", "", "TBD")
+	currentCommand.Flags().String("ci-cluster-name", "", "the ci cluster name, used to identify resources on cloud provider")
+	currentCommand.Flags().String("ci-s3-suffix", "", "unique identifier for s3 buckets")
+	currentCommand.Flags().String("ci-hosted-zone-name", "", "the ci domain to provision the kubefirst platform in")
 }
 
 // ProcessCIFlags - process global flags shared between commands like silent, dry-run and use-telemetry

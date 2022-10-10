@@ -1,6 +1,7 @@
 package flagset
 
 import (
+	"errors"
 	"log"
 	"os"
 
@@ -14,7 +15,7 @@ func DefineAWSFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("s3-suffix", "", "unique identifier for s3 buckets")
 	currentCommand.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")
 	currentCommand.Flags().Bool("aws-nodes-spot", false, "nodes spot on AWS EKS compute nodes")
-	currentCommand.Flags().String("profile", "default", "AWS profile located at ~/.aws/config")
+	currentCommand.Flags().String("profile", "", "AWS profile located at ~/.aws/config")
 	currentCommand.Flags().String("hosted-zone-name", "", "the domain to provision the kubefirst platform in")
 	currentCommand.Flags().String("region", "eu-west-1", "the region to provision the cloud resources in")
 }
@@ -28,7 +29,7 @@ type AwsFlags struct {
 	HostedZoneName  string
 }
 
-//ProcessAwsFlags - Read values of CLI parameters for aws flags
+// ProcessAwsFlags - Read values of CLI parameters for aws flags
 func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	flags := AwsFlags{}
 	// set profile
@@ -94,6 +95,19 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	}
 	viper.Set("aws.hostedzonename", hostedZoneName)
 	flags.HostedZoneName = hostedZoneName
+
+	if viper.GetString("aws.arn") == "" && viper.GetString("aws.profile") == "" {
+		log.Println("aws.arn is empty", viper.GetString("aws.arn"))
+		log.Println("aws.profile is empty", viper.GetString("aws.profile"))
+		return AwsFlags{}, errors.New("must provide profile or aws-assume-role argument for aws installations of kubefirst")
+	}
+
+	if viper.GetString("aws.arn") != "" && viper.GetString("aws.profile") != "" {
+		log.Println("aws.arn is ", viper.GetString("aws.arn"))
+		log.Println("aws.profile is: ", viper.GetString("aws.profile"))
+		log.Println("must provide only one of these arguments: profile or aws-assume-role")
+		return AwsFlags{}, errors.New("must provide only one of these arguments: profile or aws-assume-role")
+	}
 
 	return flags, nil
 }

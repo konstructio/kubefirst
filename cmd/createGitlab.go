@@ -50,7 +50,6 @@ var createGitlabCmd = &cobra.Command{
 		//infoCmd need to be before the bars or it is printed in between bars:
 		//Let's try to not move it on refactors
 		infoCmd.Run(cmd, args)
-		progressPrinter.GetInstance()
 		progressPrinter.SetupProgress(4, globalFlags.SilentMode)
 
 		var kPortForwardArgocd *exec.Cmd
@@ -375,6 +374,11 @@ var createGitlabCmd = &cobra.Command{
 			informUser("Vault backend configured", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
+
+		//directory = fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
+		//informUser("applying users terraform", globalFlags.SilentMode)
+		//terraform.ApplyUsersTerraform(globalFlags.DryRun, directory)
+
 		return nil
 	},
 }

@@ -18,10 +18,6 @@ It installs a fully automated platform of open source cloud native tools with a 
 
 3. Connect with [AdministratorAccess](https://console.aws.amazon.com/iam/home?#/policies/arn:aws:iam::aws:policy/AdministratorAccessserviceLevelSummary) IAM credentials to your AWS account ([docs](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys)).
 
-**GitHub Prerequisites**
-
-1. Establish a [GitHub organization](https://docs.github.com/en/organizations/collaborating-with-groups-in-organizations/creating-a-new-organization-from-scratch).
-
 ### Step 1 - Download
 
 Download the latest Kubefirst CLI.
@@ -36,15 +32,23 @@ brew install kubefirst/tools/kubefirst
 
 There are a number of other ways to install Kubefirst for different operating systems, architectures, and containerized environments. Please see our [installation readme](https://github.com/kubefirst/kubefirst/blob/main/build/README.md) for details.
 
-### Step 2 - Create a user GitHub personal access token
+### Step 2 - Create your kubefirst bot user and a personal access token
 
-Go to your [GitHub](https://www.github.com) account / **Settings** / **Personal access tokens**, and generate a new 
+The kubefirst cli will automatically create one admin user for you. We refer to this initial user as the `kubefirst bot`. After the installation, you will temporarily use that `kubefirst bot` to onboard yourself and the rest your team to the platform. From that point forward, the kubefirst bot should only be used for automated activities, and you can use your own personal account.
+
+This kubefirst bot user needs to be associated with a GitHub user account. Log out of GitHub and create a new GitHub account to represent this new `kubefirst bot` account. Because this account will be used for automation, it's a good to choose a username that generically represents your company or project name - something like yourcompany-bot is a good idea. You can also have fun with it and give your bot a fun name - the point is that this is not an account for your long term personal use, it's for the kubefirst system to use.
+
+Your new bot account will need to be associated with a GitHub organization. 
+
+- If you don't already have one that you want to use, while logged into GitHub with your new bot account, establish a new [GitHub organization](https://docs.github.com/en/organizations/collaborating-with-groups-in-organizations/creating-a-new-organization-from-scratch).
+- If you do already have a GitHub org that you want to add Kubefirst to, you'll need to add your new kubefirst bot to the existing organization now.
+
+While logged in with your GitHub bot account, go to your [Personal Access Tokens](https://github.com/settings/tokens) and generate a new 
 token with the following permissions:
-
 
 ![GitHub token](../../img/kubefirst/github/github_token.png)
 
-Expose the token for your local environment:
+Expose the new token to your local environment so the kubefirst cli can leverage it:
 
 ```
 export GITHUB_AUTH_TOKEN=your-new-token
@@ -52,14 +56,15 @@ export GITHUB_AUTH_TOKEN=your-new-token
 
 ### Step 3 - `kubefirst init`
 
-Then init your local setup providing values for the following flags:
+With your new GITHUB_AUTH_TOKEN exported, let's init your local setup providing values for the following flags:
 
 | Flag               | Description                                                                                                                            | Example                    |
 |--------------------|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------|
-| --admin-email      | an email address that can be used for certificate renewal alerts and the gitlab root account                                           | your_name@yourcompany.com  |
-| --cloud            | we only support aws, gcp coming soon                                                                                                   | aws                        |
-| --hosted-zone-name | name of the platform's hosted zone domain - this will drive the URLs of your tools (gitlab.yourdomain.com, argocd.yourdomain.com, etc) | yourdomain.com             |
-| --cluster-name     | the name of your cluster                                                                                                               | my_kubefirst_cluster       |
+| --admin-email      | an email address that can be used for certificate renewal alerts and the gitlab root account                                           | your_name@yourcompany.com   |
+| --bot-password     | required: provide a password to use for the initial bot user in the kubefirst platform sso system in vault.                           | replace-this-password-value |
+| --cloud            | we only support aws, gcp coming soon                                                                                                   | aws                         |
+| --hosted-zone-name | name of the platform's hosted zone domain - this will drive the URLs of your tools (gitlab.yourdomain.com, argocd.yourdomain.com, etc) | yourdomain.com           |
+| --cluster-name     | the name of your cluster                                                                                                               | my_kubefirst_cluster        |
 | --region           | name of the aws region in which to place your region specific resources                                                                | us-east-1                  |
 | --profile          | name of the aws profile the cli should leverage                                                                                        | default                    |
 | --github-user      |                                                                                                                                        | your_username              |
@@ -68,7 +73,9 @@ Then init your local setup providing values for the following flags:
 ```
 kubefirst init \
     --admin-email yourname@yourcompany.com \
-    --cloud aws --hosted-zone-name yourdomain.com \
+    --bot-password replace-this-password-value \
+    --cloud aws \
+    --hosted-zone-name yourdomain.com \
     --region us-east-1 \
     --profile default \
     --cluster-name my_kubefirst_cluster \
