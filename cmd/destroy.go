@@ -130,5 +130,5 @@ func init() {
 	clusterCmd.AddCommand(destroyCmd)
 	currentCommand := destroyCmd
 	flagset.DefineGlobalFlags(currentCommand)
-	flagset.DefineCreateFlags(currentCommand)
+	flagset.DefineDestroyFlags(currentCommand)
 }
