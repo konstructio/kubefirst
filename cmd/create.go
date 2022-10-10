@@ -96,12 +96,6 @@ cluster provisioning process spinning up the services, and validates the livenes
 			viper.WriteConfig()
 		}
 
-		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
-		err = k8s.RemoveSelfSignedCertArgoCD()
-		if err != nil {
-			log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
-		}
-
 		// Relates to issue: https://github.com/kubefirst/kubefirst/issues/386
 		// Metaphor needs chart museum for CI works
 		informUser("Waiting chartmuseum", globalFlags.SilentMode)
@@ -111,6 +105,18 @@ cluster provisioning process spinning up the services, and validates the livenes
 				informUser("Chartmuseum DNS is ready", globalFlags.SilentMode)
 				break
 			}
+		}
+		
+		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
+		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
+		if err != nil {
+			log.Printf("Failed to get clientset for k8s : %s", err)
+			return err
+		}
+		argocdPodClient := clientset.CoreV1().Pods("argocd")
+		err = k8s.RemoveSelfSignedCertArgoCD(argocdPodClient)
+		if err != nil {
+			log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
 		}
 
 		informUser("Checking if cluster is ready for use by metaphor apps", globalFlags.SilentMode)
