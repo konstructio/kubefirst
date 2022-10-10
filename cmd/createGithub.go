@@ -195,7 +195,11 @@ var createGithubCmd = &cobra.Command{
 
 		directory = fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
 		informUser("applying users terraform", globalFlags.SilentMode)
-		terraform.ApplyUsersTerraform(globalFlags.DryRun, directory)
+		gitProvider := viper.GetString("git.mode")
+		err = terraform.ApplyUsersTerraform(globalFlags.DryRun, directory, gitProvider)
+		if err != nil {
+			return err
+		}
 		progressPrinter.IncrementTracker("step-base", 1)
 		//TODO: Do we need this?
 		//From changes on create --> We need to fix once OIDC is ready
