@@ -260,7 +260,8 @@ func Test_Init_by_var_aws_profile(t *testing.T) {
 	os.Unsetenv("KUBEFIRST_HOSTED_ZONE_NAME")
 }
 
-func Test_Init_Addons(t *testing.T) {
+func Test_Init_Addons_Gitlab(t *testing.T) {
+	viper.Set("addons", "")
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
@@ -273,7 +274,45 @@ func Test_Init_Addons(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if string(out) != success {
+	if string(out) != "gitlab" {
+		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
+	}
+}
+
+func Test_Init_Addons_Github(t *testing.T) {
+	viper.Set("addons", "")
+	cmd := FakeInitAddonsTestCmd()
+	b := bytes.NewBufferString("")
+	cmd.SetOut(b)
+	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--profile", "default", "--github-user", "fake", "--github-org", "demo"})
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
+	out, err := ioutil.ReadAll(b)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(out) != "github" {
+		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
+	}
+}
+
+func Test_Init_Addons_Github_Kusk(t *testing.T) {
+	viper.Set("addons", "")
+	cmd := FakeInitAddonsTestCmd()
+	b := bytes.NewBufferString("")
+	cmd.SetOut(b)
+	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--profile", "default", "--github-user", "fake", "--github-org", "demo", "--addons", "kusk"})
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
+	out, err := ioutil.ReadAll(b)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(out) != "github,kusk" {
 		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
 	}
 }
