@@ -1,12 +1,17 @@
 package flagset
 
 import (
+	"errors"
 	"log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+const CloudAws = "aws"
+const CloudLocal = "k3d"
+const CloudK3d = "k3d"
 
 // DefineInstallerGenericFlags - define installer  flags for CLI
 type InstallerGenericFlags struct {
@@ -138,8 +143,10 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 		log.Println("Error processing addons:", err)
 		return InstallerGenericFlags{}, err
 	}
-	viper.Set("addons", addonsFlag)
-	log.Println("addons", addonsFlag)
+	addons := viper.GetStringSlice("addons")
+	addons = append(addons, addonsFlag...)
+	viper.Set("addons", addons)
+	log.Println("addons", addons)
 
 	experimentalMode, err := ReadConfigBool(cmd, "experimental-mode")
 	if err != nil {
@@ -154,6 +161,11 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	//if viper.GetBool("github.enabled") && flags.BotPassword == "" {
 	//	return InstallerGenericFlags{}, fmt.Errorf("must provide bot-password argument for github installations of kubefirst")
 	//}
+	err = validateInstallationFlags()
+	if err != nil {
+		log.Println("Error validateInstallationFlags:", err)
+		return InstallerGenericFlags{}, err
+	}
 
 	return experimentalModeTweaks(flags), nil
 }
@@ -181,4 +193,21 @@ func experimentalModeTweaks(flags InstallerGenericFlags) InstallerGenericFlags {
 
 	}
 	return flags
+}
+
+// validateInstallationFlags: Validate installation major flags
+func validateInstallationFlags() error {
+	//If you are changind this rules, please ensure to update:
+	// internal/flagset/init_test.go
+	if len(viper.GetString("adminemail")) < 1 {
+		message := "missing flag --admin-email"
+		log.Println(message)
+		return errors.New(message)
+	}
+	if len(viper.GetString("cloud")) < 1 {
+		message := "missing flag --cloud, supported values: " + CloudAws + ", " + CloudK3d
+		log.Println(message)
+		return errors.New(message)
+	}
+	return nil
 }
