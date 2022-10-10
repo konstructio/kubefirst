@@ -81,7 +81,7 @@ var createGithubK3dCmd = &cobra.Command{
 
 		//* push our locally detokenized gitops repo to remote github
 
-		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
+		//directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 		informUser("Creating K8S Cluster", globalFlags.SilentMode)
 
 		//TODO: Create K3D
@@ -110,8 +110,11 @@ var createGithubK3dCmd = &cobra.Command{
 		// progressPrinter.IncrementTracker("step-base", 1)
 
 		gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
-		argocd.CreateInitalArgoRepository(gitopsRepo)
-
+		err = argocd.CreateInitalArgoRepository(gitopsRepo)
+		if err != nil {
+			log.Println("Error CreateInitalArgoRepository")
+			return err
+		}
 		err = helm.InstallArgocd(globalFlags.DryRun)
 		if err != nil {
 			log.Println("Error installing argocd")
@@ -126,14 +129,23 @@ var createGithubK3dCmd = &cobra.Command{
 		informUser("ArgoCD Ready", globalFlags.SilentMode)
 
 		kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
-		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+		defer func() {
+			err = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Println("Error closing kPortForwardArgocd")
+			}
+		}()
 		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")), globalFlags.SilentMode)
 
 		informUser("Setting argocd credentials", globalFlags.SilentMode)
 		setArgocdCreds(globalFlags.DryRun)
 		informUser("Getting an argocd auth token", globalFlags.SilentMode)
 		token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
-		argocd.ApplyRegistry(globalFlags.DryRun)
+		err = argocd.ApplyRegistry(globalFlags.DryRun)
+		if err != nil {
+			log.Println("Error applying registry")
+			return err
+		}
 		informUser("Syncing the registry application", globalFlags.SilentMode)
 		informUser("Setup ArgoCD", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
@@ -163,7 +175,12 @@ var createGithubK3dCmd = &cobra.Command{
 		informUser("Waiting vault to be ready", globalFlags.SilentMode)
 		waitVaultToBeRunning(globalFlags.DryRun)
 		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
-		defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
+		defer func() {
+			err = kPortForwardVault.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Println("Error closing kPortForwardVault")
+			}
+		}()
 
 		loopUntilPodIsReady(globalFlags.DryRun)
 
@@ -190,7 +207,7 @@ var createGithubK3dCmd = &cobra.Command{
 		informUser("Terraform Vault", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
 
-		directory = fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
+		directory := fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
 		informUser("applying users terraform", globalFlags.SilentMode)
 
 		// TODO: K3D =>  It should work as expected
