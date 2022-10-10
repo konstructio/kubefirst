@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // Test flags scenarions on init
@@ -43,6 +47,44 @@ func FakeInitCmd() *cobra.Command {
 				fmt.Fprint(cmd.OutOrStdout(), err.Error())
 			}
 			fmt.Fprint(cmd.OutOrStdout(), success)
+			return nil
+		},
+	}
+	DefineGlobalFlags(cmd)
+	DefineGithubCmdFlags(cmd)
+	DefineAWSFlags(cmd)
+	DefineInstallerGenericFlags(cmd)
+	return cmd
+}
+
+func FakeInitAddonsTestCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "fake-init-addons",
+		Short: "Let's test init with addons",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			_, err := ProcessGlobalFlags(cmd)
+			if err != nil {
+				fmt.Fprint(cmd.OutOrStdout(), err.Error())
+			}
+
+			_, err = ProcessGithubAddCmdFlags(cmd)
+			if err != nil {
+				fmt.Fprint(cmd.OutOrStdout(), err.Error())
+			}
+
+			_, err = ProcessInstallerGenericFlags(cmd)
+			if err != nil {
+				fmt.Fprint(cmd.OutOrStdout(), err.Error())
+			}
+
+			_, err = ProcessAwsFlags(cmd)
+			if err != nil {
+				fmt.Fprint(cmd.OutOrStdout(), err.Error())
+			}
+			addons := viper.GetStringSlice("addons")
+			//convert to string..
+			addons_str := strings.Join(addons, ",")
+			fmt.Fprint(cmd.OutOrStdout(), addons_str)
 			return nil
 		},
 	}
@@ -218,4 +260,37 @@ func Test_Init_by_var_aws_profile(t *testing.T) {
 	os.Unsetenv("KUBEFIRST_CLOUD")
 	os.Unsetenv("KUBEFIRST_PROFILE")
 	os.Unsetenv("KUBEFIRST_HOSTED_ZONE_NAME")
+}
+
+func Test_Init_Addons(t *testing.T) {
+	// viper.SetConfigName("configTest") // name of config file (without extension)
+	// viper.SetConfigType("yaml")       // REQUIRED if the config file does not have the extension in the name
+
+	// viper.AddConfigPath(".")    // call multiple times to add many search paths
+	// err := viper.ReadInConfig() // Find and read the config file
+	// if err != nil {             // Handle errors reading the config file
+	// 	panic(fmt.Errorf("fatal error config file: %w", err))
+	// }
+	viper.New()
+	config := configs.ReadConfig()
+	viperConfigFile := config.KubefirstConfigFilePath
+	os.Remove(viperConfigFile)
+
+	pkg.SetupViper(config)
+
+	cmd := FakeInitAddonsTestCmd()
+	b := bytes.NewBufferString("")
+	cmd.SetOut(b)
+	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--profile", "default"})
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
+	out, err := ioutil.ReadAll(b)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(out) != success {
+		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
+	}
 }
