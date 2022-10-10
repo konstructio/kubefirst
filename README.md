@@ -20,7 +20,6 @@
   <a href="https://github.com/kubefirst/kubefirst/releases"><img title="Release date" src="https://img.shields.io/github/release-date/kubefirst/kubefirst"/></a>
 </p>
 
-
 ---
 
 # Kubefirst CLI
