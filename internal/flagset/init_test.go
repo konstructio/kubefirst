@@ -8,8 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -263,21 +261,6 @@ func Test_Init_by_var_aws_profile(t *testing.T) {
 }
 
 func Test_Init_Addons(t *testing.T) {
-	// viper.SetConfigName("configTest") // name of config file (without extension)
-	// viper.SetConfigType("yaml")       // REQUIRED if the config file does not have the extension in the name
-
-	// viper.AddConfigPath(".")    // call multiple times to add many search paths
-	// err := viper.ReadInConfig() // Find and read the config file
-	// if err != nil {             // Handle errors reading the config file
-	// 	panic(fmt.Errorf("fatal error config file: %w", err))
-	// }
-	viper.New()
-	config := configs.ReadConfig()
-	viperConfigFile := config.KubefirstConfigFilePath
-	os.Remove(viperConfigFile)
-
-	pkg.SetupViper(config)
-
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
