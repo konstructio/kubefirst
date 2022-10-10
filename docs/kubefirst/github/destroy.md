@@ -8,5 +8,5 @@ If you just recently ran install from your localhost, you'll already have the fi
 With your ~/.kubefirst file in place, run:
 
 ```bash
-kubefirst destroy
+kubefirst cluster destroy
 ```

@@ -127,10 +127,5 @@ var destroyCmd = &cobra.Command{
 }
 
 func init() {
-
-	rootCmd.AddCommand(destroyCmd)
-	currentCommand := destroyCmd
-	flagset.DefineGlobalFlags(currentCommand)
-	flagset.DefineDestroyFlags(currentCommand)
-
+	clusterCmd.AddCommand(destroyCmd)
 }
