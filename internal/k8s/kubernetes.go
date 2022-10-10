@@ -13,6 +13,7 @@ import (
 	"github.com/itchyny/gojq"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -303,7 +304,7 @@ func WaitForGitlab(dryRun bool, config *configs.Config) {
 	log.Printf("the output is: %s", output.String())
 }
 
-func RemoveSelfSignedCertArgoCD() error {
+func RemoveSelfSignedCertArgoCD(argocdPodClient coreV1Types.PodInterface) error {
 	log.Printf("Removing Self-Signed Certificate from argocd-secret")
 
 	log.Printf("Removing tls.crt")
@@ -319,6 +320,10 @@ func RemoveSelfSignedCertArgoCD() error {
 		log.Printf("err removing tls.crt from argo-secret: %s", err)
 		return err
 	}
+
+	// delete argocd-server pod to pickup the new cert-manager cert if ready
+	k8s.DeletePodByLabel(argocdPodClient, "app.kubernetes.io/name=argocd-server")
+
 	return nil
 }
 
