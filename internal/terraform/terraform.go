@@ -324,7 +324,6 @@ func ApplyUsersTerraform(dryRun bool, directory string, gitProvider string) erro
 
 	envs["AWS_SDK_LOAD_CONFIG"] = "1"
 	aws.ProfileInjection(&envs)
-	envs["AWS_PROFILE"] = viper.GetString("aws.profile")
 	envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 	envs["VAULT_TOKEN"] = viper.GetString("vault.token")
 	envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
