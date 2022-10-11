@@ -6,11 +6,12 @@ package cmd
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/terraform"
 	"log"
 	"net/http"
 	"os/exec"
 	"syscall"
+
+	"github.com/kubefirst/kubefirst/internal/terraform"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
@@ -93,6 +94,10 @@ var createGithubK3dCmd = &cobra.Command{
 		}
 
 		progressPrinter.IncrementTracker("step-base", 1)
+
+		//TODO: Remove me
+		log.Println("Hard break as we are still testing this mode")
+		return nil
 
 		// pushes detokenized KMS_KEY_ID
 		// there will not exist KMS keys on local

@@ -53,13 +53,33 @@ func FakeInitCmd() *cobra.Command {
 	return cmd
 }
 
-// Test_Init_k3d_basic
+// Test_Init_k3d_basic - not supported on gitlab
 // simulates: `kubefirst --admin-email user@domain.com --cloud k3d
-func Test_Init_k3d_basic(t *testing.T) {
+func Test_Init_k3d_gitlab(t *testing.T) {
 	cmd := FakeInitCmd()
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
 	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "k3d"})
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
+	out, err := ioutil.ReadAll(b)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(out) == success {
+		t.Errorf("expected \"%s\" got \"%s\"", "set-by-flag", string(out))
+	}
+}
+
+// Test_Init_k3d_basic
+// simulates: `kubefirst --admin-email user@domain.com --cloud k3d --github-user ghuser --github-org ghorg
+func Test_Init_k3d_basic_github(t *testing.T) {
+	cmd := FakeInitCmd()
+	b := bytes.NewBufferString("")
+	cmd.SetOut(b)
+	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "k3d", "--github-user", "ghuser", "--github-org", "ghorg"})
 	err := cmd.Execute()
 	if err != nil {
 		t.Error(err)
@@ -173,6 +193,7 @@ func Test_Init_aws_basic_with_profile_and_arn(t *testing.T) {
 }
 
 // Test_Init_by_var_k3d
+// this scenario to test to fail gitlab with k3d as it is not supported
 func Test_Init_by_var_k3d(t *testing.T) {
 	cmd := FakeInitCmd()
 	b := bytes.NewBufferString("")
@@ -187,7 +208,7 @@ func Test_Init_by_var_k3d(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if string(out) != success {
+	if string(out) == success {
 		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
 	}
 	os.Unsetenv("KUBEFIRST_ADMIN_EMAIL")

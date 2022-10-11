@@ -2,6 +2,7 @@ package flagset
 
 import (
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/kubefirst/kubefirst/configs"
@@ -206,6 +207,11 @@ func validateInstallationFlags() error {
 	}
 	if len(viper.GetString("cloud")) < 1 {
 		message := "missing flag --cloud, supported values: " + CloudAws + ", " + CloudK3d
+		log.Println(message)
+		return errors.New(message)
+	}
+	if viper.GetString("cloud") == CloudLocal && !viper.GetBool("github.enabled") {
+		message := fmt.Sprintf(" flag --cloud %s doesn't supported a non-github installation. Please, provide the flags '--github-user ghuser --github-org ghorg' to be able to use local install  ", CloudK3d)
 		log.Println(message)
 		return errors.New(message)
 	}

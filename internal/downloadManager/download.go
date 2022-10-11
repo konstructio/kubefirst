@@ -28,7 +28,7 @@ func DownloadLocalTools(config *configs.Config) error {
 
 	// https://github.com/k3d-io/k3d/releases/download/v5.4.6/k3d-linux-amd64
 	k3dDownloadUrl := fmt.Sprintf(
-		" https://github.com/k3d-io/k3d/releases/download/%s/k3d-%s-%s",
+		"https://github.com/k3d-io/k3d/releases/download/%s/k3d-%s-%s",
 		config.K3dVersion,
 		config.LocalOs,
 		config.LocalArchitecture,
