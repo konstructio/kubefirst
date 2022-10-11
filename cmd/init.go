@@ -156,6 +156,13 @@ validated and configured.`,
 		}
 		log.Println("dependency installation complete")
 		progressPrinter.IncrementTracker("step-download", 1)
+		if installerFlags.Cloud == flagset.CloudLocal {
+			err = downloadManager.DownloadLocalTools(config)
+			if err != nil {
+				return err
+			}
+		}
+
 		//Fix incomplete bar, please don't remove it.
 		progressPrinter.IncrementTracker("step-download", 1)
 

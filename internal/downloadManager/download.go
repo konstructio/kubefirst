@@ -18,16 +18,38 @@ import (
 	"github.com/kubefirst/kubefirst/pkg"
 )
 
+// DownloadLocalTools - Dowload extra tools needed for local installations scenarios
+func DownloadLocalTools(config *configs.Config) error {
+	toolsDirPath := fmt.Sprintf("%s/tools", config.K1FolderPath)
+	err := createDirIfDontExist(toolsDirPath)
+	if err != nil {
+		return err
+	}
+
+	// https://github.com/k3d-io/k3d/releases/download/v5.4.6/k3d-linux-amd64
+	k3dDownloadUrl := fmt.Sprintf(
+		" https://github.com/k3d-io/k3d/releases/download/%s/k3d-%s-%s",
+		config.K3dVersion,
+		config.LocalOs,
+		config.LocalArchitecture,
+	)
+	err = downloadFile(config.K3dPath, k3dDownloadUrl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DownloadTools - Dowload tools needed for all installations scenarios
 func DownloadTools(config *configs.Config) error {
 
 	toolsDirPath := fmt.Sprintf("%s/tools", config.K1FolderPath)
 
 	// create folder if it doesn't exist
-	if _, err := os.Stat(toolsDirPath); errors.Is(err, fs.ErrNotExist) {
-		err = os.Mkdir(toolsDirPath, 0777)
-		if err != nil {
-			return err
-		}
+	err := createDirIfDontExist(toolsDirPath)
+	if err != nil {
+		return err
 	}
 
 	kVersion := config.KubectlVersion
@@ -42,7 +64,7 @@ func DownloadTools(config *configs.Config) error {
 		config.LocalArchitecture,
 	)
 	log.Printf("Downloading kubectl from: %s", kubectlDownloadUrl)
-	err := downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
+	err = downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
 	if err != nil {
 		return err
 	}
@@ -271,4 +293,14 @@ func unzip(zipFilepath string, unzipDirectory string) {
 		dstFile.Close()
 		fileInArchive.Close()
 	}
+}
+
+func createDirIfDontExist(toolsDirPath string) error {
+	if _, err := os.Stat(toolsDirPath); errors.Is(err, fs.ErrNotExist) {
+		err = os.Mkdir(toolsDirPath, 0777)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
