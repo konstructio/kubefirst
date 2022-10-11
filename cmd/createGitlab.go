@@ -364,10 +364,16 @@ var createGitlabCmd = &cobra.Command{
 		}
 
 		// enable GitLab port forward connection for Terraform
-		var kPortForwardGitlab *exec.Cmd
+		var kPortForwardGitlab, kPortForwardVault *exec.Cmd
 		if !globalFlags.DryRun {
 			for i := 0; i < totalAttempts; i++ {
 
+				kPortForwardVault, err = k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
+				defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
+				if err != nil {
+					log.Println("Error creating port-forward")
+					return err
+				}
 				kPortForwardGitlab, err = k8s.PortForward(globalFlags.DryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
 				defer func() {
 					_ = kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
@@ -396,6 +402,7 @@ var createGitlabCmd = &cobra.Command{
 					log.Println("Users not configured - waiting before trying again")
 					time.Sleep(20 * time.Second)
 					_ = kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
+					_ = kPortForwardVault.Process.Signal(syscall.SIGTERM)
 				}
 			}
 		}
