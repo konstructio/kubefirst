@@ -63,7 +63,7 @@ var destroyCmd = &cobra.Command{
 			kPortForward, _ := k8s.PortForward(globalFlags.DryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
 			defer func() {
 				if kPortForward != nil {
-					log.Println("Closed argo port forward")
+					log.Println("Closed GitLab port forward")
 					_ = kPortForward.Process.Signal(syscall.SIGTERM)
 				}
 			}()
@@ -91,7 +91,7 @@ var destroyCmd = &cobra.Command{
 			log.Println("deleting registry application in argocd")
 			// delete argocd registry
 			informUser("Destroying Registry Application", globalFlags.SilentMode)
-			k8s.DeleteRegistryApplication(destroyFlags.SkipDeleteRegistryApplication)
+			//k8s.DeleteRegistryApplication(destroyFlags.SkipDeleteRegistryApplication)
 			progressPrinter.IncrementTracker("step-destroy", 1)
 			log.Println("registry application deleted")
 		}
