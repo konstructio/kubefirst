@@ -211,7 +211,7 @@ func validateInstallationFlags() error {
 		return errors.New(message)
 	}
 	if viper.GetString("cloud") == CloudLocal && !viper.GetBool("github.enabled") {
-		message := fmt.Sprintf(" flag --cloud %s doesn't supported a non-github installation. Please, provide the flags '--github-user ghuser --github-org ghorg' to be able to use local install  ", CloudK3d)
+		message := fmt.Sprintf(" flag --cloud %s is not supported for non-github installations. Please, provide the flags '--github-user ghuser --github-org ghorg' to be able to use local install  ", CloudK3d)
 		log.Println(message)
 		return errors.New(message)
 	}
