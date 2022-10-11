@@ -3,6 +3,12 @@ package cmd
 import (
 	"crypto/tls"
 	"fmt"
+	"log"
+	"net/http"
+	"os/exec"
+	"syscall"
+	"time"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/flagset"
@@ -16,11 +22,6 @@ import (
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"net/http"
-	"os/exec"
-	"syscall"
-	"time"
 )
 
 // createGitlabCmd represents the createGitlab command
@@ -363,22 +364,38 @@ var createGitlabCmd = &cobra.Command{
 		}
 
 		// enable GitLab port forward connection for Terraform
-		if !globalFlags.DryRun {
-			kPortForwardGitlab, err := k8s.PortForward(globalFlags.DryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
-			defer kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
+		var kPortForwardGitlab *exec.Cmd
+		for i := 0; i < totalAttempts; i++ {
+
+			kPortForwardGitlab, err = k8s.PortForward(globalFlags.DryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
+			defer func() {
+				_ = kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
+			}()
 			if err != nil {
 				log.Println("Error creating port-forward")
 				return err
 			}
-		}
+			time.Sleep(20 * time.Second)
 
-		// manage users via Terraform
-		directory = fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
-		informUser("applying users terraform", globalFlags.SilentMode)
-		gitProvider := viper.GetString("git.mode")
-		err = terraform.ApplyUsersTerraform(globalFlags.DryRun, directory, gitProvider)
-		if err != nil {
-			return err
+			// manage users via Terraform
+			directory = fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
+			informUser("applying users terraform", globalFlags.SilentMode)
+			gitProvider := viper.GetString("git.mode")
+			err = terraform.ApplyUsersTerraform(globalFlags.DryRun, directory, gitProvider)
+			if err != nil {
+				log.Println("Error applying users")
+				log.Println(err)
+			} else {
+				viper.Set("create.terraform.users", true)
+			}
+			if viper.GetBool("create.terraform.users") || err == nil {
+				log.Println("Users configured")
+				break
+			} else {
+				log.Println("Users not configured - waiting before trying again")
+				time.Sleep(20 * time.Second)
+				_ = kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
+			}
 		}
 
 		return nil
