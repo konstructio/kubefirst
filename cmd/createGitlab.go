@@ -363,6 +363,17 @@ var createGitlabCmd = &cobra.Command{
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
 
+		//Wait gitlab to resolve, before creating users:
+		if !globalFlags.DryRun {
+			for i := 1; i < 15; i++ {
+				argoCDHostReady := gitlab.AwaitHostNTimes("gitlab", globalFlags.DryRun, 20)
+				if argoCDHostReady {
+					informUser("gitlab DNS is ready", globalFlags.SilentMode)
+					break
+				}
+			}
+		}
+
 		// enable GitLab port forward connection for Terraform
 		var kPortForwardGitlab, kPortForwardVault *exec.Cmd
 		if !globalFlags.DryRun {

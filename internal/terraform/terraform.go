@@ -317,7 +317,8 @@ func ApplyUsersTerraform(dryRun bool, directory string, gitProvider string) erro
 		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 	} else if gitProvider == "gitlab" {
 		envs["GITLAB_TOKEN"] = viper.GetString("gitlab.token")
-		envs["GITLAB_BASE_URL"] = viper.GetString("gitlab.local.service")
+		//envs["GITLAB_BASE_URL"] = viper.GetString("gitlab.local.service")
+		envs["GITLAB_BASE_URL"] = fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename"))
 	} else {
 		return errors.New("a valid Git Provider wasn't provided, Terraform wasn't able to apply users")
 	}
