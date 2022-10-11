@@ -4,6 +4,8 @@
 
 [//]: # (<iframe width="784" height="441" src="https://www.youtube.com/embed/KEUOaNMUqOM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>)
 
+**psssst** *- if you plan to destroy your kubefirst platform and recreate it again we recommend running `kubefirst backupSSL --include-metaphor` to re-use your ssl certs from Let's Encrypt* 
+
 The `kubefirst cluster create` execution includes important information toward the end, including URLs and passwords. Please save this information! 
 
 You now have an EKS cluster with the following content installed in it:
