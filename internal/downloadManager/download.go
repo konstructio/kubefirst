@@ -37,6 +37,10 @@ func DownloadLocalTools(config *configs.Config) error {
 	if err != nil {
 		return err
 	}
+	err = os.Chmod(config.K3dPath, 0755)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
