@@ -91,7 +91,7 @@ var destroyCmd = &cobra.Command{
 			log.Println("deleting registry application in argocd")
 			// delete argocd registry
 			informUser("Destroying Registry Application", globalFlags.SilentMode)
-			//k8s.DeleteRegistryApplication(destroyFlags.SkipDeleteRegistryApplication)
+			k8s.DeleteRegistryApplication(destroyFlags.SkipDeleteRegistryApplication)
 			progressPrinter.IncrementTracker("step-destroy", 1)
 			log.Println("registry application deleted")
 		}
