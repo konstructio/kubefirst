@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -307,26 +306,4 @@ func randSeq(n int) string {
 func Random(seq int) string {
 	rand.Seed(time.Now().UnixNano())
 	return randSeq(seq)
-}
-
-// todo: add docs, discard body, add test
-func IsAlive(httpClient *http.Client, address string) (int, error) {
-	req, err := http.NewRequest(http.MethodGet, address, nil)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-
-	//body, err := io.ReadAll(resp.Body)
-	//if err != nil {
-	//	return http.StatusInternalServerError, err
-	//}
-	//
-	//io.Discard(nil, body)
-
-	return resp.StatusCode, nil
 }
