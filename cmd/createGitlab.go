@@ -369,7 +369,9 @@ var createGitlabCmd = &cobra.Command{
 			if !viper.GetBool("create.terraformapplied.users") {
 				for i := 0; i < totalAttempts; i++ {
 					kPortForwardVault, err = k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
-					defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
+					defer func() {
+						_ = kPortForwardVault.Process.Signal(syscall.SIGTERM)
+					}()
 					if err != nil {
 						log.Println("Error creating port-forward")
 						return err
