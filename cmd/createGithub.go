@@ -46,7 +46,6 @@ var createGithubCmd = &cobra.Command{
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 		progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 		progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
-		progressPrinter.AddTracker("step-ecr", "Setup ECR/Docker Registries", 1) // todo remove this step, its baked into github repo
 		progressPrinter.AddTracker("step-apps", "Install apps to cluster", 6)
 
 		progressPrinter.IncrementTracker("step-0", 1)
