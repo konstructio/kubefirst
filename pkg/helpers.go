@@ -310,20 +310,21 @@ func Random(seq int) string {
 }
 
 // RemoveSubDomain receives a host and remove its subdomain, if exists.
-func RemoveSubDomain(host string) (string, error) {
+func RemoveSubDomain(fullURL string) (string, error) {
 
-	// check if received host is valid before parsing it
-	err := IsValidURL(host)
+	// add http if fullURL doesn't have it, this is for validation only, won't be used on http requests
+	if !strings.HasPrefix(fullURL, "http") {
+		fullURL = "https://" + fullURL
+	}
+
+	// check if received fullURL is valid before parsing it
+	err := IsValidURL(fullURL)
 	if err != nil {
 		return "", err
 	}
 
-	if !strings.HasPrefix(host, "http") {
-		return "", errors.New("error...")
-	}
-
 	// build URL
-	fullPathURL, err := url.ParseRequestURI(host)
+	fullPathURL, err := url.ParseRequestURI(fullURL)
 	if err != nil {
 		return "", err
 	}
@@ -331,16 +332,12 @@ func RemoveSubDomain(host string) (string, error) {
 	splitHost := strings.Split(fullPathURL.Host, ".")
 
 	if len(splitHost) < 2 {
-		return "", fmt.Errorf("the host (%s) is invalid", host)
-	}
-
-	if len(splitHost) == 2 {
-		return host, nil
+		return "", fmt.Errorf("the fullURL (%s) is invalid", fullURL)
 	}
 
 	lastURLPart := splitHost[len(splitHost)-2:]
 	hostWithSpace := strings.Join(lastURLPart, " ")
-	// set host only without subdomain
+	// set fullURL only without subdomain
 	fullPathURL.Host = strings.ReplaceAll(hostWithSpace, " ", ".")
 
 	// build URL without subdomain
@@ -352,7 +349,7 @@ func RemoveSubDomain(host string) (string, error) {
 		return "", err
 	}
 
-	return result, nil
+	return fullPathURL.Host, nil
 }
 
 // IsValidURL checks if a URL is valid

@@ -72,7 +72,6 @@ cluster provisioning process spinning up the services, and validates the livenes
 		telemetryService := services.NewSegmentIoService(segmentIOClient)
 		telemetryHandler := handlers.NewTelemetryHandler(telemetryService)
 
-		// todo: confirm K1version works for release go-releaser
 		if globalFlags.UseTelemetry {
 			err = telemetryHandler.SendCountMetric(telemetryDomain)
 			if err != nil {
@@ -146,10 +145,14 @@ cluster provisioning process spinning up the services, and validates the livenes
 		}
 
 		log.Println("sending mgmt cluster install completed metric")
-		// todo: confirm K1version works for release go-releaser
 
+		installCompletedTelemetry, err := domain.NewTelemetry(
+			pkg.MetricMgmtClusterInstallCompleted,
+			hostedZoneName,
+			configs.K1Version,
+		)
 		if globalFlags.UseTelemetry {
-			err = telemetryHandler.SendCountMetric(telemetryDomain)
+			err = telemetryHandler.SendCountMetric(installCompletedTelemetry)
 			if err != nil {
 				log.Println(err)
 			}

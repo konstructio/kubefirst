@@ -116,7 +116,7 @@ validated and configured.`,
 
 		// validate telemetryDomain data
 		telemetryDomain, err := domain.NewTelemetry(
-			pkg.MetricMgmtClusterInstallStarted,
+			pkg.MetricInitStarted,
 			awsFlags.HostedZoneName,
 			configs.K1Version,
 		)
@@ -125,7 +125,7 @@ validated and configured.`,
 		}
 		telemetryService := services.NewSegmentIoService(segmentIOClient)
 		telemetryHandler := handlers.NewTelemetryHandler(telemetryService)
-		// todo: confirm K1version works for release go-releaser
+
 		if globalFlags.UseTelemetry {
 			err = telemetryHandler.SendCountMetric(telemetryDomain)
 			if err != nil {
@@ -216,10 +216,14 @@ validated and configured.`,
 		progressPrinter.IncrementTracker("step-gitops", 1)
 
 		log.Println("sending init completed metric")
-		// todo: confirm K1version works for release go-releaser
 
+		telemetryInitCompleted, err := domain.NewTelemetry(
+			pkg.MetricInitCompleted,
+			awsFlags.HostedZoneName,
+			configs.K1Version,
+		)
 		if globalFlags.UseTelemetry {
-			err = telemetryHandler.SendCountMetric(telemetryDomain)
+			err = telemetryHandler.SendCountMetric(telemetryInitCompleted)
 			if err != nil {
 				log.Println(err)
 			}

@@ -25,10 +25,6 @@ func NewTelemetry(metricName string, domain string, CLIVersion string) (*Telemet
 		return nil, err
 	}
 
-	if err = pkg.IsValidURL(domain); err != nil {
-		return nil, err
-	}
-
 	return &Telemetry{
 		MetricName: metricName,
 		Domain:     domain,

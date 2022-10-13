@@ -24,7 +24,7 @@ func TestNewTelemetry(t *testing.T) {
 			name: "valid domain",
 			args: args{
 				metricName: "test metric",
-				domain:     "example.com",
+				domain:     "https://example.com",
 				CLIVersion: "0.0.0",
 			},
 			want:    &validTelemetry,
@@ -34,7 +34,7 @@ func TestNewTelemetry(t *testing.T) {
 			name: "invalid domain",
 			args: args{
 				metricName: "test metric",
-				domain:     "example-com",
+				domain:     "https://example-com",
 				CLIVersion: "0.0.0",
 			},
 			want:    nil,

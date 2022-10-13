@@ -19,25 +19,25 @@ func TestRemoveSubDomain(t *testing.T) {
 		{
 			name:    "single domain",
 			args:    args{"https://example.com"},
-			want:    "https://example.com",
+			want:    "example.com",
 			wantErr: false,
 		},
 		{
 			name:    "subdomain.domain",
 			args:    args{"https://hub.example.com"},
-			want:    "https://example.com",
+			want:    "example.com",
 			wantErr: false,
 		},
 		{
 			name:    "sub.subdomain.domain",
 			args:    args{"https://hub.hub.example.com"},
-			want:    "https://example.com",
+			want:    "example.com",
 			wantErr: false,
 		},
 		{
 			name:    "another domain extension",
 			args:    args{"https://x.xyz"},
-			want:    "https://x.xyz",
+			want:    "x.xyz",
 			wantErr: false,
 		},
 		{
