@@ -45,7 +45,7 @@ var createGithubCmd = &cobra.Command{
 		var kPortForwardArgocd *exec.Cmd
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 		progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
-		progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
+		progressPrinter.AddTracker("step-base", "Setup base cluster", 3)
 		progressPrinter.AddTracker("step-apps", "Install apps to cluster", 6)
 
 		progressPrinter.IncrementTracker("step-0", 1)
