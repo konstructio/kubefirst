@@ -95,10 +95,6 @@ var createGithubK3dCmd = &cobra.Command{
 
 		progressPrinter.IncrementTracker("step-base", 1)
 
-		//TODO: Remove me
-		log.Println("Hard break as we are still testing this mode")
-		return nil
-
 		// pushes detokenized KMS_KEY_ID
 		// there will not exist KMS keys on local
 		// if !viper.GetBool("vault.kms.kms-pushed") {
@@ -125,6 +121,10 @@ var createGithubK3dCmd = &cobra.Command{
 			log.Println("Error installing argocd")
 			return err
 		}
+
+		//TODO: Remove me
+		log.Println("Hard break as we are still testing this mode")
+		return nil
 
 		informUser("Install ArgoCD", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
@@ -175,6 +175,10 @@ var createGithubK3dCmd = &cobra.Command{
 		}
 		informUser("Setup ArgoCD", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
+
+		//TODO: Remove me
+		log.Println("Hard break as we are still testing this mode")
+		return nil
 
 		// TODO: K3D => We need to check what changes for vault on raft mode, without terraform to unseal it
 		informUser("Waiting vault to be ready", globalFlags.SilentMode)

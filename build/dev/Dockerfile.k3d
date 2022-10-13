@@ -1,11 +1,13 @@
 FROM golang:1.18
+ARG HOME_PATH=/home/developer
 RUN \
     apt-get update && apt-get install -y \
     curl jq vim unzip less \
     ca-certificates \
     curl \
     gnupg \
-    lsb-release \ 
+    lsb-release \
+    passwd  \ 
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /etc/apt/keyrings   && \
@@ -47,8 +49,12 @@ RUN \
     apt-get update && apt-get install -y \
     curl jq vim unzip less \
     && rm -rf /var/lib/apt/lists/*
-RUN useradd -ms /bin/bash developer
-RUN usermod -aG docker developer
+RUN mkdir -p ${HOME_PATH}
+#RUN useradd -ms /bin/bash developer --home ${HOME_PATH}
+RUN echo ${HOME_PATH}
+#RUN usermod -m -d ${HOME_PATH} root
+#RUN usermod -aG docker developer
 RUN chmod 777 -R /go
-#USER developer
-WORKDIR /home/developer/app
+# USER developer
+
+WORKDIR /app

@@ -144,6 +144,15 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 		log.Println("Error processing addons:", err)
 		return InstallerGenericFlags{}, err
 	}
+	//TODO: add unit test for this, after Thiago PR is merged on new append checks
+	if flags.Cloud == CloudAws {
+		//Adds mandatory addon for non-local install
+		addonsFlag = append(addonsFlag, "cloud")
+	}
+	if flags.Cloud == CloudK3d {
+		//Adds mandatory addon for local install
+		addonsFlag = append(addonsFlag, "k3d")
+	}
 	addons := viper.GetStringSlice("addons")
 	addons = append(addons, addonsFlag...)
 	viper.Set("addons", addons)
