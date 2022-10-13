@@ -3,8 +3,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/domain"
 	"log"
-	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -87,7 +87,7 @@ validated and configured.`,
 		progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
 		progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
 		progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
-		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 1)
+		progressPrinter.AddTracker("step-telemetryDomain", pkg.SendTelemetry, 1)
 
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
 
@@ -101,7 +101,6 @@ validated and configured.`,
 		}
 
 		log.Println("sending init started metric")
-		httpClient := http.DefaultClient
 
 		// Instantiates a SegmentIO client to use send messages to the segment API.
 		segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
@@ -115,11 +114,20 @@ validated and configured.`,
 			}
 		}(segmentIOClient)
 
+		// validate telemetryDomain data
+		telemetryDomain, err := domain.NewTelemetry(
+			pkg.MetricMgmtClusterInstallStarted,
+			awsFlags.HostedZoneName,
+			configs.K1Version,
+		)
+		if err != nil {
+			log.Println(err)
+		}
 		telemetryService := services.NewSegmentIoService(segmentIOClient)
-		telemetryHandler := handlers.NewTelemetry(httpClient, telemetryService)
+		telemetryHandler := handlers.NewTelemetryHandler(telemetryService)
 		// todo: confirm K1version works for release go-releaser
 		if globalFlags.UseTelemetry {
-			err = telemetryHandler.SendCountMetric(pkg.MetricInitStarted, awsFlags.HostedZoneName, configs.K1Version)
+			err = telemetryHandler.SendCountMetric(telemetryDomain)
 			if err != nil {
 				log.Println(err)
 			}
@@ -211,7 +219,7 @@ validated and configured.`,
 		// todo: confirm K1version works for release go-releaser
 
 		if globalFlags.UseTelemetry {
-			err = telemetryHandler.SendCountMetric(pkg.MetricInitCompleted, awsFlags.HostedZoneName, configs.K1Version)
+			err = telemetryHandler.SendCountMetric(telemetryDomain)
 			if err != nil {
 				log.Println(err)
 			}
@@ -220,7 +228,7 @@ validated and configured.`,
 		viper.WriteConfig()
 
 		//! tracker 8
-		progressPrinter.IncrementTracker("step-telemetry", 1)
+		progressPrinter.IncrementTracker("step-telemetryDomain", 1)
 		time.Sleep(time.Millisecond * 100)
 
 		informUser("init is done!\n", globalFlags.SilentMode)

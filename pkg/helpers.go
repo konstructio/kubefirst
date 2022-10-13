@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -306,4 +307,40 @@ func randSeq(n int) string {
 func Random(seq int) string {
 	rand.Seed(time.Now().UnixNano())
 	return randSeq(seq)
+}
+
+func RemoveSubDomain(domain string) (string, error) {
+
+	var result string
+
+	splitDomain := strings.Split(domain, ".")
+
+	if len(splitDomain) < 2 {
+		return "", fmt.Errorf("the domain (%s) is invalid", domain)
+	}
+
+	if len(splitDomain) == 2 {
+		return domain, nil
+	}
+
+	lastURLPart := splitDomain[len(splitDomain)-2:]
+	domainWithSpace := strings.Join(lastURLPart, " ")
+	result = strings.ReplaceAll(domainWithSpace, " ", ".")
+
+	err := IsValidURL("https://" + result)
+	if err != nil {
+		return "", err
+	}
+
+	return domain, nil
+
+}
+
+func IsValidURL(rawURL string) error {
+
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil || len(parsedURL.Path) == 0 {
+		return fmt.Errorf("the URL (%s) is invalid", rawURL)
+	}
+	return nil
 }
