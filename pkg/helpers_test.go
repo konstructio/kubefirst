@@ -1,8 +1,6 @@
 package pkg
 
 import (
-	"fmt"
-	"log"
 	"reflect"
 	"testing"
 )
@@ -20,38 +18,38 @@ func TestRemoveSubDomain(t *testing.T) {
 	}{
 		{
 			name:    "single domain",
-			args:    args{"example.com"},
-			want:    "example.com",
+			args:    args{"https://example.com"},
+			want:    "https://example.com",
 			wantErr: false,
 		},
 		{
 			name:    "subdomain.domain",
-			args:    args{"hub.example.com"},
-			want:    "example.com",
+			args:    args{"https://hub.example.com"},
+			want:    "https://example.com",
 			wantErr: false,
 		},
 		{
 			name:    "sub.subdomain.domain",
-			args:    args{"hub.hub.example.com"},
-			want:    "example.com",
+			args:    args{"https://hub.hub.example.com"},
+			want:    "https://example.com",
 			wantErr: false,
 		},
 		{
 			name:    "another domain extension",
-			args:    args{"x.xyz"},
-			want:    "x.xyz",
+			args:    args{"https://x.xyz"},
+			want:    "https://x.xyz",
 			wantErr: false,
 		},
 		{
 			name:    "invalid domain",
-			args:    args{"xyz"},
-			want:    "xyz",
-			wantErr: false,
+			args:    args{"https://xyz"},
+			want:    "",
+			wantErr: true,
 		},
 		{
 			name:    "invalid domain",
 			args:    args{"invalid-examplecom"},
-			want:    "example.com",
+			want:    "",
 			wantErr: true,
 		},
 	}
@@ -65,10 +63,55 @@ func TestRemoveSubDomain(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("RemoveSubDomain() got = %v, want %v", got, tt.want)
 			}
-			log.Println("---debug---")
-			fmt.Println(got)
-			log.Println("---debug---")
+		})
+	}
+}
 
+func Test_isValidURL(t *testing.T) {
+	type args struct {
+		rawURL string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "valid url sample 1",
+			args:    args{rawURL: "https://example.com"},
+			wantErr: false,
+		},
+		{
+			name:    "valid url sample 2",
+			args:    args{rawURL: "https://hub.example.com"},
+			wantErr: false,
+		},
+		{
+			name:    "empty string",
+			args:    args{rawURL: ""},
+			wantErr: true,
+		},
+		{
+			name:    "invalid url sample 1",
+			args:    args{rawURL: "http//example.com"},
+			wantErr: true,
+		},
+		{
+			name:    "invalid url sample 2",
+			args:    args{rawURL: "example.com"},
+			wantErr: true,
+		},
+		{
+			name:    "invalid url sample 3",
+			args:    args{rawURL: "examplecom"},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := IsValidURL(tt.args.rawURL); (err != nil) != tt.wantErr {
+				t.Errorf("IsValidURL() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
 }

@@ -309,38 +309,62 @@ func Random(seq int) string {
 	return randSeq(seq)
 }
 
-func RemoveSubDomain(domain string) (string, error) {
+// RemoveSubDomain receives a host and remove its subdomain, if exists.
+func RemoveSubDomain(host string) (string, error) {
 
-	var result string
-
-	splitDomain := strings.Split(domain, ".")
-
-	if len(splitDomain) < 2 {
-		return "", fmt.Errorf("the domain (%s) is invalid", domain)
-	}
-
-	if len(splitDomain) == 2 {
-		return domain, nil
-	}
-
-	lastURLPart := splitDomain[len(splitDomain)-2:]
-	domainWithSpace := strings.Join(lastURLPart, " ")
-	result = strings.ReplaceAll(domainWithSpace, " ", ".")
-
-	err := IsValidURL("https://" + result)
+	// check if received host is valid before parsing it
+	err := IsValidURL(host)
 	if err != nil {
 		return "", err
 	}
 
-	return domain, nil
+	if !strings.HasPrefix(host, "http") {
+		return "", errors.New("error...")
+	}
 
+	// build URL
+	fullPathURL, err := url.ParseRequestURI(host)
+	if err != nil {
+		return "", err
+	}
+
+	splitHost := strings.Split(fullPathURL.Host, ".")
+
+	if len(splitHost) < 2 {
+		return "", fmt.Errorf("the host (%s) is invalid", host)
+	}
+
+	if len(splitHost) == 2 {
+		return host, nil
+	}
+
+	lastURLPart := splitHost[len(splitHost)-2:]
+	hostWithSpace := strings.Join(lastURLPart, " ")
+	// set host only without subdomain
+	fullPathURL.Host = strings.ReplaceAll(hostWithSpace, " ", ".")
+
+	// build URL without subdomain
+	result := fullPathURL.Scheme + "://" + fullPathURL.Host
+
+	// check if new URL is still valid
+	err = IsValidURL(result)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
 }
 
+// IsValidURL checks if a URL is valid
 func IsValidURL(rawURL string) error {
 
-	parsedURL, err := url.Parse(rawURL)
-	if err != nil || len(parsedURL.Path) == 0 {
-		return fmt.Errorf("the URL (%s) is invalid", rawURL)
+	if len(rawURL) == 0 {
+		return errors.New("rawURL cannot be empty string")
+	}
+
+	parsedURL, err := url.ParseRequestURI(rawURL)
+	if err != nil || parsedURL == nil {
+		return fmt.Errorf("the URL (%s) is invalid, error = %v", rawURL, err)
 	}
 	return nil
 }
