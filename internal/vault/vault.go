@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 	"syscall"
 
 	vault "github.com/hashicorp/vault/api"
@@ -101,10 +100,10 @@ func ConfigureVault(dryRun bool) {
 	envs["TF_VAR_git_provider"] = viper.GetString("git.mode")
 	//envs["TF_VAR_ssh_private_key"] = viper.GetString("botprivatekey")
 	//Escaping newline to allow certs to be loaded properly by terraform
-	envs["TF_VAR_ssh_private_key"] = strings.Replace(viper.GetString("botprivatekey"), "\n", "\\n", -1)
+	envs["TF_VAR_ssh_private_key"] = viper.GetString("botprivatekey")
 
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
-	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = strings.Replace(viper.GetString("botpublickey"), "\n", "\\n", -1)
+	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botpublickey")
 
 	directory := fmt.Sprintf("%s/gitops/terraform/vault", config.K1FolderPath)
 	err = os.Chdir(directory)

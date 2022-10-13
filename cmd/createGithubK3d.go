@@ -6,6 +6,7 @@ package cmd
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/terraform"
 	"log"
 	"net/http"
 	"os/exec"
@@ -19,7 +20,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
-	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -207,11 +207,14 @@ var createGithubK3dCmd = &cobra.Command{
 		informUser("Terraform Vault", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
 
-		directory := fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
-		informUser("applying users terraform", globalFlags.SilentMode)
-
 		// TODO: K3D =>  It should work as expected
-		terraform.ApplyUsersTerraform(globalFlags.DryRun, directory)
+		directory := fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
+		gitProvider := viper.GetString("git.mode")
+		informUser("applying users terraform", globalFlags.SilentMode)
+		err = terraform.ApplyUsersTerraform(globalFlags.DryRun, directory, gitProvider)
+		if err != nil {
+			log.Println(err)
+		}
 		progressPrinter.IncrementTracker("step-base", 1)
 		progressPrinter.IncrementTracker("step-apps", 1)
 		return nil

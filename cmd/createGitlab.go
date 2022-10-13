@@ -3,12 +3,6 @@ package cmd
 import (
 	"crypto/tls"
 	"fmt"
-	"log"
-	"net/http"
-	"os/exec"
-	"syscall"
-	"time"
-
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/flagset"
@@ -22,6 +16,12 @@ import (
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log"
+	"net/http"
+	"os"
+	"os/exec"
+	"syscall"
+	"time"
 )
 
 // createGitlabCmd represents the createGitlab command
@@ -179,27 +179,16 @@ var createGitlabCmd = &cobra.Command{
 		informUser("Waiting vault to be ready", globalFlags.SilentMode)
 		waitVaultToBeRunning(globalFlags.DryRun)
 		progressPrinter.IncrementTracker("step-gitlab", 1)
+
+		var kPortForwardVault *exec.Cmd
 		if !globalFlags.DryRun {
-			kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
-			defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
+			kPortForwardVault, err = k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
 			if err != nil {
 				log.Println("Error creating port-forward")
 				return err
 			}
-
 		}
-		/*
-			// Testing gitlab HTTPS creation, vaults needs gitlab
-			for i := 1; i < 15; i++ {
-				hostReady := gitlab.AwaitHostNTimes("gitlab", globalFlags.DryRun, 20)
-				if hostReady {
-					informUser("gitlab DNS is ready", globalFlags.SilentMode)
-					break
-				} else {
-					informUser("gitlab DNS is not ready", globalFlags.SilentMode)
-				}
-			}
-		*/
+
 		loopUntilPodIsReady(globalFlags.DryRun)
 		initializeVaultAndAutoUnseal(globalFlags.DryRun)
 		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")), globalFlags.SilentMode)
@@ -212,9 +201,9 @@ var createGitlabCmd = &cobra.Command{
 		log.Println("gitlab is ready!")
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 
+		var kPortForwardGitlab *exec.Cmd
 		if !globalFlags.DryRun {
-			kPortForwardGitlab, err := k8s.PortForward(globalFlags.DryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
-			defer kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
+			kPortForwardGitlab, err = k8s.PortForward(globalFlags.DryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
 			if err != nil {
 				log.Println("Error creating port-forward")
 				return err
@@ -232,6 +221,7 @@ var createGitlabCmd = &cobra.Command{
 			informUser("Gitlab terraform", globalFlags.SilentMode)
 			gitlab.ApplyGitlabTerraform(globalFlags.DryRun, directory)
 			gitlab.GitlabKeyUpload(globalFlags.DryRun)
+
 			informUser("Gitlab ready", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-gitlab", 1)
 		}
@@ -375,9 +365,50 @@ var createGitlabCmd = &cobra.Command{
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}
 
-		//directory = fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
-		//informUser("applying users terraform", globalFlags.SilentMode)
-		//terraform.ApplyUsersTerraform(globalFlags.DryRun, directory)
+		// force close port forward, Vault port forward is not available at this point anymore
+		if kPortForwardVault != nil {
+			err = kPortForwardVault.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+
+		kPortForwardVault, err = k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
+		defer func(Process *os.Process, sig os.Signal) {
+			err := Process.Signal(sig)
+			if err != nil {
+				log.Println(err)
+			}
+		}(kPortForwardVault.Process, syscall.SIGTERM)
+
+		// force close port forward, GitLab port forward is not available at this point anymore
+		if kPortForwardGitlab != nil {
+			err = kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+
+		kPortForwardGitlab, err = k8s.PortForward(globalFlags.DryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
+		defer func(Process *os.Process, sig os.Signal) {
+			err := Process.Signal(sig)
+			if err != nil {
+				log.Println(err)
+			}
+		}(kPortForwardGitlab.Process, syscall.SIGTERM)
+		if err != nil {
+			log.Println("Error creating port-forward")
+			return err
+		}
+
+		// manage users via Terraform
+		directory = fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
+		informUser("applying users terraform", globalFlags.SilentMode)
+		gitProvider := viper.GetString("git.mode")
+		err = terraform.ApplyUsersTerraform(globalFlags.DryRun, directory, gitProvider)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	},

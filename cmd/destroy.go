@@ -63,7 +63,7 @@ var destroyCmd = &cobra.Command{
 			kPortForward, _ := k8s.PortForward(globalFlags.DryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
 			defer func() {
 				if kPortForward != nil {
-					log.Println("Closed argo port forward")
+					log.Println("Closed GitLab port forward")
 					_ = kPortForward.Process.Signal(syscall.SIGTERM)
 				}
 			}()
@@ -127,10 +127,8 @@ var destroyCmd = &cobra.Command{
 }
 
 func init() {
-
-	rootCmd.AddCommand(destroyCmd)
+	clusterCmd.AddCommand(destroyCmd)
 	currentCommand := destroyCmd
 	flagset.DefineGlobalFlags(currentCommand)
 	flagset.DefineDestroyFlags(currentCommand)
-
 }

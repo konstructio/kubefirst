@@ -45,8 +45,7 @@ var createGithubCmd = &cobra.Command{
 		var kPortForwardArgocd *exec.Cmd
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 		progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
-		progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
-		progressPrinter.AddTracker("step-ecr", "Setup ECR/Docker Registries", 1) // todo remove this step, its baked into github repo
+		progressPrinter.AddTracker("step-base", "Setup base cluster", 3)
 		progressPrinter.AddTracker("step-apps", "Install apps to cluster", 6)
 
 		progressPrinter.IncrementTracker("step-0", 1)
@@ -195,7 +194,11 @@ var createGithubCmd = &cobra.Command{
 
 		directory = fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
 		informUser("applying users terraform", globalFlags.SilentMode)
-		terraform.ApplyUsersTerraform(globalFlags.DryRun, directory)
+		gitProvider := viper.GetString("git.mode")
+		err = terraform.ApplyUsersTerraform(globalFlags.DryRun, directory, gitProvider)
+		if err != nil {
+			return err
+		}
 		progressPrinter.IncrementTracker("step-base", 1)
 		//TODO: Do we need this?
 		//From changes on create --> We need to fix once OIDC is ready
