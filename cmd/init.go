@@ -91,13 +91,13 @@ validated and configured.`,
 
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
 
-		k1Dir := fmt.Sprintf("%s", config.K1FolderPath)
-		if _, err := os.Stat(k1Dir); errors.Is(err, os.ErrNotExist) {
-			if err := os.Mkdir(k1Dir, os.ModePerm); err != nil {
+		if _, err := os.Stat(config.K1FolderPath); errors.Is(err, os.ErrNotExist) {
+			if err := os.Mkdir(config.K1FolderPath, os.ModePerm); err != nil {
 				log.Panicf("info: could not create directory %q - error: %s", config.K1FolderPath, err)
 			}
 		} else {
-			log.Printf("info: %s already exist", k1Dir)
+			return fmt.Errorf("folder: %s already exist, and can be left over from a previous installation, "+
+				"please use kubefirst clean command to be ready for a new installation", config.K1FolderPath)
 		}
 
 		log.Println("sending init started metric")
