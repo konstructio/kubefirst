@@ -111,6 +111,13 @@ var createGithubK3dCmd = &cobra.Command{
 		// restoreSSLCmd.RunE(cmd, args)
 		// progressPrinter.IncrementTracker("step-base", 1)
 
+		//ADD Secrets to cluster
+		err = k3d.AddK3DSecrets(globalFlags.DryRun)
+		if err != nil {
+			log.Println("Error AddK3DSecrets")
+			return err
+		}
+
 		gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
 		err = argocd.CreateInitalArgoRepository(gitopsRepo)
 		if err != nil {
@@ -141,11 +148,29 @@ var createGithubK3dCmd = &cobra.Command{
 		informUser("Setting argocd credentials", globalFlags.SilentMode)
 		setArgocdCreds(globalFlags.DryRun)
 		informUser("Getting an argocd auth token", globalFlags.SilentMode)
-		token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
-		err = argocd.ApplyRegistryLocal(globalFlags.DryRun)
-		if err != nil {
-			log.Println("Error applying registry")
-			return err
+		totalAttempts := 3
+		token := ""
+
+		if kPortForwardArgocd != nil {
+			err = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		for i := 0; i < totalAttempts; i++ {
+			kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
+			defer func() {
+				err = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+				if err != nil {
+					log.Println("Error closing kPortForwardArgocd")
+				}
+			}()
+			token = argocd.GetArgocdAuthToken(globalFlags.DryRun)
+			err = argocd.ApplyRegistryLocal(globalFlags.DryRun)
+			if err != nil {
+				log.Println("Error applying registry")
+				return err
+			}
 		}
 		informUser("Syncing the registry application", globalFlags.SilentMode)
 		informUser("Setup ArgoCD", globalFlags.SilentMode)
