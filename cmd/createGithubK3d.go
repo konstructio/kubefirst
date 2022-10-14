@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os/exec"
 	"syscall"
+	"time"
 
 	"github.com/kubefirst/kubefirst/internal/terraform"
 
@@ -46,7 +47,7 @@ var createGithubK3dCmd = &cobra.Command{
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 		progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 		progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
-		progressPrinter.AddTracker("step-ecr", "Setup ECR/Docker Registries", 1) // todo remove this step, its baked into github repo
+		//progressPrinter.AddTracker("step-ecr", "Setup ECR/Docker Registries", 1) // todo remove this step, its baked into github repo
 		progressPrinter.AddTracker("step-apps", "Install apps to cluster", 6)
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
 
@@ -122,11 +123,6 @@ var createGithubK3dCmd = &cobra.Command{
 			return err
 		}
 
-		//TODO: Remove me
-		log.Println("Hard break as we are still testing this mode")
-		return nil
-
-		informUser("Install ArgoCD", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
 
 		//! argocd was just helm installed
@@ -146,7 +142,7 @@ var createGithubK3dCmd = &cobra.Command{
 		setArgocdCreds(globalFlags.DryRun)
 		informUser("Getting an argocd auth token", globalFlags.SilentMode)
 		token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
-		err = argocd.ApplyRegistry(globalFlags.DryRun)
+		err = argocd.ApplyRegistryLocal(globalFlags.DryRun)
 		if err != nil {
 			log.Println("Error applying registry")
 			return err
@@ -154,6 +150,8 @@ var createGithubK3dCmd = &cobra.Command{
 		informUser("Syncing the registry application", globalFlags.SilentMode)
 		informUser("Setup ArgoCD", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
+
+		informUser("Install ArgoCD", globalFlags.SilentMode)
 
 		if globalFlags.DryRun {
 			log.Printf("[#99] Dry-run mode, Sync ArgoCD skipped")
@@ -176,10 +174,6 @@ var createGithubK3dCmd = &cobra.Command{
 		informUser("Setup ArgoCD", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
 
-		//TODO: Remove me
-		log.Println("Hard break as we are still testing this mode")
-		return nil
-
 		// TODO: K3D => We need to check what changes for vault on raft mode, without terraform to unseal it
 		informUser("Waiting vault to be ready", globalFlags.SilentMode)
 		waitVaultToBeRunning(globalFlags.DryRun)
@@ -193,11 +187,18 @@ var createGithubK3dCmd = &cobra.Command{
 
 		loopUntilPodIsReady(globalFlags.DryRun)
 
-		// TODO: K3D =>  Does this method changes on k3d?
-		initializeVaultAndAutoUnseal(globalFlags.DryRun)
-		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")), globalFlags.SilentMode)
-		informUser("Setup Vault", globalFlags.SilentMode)
-		progressPrinter.IncrementTracker("step-apps", 1)
+		informUser("Welcome to local kubefist experience", globalFlags.SilentMode)
+		informUser("To use your cluster port-forward - argocd", globalFlags.SilentMode)
+		informUser("If not automatically injected, your kubevonfig is at:", globalFlags.SilentMode)
+		informUser("k3d kubeconfig get "+viper.GetString("cluster-name"), globalFlags.SilentMode)
+		informUser("Expose Argo-CD", globalFlags.SilentMode)
+		informUser("kubectl -n argocd port-forward svc/argocd-server 8080:80", globalFlags.SilentMode)
+		informUser("Argo User: "+viper.GetString("argocd.admin.username"), globalFlags.SilentMode)
+		informUser("Argo Password: "+viper.GetString("argocd.admin.password"), globalFlags.SilentMode)
+		time.Sleep(1 * time.Second)
+		//TODO: Remove me
+		log.Println("Hard break as we are still testing this mode")
+		return nil
 
 		if !viper.GetBool("vault.configuredsecret") { //skipVault
 			informUser("waiting for vault unseal", globalFlags.SilentMode)
