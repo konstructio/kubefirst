@@ -11,7 +11,6 @@ package swagger
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -26,84 +25,24 @@ func ConfigsGet(w http.ResponseWriter, r *http.Request) {
 
 	configValues := []Config{
 		{
-			Key:   "IS_GITHUB_ENABLED",
-			Value: viper.GetString("github.enabled"),
+			Key:   "ADMIN_EMAIL",
+			Value: viper.GetString("adminemail"),
+		},
+		{
+			Key:   "CLUSTER_NAME",
+			Value: viper.GetString("cluster-name"),
+		},
+		{
+			Key:   "GITHUB_HOST",
+			Value: viper.GetString("github.host"),
+		},
+		{
+			Key:   "GITHUB_OWNER",
+			Value: viper.GetString("github.owner"),
 		},
 		{
 			Key:   "HOSTED_ZONE_NAME",
 			Value: viper.GetString("aws.hostedzonename"),
-		},
-		{
-			Key:   "ARGO_URL",
-			Value: fmt.Sprintf("https://argo.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "ARGOCD_URL",
-			Value: fmt.Sprintf("https://argocd.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "GITLAB_URL",
-			Value: fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "GITHUB_GITOPS",
-			Value: fmt.Sprintf("https://%s/%s/gitops", viper.GetString("github.host"), viper.GetString("github.owner")),
-		},
-		{
-			Key:   "GITHUB_METAPHOR",
-			Value: fmt.Sprintf("https://%s/%s/metaphor", viper.GetString("github.host"), viper.GetString("github.owner")),
-		},
-		{
-			Key:   "VAULT_URL",
-			Value: fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "ATLANTIS_URL",
-			Value: fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "ADMIN_EMAIL",
-			Value: viper.GetString("adminemail"),
-		},
-		{
-			Key:   "METAPHOR_DEV",
-			Value: fmt.Sprintf("https://metaphor-development.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "METAPHOR_GO_DEV",
-			Value: fmt.Sprintf("https://metaphor-go-development.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "METAPHOR_FRONT_DEV",
-			Value: fmt.Sprintf("https://metaphor-frontend-development.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "METAPHOR_STAGING",
-			Value: fmt.Sprintf("https://metaphor-staging.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "METAPHOR_GO_STAGING",
-			Value: fmt.Sprintf("https://metaphor-go-staging.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "METAPHOR_FRONT_STAGING",
-			Value: fmt.Sprintf("https://metaphor-frontend-staging.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "METAPHOR_PROD",
-			Value: fmt.Sprintf("https://metaphor-production.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "METAPHOR_GO_PROD",
-			Value: fmt.Sprintf("https://metaphor-go-production.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "METAPHOR_FRONT_PROD",
-			Value: fmt.Sprintf("https://metaphor-frontend-production.%s", viper.GetString("aws.hostedzonename")),
-		},
-		{
-			Key:   "ADMIN_EMAIL",
-			Value: viper.GetString("adminemail"),
 		},
 	}
 
