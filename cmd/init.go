@@ -3,8 +3,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/domain"
 	"log"
-	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -101,7 +101,6 @@ validated and configured.`,
 		}
 
 		log.Println("sending init started metric")
-		httpClient := http.DefaultClient
 
 		// Instantiates a SegmentIO client to use send messages to the segment API.
 		segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
@@ -115,11 +114,20 @@ validated and configured.`,
 			}
 		}(segmentIOClient)
 
+		// validate telemetryDomain data
+		telemetryDomain, err := domain.NewTelemetry(
+			pkg.MetricInitStarted,
+			awsFlags.HostedZoneName,
+			configs.K1Version,
+		)
+		if err != nil {
+			log.Println(err)
+		}
 		telemetryService := services.NewSegmentIoService(segmentIOClient)
-		telemetryHandler := handlers.NewTelemetry(httpClient, telemetryService)
-		// todo: confirm K1version works for release go-releaser
+		telemetryHandler := handlers.NewTelemetryHandler(telemetryService)
+
 		if globalFlags.UseTelemetry {
-			err = telemetryHandler.SendCountMetric(pkg.MetricInitStarted, awsFlags.HostedZoneName, configs.K1Version)
+			err = telemetryHandler.SendCountMetric(telemetryDomain)
 			if err != nil {
 				log.Println(err)
 			}
@@ -208,10 +216,14 @@ validated and configured.`,
 		progressPrinter.IncrementTracker("step-gitops", 1)
 
 		log.Println("sending init completed metric")
-		// todo: confirm K1version works for release go-releaser
 
+		telemetryInitCompleted, err := domain.NewTelemetry(
+			pkg.MetricInitCompleted,
+			awsFlags.HostedZoneName,
+			configs.K1Version,
+		)
 		if globalFlags.UseTelemetry {
-			err = telemetryHandler.SendCountMetric(pkg.MetricInitCompleted, awsFlags.HostedZoneName, configs.K1Version)
+			err = telemetryHandler.SendCountMetric(telemetryInitCompleted)
 			if err != nil {
 				log.Println(err)
 			}

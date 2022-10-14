@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/segmentio/analytics-go"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/kubefirst/kubefirst/internal/gitlab"
@@ -49,9 +49,6 @@ cluster provisioning process spinning up the services, and validates the livenes
 
 		hostedZoneName := viper.GetString("aws.hostedzonename")
 
-		// instantiate http client with default values
-		httpClient := http.DefaultClient
-
 		// Instantiates a SegmentIO client to send messages to the segment API.
 		segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
 
@@ -64,12 +61,19 @@ cluster provisioning process spinning up the services, and validates the livenes
 			}
 		}(segmentIOClient)
 
+		telemetryDomain, err := domain.NewTelemetry(
+			pkg.MetricMgmtClusterInstallStarted,
+			hostedZoneName,
+			configs.K1Version,
+		)
+		if err != nil {
+			log.Println(err)
+		}
 		telemetryService := services.NewSegmentIoService(segmentIOClient)
-		telemetryHandler := handlers.NewTelemetry(httpClient, telemetryService)
+		telemetryHandler := handlers.NewTelemetryHandler(telemetryService)
 
-		// todo: confirm K1version works for release go-releaser
 		if globalFlags.UseTelemetry {
-			err = telemetryHandler.SendCountMetric(pkg.MetricMgmtClusterInstallStarted, hostedZoneName, configs.K1Version)
+			err = telemetryHandler.SendCountMetric(telemetryDomain)
 			if err != nil {
 				log.Println(err)
 			}
@@ -106,7 +110,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 				break
 			}
 		}
-		
+
 		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
 		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
 		if err != nil {
@@ -141,10 +145,14 @@ cluster provisioning process spinning up the services, and validates the livenes
 		}
 
 		log.Println("sending mgmt cluster install completed metric")
-		// todo: confirm K1version works for release go-releaser
 
+		installCompletedTelemetry, err := domain.NewTelemetry(
+			pkg.MetricMgmtClusterInstallCompleted,
+			hostedZoneName,
+			configs.K1Version,
+		)
 		if globalFlags.UseTelemetry {
-			err = telemetryHandler.SendCountMetric(pkg.MetricMgmtClusterInstallCompleted, hostedZoneName, configs.K1Version)
+			err = telemetryHandler.SendCountMetric(installCompletedTelemetry)
 			if err != nil {
 				log.Println(err)
 			}
