@@ -3,7 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -139,7 +139,7 @@ func loopUntilPodIsReady(dryRun bool) {
 			}
 
 			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			if err != nil {
 				log.Println("vault is availbale but the body is not what is expected ", err)
 				continue
@@ -216,7 +216,7 @@ func initializeVaultAndAutoUnseal(dryRun bool) {
 		}
 
 		defer res.Body.Close()
-		body, err := ioutil.ReadAll(res.Body)
+		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			log.Panic(err)
 		}

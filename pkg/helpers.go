@@ -3,7 +3,6 @@ package pkg
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/url"
@@ -75,7 +74,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	}
 
 	if matched {
-		read, err := ioutil.ReadFile(path)
+		read, err := os.ReadFile(path)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -234,7 +233,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 				log.Panic(err)
 			}
 		} else {
-			err = ioutil.WriteFile(path, []byte(newContents), 0)
+			err = os.WriteFile(path, []byte(newContents), 0)
 			if err != nil {
 				log.Panic(err)
 			}
