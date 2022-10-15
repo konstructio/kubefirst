@@ -3,11 +3,12 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/domain"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/domain"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
@@ -33,31 +34,10 @@ validated and configured.`,
 		infoCmd.Run(cmd, args)
 		config := configs.ReadConfig()
 
-		//Please don't change the order of this block, wihtout updating
-		// internal/flagset/init_test.go
-		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
+		globalFlags, githubFlags, installerFlags, awsFlags, err := flagset.InitFlags(cmd)
 		if err != nil {
 			return err
 		}
-
-		githubFlags, err := flagset.ProcessGithubAddCmdFlags(cmd)
-		if err != nil {
-			return err
-		}
-
-		installerFlags, err := flagset.ProcessInstallerGenericFlags(cmd)
-		if err != nil {
-			return err
-		}
-
-		awsFlags, err := flagset.ProcessAwsFlags(cmd)
-		if err != nil {
-			return err
-		}
-
-		//Please don't change the order of this block, wihtout updating
-		// internal/flagset/init_test.go
-
 		if globalFlags.SilentMode {
 			informUser(
 				"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
