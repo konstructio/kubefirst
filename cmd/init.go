@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"errors"
-	"fmt"
 	"github.com/kubefirst/kubefirst/internal/domain"
 	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -91,13 +88,8 @@ validated and configured.`,
 
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
 
-		if _, err := os.Stat(config.K1FolderPath); errors.Is(err, os.ErrNotExist) {
-			if err := os.Mkdir(config.K1FolderPath, os.ModePerm); err != nil {
-				log.Panicf("info: could not create directory %q - error: %s", config.K1FolderPath, err)
-			}
-		} else {
-			return fmt.Errorf("folder: %s already exist, and can be left over from a previous installation, "+
-				"please use kubefirst clean command to be ready for a new installation", config.K1FolderPath)
+		if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
+			return err
 		}
 
 		log.Println("sending init started metric")

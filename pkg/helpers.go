@@ -365,3 +365,24 @@ func IsValidURL(rawURL string) error {
 	}
 	return nil
 }
+
+func ValidateK1Folder(folderPath string) error {
+
+	if _, err := os.Stat(folderPath); errors.Is(err, os.ErrNotExist) {
+		if err = os.Mkdir(folderPath, os.ModePerm); err != nil {
+			return fmt.Errorf("info: could not create directory %q - error: %s", folderPath, err)
+		}
+	}
+
+	files, err := os.ReadDir(folderPath)
+	if err != nil {
+		log.Println(err)
+	}
+
+	if len(files) != 0 {
+		return fmt.Errorf("folder: %s has files that can be left overs from a previous installation, "+
+			"please use kubefirst clean command to be ready for a new installation", folderPath)
+	}
+
+	return nil
+}
