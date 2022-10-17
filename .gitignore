@@ -19,6 +19,8 @@ logs/
 lint_log.txt
 credentials
 .idea
+k3d-linux-amd64.1
+k3d-linux-amd64
 ./kubefirst
 my.test
 go.test

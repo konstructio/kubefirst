@@ -1,14 +1,17 @@
 package cmd
 
 import (
+	"errors"
+
+	"log"
+	"time"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/segmentio/analytics-go"
-	"log"
-	"time"
 
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/state"
@@ -83,23 +86,43 @@ cluster provisioning process spinning up the services, and validates the livenes
 			if viper.GetBool("github.enabled") {
 				log.Println("Installing Github version of Kubefirst")
 				viper.Set("git.mode", "github")
-				err := createGithubCmd.RunE(cmd, args)
-				if err != nil {
-					return err
+				if viper.GetString("cloud") == flagset.CloudLocal {
+					// if not local it is AWS for now
+					err := createGithubK3dCmd.RunE(cmd, args)
+					if err != nil {
+						return err
+					}
+				} else {
+					// if not local it is AWS for now
+					err := createGithubCmd.RunE(cmd, args)
+					if err != nil {
+						return err
+					}
 				}
 
 			} else {
 				log.Println("Installing GitLab version of Kubefirst")
 				viper.Set("git.mode", "gitlab")
-				err := createGitlabCmd.RunE(cmd, args)
-				if err != nil {
-					return err
+				if viper.GetString("cloud") == flagset.CloudLocal {
+					// We don't support gitlab on local yet
+					return errors.New("gitlab is not supported on kubefirst local")
+
+				} else {
+					// if not local it is AWS for now
+					err := createGitlabCmd.RunE(cmd, args)
+					if err != nil {
+						return err
+					}
 				}
 			}
 			viper.Set("kubefirst.done", true)
 			viper.WriteConfig()
 		}
 
+		if viper.GetString("cloud") == flagset.CloudLocal {
+			log.Println("Hard break as we are still testing this mode")
+			return nil
+		}
 		// Relates to issue: https://github.com/kubefirst/kubefirst/issues/386
 		// Metaphor needs chart museum for CI works
 		informUser("Waiting chartmuseum", globalFlags.SilentMode)

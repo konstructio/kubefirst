@@ -31,14 +31,17 @@ type Config struct {
 	K1FolderPath            string
 	KubectlClientPath       string
 	KubeConfigPath          string
+	KubeConfigFolder        string
 	HelmClientPath          string
 	TerraformPath           string
+	K3dPath                 string
 	ConsoleVersion          string
 
 	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
 	ClusterName    string `env:"CLUSTER_NAME"`
 	AwsRegion      string `env:"AWS_REGION"`
 
+	K3dVersion       string
 	KubectlVersion   string `env:"KUBECTL_VERSION" envDefault:"v1.20.0"`
 	KubectlVersionM1 string
 	TerraformVersion string
@@ -81,8 +84,10 @@ func ReadConfig() *Config {
 
 	config.KubectlClientPath = fmt.Sprintf("%s/tools/kubectl", config.K1FolderPath)
 	config.KubeConfigPath = fmt.Sprintf("%s/gitops/terraform/base/kubeconfig", config.K1FolderPath)
+	config.KubeConfigFolder = fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 	config.TerraformPath = fmt.Sprintf("%s/tools/terraform", config.K1FolderPath)
 	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
+	config.K3dPath = fmt.Sprintf("%s/tools/k3d", config.K1FolderPath)
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.TerraformVersion = "1.0.11"
 	config.ConsoleVersion = "1.0.1"
@@ -90,6 +95,7 @@ func ReadConfig() *Config {
 	// todo adopt latest helmVersion := "v3.9.0"
 	config.HelmVersion = "v3.6.1"
 	config.KubectlVersionM1 = "v1.21.14"
+	config.K3dVersion = "v5.4.6"
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
