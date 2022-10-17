@@ -129,7 +129,7 @@ func Test_Init_aws_basic_missing_hostzone(t *testing.T) {
 		t.Error(err)
 	}
 	if string(out) == success {
-		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
+		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
 
@@ -149,7 +149,7 @@ func Test_Init_aws_basic_missing_profile(t *testing.T) {
 		t.Error(err)
 	}
 	if string(out) == success {
-		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
+		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
 
@@ -169,7 +169,7 @@ func Test_Init_aws_basic_with_profile(t *testing.T) {
 		t.Error(err)
 	}
 	if string(out) != success {
-		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
+		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
 
@@ -189,7 +189,7 @@ func Test_Init_aws_basic_with_arn(t *testing.T) {
 		t.Error(err)
 	}
 	if string(out) != success {
-		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
+		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
 
@@ -208,7 +208,7 @@ func Test_Init_aws_basic_with_profile_and_arn(t *testing.T) {
 		t.Error(err)
 	}
 	if string(out) == success {
-		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
+		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
 
@@ -228,7 +228,7 @@ func Test_Init_by_var_k3d(t *testing.T) {
 		t.Error(err)
 	}
 	if string(out) != success {
-		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
+		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 	os.Unsetenv("KUBEFIRST_ADMIN_EMAIL")
 	os.Unsetenv("KUBEFIRST_CLOUD")
@@ -252,7 +252,7 @@ func Test_Init_by_var_aws_profile(t *testing.T) {
 		t.Error(err)
 	}
 	if string(out) != success {
-		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
+		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 	os.Unsetenv("KUBEFIRST_ADMIN_EMAIL")
 	os.Unsetenv("KUBEFIRST_CLOUD")
@@ -275,7 +275,7 @@ func Test_Init_Addons_Gitlab(t *testing.T) {
 		t.Error(err)
 	}
 	if string(out) != "gitlab" {
-		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
+		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
 
@@ -295,7 +295,7 @@ func Test_Init_Addons_Github(t *testing.T) {
 		t.Error(err)
 	}
 	if string(out) != "github" {
-		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
+		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
 
@@ -315,6 +315,6 @@ func Test_Init_Addons_Github_Kusk(t *testing.T) {
 		t.Error(err)
 	}
 	if string(out) != "github,kusk" {
-		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
+		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
