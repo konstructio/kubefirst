@@ -58,12 +58,15 @@ var createGithubK3dCmd = &cobra.Command{
 		}
 
 		//* create github teams in the org and gitops repo
-		informUser("Creating gitops/metaphor repos", globalFlags.SilentMode)
-		err = githubAddCmd.RunE(cmd, args)
-		if err != nil {
-			log.Println("Error running:", githubAddCmd.Name())
-			return err
-		}
+		informUser("Creating github resources with terraform", globalFlags.SilentMode)
+		tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+		terraform.InitApplyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+
+		// err = githubAddCmd.RunE(cmd, args)
+		// if err != nil {
+		// 	log.Println("Error running:", githubAddCmd.Name())
+		// 	return err
+		// }
 
 		informUser(fmt.Sprintf("Created GitOps Repo in github.com/%s", viper.GetString("github.owner")), globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-github", 1)

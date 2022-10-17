@@ -224,26 +224,25 @@ func DestroyECRTerraform(skipECRTerraform bool) {
 	}
 }
 
-func initActionAutoApprove(dryRun bool, directory, tfAction, tfEntrypoint string) {
+func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
 
 	config := configs.ReadConfig()
 	log.Printf("Entered Init%s%sTerraform", strings.Title(tfAction), strings.Title(tfEntrypoint))
 
-	kubefirstConfigPath := fmt.Sprintf("terraform.%s.apply.executed", tfEntrypoint)
+	kubefirstConfigPath := fmt.Sprintf("terraform.%s.%s.executed", tfEntrypoint, tfAction)
 
 	if !viper.GetBool(kubefirstConfigPath) {
 		log.Printf("Executing Init%s%sTerraform", strings.Title(tfAction), strings.Title(tfEntrypoint))
 		if dryRun {
 			log.Printf("[#99] Dry-run mode, Init%s%sTerraform skipped", strings.Title(tfAction), strings.Title(tfEntrypoint))
-			return
 		}
 
 		envs := terraformConfig(tfEntrypoint)
 		log.Println("tf env vars: ", envs)
 
-		err := os.Chdir(directory)
+		err := os.Chdir(tfEntrypoint)
 		if err != nil {
-			log.Panic("error: could not change to directory " + directory)
+			log.Panic("error: could not change to directory " + tfEntrypoint)
 		}
 		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
 		if err != nil {
@@ -254,7 +253,7 @@ func initActionAutoApprove(dryRun bool, directory, tfAction, tfEntrypoint string
 		if err != nil {
 			log.Panicf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
 		}
-		os.RemoveAll(fmt.Sprintf("%s/.terraform/", directory))
+		os.RemoveAll(fmt.Sprintf("%s/.terraform/", tfEntrypoint))
 		viper.Set(kubefirstConfigPath, true)
 		viper.WriteConfig()
 	} else {
@@ -262,14 +261,14 @@ func initActionAutoApprove(dryRun bool, directory, tfAction, tfEntrypoint string
 	}
 }
 
-func InitApplyAutoApprove(dryRun bool, directory, tfEntrypoint string) {
+func InitApplyAutoApprove(dryRun bool, tfEntrypoint string) {
 	tfAction := "apply"
-	initActionAutoApprove(dryRun, directory, tfAction, tfEntrypoint)
+	initActionAutoApprove(dryRun, tfAction, tfEntrypoint)
 }
 
-func InitDestroyAutoApprove(dryRun bool, directory, tfEntrypoint string) {
+func InitDestroyAutoApprove(dryRun bool, tfEntrypoint string) {
 	tfAction := "destroy"
-	initActionAutoApprove(dryRun, directory, tfAction, tfEntrypoint)
+	initActionAutoApprove(dryRun, tfAction, tfEntrypoint)
 }
 
 // todo need to write something that outputs -json type and can get multiple values

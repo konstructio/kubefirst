@@ -33,6 +33,7 @@ type Config struct {
 	KubeConfigPath          string
 	KubeConfigFolder        string
 	HelmClientPath          string
+	TerraformBasePath       string
 	TerraformPath           string
 	K3dPath                 string
 	ConsoleVersion          string
@@ -77,7 +78,7 @@ func ReadConfig() *Config {
 	}
 
 	config.KubefirstConfigFileName = ".kubefirst"
-	config.KubefirstConfigFilePath = fmt.Sprintf("%s/.kubefirst", homePath)
+	config.KubefirstConfigFilePath = fmt.Sprintf("%s/%s", homePath, config.KubefirstConfigFileName)
 
 	config.LocalOs = runtime.GOOS
 	config.LocalArchitecture = runtime.GOARCH
@@ -85,6 +86,7 @@ func ReadConfig() *Config {
 	config.KubectlClientPath = fmt.Sprintf("%s/tools/kubectl", config.K1FolderPath)
 	config.KubeConfigPath = fmt.Sprintf("%s/gitops/terraform/base/kubeconfig", config.K1FolderPath)
 	config.KubeConfigFolder = fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
+	config.TerraformBasePath = fmt.Sprintf("%s/gitops/terraform", config.K1FolderPath)
 	config.TerraformPath = fmt.Sprintf("%s/tools/terraform", config.K1FolderPath)
 	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
 	config.K3dPath = fmt.Sprintf("%s/tools/k3d", config.K1FolderPath)

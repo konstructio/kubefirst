@@ -3,12 +3,14 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
 	"syscall"
 	"time"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/handlers"
+	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
@@ -40,6 +42,16 @@ var destroyCmd = &cobra.Command{
 				"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
 				globalFlags.SilentMode,
 			)
+		}
+
+		if viper.GetString("cloud") == "k3d" {
+			informUser(
+				"deleting k3d cluster\n",
+				globalFlags.SilentMode,
+			)
+			k3d.DeleteK3dCluster()
+			informUser("k3d cluster deleted", globalFlags.SilentMode)
+			os.Exit(1)
 		}
 
 		progressPrinter.SetupProgress(2, globalFlags.SilentMode)
