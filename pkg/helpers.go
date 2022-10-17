@@ -366,12 +366,19 @@ func IsValidURL(rawURL string) error {
 	return nil
 }
 
+// ValidateK1Folder receives a folder path, and expect the Kubefirst configuration folder is empty. It follows this
+// validation list:
+//   - If folder doesn't exist, try to create it
+//   - If folder exists, check if there are files
+//   - If folder exists, and has files, inform the user that clean command should be called before a new init
 func ValidateK1Folder(folderPath string) error {
 
 	if _, err := os.Stat(folderPath); errors.Is(err, os.ErrNotExist) {
 		if err = os.Mkdir(folderPath, os.ModePerm); err != nil {
 			return fmt.Errorf("info: could not create directory %q - error: %s", folderPath, err)
 		}
+		// folder was just created, no further validation required
+		return nil
 	}
 
 	files, err := os.ReadDir(folderPath)
