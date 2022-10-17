@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/addon"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -144,19 +145,18 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 		log.Println("Error processing addons:", err)
 		return InstallerGenericFlags{}, err
 	}
+	for _, s := range addonsFlag {
+		addon.AddAddon(s)
+	}
 	//TODO: add unit test for this, after Thiago PR is merged on new append checks
 	if flags.Cloud == CloudAws {
 		//Adds mandatory addon for non-local install
-		addonsFlag = append(addonsFlag, "cloud")
+		addon.AddAddon("cloud")
 	}
 	if flags.Cloud == CloudK3d {
 		//Adds mandatory addon for local install
-		addonsFlag = append(addonsFlag, "k3d")
+		addon.AddAddon("k3d")
 	}
-	addons := viper.GetStringSlice("addons")
-	addons = append(addons, addonsFlag...)
-	viper.Set("addons", addons)
-	log.Println("addons", addons)
 
 	experimentalMode, err := ReadConfigBool(cmd, "experimental-mode")
 	if err != nil {

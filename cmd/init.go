@@ -1,16 +1,13 @@
 package cmd
 
 import (
-	"errors"
-	"fmt"
 	"log"
-	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/handlers"
@@ -33,31 +30,10 @@ validated and configured.`,
 		infoCmd.Run(cmd, args)
 		config := configs.ReadConfig()
 
-		//Please don't change the order of this block, wihtout updating
-		// internal/flagset/init_test.go
-		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
+		globalFlags, githubFlags, installerFlags, awsFlags, err := flagset.InitFlags(cmd)
 		if err != nil {
 			return err
 		}
-
-		githubFlags, err := flagset.ProcessGithubAddCmdFlags(cmd)
-		if err != nil {
-			return err
-		}
-
-		installerFlags, err := flagset.ProcessInstallerGenericFlags(cmd)
-		if err != nil {
-			return err
-		}
-
-		awsFlags, err := flagset.ProcessAwsFlags(cmd)
-		if err != nil {
-			return err
-		}
-
-		//Please don't change the order of this block, wihtout updating
-		// internal/flagset/init_test.go
-
 		if globalFlags.SilentMode {
 			informUser(
 				"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
@@ -91,17 +67,11 @@ validated and configured.`,
 
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
 
-		k1Dir := fmt.Sprintf("%s", config.K1FolderPath)
-		if _, err := os.Stat(k1Dir); errors.Is(err, os.ErrNotExist) {
-			if err := os.Mkdir(k1Dir, os.ModePerm); err != nil {
-				log.Panicf("info: could not create directory %q - error: %s", config.K1FolderPath, err)
-			}
-		} else {
-			log.Printf("info: %s already exist", k1Dir)
+		if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
+			return err
 		}
 
 		log.Println("sending init started metric")
-		httpClient := http.DefaultClient
 
 		// Instantiates a SegmentIO client to use send messages to the segment API.
 		segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
@@ -115,11 +85,20 @@ validated and configured.`,
 			}
 		}(segmentIOClient)
 
+		// validate telemetryDomain data
+		telemetryDomain, err := domain.NewTelemetry(
+			pkg.MetricInitStarted,
+			awsFlags.HostedZoneName,
+			configs.K1Version,
+		)
+		if err != nil {
+			log.Println(err)
+		}
 		telemetryService := services.NewSegmentIoService(segmentIOClient)
-		telemetryHandler := handlers.NewTelemetry(httpClient, telemetryService)
-		// todo: confirm K1version works for release go-releaser
+		telemetryHandler := handlers.NewTelemetryHandler(telemetryService)
+
 		if globalFlags.UseTelemetry {
-			err = telemetryHandler.SendCountMetric(pkg.MetricInitStarted, awsFlags.HostedZoneName, configs.K1Version)
+			err = telemetryHandler.SendCountMetric(telemetryDomain)
 			if err != nil {
 				log.Println(err)
 			}
@@ -215,10 +194,14 @@ validated and configured.`,
 		progressPrinter.IncrementTracker("step-gitops", 1)
 
 		log.Println("sending init completed metric")
-		// todo: confirm K1version works for release go-releaser
 
+		telemetryInitCompleted, err := domain.NewTelemetry(
+			pkg.MetricInitCompleted,
+			awsFlags.HostedZoneName,
+			configs.K1Version,
+		)
 		if globalFlags.UseTelemetry {
-			err = telemetryHandler.SendCountMetric(pkg.MetricInitCompleted, awsFlags.HostedZoneName, configs.K1Version)
+			err = telemetryHandler.SendCountMetric(telemetryInitCompleted)
 			if err != nil {
 				log.Println(err)
 			}

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/pkg"
 	"reflect"
@@ -10,7 +11,6 @@ import (
 func TestNewTelemetry(t *testing.T) {
 
 	// mocks
-	httpMock := pkg.HTTPMock{}
 	segmentIOMock := pkg.SegmentIOMock{}
 
 	mockedService := services.SegmentIoService{
@@ -25,19 +25,17 @@ func TestNewTelemetry(t *testing.T) {
 		{
 			name: "newTelemetry",
 			handler: TelemetryHandler{
-				httpClient: httpMock,
-				service:    mockedService,
+				service: mockedService,
 			},
 			want: TelemetryHandler{
-				httpClient: httpMock,
-				service:    mockedService,
+				service: mockedService,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewTelemetry(tt.handler.httpClient, tt.handler.service); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewTelemetry() = %v, want %v", got, tt.want)
+			if got := NewTelemetryHandler(tt.handler.service); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewTelemetryHandler() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -45,58 +43,41 @@ func TestNewTelemetry(t *testing.T) {
 
 func TestTelemetryHandler_SendCountMetric(t *testing.T) {
 
+	validTelemetry := domain.Telemetry{MetricName: "test metric", Domain: "example.com", CLIVersion: "0.0.0"}
+
 	// mocks
-	httpMock := pkg.HTTPMock{}
 	segmentIOMock := pkg.SegmentIOMock{}
 
 	mockedService := services.SegmentIoService{
 		SegmentIOClient: segmentIOMock,
 	}
 
+	type fields struct {
+		service services.SegmentIoService
+	}
 	type args struct {
-		metricName string
-		domain     string
-		cliVersion string
+		telemetry *domain.Telemetry
 	}
 	tests := []struct {
 		name    string
-		handler TelemetryHandler
+		fields  fields
 		args    args
 		wantErr bool
-	}{{
-		name: "should pass, its all correct",
-		handler: TelemetryHandler{
-			httpClient: httpMock,
-			service:    mockedService,
-		},
-		args: args{
-			metricName: "test-metric-name",
-			domain:     "example.com",
-			cliVersion: "0.0.1-test",
-		},
-		wantErr: false,
-	},
+	}{
 		{
-			name: "should fail when metric name is empty",
-			handler: TelemetryHandler{
-				httpClient: httpMock,
-				service:    mockedService,
-			},
-			args: args{
-				metricName: "",
-				domain:     "example.com",
-				cliVersion: "0.0.1-test",
-			},
-			wantErr: true,
-		}}
+			name:    "valid telemetry",
+			fields:  fields{service: mockedService},
+			args:    args{telemetry: &validTelemetry},
+			wantErr: false,
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handler := TelemetryHandler{
-				httpClient: tt.handler.httpClient,
-				service:    tt.handler.service,
+				service: tt.fields.service,
 			}
-			if err := handler.SendCountMetric(tt.args.metricName, tt.args.domain, tt.args.cliVersion); (err != nil) != tt.wantErr {
-				t.Errorf("EnqueueCountMetric() error = %v, wantErr %v", err, tt.wantErr)
+			if err := handler.SendCountMetric(tt.args.telemetry); (err != nil) != tt.wantErr {
+				t.Errorf("SendCountMetric() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

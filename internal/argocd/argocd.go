@@ -7,21 +7,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
-
-	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
-
-	"github.com/spf13/viper"
-
+	"os"
 	"strings"
 	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocdModel"
 	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/spf13/viper"
 	yaml2 "gopkg.in/yaml.v2"
+	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 var ArgocdSecretClient coreV1Types.SecretInterface
@@ -106,7 +103,7 @@ func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (
 		return res.StatusCode, "", nil
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return res.StatusCode, "", err
 	}
@@ -156,7 +153,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 		return "", errors.New("unable to retrieve ArgoCD token")
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
 	}
@@ -229,7 +226,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 				log.Print("HTTP status NOK")
 				continue
 			}
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			if err != nil {
 				log.Print("error sending POST request to get argocd auth token:", err)
 				continue
@@ -339,7 +336,7 @@ func CreateInitalArgoRepository(githubURL string) error {
 		return err
 	}
 
-	err = ioutil.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoYaml, 0644)
+	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoYaml, 0644)
 	if err != nil {
 		log.Printf("error: could not write argocd-init-values.yaml %s", err)
 		return err
