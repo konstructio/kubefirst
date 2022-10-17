@@ -148,7 +148,7 @@ func TestValidateK1Folder(t *testing.T) {
 		{
 			name:    "it has a folder, and folder is not empty",
 			args:    args{folderPath: populatedTempFolder},
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
