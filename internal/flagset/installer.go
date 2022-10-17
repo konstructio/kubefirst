@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/addon"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -143,10 +144,9 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 		log.Println("Error processing addons:", err)
 		return InstallerGenericFlags{}, err
 	}
-	addons := viper.GetStringSlice("addons")
-	addons = append(addons, addonsFlag...)
-	viper.Set("addons", addons)
-	log.Println("addons", addons)
+	for _, s := range addonsFlag {
+		addon.AddAddon(s)
+	}
 
 	experimentalMode, err := ReadConfigBool(cmd, "experimental-mode")
 	if err != nil {

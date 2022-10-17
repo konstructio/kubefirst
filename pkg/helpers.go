@@ -3,7 +3,6 @@ package pkg
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/url"
@@ -75,7 +74,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	}
 
 	if matched {
-		read, err := ioutil.ReadFile(path)
+		read, err := os.ReadFile(path)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -234,7 +233,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 				log.Panic(err)
 			}
 		} else {
-			err = ioutil.WriteFile(path, []byte(newContents), 0)
+			err = os.WriteFile(path, []byte(newContents), 0)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -363,5 +362,33 @@ func IsValidURL(rawURL string) error {
 	if err != nil || parsedURL == nil {
 		return fmt.Errorf("the URL (%s) is invalid, error = %v", rawURL, err)
 	}
+	return nil
+}
+
+// ValidateK1Folder receives a folder path, and expect the Kubefirst configuration folder is empty. It follows this
+// validation list:
+//   - If folder doesn't exist, try to create it
+//   - If folder exists, check if there are files
+//   - If folder exists, and has files, inform the user that clean command should be called before a new init
+func ValidateK1Folder(folderPath string) error {
+
+	if _, err := os.Stat(folderPath); errors.Is(err, os.ErrNotExist) {
+		if err = os.Mkdir(folderPath, os.ModePerm); err != nil {
+			return fmt.Errorf("info: could not create directory %q - error: %s", folderPath, err)
+		}
+		// folder was just created, no further validation required
+		return nil
+	}
+
+	files, err := os.ReadDir(folderPath)
+	if err != nil {
+		return err
+	}
+
+	if len(files) != 0 {
+		return fmt.Errorf("folder: %s has files that can be left overs from a previous installation, "+
+			"please use kubefirst clean command to be ready for a new installation", folderPath)
+	}
+
 	return nil
 }

@@ -3,7 +3,6 @@ package ssl
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -182,7 +181,7 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 		log.Print(path)
 		//clean yaml
 		//TODO filter yaml extension
-		files, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", filepath.Join(config.CertsPath, path), "/"))
+		files, err := os.ReadDir(fmt.Sprintf("%s/%s", filepath.Join(config.CertsPath, path), "/"))
 		if err != nil {
 			log.Println("Error RestoreSSL:", err)
 			return fmt.Errorf("erro: %s", err)
@@ -192,7 +191,7 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 			log.Println(f.Name())
 			pathyaml := fmt.Sprintf("%s/%s", filepath.Join(config.CertsPath, path), f.Name())
 
-			yfile, err := ioutil.ReadFile(pathyaml)
+			yfile, err := os.ReadFile(pathyaml)
 
 			if err != nil {
 				log.Println("Error RestoreSSL:", err)
@@ -222,7 +221,7 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 				return fmt.Errorf("erro: %s", err)
 			}
 
-			err = ioutil.WriteFile(fmt.Sprintf("%s%s", pathyaml, ".clean"), dataCleaned, 0644)
+			err = os.WriteFile(fmt.Sprintf("%s%s", pathyaml, ".clean"), dataCleaned, 0644)
 
 			if err != nil {
 				log.Println("Error RestoreSSL:", err)

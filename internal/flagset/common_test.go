@@ -3,7 +3,7 @@ package flagset
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -60,7 +60,7 @@ func Test_DefineSource_set_by_flag(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -98,7 +98,7 @@ func Test_DefineSource_set_by_var(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -116,7 +116,7 @@ func Test_DefineSource_notSet(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -154,7 +154,7 @@ func Test_DefineSource_set_by_flag_bool(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
