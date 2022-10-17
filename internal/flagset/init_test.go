@@ -3,7 +3,7 @@ package flagset
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -104,7 +104,7 @@ func Test_Init_k3d_basic(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -124,7 +124,7 @@ func Test_Init_aws_basic_missing_hostzone(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -144,7 +144,7 @@ func Test_Init_aws_basic_missing_profile(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -164,7 +164,7 @@ func Test_Init_aws_basic_with_profile(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -184,7 +184,7 @@ func Test_Init_aws_basic_with_arn(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -203,7 +203,7 @@ func Test_Init_aws_basic_with_profile_and_arn(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -223,7 +223,7 @@ func Test_Init_by_var_k3d(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -247,7 +247,7 @@ func Test_Init_by_var_aws_profile(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
