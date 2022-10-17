@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/handlers"
@@ -24,6 +25,8 @@ var destroyCmd = &cobra.Command{
 	Short: "destroy Kubefirst management cluster",
 	Long:  "destroy all the resources installed via Kubefirst installer",
 	RunE: func(cmd *cobra.Command, args []string) error {
+
+		config := configs.ReadConfig()
 
 		destroyFlags, err := flagset.ProcessDestroyFlags(cmd)
 		if err != nil {
@@ -45,14 +48,26 @@ var destroyCmd = &cobra.Command{
 		}
 
 		if viper.GetString("cloud") == "k3d" {
-			informUser(
-				"deleting k3d cluster\n",
-				globalFlags.SilentMode,
-			)
+			//* step 1 - delete k3d cluster
+			informUser("deleting k3d cluster\n", globalFlags.SilentMode)
 			k3d.DeleteK3dCluster()
 			informUser("k3d cluster deleted", globalFlags.SilentMode)
+
+			//* step 2 - terraform destroy github
+			informUser("terraform destroying github resources\n", globalFlags.SilentMode)
+			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+			terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+			informUser("successfully destroyed github resources\n", globalFlags.SilentMode)
+
+			//* step 3 - clean local .k1 dir
+			err = cleanCmd.RunE(cmd, args)
+			if err != nil {
+				log.Println("Error running:", cleanCmd.Name())
+				return err
+			}
 			os.Exit(1)
 		}
+		return nil
 
 		progressPrinter.SetupProgress(2, globalFlags.SilentMode)
 
