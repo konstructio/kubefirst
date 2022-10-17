@@ -383,7 +383,7 @@ func ValidateK1Folder(folderPath string) error {
 
 	files, err := os.ReadDir(folderPath)
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
 	if len(files) != 0 {
