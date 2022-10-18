@@ -56,7 +56,7 @@ func TestTelemetryHandler_SendCountMetric(t *testing.T) {
 		service services.SegmentIoService
 	}
 	type args struct {
-		telemetry *domain.Telemetry
+		telemetry domain.Telemetry
 	}
 	tests := []struct {
 		name    string
@@ -67,7 +67,7 @@ func TestTelemetryHandler_SendCountMetric(t *testing.T) {
 		{
 			name:    "valid telemetry",
 			fields:  fields{service: mockedService},
-			args:    args{telemetry: &validTelemetry},
+			args:    args{telemetry: validTelemetry},
 			wantErr: false,
 		},
 	}
