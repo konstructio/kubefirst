@@ -332,7 +332,7 @@ func CreateInitalArgoRepository(githubURL string) error {
 
 	argoYaml, err := yaml2.Marshal(&argoConfig)
 	if err != nil {
-		log.Printf("error: marsheling yaml for argo config %s", err)
+		log.Printf("error: marshaling yaml for argo config %s", err)
 		return err
 	}
 

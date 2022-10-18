@@ -55,16 +55,16 @@ var destroyCmd = &cobra.Command{
 
 			//* step 2 - terraform destroy github
 			informUser("terraform destroying github resources\n", globalFlags.SilentMode)
-			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github-k3d"
 			terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
 			informUser("successfully destroyed github resources\n", globalFlags.SilentMode)
 
 			//* step 3 - clean local .k1 dir
-			err = cleanCmd.RunE(cmd, args)
-			if err != nil {
-				log.Println("Error running:", cleanCmd.Name())
-				return err
-			}
+			// err = cleanCmd.RunE(cmd, args)
+			// if err != nil {
+			// 	log.Println("Error running:", cleanCmd.Name())
+			// 	return err
+			// }
 			os.Exit(1)
 		}
 		return nil

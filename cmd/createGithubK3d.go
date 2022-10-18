@@ -57,70 +57,61 @@ var createGithubK3dCmd = &cobra.Command{
 			informUser("Telemetry Disabled", globalFlags.SilentMode)
 		}
 
+		executionControl := viper.GetBool("terraform.github-k3d.apply.executed")
 		//* create github teams in the org and gitops repo
-		informUser("Creating github resources with terraform", globalFlags.SilentMode)
-		tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
-		terraform.InitApplyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+		if !executionControl {
+			informUser("Creating github resources with terraform", globalFlags.SilentMode)
 
-		// err = githubAddCmd.RunE(cmd, args)
-		// if err != nil {
-		// 	log.Println("Error running:", githubAddCmd.Name())
-		// 	return err
-		// }
+			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github-k3d"
+			terraform.InitApplyAutoApprove(globalFlags.DryRun, tfEntrypoint)
 
-		informUser(fmt.Sprintf("Created GitOps Repo in github.com/%s", viper.GetString("github.owner")), globalFlags.SilentMode)
-		progressPrinter.IncrementTracker("step-github", 1)
+			informUser(fmt.Sprintf("Created GitOps Repo in github.com/%s", viper.GetString("github.owner")), globalFlags.SilentMode)
+			progressPrinter.IncrementTracker("step-github", 1)
+		}
 
 		//* push our locally detokenized gitops repo to remote github
 		githubHost := viper.GetString("github.host")
 		githubOwner := viper.GetString("github.owner")
 		localRepo := "gitops"
 		remoteName := "github"
-		if !viper.GetBool("github.gitops.hydrated") {
+		executionControl = viper.GetBool("github.gitops.hydrated") // todo fix this executionControl value `github.detokenized-gitops.pushed`?
+		if !executionControl {
 			gitClient.PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName)
 		} else {
 			log.Println("already hydrated the github gitops repository")
 		}
-
 		progressPrinter.IncrementTracker("step-github", 1)
 
-		//* push our locally detokenized gitops repo to remote github
-
-		//directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
-		informUser("Creating K8S Cluster", globalFlags.SilentMode)
-
-		//TODO: Create K3D
-		//terraform.ApplyBaseTerraform(globalFlags.DryRun, directory)
-		err = k3d.CreateK3dCluster()
-		if err != nil {
-			log.Println("Error installing k3d cluster")
-			return err
+		//* create kubernetes cluster
+		executionControl = viper.GetBool("k3d.created") // todo fix this executionControl value `github.detokenized-gitops.pushed`?
+		if !executionControl {
+			informUser("Creating K8S Cluster", globalFlags.SilentMode)
+			err = k3d.CreateK3dCluster()
+			if err != nil {
+				log.Println("Error installing k3d cluster")
+				return err
+			}
+			progressPrinter.IncrementTracker("step-base", 1)
+		} else {
+			log.Println("already created k3d cluster")
 		}
-
-		progressPrinter.IncrementTracker("step-base", 1)
-
-		// pushes detokenized KMS_KEY_ID
-		// there will not exist KMS keys on local
-		// if !viper.GetBool("vault.kms.kms-pushed") {
-		// 	gitClient.PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName)
-		// 	viper.Set("vault.kmskeyid.kms-pushed", true)
-		// 	viper.WriteConfig()
-		// }
-
 		progressPrinter.IncrementTracker("step-github", 1)
 
-		// We would not have certs stored for local install
-		// informUser("Attempt to recycle certs", globalFlags.SilentMode)
-		// restoreSSLCmd.RunE(cmd, args)
-		// progressPrinter.IncrementTracker("step-base", 1)
+		//* ADD Secrets to cluster
+		// todo there is a secret condition in AddK3DSecrets to this not checked
+		executionControl = viper.GetBool("kubernetes.atlantis-secrets.secret.created")
+		if !executionControl {
 
-		//ADD Secrets to cluster
-		err = k3d.AddK3DSecrets(globalFlags.DryRun)
-		if err != nil {
-			log.Println("Error AddK3DSecrets")
-			return err
+			err = k3d.AddK3DSecrets(globalFlags.DryRun)
+			if err != nil {
+				log.Println("Error AddK3DSecrets")
+				return err
+			}
+		} else {
+			log.Println("already added secrets to k3d cluster")
 		}
-
+		informUser("hard breaking point", globalFlags.SilentMode)
+		return nil
 		gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
 		err = argocd.CreateInitalArgoRepository(gitopsRepo)
 		if err != nil {

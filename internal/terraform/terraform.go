@@ -47,6 +47,12 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
 		envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botPublicKey")
 		return envs
+	case "github-k3d":
+		envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
+		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
+		envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
+		envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botPublicKey")
+		return envs
 	case "users":
 		envs["VAULT_TOKEN"] = viper.GetString("vault.token")
 		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
@@ -229,7 +235,10 @@ func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
 	config := configs.ReadConfig()
 	log.Printf("Entered Init%s%sTerraform", strings.Title(tfAction), strings.Title(tfEntrypoint))
 
-	kubefirstConfigPath := fmt.Sprintf("terraform.%s.%s.executed", tfEntrypoint, tfAction)
+	tfEntrypointSplit := strings.Split(tfEntrypoint, "/")
+	kubefirstConfigProperty := tfEntrypointSplit[len(tfEntrypointSplit)-1]
+
+	kubefirstConfigPath := fmt.Sprintf("terraform.%s.%s.executed", kubefirstConfigProperty, tfAction)
 
 	if !viper.GetBool(kubefirstConfigPath) {
 		log.Printf("Executing Init%s%sTerraform", strings.Title(tfAction), strings.Title(tfEntrypoint))
@@ -237,7 +246,7 @@ func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
 			log.Printf("[#99] Dry-run mode, Init%s%sTerraform skipped", strings.Title(tfAction), strings.Title(tfEntrypoint))
 		}
 
-		envs := terraformConfig(tfEntrypoint)
+		envs := terraformConfig(kubefirstConfigProperty)
 		log.Println("tf env vars: ", envs)
 
 		err := os.Chdir(tfEntrypoint)
