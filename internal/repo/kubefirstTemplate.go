@@ -2,7 +2,6 @@ package repo
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -111,14 +110,6 @@ func UpdateForLocalMode(directory string) error {
 	//TODO: Confirm Change
 	if viper.GetString("cloud") == flagset.CloudK3d {
 		log.Println("Working Directory:", directory)
-		files, err := ioutil.ReadDir(directory)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		for _, file := range files {
-			log.Println(file.Name(), file.IsDir())
-		}
 		//Tweak folder
 		os.RemoveAll(directory + "/components")
 		os.RemoveAll(directory + "/registry")
