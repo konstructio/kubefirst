@@ -113,10 +113,7 @@ func UpdateForLocalMode(directory string) error {
 	//Tweak folder
 	os.RemoveAll(directory + "/components")
 	os.RemoveAll(directory + "/registry")
-	os.RemoveAll(directory + "/terraform/base")
-	os.RemoveAll(directory + "/terraform/ecr")
-	os.RemoveAll(directory + "/terraform/gitlab")
-	os.RemoveAll(directory + "/terraform/github")
+	os.RemoveAll(directory + "/terraform")
 	os.RemoveAll(directory + "/validation")
 	opt := cp.Options{
 		Skip: func(src string) (bool, error) {

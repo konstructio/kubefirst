@@ -205,6 +205,13 @@ var createGithubK3dCmd = &cobra.Command{
 			}
 			loopUntilPodIsReady(globalFlags.DryRun)
 		}
+		kPortForwardMinio, err := k8s.PortForward(globalFlags.DryRun, "minio", "svc/minio", "9000:9000")
+		defer func() {
+			err = kPortForwardMinio.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Println("Error closing kPortForwardMinio")
+			}
+		}()
 
 		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
 		defer func() {

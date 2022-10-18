@@ -49,17 +49,30 @@ var destroyCmd = &cobra.Command{
 
 		if viper.GetString("cloud") == "k3d" {
 			// todo add progress bars to this
-			//* step 1 - delete k3d cluster
-			informUser("deleting k3d cluster\n", globalFlags.SilentMode)
-			k3d.DeleteK3dCluster()
-			informUser("k3d cluster deleted", globalFlags.SilentMode)
 
-			//* step 2 - terraform destroy github
+			//* step 1.1 - open port-forward to state store
+			// todo --skip-git-terraform
+			kPortForwardMinio, err := k8s.PortForward(globalFlags.DryRun, "minio", "svc/minio", "9000:9000")
+			defer func() {
+				err = kPortForwardMinio.Process.Signal(syscall.SIGTERM)
+				if err != nil {
+					log.Println("Error closing kPortForwardMinio")
+				}
+			}()
+			//* step 1.2 - terraform destroy github
 			informUser("terraform destroying github resources", globalFlags.SilentMode)
 			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
 			terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
 			informUser("successfully destroyed github resources", globalFlags.SilentMode)
 			informUser("be sure to run `kubefirst clean` before your next cloud provision", globalFlags.SilentMode)
+
+			//* step 2 - delete k3d cluster
+			// this could be useful for us to chase down in eks and destroy everything
+			// in the cloud / cluster minus eks to iterate from argocd forward
+			// todo --skip-cluster-destroy
+			informUser("deleting k3d cluster\n", globalFlags.SilentMode)
+			k3d.DeleteK3dCluster()
+			informUser("k3d cluster deleted", globalFlags.SilentMode)
 
 			//* step 3 - clean local .k1 dir
 			// err = cleanCmd.RunE(cmd, args)
