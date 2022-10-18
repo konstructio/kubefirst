@@ -37,3 +37,4 @@ be properly destroyed.
 One step that takes some minutes to conclude is the EKS cluster deletion because Kubefirst destroys
 every resource that was created during the installation, including VPC, load balancer, sub networks and everything else
 that was created like Argo CD, Argo Workflow, demo applications, and GitLab self-hosted.
+
