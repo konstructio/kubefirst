@@ -1,64 +1,105 @@
 # Vault
 
-[Vault](https://www.vaultproject.io/) is our secrets manager. It runs in Kubernetes with a 
-[DynamoDB](https://aws.amazon.com/dynamodb/) backend that's encrypted with KMS.
+[Vault](https://www.vaultproject.io/) is an open source secrets manager and identity provider created by hashicorp. It runs in Kubernetes with a [DynamoDB](https://aws.amazon.com/dynamodb/) backend that's encrypted with KMS with point in time recovery enabled.
 
-## After Install
+## Authentication Backends
 
-![](../../img/todo.jpeg)
+Your infrastructure will be set up with Vault running in the EKS cluster. It will come with multiple Authentication Backends enabled.
 
-`todo: metaphor secrets and external-secrets-operator need current details`
+### Token authentication
 
-## Authentication
+Your first login to Vault will be with the root token that is provided to you at the end of your kubefirst cluster create. This root token has full administrative permission throughout Vault.
 
-Your infrastructure will be set up with Vault running in the EKS cluster. The `external-secrets` app is preconfigured 
-to be able to pull secrets from your cluster's vault instance.
+To log in with the root token, find the `vault.token` field in your `~/.kubefirst` file and copy the value that starts with `hvs.`. Then navigate to your vault instance in your browser, select `Token` and paste the token in the password field.
 
-There are numerous other authentication schemes available to you as well:
+![](../../img/kubefirst/vault/token-login.png)
+
+While logged in with the root token, navigate to the secret:
+`Secrets -> Users -> kbot`
+
+This secret is the userpass/oidc password for the kubefirst bot user `kbot`. Copy this value to your clipboard, log out of vault and let's try using the userpass authentication backend in the next section.
+
+### Username authentication (human users)
+
+Now that you have collected the kbot password, let's log out and back into Vault, this time using the `kbot` bot account.
+
+When logging in with users instead of tokens, select method `Username` as the login method on the login screen. Enter `kbot` as the username, and paste the password you collected in the Password field and log in.
+
+![](../../img/kubefirst/vault/vault-userpass.png)
+
+This is the login experience that your team will use when authenticating with Vault. Initially, there will only be a singular `kbot` user created that represents the kubefirst bot account. You can pull request additional admins and developers from your team onto the platform, and they will all log in using the Username method.
+
+Once a user is logged into vault with Username auth, they will be automatically provided single-sign-on access to argo workflows, argo cd, console, and gitlab applications.
+
+### Kubernetes authentication
+
+The `external-secrets-operator` application will be preconfigured with a service account that can pull secrets from your cluster's vault instance. This is accomplished by leveraging the `kubernetes/kubefirst/` auth backend. By default, external-secrets will be able to pull your cluster secrets, and make them available as native kubernetes secrets for your applications to leverage.
+
+### Additional auth methods
+
+There are other authentication schemes available to you as well:
 [https://www.vaultproject.io/docs/auth](https://www.vaultproject.io/docs/auth)
 
 ## Secrets Setup for Applications
 
-There's an [external-secrets](https://github.com/external-secrets/kubernetes-external-secrets) pod running in each of 
-our clusters. `external-secrets` is able to keep Kubernetes secrets in sync with the values in vault so your Kubernetes 
-apps can use them.
+### Storing secrets in Vault
 
-Let's explore how this works in our demo application Metaphor Go. 
-
-### Storing Secrets in Vault
-
-First, let's look in your [vault kv store](https://vault.mgmt.kubefirst.com/ui/vault/secrets/secret/show/development/metaphor).
+While logged into Vault, navigate to secrets path `secret/development/metaphor`.
 
 ![](../../img/kubefirst/vault/vault-secret-example.png)
 
-Here you can see we have two secrets stored at `secret/development/metaphor` named `SECRET_ONE` and `SECRET_TWO`.
+Here you can see we have two secrets stored at named `SECRET_ONE` and `SECRET_TWO` with two "secret values". These two values are obviously not actually sensitive and are for demonstration purposes only. Let's explore how secrets work.
 
 ### Creating Kubernetes Secrets From Vault Secrets
 
-Now let's visit Metaphor [external secrets definition] `/kubernetes/metaphor/external-secrets.yaml`. We can see 
-here that we've defined an external-secrets manifest which will collect secrets from the Vault path 
-`secret/data/development/metaphor` (be mindful of the `/data/` that Vault imposes on your paths). It will take the 
-values from those paths and produce a secret named metaphor-envs with a `secret-one` and `secret-two` derived from 
-Vault's `SECRET_ONE` and `SECRET_TWO` property.
+If you look in your new metaphor repository in gitlab or github, you'll find a helm template file at path `metaphor/charts/metaphor/templates/external-secrets.yaml`
 
-> Note: The below `<values>` are token values replaced via Helm templating.
 ```
-apiVersion: "kubernetes-client.io/v1"
+apiVersion: "external-secrets.io/v1alpha1"
 kind: ExternalSecret
 metadata:
-  name: metaphor-envs
+  name: {{ template "metaphor.fullname" . }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
 spec:
-  backendType: vault
-  vaultMountPoint: kubernetes/<vault-mount-point>
-  vaultRole: external-secrets
-  kvVersion: 2
+  target:
+    name: {{ template "metaphor.fullname" . }}
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-secrets-backend
+  refreshInterval: "10s"
   data:
-    - name: secret-one
-      key: secret/data/<namespace>/metaphor
-      property: SECRET_ONE
-    - name: secret-two
-      key: secret/data/<namespace>/metaphor
-      property: SECRET_TWO
+    - remoteRef:
+        key: {{ .Values.vaultSecretPath }}
+        property: SECRET_ONE
+      secretKey: SECRET_ONE
+    - remoteRef:
+        key: {{ .Values.vaultSecretPath }}
+        property: SECRET_TWO
+      secretKey: SECRET_TWO
+```
+
+This is going to be a very common file type for you on the kubefirst platform. This kubernetes resource deploys with metaphor, connecting to the `vault-secrets-backend` cluster secret store, and pulls secrets from the path specified in the values.yaml property `vaultSecretPath`. You can either pull all secrets from Vault into the kubernetes secret, or as this secret demonstrates, you can also specify exactly which specific key/value pairs to pull when creating the secret.
+
+The result will be a native kubernetes secret, which can be used by your application. Since the path is driven by helm values.yaml values, the source for these secrets can be different in your different environments. For example, when you go to your gitops repository and look at `gitops/components/staging/metaphor/values.yaml` you'll see on the last line that we're pulling the staging secrets from the staging path in vault.
+
+```
+metaphor:
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - host: metaphor-staging.feedkray.com
+        paths:
+          - /
+    tls:
+    - secretName: metaphor-tls
+      hosts:
+        - metaphor-staging.feedkray.com
+  vaultMountPoint: kubefirst
+  vaultSecretPath: staging/metaphor
 ```
 
 ### Confirming Your Kubernetes Secrets
@@ -66,61 +107,73 @@ spec:
 Applying the above ExternalSecret resource to your Kubernetes namespace is enough to produce a Kubernetes secret which 
 will stay in sync with Vault's values. Let's confirm:
 
-#### 1. Get all secrets in the development namespace:
+#### 1. Get all secrets in the staging namespace:
 
 ```
-(⎈ |k8s-preprod:development) % kubectl -n development get secrets
-NAME                      TYPE                                  DATA   AGE
-default-token-7glxr       kubernetes.io/service-account-token   3      26d
-docs-tls                  kubernetes.io/tls                     2      7d11h
-metaphor-envs             Opaque                                2      21d
-metaphor-sa-token-w4lht   kubernetes.io/service-account-token   3      26d
-metaphor-tls              kubernetes.io/tls                     2      26d
+kubectl -n staging get secrets
+
+NAME                               TYPE                                  DATA   AGE
+default-token-z7crd                kubernetes.io/service-account-token   3      13h
+metaphor-frontend-sa-token-668gq   kubernetes.io/service-account-token   3      12h
+metaphor-frontend-tls              kubernetes.io/tls                     2      12h
+metaphor-go-sa-token-bx2gk         kubernetes.io/service-account-token   3      12h
+metaphor-go-staging                Opaque                                2      12h
+metaphor-go-tls                    kubernetes.io/tls                     2      12h
+metaphor-sa-token-v964z            kubernetes.io/service-account-token   3      12h
+metaphor-staging                   Opaque                                2      12h
+metaphor-tls                       kubernetes.io/tls                     2      12h
 ```
 
-#### 2. Get the yaml of the one named `metaphor-envs`:
+#### 2. Get the yaml of the one named `metaphor-staging`:
 
 ```
-(⎈ |k8s-preprod:development) % kubectl -n development get secret metaphor-envs -oyaml
+kubectl -n staging get secret metaphor-staging -oyaml
+
 apiVersion: v1
 data:
-  secret-one: bXktc3VwZXItc2VjcmV0
-  secret-two: bXktb3RoZXItc2VjcmV0
+  SECRET_ONE: c3RhZ2luZyBzZWNyZXQgMQ==
+  SECRET_TWO: c3RhZ2luZyBzZWNyZXQgMg==
+immutable: false
 kind: Secret
 metadata:
-  creationTimestamp: "2020-11-18T05:22:15Z"
-  name: metaphor-envs
-  namespace: development
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"external-secrets.io/v1alpha1","kind":"ExternalSecret","metadata":{"annotations":{},"labels":{"argocd.argoproj.io/instance":"metaphor-staging","chart":"metaphor-0.1.0-rc.e54452a0"},"name":"metaphor-staging","namespace":"staging"},"spec":{"data":[{"remoteRef":{"key":"staging/metaphor","property":"SECRET_ONE"},"secretKey":"SECRET_ONE"},{"remoteRef":{"key":"staging/metaphor","property":"SECRET_TWO"},"secretKey":"SECRET_TWO"}],"refreshInterval":"10s","secretStoreRef":{"kind":"ClusterSecretStore","name":"vault-secrets-backend"},"target":{"name":"metaphor-staging"}}}
+    reconcile.external-secrets.io/data-hash: fdc2f634a31c8e93dd8d47e940aa7939
+  creationTimestamp: "2022-10-18T04:21:57Z"
+  labels:
+    argocd.argoproj.io/instance: metaphor-staging
+    chart: metaphor-0.1.0-rc.e54452a0
+  name: metaphor-staging
+  namespace: staging
   ownerReferences:
-  - apiVersion: kubernetes-client.io/v1
+  - apiVersion: external-secrets.io/v1beta1
+    blockOwnerDeletion: true
     controller: true
     kind: ExternalSecret
-    name: metaphor-envs
-    uid: 63c88d17-4623-40e9-8457-921a5aeb32c8
-  resourceVersion: "4491034"
-  selfLink: /api/v1/namespaces/development/secrets/metaphor-envs
-  uid: 129cc5a2-d134-4ca1-be7b-f5c26cec0fbd
+    name: metaphor-staging
+    uid: 890fe79f-f48a-4dac-85c6-ac790ffc4147
+  resourceVersion: "21526"
+  uid: 1c2c9cd8-6aed-4e65-8e5c-57d3fd578b4d
 type: Opaque
-```
-
-#### 3. Confirm that it is your value from vault:
 
 ```
-(⎈ |k8s-preprod:development) % echo "bXktc3VwZXItc2VjcmV0" | base64 -d
-my-super-secret%                                   
+
+#### 3. Confirm that it's your value from vault:
+
+```
+echo "c3RhZ2luZyBzZWNyZXQgMQ==" | base64 -d
+
+staging secret 1% 
 ```
 
 ### Using Those Secrets in Your App
 
-Now that you have native Kubernetes secrets available, you can use them however you choose. Our Metaphor example 
-uses them as environment variables as shown here:
+Now that you have native Kubernetes secrets available, you can use them however you choose. Our metaphor example uses them as environment variables as shown here:
 
-![](../../img/kubefirst/vault/metaphor-secret-use.png)
+![](../../img/kubefirst/vault/metaphor-secret-use-in-deployment.png)
 
 > Note: There are a ton of other ways secrets can be leveraged in your app, like 
 [using secrets as files on pods](https://kubernetes.io/docs/concepts/configuration/secret/), or 
 [storing your dockerhub login](https://kubernetes.io/docs/concepts/configuration/secret/#docker-config-secrets).
 
-The [Metaphor](../../common/metaphors.md) app will show you these secrets when you visit 
-[Metaphor](https://metaphor-development.preprod.kubefirst.com/). Obviously you don't want to actually show your 
-secrets in a web response, but it helps us demonstrate since these Metaphor secrets don't need protection.
