@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/kubefirst/kubefirst/internal/domain"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -54,6 +55,16 @@ validated and configured.`,
 
 		//Please don't change the order of this block, wihtout updating
 		// internal/flagset/init_test.go
+
+		// todo: wire it / check if gitlab or github install
+		if os.Getenv("GITHUB_AUTH_TOKEN") != "" {
+			gitHubService := services.NewGitHubService()
+			gitHubHandler := handlers.NewGitHubHandler(gitHubService)
+			err := gitHubHandler.AuthenticateUser()
+			if err != nil {
+				return err
+			}
+		}
 
 		if globalFlags.SilentMode {
 			informUser(
