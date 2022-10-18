@@ -97,7 +97,7 @@ var createGithubK3dCmd = &cobra.Command{
 		}
 		progressPrinter.IncrementTracker("step-github", 1)
 
-		//* ADD Secrets to cluster
+		//* add secrets to cluster
 		// todo there is a secret condition in AddK3DSecrets to this not checked
 		executionControl = viper.GetBool("kubernetes.atlantis-secrets.secret.created")
 		if !executionControl {
@@ -111,24 +111,46 @@ var createGithubK3dCmd = &cobra.Command{
 			log.Println("already added secrets to k3d cluster")
 		}
 
-		gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
-		err = argocd.CreateInitialArgoCDRepository(gitopsRepo)
-		if err != nil {
-			log.Println("Error CreateInitialArgoCDRepository")
-			return err
-		}
-		err = helm.InstallArgocd(globalFlags.DryRun)
-		if err != nil {
-			log.Println("Error installing argocd")
-			return err
+		//* create argocd repository
+		informUser("Setup ArgoCD", globalFlags.SilentMode)
+		executionControl = viper.GetBool("argocd.initial-repository.created")
+		if !executionControl {
+			gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
+			err = argocd.CreateInitialArgoCDRepository(gitopsRepo)
+			if err != nil {
+				log.Println("Error CreateInitialArgoCDRepository")
+				return err
+			}
+		} else {
+			log.Println("already created initial argocd repository")
 		}
 
+		//* helm install argocd repository
+		informUser("Helm install ArgoCD", globalFlags.SilentMode)
+		executionControl = viper.GetBool("argocd.helm-install.complete")
+		if !executionControl {
+			err = helm.InstallArgocd(globalFlags.DryRun)
+			if err != nil {
+				log.Println("Error helm installing argocd")
+				return err
+			}
+		} else {
+			log.Println("already helm installed argocd")
+		}
 		progressPrinter.IncrementTracker("step-apps", 1)
 
-		//! argocd was just helm installed
-		waitArgoCDToBeReady(globalFlags.DryRun)
-		informUser("ArgoCD Ready", globalFlags.SilentMode)
+		//* argocd pods are ready
+		executionControl = viper.GetBool("argocd.ready")
+		if !executionControl {
+			waitArgoCDToBeReady(globalFlags.DryRun)
+			informUser("ArgoCD is ready, continuing", globalFlags.SilentMode)
+		} else {
+			log.Println("already waited for argocd to be ready")
+		}
 
+		//! everything between here
+
+		// todo do we need this again
 		kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 		defer func() {
 			err = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
@@ -136,40 +158,43 @@ var createGithubK3dCmd = &cobra.Command{
 				log.Println("Error closing kPortForwardArgocd")
 			}
 		}()
-		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")), globalFlags.SilentMode)
+		informUser(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")), globalFlags.SilentMode)
 
-		informUser("Setting argocd credentials", globalFlags.SilentMode)
-		setArgocdCreds(globalFlags.DryRun)
-		informUser("Getting an argocd auth token", globalFlags.SilentMode)
-		totalAttempts := 3
-		token := ""
+		token := "" // todo need to get rid of this and use value from viper
+		//* argocd pods are ready
+		executionControl = viper.GetBool("argocd.credentials.set")
+		if !executionControl {
 
-		if kPortForwardArgocd != nil {
-			err = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
-			if err != nil {
-				log.Println(err)
-			}
-		}
-		for i := 0; i < totalAttempts; i++ {
-			kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
-			defer func() {
+			informUser("Setting argocd credentials", globalFlags.SilentMode)
+			setArgocdCreds(globalFlags.DryRun)
+			informUser("Getting an argocd auth token", globalFlags.SilentMode)
+			totalAttempts := 3
+
+			if kPortForwardArgocd != nil {
 				err = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 				if err != nil {
-					log.Println("Error closing kPortForwardArgocd")
+					log.Println(err)
 				}
-			}()
-			token = argocd.GetArgocdAuthToken(globalFlags.DryRun)
-			err = argocd.ApplyRegistryLocal(globalFlags.DryRun)
-			if err != nil {
-				log.Println("Error applying registry")
-				return err
+			}
+			for i := 0; i < totalAttempts; i++ {
+				kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
+				defer func() {
+					err = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
+					if err != nil {
+						log.Println("Error closing kPortForwardArgocd")
+					}
+				}()
+				token = argocd.GetArgocdAuthToken(globalFlags.DryRun)
+				err = argocd.ApplyRegistryLocal(globalFlags.DryRun)
+				if err != nil {
+					log.Println("Error applying registry")
+					return err
+				}
 			}
 		}
 		informUser("Syncing the registry application", globalFlags.SilentMode)
-		informUser("Setup ArgoCD", globalFlags.SilentMode)
-		progressPrinter.IncrementTracker("step-apps", 1)
 
-		informUser("Install ArgoCD", globalFlags.SilentMode)
+		progressPrinter.IncrementTracker("step-apps", 1)
 
 		if globalFlags.DryRun {
 			log.Printf("[#99] Dry-run mode, Sync ArgoCD skipped")
@@ -191,6 +216,8 @@ var createGithubK3dCmd = &cobra.Command{
 		}
 		informUser("Setup ArgoCD", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
+
+		//! everything between here
 
 		// TODO: K3D => We need to check what changes for vault on raft mode, without terraform to unseal it
 		informUser("Waiting vault to be ready", globalFlags.SilentMode)

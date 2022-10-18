@@ -14,7 +14,7 @@ import (
 func InstallArgocd(dryRun bool) error {
 	config := configs.ReadConfig()
 	message := "error installing argo-cd: unexpected state"
-	if !viper.GetBool("create.argocd.helm") {
+	if !viper.GetBool("argocd.helm-install.complete") {
 		if dryRun {
 			log.Printf("[#99] Dry-run mode, helmInstallArgocd skipped.")
 			return nil
@@ -45,15 +45,12 @@ func InstallArgocd(dryRun bool) error {
 				continue
 			}
 
-			viper.Set("create.argocd.helm", true)
+			viper.Set("argocd.helm-install.complete", true)
 			err = viper.WriteConfig()
 			if err != nil {
 				log.Printf("error: could not write to viper config")
 				message = "error installing argo-cd: update config"
 				continue
-			}
-			if viper.GetBool("create.argocd.helm") {
-				return nil
 			}
 		}
 	} else {

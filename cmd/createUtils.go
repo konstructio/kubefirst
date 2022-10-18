@@ -41,6 +41,7 @@ func setArgocdCreds(dryRun bool) {
 
 	viper.Set("argocd.admin.password", argocdPassword)
 	viper.Set("argocd.admin.username", "admin")
+	viper.Set("argocd.credentials.set", true)
 	viper.WriteConfig()
 }
 
@@ -68,8 +69,10 @@ func waitArgoCDToBeReady(dryRun bool) {
 			log.Println("Waiting for argocd pods to create, checking in 10 seconds")
 			time.Sleep(10 * time.Second)
 		} else {
-			log.Println("argocd pods found, continuing")
-			time.Sleep(15 * time.Second)
+			log.Println("argocd pods found, waiting for them to be running")
+			viper.Set("argocd.ready", true)
+			viper.WriteConfig()
+			time.Sleep(35 * time.Second)
 			break
 		}
 	}
