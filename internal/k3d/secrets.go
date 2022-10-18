@@ -37,8 +37,10 @@ func AddK3DSecrets(dryrun bool) error {
 	_, err = clientset.CoreV1().Secrets("github-runner").Create(context.TODO(), ghRunnerSecret, metav1.CreateOptions{})
 	if err != nil {
 		log.Println("Error:", err)
-		return errors.New("error creating namespace")
+		return errors.New("error creating kubernetes secret: github-runner/controller-manager")
 	}
+	viper.Set("kubernetes.github-runner.secret.created", true)
+	viper.WriteConfig()
 
 	dataAtlantis := map[string][]byte{
 		"ATLANTIS_GH_TOKEN":          []byte(os.Getenv("GITHUB_AUTH_TOKEN")),
@@ -53,7 +55,9 @@ func AddK3DSecrets(dryrun bool) error {
 	_, err = clientset.CoreV1().Secrets("atlantis").Create(context.TODO(), ghAtlantisSecret, metav1.CreateOptions{})
 	if err != nil {
 		log.Println("Error:", err)
-		return errors.New("error creating namespace")
+		return errors.New("error creating kubernetes secret: atlantis/atlantis-secrets")
 	}
+	viper.Set("kubernetes.atlantis-secrets.secret.created", true)
+	viper.WriteConfig()
 	return nil
 }

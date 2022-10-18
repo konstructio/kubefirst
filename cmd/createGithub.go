@@ -99,7 +99,7 @@ var createGithubCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-base", 1)
 
 		gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
-		argocd.CreateInitalArgoRepository(gitopsRepo)
+		argocd.CreateInitialArgoCDRepository(gitopsRepo)
 
 		// clientset, err := k8s.GetClientSet(globalFlags.DryRun)
 		// if err != nil {

@@ -297,13 +297,15 @@ func ApplyRegistry(dryRun bool) error {
 	return nil
 }
 
-// ApplyRegistry - Apply Registry application
+// ApplyRegistryLocal - Apply Registry Local application
 func ApplyRegistryLocal(dryRun bool) error {
 	config := configs.ReadConfig()
+
 	if viper.GetBool("argocd.registry.applied") {
-		log.Println("skipped ApplyRegistry - ")
+		log.Println("skipped ApplyRegistryLocal - ")
 		return nil
 	}
+
 	if !dryRun {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/registry.yaml", config.K1FolderPath))
 		if err != nil {
@@ -317,8 +319,8 @@ func ApplyRegistryLocal(dryRun bool) error {
 	return nil
 }
 
-// CreateInitalArgoRepository - Fill and create argocd-init-values.yaml for Github installs
-func CreateInitalArgoRepository(githubURL string) error {
+// CreateInitialArgoCDRepository - Fill and create argocd-init-values.yaml for Github installs
+func CreateInitialArgoCDRepository(githubURL string) error {
 	config := configs.ReadConfig()
 
 	privateKey := viper.GetString("botprivatekey")
@@ -330,17 +332,19 @@ func CreateInitalArgoRepository(githubURL string) error {
 	argoConfig.Configs.CredentialTemplates.SSHCreds.URL = githubURL
 	argoConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = privateKey
 
-	argoYaml, err := yaml2.Marshal(&argoConfig)
+	argoCdRepoYaml, err := yaml2.Marshal(&argoConfig)
 	if err != nil {
-		log.Printf("error: marsheling yaml for argo config %s", err)
+		log.Printf("error: marshaling yaml for argo config %s", err)
 		return err
 	}
 
-	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoYaml, 0644)
+	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoCdRepoYaml, 0644)
 	if err != nil {
 		log.Printf("error: could not write argocd-init-values.yaml %s", err)
 		return err
 	}
+	viper.Set("argocd.initial-repository.created", true)
+	viper.WriteConfig()
 	return nil
 }
 

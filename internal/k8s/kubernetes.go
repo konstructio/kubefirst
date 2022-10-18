@@ -194,7 +194,7 @@ func PortForward(dryRun bool, namespace string, filter string, ports string) (*e
 	kPortForward.Stdout = &kPortForwardOutb
 	kPortForward.Stderr = &kPortForwardErrb
 	err := kPortForward.Start()
-	log.Printf("PF started (%s)", filter)
+	log.Printf("kubectl port-forward started for (%s) available at http://localhost:%s", filter, ports)
 	//defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
 
 	//Please, don't remove this sleep, pf takes a while to be ready to search calls.
