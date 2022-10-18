@@ -317,8 +317,8 @@ func ApplyRegistryLocal(dryRun bool) error {
 	return nil
 }
 
-// CreateInitalArgoRepository - Fill and create argocd-init-values.yaml for Github installs
-func CreateInitalArgoRepository(githubURL string) error {
+// CreateInitialArgoRepository - Fill and create argocd-init-values.yaml for Github installs
+func CreateInitialArgoRepository(githubURL string) error {
 	config := configs.ReadConfig()
 
 	privateKey := viper.GetString("botprivatekey")

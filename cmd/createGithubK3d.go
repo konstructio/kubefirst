@@ -113,9 +113,9 @@ var createGithubK3dCmd = &cobra.Command{
 		informUser("hard breaking point", globalFlags.SilentMode)
 		return nil
 		gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
-		err = argocd.CreateInitalArgoRepository(gitopsRepo)
+		err = argocd.CreateInitialArgoRepository(gitopsRepo)
 		if err != nil {
-			log.Println("Error CreateInitalArgoRepository")
+			log.Println("Error CreateInitialArgoRepository")
 			return err
 		}
 		err = helm.InstallArgocd(globalFlags.DryRun)
