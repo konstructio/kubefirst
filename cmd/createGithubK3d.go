@@ -111,7 +111,7 @@ var createGithubK3dCmd = &cobra.Command{
 			log.Println("already added secrets to k3d cluster")
 		}
 
-		//* create argocd repository
+		//* create argocd intiial repository config
 		informUser("Setup ArgoCD", globalFlags.SilentMode)
 		executionControl = viper.GetBool("argocd.initial-repository.created")
 		if !executionControl {
@@ -125,9 +125,32 @@ var createGithubK3dCmd = &cobra.Command{
 			log.Println("already created initial argocd repository")
 		}
 
-		//* helm install argocd repository
-		informUser("Helm install ArgoCD", globalFlags.SilentMode)
-		executionControl = viper.GetBool("argocd.helm-install.complete")
+		//! everything between here
+		//* helm add argo repository && update
+		executionControl = viper.GetBool("argocd.helm.repo.updated")
+		helmRepo := helm.HelmRepo{}
+		helmRepo.RepoName = "argo"
+		helmRepo.RepoURL = "https://argoproj.github.io/argo-helm"
+		helmRepo.ChartName = "argo-cd"
+		helmRepo.Namespace = "argocd"
+		helmRepo.ChartVersion = "4.10.5"
+		if !executionControl {
+			informUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), globalFlags.SilentMode)
+			helm.AddRepoAndUpdateRepo(globalFlags.DryRun, helmRepo)
+		}
+
+		log.Println("Hard break as we are still testing this mode")
+		return nil
+
+		//* helm install argocd
+		informUser("helm install ArgoCD", globalFlags.SilentMode)
+		executionControl = viper.GetBool("argocd.helm.install.complete")
+		if !executionControl {
+			informUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), globalFlags.SilentMode)
+			helm.Install(globalFlags.DryRun, helmRepo)
+		}
+
+		//! stop here
 		if !executionControl {
 			err = helm.InstallArgocd(globalFlags.DryRun)
 			if err != nil {
@@ -147,8 +170,6 @@ var createGithubK3dCmd = &cobra.Command{
 		} else {
 			log.Println("already waited for argocd to be ready")
 		}
-
-		//! everything between here
 
 		kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 		defer func() {

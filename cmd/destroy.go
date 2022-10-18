@@ -59,6 +59,7 @@ var destroyCmd = &cobra.Command{
 			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github-k3d"
 			terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
 			informUser("successfully destroyed github resources\n", globalFlags.SilentMode)
+			informUser("be sure to run `kubefirst clean` before your next cloud provision\n", globalFlags.SilentMode)
 
 			//* step 3 - clean local .k1 dir
 			// err = cleanCmd.RunE(cmd, args)
@@ -68,7 +69,6 @@ var destroyCmd = &cobra.Command{
 			// }
 			os.Exit(1)
 		}
-		return nil
 
 		progressPrinter.SetupProgress(2, globalFlags.SilentMode)
 

@@ -48,7 +48,8 @@ type Config struct {
 	TerraformVersion string
 	HelmVersion      string
 
-	ArgoCDChartHelmVersion string
+	ArgoCDChartHelmVersion   string
+	ArgoCDInitValuesYamlPath string
 
 	CertsPath string
 
@@ -94,6 +95,7 @@ func ReadConfig() *Config {
 	config.TerraformVersion = "1.0.11"
 	config.ConsoleVersion = "1.0.1"
 	config.ArgoCDChartHelmVersion = "4.10.5"
+	config.ArgoCDInitValuesYamlPath = fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath)
 	// todo adopt latest helmVersion := "v3.9.0"
 	config.HelmVersion = "v3.6.1"
 	config.KubectlVersionM1 = "v1.21.14"
