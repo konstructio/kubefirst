@@ -3,16 +3,15 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/kubefirst/kubefirst/internal/argocd"
-
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -63,13 +62,15 @@ func waitArgoCDToBeReady(dryRun bool) {
 		}
 	}
 	for i := 0; i < x; i++ {
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
 		if err != nil {
 			log.Println("Waiting for argocd pods to create, checking in 10 seconds")
 			time.Sleep(10 * time.Second)
 		} else {
-			log.Println("argocd pods found, continuing")
-			time.Sleep(15 * time.Second)
+			log.Println("argocd pods found, waiting for them to be running")
+			viper.Set("argocd.ready", true)
+			viper.WriteConfig()
+			time.Sleep(35 * time.Second)
 			break
 		}
 	}
@@ -139,7 +140,7 @@ func loopUntilPodIsReady(dryRun bool) {
 			}
 
 			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			if err != nil {
 				log.Println("vault is availbale but the body is not what is expected ", err)
 				continue
@@ -216,7 +217,7 @@ func initializeVaultAndAutoUnseal(dryRun bool) {
 		}
 
 		defer res.Body.Close()
-		body, err := ioutil.ReadAll(res.Body)
+		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			log.Panic(err)
 		}

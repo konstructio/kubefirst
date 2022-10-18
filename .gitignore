@@ -19,4 +19,9 @@ logs/
 lint_log.txt
 credentials
 .idea
+k3d-linux-amd64.1
+k3d-linux-amd64
+my.test
+go.test
 # kubefirst # <- this is causing files in docs to not commit, need a more explicit path ignored
+

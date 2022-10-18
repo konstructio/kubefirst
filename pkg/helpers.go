@@ -3,9 +3,9 @@ package pkg
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,7 +74,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	}
 
 	if matched {
-		read, err := ioutil.ReadFile(path)
+		read, err := os.ReadFile(path)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -233,7 +233,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 				log.Panic(err)
 			}
 		} else {
-			err = ioutil.WriteFile(path, []byte(newContents), 0)
+			err = os.WriteFile(path, []byte(newContents), 0)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -306,4 +306,89 @@ func randSeq(n int) string {
 func Random(seq int) string {
 	rand.Seed(time.Now().UnixNano())
 	return randSeq(seq)
+}
+
+// RemoveSubDomain receives a host and remove its subdomain, if exists.
+func RemoveSubDomain(fullURL string) (string, error) {
+
+	// add http if fullURL doesn't have it, this is for validation only, won't be used on http requests
+	if !strings.HasPrefix(fullURL, "http") {
+		fullURL = "https://" + fullURL
+	}
+
+	// check if received fullURL is valid before parsing it
+	err := IsValidURL(fullURL)
+	if err != nil {
+		return "", err
+	}
+
+	// build URL
+	fullPathURL, err := url.ParseRequestURI(fullURL)
+	if err != nil {
+		return "", err
+	}
+
+	splitHost := strings.Split(fullPathURL.Host, ".")
+
+	if len(splitHost) < 2 {
+		return "", fmt.Errorf("the fullURL (%s) is invalid", fullURL)
+	}
+
+	lastURLPart := splitHost[len(splitHost)-2:]
+	hostWithSpace := strings.Join(lastURLPart, " ")
+	// set fullURL only without subdomain
+	fullPathURL.Host = strings.ReplaceAll(hostWithSpace, " ", ".")
+
+	// build URL without subdomain
+	result := fullPathURL.Scheme + "://" + fullPathURL.Host
+
+	// check if new URL is still valid
+	err = IsValidURL(result)
+	if err != nil {
+		return "", err
+	}
+
+	return fullPathURL.Host, nil
+}
+
+// IsValidURL checks if a URL is valid
+func IsValidURL(rawURL string) error {
+
+	if len(rawURL) == 0 {
+		return errors.New("rawURL cannot be empty string")
+	}
+
+	parsedURL, err := url.ParseRequestURI(rawURL)
+	if err != nil || parsedURL == nil {
+		return fmt.Errorf("the URL (%s) is invalid, error = %v", rawURL, err)
+	}
+	return nil
+}
+
+// ValidateK1Folder receives a folder path, and expect the Kubefirst configuration folder is empty. It follows this
+// validation list:
+//   - If folder doesn't exist, try to create it
+//   - If folder exists, check if there are files
+//   - If folder exists, and has files, inform the user that clean command should be called before a new init
+func ValidateK1Folder(folderPath string) error {
+
+	if _, err := os.Stat(folderPath); errors.Is(err, os.ErrNotExist) {
+		if err = os.Mkdir(folderPath, os.ModePerm); err != nil {
+			return fmt.Errorf("info: could not create directory %q - error: %s", folderPath, err)
+		}
+		// folder was just created, no further validation required
+		return nil
+	}
+
+	files, err := os.ReadDir(folderPath)
+	if err != nil {
+		return err
+	}
+
+	if len(files) != 0 {
+		return fmt.Errorf("folder: %s has files that can be left overs from a previous installation, "+
+			"please use kubefirst clean command to be ready for a new installation", folderPath)
+	}
+
+	return nil
 }

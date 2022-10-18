@@ -4,13 +4,13 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"crypto/tls"
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/terraform"
 	"log"
-	"net/http"
 	"os/exec"
 	"syscall"
+	"time"
+
+	"github.com/kubefirst/kubefirst/internal/terraform"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
@@ -45,8 +45,8 @@ var createGithubK3dCmd = &cobra.Command{
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 		progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 		progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
-		progressPrinter.AddTracker("step-ecr", "Setup ECR/Docker Registries", 1) // todo remove this step, its baked into github repo
-		progressPrinter.AddTracker("step-apps", "Install apps to cluster", 6)
+		//progressPrinter.AddTracker("step-ecr", "Setup ECR/Docker Registries", 1) // todo remove this step, its baked into github repo
+		progressPrinter.AddTracker("step-apps", "Install apps to cluster", 5)
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
 
 		progressPrinter.IncrementTracker("step-0", 1)
@@ -55,79 +55,109 @@ var createGithubK3dCmd = &cobra.Command{
 			informUser("Telemetry Disabled", globalFlags.SilentMode)
 		}
 
+		executionControl := viper.GetBool("terraform.github.apply.complete")
 		//* create github teams in the org and gitops repo
-		informUser("Creating gitops/metaphor repos", globalFlags.SilentMode)
-		err = githubAddCmd.RunE(cmd, args)
-		if err != nil {
-			log.Println("Error running:", githubAddCmd.Name())
-			return err
-		}
+		if !executionControl {
+			informUser("Creating github resources with terraform", globalFlags.SilentMode)
 
-		informUser(fmt.Sprintf("Created GitOps Repo in github.com/%s", viper.GetString("github.owner")), globalFlags.SilentMode)
-		progressPrinter.IncrementTracker("step-github", 1)
+			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+			terraform.InitApplyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+
+			informUser(fmt.Sprintf("Created gitops Repo in github.com/%s", viper.GetString("github.owner")), globalFlags.SilentMode)
+			progressPrinter.IncrementTracker("step-github", 1)
+		} else {
+			log.Println("already created github terraform resources")
+		}
 
 		//* push our locally detokenized gitops repo to remote github
 		githubHost := viper.GetString("github.host")
 		githubOwner := viper.GetString("github.owner")
 		localRepo := "gitops"
 		remoteName := "github"
-		if !viper.GetBool("github.gitops.hydrated") {
+		executionControl = viper.GetBool("github.gitops.hydrated") // todo fix this executionControl value `github.detokenized-gitops.pushed`?
+		if !executionControl {
+			informUser(fmt.Sprintf("pushing local detokenized gitops content to new remote github.com/%s", viper.GetString("github.owner")), globalFlags.SilentMode)
 			gitClient.PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName)
 		} else {
 			log.Println("already hydrated the github gitops repository")
 		}
-
 		progressPrinter.IncrementTracker("step-github", 1)
 
-		//* push our locally detokenized gitops repo to remote github
-
-		//directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
-		informUser("Creating K8S Cluster", globalFlags.SilentMode)
-
-		//TODO: Create K3D
-		//terraform.ApplyBaseTerraform(globalFlags.DryRun, directory)
-		err = k3d.CreateK3dCluster()
-		if err != nil {
-			log.Println("Error installing k3d cluster")
-			return err
+		//* create kubernetes cluster
+		executionControl = viper.GetBool("k3d.created")
+		if !executionControl {
+			informUser("Creating K8S Cluster", globalFlags.SilentMode)
+			err = k3d.CreateK3dCluster()
+			if err != nil {
+				log.Println("Error installing k3d cluster")
+				return err
+			}
+			progressPrinter.IncrementTracker("step-base", 1)
+		} else {
+			log.Println("already created k3d cluster")
 		}
-
-		progressPrinter.IncrementTracker("step-base", 1)
-
-		// pushes detokenized KMS_KEY_ID
-		// there will not exist KMS keys on local
-		// if !viper.GetBool("vault.kms.kms-pushed") {
-		// 	gitClient.PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName)
-		// 	viper.Set("vault.kmskeyid.kms-pushed", true)
-		// 	viper.WriteConfig()
-		// }
-
 		progressPrinter.IncrementTracker("step-github", 1)
 
-		// We would not have certs stored for local install
-		// informUser("Attempt to recycle certs", globalFlags.SilentMode)
-		// restoreSSLCmd.RunE(cmd, args)
-		// progressPrinter.IncrementTracker("step-base", 1)
-
-		gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
-		err = argocd.CreateInitalArgoRepository(gitopsRepo)
-		if err != nil {
-			log.Println("Error CreateInitalArgoRepository")
-			return err
-		}
-		err = helm.InstallArgocd(globalFlags.DryRun)
-		if err != nil {
-			log.Println("Error installing argocd")
-			return err
+		//* add secrets to cluster
+		// todo there is a secret condition in AddK3DSecrets to this not checked
+		executionControl = viper.GetBool("kubernetes.atlantis-secrets.secret.created")
+		if !executionControl {
+			err = k3d.AddK3DSecrets(globalFlags.DryRun)
+			if err != nil {
+				log.Println("Error AddK3DSecrets")
+				return err
+			}
+		} else {
+			log.Println("already added secrets to k3d cluster")
 		}
 
-		informUser("Install ArgoCD", globalFlags.SilentMode)
+		//* create argocd intiial repository config
+		executionControl = viper.GetBool("argocd.initial-repository.created")
+		if !executionControl {
+			informUser("create initial argocd repository", globalFlags.SilentMode)
+			//Enterprise users need to be able to set the hostname for git.
+			gitopsRepo := fmt.Sprintf("git@%s:%s/gitops.git", viper.GetString("github.host"), viper.GetString("github.owner"))
+			err = argocd.CreateInitialArgoCDRepository(gitopsRepo)
+			if err != nil {
+				log.Println("Error CreateInitialArgoCDRepository")
+				return err
+			}
+		} else {
+			log.Println("already created initial argocd repository")
+		}
+
+		//* helm add argo repository && update
+		helmRepo := helm.HelmRepo{}
+		helmRepo.RepoName = "argo"
+		helmRepo.RepoURL = "https://argoproj.github.io/argo-helm"
+		helmRepo.ChartName = "argo-cd"
+		helmRepo.Namespace = "argocd"
+		helmRepo.ChartVersion = "4.10.5"
+
+		executionControl = viper.GetBool("argocd.helm.repo.updated")
+		if !executionControl {
+			informUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), globalFlags.SilentMode)
+			helm.AddRepoAndUpdateRepo(globalFlags.DryRun, helmRepo)
+		}
+
+		//* helm install argocd
+		executionControl = viper.GetBool("argocd.helm.install.complete")
+		if !executionControl {
+			informUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), globalFlags.SilentMode)
+			helm.Install(globalFlags.DryRun, helmRepo)
+		}
 		progressPrinter.IncrementTracker("step-apps", 1)
 
-		//! argocd was just helm installed
-		waitArgoCDToBeReady(globalFlags.DryRun)
-		informUser("ArgoCD Ready", globalFlags.SilentMode)
+		//* argocd pods are running
+		executionControl = viper.GetBool("argocd.ready")
+		if !executionControl {
+			waitArgoCDToBeReady(globalFlags.DryRun)
+			informUser("ArgoCD is running, continuing", globalFlags.SilentMode)
+		} else {
+			log.Println("already waited for argocd to be ready")
+		}
 
+		//* establish port-forward
 		kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 		defer func() {
 			err = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
@@ -135,45 +165,47 @@ var createGithubK3dCmd = &cobra.Command{
 				log.Println("Error closing kPortForwardArgocd")
 			}
 		}()
-		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")), globalFlags.SilentMode)
+		informUser(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")), globalFlags.SilentMode)
 
-		informUser("Setting argocd credentials", globalFlags.SilentMode)
-		setArgocdCreds(globalFlags.DryRun)
-		informUser("Getting an argocd auth token", globalFlags.SilentMode)
-		token := argocd.GetArgocdAuthToken(globalFlags.DryRun)
-		err = argocd.ApplyRegistry(globalFlags.DryRun)
+		//* argocd pods are ready, get and set credentials
+		executionControl = viper.GetBool("argocd.credentials.set")
+		if !executionControl {
+			informUser("Setting argocd username and password credentials", globalFlags.SilentMode)
+			setArgocdCreds(globalFlags.DryRun)
+			informUser("argocd username and password credentials set successfully", globalFlags.SilentMode)
+
+			informUser("Getting an argocd auth token", globalFlags.SilentMode)
+			_ = argocd.GetArgocdAuthToken(globalFlags.DryRun)
+			informUser("argocd admin auth token set", globalFlags.SilentMode)
+
+			viper.Set("argocd.credentials.set", true)
+			viper.WriteConfig()
+		}
+
+		//* argocd sync registry and start sync waves
+		executionControl = viper.GetBool("argocd.registry.applied")
+		if !executionControl {
+			informUser("applying the registry application to argocd", globalFlags.SilentMode)
+			err = argocd.ApplyRegistryLocal(globalFlags.DryRun)
+			if err != nil {
+				log.Println("Error applying registry application to argocd")
+				return err
+			}
+		}
+
+		progressPrinter.IncrementTracker("step-apps", 1)
+
+		// executionControl = viper.GetBool("vault.status.running")
+		// if !executionControl {
+		// TODO: K3D => We need to check what changes for vault on raft mode, without terraform to unseal it
+		informUser("Waiting for vault to be ready", globalFlags.SilentMode)
+		waitVaultToBeRunning(globalFlags.DryRun)
 		if err != nil {
-			log.Println("Error applying registry")
+			log.Println("error waiting for vault to become running")
 			return err
 		}
-		informUser("Syncing the registry application", globalFlags.SilentMode)
-		informUser("Setup ArgoCD", globalFlags.SilentMode)
-		progressPrinter.IncrementTracker("step-apps", 1)
+		// }
 
-		if globalFlags.DryRun {
-			log.Printf("[#99] Dry-run mode, Sync ArgoCD skipped")
-		} else {
-			// todo: create ArgoCD struct, and host dependencies (like http client)
-			customTransport := http.DefaultTransport.(*http.Transport).Clone()
-			customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-			httpClient := http.Client{Transport: customTransport}
-
-			// retry to sync ArgoCD application until reaches the maximum attempts
-			argoCDIsReady, err := argocd.SyncRetry(&httpClient, 20, 5, "registry", token)
-			if err != nil {
-				log.Printf("something went wrong during ArgoCD sync step, error is: %v", err)
-			}
-
-			if !argoCDIsReady {
-				log.Println("unable to sync ArgoCD application, continuing...")
-			}
-		}
-		informUser("Setup ArgoCD", globalFlags.SilentMode)
-		progressPrinter.IncrementTracker("step-apps", 1)
-
-		// TODO: K3D => We need to check what changes for vault on raft mode, without terraform to unseal it
-		informUser("Waiting vault to be ready", globalFlags.SilentMode)
-		waitVaultToBeRunning(globalFlags.DryRun)
 		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
 		defer func() {
 			err = kPortForwardVault.Process.Signal(syscall.SIGTERM)
@@ -184,11 +216,15 @@ var createGithubK3dCmd = &cobra.Command{
 
 		loopUntilPodIsReady(globalFlags.DryRun)
 
-		// TODO: K3D =>  Does this method changes on k3d?
-		initializeVaultAndAutoUnseal(globalFlags.DryRun)
-		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")), globalFlags.SilentMode)
-		informUser("Setup Vault", globalFlags.SilentMode)
-		progressPrinter.IncrementTracker("step-apps", 1)
+		informUser("Welcome to local kubefist experience", globalFlags.SilentMode)
+		informUser("To use your cluster port-forward - argocd", globalFlags.SilentMode)
+		informUser("If not automatically injected, your kubevonfig is at:", globalFlags.SilentMode)
+		informUser("k3d kubeconfig get "+viper.GetString("cluster-name"), globalFlags.SilentMode)
+		informUser("Expose Argo-CD", globalFlags.SilentMode)
+		informUser("kubectl -n argocd port-forward svc/argocd-server 8080:80", globalFlags.SilentMode)
+		informUser("Argo User: "+viper.GetString("argocd.admin.username"), globalFlags.SilentMode)
+		informUser("Argo Password: "+viper.GetString("argocd.admin.password"), globalFlags.SilentMode)
+		time.Sleep(1 * time.Second)
 
 		if !viper.GetBool("vault.configuredsecret") { //skipVault
 			informUser("waiting for vault unseal", globalFlags.SilentMode)

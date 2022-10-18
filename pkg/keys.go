@@ -6,15 +6,16 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"log"
+	"os"
+	"strings"
+
 	"github.com/caarlos0/sshmarshal"
 	goGitSsh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
-	"io/ioutil"
-	"log"
-	"strings"
 )
 
 func CreateSshKeyPair() {
@@ -76,7 +77,7 @@ configs:
         %s
 `, strings.ReplaceAll(privateKey, "\n", "\n        ")))
 
-	err := ioutil.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
+	err := os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
 	if err != nil {
 		log.Panicf("error: could not write argocd-init-values.yaml %s", err)
 	}
@@ -143,14 +144,14 @@ func generateGitHubKeys() (string, string, error) {
 // todo: function not in use, can we remove it?
 func ModConfigYaml() {
 
-	file, err := ioutil.ReadFile("./config.yaml")
+	file, err := os.ReadFile("./config.yaml")
 	if err != nil {
 		log.Println("error reading file", err)
 	}
 
 	newFile := strings.Replace(string(file), "allow-keyless: false", "allow-keyless: true", -1)
 
-	err = ioutil.WriteFile("./config.yaml", []byte(newFile), 0)
+	err = os.WriteFile("./config.yaml", []byte(newFile), 0)
 	if err != nil {
 		panic(err)
 	}
