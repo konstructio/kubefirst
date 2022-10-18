@@ -105,7 +105,8 @@ func Install(dryRun bool, helmRepo HelmRepo) error {
 	config := configs.ReadConfig()
 
 	log.Printf("executing `helm install %s` and waiting for completion ", helmRepo.ChartName)
-	_, _, err := pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "upgrade", "--install", helmRepo.ChartName, "--namespace", helmRepo.Namespace, "--create-namespace", "--version", helmRepo.ChartVersion, "--wait", "--values", config.ArgoCDInitValuesYamlPath, fmt.Sprintf("%s/%s", helmRepo.RepoName, helmRepo.ChartName))
+	// todo remove `"--set", "fullnameOverride=argocd", "--set", "nameOverride=argocd"` see type ConfigRepo
+	_, _, err := pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "upgrade", "--install", helmRepo.ChartName, "--namespace", helmRepo.Namespace, "--create-namespace", "--version", helmRepo.ChartVersion, "--wait", "--set", "fullnameOverride=argocd", "--set", "nameOverride=argocd", "--values", config.ArgoCDInitValuesYamlPath, fmt.Sprintf("%s/%s", helmRepo.RepoName, helmRepo.ChartName))
 	if err != nil {
 		log.Printf("error: could not helm install %s - %s", helmRepo.ChartName, err)
 	}

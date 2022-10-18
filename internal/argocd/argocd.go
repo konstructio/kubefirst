@@ -297,13 +297,15 @@ func ApplyRegistry(dryRun bool) error {
 	return nil
 }
 
-// ApplyRegistry - Apply Registry application
+// ApplyRegistryLocal - Apply Registry Local application
 func ApplyRegistryLocal(dryRun bool) error {
 	config := configs.ReadConfig()
+
 	if viper.GetBool("argocd.registry.applied") {
-		log.Println("skipped ApplyRegistry - ")
+		log.Println("skipped ApplyRegistryLocal - ")
 		return nil
 	}
+
 	if !dryRun {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/registry.yaml", config.K1FolderPath))
 		if err != nil {

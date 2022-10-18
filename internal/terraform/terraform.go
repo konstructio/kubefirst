@@ -238,7 +238,7 @@ func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
 	tfEntrypointSplit := strings.Split(tfEntrypoint, "/")
 	kubefirstConfigProperty := tfEntrypointSplit[len(tfEntrypointSplit)-1]
 
-	kubefirstConfigPath := fmt.Sprintf("terraform.%s.%s.executed", kubefirstConfigProperty, tfAction)
+	kubefirstConfigPath := fmt.Sprintf("terraform.%s.%s.complete", kubefirstConfigProperty, tfAction)
 
 	if !viper.GetBool(kubefirstConfigPath) {
 		log.Printf("Executing Init%s%sTerraform", strings.Title(tfAction), strings.Title(tfEntrypoint))

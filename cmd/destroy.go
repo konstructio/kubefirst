@@ -55,11 +55,11 @@ var destroyCmd = &cobra.Command{
 			informUser("k3d cluster deleted", globalFlags.SilentMode)
 
 			//* step 2 - terraform destroy github
-			informUser("terraform destroying github resources\n", globalFlags.SilentMode)
+			informUser("terraform destroying github resources", globalFlags.SilentMode)
 			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github-k3d"
 			terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
-			informUser("successfully destroyed github resources\n", globalFlags.SilentMode)
-			informUser("be sure to run `kubefirst clean` before your next cloud provision\n", globalFlags.SilentMode)
+			informUser("successfully destroyed github resources", globalFlags.SilentMode)
+			informUser("be sure to run `kubefirst clean` before your next cloud provision", globalFlags.SilentMode)
 
 			//* step 3 - clean local .k1 dir
 			// err = cleanCmd.RunE(cmd, args)

@@ -10,9 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubefirst/kubefirst/internal/argocd"
-
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -41,7 +40,6 @@ func setArgocdCreds(dryRun bool) {
 
 	viper.Set("argocd.admin.password", argocdPassword)
 	viper.Set("argocd.admin.username", "admin")
-	viper.Set("argocd.credentials.set", true)
 	viper.WriteConfig()
 }
 
