@@ -214,6 +214,9 @@ validated and configured.`,
 			awsFlags.HostedZoneName,
 			configs.K1Version,
 		)
+		if err != nil {
+			log.Println(err)
+		}
 		if globalFlags.UseTelemetry {
 			err = telemetryHandler.SendCountMetric(telemetryInitCompleted)
 			if err != nil {
