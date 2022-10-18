@@ -84,7 +84,7 @@ var createGithubK3dCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-github", 1)
 
 		//* create kubernetes cluster
-		executionControl = viper.GetBool("k3d.created") // todo fix this executionControl value `github.detokenized-gitops.pushed`?
+		executionControl = viper.GetBool("k3d.created")
 		if !executionControl {
 			informUser("Creating K8S Cluster", globalFlags.SilentMode)
 			err = k3d.CreateK3dCluster()
@@ -194,9 +194,17 @@ var createGithubK3dCmd = &cobra.Command{
 
 		progressPrinter.IncrementTracker("step-apps", 1)
 
+		// executionControl = viper.GetBool("vault.status.running")
+		// if !executionControl {
 		// TODO: K3D => We need to check what changes for vault on raft mode, without terraform to unseal it
-		informUser("Waiting vault to be ready", globalFlags.SilentMode)
+		informUser("Waiting for vault to be ready", globalFlags.SilentMode)
 		waitVaultToBeRunning(globalFlags.DryRun)
+		if err != nil {
+			log.Println("error waiting for vault to become running")
+			return err
+		}
+		// }
+
 		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
 		defer func() {
 			err = kPortForwardVault.Process.Signal(syscall.SIGTERM)
