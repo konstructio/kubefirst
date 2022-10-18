@@ -7,7 +7,6 @@ import (
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
-	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
@@ -33,11 +32,6 @@ func ApplyGitHubTerraform(dryRun bool) {
 	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botPublicKey")
 
 	directory := fmt.Sprintf("%s/gitops/terraform/github", config.K1FolderPath)
-
-	//TODO: maybe we need better logic here, this works for now
-	if viper.GetString("cloud") == flagset.CloudLocal {
-		directory = fmt.Sprintf("%s/gitops/terraform/github", config.K1FolderPath)
-	}
 
 	err := os.Chdir(directory)
 	if err != nil {
