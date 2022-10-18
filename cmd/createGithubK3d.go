@@ -125,7 +125,6 @@ var createGithubK3dCmd = &cobra.Command{
 			log.Println("already created initial argocd repository")
 		}
 
-		//! everything between here
 		//* helm add argo repository && update
 		helmRepo := helm.HelmRepo{}
 		helmRepo.RepoName = "argo"
@@ -194,36 +193,6 @@ var createGithubK3dCmd = &cobra.Command{
 		}
 
 		progressPrinter.IncrementTracker("step-apps", 1)
-
-		// //! skipping this on first test
-		// informUser("Syncing the registry application", globalFlags.SilentMode)
-		// todo this step can be removed? we used this to force the switch from soft-serve to
-		// todo gitlab if i recall
-		// if globalFlags.DryRun {
-		// 	log.Printf("[#99] Dry-run mode, Sync ArgoCD skipped")
-		// } else {
-		// 	// todo: create ArgoCD struct, and host dependencies (like http client)
-		// 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-		// 	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-		// 	httpClient := http.Client{Transport: customTransport}
-
-		// 	// retry to sync ArgoCD application until reaches the maximum attempts
-		// 	argoCDIsReady, err := argocd.SyncRetry(&httpClient, 20, 5, "registry", token)
-		// 	if err != nil {
-		// 		log.Printf("something went wrong during ArgoCD sync step, error is: %v", err)
-		// 	}
-
-		// 	if !argoCDIsReady {
-		// 		log.Println("unable to sync ArgoCD application, continuing...")
-		// 	}
-		// }
-		// informUser("Setup ArgoCD", globalFlags.SilentMode)0
-		// progressPrinter.IncrementTracker("step-apps", 1)
-
-		//! everything between here
-		//TODO: Remove me
-		log.Println("Hard break as we are still testing this mode")
-		return nil
 
 		// TODO: K3D => We need to check what changes for vault on raft mode, without terraform to unseal it
 		informUser("Waiting vault to be ready", globalFlags.SilentMode)
