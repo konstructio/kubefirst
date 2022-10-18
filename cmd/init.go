@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"github.com/kubefirst/kubefirst/internal/domain"
 	"log"
 	"net/http"
@@ -57,6 +58,10 @@ validated and configured.`,
 		//Please don't change the order of this block, wihtout updating
 		// internal/flagset/init_test.go
 
+		if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
+			return err
+		}
+
 		// todo: wire it / check if gitlab or github install
 		if config.GitHubPersonalAccessToken == "" && !globalFlags.SilentMode {
 
@@ -64,17 +69,19 @@ validated and configured.`,
 			gitHubService := services.NewGitHubService(httpClient)
 			gitHubHandler := handlers.NewGitHubHandler(gitHubService)
 			gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
-			if len(gitHubAccessToken) > 0 {
-				// todo: set common way to load env. values (viper->struct->load-env)
-				err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken)
-				if err != nil {
-					return err
-				}
-				log.Println("\nGITHUB_AUTH_TOKEN set via OAuth")
-			}
 			if err != nil {
 				return err
 			}
+
+			if len(gitHubAccessToken) == 0 {
+				return errors.New("unable to retrieve a GitHub token for the user")
+			}
+
+			// todo: set common way to load env. values (viper->struct->load-env)
+			if err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
+				return err
+			}
+			log.Println("\nGITHUB_AUTH_TOKEN set via OAuth")
 		}
 
 		if globalFlags.SilentMode {
@@ -109,10 +116,6 @@ validated and configured.`,
 		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 1)
 
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
-
-		if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
-			return err
-		}
 
 		log.Println("sending init started metric")
 

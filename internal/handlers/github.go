@@ -10,7 +10,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -73,24 +72,14 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 
 	// todo: check http code
 
-	var gitHubTokenReport bytes.Buffer
-	gitHubTokenReport.WriteString(strings.Repeat("-", 69))
-	gitHubTokenReport.WriteString("\nGitHub Token\n")
-	gitHubTokenReport.WriteString(strings.Repeat("-", 69))
-	gitHubTokenReport.WriteString("\n\nA GitHub token is required to provision a cluster using GitHub git provider. ")
-	gitHubTokenReport.WriteString("Kubefirst can generate a token for your installation follow this steps: \n\n")
-	//gitHubTokenReport.WriteString("1. click the following GitHub URL\n",)
-	gitHubTokenReport.WriteString("1. click the following GitHub URL: " + gitHubDeviceFlow.VerificationUri + "\n")
-	gitHubTokenReport.WriteString("2. entering the generate code: " + gitHubDeviceFlow.UserCode + "\n")
-	gitHubTokenReport.WriteString("3. allow the organization")
-	fmt.Println(reports.StyleMessage(gitHubTokenReport.String()))
+	// UI update to the user adding instructions how to proceed
+	gitHubTokenReport := reports.GitHubAuthToken(gitHubDeviceFlow.UserCode, gitHubDeviceFlow.VerificationUri)
+	fmt.Println(reports.StyleMessage(gitHubTokenReport))
 
-	//fmt.Println("--- GitHub Auth Token data ---")
-	//fmt.Printf("Copy the following code %s ,paste it at: %s , and authorize the organization \n", gitHubDeviceFlow.UserCode, gitHubDeviceFlow.VerificationUri)
-	//fmt.Println("--- GitHub Auth Token data ---")
-
+	// todo: improve the logic for the counter
 	var gitHubAccessToken string
-	var attempts = 30
+	var attempts = 10
+	var attemptsControl = attempts + 40
 	for i := 0; i < attempts; i++ {
 		gitHubAccessToken, err = handler.service.CheckUserCodeConfirmation(gitHubDeviceFlow.DeviceCode)
 		if err != nil {
@@ -101,7 +90,8 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 			fmt.Printf("\n\nGitHub token set!\n\n")
 			return gitHubAccessToken, nil
 		}
-		fmt.Printf("\rwaiting for authorization (%d seconds)", (attempts)-i)
+		fmt.Printf("\rwaiting for authorization (%d seconds)", (attemptsControl)-5)
+		attemptsControl -= 5
 		// todo: handle github interval https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps#response-parameters
 		time.Sleep(5 * time.Second)
 	}

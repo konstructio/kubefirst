@@ -181,3 +181,17 @@ func HandoffScreen(dryRun bool, silentMode bool) {
 	CommandSummary(handOffData)
 
 }
+
+func GitHubAuthToken(userCode, verificationUri string) string {
+	var gitHubTokenReport bytes.Buffer
+	gitHubTokenReport.WriteString(strings.Repeat("-", 69))
+	gitHubTokenReport.WriteString("\nGitHub Token\n")
+	gitHubTokenReport.WriteString(strings.Repeat("-", 69))
+	gitHubTokenReport.WriteString("\n\nA GitHub token is required to provision a cluster using GitHub git provider. ")
+	gitHubTokenReport.WriteString("Kubefirst can generate a token for your installation follow this steps: \n\n")
+	gitHubTokenReport.WriteString("1. copy the generate code: " + userCode + "\n")
+	gitHubTokenReport.WriteString("2. paste the code at the GitHub page: " + verificationUri + "\n")
+	gitHubTokenReport.WriteString("3. authorize your organization")
+
+	return gitHubTokenReport.String()
+}
