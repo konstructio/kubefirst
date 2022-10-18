@@ -55,12 +55,12 @@ var createGithubK3dCmd = &cobra.Command{
 			informUser("Telemetry Disabled", globalFlags.SilentMode)
 		}
 
-		executionControl := viper.GetBool("terraform.github-k3d.apply.complete")
+		executionControl := viper.GetBool("terraform.github.apply.complete")
 		//* create github teams in the org and gitops repo
 		if !executionControl {
 			informUser("Creating github resources with terraform", globalFlags.SilentMode)
 
-			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github-k3d"
+			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
 			terraform.InitApplyAutoApprove(globalFlags.DryRun, tfEntrypoint)
 
 			informUser(fmt.Sprintf("Created gitops Repo in github.com/%s", viper.GetString("github.owner")), globalFlags.SilentMode)
