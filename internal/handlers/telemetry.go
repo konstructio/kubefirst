@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/services"
 )
@@ -18,7 +19,12 @@ func NewTelemetryHandler(service services.SegmentIoService) TelemetryHandler {
 }
 
 // SendCountMetric validate and handles the metric request to the metric service.
-func (handler TelemetryHandler) SendCountMetric(telemetry *domain.Telemetry) error {
+func (handler TelemetryHandler) SendCountMetric(telemetry domain.Telemetry) error {
+	fmt.Println("---debug---")
+	fmt.Println(telemetry.MetricName)
+	fmt.Println(telemetry.Domain)
+	fmt.Println(telemetry.CLIVersion)
+	fmt.Println("---debug---")
 
 	err := handler.service.EnqueueCountMetric(
 		telemetry.MetricName,
