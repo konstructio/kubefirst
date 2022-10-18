@@ -312,7 +312,7 @@ func Test_Init_Addons_Gitlab(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if string(out) != "gitlab" {
+	if string(out) != "gitlab,cloud" {
 		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
@@ -332,7 +332,7 @@ func Test_Init_Addons_Github(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if string(out) != "github" {
+	if string(out) != "github,cloud" {
 		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
@@ -352,7 +352,7 @@ func Test_Init_Addons_Github_Kusk(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if string(out) != "github,kusk" {
+	if string(out) != "github,kusk,cloud" {
 		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
