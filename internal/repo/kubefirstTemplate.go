@@ -3,14 +3,18 @@ package repo
 import (
 	"fmt"
 	"log"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/pkg"
+	cp "github.com/otiai10/copy"
 	"github.com/spf13/viper"
 )
 
@@ -30,6 +34,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 	viper.WriteConfig()
 
 	log.Printf("cloned %s-template repository to directory %s/%s", repoName, config.K1FolderPath, repoName)
+	UpdateForLocalMode(directory)
 
 	log.Printf("detokenizing %s/%s", config.K1FolderPath, repoName)
 	pkg.Detokenize(directory)
@@ -98,4 +103,36 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 		},
 	})
 	viper.WriteConfig()
+}
+
+// UpdateForLocalMode - Tweak for local install on templates
+func UpdateForLocalMode(directory string) error {
+	//TODO: Confirm Change
+	if viper.GetString("cloud") == flagset.CloudK3d {
+		log.Println("Working Directory:", directory)
+		//Tweak folder
+		os.RemoveAll(directory + "/components")
+		os.RemoveAll(directory + "/registry")
+		os.RemoveAll(directory + "/terraform")
+		os.RemoveAll(directory + "/validation")
+		opt := cp.Options{
+			Skip: func(src string) (bool, error) {
+				if strings.HasSuffix(src, ".git") {
+					return true, nil
+				} else if strings.Index(src, "/.terraform") > 0 {
+					return true, nil
+				}
+				//Add more stuff to be ignored here
+				return false, nil
+
+			},
+		}
+		err := cp.Copy(directory+"/localhost", directory, opt)
+		if err != nil {
+			log.Println("Error populating gitops with local setup:", err)
+			return err
+		}
+		os.RemoveAll(directory + "/localhost")
+	}
+	return nil
 }

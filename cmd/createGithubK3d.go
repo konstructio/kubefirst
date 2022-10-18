@@ -115,7 +115,8 @@ var createGithubK3dCmd = &cobra.Command{
 		executionControl = viper.GetBool("argocd.initial-repository.created")
 		if !executionControl {
 			informUser("create initial argocd repository", globalFlags.SilentMode)
-			gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
+			//Enterprise users need to be able to set the hostname for git.
+			gitopsRepo := fmt.Sprintf("git@%s:%s/gitops.git", viper.GetString("github.host"), viper.GetString("github.owner"))
 			err = argocd.CreateInitialArgoCDRepository(gitopsRepo)
 			if err != nil {
 				log.Println("Error CreateInitialArgoCDRepository")

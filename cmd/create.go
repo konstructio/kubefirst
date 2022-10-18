@@ -52,30 +52,31 @@ cluster provisioning process spinning up the services, and validates the livenes
 
 		hostedZoneName := viper.GetString("aws.hostedzonename")
 
-		// Instantiates a SegmentIO client to send messages to the segment API.
-		segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
+		var telemetryHandler handlers.TelemetryHandler
+		if globalFlags.UseTelemetry {
+			// Instantiates a SegmentIO client to send messages to the segment API.
+			segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
 
-		// SegmentIO library works with queue that is based on timing, we explicit close the http client connection
-		// to force flush in case there is still some pending message in the SegmentIO library queue.
-		defer func(segmentIOClient analytics.Client) {
-			err := segmentIOClient.Close()
+			// SegmentIO library works with queue that is based on timing, we explicit close the http client connection
+			// to force flush in case there is still some pending message in the SegmentIO library queue.
+			defer func(segmentIOClient analytics.Client) {
+				err := segmentIOClient.Close()
+				if err != nil {
+					log.Println(err)
+				}
+			}(segmentIOClient)
+
+			telemetryDomain, err := domain.NewTelemetry(
+				pkg.MetricMgmtClusterInstallStarted,
+				hostedZoneName,
+				configs.K1Version,
+			)
 			if err != nil {
 				log.Println(err)
 			}
-		}(segmentIOClient)
+			telemetryService := services.NewSegmentIoService(segmentIOClient)
+			telemetryHandler := handlers.NewTelemetryHandler(telemetryService)
 
-		telemetryDomain, err := domain.NewTelemetry(
-			pkg.MetricMgmtClusterInstallStarted,
-			hostedZoneName,
-			configs.K1Version,
-		)
-		if err != nil {
-			log.Println(err)
-		}
-		telemetryService := services.NewSegmentIoService(segmentIOClient)
-		telemetryHandler := handlers.NewTelemetryHandler(telemetryService)
-
-		if globalFlags.UseTelemetry {
 			err = telemetryHandler.SendCountMetric(telemetryDomain)
 			if err != nil {
 				log.Println(err)
@@ -169,12 +170,15 @@ cluster provisioning process spinning up the services, and validates the livenes
 
 		log.Println("sending mgmt cluster install completed metric")
 
-		installCompletedTelemetry, err := domain.NewTelemetry(
-			pkg.MetricMgmtClusterInstallCompleted,
-			hostedZoneName,
-			configs.K1Version,
-		)
 		if globalFlags.UseTelemetry {
+			installCompletedTelemetry, err := domain.NewTelemetry(
+				pkg.MetricMgmtClusterInstallCompleted,
+				hostedZoneName,
+				configs.K1Version,
+			)
+			if err != nil {
+				log.Println(err)
+			}
 			err = telemetryHandler.SendCountMetric(installCompletedTelemetry)
 			if err != nil {
 				log.Println(err)

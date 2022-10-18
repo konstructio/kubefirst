@@ -73,31 +73,33 @@ validated and configured.`,
 
 		log.Println("sending init started metric")
 
-		// Instantiates a SegmentIO client to use send messages to the segment API.
-		segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
+		var telemetryHandler handlers.TelemetryHandler
+		if globalFlags.UseTelemetry {
 
-		// SegmentIO library works with queue that is based on timing, we explicit close the http client connection
-		// to force flush in case there is still some pending message in the SegmentIO library queue.
-		defer func(segmentIOClient analytics.Client) {
-			err := segmentIOClient.Close()
+			// Instantiates a SegmentIO client to use send messages to the segment API.
+			segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
+
+			// SegmentIO library works with queue that is based on timing, we explicit close the http client connection
+			// to force flush in case there is still some pending message in the SegmentIO library queue.
+			defer func(segmentIOClient analytics.Client) {
+				err := segmentIOClient.Close()
+				if err != nil {
+					log.Println(err)
+				}
+			}(segmentIOClient)
+
+			// validate telemetryDomain data
+			telemetryDomain, err := domain.NewTelemetry(
+				pkg.MetricInitStarted,
+				awsFlags.HostedZoneName,
+				configs.K1Version,
+			)
 			if err != nil {
 				log.Println(err)
 			}
-		}(segmentIOClient)
+			telemetryService := services.NewSegmentIoService(segmentIOClient)
+			telemetryHandler = handlers.NewTelemetryHandler(telemetryService)
 
-		// validate telemetryDomain data
-		telemetryDomain, err := domain.NewTelemetry(
-			pkg.MetricInitStarted,
-			awsFlags.HostedZoneName,
-			configs.K1Version,
-		)
-		if err != nil {
-			log.Println(err)
-		}
-		telemetryService := services.NewSegmentIoService(segmentIOClient)
-		telemetryHandler := handlers.NewTelemetryHandler(telemetryService)
-
-		if globalFlags.UseTelemetry {
 			err = telemetryHandler.SendCountMetric(telemetryDomain)
 			if err != nil {
 				log.Println(err)
@@ -195,12 +197,15 @@ validated and configured.`,
 
 		log.Println("sending init completed metric")
 
-		telemetryInitCompleted, err := domain.NewTelemetry(
-			pkg.MetricInitCompleted,
-			awsFlags.HostedZoneName,
-			configs.K1Version,
-		)
 		if globalFlags.UseTelemetry {
+			telemetryInitCompleted, err := domain.NewTelemetry(
+				pkg.MetricInitCompleted,
+				awsFlags.HostedZoneName,
+				configs.K1Version,
+			)
+			if err != nil {
+				log.Println(err)
+			}
 			err = telemetryHandler.SendCountMetric(telemetryInitCompleted)
 			if err != nil {
 				log.Println(err)
