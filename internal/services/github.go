@@ -1,56 +1,76 @@
 package services
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
+	"github.com/kubefirst/kubefirst/pkg"
 	"io"
 	"log"
 	"net/http"
-	"net/url"
-	"strings"
 )
 
-type GitHubService struct{}
+type GitHubService struct {
+	httpClient pkg.HTTPDoer
+}
 
-type TokenResp struct {
+// gitHubAccessCode host OAuth data
+type gitHubAccessCode struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
 	Scope       string `json:"scope"`
 }
 
-func NewGitHubService() *GitHubService {
-	return &GitHubService{}
+// NewGitHubService instantiate a new GitHub service
+func NewGitHubService(httpClient pkg.HTTPDoer) *GitHubService {
+	return &GitHubService{
+		httpClient: httpClient,
+	}
 }
 
-func (service GitHubService) PoolAccessToken(clientId string, deviceCode string) string {
-	urlA := "https://github.com/login/oauth/access_token"
+// CheckUserCodeConfirmation checks if the user gave permission to the device flow request
+func (service GitHubService) CheckUserCodeConfirmation(deviceCode string) (string, error) {
 
-	//payload := strings.NewReader("client_id=cfe20fec21fd8126d9be&device_code=f479009c42646ea8a5424ffb8ff0c6884ead9575&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code")
-	payload := url.Values{}
-	payload.Add("client_id", clientId)
-	payload.Add("device_code", deviceCode)
-	grantType := "urn:ietf:params:oauth:grant-type:device_code"
-	payload.Add("grant_type", grantType)
+	gitHubAccessTokenURL := "https://github.com/login/oauth/access_token"
 
-	req, _ := http.NewRequest("POST", urlA, strings.NewReader(payload.Encode()))
+	jsonData, err := json.Marshal(map[string]string{
+		"client_id":   pkg.GitHubOAuthClientId,
+		"device_code": deviceCode,
+		"grant_type":  "urn:ietf:params:oauth:grant-type:device_code",
+	})
+	if err != nil {
+		return "", err
+	}
 
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Accept", "application/json")
+	req, err := http.NewRequest(http.MethodPost, gitHubAccessTokenURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", nil
+	}
 
-	res, _ := http.DefaultClient.Do(req)
+	req.Header.Add("Content-Type", pkg.JSONContentType)
+	req.Header.Add("Accept", pkg.JSONContentType)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", nil
+	}
+
+	if res.StatusCode != http.StatusOK {
+		log.Printf("waiting user to authorize at GitHub page..., current status code = %d", res.StatusCode)
+		return "", errors.New("unable to issue a GitHub token")
+	}
 
 	defer res.Body.Close()
-	body, _ := io.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return "", nil
+	}
 
-	var tk TokenResp
-	err := json.Unmarshal(body, &tk)
+	var gitHubAccessToken gitHubAccessCode
+	err = json.Unmarshal(body, &gitHubAccessToken)
 	if err != nil {
 		log.Println(err)
 	}
 
-	fmt.Println("---debug1---")
-	fmt.Println(tk.AccessToken)
-	fmt.Println("---debug1---")
-
-	return "a"
+	return gitHubAccessToken.AccessToken, nil
 }

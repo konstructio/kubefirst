@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/kubefirst/kubefirst/internal/domain"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -57,10 +58,20 @@ validated and configured.`,
 		// internal/flagset/init_test.go
 
 		// todo: wire it / check if gitlab or github install
-		if os.Getenv("GITHUB_AUTH_TOKEN") != "" {
-			gitHubService := services.NewGitHubService()
+		if config.GitHubPersonalAccessToken == "" && !globalFlags.SilentMode {
+
+			httpClient := http.DefaultClient
+			gitHubService := services.NewGitHubService(httpClient)
 			gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-			err := gitHubHandler.AuthenticateUser()
+			gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
+			if len(gitHubAccessToken) > 0 {
+				// todo: set common way to load env. values (viper->struct->load-env)
+				err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken)
+				if err != nil {
+					return err
+				}
+				log.Println("\nGITHUB_AUTH_TOKEN set via OAuth")
+			}
 			if err != nil {
 				return err
 			}
