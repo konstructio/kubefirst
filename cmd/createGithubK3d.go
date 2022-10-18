@@ -110,12 +110,11 @@ var createGithubK3dCmd = &cobra.Command{
 		} else {
 			log.Println("already added secrets to k3d cluster")
 		}
-		informUser("hard breaking point", globalFlags.SilentMode)
-		return nil
+
 		gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
-		err = argocd.CreateInitialArgoRepository(gitopsRepo)
+		err = argocd.CreateInitialArgoCDRepository(gitopsRepo)
 		if err != nil {
-			log.Println("Error CreateInitialArgoRepository")
+			log.Println("Error CreateInitialArgoCDRepository")
 			return err
 		}
 		err = helm.InstallArgocd(globalFlags.DryRun)

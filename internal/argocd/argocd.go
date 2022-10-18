@@ -317,8 +317,8 @@ func ApplyRegistryLocal(dryRun bool) error {
 	return nil
 }
 
-// CreateInitialArgoRepository - Fill and create argocd-init-values.yaml for Github installs
-func CreateInitialArgoRepository(githubURL string) error {
+// CreateInitialArgoCDRepository - Fill and create argocd-init-values.yaml for Github installs
+func CreateInitialArgoCDRepository(githubURL string) error {
 	config := configs.ReadConfig()
 
 	privateKey := viper.GetString("botprivatekey")
@@ -330,13 +330,13 @@ func CreateInitialArgoRepository(githubURL string) error {
 	argoConfig.Configs.CredentialTemplates.SSHCreds.URL = githubURL
 	argoConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = privateKey
 
-	argoYaml, err := yaml2.Marshal(&argoConfig)
+	argoCdRepoYaml, err := yaml2.Marshal(&argoConfig)
 	if err != nil {
 		log.Printf("error: marshaling yaml for argo config %s", err)
 		return err
 	}
 
-	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoYaml, 0644)
+	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoCdRepoYaml, 0644)
 	if err != nil {
 		log.Printf("error: could not write argocd-init-values.yaml %s", err)
 		return err
