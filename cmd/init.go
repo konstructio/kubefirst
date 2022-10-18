@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"github.com/kubefirst/kubefirst/internal/domain"
 	"log"
 	"strings"
 	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/handlers"
