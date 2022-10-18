@@ -151,6 +151,9 @@ cluster provisioning process spinning up the services, and validates the livenes
 			hostedZoneName,
 			configs.K1Version,
 		)
+		if err != nil {
+			log.Println(err)
+		}
 		if globalFlags.UseTelemetry {
 			err = telemetryHandler.SendCountMetric(installCompletedTelemetry)
 			if err != nil {
