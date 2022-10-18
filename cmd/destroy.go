@@ -48,6 +48,7 @@ var destroyCmd = &cobra.Command{
 		}
 
 		if viper.GetString("cloud") == "k3d" {
+			// todo add progress bars to this
 			//* step 1 - delete k3d cluster
 			informUser("deleting k3d cluster\n", globalFlags.SilentMode)
 			k3d.DeleteK3dCluster()

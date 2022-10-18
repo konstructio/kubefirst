@@ -64,7 +64,7 @@ func waitArgoCDToBeReady(dryRun bool) {
 		}
 	}
 	for i := 0; i < x; i++ {
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
 		if err != nil {
 			log.Println("Waiting for argocd pods to create, checking in 10 seconds")
 			time.Sleep(10 * time.Second)

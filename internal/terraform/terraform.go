@@ -263,6 +263,7 @@ func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
 			log.Panicf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform/", tfEntrypoint))
+		os.Remove(fmt.Sprintf("%s/.terraform.lock.hcl", tfEntrypoint))
 		viper.Set(kubefirstConfigPath, true)
 		viper.WriteConfig()
 	} else {

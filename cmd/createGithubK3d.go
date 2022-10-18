@@ -139,18 +139,17 @@ var createGithubK3dCmd = &cobra.Command{
 		}
 		progressPrinter.IncrementTracker("step-apps", 1)
 
-		//* argocd pods are ready
+		//* argocd pods are running
 		executionControl = viper.GetBool("argocd.ready")
 		if !executionControl {
 			waitArgoCDToBeReady(globalFlags.DryRun)
-			informUser("ArgoCD is ready, continuing", globalFlags.SilentMode)
+			informUser("ArgoCD is running, continuing", globalFlags.SilentMode)
 		} else {
 			log.Println("already waited for argocd to be ready")
 		}
 
 		//! everything between here
 
-		// todo do we need this again
 		kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 		defer func() {
 			err = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
