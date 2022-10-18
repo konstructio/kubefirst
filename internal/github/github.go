@@ -36,7 +36,7 @@ func ApplyGitHubTerraform(dryRun bool) {
 
 	//TODO: maybe we need better logic here, this works for now
 	if viper.GetString("cloud") == flagset.CloudLocal {
-		directory = fmt.Sprintf("%s/gitops/terraform/github-k3d", config.K1FolderPath)
+		directory = fmt.Sprintf("%s/gitops/terraform/github", config.K1FolderPath)
 	}
 
 	err := os.Chdir(directory)

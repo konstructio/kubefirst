@@ -56,7 +56,7 @@ var destroyCmd = &cobra.Command{
 
 			//* step 2 - terraform destroy github
 			informUser("terraform destroying github resources", globalFlags.SilentMode)
-			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github-k3d"
+			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
 			terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
 			informUser("successfully destroyed github resources", globalFlags.SilentMode)
 			informUser("be sure to run `kubefirst clean` before your next cloud provision", globalFlags.SilentMode)
