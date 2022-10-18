@@ -20,7 +20,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
-	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -195,16 +194,17 @@ var createGithubK3dCmd = &cobra.Command{
 
 		progressPrinter.IncrementTracker("step-apps", 1)
 
-		// executionControl = viper.GetBool("vault.status.running")
-		// if !executionControl {
-		// TODO: K3D => We need to check what changes for vault on raft mode, without terraform to unseal it
-		informUser("Waiting for vault to be ready", globalFlags.SilentMode)
-		waitVaultToBeRunning(globalFlags.DryRun)
-		if err != nil {
-			log.Println("error waiting for vault to become running")
-			return err
+		executionControl = viper.GetBool("vault.status.running")
+		if !executionControl {
+			// TODO: K3D => We need to check what changes for vault on raft mode, without terraform to unseal it
+			informUser("Waiting for vault to be ready", globalFlags.SilentMode)
+			waitVaultToBeRunning(globalFlags.DryRun)
+			if err != nil {
+				log.Println("error waiting for vault to become running")
+				return err
+			}
+			loopUntilPodIsReady(globalFlags.DryRun)
 		}
-		// }
 
 		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
 		defer func() {
@@ -214,33 +214,38 @@ var createGithubK3dCmd = &cobra.Command{
 			}
 		}()
 
-		loopUntilPodIsReady(globalFlags.DryRun)
+		executionControl = viper.GetBool("terraform.vault.apply.complete")
+		//* create github teams in the org and gitops repo
+		if !executionControl {
+			// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
+			//* set known vault token
+			viper.Set("vault.token", "k1_local_vault_token")
+			viper.WriteConfig()
 
-		informUser("Welcome to local kubefist experience", globalFlags.SilentMode)
+			//* run vault terraform
+			informUser("configuring vault with terraform", globalFlags.SilentMode)
+			tfEntrypoint := config.GitOpsRepoPath + "/terraform/vault"
+			terraform.InitApplyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+
+			informUser("vault terraform executed successfully", globalFlags.SilentMode)
+
+			//* create vault configurerd secret
+			// todo remove this code
+			log.Println("creating vault configured secret")
+			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
+			informUser("Vault secret created", globalFlags.SilentMode)
+		} else {
+			log.Println("already executed vault terraform")
+		}
+		informUser("Welcome to local kubefirst experience", globalFlags.SilentMode)
 		informUser("To use your cluster port-forward - argocd", globalFlags.SilentMode)
-		informUser("If not automatically injected, your kubevonfig is at:", globalFlags.SilentMode)
+		informUser("If not automatically injected, your kubeconfig is at:", globalFlags.SilentMode)
 		informUser("k3d kubeconfig get "+viper.GetString("cluster-name"), globalFlags.SilentMode)
 		informUser("Expose Argo-CD", globalFlags.SilentMode)
 		informUser("kubectl -n argocd port-forward svc/argocd-server 8080:80", globalFlags.SilentMode)
 		informUser("Argo User: "+viper.GetString("argocd.admin.username"), globalFlags.SilentMode)
 		informUser("Argo Password: "+viper.GetString("argocd.admin.password"), globalFlags.SilentMode)
 		time.Sleep(1 * time.Second)
-
-		if !viper.GetBool("vault.configuredsecret") { //skipVault
-			informUser("waiting for vault unseal", globalFlags.SilentMode)
-			log.Println("configuring vault")
-			// TODO: K3D => I think this may keep working, I think we are just populating vault
-			vault.ConfigureVault(globalFlags.DryRun)
-			informUser("Vault configured", globalFlags.SilentMode)
-
-			vault.GetOidcClientCredentials(globalFlags.DryRun)
-			log.Println("vault oidc clients created")
-
-			log.Println("creating vault configured secret")
-			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
-			informUser("Vault secret created", globalFlags.SilentMode)
-		}
-		informUser("Terraform Vault", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)
 
 		// TODO: K3D =>  It should work as expected

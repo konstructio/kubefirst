@@ -11,6 +11,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
@@ -36,7 +37,44 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		}
 		return envs
 	case "vault":
-		fmt.Println("vault")
+
+		if viper.GetString("cloud") == flagset.CloudLocal {
+			envs["TF_VAR_email_address"] = viper.GetString("adminemail")
+			envs["TF_VAR_github_token"] = os.Getenv("GITHUB_AUTH_TOKEN")
+			envs["TF_VAR_vault_addr"] = viper.GetString("vault.local.service")
+			envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
+			envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
+			envs["VAULT_TOKEN"] = viper.GetString("vault.token")
+			envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
+			envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botpublickey")
+			// envs["TF_VAR_vault_redirect_uris"] = viper.GetString("vault.oidc_redirect_uris") // todo remove - should be unused
+			return envs
+		}
+
+		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
+		envs["VAULT_TOKEN"] = viper.GetString("vault.token")
+
+		envs["AWS_SDK_LOAD_CONFIG"] = "1"
+		aws.ProfileInjection(&envs)
+
+		envs["AWS_DEFAULT_REGION"] = viper.GetString("aws.region")
+
+		envs["TF_VAR_vault_addr"] = fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename"))
+		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
+		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
+		envs["TF_VAR_email_address"] = viper.GetString("adminemail")
+		envs["TF_VAR_github_token"] = os.Getenv("GITHUB_AUTH_TOKEN")
+		envs["TF_VAR_hosted_zone_id"] = viper.GetString("aws.hostedzoneid") //# TODO: are we using this?
+		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
+		envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
+		// envs["TF_VAR_vault_redirect_uris"] = viper.GetString("vault.oidc_redirect_uris") // todo remove - should be unused
+		envs["TF_VAR_git_provider"] = viper.GetString("git.mode")
+		//envs["TF_VAR_ssh_private_key"] = viper.GetString("botprivatekey")
+		//Escaping newline to allow certs to be loaded properly by terraform
+		envs["TF_VAR_ssh_private_key"] = viper.GetString("botprivatekey")
+
+		envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
+		envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botpublickey")
 		return envs
 	case "gitlab":
 		fmt.Println("gitlab")
@@ -227,17 +265,16 @@ func DestroyECRTerraform(skipECRTerraform bool) {
 func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
 
 	config := configs.ReadConfig()
-	log.Printf("Entered Init%s%sTerraform", strings.Title(tfAction), strings.Title(tfEntrypoint))
-
 	tfEntrypointSplit := strings.Split(tfEntrypoint, "/")
 	kubefirstConfigProperty := tfEntrypointSplit[len(tfEntrypointSplit)-1]
+	log.Printf("Entered Init%s%sTerraform", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
 
 	kubefirstConfigPath := fmt.Sprintf("terraform.%s.%s.complete", kubefirstConfigProperty, tfAction)
 
 	if !viper.GetBool(kubefirstConfigPath) {
-		log.Printf("Executing Init%s%sTerraform", strings.Title(tfAction), strings.Title(tfEntrypoint))
+		log.Printf("Executing Init%s%sTerraform", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
 		if dryRun {
-			log.Printf("[#99] Dry-run mode, Init%s%sTerraform skipped", strings.Title(tfAction), strings.Title(tfEntrypoint))
+			log.Printf("[#99] Dry-run mode, Init%s%sTerraform skipped", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
 		}
 
 		envs := terraformConfig(kubefirstConfigProperty)

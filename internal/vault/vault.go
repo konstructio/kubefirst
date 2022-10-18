@@ -57,8 +57,7 @@ func ConfigureVault(dryRun bool) {
 	// "TF_VAR_vault_addr": "${var.vault_addr}",
 	// ```
 	// ... obviously keep the sensitive values bound to vars
-	viper.Set("vault.oidc_redirect_uris", "[\"will-be-patched-later\"]") //! todo need to remove this value, no longer used anywhere
-	viper.WriteConfig()
+
 	vaultToken := viper.GetString("vault.token")
 	var kPortForwardOutb, kPortForwardErrb bytes.Buffer
 	kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "port-forward", "svc/vault", "8200:8200")
