@@ -109,6 +109,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 func UpdateForLocalMode(directory string) error {
 	//TODO: Confirm Change
 	if viper.GetString("cloud") == flagset.CloudK3d {
+		log.Println("Working Directory:", directory)
 		//Tweak folder
 		os.RemoveAll(directory + "/components")
 		os.RemoveAll(directory + "/registry")
@@ -128,7 +129,7 @@ func UpdateForLocalMode(directory string) error {
 		}
 		err := cp.Copy(directory+"/localhost", directory, opt)
 		if err != nil {
-			log.Println("Error populating gitops with local setup")
+			log.Println("Error populating gitops with local setup:", err)
 			return err
 		}
 		os.RemoveAll(directory + "/localhost")
