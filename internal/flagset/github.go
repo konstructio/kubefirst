@@ -29,15 +29,15 @@ func DefineGithubCmdFlags(currentCommand *cobra.Command) {
 
 	err := viper.BindPFlag("github.org", currentCommand.Flags().Lookup("github-org"))
 	if err != nil {
-		log.Println("Error Binding fllag: github.org")
+		log.Println("Error Binding flag: github.org")
 	}
 	err = viper.BindPFlag("github.host", currentCommand.Flags().Lookup("github-host"))
 	if err != nil {
-		log.Println("Error Binding fllag: github.org")
+		log.Println("Error Binding flag: github.host")
 	}
 	err = viper.BindPFlag("github.user", currentCommand.Flags().Lookup("github-user"))
 	if err != nil {
-		log.Println("Error Binding fllag: github.org")
+		log.Println("Error Binding flag: github.user")
 	}
 
 }

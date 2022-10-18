@@ -2,6 +2,7 @@ package repo
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -110,10 +111,20 @@ func UpdateForLocalMode(directory string) error {
 	//TODO: Confirm Change
 	if viper.GetString("cloud") == flagset.CloudK3d {
 		log.Println("Working Directory:", directory)
+		files, err := ioutil.ReadDir(directory)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for _, file := range files {
+			log.Println(file.Name(), file.IsDir())
+		}
 		//Tweak folder
 		os.RemoveAll(directory + "/components")
 		os.RemoveAll(directory + "/registry")
-		os.RemoveAll(directory + "/terraform")
+		os.RemoveAll(directory + "/terraform/base")
+		os.RemoveAll(directory + "/terraform/ecr")
+		os.RemoveAll(directory + "/terraform/gitlab")
 		os.RemoveAll(directory + "/validation")
 		opt := cp.Options{
 			Skip: func(src string) (bool, error) {
@@ -127,7 +138,7 @@ func UpdateForLocalMode(directory string) error {
 
 			},
 		}
-		err := cp.Copy(directory+"/localhost", directory, opt)
+		err = cp.Copy(directory+"/localhost", directory, opt)
 		if err != nil {
 			log.Println("Error populating gitops with local setup:", err)
 			return err

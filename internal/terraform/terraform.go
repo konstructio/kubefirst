@@ -47,12 +47,6 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
 		envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botPublicKey")
 		return envs
-	case "github-k3d":
-		envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
-		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
-		envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
-		envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botPublicKey")
-		return envs
 	case "users":
 		envs["VAULT_TOKEN"] = viper.GetString("vault.token")
 		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
