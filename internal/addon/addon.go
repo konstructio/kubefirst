@@ -1,11 +1,24 @@
 package addon
 
 import (
+	"log"
 	"os"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/viper"
+	"golang.org/x/exp/slices"
 )
+
+func AddAddon(s string) {
+	addons := viper.GetStringSlice("addons")
+	if !slices.Contains(addons, s) {
+		log.Printf("Adding addon on kubefirst file: %s", s)
+		addons = append(addons, s)
+		viper.Set("addons", addons)
+	} else {
+		log.Printf("Addon already on kubefirst file, nothing to do: %s", s)
+	}
+}
 
 func ListAddons() {
 	addonsInstalled := viper.GetStringSlice("addons")

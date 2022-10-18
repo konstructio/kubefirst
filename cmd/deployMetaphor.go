@@ -38,7 +38,15 @@ var deployMetaphorCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
+		/*
+			config := configs.ReadConfig()
+			repos := [3]string{"metaphor", "metaphor-go", "metaphor-frontend"}
+			for _, repoName := range repos {
+				directory := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
+				_ = os.RemoveAll(directory)
+				log.Println("Removed repo pre-clone:", directory)
+			}
+		*/
 		if viper.GetBool("github.enabled") {
 			return metaphor.DeployMetaphorGithub(globalFlags)
 		} else {

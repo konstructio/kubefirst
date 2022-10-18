@@ -654,12 +654,13 @@ spec:
 			Auth:       auth,
 		})
 		if err != nil {
+			log.Println(err)
 			log.Panicf("error pushing detokenized %s repository to remote at %s", repoName, gitOrigin)
 		}
 		log.Printf("successfully pushed %s to gitlab", repoName)
-		cmd := exec.Command("cp", "-r", repoDir, repoDir+"-"+gitOrigin)
-		err = cmd.Run()
-		log.Println(err)
+		//cmd := exec.Command("cp", "-r", repoDir, repoDir+"-"+gitOrigin)
+		//err = cmd.Run()
+		//log.Println(err)
 	}
 
 	viper.Set(fmt.Sprintf("create.repos.%s.%s.pushed", gitOrigin, repoName), true)

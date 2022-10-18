@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/addon"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -96,17 +97,11 @@ func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 	viper.Set("github.owner", flags.GithubOwner)
 	viper.Set("github.enabled", flags.GithubEnable)
 
-	addons := viper.GetStringSlice("addons")
-	log.Printf("addons before define git provider: %s", addons)
-
 	if flags.GithubEnable {
-		addons = append(addons, "github")
+		addon.AddAddon("github")
 	} else {
-		addons = append(addons, "gitlab")
+		addon.AddAddon("gitlab")
 	}
-
-	viper.Set("addons", addons)
-	log.Printf("addons after define git provider: %s", addons)
 
 	return flags, nil
 

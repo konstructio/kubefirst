@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"os"
 	"reflect"
 	"testing"
 )
@@ -111,6 +112,49 @@ func Test_isValidURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := IsValidURL(tt.args.rawURL); (err != nil) != tt.wantErr {
 				t.Errorf("IsValidURL() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateK1Folder(t *testing.T) {
+	emptyTempFolder, err := os.MkdirTemp("", "unit-test")
+	if err != nil {
+		t.Error(err)
+	}
+
+	populatedTempFolder, err := os.MkdirTemp("", "populated-unit-test")
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = os.CreateTemp(populatedTempFolder, "test.ext")
+	if err != nil {
+		t.Error(err)
+	}
+
+	type args struct {
+		folderPath string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "it has a folder, and folder is empty",
+			args:    args{folderPath: emptyTempFolder},
+			wantErr: false,
+		},
+		{
+			name:    "it has a folder, and folder is not empty",
+			args:    args{folderPath: populatedTempFolder},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := ValidateK1Folder(tt.args.folderPath); (err != nil) != tt.wantErr {
+				t.Errorf("ValidateK1Folder() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

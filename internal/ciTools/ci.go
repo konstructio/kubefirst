@@ -2,8 +2,8 @@ package ciTools
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/kubefirst/kubefirst/configs"
@@ -60,7 +60,7 @@ func SedBucketName(old, new string) error {
 	cfg := configs.ReadConfig()
 	providerFile := fmt.Sprintf("%s/ci/terraform/base/provider.tf", cfg.K1FolderPath)
 
-	fileData, err := ioutil.ReadFile(providerFile)
+	fileData, err := os.ReadFile(providerFile)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func SedBucketName(old, new string) error {
 	fileString = strings.ReplaceAll(fileString, old, new)
 	fileData = []byte(fileString)
 
-	err = ioutil.WriteFile(providerFile, fileData, 0o600)
+	err = os.WriteFile(providerFile, fileData, 0o600)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func SedBucketName(old, new string) error {
 func DetokenizeCI(old, new, ciLocation string) error {
 	ciFile := ciLocation
 
-	fileData, err := ioutil.ReadFile(ciFile)
+	fileData, err := os.ReadFile(ciFile)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func DetokenizeCI(old, new, ciLocation string) error {
 	fileString = strings.ReplaceAll(fileString, old, new)
 	fileData = []byte(fileString)
 
-	err = ioutil.WriteFile(ciFile, fileData, 0o600)
+	err = os.WriteFile(ciFile, fileData, 0o600)
 	if err != nil {
 		return err
 	}
