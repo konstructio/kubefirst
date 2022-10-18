@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/kubefirst/kubefirst/internal/domain"
 	"log"
 	"strings"
@@ -116,10 +115,6 @@ validated and configured.`,
 				awsFlags.HostedZoneName,
 				configs.K1Version,
 			)
-			fmt.Println("---debug---")
-			fmt.Println(telemetryDomain)
-			fmt.Println("---debug---")
-
 			if err != nil {
 				log.Println(err)
 			}
