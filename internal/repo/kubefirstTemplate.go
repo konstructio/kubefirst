@@ -34,7 +34,9 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 	viper.WriteConfig()
 
 	log.Printf("cloned %s-template repository to directory %s/%s", repoName, config.K1FolderPath, repoName)
-	UpdateForLocalMode(directory)
+	if viper.GetString("cloud") == flagset.CloudK3d {
+		UpdateForLocalMode(directory)
+	}
 
 	log.Printf("detokenizing %s/%s", config.K1FolderPath, repoName)
 	pkg.Detokenize(directory)
@@ -107,35 +109,32 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 
 // UpdateForLocalMode - Tweak for local install on templates
 func UpdateForLocalMode(directory string) error {
-	//TODO: Confirm Change
-	if viper.GetString("cloud") == flagset.CloudK3d {
-		log.Println("Working Directory:", directory)
-		//Tweak folder
-		os.RemoveAll(directory + "/components")
-		os.RemoveAll(directory + "/registry")
-		os.RemoveAll(directory + "/terraform/base")
-		os.RemoveAll(directory + "/terraform/ecr")
-		os.RemoveAll(directory + "/terraform/gitlab")
-		os.RemoveAll(directory + "/terraform/github")
-		os.RemoveAll(directory + "/validation")
-		opt := cp.Options{
-			Skip: func(src string) (bool, error) {
-				if strings.HasSuffix(src, ".git") {
-					return true, nil
-				} else if strings.Index(src, "/.terraform") > 0 {
-					return true, nil
-				}
-				//Add more stuff to be ignored here
-				return false, nil
+	log.Println("Working Directory:", directory)
+	//Tweak folder
+	os.RemoveAll(directory + "/components")
+	os.RemoveAll(directory + "/registry")
+	os.RemoveAll(directory + "/terraform/base")
+	os.RemoveAll(directory + "/terraform/ecr")
+	os.RemoveAll(directory + "/terraform/gitlab")
+	os.RemoveAll(directory + "/terraform/github")
+	os.RemoveAll(directory + "/validation")
+	opt := cp.Options{
+		Skip: func(src string) (bool, error) {
+			if strings.HasSuffix(src, ".git") {
+				return true, nil
+			} else if strings.Index(src, "/.terraform") > 0 {
+				return true, nil
+			}
+			//Add more stuff to be ignored here
+			return false, nil
 
-			},
-		}
-		err = cp.Copy(directory+"/localhost", directory, opt)
-		if err != nil {
-			log.Println("Error populating gitops with local setup:", err)
-			return err
-		}
-		os.RemoveAll(directory + "/localhost")
+		},
 	}
+	err := cp.Copy(directory+"/localhost", directory, opt)
+	if err != nil {
+		log.Println("Error populating gitops with local setup:", err)
+		return err
+	}
+	os.RemoveAll(directory + "/localhost")
 	return nil
 }
