@@ -43,6 +43,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.12 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
+	github.com/denisbrodbeck/machineid v1.0.1 // indirect
 	github.com/hashicorp/vault/sdk v0.6.0 // indirect
 	github.com/segmentio/backo-go v1.0.1 // indirect
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect

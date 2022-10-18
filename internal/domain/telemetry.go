@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"github.com/denisbrodbeck/machineid"
 	"github.com/kubefirst/kubefirst/pkg"
 )
 
@@ -18,6 +19,19 @@ func NewTelemetry(metricName string, domain string, CLIVersion string) (Telemetr
 
 	if len(metricName) == 0 {
 		return Telemetry{}, errors.New("unable to create metric, missing metric name")
+	}
+
+	if len(domain) == 0 {
+		machineId, err := machineid.ID()
+		if err != nil {
+			return Telemetry{}, err
+		}
+		domain = machineId
+		return Telemetry{
+			MetricName: metricName,
+			Domain:     domain,
+			CLIVersion: CLIVersion,
+		}, nil
 	}
 
 	domain, err := pkg.RemoveSubDomain(domain)
