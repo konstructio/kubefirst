@@ -15,4 +15,5 @@ const (
 	MetricInitCompleted               = "kubefirst.init.completed"
 	MetricMgmtClusterInstallStarted   = "kubefirst.mgmt_cluster_install.started"
 	MetricMgmtClusterInstallCompleted = "kubefirst.mgmt_cluster_install.completed"
+	MetricConsoleOpened               = "kubefirst.console.opened"
 )
