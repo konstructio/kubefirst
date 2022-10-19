@@ -34,7 +34,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 	viper.WriteConfig()
 
 	log.Printf("cloned %s-template repository to directory %s/%s", repoName, config.K1FolderPath, repoName)
-	if viper.GetString("cloud") == flagset.CloudK3d {
+	if viper.GetString("cloud") == flagset.CloudK3d && !viper.GetBool("github.gitops.hydrated") {
 		UpdateForLocalMode(directory)
 	}
 
