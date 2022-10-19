@@ -53,7 +53,6 @@ func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 	flags := GithubAddCmdFlags{}
 	flags.GithubEnable = false
 	user, err := ReadConfigString(cmd, "github-user")
-	log.Panic("the value of user is:", user)
 	if err != nil {
 		log.Println("Error Processing - github-user flag")
 		return flags, err
