@@ -95,10 +95,6 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	}
 	viper.Set("aws.hostedzonename", hostedZoneName)
 	flags.HostedZoneName = hostedZoneName
-	if viper.GetString("cloud") == CloudK3d {
-		//Adds mandatory addon for local install
-		viper.Set("aws.hostedzonename", "local.k3d")
-	}
 
 	err = validateAwsFlags()
 	if err != nil {
