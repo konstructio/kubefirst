@@ -1,9 +1,8 @@
 package cmd
 
 import (
+	"context"
 	"errors"
-	"fmt"
-	"os"
 	"os/exec"
 	"syscall"
 
@@ -54,8 +53,10 @@ cluster provisioning process spinning up the services, and validates the livenes
 			)
 		}
 
+		// todo remove this dependency from create.go
 		hostedZoneName := viper.GetString("aws.hostedzonename")
 
+		//* telemetry
 		if globalFlags.UseTelemetry {
 			// Instantiates a SegmentIO client to send messages to the segment API.
 			segmentIOClientStart := analytics.New(pkg.SegmentIOWriteKey)
@@ -87,15 +88,11 @@ cluster provisioning process spinning up the services, and validates the livenes
 		}
 
 		if viper.GetString("cloud") == flagset.CloudK3d {
-			// todo need to execute ngrok
-			ngrokURL := pkg.OpenNgrokTunnel()
-			viper.Set("github.atlantis.webhook.url", ngrokURL)
-		} else {
-			// todo this might break the gitlab and github installations, need to review this before merging
-			// todo backfill a tf var?
-			viper.Set("github.atlantis.webhook.url", fmt.Sprintf("https://atlantis.%s/events", viper.GetString("aws.hostedzone")))
+			// todo need to add go channel to control when ngrok should close
+			go pkg.RunNgrok(context.TODO(), "localhost:4141")
+			time.Sleep(10 * time.Second)
+
 		}
-		os.Exit(1)
 
 		if !viper.GetBool("kubefirst.done") {
 			if viper.GetBool("github.enabled") {
@@ -197,7 +194,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 			return err
 		}
 
-		if viper.GetString("cloud") != flagset.CloudLocal {
+		if viper.GetString("cloud") == flagset.CloudAws {
 			err = state.UploadKubefirstToStateStore(globalFlags.DryRun)
 			if err != nil {
 				log.Println(err)

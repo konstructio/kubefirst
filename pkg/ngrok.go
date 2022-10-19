@@ -9,6 +9,7 @@ import (
 
 	"github.com/ngrok/ngrok-go"
 	"github.com/ngrok/ngrok-go/config"
+	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -19,6 +20,8 @@ func RunNgrok(ctx context.Context, dest string) {
 	}
 
 	fmt.Println("tunnel created: ", tunnel.URL())
+	viper.Set("github.atlantis.webhook.url", tunnel.URL())
+	viper.WriteConfig()
 
 	for {
 		conn, err := tunnel.Accept()

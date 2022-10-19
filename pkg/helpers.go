@@ -1,8 +1,6 @@
 package pkg
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -10,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -418,32 +415,32 @@ func AwaitHostNTimes(url string, times int, gracePeriod time.Duration) {
 	}
 }
 
-type NgrokOutput struct {
-	Tunnels []struct {
-		PublicURL string `json:"public_url"`
-	} `json:"tunnels"`
-	URI string `json:"uri"`
-}
+// type NgrokOutput struct {
+// 	Tunnels []struct {
+// 		PublicURL string `json:"public_url"`
+// 	} `json:"tunnels"`
+// 	URI string `json:"uri"`
+// }
 
-func OpenNgrokTunnel() string {
+// func OpenNgrokTunnel() string {
 
-	config := configs.ReadConfig()
+// 	config := configs.ReadConfig()
 
-	var ngrokOutb, ngrokErrb bytes.Buffer
-	openNgrokTunnel := exec.Command(config.NgrokClientPath, "http", "4141")
-	openNgrokTunnel.Stdout = &ngrokOutb
-	openNgrokTunnel.Stderr = &ngrokErrb
-	err := openNgrokTunnel.Start()
-	url := "http://localhost:4040/api/tunnels"
-	outb, _, err := ExecShellReturnStrings("curl", url)
-	if err != nil {
-		log.Panicf("error starting ngrok on port 4141: %s", err)
-	}
-	ngrokOutput := &NgrokOutput{}
-	err = json.Unmarshal([]byte(outb), ngrokOutput)
-	if err != nil {
-		log.Println("error unmarshalling json from curl command ")
-	}
-	fmt.Println(ngrokOutput.Tunnels[0].PublicURL)
-	return ngrokOutput.Tunnels[0].PublicURL
-}
+// 	var ngrokOutb, ngrokErrb bytes.Buffer
+// 	openNgrokTunnel := exec.Command(config.NgrokClientPath, "http", "4141")
+// 	openNgrokTunnel.Stdout = &ngrokOutb
+// 	openNgrokTunnel.Stderr = &ngrokErrb
+// 	err := openNgrokTunnel.Start()
+// 	url := "http://localhost:4040/api/tunnels"
+// 	outb, _, err := ExecShellReturnStrings("curl", url)
+// 	if err != nil {
+// 		log.Panicf("error starting ngrok on port 4141: %s", err)
+// 	}
+// 	ngrokOutput := &NgrokOutput{}
+// 	err = json.Unmarshal([]byte(outb), ngrokOutput)
+// 	if err != nil {
+// 		log.Println("error unmarshalling json from curl command ")
+// 	}
+// 	fmt.Println(ngrokOutput.Tunnels[0].PublicURL)
+// 	return ngrokOutput.Tunnels[0].PublicURL
+// }

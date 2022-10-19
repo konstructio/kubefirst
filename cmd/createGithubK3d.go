@@ -194,6 +194,7 @@ var createGithubK3dCmd = &cobra.Command{
 
 		progressPrinter.IncrementTracker("step-apps", 1)
 
+		//* vault in runnin state
 		executionControl = viper.GetBool("vault.status.running")
 		if !executionControl {
 			// TODO: K3D => We need to check what changes for vault on raft mode, without terraform to unseal it
@@ -221,8 +222,8 @@ var createGithubK3dCmd = &cobra.Command{
 			}
 		}()
 
+		//* configure vault with terraform
 		executionControl = viper.GetBool("terraform.vault.apply.complete")
-		//* create github teams in the org and gitops repo
 		if !executionControl {
 			// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
 			//* set known vault token
@@ -245,8 +246,8 @@ var createGithubK3dCmd = &cobra.Command{
 			log.Println("already executed vault terraform")
 		}
 
-		executionControl = viper.GetBool("terraform.users.apply.complete")
 		//* create users
+		executionControl = viper.GetBool("terraform.users.apply.complete")
 		if !executionControl {
 			informUser("applying users terraform", globalFlags.SilentMode)
 
