@@ -34,7 +34,9 @@ type Config struct {
 	KubeConfigFolder        string
 	HelmClientPath          string
 	GitOpsRepoPath          string
-	TerraformPath           string
+	NgrokVersion            string
+	NgrokClientPath         string
+	TerraformClientPath     string
 	K3dPath                 string
 	ConsoleVersion          string
 
@@ -88,10 +90,12 @@ func ReadConfig() *Config {
 	config.KubeConfigPath = fmt.Sprintf("%s/gitops/terraform/base/kubeconfig", config.K1FolderPath)
 	config.KubeConfigFolder = fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 	config.GitOpsRepoPath = fmt.Sprintf("%s/gitops", config.K1FolderPath)
-	config.TerraformPath = fmt.Sprintf("%s/tools/terraform", config.K1FolderPath)
+	config.NgrokClientPath = fmt.Sprintf("%s/tools/ngrok", config.K1FolderPath)
+	config.TerraformClientPath = fmt.Sprintf("%s/tools/terraform", config.K1FolderPath)
 	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
 	config.K3dPath = fmt.Sprintf("%s/tools/k3d", config.K1FolderPath)
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
+	config.NgrokVersion = "v3"
 	config.TerraformVersion = "1.0.11"
 	config.ConsoleVersion = "1.0.1"
 	config.ArgoCDChartHelmVersion = "4.10.5"

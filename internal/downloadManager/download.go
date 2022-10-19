@@ -42,37 +42,33 @@ func DownloadLocalTools(config *configs.Config) error {
 		return err
 	}
 
-	// todo: install ngrok
-	// terraformVersion := config.TerraformVersion
-	// // ngrok-v3-stable-darwin-arm64.zip
-	// terraformDownloadUrl := fmt.Sprintf(
-	// 	"https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-darwin-arm64.zip",
-	// 	terraformVersion,
-	// 	terraformVersion,
-	// 	config.LocalOs,
-	// 	config.LocalArchitecture,
-	// )
-	// log.Printf("Downloading terraform from %s", terraformDownloadUrl)
-	// terraformDownloadZipPath := fmt.Sprintf("%s/tools/terraform.zip", config.K1FolderPath)
-	// err = downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
-	// if err != nil {
-	// 	log.Println("error reading terraform file")
-	// 	return err
-	// }
+	ngrokDownloadUrl := fmt.Sprintf(
+		"https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-%s-stable-%s-%s.zip",
+		config.NgrokVersion,
+		config.LocalOs,
+		config.LocalArchitecture,
+	)
+	log.Printf("Downloading ngrok from %s", ngrokDownloadUrl)
+	ngrokDownloadZipPath := fmt.Sprintf("%s/tools/ngrok.zip", config.K1FolderPath)
+	err = downloadFile(ngrokDownloadZipPath, ngrokDownloadUrl)
+	if err != nil {
+		log.Println("error reading ngrok file")
+		return err
+	}
 
-	// unzipDirectory := fmt.Sprintf("%s/tools", config.K1FolderPath)
-	// unzip(terraformDownloadZipPath, unzipDirectory)
+	unzipDirectory := fmt.Sprintf("%s/tools", config.K1FolderPath)
+	unzip(ngrokDownloadZipPath, unzipDirectory)
 
-	// err = os.Chmod(unzipDirectory, 0777)
-	// if err != nil {
-	// 	return err
-	// }
+	err = os.Chmod(unzipDirectory, 0777)
+	if err != nil {
+		return err
+	}
 
-	// err = os.Chmod(fmt.Sprintf("%s/terraform", unzipDirectory), 0755)
-	// if err != nil {
-	// 	return err
-	// }
-	// os.RemoveAll(fmt.Sprintf("%s/terraform.zip", toolsDirPath))
+	err = os.Chmod(fmt.Sprintf("%s/ngrok", unzipDirectory), 0755)
+	if err != nil {
+		return err
+	}
+	os.RemoveAll(fmt.Sprintf("%s/ngrok.zip", toolsDirPath))
 
 	return nil
 }
