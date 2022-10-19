@@ -157,10 +157,6 @@ var destroyCmd = &cobra.Command{
 			log.Println("registry application deleted")
 		}
 
-		// delete ECR when github
-		informUser("Destroy ECR Repos", globalFlags.SilentMode)
-		terraform.DestroyECRTerraform(false)
-
 		log.Println("terraform destroy base")
 		informUser("Destroying Cluster", globalFlags.SilentMode)
 		terraform.DestroyBaseTerraform(destroyFlags.SkipBaseTerraform)
