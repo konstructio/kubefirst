@@ -100,7 +100,7 @@ var destroyCmd = &cobra.Command{
 			// 	log.Println("Error running:", cleanCmd.Name())
 			// 	return err
 			// }
-			os.Exit(1)
+			os.Exit(0)
 		}
 
 		progressPrinter.SetupProgress(2, globalFlags.SilentMode)
