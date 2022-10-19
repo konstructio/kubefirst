@@ -102,7 +102,7 @@ func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 	viper.Set("github.host", flags.GithubHost)
 	viper.Set("github.org", flags.GithubOrg)
 	viper.Set("github.owner", flags.GithubOwner)
-	viper.Set("github.enabled", flags.GithubEnable)
+	viper.Set("github.user", flags.GithubUser)
 	viper.WriteConfig()
 
 	if flags.GithubEnable {
