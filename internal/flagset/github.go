@@ -53,6 +53,7 @@ func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 	flags := GithubAddCmdFlags{}
 	flags.GithubEnable = false
 	user, err := ReadConfigString(cmd, "github-user")
+	log.Panic("the value of user is:", user)
 	if err != nil {
 		log.Println("Error Processing - github-user flag")
 		return flags, err
@@ -102,7 +103,7 @@ func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 	viper.Set("github.host", flags.GithubHost)
 	viper.Set("github.org", flags.GithubOrg)
 	viper.Set("github.owner", flags.GithubOwner)
-	viper.Set("github.enabled", flags.GithubEnable)
+	viper.Set("github.user", flags.GithubUser)
 	viper.WriteConfig()
 
 	if flags.GithubEnable {
