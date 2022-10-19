@@ -72,7 +72,7 @@ func DestroyCITerraform(skipCITerraform bool) {
 		if err != nil {
 			log.Printf("[WARN]: failed to terraform destroy CI, was the CI not created (check AWS)?: %s", err)
 		}
-		viper.Set("destroy.terraformdestroy.ci", true)
+		viper.Set("gitlab.ci-pushed", false)
 		viper.WriteConfig()
 	} else {
 		log.Println("skip:  destroyBaseTerraform")
