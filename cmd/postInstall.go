@@ -19,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// preRunE
+// preRunE is executed before the main command is called. It sends a new telemetry if it's allowed to.
 func preRunE(cmd *cobra.Command, args []string) error {
 
 	globalFlags, err := flagset.ProcessGlobalFlags(cmd)
