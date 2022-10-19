@@ -41,14 +41,14 @@ func TestNewTelemetry(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "empty domain",
+			name: "empty domain (localhost)",
 			args: args{
 				metricName: "test metric",
 				domain:     "",
 				CLIVersion: "0.0.0",
 			},
 			want:    Telemetry{},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "missing telemetry name",
