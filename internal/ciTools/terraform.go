@@ -45,6 +45,25 @@ func ApplyCITerraform(dryRun bool, bucketName string) {
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 
+		if viper.GetString("ci.flavor") == "github" {
+			envs["TF_VAR_github_token"] = os.Getenv("GITHUB_AUTH_TOKEN")
+			secretDirectory := fmt.Sprintf("%s/ci/terraform/secret", config.K1FolderPath)
+			err := os.Chdir(secretDirectory)
+			if err != nil {
+				log.Panic("error: could not change directory to " + secretDirectory)
+			}
+			err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
+			if err != nil {
+				log.Panicf("error: terraform init for ci secret failed %s", err)
+			}
+
+			err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
+			if err != nil {
+				log.Panicf("error: terraform apply for ci secret failed %s", err)
+			}
+			os.RemoveAll(fmt.Sprintf("%s/.terraform", secretDirectory))
+		}
+
 	} else {
 		log.Println("Skipping: applyCITerraform")
 	}
@@ -72,6 +91,26 @@ func DestroyCITerraform(skipCITerraform bool) {
 		if err != nil {
 			log.Printf("[WARN]: failed to terraform destroy CI, was the CI not created (check AWS)?: %s", err)
 		}
+
+		if viper.GetString("ci.flavor") == "github" {
+			envs["TF_VAR_github_token"] = os.Getenv("GITHUB_AUTH_TOKEN")
+			secretDirectory := fmt.Sprintf("%s/ci/terraform/secret", config.K1FolderPath)
+			err := os.Chdir(secretDirectory)
+			if err != nil {
+				log.Panic("error: could not change directory to " + secretDirectory)
+			}
+			err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
+			if err != nil {
+				log.Panicf("error: terraform init for ci secret failed %s", err)
+			}
+
+			err = pkg.ExecShellWithVars(envs, config.TerraformPath, "destroy", "-auto-approve")
+			if err != nil {
+				log.Panicf("error: terraform destroy for ci secret failed %s", err)
+			}
+			os.RemoveAll(fmt.Sprintf("%s/.terraform", secretDirectory))
+		}
+
 		viper.Set("gitlab.ci-pushed", false)
 		viper.WriteConfig()
 	} else {

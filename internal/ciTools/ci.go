@@ -24,13 +24,29 @@ func DeployOnGitlab(globalFlags flagset.GlobalFlags, bucketName string) error {
 	repo.PrepareKubefirstTemplateRepo(globalFlags.DryRun, config, viper.GetString("gitops.owner"), "ci", viper.GetString("ci.branch"), viper.GetString("template.tag"))
 	log.Println("clone and detokenization of ci-template repository complete")
 
-	err := SedBucketName("<BUCKET_NAME>", bucketName)
+	secretProviderFile := fmt.Sprintf("%s/ci/terraform/secret/provider.tf", config.K1FolderPath)
+	baseProviderFile := fmt.Sprintf("%s/ci/terraform/base/provider.tf", config.K1FolderPath)
+
+	err := SedBucketName("<BUCKET_NAME>", bucketName, secretProviderFile)
 	if err != nil {
 		log.Panicf("Error sed bucket name on CI repository: %s", err)
 		return err
 	}
 
-	ciLocation := fmt.Sprintf("%s/ci/components/argo-gitlab/ci.yaml", config.K1FolderPath)
+	err = SedBucketName("<BUCKET_NAME>", bucketName, baseProviderFile)
+	if err != nil {
+		log.Panicf("Error sed bucket name on CI repository: %s", err)
+		return err
+	}
+
+	ciLocation := ""
+	workflowLocation := fmt.Sprintf("%s/ci/.gitlab-ci.yml", config.K1FolderPath)
+
+	if viper.GetString("ci.flavor") == "github" {
+		ciLocation = fmt.Sprintf("%s/ci/components/argo-github/ci.yaml", config.K1FolderPath)
+	} else {
+		ciLocation = fmt.Sprintf("%s/ci/components/argo-gitlab/ci.yaml", config.K1FolderPath)
+	}
 
 	err = DetokenizeCI("<CI_CLUSTER_NAME>", viper.GetString("ci.cluster.name"), ciLocation)
 	if err != nil {
@@ -44,6 +60,21 @@ func DeployOnGitlab(globalFlags flagset.GlobalFlags, bucketName string) error {
 	if err != nil {
 		log.Println(err)
 	}
+	err = DetokenizeCI("<FLAVOR>", viper.GetString("ci.flavor"), workflowLocation)
+	if err != nil {
+		log.Println(err)
+	}
+
+	if viper.GetString("ci.flavor") == "github" {
+		err = DetokenizeCI("<CI_GITHUB_USER>", viper.GetString("ci.github.user"), ciLocation)
+		if err != nil {
+			log.Println(err)
+		}
+		err = DetokenizeCI("<CI_GITHUB_ORGANIZATION>", viper.GetString("ci.github.organization"), ciLocation)
+		if err != nil {
+			log.Println(err)
+		}
+	}
 
 	if !viper.GetBool("gitlab.ci-pushed") {
 		log.Println("Pushing ci repo to origin gitlab")
@@ -56,10 +87,7 @@ func DeployOnGitlab(globalFlags flagset.GlobalFlags, bucketName string) error {
 	return nil
 }
 
-func SedBucketName(old, new string) error {
-	cfg := configs.ReadConfig()
-	providerFile := fmt.Sprintf("%s/ci/terraform/base/provider.tf", cfg.K1FolderPath)
-
+func SedBucketName(old string, new string, providerFile string) error {
 	fileData, err := os.ReadFile(providerFile)
 	if err != nil {
 		return err
