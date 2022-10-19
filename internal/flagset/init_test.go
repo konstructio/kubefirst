@@ -111,6 +111,8 @@ func Test_Init_k3d_gitlab(t *testing.T) {
 // Test_Init_k3d_basic
 // simulates: `kubefirst --admin-email user@domain.com --cloud k3d --github-user ghuser --github-org ghorg
 func Test_Init_k3d_basic_github(t *testing.T) {
+	os.Setenv("GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
+	defer os.Unsetenv("GITHUB_AUTH_TOKEN")
 	cmd := FakeInitCmd()
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
@@ -312,13 +314,14 @@ func Test_Init_Addons_Gitlab(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if string(out) != "gitlab" {
+	if string(out) != "gitlab,cloud" {
 		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
 
 func Test_Init_Addons_Github(t *testing.T) {
 	os.Setenv("GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
+	defer os.Unsetenv("GITHUB_AUTH_TOKEN")
 	viper.Set("addons", "")
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
@@ -332,13 +335,14 @@ func Test_Init_Addons_Github(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if string(out) != "github" {
+	if string(out) != "github,cloud" {
 		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
 
 func Test_Init_Addons_Github_Kusk(t *testing.T) {
 	os.Setenv("GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
+	defer os.Unsetenv("GITHUB_AUTH_TOKEN")
 	viper.Set("addons", "")
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
@@ -352,7 +356,7 @@ func Test_Init_Addons_Github_Kusk(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if string(out) != "github,kusk" {
+	if string(out) != "github,kusk,cloud" {
 		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }

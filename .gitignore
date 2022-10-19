@@ -21,7 +21,7 @@ credentials
 .idea
 k3d-linux-amd64.1
 k3d-linux-amd64
-./kubefirst
 my.test
 go.test
-/kubefirst
+# kubefirst # <- this is causing files in docs to not commit, need a more explicit path ignored
+

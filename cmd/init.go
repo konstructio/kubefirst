@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"github.com/kubefirst/kubefirst/internal/services"
+	"github.com/segmentio/analytics-go"
 	"log"
 	"strings"
 	"time"
@@ -13,9 +15,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/repo"
-	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/pkg"
-	"github.com/segmentio/analytics-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
