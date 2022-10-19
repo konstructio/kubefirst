@@ -70,7 +70,7 @@ func waitArgoCDToBeReady(dryRun bool) {
 			log.Println("argocd pods found, waiting for them to be running")
 			viper.Set("argocd.ready", true)
 			viper.WriteConfig()
-			time.Sleep(35 * time.Second)
+			time.Sleep(15 * time.Second)
 			break
 		}
 	}
@@ -142,14 +142,14 @@ func loopUntilPodIsReady(dryRun bool) {
 			defer res.Body.Close()
 			body, err := io.ReadAll(res.Body)
 			if err != nil {
-				log.Println("vault is availbale but the body is not what is expected ", err)
+				log.Println("vault is available but the body is not what is expected ", err)
 				continue
 			}
 
 			var responseJson map[string]interface{}
 
 			if err := json.Unmarshal(body, &responseJson); err != nil {
-				log.Printf("vault is availbale but the body is not what is expected %s", err)
+				log.Printf("vault is available but the body is not what is expected %s", err)
 				continue
 			}
 
@@ -160,8 +160,10 @@ func loopUntilPodIsReady(dryRun bool) {
 			}
 			log.Panic("vault was never initialized")
 		}
+		viper.Set("vault.status.running", true)
+		viper.WriteConfig()
 	} else {
-		log.Println("vault token arleady exists, skipping vault health checks loopUntilPodIsReady")
+		log.Println("vault token already exists, skipping vault health checks loopUntilPodIsReady")
 	}
 }
 

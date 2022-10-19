@@ -22,7 +22,7 @@ var checktoolsCmd = &cobra.Command{
 
 		kubectlVersion, kubectlStdErr, errKubectl := pkg.ExecShellReturnStrings(config.KubectlClientPath, "version", "--client", "--short")
 		fmt.Printf("-> kubectl version:\n\t%s\n\t%s\n", kubectlVersion, kubectlStdErr)
-		terraformVersion, terraformStdErr, errTerraform := pkg.ExecShellReturnStrings(config.TerraformPath, "version")
+		terraformVersion, terraformStdErr, errTerraform := pkg.ExecShellReturnStrings(config.TerraformClientPath, "version")
 		fmt.Printf("-> terraform version:\n\t%s\n\t%s\n", terraformVersion, terraformStdErr)
 		helmVersion, helmStdErr, errHelm := pkg.ExecShellReturnStrings(config.HelmClientPath, "version", "--client", "--short")
 		fmt.Printf("-> helm version:\n\t%s\n\t%s\n", helmVersion, helmStdErr)

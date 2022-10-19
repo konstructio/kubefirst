@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"context"
 	"errors"
+	"os/exec"
+	"syscall"
 
 	"log"
 	"time"
@@ -50,8 +53,10 @@ cluster provisioning process spinning up the services, and validates the livenes
 			)
 		}
 
+		// todo remove this dependency from create.go
 		hostedZoneName := viper.GetString("aws.hostedzonename")
 
+		//* telemetry
 		if globalFlags.UseTelemetry {
 			// Instantiates a SegmentIO client to send messages to the segment API.
 			segmentIOClientStart := analytics.New(pkg.SegmentIOWriteKey)
@@ -80,6 +85,13 @@ cluster provisioning process spinning up the services, and validates the livenes
 			if err != nil {
 				log.Println(err)
 			}
+		}
+
+		if viper.GetString("cloud") == flagset.CloudK3d {
+			// todo need to add go channel to control when ngrok should close
+			go pkg.RunNgrok(context.TODO(), "localhost:4141")
+			time.Sleep(10 * time.Second)
+
 		}
 
 		if !viper.GetBool("kubefirst.done") {
@@ -117,44 +129,63 @@ cluster provisioning process spinning up the services, and validates the livenes
 			}
 			viper.Set("kubefirst.done", true)
 			viper.WriteConfig()
+		} else {
+			log.Println("already executed create command, continuing for readiness checks")
 		}
 
 		if viper.GetString("cloud") == flagset.CloudLocal {
-			log.Println("Hard break as we are still testing this mode")
-			return nil
-		}
-		// Relates to issue: https://github.com/kubefirst/kubefirst/issues/386
-		// Metaphor needs chart museum for CI works
-		informUser("Waiting chartmuseum", globalFlags.SilentMode)
-		for i := 1; i < 10; i++ {
-			chartMuseum := gitlab.AwaitHostNTimes("chartmuseum", globalFlags.DryRun, 20)
-			if chartMuseum {
-				informUser("Chartmuseum DNS is ready", globalFlags.SilentMode)
-				break
-			}
-		}
+			if !viper.GetBool("chartmuseum.host.resolved") {
 
-		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
-		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
-		if err != nil {
-			log.Printf("Failed to get clientset for k8s : %s", err)
-			return err
-		}
-		argocdPodClient := clientset.CoreV1().Pods("argocd")
-		err = k8s.RemoveSelfSignedCertArgoCD(argocdPodClient)
-		if err != nil {
-			log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
-		}
-
-		informUser("Checking if cluster is ready for use by metaphor apps", globalFlags.SilentMode)
-		for i := 1; i < 10; i++ {
-			err = k1ReadyCmd.RunE(cmd, args)
-			if err != nil {
-				log.Println(err)
+				//* establish port-forward
+				var kPortForwardChartMuseum *exec.Cmd
+				kPortForwardChartMuseum, err = k8s.PortForward(globalFlags.DryRun, "chartmuseum", "svc/chartmuseum", "8181:8080")
+				defer func() {
+					err = kPortForwardChartMuseum.Process.Signal(syscall.SIGTERM)
+					if err != nil {
+						log.Println("Error closing kPortForwardChartMuseum")
+					}
+				}()
+				pkg.AwaitHostNTimes("http://localhost:8181/health", 5, 5)
+				viper.Set("chartmuseum.host.resolved", true)
+				viper.WriteConfig()
 			} else {
-				break
+				log.Println("already resolved host for chartmuseum, continuing")
+			}
+
+		} else {
+			// Relates to issue: https://github.com/kubefirst/kubefirst/issues/386
+			// Metaphor needs chart museum for CI works
+			informUser("Waiting chartmuseum", globalFlags.SilentMode)
+			for i := 1; i < 10; i++ {
+				chartMuseum := gitlab.AwaitHostNTimes("chartmuseum", globalFlags.DryRun, 20)
+				if chartMuseum {
+					informUser("Chartmuseum DNS is ready", globalFlags.SilentMode)
+					break
+				}
+			}
+			informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
+			clientset, err := k8s.GetClientSet(globalFlags.DryRun)
+			if err != nil {
+				log.Printf("Failed to get clientset for k8s : %s", err)
+				return err
+			}
+			argocdPodClient := clientset.CoreV1().Pods("argocd")
+			err = k8s.RemoveSelfSignedCertArgoCD(argocdPodClient)
+			if err != nil {
+				log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
+			}
+
+			informUser("Checking if cluster is ready for use by metaphor apps", globalFlags.SilentMode)
+			for i := 1; i < 10; i++ {
+				err = k1ReadyCmd.RunE(cmd, args)
+				if err != nil {
+					log.Println(err)
+				} else {
+					break
+				}
 			}
 		}
+
 		informUser("Deploying metaphor applications", globalFlags.SilentMode)
 		err = deployMetaphorCmd.RunE(cmd, args)
 		if err != nil {
@@ -162,11 +193,13 @@ cluster provisioning process spinning up the services, and validates the livenes
 			log.Println("Error running deployMetaphorCmd")
 			return err
 		}
-		err = state.UploadKubefirstToStateStore(globalFlags.DryRun)
-		if err != nil {
-			log.Println(err)
-		}
 
+		if viper.GetString("cloud") == flagset.CloudAws {
+			err = state.UploadKubefirstToStateStore(globalFlags.DryRun)
+			if err != nil {
+				log.Println(err)
+			}
+		}
 		log.Println("sending mgmt cluster install completed metric")
 
 		if globalFlags.UseTelemetry {

@@ -42,6 +42,8 @@ validated and configured.`,
 		}
 
 		log.Println("github:", githubFlags.GithubHost)
+		log.Println("github:", githubFlags.GithubOrg)
+		log.Println("github:", githubFlags.GithubUser)
 		log.Println("dry run enabled:", globalFlags.DryRun)
 
 		if len(awsFlags.AssumeRole) > 0 {
