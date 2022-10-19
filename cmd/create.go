@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"os/exec"
 	"syscall"
 
@@ -84,6 +86,17 @@ cluster provisioning process spinning up the services, and validates the livenes
 			}
 		}
 
+		if viper.GetString("cloud") == flagset.CloudK3d {
+			// todo need to execute ngrok
+			ngrokURL := pkg.OpenNgrokTunnel()
+			viper.Set("github.atlantis.webhook.url", ngrokURL)
+		} else {
+			// todo this might break the gitlab and github installations, need to review this before merging
+			// todo backfill a tf var?
+			viper.Set("github.atlantis.webhook.url", fmt.Sprintf("https://atlantis.%s/events", viper.GetString("aws.hostedzone")))
+		}
+		os.Exit(1)
+
 		if !viper.GetBool("kubefirst.done") {
 			if viper.GetBool("github.enabled") {
 				log.Println("Installing Github version of Kubefirst")
@@ -123,7 +136,6 @@ cluster provisioning process spinning up the services, and validates the livenes
 			log.Println("already executed create command, continuing for readiness checks")
 		}
 
-		//! keep eyes here chartmuseum health check
 		if viper.GetString("cloud") == flagset.CloudLocal {
 			if !viper.GetBool("chartmuseum.host.resolved") {
 
@@ -176,11 +188,6 @@ cluster provisioning process spinning up the services, and validates the livenes
 				}
 			}
 		}
-		//! keep eyes next deploy metaphor
-		if viper.GetString("cloud") == flagset.CloudLocal {
-			log.Println("Hard break as we are still testing this mode")
-			return nil
-		}
 
 		informUser("Deploying metaphor applications", globalFlags.SilentMode)
 		err = deployMetaphorCmd.RunE(cmd, args)
@@ -189,11 +196,13 @@ cluster provisioning process spinning up the services, and validates the livenes
 			log.Println("Error running deployMetaphorCmd")
 			return err
 		}
-		err = state.UploadKubefirstToStateStore(globalFlags.DryRun)
-		if err != nil {
-			log.Println(err)
-		}
 
+		if viper.GetString("cloud") != flagset.CloudLocal {
+			err = state.UploadKubefirstToStateStore(globalFlags.DryRun)
+			if err != nil {
+				log.Println(err)
+			}
+		}
 		log.Println("sending mgmt cluster install completed metric")
 
 		if globalFlags.UseTelemetry {
