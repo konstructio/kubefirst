@@ -3,12 +3,13 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"github.com/ngrok/ngrok-go"
-	"github.com/ngrok/ngrok-go/config"
-	"golang.org/x/sync/errgroup"
 	"io"
 	"log"
 	"net"
+
+	"github.com/ngrok/ngrok-go"
+	"github.com/ngrok/ngrok-go/config"
+	"golang.org/x/sync/errgroup"
 )
 
 func RunNgrok(ctx context.Context, dest string) {
