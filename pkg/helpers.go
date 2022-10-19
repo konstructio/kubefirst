@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -127,10 +128,10 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		kmsKeyId := viper.GetString("vault.kmskeyid")
 		clusterName := viper.GetString("cluster-name")
 		argocdOidcClientId := viper.GetString(("vault.oidc.argocd.client_id"))
-		githubRepoOwner := viper.GetString(("github.owner"))
 		githubRepoHost := viper.GetString(("github.host"))
-		githubUser := viper.GetString(("github.user"))
+		githubRepoOwner := viper.GetString(("github.owner"))
 		githubOrg := viper.GetString(("github.org"))
+		githubUser := viper.GetString(("github.user"))
 
 		//TODO:  We need to fix this
 		githubToken := os.Getenv("GITHUB_AUTH_TOKEN")
@@ -391,4 +392,25 @@ func ValidateK1Folder(folderPath string) error {
 	}
 
 	return nil
+}
+
+// AwaitHostNTimes - Wait for a Host to return a 200
+// - To return 200
+// - To return true if host is ready, or false if not
+// - Supports a number of times to test an endpoint
+// - Supports the grace period after status 200 to wait before returning
+func AwaitHostNTimes(url string, times int, gracePeriod time.Duration) {
+	log.Printf("AwaitHostNTimes %d called with grace period of: %d seconds", times, gracePeriod)
+	max := times
+	for i := 0; i < max; i++ {
+		resp, _ := http.Get(url)
+		if resp != nil && resp.StatusCode == 200 {
+			log.Printf("%s resolved, %s second grace period required...", url, gracePeriod)
+			time.Sleep(time.Second * gracePeriod)
+			return
+		} else {
+			log.Printf("%s not resolved, sleeping 10s", url)
+			time.Sleep(time.Second * 10)
+		}
+	}
 }
