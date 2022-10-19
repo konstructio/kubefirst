@@ -132,6 +132,13 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubUser := viper.GetString(("github.user"))
 		githubOrg := viper.GetString(("github.org"))
 
+		if viper.GetString("cloud") == "k3d" && viper.GetString(("github.user")) == "" {
+			githubUser = viper.GetString(("config.github-user"))
+		}
+		if viper.GetString("cloud") == "k3d" && viper.GetString(("github.org")) == "" {
+			githubOrg = viper.GetString(("config.github-org"))
+		}
+
 		//TODO:  We need to fix this
 		githubToken := os.Getenv("GITHUB_AUTH_TOKEN")
 		//TODO: Make this more clear

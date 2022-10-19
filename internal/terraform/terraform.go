@@ -20,11 +20,13 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 
 	envs := map[string]string{}
 
-	//* AWS_SDK_LOAD_CONFIG=1
-	//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
-	envs["AWS_SDK_LOAD_CONFIG"] = "1"
-	aws.ProfileInjection(&envs)
-	envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
+	if viper.GetString("cloud") == "aws" {
+		//* AWS_SDK_LOAD_CONFIG=1
+		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
+		envs["AWS_SDK_LOAD_CONFIG"] = "1"
+		aws.ProfileInjection(&envs)
+		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
+	}
 
 	switch terraformEntryPoint {
 	case "base":

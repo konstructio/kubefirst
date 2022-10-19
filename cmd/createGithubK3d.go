@@ -203,21 +203,21 @@ var createGithubK3dCmd = &cobra.Command{
 				log.Println("error waiting for vault to become running")
 				return err
 			}
-			loopUntilPodIsReady(globalFlags.DryRun)
 		}
-		kPortForwardMinio, err := k8s.PortForward(globalFlags.DryRun, "minio", "svc/minio", "9000:9000")
-		defer func() {
-			err = kPortForwardMinio.Process.Signal(syscall.SIGTERM)
-			if err != nil {
-				log.Println("Error closing kPortForwardMinio")
-			}
-		}()
-
 		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
 		defer func() {
 			err = kPortForwardVault.Process.Signal(syscall.SIGTERM)
 			if err != nil {
 				log.Println("Error closing kPortForwardVault")
+			}
+		}()
+
+		loopUntilPodIsReady(globalFlags.DryRun)
+		kPortForwardMinio, err := k8s.PortForward(globalFlags.DryRun, "minio", "svc/minio", "9000:9000")
+		defer func() {
+			err = kPortForwardMinio.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Println("Error closing kPortForwardMinio")
 			}
 		}()
 
@@ -244,6 +244,23 @@ var createGithubK3dCmd = &cobra.Command{
 		} else {
 			log.Println("already executed vault terraform")
 		}
+
+		executionControl = viper.GetBool("terraform.users.apply.complete")
+		//* create users
+		if !executionControl {
+			informUser("applying users terraform", globalFlags.SilentMode)
+
+			tfEntrypoint := config.GitOpsRepoPath + "/terraform/users"
+			terraform.InitApplyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+
+			informUser("executed users terraform successfully", globalFlags.SilentMode)
+			// progressPrinter.IncrementTracker("step-users", 1)
+		} else {
+			log.Println("already created users with terraform")
+		}
+
+		// TODO: K3D =>  NEED TO REMOVE local-backend.tf and rename remote-backend.md
+
 		informUser("Welcome to local kubefirst experience", globalFlags.SilentMode)
 		informUser("To use your cluster port-forward - argocd", globalFlags.SilentMode)
 		informUser("If not automatically injected, your kubeconfig is at:", globalFlags.SilentMode)
@@ -254,15 +271,6 @@ var createGithubK3dCmd = &cobra.Command{
 		informUser("Argo Password: "+viper.GetString("argocd.admin.password"), globalFlags.SilentMode)
 		time.Sleep(1 * time.Second)
 		progressPrinter.IncrementTracker("step-apps", 1)
-
-		// TODO: K3D =>  It should work as expected
-		directory := fmt.Sprintf("%s/gitops/terraform/users", config.K1FolderPath)
-		gitProvider := viper.GetString("git.mode")
-		informUser("applying users terraform", globalFlags.SilentMode)
-		err = terraform.ApplyUsersTerraform(globalFlags.DryRun, directory, gitProvider)
-		if err != nil {
-			log.Println(err)
-		}
 		progressPrinter.IncrementTracker("step-base", 1)
 		progressPrinter.IncrementTracker("step-apps", 1)
 		return nil

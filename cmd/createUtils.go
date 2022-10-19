@@ -70,7 +70,7 @@ func waitArgoCDToBeReady(dryRun bool) {
 			log.Println("argocd pods found, waiting for them to be running")
 			viper.Set("argocd.ready", true)
 			viper.WriteConfig()
-			time.Sleep(35 * time.Second)
+			time.Sleep(15 * time.Second)
 			break
 		}
 	}
