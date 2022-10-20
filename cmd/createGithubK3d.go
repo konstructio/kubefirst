@@ -222,6 +222,14 @@ var createGithubK3dCmd = &cobra.Command{
 			}
 		}()
 
+		kPortForwardAtlantis, err := k8s.PortForward(globalFlags.DryRun, "atlatnis", "svc/atlantis", "4141:80")
+		defer func() {
+			err = kPortForwardAtlantis.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Println("error closing kPortForwardAtlantis")
+			}
+		}()
+
 		//* configure vault with terraform
 		executionControl = viper.GetBool("terraform.vault.apply.complete")
 		if !executionControl {

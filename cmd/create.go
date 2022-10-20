@@ -89,9 +89,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 
 		if viper.GetString("cloud") == flagset.CloudK3d {
 			// todo need to add go channel to control when ngrok should close
-			go pkg.RunNgrok(context.TODO(), "localhost:4141")
-			time.Sleep(10 * time.Second)
-
+			go pkg.RunNgrok(context.TODO(), pkg.LocalAtlantisURL)
 		}
 
 		if !viper.GetBool("kubefirst.done") {
