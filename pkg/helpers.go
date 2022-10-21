@@ -212,6 +212,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<GITHUB_TOKEN>", githubToken, -1)
 
 		newContents = strings.Replace(newContents, "<REPO_GITOPS>", "gitops", -1)
+		newContents = strings.Replace(newContents, "<KUBEFIRST_VERSION>", configs.K1Version, -1)
 
 		if kmsKeyId != "" {
 			newContents = strings.Replace(newContents, "<KMS_KEY_ID>", kmsKeyId, -1)
