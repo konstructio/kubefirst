@@ -47,6 +47,21 @@ func AddK3DSecrets(dryrun bool) error {
 		"ATLANTIS_GH_USER":           []byte(viper.GetString("github.user")),
 		"ATLANTIS_GH_HOSTNAME":       []byte(viper.GetString("github.host")),
 		"ATLANTIS_GH_WEBHOOK_SECRET": []byte(viper.GetString("github.atlantis.webhook.secret")),
+		// todo: this is hardcoded / testing
+		"ATLANTIS_ATLANTIS_URL": []byte(viper.GetString("http://localhost:4141")),
+
+		// todo: testing / clean up
+		"GITHUB_OWNER":                        []byte(viper.GetString("github.org")),
+		"GITHUB_TOKEN":                        []byte(os.Getenv("GITHUB_AUTH_TOKEN")),
+		"TF_VAR_atlantis_repo_webhook_secret": []byte(viper.GetString("github.atlantis.webhook.secret")),
+		"TF_VAR_email_address":                []byte(viper.GetString("adminemail")),
+		"TF_VAR_github_token":                 []byte(os.Getenv("GITHUB_AUTH_TOKEN")),
+		"TF_VAR_kubefirst_bot_ssh_public_key": []byte(viper.GetString("botpublickey")),
+		"TF_VAR_ssh_private_key":              []byte(viper.GetString("botprivatekey")),
+		"TF_VAR_vault_addr":                   []byte(viper.GetString("vault.local.service")),
+		"TF_VAR_vault_token":                  []byte("k1_local_vault_token"),
+		"VAULT_ADDR":                          []byte(viper.GetString("vault.local.service")),
+		"VAULT_TOKEN":                         []byte("k1_local_vault_token"),
 	}
 	ghAtlantisSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "atlantis-secrets", Namespace: "atlantis"},

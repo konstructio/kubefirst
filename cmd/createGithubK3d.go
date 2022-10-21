@@ -44,7 +44,6 @@ var createGithubK3dCmd = &cobra.Command{
 		progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 		progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 		progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
-		//progressPrinter.AddTracker("step-ecr", "Setup ECR/Docker Registries", 1) // todo remove this step, its baked into github repo
 		progressPrinter.AddTracker("step-apps", "Install apps to cluster", 5)
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
 
@@ -219,14 +218,6 @@ var createGithubK3dCmd = &cobra.Command{
 			err = kPortForwardMinio.Process.Signal(syscall.SIGTERM)
 			if err != nil {
 				log.Println("Error closing kPortForwardMinio")
-			}
-		}()
-
-		kPortForwardAtlantis, err := k8s.PortForward(globalFlags.DryRun, "atlatnis", "svc/atlantis", "4141:80")
-		defer func() {
-			err = kPortForwardAtlantis.Process.Signal(syscall.SIGTERM)
-			if err != nil {
-				log.Println("error closing kPortForwardAtlantis")
 			}
 		}()
 
