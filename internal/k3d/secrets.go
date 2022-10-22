@@ -51,8 +51,6 @@ func AddK3DSecrets(dryrun bool) error {
 		"PERSONAL_ACCESS_TOKEN": []byte(os.Getenv("GITHUB_AUTH_TOKEN")),
 		"username":              []byte(viper.GetString("github.user")),
 		"password":              []byte(os.Getenv("GITHUB_AUTH_TOKEN")),
-		"dockerLoginPassword":   []byte("k-ray"),
-		"dockerLoginUser":       []byte("feedkraystars"),
 	}
 	argoCiSecrets := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "ci-secrets", Namespace: "argo"},
