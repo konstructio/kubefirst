@@ -52,11 +52,12 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 
 			},
 		}
-		err := cp.Copy(directory+"/argo-workflows/.argo", directory+"/.argo", opt)
+
+		err := cp.Copy(config.GitOpsRepoPath+"/argo-workflows/.argo", directory+"/.argo", opt)
 		if err != nil {
 			log.Println("Error populating argo-workflows .argo/ with local setup:", err)
 		}
-		err = cp.Copy(directory+"/argo-workflows/.github", directory+"/.github", opt)
+		err = cp.Copy(config.GitOpsRepoPath+"/argo-workflows/.github", directory+"/.github", opt)
 		if err != nil {
 			log.Println("Error populating argo-workflows with .github/ with local setup:", err)
 		}
