@@ -1,11 +1,12 @@
 package cmd
 
 import (
-	"github.com/kubefirst/kubefirst/internal/services"
-	"github.com/segmentio/analytics-go"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/services"
+	"github.com/segmentio/analytics-go"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
