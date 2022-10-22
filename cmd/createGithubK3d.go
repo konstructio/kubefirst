@@ -194,7 +194,7 @@ var createGithubK3dCmd = &cobra.Command{
 
 		progressPrinter.IncrementTracker("step-apps", 1)
 
-		//* vault in runnin state
+		//* vault in running state
 		executionControl = viper.GetBool("vault.status.running")
 		if !executionControl {
 			// TODO: K3D => We need to check what changes for vault on raft mode, without terraform to unseal it
