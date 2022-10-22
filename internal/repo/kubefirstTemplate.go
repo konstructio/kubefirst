@@ -37,6 +37,26 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 	if viper.GetString("cloud") == flagset.CloudK3d && !viper.GetBool("github.gitops.hydrated") {
 		UpdateForLocalMode(directory)
 	}
+	if viper.GetString("cloud") == flagset.CloudK3d && strings.Contains(repoName, "metaphor") {
+		os.RemoveAll(fmt.Sprintf("%s/.argo", directory))
+		os.RemoveAll(fmt.Sprintf("%s/.github", directory))
+		opt := cp.Options{
+			Skip: func(src string) (bool, error) {
+				if strings.HasSuffix(src, ".git") {
+					return true, nil
+				} else if strings.Index(src, "/.terraform") > 0 {
+					return true, nil
+				}
+				//Add more stuff to be ignored here
+				return false, nil
+
+			},
+		}
+		err := cp.Copy(directory+"/argo-workflows/", directory, opt)
+		if err != nil {
+			log.Println("Error populating argo-workflows with .github/ and .argo/ with local setup:", err)
+		}
+	}
 
 	log.Printf("detokenizing %s/%s", config.K1FolderPath, repoName)
 	pkg.Detokenize(directory)

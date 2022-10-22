@@ -76,14 +76,14 @@ var destroyCmd = &cobra.Command{
 			// 	informUser("successfully destroyed users resources", globalFlags.SilentMode)
 			// }
 
-			// //* step 1.3 - terraform destroy github
-			// githubTfApplied := viper.GetBool("terraform.github.apply.complete")
-			// if githubTfApplied {
-			// 	informUser("terraform destroying github resources", globalFlags.SilentMode)
-			// 	tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
-			// 	terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
-			// 	informUser("successfully destroyed github resources", globalFlags.SilentMode)
-			// }
+			//* step 1.3 - terraform destroy github
+			githubTfApplied := viper.GetBool("terraform.github.apply.complete")
+			if githubTfApplied {
+				informUser("terraform destroying github resources", globalFlags.SilentMode)
+				tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+				terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+				informUser("successfully destroyed github resources", globalFlags.SilentMode)
+			}
 
 			//* step 2 - delete k3d cluster
 			// this could be useful for us to chase down in eks and destroy everything
