@@ -34,12 +34,12 @@ func ApplyCITerraform(dryRun bool, bucketName string) {
 		if err != nil {
 			log.Panic("error: could not change directory to " + directory)
 		}
-		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
 			log.Panicf("error: terraform init for ci failed %s", err)
 		}
 
-		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
 		if err != nil {
 			log.Panicf("error: terraform apply for ci failed %s", err)
 		}
@@ -63,16 +63,16 @@ func DestroyCITerraform(skipCITerraform bool) {
 		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 
-		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
 			log.Printf("[WARN]: failed to terraform init (destroy) CI, was the CI not created(check AWS)?: %s", err)
 		}
 
-		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "destroy", "-auto-approve")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
 		if err != nil {
 			log.Printf("[WARN]: failed to terraform destroy CI, was the CI not created (check AWS)?: %s", err)
 		}
-		viper.Set("destroy.terraformdestroy.ci", true)
+		viper.Set("gitlab.ci-pushed", false)
 		viper.WriteConfig()
 	} else {
 		log.Println("skip:  destroyBaseTerraform")

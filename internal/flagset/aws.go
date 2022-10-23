@@ -17,7 +17,7 @@ func DefineAWSFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().Bool("aws-nodes-spot", false, "nodes spot on AWS EKS compute nodes")
 	currentCommand.Flags().String("profile", "", "AWS profile located at ~/.aws/config")
 	currentCommand.Flags().String("hosted-zone-name", "", "the domain to provision the kubefirst platform in")
-	currentCommand.Flags().String("region", "eu-west-1", "the region to provision the cloud resources in")
+	currentCommand.Flags().String("region", "", "the region to provision the cloud resources in")
 }
 
 type AwsFlags struct {

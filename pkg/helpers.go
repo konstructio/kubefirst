@@ -3,9 +3,9 @@ package pkg
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -75,7 +75,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	}
 
 	if matched {
-		read, err := ioutil.ReadFile(path)
+		read, err := os.ReadFile(path)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -128,10 +128,10 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		kmsKeyId := viper.GetString("vault.kmskeyid")
 		clusterName := viper.GetString("cluster-name")
 		argocdOidcClientId := viper.GetString(("vault.oidc.argocd.client_id"))
-		githubRepoOwner := viper.GetString(("github.owner"))
 		githubRepoHost := viper.GetString(("github.host"))
-		githubUser := viper.GetString(("github.user"))
+		githubRepoOwner := viper.GetString(("github.owner"))
 		githubOrg := viper.GetString(("github.org"))
+		githubUser := viper.GetString(("github.user"))
 
 		//TODO:  We need to fix this
 		githubToken := os.Getenv("GITHUB_AUTH_TOKEN")
@@ -234,7 +234,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 				log.Panic(err)
 			}
 		} else {
-			err = ioutil.WriteFile(path, []byte(newContents), 0)
+			err = os.WriteFile(path, []byte(newContents), 0)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -393,3 +393,54 @@ func ValidateK1Folder(folderPath string) error {
 
 	return nil
 }
+
+// AwaitHostNTimes - Wait for a Host to return a 200
+// - To return 200
+// - To return true if host is ready, or false if not
+// - Supports a number of times to test an endpoint
+// - Supports the grace period after status 200 to wait before returning
+func AwaitHostNTimes(url string, times int, gracePeriod time.Duration) {
+	log.Printf("AwaitHostNTimes %d called with grace period of: %d seconds", times, gracePeriod)
+	max := times
+	for i := 0; i < max; i++ {
+		resp, _ := http.Get(url)
+		if resp != nil && resp.StatusCode == 200 {
+			log.Printf("%s resolved, %s second grace period required...", url, gracePeriod)
+			time.Sleep(time.Second * gracePeriod)
+			return
+		} else {
+			log.Printf("%s not resolved, sleeping 10s", url)
+			time.Sleep(time.Second * 10)
+		}
+	}
+}
+
+// type NgrokOutput struct {
+// 	Tunnels []struct {
+// 		PublicURL string `json:"public_url"`
+// 	} `json:"tunnels"`
+// 	URI string `json:"uri"`
+// }
+
+// func OpenNgrokTunnel() string {
+
+// 	config := configs.ReadConfig()
+
+// 	var ngrokOutb, ngrokErrb bytes.Buffer
+// 	openNgrokTunnel := exec.Command(config.NgrokClientPath, "http", "4141")
+// 	openNgrokTunnel.Stdout = &ngrokOutb
+// 	openNgrokTunnel.Stderr = &ngrokErrb
+// 	err := openNgrokTunnel.Start()
+// 	url := "http://localhost:4040/api/tunnels"
+// 	outb, _, err := ExecShellReturnStrings("curl", url)
+// 	if err != nil {
+// 		log.Panicf("error starting ngrok on port 4141: %s", err)
+// 	}
+// 	ngrokOutput := &NgrokOutput{}
+// 	err = json.Unmarshal([]byte(outb), ngrokOutput)
+// 	if err != nil {
+// 		log.Println("error unmarshalling json from curl command ")
+// 	}
+// 	fmt.Println(ngrokOutput.Tunnels[0].PublicURL)
+// 	return ngrokOutput.Tunnels[0].PublicURL
+// }

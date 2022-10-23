@@ -157,6 +157,8 @@ nav:
           # add details about kubefirst state command, typo on link
         - FAQ: 'kubefirst/gitlab/faq.md'
           # is this fine? get feedback from devrel
+      - Installer Options:
+        - Config: 'kubefirst/installer/config-file.md'          
       # - Page: white glove service
       # - Pag
     - Tooling:

@@ -7,8 +7,10 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
+const CONFIG = 2
 const ENV = 1
 const FLAG = 0
 const NONE = 99
@@ -17,7 +19,11 @@ const NONE = 99
 // default value is ""
 // Current version doesn't have error, but we may expect some as the function evolves.
 func ReadConfigString(cmd *cobra.Command, flag string) (string, error) {
-	if DefineSource(cmd, flag) == ENV {
+	source := DefineSource(cmd, flag)
+	if source == CONFIG {
+		return viper.GetString(GetConfig(flag)), nil
+	}
+	if source == ENV {
 		return os.Getenv(GetFlagVarName(flag)), nil
 	}
 	value, err := cmd.Flags().GetString(flag)
@@ -33,7 +39,11 @@ func ReadConfigStringSlice(cmd *cobra.Command, flag string) ([]string, error) {
 // default value is ""
 // Current version doesn't have error, but we may expect some as the function evolves.
 func ReadConfigBool(cmd *cobra.Command, flag string) (bool, error) {
-	if DefineSource(cmd, flag) == ENV {
+	source := DefineSource(cmd, flag)
+	if source == CONFIG {
+		return viper.GetBool(GetConfig(flag)), nil
+	}
+	if source == ENV {
 		boolVal, err := strconv.ParseBool(os.Getenv(GetFlagVarName(flag)))
 		return boolVal, err
 	}
@@ -44,9 +54,16 @@ func ReadConfigBool(cmd *cobra.Command, flag string) (bool, error) {
 // DefineSource - Calculate precedence rule for flags and variables
 func DefineSource(cmd *cobra.Command, flag string) int {
 	//Precedence rule:
-	//1st Flag
-	//2nd Variable
-	//3rd default Variable value
+	//1st Config file
+	//2nd Flag
+	//3rd Variable
+	//4th default Variable value
+	configReference := viper.Get(GetConfig(flag))
+	if configReference != nil {
+		log.Printf("Flag(%s) set from Config File", flag)
+		return CONFIG
+	}
+
 	flagReference := cmd.Flags().Lookup(flag)
 	if flagReference != nil && flagReference.Changed {
 		log.Printf("Flag(%s) set from CLI flag", flag)
@@ -71,4 +88,19 @@ func GetFlagVarName(flag string) string {
 	varName := "KUBEFIRST_" + strings.ToUpper(flag)
 	varName = strings.ReplaceAll(varName, "-", "_")
 	return varName
+}
+
+func GetConfig(flag string) string {
+	return "config." + flag
+}
+
+// InjectConfigs - Append configs from a new source to the main viper file.
+func InjectConfigs(extraConfig string) {
+	//Workaround due to: https://github.com/spf13/viper/issues/181
+	var v = viper.New()
+	v.SetConfigType("yaml")
+	v.SetConfigFile(extraConfig)
+	_ = v.ReadInConfig()
+	//log.Println(v.AllSettings())
+	viper.MergeConfigMap(v.AllSettings())
 }

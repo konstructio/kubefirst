@@ -292,12 +292,12 @@ func ApplyGitlabTerraform(dryRun bool, directory string) {
 		if err != nil {
 			log.Panic("error: could not change directory to " + directory)
 		}
-		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
 			log.Panicf("error: terraform init for gitlab failed %s", err)
 		}
 
-		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
 		if err != nil {
 			log.Panicf("error: terraform apply for gitlab failed %s", err)
 		}
@@ -373,12 +373,12 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 	envs["GITLAB_BASE_URL"] = viper.GetString("gitlab.local.service")
 
 	if !skipGitlabTerraform && !viper.GetBool("github.enabled") {
-		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
 			log.Panicf("failed to terraform init gitlab %s", err)
 		}
 
-		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "destroy", "-auto-approve")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
 		if err != nil {
 			log.Panicf("failed to terraform destroy gitlab %s", err)
 		}
@@ -654,12 +654,13 @@ spec:
 			Auth:       auth,
 		})
 		if err != nil {
+			log.Println(err)
 			log.Panicf("error pushing detokenized %s repository to remote at %s", repoName, gitOrigin)
 		}
 		log.Printf("successfully pushed %s to gitlab", repoName)
-		cmd := exec.Command("cp", "-r", repoDir, repoDir+"-"+gitOrigin)
-		err = cmd.Run()
-		log.Println(err)
+		//cmd := exec.Command("cp", "-r", repoDir, repoDir+"-"+gitOrigin)
+		//err = cmd.Run()
+		//log.Println(err)
 	}
 
 	viper.Set(fmt.Sprintf("create.repos.%s.%s.pushed", gitOrigin, repoName), true)

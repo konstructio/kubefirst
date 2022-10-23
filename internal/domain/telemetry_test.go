@@ -17,7 +17,7 @@ func TestNewTelemetry(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *Telemetry
+		want    Telemetry
 		wantErr bool
 	}{
 		{
@@ -27,7 +27,7 @@ func TestNewTelemetry(t *testing.T) {
 				domain:     "https://example.com",
 				CLIVersion: "0.0.0",
 			},
-			want:    &validTelemetry,
+			want:    validTelemetry,
 			wantErr: false,
 		},
 		{
@@ -37,18 +37,18 @@ func TestNewTelemetry(t *testing.T) {
 				domain:     "https://example-com",
 				CLIVersion: "0.0.0",
 			},
-			want:    nil,
+			want:    Telemetry{},
 			wantErr: true,
 		},
 		{
-			name: "empty domain",
+			name: "empty domain (localhost)",
 			args: args{
 				metricName: "test metric",
 				domain:     "",
 				CLIVersion: "0.0.0",
 			},
-			want:    nil,
-			wantErr: true,
+			want:    Telemetry{},
+			wantErr: false,
 		},
 		{
 			name: "missing telemetry name",
@@ -57,7 +57,7 @@ func TestNewTelemetry(t *testing.T) {
 				domain:     "example.com",
 				CLIVersion: "0.0.0",
 			},
-			want:    nil,
+			want:    Telemetry{},
 			wantErr: true,
 		},
 	}

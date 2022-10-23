@@ -72,14 +72,14 @@ func DeployMetaphorGithub(globalFlags flagset.GlobalFlags) error {
 		return nil
 	}
 	config := configs.ReadConfig()
-	tfEntrypoint := "github"
-	directory := fmt.Sprintf("%s/gitops/terraform/%s", config.K1FolderPath, tfEntrypoint)
-	err := os.Rename(fmt.Sprintf("%s/%s", directory, "metaphor-repos.md"), fmt.Sprintf("%s/%s", directory, "metaphor-repos.tf"))
+
+	tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+	err := os.Rename(fmt.Sprintf("%s/%s", tfEntrypoint, "metaphor-repos.md"), fmt.Sprintf("%s/%s", tfEntrypoint, "metaphor-repos.tf"))
 	if err != nil {
 		log.Println("error renaming metaphor-repos.md to metaphor-repos.tf", err)
 	}
 	gitClient.PushLocalRepoUpdates(githubHost, githubOwner, "gitops", "github")
-	terraform.InitApplyAutoApprove(globalFlags.DryRun, directory, tfEntrypoint)
+	terraform.InitApplyAutoApprove(globalFlags.DryRun, tfEntrypoint)
 
 	repos := [3]string{"metaphor", "metaphor-go", "metaphor-frontend"}
 	for _, element := range repos {
