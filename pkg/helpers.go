@@ -444,3 +444,36 @@ func AwaitHostNTimes(url string, times int, gracePeriod time.Duration) {
 // 	fmt.Println(ngrokOutput.Tunnels[0].PublicURL)
 // 	return ngrokOutput.Tunnels[0].PublicURL
 // }
+
+// this is temporary code
+func ReplaceS3Backend() error {
+
+	config := configs.ReadConfig()
+
+	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", config.K1FolderPath)
+
+	file, err := os.ReadFile(vaultMainFile)
+	if err != nil {
+		return err
+	}
+	newContents := strings.Replace(string(file), "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000", -1)
+
+	err = os.WriteFile(vaultMainFile, []byte(newContents), 0)
+	if err != nil {
+		return err
+	}
+
+	kubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
+	file2, err := os.ReadFile(kubefirstGitHubFile)
+	if err != nil {
+		return err
+	}
+	newContents2 := strings.Replace(string(file2), "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000", -1)
+
+	err = os.WriteFile(kubefirstGitHubFile, []byte(newContents2), 0)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

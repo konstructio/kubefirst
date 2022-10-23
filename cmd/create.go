@@ -256,7 +256,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 
 		*/
 		// 1
-		err = replaceS3Backend()
+		err = pkg.ReplaceS3Backend()
 		if err != nil {
 			return err
 		}
