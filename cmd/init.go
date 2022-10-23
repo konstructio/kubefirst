@@ -46,26 +46,27 @@ validated and configured.`,
 			return err
 		}
 
-		// todo: wire it / check if gitlab or github install
-		if config.GitHubPersonalAccessToken == "" && !globalFlags.SilentMode {
+		if viper.GetString("cloud") == flagset.CloudK3d {
+			if config.GitHubPersonalAccessToken == "" && !globalFlags.SilentMode {
 
-			httpClient := http.DefaultClient
-			gitHubService := services.NewGitHubService(httpClient)
-			gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-			gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
-			if err != nil {
-				return err
-			}
+				httpClient := http.DefaultClient
+				gitHubService := services.NewGitHubService(httpClient)
+				gitHubHandler := handlers.NewGitHubHandler(gitHubService)
+				gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
+				if err != nil {
+					return err
+				}
 
-			if len(gitHubAccessToken) == 0 {
-				return errors.New("unable to retrieve a GitHub token for the user")
-			}
+				if len(gitHubAccessToken) == 0 {
+					return errors.New("unable to retrieve a GitHub token for the user")
+				}
 
-			// todo: set common way to load env. values (viper->struct->load-env)
-			if err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
-				return err
+				// todo: set common way to load env. values (viper->struct->load-env)
+				if err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
+					return err
+				}
+				log.Println("\nGITHUB_AUTH_TOKEN set via OAuth")
 			}
-			log.Println("\nGITHUB_AUTH_TOKEN set via OAuth")
 		}
 
 		if globalFlags.SilentMode {
