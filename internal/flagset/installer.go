@@ -2,7 +2,6 @@ package flagset
 
 import (
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/kubefirst/kubefirst/configs"
@@ -34,7 +33,7 @@ func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
 	// Generic Installer flags:
 	currentCommand.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
 	currentCommand.Flags().String("admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
-	currentCommand.Flags().String("cloud", "", "the cloud to provision infrastructure in")
+	currentCommand.Flags().String("cloud", "k3d", "the cloud to provision infrastructure in")
 	currentCommand.Flags().String("gitops-owner", "kubefirst", "git owner of gitops, this may be a user or a org to support forks for testing")
 	currentCommand.Flags().String("gitops-repo", "gitops", "version/branch used on git clone")
 	currentCommand.Flags().String("gitops-branch", "", "version/branch used on git clone - former: version-gitops flag")
@@ -220,10 +219,11 @@ func validateInstallationFlags() error {
 		log.Println(message)
 		return errors.New(message)
 	}
-	if viper.GetString("cloud") == CloudLocal && !viper.GetBool("github.enabled") {
-		message := fmt.Sprintf(" flag --cloud %s is not supported for non-github installations. Please, provide the flags '--github-user ghuser --github-org ghorg' to be able to use local install  ", CloudK3d)
-		log.Println(message)
-		return errors.New(message)
-	}
+	// todo double check this validation with the new default of k3d
+	// if viper.GetString("cloud") == CloudLocal && !viper.GetBool("github.enabled") {
+	// 	message := fmt.Sprintf(" flag --cloud %s is not supported for non-github installations. Please, provide the flags '--github-user ghuser --github-org ghorg' to be able to use local install  ", CloudK3d)
+	// 	log.Println(message)
+	// 	return errors.New(message)
+	// }
 	return nil
 }
