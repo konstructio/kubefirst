@@ -250,20 +250,15 @@ cluster provisioning process spinning up the services, and validates the livenes
 			}
 		}()
 
-		/*
+		// todo: wire it up in the architecture / files / folder
 
-		 this is atlantis temporary code
-
-		*/
-		// 1
-		err = replaceS3Backend()
+		// update terraform s3 backend to internal k8s dns (s3/minio bucket)
+		err = pkg.ReplaceS3Backend()
 		if err != nil {
 			return err
 		}
-		//
-		// 2 git push to new repo
-		////ref := plumbing.NewHashReference("refs/heads/update-s3-backend", headRef.Hash())
-		//
+
+		// create a new branch and push changes
 		githubHost := viper.GetString("github.host")
 		githubOwner := viper.GetString("github.owner")
 		remoteName := "github"
@@ -282,26 +277,22 @@ cluster provisioning process spinning up the services, and validates the livenes
 		fmt.Println("sleeping after commit...")
 		time.Sleep(3 * time.Second)
 
-		// 3
+		// create a PR, atlantis will identify it's a terraform change/file update and,
+		// trigger atlantis plan
 		g := githubWrapper.New()
 		err = g.CreatePR(branchName)
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Println("sleeping after create PR...")
+		log.Println("sleeping after create PR...")
 		time.Sleep(5 * time.Second)
-		//
-		//// 4
-		err = g.CommentPR(3, "atlantis plan")
-		if err != nil {
-			fmt.Println(err)
-		}
+		log.Println("sleeping... atlantis plan should be running")
+		time.Sleep(5 * time.Second)
 
 		fmt.Println("sleeping before apply...")
 		time.Sleep(120 * time.Second)
 
-		// 5
-		// call atlantis apply
+		// after 120 seconds, it will comment in the PR with atlantis plan
 		err = g.CommentPR(1, "atlantis apply")
 		if err != nil {
 			fmt.Println(err)

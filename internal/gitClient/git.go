@@ -446,12 +446,12 @@ func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName st
 	//	}
 	//}
 
-	kubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", cfg.K1FolderPath)
+	kubefirstGitHubFile := "terraform/users/kubefirst-github.tf"
 	_, err = w.Add(kubefirstGitHubFile)
 	if err != nil {
 		log.Println(err)
 	}
-	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", cfg.K1FolderPath)
+	vaultMainFile := "terraform/vault/main.tf"
 	_, err = w.Add(vaultMainFile)
 	if err != nil {
 		log.Println(err)
