@@ -42,9 +42,9 @@ func PrintSectionOverview() []byte {
 	var handOffData bytes.Buffer
 	handOffData.WriteString(strings.Repeat("-", 70))
 	handOffData.WriteString(fmt.Sprintf("\nCluster %q is up and running!:", viper.GetString("cluster-name")))
-	handOffData.WriteString(fmt.Sprintf("\nSave this information for future use, once you leave this screen some of this information is lost. "))
-	handOffData.WriteString(fmt.Sprintf("\n\nAccess the Console on your Browser at: http://localhost:9094\n"))
-	handOffData.WriteString(fmt.Sprintf("\nPress ESC to leave this screen and return to shell."))
+	handOffData.WriteString("\nThis information is available at $HOME/.kubefirst ")
+	handOffData.WriteString("\n\nAccess the kubefirst-console from your browser at:\n http://localhost:9094\n")
+	handOffData.WriteString("\nPress ESC to leave this screen and return to your shell.")
 
 	return handOffData.Bytes()
 }
@@ -99,7 +99,7 @@ func PrintSectionArgoWorkflows() []byte {
 
 	var argoWorkflowsURL string
 	if viper.GetString("cloud") == flagset.CloudK3d {
-		argoWorkflowsURL = "http://localhost:8080"
+		argoWorkflowsURL = "http://localhost:2746"
 	} else {
 		argoWorkflowsURL = fmt.Sprintf("https://argo.%s", viper.GetString("aws.hostedzonename"))
 	}
@@ -108,31 +108,56 @@ func PrintSectionArgoWorkflows() []byte {
 	handOffData.WriteString("\n--- Argo Workflows ")
 	handOffData.WriteString(strings.Repeat("-", 51))
 	handOffData.WriteString(fmt.Sprintf("\n URL: %s", argoWorkflowsURL))
-	handOffData.WriteString("\n sso credentials only ")
-	handOffData.WriteString("\n * sso enabled ")
 
-	return handOffData.Bytes()
+	if viper.GetString("cloud") == flagset.CloudK3d {
+		return handOffData.Bytes()
+	} else {
+		handOffData.WriteString("\n sso credentials only ")
+		handOffData.WriteString("\n * sso enabled ")
+
+		return handOffData.Bytes()
+	}
 }
 
 func PrintSectionAtlantis() []byte {
-	var handOffData bytes.Buffer
 
+	var atlantisUrl string
+	if viper.GetString("cloud") == flagset.CloudK3d {
+		atlantisUrl = "http://localhost:4141"
+	} else {
+		atlantisUrl = fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename"))
+	}
+
+	var handOffData bytes.Buffer
 	handOffData.WriteString("\n--- Atlantis ")
 	handOffData.WriteString(strings.Repeat("-", 57))
-	handOffData.WriteString(fmt.Sprintf("\n URL: %s", fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n URL: %s", atlantisUrl))
 
 	return handOffData.Bytes()
 }
 
 func PrintSectionMuseum() []byte {
+
+	var chartmuseumURL string
+	if viper.GetString("cloud") == flagset.CloudK3d {
+		chartmuseumURL = "http://localhost:8181"
+	} else {
+		chartmuseumURL = fmt.Sprintf("https://chartmuseum.%s", viper.GetString("aws.hostedzonename"))
+	}
+
 	var handOffData bytes.Buffer
+	handOffData.WriteString("\n--- Chartmuseum ")
+	handOffData.WriteString(strings.Repeat("-", 54))
+	handOffData.WriteString(fmt.Sprintf("\n URL: %s", chartmuseumURL))
 
-	handOffData.WriteString("\n--- Museum ")
-	handOffData.WriteString(strings.Repeat("-", 59))
-	handOffData.WriteString(fmt.Sprintf("\n URL: %s\n", fmt.Sprintf("https://chartmuseum.%s", viper.GetString("aws.hostedzonename"))))
-	handOffData.WriteString(" see vault for credentials ")
+	if viper.GetString("cloud") == flagset.CloudK3d {
+		return handOffData.Bytes()
+	} else {
+		handOffData.WriteString("\n see vault for credentials ")
 
-	return handOffData.Bytes()
+		return handOffData.Bytes()
+	}
+
 }
 
 func PrintSectionMetaphor() []byte {
@@ -162,15 +187,30 @@ func PrintSectionMetaphorGo() []byte {
 
 func PrintSectionMetaphorFrontend() []byte {
 	var handOffData bytes.Buffer
+	if viper.GetString("cloud") == flagset.CloudK3d {
+		handOffData.WriteString("\n--- Metaphor ")
+		handOffData.WriteString(strings.Repeat("-", 57))
+		handOffData.WriteString("\n To access the metaphor applications you'll need to \n`kubectl port-forward` to the kubernetes service")
+		handOffData.WriteString("\n\n kubectl -n development port-forward svc/metaphor-frontend-development 3000:443")
+		handOffData.WriteString("\n http://localhost:3000\n")
+		handOffData.WriteString("\n kubectl -n staging port-forward svc/metaphor-frontend-staging 3001:443")
+		handOffData.WriteString("\n http://localhost:3001\n")
+		handOffData.WriteString("\n kubectl -n production port-forward svc/metaphor-frontend-production 3002:443")
+		handOffData.WriteString("\n http://localhost:3002\n")
+		handOffData.WriteString(strings.Repeat("-", 70))
 
-	handOffData.WriteString("\n--- Metaphor Frontend")
-	handOffData.WriteString(strings.Repeat("-", 49))
-	handOffData.WriteString(fmt.Sprintf("\n Development: %s", fmt.Sprintf("https://metaphor-frontend-development.%s", viper.GetString("aws.hostedzonename"))))
-	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", fmt.Sprintf("https://metaphor-frontend-staging.%s", viper.GetString("aws.hostedzonename"))))
-	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", fmt.Sprintf("https://metaphor-frontend-production.%s", viper.GetString("aws.hostedzonename"))))
-	handOffData.WriteString(strings.Repeat("-", 70))
+		return handOffData.Bytes()
+	} else {
+		var handOffData bytes.Buffer
+		handOffData.WriteString("\n--- Metaphor Frontend")
+		handOffData.WriteString(strings.Repeat("-", 57))
+		handOffData.WriteString(fmt.Sprintf("\n Development: %s", fmt.Sprintf("https://metaphor-frontend-development.%s", viper.GetString("aws.hostedzonename"))))
+		handOffData.WriteString(fmt.Sprintf("\n Staging: %s", fmt.Sprintf("https://metaphor-frontend-staging.%s", viper.GetString("aws.hostedzonename"))))
+		handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", fmt.Sprintf("https://metaphor-frontend-production.%s", viper.GetString("aws.hostedzonename"))))
+		handOffData.WriteString(strings.Repeat("-", 70))
 
-	return handOffData.Bytes()
+		return handOffData.Bytes()
+	}
 }
 
 //HandoffScreen - prints the handoff screen
@@ -222,19 +262,13 @@ func LocalHandoffScreen(dryRun bool, silentMode bool) {
 
 	var handOffData bytes.Buffer
 	handOffData.Write(PrintSectionOverview())
-	if viper.GetBool("github.enabled") {
-		handOffData.Write(PrintSectionRepoGithub())
-	} else {
-		handOffData.Write(PrintSectionRepoGitlab())
-	}
+	handOffData.Write(PrintSectionRepoGithub())
 	handOffData.Write(PrintSectionVault())
 	handOffData.Write(PrintSectionArgoCD())
 	handOffData.Write(PrintSectionArgoWorkflows())
 	handOffData.Write(PrintSectionAtlantis())
 	handOffData.Write(PrintSectionMuseum())
 	handOffData.Write(PrintSectionMetaphorFrontend())
-	handOffData.Write(PrintSectionMetaphorGo())
-	handOffData.Write(PrintSectionMetaphor())
 
 	CommandSummary(handOffData)
 

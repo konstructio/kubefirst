@@ -53,7 +53,7 @@ var postInstallCmd = &cobra.Command{
 		openbrowser("http://localhost:9094")
 
 		if viper.GetString("cloud") == flagset.CloudK3d {
-			reports.HandoffLocalScreen(globalFlags.DryRun, globalFlags.SilentMode)
+			reports.LocalHandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
 		} else {
 			reports.HandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
 		}
