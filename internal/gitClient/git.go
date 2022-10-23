@@ -397,7 +397,7 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 }
 
 // todo: refactor
-func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName string) {
+func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName string, branchDestiny plumbing.ReferenceName) {
 
 	cfg := configs.ReadConfig()
 
@@ -416,26 +416,57 @@ func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName st
 
 	w, _ := repo.Worktree()
 
-	log.Println("Committing new changes... PushLocalRepoUpdates")
-	status, err := w.Status()
+	//headRef, err := repo.Head()
+	//ref := plumbing.NewHashReference(branchDestiny, headRef.Hash())
+	//if err = repo.Storer.SetReference(ref); err != nil {
+	//	log.Panic(err)
+	//}
+
+	err = w.Checkout(&git.CheckoutOptions{
+		//Branch: plumbing.ReferenceName("ref/heads/update-s3-backend"),
+		Branch: branchDestiny,
+		Create: true,
+	})
 	if err != nil {
-		log.Println("error getting worktree status", err)
+		fmt.Println(err)
 	}
 
-	for file, s := range status {
-		log.Printf("the file is %s the status is %v", file, s.Worktree)
-		_, err = w.Add(file)
-		if err != nil {
-			log.Println("error getting worktree status", err)
-		}
+	log.Println("Committing new changes... PushLocalRepoUpdates")
+	//status, err := w.Status()
+	//if err != nil {
+	//	log.Println("error getting worktree status", err)
+	//}
+
+	//for file, s := range status {
+	//	//log.Printf("the file is %s the status is %v", file, s.Worktree)
+	//	fmt.Printf("the file is %s the status is %v", file, s.Worktree)
+	//	_, err = w.Add(file)
+	//	if err != nil {
+	//		log.Println("error getting worktree status", err)
+	//	}
+	//}
+
+	kubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", cfg.K1FolderPath)
+	_, err = w.Add(kubefirstGitHubFile)
+	if err != nil {
+		log.Println(err)
 	}
-	w.Commit("hii commiting staged changes to remote", &git.CommitOptions{
+	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", cfg.K1FolderPath)
+	_, err = w.Add(vaultMainFile)
+	if err != nil {
+		log.Println(err)
+	}
+
+	_, err = w.Commit("update s3 terraform backend to minio", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
 			Email: "kubefirst-bot@kubefirst.com",
 			When:  time.Now(),
 		},
 	})
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	token := os.Getenv("GITHUB_AUTH_TOKEN")
 	err = repo.Push(&git.PushOptions{

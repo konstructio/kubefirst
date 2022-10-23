@@ -127,3 +127,49 @@ func (g GithubSession) IsRepoInUse(org string, name string) (bool, error) {
 	log.Printf("check if a repo is in use already")
 	return false, nil
 }
+
+func (g GithubSession) CreatePR(branchName string) error {
+	title := "update S3 backend to minio / internal k8s dns"
+	head := branchName
+	body := "use internal Kubernetes dns"
+	base := "main"
+	pr := github.NewPullRequest{
+		Title: &title,
+		Head:  &head,
+		Body:  &body,
+		Base:  &base,
+	}
+
+	_, resp, err := g.gitClient.PullRequests.Create(
+		context.Background(),
+		"org-k1-converge-2",
+		"gitops",
+		&pr,
+	)
+	if err != nil {
+		return err
+	}
+	log.Printf("pull request create response http code: %d", resp.StatusCode)
+
+	return nil
+}
+
+func (g GithubSession) CommentPR(prNumber int, body string) error {
+
+	issueComment := github.IssueComment{
+		Body: &body,
+	}
+	_, resp, err := g.gitClient.Issues.CreateComment(
+		context.Background(),
+		"org-k1-converge-2",
+		"gitops", prNumber,
+		&issueComment,
+	)
+	if err != nil {
+		return err
+	}
+	log.Printf("pull request comment response http code: %d", resp.StatusCode)
+
+	return nil
+
+}

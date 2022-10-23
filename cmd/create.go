@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
+	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
 	"os/exec"
-	"strings"
 	"syscall"
 
 	"log"
@@ -250,46 +250,62 @@ cluster provisioning process spinning up the services, and validates the livenes
 			}
 		}()
 
-		// part 2
+		/*
 
-		// todo: god, forgive me for this code, I swear I'll update it
-		config := configs.ReadConfig()
-		fmt.Println("---debug---")
-		fmt.Println(config.K1FolderPath)
-		fmt.Println(config.K1FolderPath + "/gitops/terraform/vault/main.tf")
-		fmt.Println("---debug---")
+		 this is atlantis temporary code
 
-		path := "/Users/converge/.k1/gitops/terraform/vault/main.tf"
-		file, err := os.ReadFile(path)
+		*/
+		// 1
+		err = replaceS3Backend()
 		if err != nil {
 			return err
 		}
-		newContents := strings.Replace(string(file), "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000", -1)
-
-		err = os.WriteFile(path, []byte(newContents), 0)
-		if err != nil {
-			return err
-		}
-
-		path2 := "/Users/converge/.k1/gitops/terraform/users/kubefirst-github.tf"
-		file2, err := os.ReadFile(path2)
-		if err != nil {
-			return err
-		}
-		newContents2 := strings.Replace(string(file2), "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000", -1)
-
-		err = os.WriteFile(path2, []byte(newContents2), 0)
-		if err != nil {
-			return err
-		}
+		//
+		// 2 git push to new repo
+		////ref := plumbing.NewHashReference("refs/heads/update-s3-backend", headRef.Hash())
+		//
 		githubHost := viper.GetString("github.host")
-		remoteName := "github"
 		githubOwner := viper.GetString("github.owner")
+		remoteName := "github"
 		localRepo := "gitops"
+		branchName := "update-s3-backend"
+		branchNameRef := plumbing.ReferenceName("refs/heads/" + branchName)
 
-		gitClient.UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName)
+		gitClient.UpdateLocalTFFilesAndPush(
+			githubHost,
+			githubOwner,
+			localRepo,
+			remoteName,
+			branchNameRef,
+		)
 
-		// ---
+		fmt.Println("sleeping after commit...")
+		time.Sleep(3 * time.Second)
+
+		// 3
+		g := githubWrapper.New()
+		err = g.CreatePR(branchName)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println("sleeping after create PR...")
+		time.Sleep(5 * time.Second)
+		//
+		//// 4
+		err = g.CommentPR(3, "atlantis plan")
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		fmt.Println("sleeping before apply...")
+		time.Sleep(120 * time.Second)
+
+		// 5
+		// call atlantis apply
+		err = g.CommentPR(1, "atlantis apply")
+		if err != nil {
+			fmt.Println(err)
+		}
 
 		log.Println("sending mgmt cluster install completed metric")
 

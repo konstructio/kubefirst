@@ -3,6 +3,7 @@ package k3d
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 
@@ -15,7 +16,7 @@ import (
 func AddK3DSecrets(dryrun bool) error {
 	clientset, err := k8s.GetClientSet(dryrun)
 
-	newNamespaces := []string{"github-runner", "atlantis"}
+	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "github-runner", "vault"}
 	for i, s := range newNamespaces {
 		namespace := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s}}
 		_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
