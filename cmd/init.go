@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"os"
