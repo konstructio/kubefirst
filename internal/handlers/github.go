@@ -4,13 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/reports"
-	"github.com/kubefirst/kubefirst/internal/services"
-	"github.com/kubefirst/kubefirst/pkg"
 	"io"
 	"log"
 	"net/http"
+	"os/exec"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/kubefirst/kubefirst/internal/services"
+	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/spf13/viper"
 )
 
 // GitHubDeviceFlow handles https://docs.github.com/apps/building-oauth-apps/authorizing-oauth-apps#device-flow
@@ -43,7 +46,7 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 
 	requestBody, err := json.Marshal(map[string]string{
 		"client_id": pkg.GitHubOAuthClientId,
-		"scope":     "admin:org repo",
+		"scope":     "admin:org repo read:packages write:packages workflows admin:repo_hook",
 	})
 
 	req, err := http.NewRequest(http.MethodPost, gitHubDeviceFlowCodeURL, bytes.NewBuffer(requestBody))
@@ -76,10 +79,14 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 	gitHubTokenReport := reports.GitHubAuthToken(gitHubDeviceFlow.UserCode, gitHubDeviceFlow.VerificationUri)
 	fmt.Println(reports.StyleMessage(gitHubTokenReport))
 
+	// todo add a 10 second countdown to warn browser open
+	time.Sleep(8 * time.Second)
+	exec.Command("open", "https://github.com/login/device").Start()
+
 	// todo: improve the logic for the counter
 	var gitHubAccessToken string
 	var attempts = 10
-	var attemptsControl = attempts + 40
+	var attemptsControl = attempts + 90
 	for i := 0; i < attempts; i++ {
 		gitHubAccessToken, err = handler.service.CheckUserCodeConfirmation(gitHubDeviceFlow.DeviceCode)
 		if err != nil {
@@ -88,6 +95,8 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 
 		if len(gitHubAccessToken) > 0 {
 			fmt.Printf("\n\nGitHub token set!\n\n")
+			viper.Set("github.token", gitHubAccessToken)
+			viper.WriteConfig()
 			return gitHubAccessToken, nil
 		}
 		fmt.Printf("\rwaiting for authorization (%d seconds)", (attemptsControl)-5)
