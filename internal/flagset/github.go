@@ -1,10 +1,8 @@
 package flagset
 
 import (
-	"errors"
 	"log"
 
-	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/addon"
 
 	"github.com/spf13/cobra"
@@ -49,7 +47,6 @@ func DefineGithubCmdFlags(currentCommand *cobra.Command) {
 // ProcessGithubAddCmdFlags - Process github flags or vars
 func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 
-	config := configs.ReadConfig()
 	flags := GithubAddCmdFlags{}
 	flags.GithubEnable = false
 	user, err := ReadConfigString(cmd, "github-user")
@@ -61,14 +58,6 @@ func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 	if err != nil {
 		log.Println("Error Processing - github-org flag")
 		return flags, err
-	}
-
-	// if GitHub installation, and GitHub personal access token is not provided, inform that the token is required for
-	// GitHub installations
-	if len(user) > 0 && len(org) > 0 && len(config.GitHubPersonalAccessToken) == 0 {
-		errorMsg := "GITHUB_AUTH_TOKEN is required for GitHub installation"
-		log.Println(errorMsg)
-		return GithubAddCmdFlags{}, errors.New(errorMsg)
 	}
 
 	owner, err := ReadConfigString(cmd, "github-owner")
