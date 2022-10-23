@@ -98,7 +98,7 @@ var createGithubK3dCmd = &cobra.Command{
 
 		//* add secrets to cluster
 		// todo there is a secret condition in AddK3DSecrets to this not checked
-		executionControl = viper.GetBool("kubernetes.atlantis-secrets.secret.created")
+		executionControl = viper.GetBool("kubernetes.vault.secret.created")
 		if !executionControl {
 			err = k3d.AddK3DSecrets(globalFlags.DryRun)
 			if err != nil {
@@ -193,7 +193,7 @@ var createGithubK3dCmd = &cobra.Command{
 
 		progressPrinter.IncrementTracker("step-apps", 1)
 
-		//* vault in runnin state
+		//* vault in running state
 		executionControl = viper.GetBool("vault.status.running")
 		if !executionControl {
 			// TODO: K3D => We need to check what changes for vault on raft mode, without terraform to unseal it

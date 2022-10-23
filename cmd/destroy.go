@@ -68,13 +68,13 @@ var destroyCmd = &cobra.Command{
 			}()
 
 			//* step 1.2
-			usersTfApplied := viper.GetBool("terraform.users.apply.complete")
-			if usersTfApplied {
-				informUser("terraform destroying users resources", globalFlags.SilentMode)
-				tfEntrypoint := config.GitOpsRepoPath + "/terraform/users"
-				terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
-				informUser("successfully destroyed users resources", globalFlags.SilentMode)
-			}
+			// usersTfApplied := viper.GetBool("terraform.users.apply.complete")
+			// if usersTfApplied {
+			// 	informUser("terraform destroying users resources", globalFlags.SilentMode)
+			// 	tfEntrypoint := config.GitOpsRepoPath + "/terraform/users"
+			// 	terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+			// 	informUser("successfully destroyed users resources", globalFlags.SilentMode)
+			// }
 
 			//* step 1.3 - terraform destroy github
 			githubTfApplied := viper.GetBool("terraform.github.apply.complete")
