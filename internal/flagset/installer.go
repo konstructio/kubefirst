@@ -209,11 +209,12 @@ func experimentalModeTweaks(flags InstallerGenericFlags) InstallerGenericFlags {
 func validateInstallationFlags() error {
 	//If you are changind this rules, please ensure to update:
 	// internal/flagset/init_test.go
-	if len(viper.GetString("adminemail")) < 1 {
-		message := "missing flag --admin-email"
-		log.Println(message)
-		return errors.New(message)
-	}
+	// todo validate on email address if not local
+	// if len(viper.GetString("adminemail")) < 1 {
+	// 	message := "missing flag --admin-email"
+	// 	log.Println(message)
+	// 	return errors.New(message)
+	// }
 	if len(viper.GetString("cloud")) < 1 {
 		message := "missing flag --cloud, supported values: " + CloudAws + ", " + CloudK3d
 		log.Println(message)
