@@ -292,7 +292,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		time.Sleep(5 * time.Second)
 		//
 		//// 4
-		err = g.CommentPR(3, "atlantis plan")
+		err = g.CommentPR(1, "atlantis plan")
 		if err != nil {
 			fmt.Println(err)
 		}
