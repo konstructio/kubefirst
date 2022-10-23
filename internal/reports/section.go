@@ -6,12 +6,14 @@ import (
 	"log"
 	"strings"
 
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/spf13/viper"
 )
 
 func PrintSectionRepoGithub() []byte {
 	var handOffData bytes.Buffer
 
+	// todo construct these urls upfront on init
 	handOffData.WriteString("\n--- Github ")
 	handOffData.WriteString(strings.Repeat("-", 59))
 	handOffData.WriteString(fmt.Sprintf("\n owner: %s", viper.GetString("github.owner")))
@@ -58,19 +60,35 @@ func PrintSectionAws() []byte {
 }
 
 func PrintSectionVault() []byte {
+
+	var vaultURL string
+	if viper.GetString("cloud") == flagset.CloudK3d {
+		vaultURL = "http://localhost:8200"
+	} else {
+		vaultURL = fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename"))
+	}
+
 	var handOffData bytes.Buffer
 	handOffData.WriteString("\n--- Vault ")
 	handOffData.WriteString(strings.Repeat("-", 60))
-	handOffData.WriteString(fmt.Sprintf("\n URL: %s", fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n URL: %s", vaultURL))
 	handOffData.WriteString(fmt.Sprintf("\n token: %s", viper.GetString("vault.token")))
 	return handOffData.Bytes()
 }
 
 func PrintSectionArgoCD() []byte {
+
+	var argoCdURL string
+	if viper.GetString("cloud") == flagset.CloudK3d {
+		argoCdURL = "http://localhost:8080"
+	} else {
+		argoCdURL = fmt.Sprintf("https://argocd.%s", viper.GetString("aws.hostedzonename"))
+	}
+
 	var handOffData bytes.Buffer
 	handOffData.WriteString("\n--- ArgoCD ")
 	handOffData.WriteString(strings.Repeat("-", 59))
-	handOffData.WriteString(fmt.Sprintf("\n URL: %s", fmt.Sprintf("https://argocd.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n URL: %s", argoCdURL))
 	handOffData.WriteString(fmt.Sprintf("\n username: %s", viper.GetString("argocd.admin.username")))
 	handOffData.WriteString(fmt.Sprintf("\n password: %s", viper.GetString("argocd.admin.password")))
 
@@ -78,11 +96,18 @@ func PrintSectionArgoCD() []byte {
 }
 
 func PrintSectionArgoWorkflows() []byte {
-	var handOffData bytes.Buffer
 
+	var argoWorkflowsURL string
+	if viper.GetString("cloud") == flagset.CloudK3d {
+		argoWorkflowsURL = "http://localhost:8080"
+	} else {
+		argoWorkflowsURL = fmt.Sprintf("https://argo.%s", viper.GetString("aws.hostedzonename"))
+	}
+
+	var handOffData bytes.Buffer
 	handOffData.WriteString("\n--- Argo Workflows ")
 	handOffData.WriteString(strings.Repeat("-", 51))
-	handOffData.WriteString(fmt.Sprintf("\n URL: %s", fmt.Sprintf("https://argo.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n URL: %s", argoWorkflowsURL))
 	handOffData.WriteString("\n sso credentials only ")
 	handOffData.WriteString("\n * sso enabled ")
 
@@ -164,6 +189,39 @@ func HandoffScreen(dryRun bool, silentMode bool) {
 	var handOffData bytes.Buffer
 	handOffData.Write(PrintSectionOverview())
 	handOffData.Write(PrintSectionAws())
+	if viper.GetBool("github.enabled") {
+		handOffData.Write(PrintSectionRepoGithub())
+	} else {
+		handOffData.Write(PrintSectionRepoGitlab())
+	}
+	handOffData.Write(PrintSectionVault())
+	handOffData.Write(PrintSectionArgoCD())
+	handOffData.Write(PrintSectionArgoWorkflows())
+	handOffData.Write(PrintSectionAtlantis())
+	handOffData.Write(PrintSectionMuseum())
+	handOffData.Write(PrintSectionMetaphorFrontend())
+	handOffData.Write(PrintSectionMetaphorGo())
+	handOffData.Write(PrintSectionMetaphor())
+
+	CommandSummary(handOffData)
+
+}
+
+//HandoffScreen - prints the handoff screen
+func LocalHandoffScreen(dryRun bool, silentMode bool) {
+	// prepare data for the handoff report
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, LocalHandoffScreen skipped.")
+		return
+	}
+
+	if silentMode {
+		log.Printf("[#99] Silent mode enabled, LocalHandoffScreen skipped, please check ~/.kubefirst file for your cluster and service credentials.")
+		return
+	}
+
+	var handOffData bytes.Buffer
+	handOffData.Write(PrintSectionOverview())
 	if viper.GetBool("github.enabled") {
 		handOffData.Write(PrintSectionRepoGithub())
 	} else {
