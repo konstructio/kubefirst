@@ -2,6 +2,7 @@ package flagset
 
 import (
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/kubefirst/kubefirst/configs"
@@ -147,6 +148,15 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	for _, s := range addonsFlag {
 		addon.AddAddon(s)
 	}
+	//TODO: add unit test for this, after Thiago PR is merged on new append checks
+	if flags.Cloud == CloudAws {
+		//Adds mandatory addon for non-local install
+		addon.AddAddon("cloud")
+	}
+	if flags.Cloud == CloudK3d {
+		//Adds mandatory addon for local install
+		addon.AddAddon("k3d")
+	}
 
 	experimentalMode, err := ReadConfigBool(cmd, "experimental-mode")
 	if err != nil {
@@ -206,6 +216,11 @@ func validateInstallationFlags() error {
 	}
 	if len(viper.GetString("cloud")) < 1 {
 		message := "missing flag --cloud, supported values: " + CloudAws + ", " + CloudK3d
+		log.Println(message)
+		return errors.New(message)
+	}
+	if viper.GetString("cloud") == CloudLocal && !viper.GetBool("github.enabled") {
+		message := fmt.Sprintf(" flag --cloud %s is not supported for non-github installations. Please, provide the flags '--github-user ghuser --github-org ghorg' to be able to use local install  ", CloudK3d)
 		log.Println(message)
 		return errors.New(message)
 	}

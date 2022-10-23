@@ -7,21 +7,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
-
-	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
-
-	"github.com/spf13/viper"
-
+	"os"
 	"strings"
 	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocdModel"
 	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/spf13/viper"
 	yaml2 "gopkg.in/yaml.v2"
+	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 var ArgocdSecretClient coreV1Types.SecretInterface
@@ -106,7 +103,7 @@ func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (
 		return res.StatusCode, "", nil
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return res.StatusCode, "", err
 	}
@@ -156,7 +153,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 		return "", errors.New("unable to retrieve ArgoCD token")
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
 	}
@@ -229,7 +226,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 				log.Print("HTTP status NOK")
 				continue
 			}
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			if err != nil {
 				log.Print("error sending POST request to get argocd auth token:", err)
 				continue
@@ -300,8 +297,30 @@ func ApplyRegistry(dryRun bool) error {
 	return nil
 }
 
-// CreateInitalArgoRepository - Fill and create argocd-init-values.yaml for Github installs
-func CreateInitalArgoRepository(githubURL string) error {
+// ApplyRegistryLocal - Apply Registry Local application
+func ApplyRegistryLocal(dryRun bool) error {
+	config := configs.ReadConfig()
+
+	if viper.GetBool("argocd.registry.applied") {
+		log.Println("skipped ApplyRegistryLocal - ")
+		return nil
+	}
+
+	if !dryRun {
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/registry.yaml", config.K1FolderPath))
+		if err != nil {
+			log.Printf("failed to execute localhost kubectl apply of registry-base: %s", err)
+			return err
+		}
+		time.Sleep(45 * time.Second)
+		viper.Set("argocd.registry.applied", true)
+		viper.WriteConfig()
+	}
+	return nil
+}
+
+// CreateInitialArgoCDRepository - Fill and create argocd-init-values.yaml for Github installs
+func CreateInitialArgoCDRepository(githubURL string) error {
 	config := configs.ReadConfig()
 
 	privateKey := viper.GetString("botprivatekey")
@@ -313,17 +332,19 @@ func CreateInitalArgoRepository(githubURL string) error {
 	argoConfig.Configs.CredentialTemplates.SSHCreds.URL = githubURL
 	argoConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = privateKey
 
-	argoYaml, err := yaml2.Marshal(&argoConfig)
+	argoCdRepoYaml, err := yaml2.Marshal(&argoConfig)
 	if err != nil {
-		log.Printf("error: marsheling yaml for argo config %s", err)
+		log.Printf("error: marshaling yaml for argo config %s", err)
 		return err
 	}
 
-	err = ioutil.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoYaml, 0644)
+	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoCdRepoYaml, 0644)
 	if err != nil {
 		log.Printf("error: could not write argocd-init-values.yaml %s", err)
 		return err
 	}
+	viper.Set("argocd.initial-repository.created", true)
+	viper.WriteConfig()
 	return nil
 }
 

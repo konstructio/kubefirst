@@ -3,11 +3,15 @@ package flagset
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -25,22 +29,13 @@ func FakeInitCmd() *cobra.Command {
 		Use:   "fake-init",
 		Short: "Let's test init",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := ProcessGlobalFlags(cmd)
-			if err != nil {
-				fmt.Fprint(cmd.OutOrStdout(), err.Error())
-			}
-
-			_, err = ProcessGithubAddCmdFlags(cmd)
-			if err != nil {
-				fmt.Fprint(cmd.OutOrStdout(), err.Error())
-			}
-
-			_, err = ProcessInstallerGenericFlags(cmd)
-			if err != nil {
-				fmt.Fprint(cmd.OutOrStdout(), err.Error())
-			}
-
-			_, err = ProcessAwsFlags(cmd)
+			config := configs.ReadConfig()
+			config.KubefirstConfigFilePath = "./logs/.k1_test"
+			_ = os.Remove(config.KubefirstConfigFilePath)
+			pkg.SetupViper(config)
+			log.Println(viper.AllSettings())
+			_, _, _, _, err := InitFlags(cmd)
+			log.Println(viper.AllSettings())
 			if err != nil {
 				fmt.Fprint(cmd.OutOrStdout(), err.Error())
 			}
@@ -93,13 +88,35 @@ func FakeInitAddonsTestCmd() *cobra.Command {
 	return cmd
 }
 
-// Test_Init_k3d_basic
+// Test_Init_k3d_basic - not supported on gitlab
 // simulates: `kubefirst --admin-email user@domain.com --cloud k3d
-func Test_Init_k3d_basic(t *testing.T) {
+func Test_Init_k3d_gitlab(t *testing.T) {
 	cmd := FakeInitCmd()
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
 	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "k3d"})
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
+	out, err := io.ReadAll(b)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(out) == success {
+		t.Errorf("expected \"%s\" got \"%s\"", "set-by-flag", string(out))
+	}
+}
+
+// Test_Init_k3d_basic
+// simulates: `kubefirst --admin-email user@domain.com --cloud k3d --github-user ghuser --github-org ghorg
+func Test_Init_k3d_basic_github(t *testing.T) {
+	os.Setenv("GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
+	defer os.Unsetenv("GITHUB_AUTH_TOKEN")
+	cmd := FakeInitCmd()
+	b := bytes.NewBufferString("")
+	cmd.SetOut(b)
+	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "k3d", "--github-user", "ghuser", "--github-org", "ghorg"})
 	err := cmd.Execute()
 	if err != nil {
 		t.Error(err)
@@ -124,7 +141,7 @@ func Test_Init_aws_basic_missing_hostzone(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -144,7 +161,7 @@ func Test_Init_aws_basic_missing_profile(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -164,7 +181,7 @@ func Test_Init_aws_basic_with_profile(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -184,7 +201,7 @@ func Test_Init_aws_basic_with_arn(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -203,7 +220,7 @@ func Test_Init_aws_basic_with_profile_and_arn(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -213,6 +230,7 @@ func Test_Init_aws_basic_with_profile_and_arn(t *testing.T) {
 }
 
 // Test_Init_by_var_k3d
+// this scenario to test to fail gitlab with k3d as it is not supported
 func Test_Init_by_var_k3d(t *testing.T) {
 	cmd := FakeInitCmd()
 	b := bytes.NewBufferString("")
@@ -223,12 +241,12 @@ func Test_Init_by_var_k3d(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	if err != nil {
 		t.Error(err)
 	}
-	if string(out) != success {
-		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
+	if string(out) == success {
+		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
 	}
 	os.Unsetenv("KUBEFIRST_ADMIN_EMAIL")
 	os.Unsetenv("KUBEFIRST_CLOUD")
@@ -239,10 +257,36 @@ func Test_Init_by_var_aws_profile(t *testing.T) {
 	cmd := FakeInitCmd()
 	b := bytes.NewBufferString("")
 	os.Setenv("KUBEFIRST_ADMIN_EMAIL", "user@domain.com")
+	defer os.Unsetenv("KUBEFIRST_ADMIN_EMAIL")
 	os.Setenv("KUBEFIRST_CLOUD", "aws")
+	defer os.Unsetenv("KUBEFIRST_CLOUD")
 	os.Setenv("KUBEFIRST_PROFILE", "default")
+	defer os.Unsetenv("KUBEFIRST_PROFILE")
 	os.Setenv("KUBEFIRST_HOSTED_ZONE_NAME", "mydomain.com")
+	defer os.Unsetenv("KUBEFIRST_HOSTED_ZONE_NAME")
 	cmd.SetOut(b)
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
+	out, err := io.ReadAll(b)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(out) != success {
+		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
+	}
+
+}
+
+// Test_Init_aws_basic_with_profile
+// simulates: `kubefirst --admin-email user@domain.com --cloud aws --cloud aws --hosted-zone-name my.domain.com --profile default
+func Test_Init_aws_basic_with_profile_config(t *testing.T) {
+	cmd := FakeInitCmd()
+	b := bytes.NewBufferString("")
+	artifactsDir := os.Getenv("ARTIFACTS_SOURCE")
+	cmd.SetOut(b)
+	cmd.SetArgs([]string{"--config", artifactsDir + "/test/artifacts/init/aws_profile.yaml"})
 	err := cmd.Execute()
 	if err != nil {
 		t.Error(err)
@@ -252,12 +296,8 @@ func Test_Init_by_var_aws_profile(t *testing.T) {
 		t.Error(err)
 	}
 	if string(out) != success {
-		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
+		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
 	}
-	os.Unsetenv("KUBEFIRST_ADMIN_EMAIL")
-	os.Unsetenv("KUBEFIRST_CLOUD")
-	os.Unsetenv("KUBEFIRST_PROFILE")
-	os.Unsetenv("KUBEFIRST_HOSTED_ZONE_NAME")
 }
 
 func Test_Init_Addons_Gitlab(t *testing.T) {
@@ -274,13 +314,14 @@ func Test_Init_Addons_Gitlab(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if string(out) != "gitlab" {
+	if string(out) != "gitlab,cloud" {
 		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
 
 func Test_Init_Addons_Github(t *testing.T) {
 	os.Setenv("GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
+	defer os.Unsetenv("GITHUB_AUTH_TOKEN")
 	viper.Set("addons", "")
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
@@ -294,13 +335,14 @@ func Test_Init_Addons_Github(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if string(out) != "github" {
+	if string(out) != "github,cloud" {
 		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }
 
 func Test_Init_Addons_Github_Kusk(t *testing.T) {
 	os.Setenv("GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
+	defer os.Unsetenv("GITHUB_AUTH_TOKEN")
 	viper.Set("addons", "")
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
@@ -314,7 +356,7 @@ func Test_Init_Addons_Github_Kusk(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if string(out) != "github,kusk" {
+	if string(out) != "github,kusk,cloud" {
 		t.Errorf("expected to fail validation, but got \"%s\"", string(out))
 	}
 }

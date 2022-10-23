@@ -18,7 +18,7 @@ func NewTelemetryHandler(service services.SegmentIoService) TelemetryHandler {
 }
 
 // SendCountMetric validate and handles the metric request to the metric service.
-func (handler TelemetryHandler) SendCountMetric(telemetry *domain.Telemetry) error {
+func (handler TelemetryHandler) SendCountMetric(telemetry domain.Telemetry) error {
 
 	err := handler.service.EnqueueCountMetric(
 		telemetry.MetricName,

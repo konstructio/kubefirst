@@ -2,10 +2,11 @@ package state
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/spf13/viper"
-	"log"
 )
 
 // UploadKubefirstToStateStore - Send kubefirst file to state store

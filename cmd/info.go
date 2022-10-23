@@ -33,7 +33,7 @@ var infoCmd = &cobra.Command{
 		infoSummary.WriteString(fmt.Sprintf("Kubefirst config file: %s\n", config.KubefirstConfigFilePath))
 		infoSummary.WriteString(fmt.Sprintf("Kubefirst config folder: %s\n", config.K1FolderPath))
 		infoSummary.WriteString(fmt.Sprintf("Kubectl path: %s\n", config.KubectlClientPath))
-		infoSummary.WriteString(fmt.Sprintf("Terraform path: %s\n", config.TerraformPath))
+		infoSummary.WriteString(fmt.Sprintf("Terraform path: %s\n", config.TerraformClientPath))
 		infoSummary.WriteString(fmt.Sprintf("Kubeconfig path: %s\n", config.KubeConfigPath))
 
 		infoSummary.WriteString(fmt.Sprintf("Kubefirst Version: %s\n", configs.K1Version))

@@ -18,16 +18,70 @@ import (
 	"github.com/kubefirst/kubefirst/pkg"
 )
 
+// DownloadLocalTools - Dowload extra tools needed for local installations scenarios
+func DownloadLocalTools(config *configs.Config) error {
+	toolsDirPath := fmt.Sprintf("%s/tools", config.K1FolderPath)
+	err := createDirIfDontExist(toolsDirPath)
+	if err != nil {
+		return err
+	}
+
+	// https://github.com/k3d-io/k3d/releases/download/v5.4.6/k3d-linux-amd64
+	k3dDownloadUrl := fmt.Sprintf(
+		"https://github.com/k3d-io/k3d/releases/download/%s/k3d-%s-%s",
+		config.K3dVersion,
+		config.LocalOs,
+		config.LocalArchitecture,
+	)
+	err = downloadFile(config.K3dPath, k3dDownloadUrl)
+	if err != nil {
+		return err
+	}
+	err = os.Chmod(config.K3dPath, 0755)
+	if err != nil {
+		return err
+	}
+
+	ngrokDownloadUrl := fmt.Sprintf(
+		"https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-%s-stable-%s-%s.zip",
+		config.NgrokVersion,
+		config.LocalOs,
+		config.LocalArchitecture,
+	)
+	log.Printf("Downloading ngrok from %s", ngrokDownloadUrl)
+	ngrokDownloadZipPath := fmt.Sprintf("%s/tools/ngrok.zip", config.K1FolderPath)
+	err = downloadFile(ngrokDownloadZipPath, ngrokDownloadUrl)
+	if err != nil {
+		log.Println("error reading ngrok file")
+		return err
+	}
+
+	unzipDirectory := fmt.Sprintf("%s/tools", config.K1FolderPath)
+	unzip(ngrokDownloadZipPath, unzipDirectory)
+
+	err = os.Chmod(unzipDirectory, 0777)
+	if err != nil {
+		return err
+	}
+
+	err = os.Chmod(fmt.Sprintf("%s/ngrok", unzipDirectory), 0755)
+	if err != nil {
+		return err
+	}
+	os.RemoveAll(fmt.Sprintf("%s/ngrok.zip", toolsDirPath))
+
+	return nil
+}
+
+// DownloadTools - Dowload tools needed for all installations scenarios
 func DownloadTools(config *configs.Config) error {
 
 	toolsDirPath := fmt.Sprintf("%s/tools", config.K1FolderPath)
 
 	// create folder if it doesn't exist
-	if _, err := os.Stat(toolsDirPath); errors.Is(err, fs.ErrNotExist) {
-		err = os.Mkdir(toolsDirPath, 0777)
-		if err != nil {
-			return err
-		}
+	err := createDirIfDontExist(toolsDirPath)
+	if err != nil {
+		return err
 	}
 
 	kVersion := config.KubectlVersion
@@ -42,7 +96,7 @@ func DownloadTools(config *configs.Config) error {
 		config.LocalArchitecture,
 	)
 	log.Printf("Downloading kubectl from: %s", kubectlDownloadUrl)
-	err := downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
+	err = downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
 	if err != nil {
 		return err
 	}
@@ -271,4 +325,14 @@ func unzip(zipFilepath string, unzipDirectory string) {
 		dstFile.Close()
 		fileInArchive.Close()
 	}
+}
+
+func createDirIfDontExist(toolsDirPath string) error {
+	if _, err := os.Stat(toolsDirPath); errors.Is(err, fs.ErrNotExist) {
+		err = os.Mkdir(toolsDirPath, 0777)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

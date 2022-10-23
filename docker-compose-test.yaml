@@ -6,6 +6,8 @@ services:
       context: .
       dockerfile: ./build/Dockerfile.ci
     working_dir: /home/developer/kubefirst
+    environment:
+      - ARTIFACTS_SOURCE=/home/developer/kubefirst
     # platform: linux/amd64 # enable this to run local tests on Mac M1
     volumes:
       - ./:/home/developer/kubefirst
