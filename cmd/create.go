@@ -3,6 +3,11 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/kubefirst/kubefirst/internal/gitClient"
+	"github.com/kubefirst/kubefirst/internal/githubWrapper"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os/exec"
 	"syscall"
 
@@ -89,9 +94,8 @@ cluster provisioning process spinning up the services, and validates the livenes
 
 		if viper.GetString("cloud") == flagset.CloudK3d {
 			// todo need to add go channel to control when ngrok should close
-			go pkg.RunNgrok(context.TODO(), "localhost:4141")
-			time.Sleep(10 * time.Second)
-
+			go pkg.RunNgrok(context.TODO(), pkg.LocalAtlantisURL)
+			time.Sleep(5 * time.Second)
 		}
 
 		if !viper.GetBool("kubefirst.done") {
@@ -200,6 +204,109 @@ cluster provisioning process spinning up the services, and validates the livenes
 				log.Println(err)
 			}
 		}
+
+		//kPortForwardAtlantis, err := k8s.PortForward(globalFlags.DryRun, "atlantis", "svc/atlantis", "4141:80")
+		//defer func() {
+		//	err = kPortForwardAtlantis.Process.Signal(syscall.SIGTERM)
+		//	if err != nil {
+		//		log.Println("error closing kPortForwardAtlantis")
+		//	}
+		//}()
+
+		// ---
+		clientset, err := k8s.GetClientSet(false)
+		atlantisSecrets, err := clientset.CoreV1().Secrets("atlantis").Get(context.TODO(), "atlantis-secrets", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		// todo: hardcoded
+		atlantisSecrets.Data["TF_VAR_vault_addr"] = []byte("http://vault.vault.svc.cluster.local:8200")
+		atlantisSecrets.Data["VAULT_ADDR"] = []byte("http://vault.vault.svc.cluster.local:8200")
+
+		_, err = clientset.CoreV1().Secrets("atlantis").Update(context.TODO(), atlantisSecrets, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+
+		err = clientset.CoreV1().Pods("atlantis").Delete(context.TODO(), "atlantis-0", metav1.DeleteOptions{})
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("---debug---")
+		log.Println("sleeping after kill atlantis pod")
+		log.Println("---debug---")
+
+		time.Sleep(10 * time.Second)
+
+		log.Println("---debug---")
+		log.Println("new port forward atlantis")
+		log.Println("---debug---")
+		kPortForwardAtlantis, err := k8s.PortForward(false, "atlantis", "svc/atlantis", "4141:80")
+		defer func() {
+			err = kPortForwardAtlantis.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Println("error closing kPortForwardAtlantis")
+			}
+		}()
+
+		/*
+
+		 this is atlantis temporary code
+
+		*/
+		// 1
+		err = replaceS3Backend()
+		if err != nil {
+			return err
+		}
+		//
+		// 2 git push to new repo
+		////ref := plumbing.NewHashReference("refs/heads/update-s3-backend", headRef.Hash())
+		//
+		githubHost := viper.GetString("github.host")
+		githubOwner := viper.GetString("github.owner")
+		remoteName := "github"
+		localRepo := "gitops"
+		branchName := "update-s3-backend"
+		branchNameRef := plumbing.ReferenceName("refs/heads/" + branchName)
+
+		gitClient.UpdateLocalTFFilesAndPush(
+			githubHost,
+			githubOwner,
+			localRepo,
+			remoteName,
+			branchNameRef,
+		)
+
+		fmt.Println("sleeping after commit...")
+		time.Sleep(3 * time.Second)
+
+		// 3
+		g := githubWrapper.New()
+		err = g.CreatePR(branchName)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println("sleeping after create PR...")
+		time.Sleep(5 * time.Second)
+		//
+		//// 4
+		err = g.CommentPR(3, "atlantis plan")
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		fmt.Println("sleeping before apply...")
+		time.Sleep(120 * time.Second)
+
+		// 5
+		// call atlantis apply
+		err = g.CommentPR(1, "atlantis apply")
+		if err != nil {
+			fmt.Println(err)
+		}
+
 		log.Println("sending mgmt cluster install completed metric")
 
 		if globalFlags.UseTelemetry {
