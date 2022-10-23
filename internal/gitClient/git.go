@@ -395,3 +395,89 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 	}
 	log.Println("successfully pushed detokenized gitops content to github/", viper.GetString("github.owner"))
 }
+
+// todo: refactor
+func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName string, branchDestiny plumbing.ReferenceName) {
+
+	cfg := configs.ReadConfig()
+
+	localDirectory := fmt.Sprintf("%s/%s", cfg.K1FolderPath, localRepo)
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform", cfg.K1FolderPath))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform.lock.hcl", cfg.K1FolderPath))
+
+	log.Println("opening repository with gitClient: ", localDirectory)
+	repo, err := git.PlainOpen(localDirectory)
+	if err != nil {
+		log.Panic("error opening the localDirectory: ", localDirectory, err)
+	}
+
+	url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, localRepo)
+	log.Printf("git push to  remote: %s url: %s", remoteName, url)
+
+	w, _ := repo.Worktree()
+
+	//headRef, err := repo.Head()
+	//ref := plumbing.NewHashReference(branchDestiny, headRef.Hash())
+	//if err = repo.Storer.SetReference(ref); err != nil {
+	//	log.Panic(err)
+	//}
+
+	err = w.Checkout(&git.CheckoutOptions{
+		//Branch: plumbing.ReferenceName("ref/heads/update-s3-backend"),
+		Branch: branchDestiny,
+		Create: true,
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	log.Println("Committing new changes... PushLocalRepoUpdates")
+	//status, err := w.Status()
+	//if err != nil {
+	//	log.Println("error getting worktree status", err)
+	//}
+
+	//for file, s := range status {
+	//	//log.Printf("the file is %s the status is %v", file, s.Worktree)
+	//	fmt.Printf("the file is %s the status is %v", file, s.Worktree)
+	//	_, err = w.Add(file)
+	//	if err != nil {
+	//		log.Println("error getting worktree status", err)
+	//	}
+	//}
+
+	kubefirstGitHubFile := "terraform/users/kubefirst-github.tf"
+	_, err = w.Add(kubefirstGitHubFile)
+	if err != nil {
+		log.Println(err)
+	}
+	vaultMainFile := "terraform/vault/main.tf"
+	_, err = w.Add(vaultMainFile)
+	if err != nil {
+		log.Println(err)
+	}
+
+	_, err = w.Commit("update s3 terraform backend to minio", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "kubefirst-bot",
+			Email: "kubefirst-bot@kubefirst.com",
+			When:  time.Now(),
+		},
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	err = repo.Push(&git.PushOptions{
+		RemoteName: remoteName,
+		Auth: &http.BasicAuth{
+			Username: "kubefirst-bot",
+			Password: token,
+		},
+	})
+	if err != nil {
+		log.Panicf("error pushing to remote %s: %s", remoteName, err)
+	}
+	log.Println("successfully pushed detokenized gitops content to github/", viper.GetString("github.owner"))
+}

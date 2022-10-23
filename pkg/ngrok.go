@@ -20,7 +20,7 @@ func RunNgrok(ctx context.Context, dest string) {
 	}
 
 	fmt.Println("tunnel created: ", tunnel.URL())
-	viper.Set("github.atlantis.webhook.url", tunnel.URL())
+	viper.Set("github.atlantis.webhook.url", tunnel.URL()+"/events")
 	viper.WriteConfig()
 
 	for {
