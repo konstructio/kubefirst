@@ -4,7 +4,7 @@ const (
 	ArgoCDLocalBaseURL  = "https://localhost:8080/api/v1"
 	JSONContentType     = "application/json"
 	SoftServerURI       = "ssh://127.0.0.1:8022/config"
-	GitHubOAuthClientId = "cfe20fec21fd8126d9be" // todo: update it
+	GitHubOAuthClientId = "Iv1.e783285e6ad438ac" // todo: update it
 )
 
 // SegmentIO constants
