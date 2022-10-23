@@ -288,14 +288,10 @@ cluster provisioning process spinning up the services, and validates the livenes
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Println("sleeping after create PR...")
+		log.Println("sleeping after create PR...")
 		time.Sleep(5 * time.Second)
-		//
-		//// 4
-		err = g.CommentPR(1, "atlantis plan")
-		if err != nil {
-			fmt.Println(err)
-		}
+		log.Println("sleeping... atlantis plan should be running")
+		time.Sleep(5 * time.Second)
 
 		fmt.Println("sleeping before apply...")
 		time.Sleep(120 * time.Second)
