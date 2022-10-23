@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"log"
+	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -35,6 +38,37 @@ validated and configured.`,
 		if err != nil {
 			return err
 		}
+
+		//Please don't change the order of this block, wihtout updating
+		// internal/flagset/init_test.go
+
+		if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
+			return err
+		}
+
+		if viper.GetString("cloud") == flagset.CloudK3d {
+			if config.GitHubPersonalAccessToken == "" && !globalFlags.SilentMode {
+
+				httpClient := http.DefaultClient
+				gitHubService := services.NewGitHubService(httpClient)
+				gitHubHandler := handlers.NewGitHubHandler(gitHubService)
+				gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
+				if err != nil {
+					return err
+				}
+
+				if len(gitHubAccessToken) == 0 {
+					return errors.New("unable to retrieve a GitHub token for the user")
+				}
+
+				// todo: set common way to load env. values (viper->struct->load-env)
+				if err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
+					return err
+				}
+				log.Println("\nGITHUB_AUTH_TOKEN set via OAuth")
+			}
+		}
+
 		if globalFlags.SilentMode {
 			informUser(
 				"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
@@ -69,10 +103,6 @@ validated and configured.`,
 		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 1)
 
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
-
-		if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
-			return err
-		}
 
 		log.Println("sending init started metric")
 
