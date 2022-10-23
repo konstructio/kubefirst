@@ -64,7 +64,7 @@ func AddK3DSecrets(dryrun bool) error {
 	viper.Set("kubernetes.argo-ci.secret.created", true)
 	viper.WriteConfig()
 
-	dockerConfigString := fmt.Sprintf(`{"auths": {"https://ghcr.io/": {"auth": "%s:%s"}}}`, viper.GetString("github.user"), os.Getenv("GITHUB_AUTH_TOKEN"))
+	dockerConfigString := fmt.Sprintf(`{"auths": {"https://ghcr.io/": {"auth": "%s:%s"}}}`, viper.GetString("github.owner"), os.Getenv("GITHUB_AUTH_TOKEN"))
 	argoDockerSecrets := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "argo"},
 		Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
