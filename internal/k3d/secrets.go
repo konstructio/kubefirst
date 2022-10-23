@@ -2,6 +2,7 @@ package k3d
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -64,7 +65,11 @@ func AddK3DSecrets(dryrun bool) error {
 	viper.Set("kubernetes.argo-ci.secret.created", true)
 	viper.WriteConfig()
 
-	dockerConfigString := fmt.Sprintf(`{"auths": {"https://ghcr.io/": {"auth": "%s:%s"}}}`, viper.GetString("github.owner"), os.Getenv("GITHUB_AUTH_TOKEN"))
+	usernamePasswordString := fmt.Sprintf("%s:%s", viper.GetString("github.user"), os.Getenv("GITHUB_AUTH_TOKEN"))
+	usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+
+	dockerConfigString := fmt.Sprintf(`{"auths": {"https://ghcr.io/": {"auth": "%s"}}}`, usernamePasswordStringB64)
+
 	argoDockerSecrets := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "argo"},
 		Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
