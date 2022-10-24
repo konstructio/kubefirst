@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"github.com/denisbrodbeck/machineid"
 	"reflect"
 	"testing"
 )
@@ -8,6 +9,10 @@ import (
 func TestNewTelemetry(t *testing.T) {
 
 	validTelemetry := Telemetry{MetricName: "test metric", Domain: "example.com", CLIVersion: "0.0.0"}
+	machineId, err := machineid.ID()
+	if err != nil {
+		t.Error(err)
+	}
 
 	type args struct {
 		metricName string
@@ -47,7 +52,11 @@ func TestNewTelemetry(t *testing.T) {
 				domain:     "",
 				CLIVersion: "0.0.0",
 			},
-			want:    Telemetry{},
+			want: Telemetry{
+				MetricName: "test metric",
+				Domain:     machineId,
+				CLIVersion: "0.0.0",
+			},
 			wantErr: false,
 		},
 		{
