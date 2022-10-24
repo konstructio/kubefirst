@@ -327,6 +327,10 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 	})
 
 	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	if len(token) == 0 {
+		token = viper.GetString("github.token")
+	}
+
 	err = repo.Push(&git.PushOptions{
 		RemoteName: remoteName,
 		Auth: &http.BasicAuth{
