@@ -8,6 +8,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"os"
 	"os/exec"
 	"syscall"
 
@@ -89,6 +90,15 @@ cluster provisioning process spinning up the services, and validates the livenes
 			err = telemetryHandlerStart.SendCountMetric(telemetryDomainStart)
 			if err != nil {
 				log.Println(err)
+			}
+		}
+
+		token := os.Getenv("GITHUB_AUTH_TOKEN")
+		if len(token) == 0 {
+			token = viper.GetString("github.token")
+			err := os.Setenv("GITHUB_AUTH_TOKEN", token)
+			if err != nil {
+				return err
 			}
 		}
 
@@ -214,6 +224,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		//}()
 
 		// ---
+		// todo: (start) we can remove it, the secrets are now coming from Vault (run a full installation after removing to confirm)
 		clientset, err := k8s.GetClientSet(false)
 		atlantisSecrets, err := clientset.CoreV1().Secrets("atlantis").Get(context.TODO(), "atlantis-secrets", metav1.GetOptions{})
 		if err != nil {
@@ -249,6 +260,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 				log.Println("error closing kPortForwardAtlantis")
 			}
 		}()
+		// todo: (end)
 
 		// todo: wire it up in the architecture / files / folder
 
