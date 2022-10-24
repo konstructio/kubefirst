@@ -42,7 +42,7 @@ func BuildCreateHandOffReport(clusterData CreateHandOff) bytes.Buffer {
 	var handOffData bytes.Buffer
 	handOffData.WriteString(strings.Repeat("-", 70))
 	handOffData.WriteString(fmt.Sprintf("\nCluster %q is up and running!:", clusterData.ClusterName))
-	handOffData.WriteString(fmt.Sprintf("\nSave this information for future use, once you leave this screen some of this information is lost. "))
+	handOffData.WriteString("\nThis information is available at $HOME/.kubefirst ")
 	handOffData.WriteString(fmt.Sprintf("\nPress ESC to leave this screen and return to shell."))
 	//handOffData.WriteString(strings.Repeat("-", 70))
 

@@ -1,17 +1,18 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
-    "fmt"
-	"time"
 	"runtime"
+	"time"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/reports"
-    
-    "github.com/kubefirst/kubefirst/pkg"
+
+	"github.com/kubefirst/kubefirst/pkg"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var postInstallCmd = &cobra.Command{
@@ -29,7 +30,6 @@ var postInstallCmd = &cobra.Command{
 			return err
 		}
 
-		
 		if createFlags.EnableConsole {
 			log.Println("Starting the presentation of console and api for the handoff screen")
 			go func() {
@@ -50,8 +50,14 @@ var postInstallCmd = &cobra.Command{
 			log.Println("Skipping the presentation of console and api for the handoff screen")
 		}
 
-        openbrowser("http://localhost:9094")
-		reports.HandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
+		openbrowser("http://localhost:9094")
+
+		if viper.GetString("cloud") == flagset.CloudK3d {
+			reports.LocalHandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
+		} else {
+			reports.HandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
+		}
+
 		time.Sleep(time.Millisecond * 2000)
 		return nil
 	},
