@@ -40,10 +40,10 @@ validated and configured.`,
 		}
 
 		// command line flags
-		cloudValue, err := cmd.Flags().GetString("cloud")
-		if err != nil {
-			return err
-		}
+		// cloudValue, err := cmd.Flags().GetString("cloud")
+		// if err != nil {
+		// 	return err
+		// }
 
 		// todo: wip
 		//if cloudValue == flagset.CloudK3d {
