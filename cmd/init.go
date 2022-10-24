@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -45,29 +47,28 @@ validated and configured.`,
 			return err
 		}
 
-		// todo: wip
-		//if cloudValue == flagset.CloudK3d {
-		//	if config.GitHubPersonalAccessToken == "" {
-		//
-		//		httpClient := http.DefaultClient
-		//		gitHubService := services.NewGitHubService(httpClient)
-		//		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-		//		gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
-		//		if err != nil {
-		//			return err
-		//		}
-		//
-		//		if len(gitHubAccessToken) == 0 {
-		//			return errors.New("unable to retrieve a GitHub token for the user")
-		//		}
-		//
-		//		// todo: set common way to load env. values (viper->struct->load-env)
-		//		if err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
-		//			return err
-		//		}
-		//		log.Println("\nGITHUB_AUTH_TOKEN set via OAuth")
-		//	}
-		//}
+		if cloudValue == flagset.CloudK3d {
+			if config.GitHubPersonalAccessToken == "" {
+
+				httpClient := http.DefaultClient
+				gitHubService := services.NewGitHubService(httpClient)
+				gitHubHandler := handlers.NewGitHubHandler(gitHubService)
+				gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
+				if err != nil {
+					return err
+				}
+
+				if len(gitHubAccessToken) == 0 {
+					return errors.New("unable to retrieve a GitHub token for the user")
+				}
+
+				// todo: set common way to load env. values (viper->struct->load-env)
+				if err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
+					return err
+				}
+				log.Println("\nGITHUB_AUTH_TOKEN set via OAuth")
+			}
+		}
 
 		if os.Getenv("GITHUB_AUTH_TOKEN") != "" {
 			viper.Set("github.token", os.Getenv("GITHUB_AUTH_TOKEN"))

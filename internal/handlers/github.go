@@ -43,10 +43,10 @@ func NewGitHubHandler(gitHubService *services.GitHubService) *GitHubHandler {
 func (handler GitHubHandler) AuthenticateUser() (string, error) {
 
 	gitHubDeviceFlowCodeURL := "https://github.com/login/device/code"
-
+	// todo: update scope list, we have more than we need at the moment
 	requestBody, err := json.Marshal(map[string]string{
 		"client_id": pkg.GitHubOAuthClientId,
-		"scope":     "admin:org repo read:packages write:packages workflows admin:repo_hook",
+		"scope":     "repo public_repo admin:repo_hook admin:org admin:public_key admin:org_hook user project delete_repo write:packages admin:gpg_key workflow",
 	})
 
 	req, err := http.NewRequest(http.MethodPost, gitHubDeviceFlowCodeURL, bytes.NewBuffer(requestBody))
