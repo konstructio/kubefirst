@@ -42,7 +42,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 
 		if viper.GetString("cloud") == flagset.CloudLocal {
 			envs["TF_VAR_email_address"] = viper.GetString("adminemail")
-			envs["TF_VAR_github_token"] = os.Getenv("GITHUB_AUTH_TOKEN")
+			envs["TF_VAR_github_token"] = viper.GetString("github.token")
 			envs["TF_VAR_vault_addr"] = viper.GetString("vault.local.service")
 			envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
 			envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
@@ -64,7 +64,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_email_address"] = viper.GetString("adminemail")
-		envs["TF_VAR_github_token"] = os.Getenv("GITHUB_AUTH_TOKEN")
+		envs["TF_VAR_github_token"] = viper.GetString("github.token")
 		envs["TF_VAR_hosted_zone_id"] = viper.GetString("aws.hostedzoneid") //# TODO: are we using this?
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 		envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
@@ -79,7 +79,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		fmt.Println("gitlab")
 		return envs
 	case "github":
-		envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
+		envs["GITHUB_TOKEN"] = viper.GetString("github.token")
 		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 		envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
 		envs["TF_VAR_atlantis_repo_webhook_url"] = viper.GetString("github.atlantis.webhook.url")
@@ -87,7 +87,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 
 		// todo: add validation for localhost
 		envs["TF_VAR_email_address"] = viper.GetString("adminemail")
-		envs["TF_VAR_github_token"] = os.Getenv("GITHUB_AUTH_TOKEN")
+		envs["TF_VAR_github_token"] = viper.GetString("github.token")
 		envs["TF_VAR_vault_addr"] = viper.GetString("vault.local.service")
 		envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
 		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")

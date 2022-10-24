@@ -91,7 +91,7 @@ func ConfigureVault(dryRun bool) {
 	envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 	envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 	envs["TF_VAR_email_address"] = viper.GetString("adminemail")
-	envs["TF_VAR_github_token"] = os.Getenv("GITHUB_AUTH_TOKEN")
+	envs["TF_VAR_github_token"] = viper.GetString("github.token")
 	envs["TF_VAR_hosted_zone_id"] = viper.GetString("aws.hostedzoneid") //# TODO: are we using this?
 	envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 	envs["TF_VAR_vault_token"] = vaultToken
@@ -156,7 +156,7 @@ func GetOidcClientCredentials(dryRun bool) {
 
 	oidcApps := []string{"argo", "argocd"}
 
-	if !viper.GetBool("github.enabled") {
+	if viper.GetString("gitprovider") == "gitlab" {
 		oidcApps = append(oidcApps, "gitlab")
 	}
 

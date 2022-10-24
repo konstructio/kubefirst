@@ -34,11 +34,6 @@ validated and configured.`,
 		infoCmd.Run(cmd, args)
 		config := configs.ReadConfig()
 
-		globalFlags, githubFlags, installerFlags, awsFlags, err := flagset.InitFlags(cmd)
-		if err != nil {
-			return err
-		}
-
 		//Please don't change the order of this block, wihtout updating
 		// internal/flagset/init_test.go
 
@@ -46,8 +41,14 @@ validated and configured.`,
 			return err
 		}
 
-		if viper.GetString("cloud") == flagset.CloudK3d {
-			if config.GitHubPersonalAccessToken == "" && !globalFlags.SilentMode {
+		// command line flags
+		cloudValue, err := cmd.Flags().GetString("cloud")
+		if err != nil {
+			return err
+		}
+
+		if cloudValue == flagset.CloudK3d {
+			if config.GitHubPersonalAccessToken == "" {
 
 				httpClient := http.DefaultClient
 				gitHubService := services.NewGitHubService(httpClient)
@@ -69,6 +70,17 @@ validated and configured.`,
 			}
 		}
 
+		if os.Getenv("GITHUB_AUTH_TOKEN") != "" {
+			viper.Set("github.token", os.Getenv("GITHUB_AUTH_TOKEN"))
+		} else {
+			log.Fatal("cannot create a local cluster without a github auth token. please export your GITHUB_AUTH_TOKEN in your terminal.")
+		}
+
+		globalFlags, githubFlags, installerFlags, awsFlags, err := flagset.InitFlags(cmd)
+		if err != nil {
+			return err
+		}
+
 		if globalFlags.SilentMode {
 			informUser(
 				"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
@@ -77,7 +89,7 @@ validated and configured.`,
 		}
 
 		log.Println("github:", githubFlags.GithubHost)
-		log.Println("github:", githubFlags.GithubOrg)
+		log.Println("github:", githubFlags.GithubOwner)
 		log.Println("github:", githubFlags.GithubUser)
 		log.Println("dry run enabled:", globalFlags.DryRun)
 

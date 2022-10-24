@@ -51,15 +51,15 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		return nil
 	}
 
-	if viper.GetBool("github.enabled") && strings.Contains(path, "-gitlab.tf") {
-		log.Println("github is enabled, removing gitlab terraform file:", path)
+	if viper.GetString("gitprovider") == "github" && strings.Contains(path, "-gitlab.tf") {
+		log.Println("github provider specified, removing gitlab terraform file:", path)
 		err = os.Remove(path)
 		if err != nil {
 			log.Panic(err)
 		}
 		return nil
 	}
-	if !viper.GetBool("github.enabled") && strings.Contains(path, "-github.tf") {
+	if viper.GetString("gitprovider") == "gitlab" && strings.Contains(path, "-github.tf") {
 		log.Println("gitlab is enabled, removing github terraform file:", path)
 		err = os.Remove(path)
 		if err != nil {
@@ -111,8 +111,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		//Please, don't remove comments on this file unless you added it
 		// todo should Detokenize be a switch statement based on a value found in viper?
 		gitlabConfigured := viper.GetBool("gitlab.keyuploaded")
-		//githubConfigured := viper.GetBool("github.enabled")
-
+		
 		newContents := string(read)
 
 		botPublicKey := viper.GetString("botpublickey")
@@ -133,10 +132,9 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubOrg := viper.GetString(("github.org"))
 		githubUser := viper.GetString(("github.user"))
 
-		//TODO:  We need to fix this
+		//TODO: We need to fix this
 		githubToken := os.Getenv("GITHUB_AUTH_TOKEN")
-		//TODO: Make this more clear
-		isGithubMode := viper.GetBool("github.enabled")
+		
 		//todo: get from viper
 		gitopsRepo := "gitops"
 		repoPathHTTPSGitlab := "https://gitlab." + hostedZoneName + "/kubefirst/" + gitopsRepo
@@ -148,7 +146,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		var repoPathSSH string
 		var repoPathPrefered string
 
-		if isGithubMode {
+		if viper.GetString("gitprovider") == "github" {
 			repoPathHTTPS = "https://" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
 			repoPathSSH = "git@" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
 			repoPathPrefered = repoPathSSH

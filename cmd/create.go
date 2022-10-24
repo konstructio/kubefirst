@@ -99,7 +99,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		}
 
 		if !viper.GetBool("kubefirst.done") {
-			if viper.GetBool("github.enabled") {
+			if viper.GetString("gitprovider") == "github" {
 				log.Println("Installing Github version of Kubefirst")
 				viper.Set("git.mode", "github")
 				if viper.GetString("cloud") == flagset.CloudLocal {
