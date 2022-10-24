@@ -61,7 +61,7 @@ func TestArgoWorkflowLivenessIntegration(t *testing.T) {
 
 	var argoURL string
 	if viper.GetString("cloud") == flagset.CloudK3d {
-		argoURL = "http://localhost:8080"
+		argoURL = "http://localhost:2746"
 	} else {
 		argoURL = fmt.Sprintf("https://argocd.%s", viper.GetString("aws.hostedzonename"))
 	}
