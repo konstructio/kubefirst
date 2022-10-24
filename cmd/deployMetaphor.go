@@ -47,7 +47,7 @@ var deployMetaphorCmd = &cobra.Command{
 				log.Println("Removed repo pre-clone:", directory)
 			}
 		*/
-		if viper.GetBool("github.enabled") {
+		if viper.GetString("gitprovider") == "github" {
 			return metaphor.DeployMetaphorGithub(globalFlags)
 		} else {
 			return metaphor.DeployMetaphorGitlab(globalFlags)

@@ -71,7 +71,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 
 	repo, err := git.PlainOpen(directory)
 
-	if viper.GetBool("github.enabled") {
+	if viper.GetString("gitprovider") == "github" {
 		githubHost := viper.GetString("github.host")
 		githubOwner := viper.GetString("github.owner")
 
@@ -151,7 +151,7 @@ func UpdateForLocalMode(directory string) error {
 
 		},
 	}
-	err := cp.Copy(directory+"/localhost", directory, opt)
+	err := cp.Copy(directory + "/localhost", directory, opt)
 	if err != nil {
 		log.Println("Error populating gitops with local setup:", err)
 		return err

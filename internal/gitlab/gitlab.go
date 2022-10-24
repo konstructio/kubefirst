@@ -372,7 +372,7 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 
 	envs["GITLAB_BASE_URL"] = viper.GetString("gitlab.local.service")
 
-	if !skipGitlabTerraform && !viper.GetBool("github.enabled") {
+	if !skipGitlabTerraform && viper.GetString("gitprovider") == "gitlab" {
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
 			log.Panicf("failed to terraform init gitlab %s", err)

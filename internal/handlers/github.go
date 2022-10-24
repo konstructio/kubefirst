@@ -98,6 +98,7 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 
 			fmt.Printf("\n\nGitHub token set!\n\n")
 			viper.Set("github.token", gitHubAccessToken)
+			viper.Set("github.user", githubOwner) // TODO: deal with it
 			viper.Set("github.owner", githubOwner)
 			viper.WriteConfig()
 			return gitHubAccessToken, nil
