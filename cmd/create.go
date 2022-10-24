@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"syscall"
+
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os/exec"
-	"syscall"
 
 	"log"
 	"time"
@@ -89,6 +91,15 @@ cluster provisioning process spinning up the services, and validates the livenes
 			err = telemetryHandlerStart.SendCountMetric(telemetryDomainStart)
 			if err != nil {
 				log.Println(err)
+			}
+		}
+
+		token := os.Getenv("GITHUB_AUTH_TOKEN")
+		if len(token) == 0 {
+			token = viper.GetString("github.token")
+			err := os.Setenv("GITHUB_AUTH_TOKEN", token)
+			if err != nil {
+				return err
 			}
 		}
 
@@ -214,88 +225,92 @@ cluster provisioning process spinning up the services, and validates the livenes
 		//}()
 
 		// ---
-		clientset, err := k8s.GetClientSet(false)
-		atlantisSecrets, err := clientset.CoreV1().Secrets("atlantis").Get(context.TODO(), "atlantis-secrets", metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-
-		// todo: hardcoded
-		atlantisSecrets.Data["TF_VAR_vault_addr"] = []byte("http://vault.vault.svc.cluster.local:8200")
-		atlantisSecrets.Data["VAULT_ADDR"] = []byte("http://vault.vault.svc.cluster.local:8200")
-
-		_, err = clientset.CoreV1().Secrets("atlantis").Update(context.TODO(), atlantisSecrets, metav1.UpdateOptions{})
-		if err != nil {
-			return err
-		}
-
-		err = clientset.CoreV1().Pods("atlantis").Delete(context.TODO(), "atlantis-0", metav1.DeleteOptions{})
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println("---debug---")
-		log.Println("sleeping after kill atlantis pod")
-		log.Println("---debug---")
-
-		time.Sleep(10 * time.Second)
-
-		log.Println("---debug---")
-		log.Println("new port forward atlantis")
-		log.Println("---debug---")
-		kPortForwardAtlantis, err := k8s.PortForward(false, "atlantis", "svc/atlantis", "4141:80")
-		defer func() {
-			err = kPortForwardAtlantis.Process.Signal(syscall.SIGTERM)
+		// todo: (start) we can remove it, the secrets are now coming from Vault (run a full installation after removing to confirm)
+		if viper.GetString("cloud") == flagset.CloudK3d {
+			clientset, err := k8s.GetClientSet(false)
+			atlantisSecrets, err := clientset.CoreV1().Secrets("atlantis").Get(context.TODO(), "atlantis-secrets", metav1.GetOptions{})
 			if err != nil {
-				log.Println("error closing kPortForwardAtlantis")
+				return err
 			}
-		}()
 
-		// todo: wire it up in the architecture / files / folder
+			// todo: hardcoded
+			atlantisSecrets.Data["TF_VAR_vault_addr"] = []byte("http://vault.vault.svc.cluster.local:8200")
+			atlantisSecrets.Data["VAULT_ADDR"] = []byte("http://vault.vault.svc.cluster.local:8200")
 
-		// update terraform s3 backend to internal k8s dns (s3/minio bucket)
-		err = pkg.ReplaceS3Backend()
-		if err != nil {
-			return err
-		}
+			_, err = clientset.CoreV1().Secrets("atlantis").Update(context.TODO(), atlantisSecrets, metav1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
 
-		// create a new branch and push changes
-		githubHost := viper.GetString("github.host")
-		githubOwner := viper.GetString("github.owner")
-		remoteName := "github"
-		localRepo := "gitops"
-		branchName := "update-s3-backend"
-		branchNameRef := plumbing.ReferenceName("refs/heads/" + branchName)
+			err = clientset.CoreV1().Pods("atlantis").Delete(context.TODO(), "atlantis-0", metav1.DeleteOptions{})
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Println("---debug---")
+			log.Println("sleeping after kill atlantis pod")
+			log.Println("---debug---")
 
-		gitClient.UpdateLocalTFFilesAndPush(
-			githubHost,
-			githubOwner,
-			localRepo,
-			remoteName,
-			branchNameRef,
-		)
+			time.Sleep(10 * time.Second)
 
-		fmt.Println("sleeping after commit...")
-		time.Sleep(3 * time.Second)
+			log.Println("---debug---")
+			log.Println("new port forward atlantis")
+			log.Println("---debug---")
+			kPortForwardAtlantis, err := k8s.PortForward(false, "atlantis", "svc/atlantis", "4141:80")
+			defer func() {
+				err = kPortForwardAtlantis.Process.Signal(syscall.SIGTERM)
+				if err != nil {
+					log.Println("error closing kPortForwardAtlantis")
+				}
+			}()
+			// todo: (end)
 
-		// create a PR, atlantis will identify it's a terraform change/file update and,
-		// trigger atlantis plan
-		g := githubWrapper.New()
-		err = g.CreatePR(branchName)
-		if err != nil {
-			fmt.Println(err)
-		}
-		log.Println("sleeping after create PR...")
-		time.Sleep(5 * time.Second)
-		log.Println("sleeping... atlantis plan should be running")
-		time.Sleep(5 * time.Second)
+			// todo: wire it up in the architecture / files / folder
 
-		fmt.Println("sleeping before apply...")
-		time.Sleep(120 * time.Second)
+			// update terraform s3 backend to internal k8s dns (s3/minio bucket)
+			err = pkg.ReplaceS3Backend()
+			if err != nil {
+				return err
+			}
 
-		// after 120 seconds, it will comment in the PR with atlantis plan
-		err = g.CommentPR(1, "atlantis apply")
-		if err != nil {
-			fmt.Println(err)
+			// create a new branch and push changes
+			githubHost := viper.GetString("github.host")
+			githubOwner := viper.GetString("github.owner")
+			remoteName := "github"
+			localRepo := "gitops"
+			branchName := "update-s3-backend"
+			branchNameRef := plumbing.ReferenceName("refs/heads/" + branchName)
+
+			gitClient.UpdateLocalTFFilesAndPush(
+				githubHost,
+				githubOwner,
+				localRepo,
+				remoteName,
+				branchNameRef,
+			)
+
+			fmt.Println("sleeping after commit...")
+			time.Sleep(3 * time.Second)
+
+			// create a PR, atlantis will identify it's a terraform change/file update and,
+			// trigger atlantis plan
+			g := githubWrapper.New()
+			err = g.CreatePR(branchName)
+			if err != nil {
+				fmt.Println(err)
+			}
+			log.Println("sleeping after create PR...")
+			time.Sleep(5 * time.Second)
+			log.Println("sleeping... atlantis plan should be running")
+			time.Sleep(5 * time.Second)
+
+			fmt.Println("sleeping before apply...")
+			time.Sleep(120 * time.Second)
+
+			// after 120 seconds, it will comment in the PR with atlantis plan
+			err = g.CommentPR(1, "atlantis apply")
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 
 		log.Println("sending mgmt cluster install completed metric")

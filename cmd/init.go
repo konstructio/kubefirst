@@ -79,7 +79,7 @@ validated and configured.`,
 			if os.Getenv("GITHUB_AUTH_TOKEN") != "" {
 				viper.Set("github.token", os.Getenv("GITHUB_AUTH_TOKEN"))
 			} else {
-				log.Fatal("cannot create a local cluster without a github auth token. please export your GITHUB_AUTH_TOKEN in your terminal.")
+				log.Fatal("cannot create a cluster without a github auth token. please export your GITHUB_AUTH_TOKEN in your terminal.")
 			}
 		}
 
