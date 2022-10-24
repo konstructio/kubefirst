@@ -71,8 +71,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 
 	repo, err := git.PlainOpen(directory)
 
-	// todo these values should be constructed upfront on init when we get the users info
-	if viper.GetBool("github.enabled") {
+	if viper.GetString("gitprovider") == "github" {
 		githubHost := viper.GetString("github.host")
 		githubOwner := viper.GetString("github.owner")
 

@@ -23,10 +23,8 @@ func CreateSshKeyPair() {
 	config := configs.ReadConfig()
 	publicKey := viper.GetString("botpublickey")
 
-	isGitHubEnabled := viper.GetBool("github.enabled")
-
 	// generate GitLab keys
-	if publicKey == "" && !isGitHubEnabled {
+	if publicKey == "" && viper.GetString("gitprovider") == "gitlab" {
 
 		log.Println("generating new key pair for GitLab")
 		publicKey, privateKey, err := generateGitLabKeys()
@@ -43,7 +41,7 @@ func CreateSshKeyPair() {
 	}
 
 	// generate GitHub keys
-	if publicKey == "" && isGitHubEnabled {
+	if publicKey == "" && viper.GetString("gitprovider") == "github" {
 
 		log.Println("generating new key pair for GitHub")
 		publicKey, privateKey, err := generateGitHubKeys()

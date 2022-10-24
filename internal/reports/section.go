@@ -229,7 +229,7 @@ func HandoffScreen(dryRun bool, silentMode bool) {
 	var handOffData bytes.Buffer
 	handOffData.Write(PrintSectionOverview())
 	handOffData.Write(PrintSectionAws())
-	if viper.GetBool("github.enabled") {
+	if viper.GetString("gitprovider") == "github" {
 		handOffData.Write(PrintSectionRepoGithub())
 	} else {
 		handOffData.Write(PrintSectionRepoGitlab())

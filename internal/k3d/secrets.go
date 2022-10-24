@@ -105,7 +105,7 @@ func AddK3DSecrets(dryrun bool) error {
 	viper.WriteConfig()
 
 	dataAtlantis := map[string][]byte{
-		"ATLANTIS_GH_TOKEN":                   []byte(os.Getenv("GITHUB_AUTH_TOKEN")),
+		"ATLANTIS_GH_TOKEN":                   []byte(viper.GetString("github.token")),
 		"ATLANTIS_GH_USER":                    []byte(viper.GetString("github.user")),
 		"ATLANTIS_GH_HOSTNAME":                []byte(viper.GetString("github.host")),
 		"ATLANTIS_GH_WEBHOOK_SECRET":          []byte(viper.GetString("github.atlantis.webhook.secret")),
@@ -114,10 +114,10 @@ func AddK3DSecrets(dryrun bool) error {
 		"ARGOCD_SERVER":                       []byte("http://localhost:8080"),
 		"ARGO_SERVER_URL":                     []byte("argo.argo.svc.cluster.local:443"),
 		"GITHUB_OWNER":                        []byte(viper.GetString("github.owner")),
-		"GITHUB_TOKEN":                        []byte(os.Getenv("GITHUB_AUTH_TOKEN")),
+		"GITHUB_TOKEN":                        []byte(viper.GetString("github.token")),
 		"TF_VAR_atlantis_repo_webhook_secret": []byte(viper.GetString("github.atlantis.webhook.secret")),
 		"TF_VAR_email_address":                []byte(viper.GetString("adminemail")),
-		"TF_VAR_github_token":                 []byte(os.Getenv("GITHUB_AUTH_TOKEN")),
+		"TF_VAR_github_token":                 []byte(viper.GetString("github.token")),
 		"TF_VAR_kubefirst_bot_ssh_public_key": []byte(viper.GetString("botpublickey")),
 		"TF_VAR_vault_addr":                   []byte("http://vault.vault.svc.cluster.local:443"),
 		"TF_VAR_vault_token":                  []byte("k1_local_vault_token"),
