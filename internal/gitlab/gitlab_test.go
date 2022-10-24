@@ -2,9 +2,10 @@ package gitlab_test
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
 	"net/http"
 	"testing"
+
+	"github.com/kubefirst/kubefirst/configs"
 )
 
 // this is called when GitLab should be up and running
@@ -19,10 +20,10 @@ func TestGitLabLivenessIntegration(t *testing.T) {
 		t.Error("HOSTED_ZONE_NAME environment variable is not set")
 		return
 	}
+	// todo local we don't call this function
+	gitlabUrl := fmt.Sprintf("https://gitlab.%s", config.HostedZoneName)
 
-	argoURL := fmt.Sprintf("https://gitlab.%s", config.HostedZoneName)
-
-	req, err := http.NewRequest(http.MethodGet, argoURL, nil)
+	req, err := http.NewRequest(http.MethodGet, gitlabUrl, nil)
 	if err != nil {
 		t.Error(err)
 	}

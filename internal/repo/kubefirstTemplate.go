@@ -151,7 +151,7 @@ func UpdateForLocalMode(directory string) error {
 
 		},
 	}
-	err := cp.Copy(directory + "/localhost", directory, opt)
+	err := cp.Copy(directory+"/localhost", directory, opt)
 	if err != nil {
 		log.Println("Error populating gitops with local setup:", err)
 		return err

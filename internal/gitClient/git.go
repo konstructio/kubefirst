@@ -211,7 +211,7 @@ func PushGitopsToSoftServe() {
 // In the absence of matching tag/branch function will fail
 func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory string, branch string, fallbackTag string) error {
 	defer viper.WriteConfig()
-
+	// todo need to refactor this and have the repoName include -template
 	repoURL := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)
 
 	isMainBranch := true
