@@ -30,7 +30,8 @@ var postInstallCmd = &cobra.Command{
 			return err
 		}
 
-		if createFlags.EnableConsole {
+		cloud := viper.GetString("cloud")
+		if createFlags.EnableConsole && cloud != pkg.CloudK3d {
 			log.Println("Starting the presentation of console and api for the handoff screen")
 			go func() {
 				errInThread := api.RunE(cmd, args)
@@ -45,12 +46,27 @@ var postInstallCmd = &cobra.Command{
 				}
 			}()
 
-			log.Println("Kubefirst Console avilable at: http://localhost:9094", globalFlags.SilentMode)
+			log.Println("Kubefirst Console available at: http://localhost:9094", globalFlags.SilentMode)
+
+			openbrowser(pkg.LocalConsoleUI)
+
 		} else {
 			log.Println("Skipping the presentation of console and api for the handoff screen")
 		}
 
-		openbrowser("http://localhost:9094")
+		// open all port forwards, wait console ui be ready, and open console ui in the browser
+		if cloud == pkg.CloudK3d {
+			err := openPortForwardForKubeConConsole()
+			if err != nil {
+				log.Println(err)
+			}
+
+			err = isConsoleUIAvailable(pkg.LocalConsoleUI)
+			if err != nil {
+				log.Println(err)
+			}
+			openbrowser(pkg.LocalConsoleUI)
+		}
 
 		if viper.GetString("cloud") == flagset.CloudK3d {
 			reports.LocalHandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
