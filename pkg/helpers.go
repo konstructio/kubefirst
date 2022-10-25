@@ -131,6 +131,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubRepoOwner := viper.GetString(("github.owner"))
 		githubOrg := viper.GetString(("github.org"))
 		githubUser := viper.GetString(("github.user"))
+		cloud := viper.GetString("cloud")
 
 		//TODO: We need to fix this
 		githubToken := os.Getenv("GITHUB_AUTH_TOKEN")
@@ -215,6 +216,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<KMS_KEY_ID>", kmsKeyId, -1)
 		}
 		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", clusterName, -1)
+		newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
 
 		if argocdOidcClientId != "" {
 			newContents = strings.Replace(newContents, "<ARGOCD_OIDC_CLIENT_ID>", argocdOidcClientId, -1)
