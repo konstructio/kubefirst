@@ -19,8 +19,12 @@ func CreateK3dCluster() error {
 	// it didn't worked as expected.
 	if !viper.GetBool("k3d.created") {
 		// k3d cluster create kubefirst  --agents 3 --agents-memory 1024m  --registry-create k3d-kubefirst-registry:63630
-		_, _, err := pkg.ExecShellReturnStrings(config.K3dPath, "cluster", "create", viper.GetString("cluster-name"),
-			"--agents", "3", "--agents-memory", "1024m", "--registry-create", "k3d-"+viper.GetString("cluster-name")+"-registry:63630")
+		//_, _, err := pkg.ExecShellReturnStrings(config.K3dPath, "cluster", "create", viper.GetString("cluster-name"),
+		_, _, err := pkg.ExecShellReturnStrings(config.K3dPath, "cluster", "create",
+			viper.GetString("cluster-name"),
+			"--agents", "3",
+			"--agents-memory", "1024m",
+			"--registry-create", "k3d-"+viper.GetString("cluster-name")+"-registry:63630")
 		if err != nil {
 			log.Println("error creating k3d cluster")
 			return errors.New("error creating k3d cluster")
@@ -33,6 +37,9 @@ func CreateK3dCluster() error {
 
 		log.Println(config.K3dPath, "kubeconfig", "get", viper.GetString("cluster-name"), ">", config.KubeConfigPath)
 		out, _, err := pkg.ExecShellReturnStrings(config.K3dPath, "kubeconfig", "get", viper.GetString("cluster-name"))
+		if err != nil {
+			return err
+		}
 		log.Println(config.KubeConfigPath)
 
 		kubeConfig := []byte(out)

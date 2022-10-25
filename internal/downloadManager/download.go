@@ -78,11 +78,12 @@ func DownloadTools(config *configs.Config) error {
 		return err
 	}
 
+	// todo: delete it ->
 	// todo: this kubeconfig is not available to us until we have run the terraform in base/
-	err = os.Setenv("KUBECONFIG", config.KubeConfigPath)
-	if err != nil {
-		return err
-	}
+	//err = os.Setenv("KUBECONFIG", config.KubeConfigPath)
+	//if err != nil {
+	//	return err
+	//}
 
 	log.Println("going to print the kubeconfig env in runtime", os.Getenv("KUBECONFIG"))
 
