@@ -93,7 +93,7 @@ validated and configured.`,
 
 			globalFlags, _, installerFlags, awsFlags, err = flagset.InitFlags(cmd)
 			viper.Set("gitops.branch", "update_atlantis_chart_version")
-			viper.Set("github.owner", "converge")
+			viper.Set("github.owner", viper.GetString("github.user"))
 			viper.WriteConfig()
 
 			if installerFlags.BranchGitops = viper.GetString("gitops.branch"); err != nil {
