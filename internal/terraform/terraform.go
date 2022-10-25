@@ -83,7 +83,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 		envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
 		envs["TF_VAR_atlantis_repo_webhook_url"] = viper.GetString("github.atlantis.webhook.url")
-		envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botPublicKey")
+		envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botpublickey")
 
 		// todo: add validation for localhost
 		envs["TF_VAR_email_address"] = viper.GetString("adminemail")

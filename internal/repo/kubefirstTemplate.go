@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-//PrepareKubefirstTemplateRepo - Prepare template repo to be used by installer
+// PrepareKubefirstTemplateRepo - Prepare template repo to be used by installer
 func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg, repoName string, branch string, tag string) {
 
 	if dryRun {

@@ -31,6 +31,7 @@ var initCmd = &cobra.Command{
 	Long: `Initialize the required resources to provision a full Cloud environment. At this step initial resources are
 validated and configured.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+
 		infoCmd.Run(cmd, args)
 		config := configs.ReadConfig()
 
@@ -76,10 +77,29 @@ validated and configured.`,
 			log.Fatal("cannot create a local cluster without a github auth token. please export your GITHUB_AUTH_TOKEN in your terminal.")
 		}
 
-		globalFlags, githubFlags, installerFlags, awsFlags, err := flagset.InitFlags(cmd)
+		// todo: wire it up for localhost
+		//globalFlags, githubFlags, installerFlags, awsFlags, err := flagset.InitFlags(cmd)
+		globalFlags, _, installerFlags, awsFlags, err := flagset.InitFlags(cmd)
 		if err != nil {
 			return err
 		}
+
+		viper.Set("gitops.branch", "main")
+		viper.WriteConfig()
+		if installerFlags.BranchGitops = viper.GetString("gitops.branch"); err != nil {
+			return err
+		}
+		if installerFlags.BranchMetaphor = viper.GetString("metaphor.branch"); err != nil {
+			return err
+		}
+
+		//if githubFlags.GithubOwner = viper.GetString("github.owner"); err != nil {
+		//	return err
+		//}
+		//
+		//if githubFlags.GithubUser = viper.GetString("github.user"); err != nil {
+		//	return err
+		//}
 
 		if globalFlags.SilentMode {
 			informUser(
@@ -87,11 +107,6 @@ validated and configured.`,
 				globalFlags.SilentMode,
 			)
 		}
-
-		log.Println("github:", githubFlags.GithubHost)
-		log.Println("github:", githubFlags.GithubOwner)
-		log.Println("github:", githubFlags.GithubUser)
-		log.Println("dry run enabled:", globalFlags.DryRun)
 
 		if len(awsFlags.AssumeRole) > 0 {
 			log.Println("calling assume role")

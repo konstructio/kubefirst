@@ -3,6 +3,7 @@ package githubWrapper
 import (
 	"context"
 	"fmt"
+	"github.com/spf13/viper"
 	"log"
 	"net/http"
 	"os"
@@ -140,9 +141,12 @@ func (g GithubSession) CreatePR(branchName string) error {
 		Base:  &base,
 	}
 
+	// todo: receive as parameter
+	gitHubUser := viper.GetString("github.user")
+
 	_, resp, err := g.gitClient.PullRequests.Create(
 		context.Background(),
-		"org-k1-converge-2",
+		gitHubUser,
 		"gitops",
 		&pr,
 	)
@@ -159,9 +163,13 @@ func (g GithubSession) CommentPR(prNumber int, body string) error {
 	issueComment := github.IssueComment{
 		Body: &body,
 	}
+
+	// todo: receive as parameter
+	gitHubUser := viper.GetString("github.user")
+
 	_, resp, err := g.gitClient.Issues.CreateComment(
 		context.Background(),
-		"org-k1-converge-2",
+		gitHubUser,
 		"gitops", prNumber,
 		&issueComment,
 	)

@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os/exec"
 	"time"
 
 	"github.com/kubefirst/kubefirst/internal/reports"
@@ -80,8 +79,8 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 	fmt.Println(reports.StyleMessage(gitHubTokenReport))
 
 	// todo add a 10 second countdown to warn browser open
-	time.Sleep(8 * time.Second)
-	exec.Command("open", "https://github.com/login/device").Start()
+	//time.Sleep(8 * time.Second)
+	//exec.Command("open", "https://github.com/login/device").Start()
 
 	// todo: improve the logic for the counter
 	var gitHubAccessToken string
@@ -131,6 +130,7 @@ func getGithubOwner(gitHubAccessToken string) string {
 	if err != nil {
 		log.Println("error unmarshalling request")
 	}
+
 	type GitHubUser struct {
 		Login string `json:"login"`
 	}
