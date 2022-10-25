@@ -26,7 +26,9 @@ var postInstallCmd = &cobra.Command{
 
 		// todo: temporary
 		//flagset.DefineGlobalFlags(cmd)
-		cmd.Flags().Bool("enable-console", true, "If hand-off screen will be presented on a browser UI")
+		if viper.GetString("cloud") == flagset.CloudLocal {
+			cmd.Flags().Bool("enable-console", true, "If hand-off screen will be presented on a browser UI")
+		}
 		//globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		//if err != nil {
 		//	return err
