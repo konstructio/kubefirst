@@ -91,9 +91,6 @@ validated and configured.`,
 			return err
 		}
 
-		viper.Set("gitops.branch", "update_atlantis_chart_version")
-		viper.Set("github.owner", "converge")
-		viper.WriteConfig()
 		if installerFlags.BranchGitops = viper.GetString("gitops.branch"); err != nil {
 			return err
 		}
@@ -101,13 +98,13 @@ validated and configured.`,
 			return err
 		}
 
-		//if githubFlags.GithubOwner = viper.GetString("github.owner"); err != nil {
-		//	return err
-		//}
-		//
-		//if githubFlags.GithubUser = viper.GetString("github.user"); err != nil {
-		//	return err
-		//}
+		// if githubFlags.GithubOwner = viper.GetString("github.owner"); err != nil {
+		// 	return err
+		// }
+
+		// if githubFlags.GithubUser = viper.GetString("github.user"); err != nil {
+		// 	return err
+		// }
 
 		if globalFlags.SilentMode {
 			informUser(
