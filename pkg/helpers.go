@@ -111,7 +111,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		//Please, don't remove comments on this file unless you added it
 		// todo should Detokenize be a switch statement based on a value found in viper?
 		gitlabConfigured := viper.GetBool("gitlab.keyuploaded")
-		
+
 		newContents := string(read)
 
 		botPublicKey := viper.GetString("botpublickey")
@@ -134,7 +134,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 
 		//TODO: We need to fix this
 		githubToken := os.Getenv("GITHUB_AUTH_TOKEN")
-		
+
 		//todo: get from viper
 		gitopsRepo := "gitops"
 		repoPathHTTPSGitlab := "https://gitlab." + hostedZoneName + "/kubefirst/" + gitopsRepo
@@ -461,16 +461,18 @@ func ReplaceS3Backend() error {
 		return err
 	}
 
-	kubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
-	file2, err := os.ReadFile(kubefirstGitHubFile)
-	if err != nil {
-		return err
-	}
-	newContents2 := strings.Replace(string(file2), "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000", -1)
+	if viper.GetString("gitprovider") == "github" {
+		kubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
+		file2, err := os.ReadFile(kubefirstGitHubFile)
+		if err != nil {
+			return err
+		}
+		newContents2 := strings.Replace(string(file2), "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000", -1)
 
-	err = os.WriteFile(kubefirstGitHubFile, []byte(newContents2), 0)
-	if err != nil {
-		return err
+		err = os.WriteFile(kubefirstGitHubFile, []byte(newContents2), 0)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

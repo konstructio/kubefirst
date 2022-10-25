@@ -450,10 +450,12 @@ func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName st
 	//	}
 	//}
 
-	kubefirstGitHubFile := "terraform/users/kubefirst-github.tf"
-	_, err = w.Add(kubefirstGitHubFile)
-	if err != nil {
-		log.Println(err)
+	if viper.GetString("gitprovider") == "github" {
+		kubefirstGitHubFile := "terraform/users/kubefirst-github.tf"
+		_, err = w.Add(kubefirstGitHubFile)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 	vaultMainFile := "terraform/vault/main.tf"
 	_, err = w.Add(vaultMainFile)
