@@ -5,7 +5,9 @@ const (
 	JSONContentType     = "application/json"
 	SoftServerURI       = "ssh://127.0.0.1:8022/config"
 	LocalAtlantisURL    = "localhost:4141"
+	LocalConsoleUI      = "http://localhost:9094"
 	GitHubOAuthClientId = "2ced340927e0a6c49a45"
+	CloudK3d            = "k3d"
 )
 
 // SegmentIO constants

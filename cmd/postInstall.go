@@ -2,8 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/k8s"
 	"log"
+	"net/http"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
@@ -35,7 +38,8 @@ var postInstallCmd = &cobra.Command{
 			return err
 		}
 
-		if createFlags.EnableConsole {
+		cloud := viper.GetString("cloud")
+		if createFlags.EnableConsole && cloud != pkg.CloudK3d {
 			log.Println("Starting the presentation of console and api for the handoff screen")
 			go func() {
 				errInThread := api.RunE(cmd, args)
@@ -50,12 +54,27 @@ var postInstallCmd = &cobra.Command{
 				}
 			}()
 
-			log.Println("Kubefirst Console avilable at: http://localhost:9094", globalFlags.SilentMode)
+			log.Println("Kubefirst Console available at: http://localhost:9094", globalFlags.SilentMode)
+
+			openbrowser(pkg.LocalConsoleUI)
+
 		} else {
 			log.Println("Skipping the presentation of console and api for the handoff screen")
 		}
 
-		openbrowser("http://localhost:9094")
+		// open all port forwards, wait console ui be ready, and open console ui in the browser
+		if cloud == pkg.CloudK3d {
+			err := openPortForwardForKubeConConsole()
+			if err != nil {
+				log.Println(err)
+			}
+
+			err = isConsoleUIAvailable(pkg.LocalConsoleUI)
+			if err != nil {
+				log.Println(err)
+			}
+			openbrowser(pkg.LocalConsoleUI)
+		}
 
 		if viper.GetString("cloud") == flagset.CloudK3d {
 			reports.LocalHandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
@@ -93,4 +112,108 @@ func openbrowser(url string) {
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+// todo: this is temporary
+func isConsoleUIAvailable(url string) error {
+	attempts := 10
+	httpClient := http.DefaultClient
+	for i := 0; i < attempts; i++ {
+
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			log.Printf("unable to reach %q (%d/%d)", url, i+1, attempts)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			log.Printf("unable to reach %q (%d/%d)", url, i+1, attempts)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			log.Println("console UI is up and running")
+			return nil
+		}
+
+		log.Println("waiting UI console to be ready")
+		time.Sleep(5 * time.Second)
+	}
+
+	return nil
+}
+
+// todo: this is temporary
+func openPortForwardForKubeConConsole() error {
+
+	var wg sync.WaitGroup
+	wg.Add(7)
+	// argocd
+	go func() {
+		_, err := k8s.PortForward(false, "argocd", "svc/argocd-server", "8080:80")
+		if err != nil {
+			log.Println("error opening ArgoCD port forward")
+		}
+		wg.Done()
+	}()
+
+	// atlantis
+	go func() {
+		_, err := k8s.PortForward(false, "atlantis", "svc/atlantis", "4141:80")
+		if err != nil {
+			log.Println("error opening Atlantis port forward")
+		}
+		wg.Done()
+	}()
+
+	// chartmuseum
+	go func() {
+		_, err := k8s.PortForward(false, "chartmuseum", "svc/chartmuseum", "8181:8080")
+		if err != nil {
+			log.Println("error opening Chartmuseum port forward")
+		}
+		wg.Done()
+	}()
+
+	// vault
+	go func() {
+		_, err := k8s.PortForward(false, "vault", "svc/vault", "8200:8200")
+		if err != nil {
+			log.Println("error opening Vault port forward")
+		}
+		wg.Done()
+	}()
+
+	// minio
+	go func() {
+		_, err := k8s.PortForward(false, "minio", "svc/minio", "9000:9000")
+		if err != nil {
+			log.Println("error opening Minio port forward")
+		}
+		wg.Done()
+	}()
+
+	// minio console
+	go func() {
+		_, err := k8s.PortForward(false, "minio", "svc/minio-console", "9001:9001")
+		if err != nil {
+			log.Println("error opening Minio-console port forward")
+		}
+		wg.Done()
+	}()
+
+	// Kubecon console ui
+	go func() {
+		_, err := k8s.PortForward(false, "kubefirst", "svc/kubefirst-console", "9094:80")
+		if err != nil {
+			log.Println("error opening Kubefirst-console port forward")
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	return nil
 }
