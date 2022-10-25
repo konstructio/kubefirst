@@ -71,10 +71,17 @@ validated and configured.`,
 			}
 		}
 
-		if os.Getenv("GITHUB_AUTH_TOKEN") != "" {
-			viper.Set("github.token", os.Getenv("GITHUB_AUTH_TOKEN"))
-		} else {
-			log.Fatal("cannot create a local cluster without a github auth token. please export your GITHUB_AUTH_TOKEN in your terminal.")
+		providerValue, err := cmd.Flags().GetString("git-provider")
+		if err != nil {
+			return err
+		}
+
+		if providerValue == "github" {
+			if os.Getenv("GITHUB_AUTH_TOKEN") != "" {
+				viper.Set("github.token", os.Getenv("GITHUB_AUTH_TOKEN"))
+			} else {
+				log.Fatal("cannot create a cluster without a github auth token. please export your GITHUB_AUTH_TOKEN in your terminal.")
+			}
 		}
 
 		// todo: wire it up for localhost
