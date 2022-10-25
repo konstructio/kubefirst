@@ -84,30 +84,38 @@ validated and configured.`,
 			}
 		}
 
-		// todo: wire it up for localhost
-		//globalFlags, githubFlags, installerFlags, awsFlags, err := flagset.InitFlags(cmd)
-		globalFlags, _, installerFlags, awsFlags, err := flagset.InitFlags(cmd)
+		var globalFlags flagset.GlobalFlags
+		var installerFlags flagset.InstallerGenericFlags
+		var awsFlags flagset.AwsFlags
+		var githubFlags flagset.GithubAddCmdFlags
+
+		if cloudValue == pkg.CloudK3d {
+
+			globalFlags, _, installerFlags, awsFlags, err = flagset.InitFlags(cmd)
+			viper.Set("gitops.branch", "update_atlantis_chart_version")
+			viper.Set("github.owner", "converge")
+			viper.WriteConfig()
+
+			if installerFlags.BranchGitops = viper.GetString("gitops.branch"); err != nil {
+				return err
+			}
+			if installerFlags.BranchMetaphor = viper.GetString("metaphor.branch"); err != nil {
+				return err
+			}
+			if githubFlags.GithubOwner = viper.GetString("github.owner"); err != nil {
+				return err
+			}
+
+			if githubFlags.GithubUser = viper.GetString("github.user"); err != nil {
+				return err
+			}
+		} else {
+			// github or gitlab
+			globalFlags, githubFlags, installerFlags, awsFlags, err = flagset.InitFlags(cmd)
+		}
 		if err != nil {
 			return err
 		}
-
-		viper.Set("gitops.branch", "update_atlantis_chart_version")
-		viper.Set("github.owner", "converge")
-		viper.WriteConfig()
-		if installerFlags.BranchGitops = viper.GetString("gitops.branch"); err != nil {
-			return err
-		}
-		if installerFlags.BranchMetaphor = viper.GetString("metaphor.branch"); err != nil {
-			return err
-		}
-
-		//if githubFlags.GithubOwner = viper.GetString("github.owner"); err != nil {
-		//	return err
-		//}
-		//
-		//if githubFlags.GithubUser = viper.GetString("github.user"); err != nil {
-		//	return err
-		//}
 
 		if globalFlags.SilentMode {
 			informUser(
