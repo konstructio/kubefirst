@@ -116,7 +116,7 @@ func Test_Init_k3d_basic_github(t *testing.T) {
 	cmd := FakeInitCmd()
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
-	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "k3d", "--github-user", "ghuser", "--github-org", "ghorg"})
+	cmd.SetArgs([]string{"--admin-email", "user@domain.com", "--cloud", "k3d", "--github-user", "ghuser", "--github-owner", "ghorg"})
 	err := cmd.Execute()
 	if err != nil {
 		t.Error(err)
@@ -316,7 +316,7 @@ func Test_Init_Addons_Gitlab(t *testing.T) {
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
-	cmd.SetArgs([]string{"--region", "eu-central-1", "--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--profile", "default"})
+	cmd.SetArgs([]string{"--region", "eu-central-1", "--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--profile", "default", "--git-provider", "gitlab"})
 	err := cmd.Execute()
 	if err != nil {
 		t.Error(err)
@@ -337,7 +337,7 @@ func Test_Init_Addons_Github(t *testing.T) {
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
-	cmd.SetArgs([]string{"--region", "eu-central-1", "--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--profile", "default", "--github-user", "fake", "--github-org", "demo"})
+	cmd.SetArgs([]string{"--region", "eu-central-1", "--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--profile", "default", "--github-user", "fake", "--github-owner", "demo"})
 	err := cmd.Execute()
 	if err != nil {
 		t.Error(err)
@@ -358,7 +358,7 @@ func Test_Init_Addons_Github_Kusk(t *testing.T) {
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
-	cmd.SetArgs([]string{"--region", "eu-central-1", "--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--profile", "default", "--github-user", "fake", "--github-org", "demo", "--addons", "kusk"})
+	cmd.SetArgs([]string{"--region", "eu-central-1", "--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--profile", "default", "--github-user", "fake", "--github-owner", "demo", "--addons", "kusk"})
 	err := cmd.Execute()
 	if err != nil {
 		fmt.Println("---debug---")
