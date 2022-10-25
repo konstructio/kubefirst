@@ -348,6 +348,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		log.Println("Kubefirst installation finished successfully")
 		informUser("Kubefirst installation finished successfully", globalFlags.SilentMode)
 
+		// todo: temporary code to enable console for localhost
 		err = postInstallCmd.RunE(cmd, args)
 		if err != nil {
 			informUser("Error starting apps from post-install", globalFlags.SilentMode)

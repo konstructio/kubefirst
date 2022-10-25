@@ -18,8 +18,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-//PrepareKubefirstTemplateRepo - Prepare template repo to be used by installer
+// PrepareKubefirstTemplateRepo - Prepare template repo to be used by installer
 func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg, repoName string, branch string, tag string) {
+
+	log.Println("---debug---")
+	log.Println(githubOrg)
+	log.Println(repoName)
+	log.Println(branch)
+	log.Println(tag)
+	log.Println("---debug---")
 
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, PrepareKubefirstTemplateRepo skipped.")

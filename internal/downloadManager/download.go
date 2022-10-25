@@ -42,34 +42,6 @@ func DownloadLocalTools(config *configs.Config) error {
 		return err
 	}
 
-	ngrokDownloadUrl := fmt.Sprintf(
-		"https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-%s-stable-%s-%s.zip",
-		config.NgrokVersion,
-		config.LocalOs,
-		config.LocalArchitecture,
-	)
-	log.Printf("Downloading ngrok from %s", ngrokDownloadUrl)
-	ngrokDownloadZipPath := fmt.Sprintf("%s/tools/ngrok.zip", config.K1FolderPath)
-	err = downloadFile(ngrokDownloadZipPath, ngrokDownloadUrl)
-	if err != nil {
-		log.Println("error reading ngrok file")
-		return err
-	}
-
-	unzipDirectory := fmt.Sprintf("%s/tools", config.K1FolderPath)
-	unzip(ngrokDownloadZipPath, unzipDirectory)
-
-	err = os.Chmod(unzipDirectory, 0777)
-	if err != nil {
-		return err
-	}
-
-	err = os.Chmod(fmt.Sprintf("%s/ngrok", unzipDirectory), 0755)
-	if err != nil {
-		return err
-	}
-	os.RemoveAll(fmt.Sprintf("%s/ngrok.zip", toolsDirPath))
-
 	return nil
 }
 
@@ -106,11 +78,12 @@ func DownloadTools(config *configs.Config) error {
 		return err
 	}
 
+	// todo: delete it ->
 	// todo: this kubeconfig is not available to us until we have run the terraform in base/
-	err = os.Setenv("KUBECONFIG", config.KubeConfigPath)
-	if err != nil {
-		return err
-	}
+	//err = os.Setenv("KUBECONFIG", config.KubeConfigPath)
+	//if err != nil {
+	//	return err
+	//}
 
 	log.Println("going to print the kubeconfig env in runtime", os.Getenv("KUBECONFIG"))
 
