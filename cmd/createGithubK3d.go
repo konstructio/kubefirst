@@ -204,6 +204,7 @@ var createGithubK3dCmd = &cobra.Command{
 				return err
 			}
 		}
+		time.Sleep(30 * time.Second)
 		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
 		defer func() {
 			err = kPortForwardVault.Process.Signal(syscall.SIGTERM)
