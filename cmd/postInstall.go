@@ -143,7 +143,7 @@ func isConsoleUIAvailable(url string) error {
 func openPortForwardForKubeConConsole() error {
 
 	var wg sync.WaitGroup
-	wg.Add(6)
+	wg.Add(7)
 	// argocd
 	go func() {
 		_, err := k8s.PortForward(false, "argocd", "svc/argocd-server", "8080:80")
@@ -194,6 +194,15 @@ func openPortForwardForKubeConConsole() error {
 		_, err := k8s.PortForward(false, "minio", "svc/minio-console", "9001:9001")
 		if err != nil {
 			log.Println("error opening Minio-console port forward")
+		}
+		wg.Done()
+	}()
+
+	// Kubecon console ui
+	go func() {
+		_, err := k8s.PortForward(false, "kubefirst", "svc/kubefirst-console", "9094:80")
+		if err != nil {
+			log.Println("error opening Kubefirst-console port forward")
 		}
 		wg.Done()
 	}()
