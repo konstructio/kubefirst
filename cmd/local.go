@@ -14,11 +14,13 @@ var localCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		initFlags := initCmd.Flags()
-		err := initFlags.Set("gitops-branch", "main")
+		//err := initFlags.Set("gitops-branch", "main")
+		err := initFlags.Set("gitops-branch", "update_atlantis_chart_version")
 		if err != nil {
 			return err
 		}
-		viper.Set("gitops.branch", "main")
+		//viper.Set("gitops.branch", "main")
+		viper.Set("gitops.branch", "update_atlantis_chart_version")
 
 		err = initFlags.Set("metaphor-branch", "main")
 		if err != nil {

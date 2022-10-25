@@ -84,7 +84,8 @@ validated and configured.`,
 			return err
 		}
 
-		viper.Set("gitops.branch", "main")
+		viper.Set("gitops.branch", "update_atlantis_chart_version")
+		viper.Set("github.owner", "converge")
 		viper.WriteConfig()
 		if installerFlags.BranchGitops = viper.GetString("gitops.branch"); err != nil {
 			return err
