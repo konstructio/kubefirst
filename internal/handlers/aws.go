@@ -2,20 +2,19 @@ package handlers
 
 import (
 	"github.com/kubefirst/kubefirst/internal/aws"
-	"github.com/kubefirst/kubefirst/internal/flagset"
 )
 
 // AwsHandler provides base data for Aws Handler methods.
 type AwsHandler struct {
-	HostedZone string
-	CLIFlags   flagset.DestroyFlags
+	hostedZone         string
+	hostedZoneKeepBase bool
 }
 
 // NewAwsHandler creates a new Aws Handler object.
-func NewAwsHandler(hostedZone string, cliFlags flagset.DestroyFlags) AwsHandler {
+func NewAwsHandler(hostedZone string, hostedZoneKeepBase bool) AwsHandler {
 	return AwsHandler{
-		HostedZone: hostedZone,
-		CLIFlags:   cliFlags,
+		hostedZone:         hostedZone,
+		hostedZoneKeepBase: hostedZoneKeepBase,
 	}
 }
 
@@ -24,7 +23,7 @@ func NewAwsHandler(hostedZone string, cliFlags flagset.DestroyFlags) AwsHandler 
 func (handler AwsHandler) HostedZoneDelete() error {
 
 	// get hosted zone id
-	hostedZoneId, err := aws.Route53GetHostedZoneId(handler.HostedZone)
+	hostedZoneId, err := aws.Route53GetHostedZoneId(handler.hostedZone)
 	if err != nil {
 		return err
 	}
@@ -36,8 +35,8 @@ func (handler AwsHandler) HostedZoneDelete() error {
 	}
 	err = aws.Route53DeleteTXTRecords(
 		hostedZoneId,
-		handler.HostedZone,
-		handler.CLIFlags.HostedZoneKeepBase,
+		handler.hostedZone,
+		handler.hostedZoneKeepBase,
 		txtRecords,
 	)
 	if err != nil {
@@ -55,8 +54,8 @@ func (handler AwsHandler) HostedZoneDelete() error {
 	}
 
 	// deletes full hosted zone, at this point there is only a SOA and a NS record, and deletion will succeed
-	if !handler.CLIFlags.HostedZoneKeepBase {
-		err := aws.Route53DeleteHostedZone(hostedZoneId, handler.HostedZone)
+	if !handler.hostedZoneKeepBase {
+		err := aws.Route53DeleteHostedZone(hostedZoneId, handler.hostedZone)
 		if err != nil {
 			return err
 		}

@@ -5,11 +5,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/kubefirst/kubefirst/cmd/cli"
+	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"log"
 	"os"
 	"time"
 
-	"github.com/kubefirst/kubefirst/cmd"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
@@ -62,7 +63,14 @@ func main() {
 	log.SetPrefix("LOG: ")
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
 
-	cmd.Execute()
+	// progress bar
+	progressPrinter.GetInstance()
+
+	kubefirstCmd := cli.NewCommand()
+	if err = kubefirstCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+	//cmd.Execute()
 }
 
 func openLogFile(path string) (*os.File, error) {
