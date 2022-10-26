@@ -141,6 +141,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 
 		newContents = strings.Replace(newContents, "<GITHUB_USER>", githubUser, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_TOKEN>", githubToken, -1)
+		newContents = strings.Replace(newContents, "<KUBEFIRST_VERSION>", configs.K1Version, -1)
 
 		var repoPathHTTPS string
 		var repoPathSSH string
