@@ -119,9 +119,9 @@ func AddK3DSecrets(dryrun bool) error {
 		"TF_VAR_email_address":                []byte(viper.GetString("adminemail")),
 		"TF_VAR_github_token":                 []byte(viper.GetString("github.token")),
 		"TF_VAR_kubefirst_bot_ssh_public_key": []byte(viper.GetString("botpublickey")),
-		"TF_VAR_vault_addr":                   []byte("http://vault.vault.svc.cluster.local:443"),
+		"TF_VAR_vault_addr":                   []byte("http://vault.vault.svc.cluster.local:8200"),
 		"TF_VAR_vault_token":                  []byte("k1_local_vault_token"),
-		"VAULT_ADDR":                          []byte("http://vault.vault.svc.cluster.local:443"),
+		"VAULT_ADDR":                          []byte("http://vault.vault.svc.cluster.local:8200"),
 		"VAULT_TOKEN":                         []byte("k1_local_vault_token"),
 	}
 	atlantisSecret := &v1.Secret{
