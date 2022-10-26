@@ -79,8 +79,8 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 	fmt.Println(reports.StyleMessage(gitHubTokenReport))
 
 	// todo add a 10 second countdown to warn browser open
-	//time.Sleep(8 * time.Second)
-	//exec.Command("open", "https://github.com/login/device").Start()
+	time.Sleep(7 * time.Second)
+	exec.Command("open", "https://github.com/login/device").Start()
 
 	// todo: improve the logic for the counter
 	var gitHubAccessToken string
