@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/k8s"
 	"log"
 	"net/http"
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/k8s"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/reports"
@@ -151,7 +152,15 @@ func isConsoleUIAvailable(url string) error {
 func openPortForwardForKubeConConsole() error {
 
 	var wg sync.WaitGroup
-	wg.Add(7)
+	wg.Add(8)
+	// argo workflows
+	go func() {
+		_, err := k8s.PortForward(false, "argo", "svc/argo-server", "2746:2746")
+		if err != nil {
+			log.Println("error opening Argo Workflows port forward")
+		}
+		wg.Done()
+	}()
 	// argocd
 	go func() {
 		_, err := k8s.PortForward(false, "argocd", "svc/argocd-server", "8080:80")
