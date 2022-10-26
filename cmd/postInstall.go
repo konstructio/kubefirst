@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/k8s"
 	"log"
 	"net/http"
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/k8s"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/reports"
@@ -26,7 +27,9 @@ var postInstallCmd = &cobra.Command{
 
 		// todo: temporary
 		//flagset.DefineGlobalFlags(cmd)
-		cmd.Flags().Bool("enable-console", true, "If hand-off screen will be presented on a browser UI")
+		if viper.GetString("cloud") == flagset.CloudLocal {
+			cmd.Flags().Bool("enable-console", true, "If hand-off screen will be presented on a browser UI")
+		}
 		//globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		//if err != nil {
 		//	return err

@@ -92,7 +92,7 @@ validated and configured.`,
 		if cloudValue == pkg.CloudK3d {
 
 			globalFlags, _, installerFlags, awsFlags, err = flagset.InitFlags(cmd)
-			viper.Set("gitops.branch", "update_atlantis_chart_version")
+			viper.Set("gitops.branch", "main")
 			viper.Set("github.owner", viper.GetString("github.user"))
 			viper.WriteConfig()
 
