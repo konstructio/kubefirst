@@ -136,6 +136,14 @@ func loopUntilPodIsReady(dryRun bool) {
 			res, err := http.DefaultClient.Do(req)
 			if err != nil {
 				log.Println("error with http request Do, vault is not available", err)
+				// todo: temporary code
+				log.Println("trying to open port-forward again...")
+				go func() {
+					_, err := k8s.PortForward(false, "vault", "svc/vault", "8200:8200")
+					if err != nil {
+						log.Println("error opening Vault port forward")
+					}
+				}()
 				continue
 			}
 
