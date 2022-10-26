@@ -196,7 +196,6 @@ var createGithubK3dCmd = &cobra.Command{
 		//* vault in running state
 		executionControl = viper.GetBool("vault.status.running")
 		if !executionControl {
-			// TODO: K3D => We need to check what changes for vault on raft mode, without terraform to unseal it
 			informUser("Waiting for vault to be ready", globalFlags.SilentMode)
 			waitVaultToBeRunning(globalFlags.DryRun)
 			if err != nil {
