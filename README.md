@@ -75,7 +75,16 @@ brew install kubefirst/tools/kubefirst
 
 Since Kubefirst 1.9 version, GitHub is also available as a Git platform provider alongside GitLab.
 
+### localhost
+
+localhost enables Kubefirst to be installed in your local machine, not requiring an AWS account, using localhost you can:
+
+```bash
+kubefirst local
+```
+
 ### GitLab
+
 To prepare the installation using GitLab you can:
 
 ```bash
@@ -119,7 +128,7 @@ kubefirst cluster create
 It will destroy the kubefirst management cluster, and clean up every change made in the cloud.
 
 ```bash
-kubefirst destroy
+kubefirst cluster destroy
 ```
 
 # What to do next
