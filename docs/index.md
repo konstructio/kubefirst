@@ -1,5 +1,8 @@
 # Choose your adventure
 
+To try kubefirst locally with no costs, check out our new `kubefirst local` command here:
+https://kubefirst.io/blog/kubefirst-v110-release-notes
+
 The kubefirst platform now supports both the [GitHub](https://www.github.com) and [GitLab](https://www.gitlab.com) Git providers. 
 The Git provider you choose will host the code for you applications, your new gitops repository, and will be fully configured through that gitops repository with some new Terraform that will manage your team and user access to the system.
 
