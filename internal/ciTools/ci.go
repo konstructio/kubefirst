@@ -70,7 +70,7 @@ func DeployOnGitlab(globalFlags flagset.GlobalFlags, bucketName string) error {
 		if err != nil {
 			log.Println(err)
 		}
-		err = DetokenizeCI("<CI_GITHUB_ORGANIZATION>", viper.GetString("ci.github.organization"), ciLocation)
+		err = DetokenizeCI("<CI_GITHUB_OWNER>", viper.GetString("ci.github.owner"), ciLocation)
 		if err != nil {
 			log.Println(err)
 		}

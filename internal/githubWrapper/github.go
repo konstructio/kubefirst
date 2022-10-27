@@ -3,6 +3,7 @@ package githubWrapper
 import (
 	"context"
 	"fmt"
+	"github.com/spf13/viper"
 	"log"
 	"net/http"
 	"os"
@@ -126,4 +127,57 @@ func (g GithubSession) RemoveSSHKey(keyId int64) error {
 func (g GithubSession) IsRepoInUse(org string, name string) (bool, error) {
 	log.Printf("check if a repo is in use already")
 	return false, nil
+}
+
+func (g GithubSession) CreatePR(branchName string) error {
+	title := "update S3 backend to minio / internal k8s dns"
+	head := branchName
+	body := "use internal Kubernetes dns"
+	base := "main"
+	pr := github.NewPullRequest{
+		Title: &title,
+		Head:  &head,
+		Body:  &body,
+		Base:  &base,
+	}
+
+	// todo: receive as parameter
+	gitHubUser := viper.GetString("github.user")
+
+	_, resp, err := g.gitClient.PullRequests.Create(
+		context.Background(),
+		gitHubUser,
+		"gitops",
+		&pr,
+	)
+	if err != nil {
+		return err
+	}
+	log.Printf("pull request create response http code: %d", resp.StatusCode)
+
+	return nil
+}
+
+func (g GithubSession) CommentPR(prNumber int, body string) error {
+
+	issueComment := github.IssueComment{
+		Body: &body,
+	}
+
+	// todo: receive as parameter
+	gitHubUser := viper.GetString("github.user")
+
+	_, resp, err := g.gitClient.Issues.CreateComment(
+		context.Background(),
+		gitHubUser,
+		"gitops", prNumber,
+		&issueComment,
+	)
+	if err != nil {
+		return err
+	}
+	log.Printf("pull request comment response http code: %d", resp.StatusCode)
+
+	return nil
+
 }

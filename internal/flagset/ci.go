@@ -9,14 +9,14 @@ import (
 
 // CIFlags - Global flags
 type CIFlags struct {
-	BranchCI             string
-	DestroyBucket        bool
-	CIClusterName        string
-	CIS3Suffix           string
-	CIHostedZoneName     string
-	CIFlavor             string
-	CIGithubUser         string
-	CIGithubOrganization string
+	BranchCI         string
+	DestroyBucket    bool
+	CIClusterName    string
+	CIS3Suffix       string
+	CIHostedZoneName string
+	CIFlavor         string
+	CIGithubUser     string
+	CIGithubOwner    string
 }
 
 // DefineCIFlags - Define global flags
@@ -28,7 +28,7 @@ func DefineCIFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("ci-hosted-zone-name", "", "the ci domain to provision the kubefirst platform in")
 	currentCommand.Flags().String("ci-flavor", "", "inform which flavor will be installed")
 	currentCommand.Flags().String("ci-github-user", "", "inform which github user will be used")
-	currentCommand.Flags().String("ci-github-organization", "", "inform which github organization will be used")
+	currentCommand.Flags().String("ci-github-owner", "", "inform which github owner will be used")
 }
 
 // ProcessCIFlags - process global flags shared between commands like silent, dry-run and use-telemetry
@@ -91,13 +91,13 @@ func ProcessCIFlags(cmd *cobra.Command) (CIFlags, error) {
 	flags.CIGithubUser = ciGithubUser
 	viper.Set("ci.github.user", ciGithubUser)
 
-	ciGithubOrganization, err := ReadConfigString(cmd, "ci-github-organization")
+	ciGithubOwner, err := ReadConfigString(cmd, "ci-github-owner")
 	if err != nil {
-		log.Printf("Error Processing - ci-github-organization flag, error: %v", err)
+		log.Printf("Error Processing - ci-github-owner flag, error: %v", err)
 		return flags, err
 	}
-	flags.CIGithubOrganization = ciGithubOrganization
-	viper.Set("ci.github.organization", ciGithubOrganization)
+	flags.CIGithubOwner = ciGithubOwner
+	viper.Set("ci.github.owner", ciGithubOwner)
 
 	return flags, nil
 

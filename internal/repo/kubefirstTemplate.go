@@ -18,8 +18,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-//PrepareKubefirstTemplateRepo - Prepare template repo to be used by installer
+// PrepareKubefirstTemplateRepo - Prepare template repo to be used by installer
 func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg, repoName string, branch string, tag string) {
+
+	log.Println("---debug---")
+	log.Println(githubOrg)
+	log.Println(repoName)
+	log.Println(branch)
+	log.Println(tag)
+	log.Println("---debug---")
 
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, PrepareKubefirstTemplateRepo skipped.")
@@ -34,7 +41,33 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 	viper.WriteConfig()
 
 	log.Printf("cloned %s-template repository to directory %s/%s", repoName, config.K1FolderPath, repoName)
-	UpdateForLocalMode(directory)
+	if viper.GetString("cloud") == flagset.CloudK3d && !viper.GetBool("github.gitops.hydrated") {
+		UpdateForLocalMode(directory)
+	}
+	if viper.GetString("cloud") == flagset.CloudK3d && strings.Contains(repoName, "metaphor") {
+		os.RemoveAll(fmt.Sprintf("%s/.argo", directory))
+		os.RemoveAll(fmt.Sprintf("%s/.github", directory))
+		opt := cp.Options{
+			Skip: func(src string) (bool, error) {
+				if strings.HasSuffix(src, ".git") {
+					return true, nil
+				} else if strings.Index(src, "/.terraform") > 0 {
+					return true, nil
+				}
+				//Add more stuff to be ignored here
+				return false, nil
+
+			},
+		}
+		err := cp.Copy(config.GitOpsRepoPath+"/argo-workflows/.argo", directory+"/.argo", opt)
+		if err != nil {
+			log.Println("Error populating argo-workflows .argo/ with local setup:", err)
+		}
+		err = cp.Copy(config.GitOpsRepoPath+"/argo-workflows/.github", directory+"/.github", opt)
+		if err != nil {
+			log.Println("Error populating argo-workflows with .github/ with local setup:", err)
+		}
+	}
 
 	log.Printf("detokenizing %s/%s", config.K1FolderPath, repoName)
 	pkg.Detokenize(directory)
@@ -45,7 +78,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 
 	repo, err := git.PlainOpen(directory)
 
-	if viper.GetBool("github.enabled") {
+	if viper.GetString("gitprovider") == "github" {
 		githubHost := viper.GetString("github.host")
 		githubOwner := viper.GetString("github.owner")
 
@@ -107,32 +140,29 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 
 // UpdateForLocalMode - Tweak for local install on templates
 func UpdateForLocalMode(directory string) error {
-	//TODO: Confirm Change
-	if viper.GetString("cloud") == flagset.CloudK3d {
-		log.Println("Working Directory:", directory)
-		//Tweak folder
-		os.RemoveAll(directory + "/components")
-		os.RemoveAll(directory + "/registry")
-		os.RemoveAll(directory + "/terraform")
-		os.RemoveAll(directory + "/validation")
-		opt := cp.Options{
-			Skip: func(src string) (bool, error) {
-				if strings.HasSuffix(src, ".git") {
-					return true, nil
-				} else if strings.Index(src, "/.terraform") > 0 {
-					return true, nil
-				}
-				//Add more stuff to be ignored here
-				return false, nil
+	log.Println("Working Directory:", directory)
+	//Tweak folder
+	os.RemoveAll(directory + "/components")
+	os.RemoveAll(directory + "/registry")
+	os.RemoveAll(directory + "/terraform")
+	os.RemoveAll(directory + "/validation")
+	opt := cp.Options{
+		Skip: func(src string) (bool, error) {
+			if strings.HasSuffix(src, ".git") {
+				return true, nil
+			} else if strings.Index(src, "/.terraform") > 0 {
+				return true, nil
+			}
+			//Add more stuff to be ignored here
+			return false, nil
 
-			},
-		}
-		err := cp.Copy(directory+"/localhost", directory, opt)
-		if err != nil {
-			log.Println("Error populating gitops with local setup:", err)
-			return err
-		}
-		os.RemoveAll(directory + "/localhost")
+		},
 	}
+	err := cp.Copy(directory+"/localhost", directory, opt)
+	if err != nil {
+		log.Println("Error populating gitops with local setup:", err)
+		return err
+	}
+	os.RemoveAll(directory + "/localhost")
 	return nil
 }

@@ -12,6 +12,7 @@ import (
 // IsChartMuseumReady - check is current instance of ChartMuseum is ready to receive deployments
 // refers to: https://github.com/kubefirst/kubefirst/issues/386
 func IsChartMuseumReady() (bool, error) {
+	// todo local uses a different function pkg.AwaitHostNTimes
 	url := fmt.Sprintf("https://chartmuseum.%s/index.yaml", viper.GetString("aws.hostedzonename"))
 
 	response, err := httpCommon.CustomHttpClient(false).Get(url)

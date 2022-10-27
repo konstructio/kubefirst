@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -29,17 +30,32 @@ func ApplyCITerraform(dryRun bool, bucketName string) {
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_bucket_ci"] = bucketName
 
+		accessKeyCmd := "cat $HOME/.aws/credentials | grep aws_access_key_id | awk '{ print $3 }'"
+		awsAccessKeyId, err := exec.Command("bash", "-c", accessKeyCmd).Output()
+		if err != nil {
+			log.Panicf("error: could not set aws key id: %s", err)
+		}
+
+		accessSecretCmd := "cat $HOME/.aws/credentials | grep aws_secret_access_key | awk '{ print $3 }'"
+		awsSecret, err := exec.Command("bash", "-c", accessSecretCmd).Output()
+		if err != nil {
+			log.Panicf("error: could not set aws secret: %s", err)
+		}
+
+		envs["TF_VAR_aws_access_key_id"] = string(awsAccessKeyId)
+		envs["TF_VAR_aws_secret_access_key"] = string(awsSecret)
+
 		directory := fmt.Sprintf("%s/ci/terraform/base", config.K1FolderPath)
-		err := os.Chdir(directory)
+		err = os.Chdir(directory)
 		if err != nil {
 			log.Panic("error: could not change directory to " + directory)
 		}
-		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
 			log.Panicf("error: terraform init for ci failed %s", err)
 		}
 
-		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
 		if err != nil {
 			log.Panicf("error: terraform apply for ci failed %s", err)
 		}
@@ -52,12 +68,12 @@ func ApplyCITerraform(dryRun bool, bucketName string) {
 			if err != nil {
 				log.Panic("error: could not change directory to " + secretDirectory)
 			}
-			err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
+			err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 			if err != nil {
 				log.Panicf("error: terraform init for ci secret failed %s", err)
 			}
 
-			err = pkg.ExecShellWithVars(envs, config.TerraformPath, "apply", "-auto-approve")
+			err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
 			if err != nil {
 				log.Panicf("error: terraform apply for ci secret failed %s", err)
 			}
@@ -82,33 +98,46 @@ func DestroyCITerraform(skipCITerraform bool) {
 		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 
-		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
 			log.Printf("[WARN]: failed to terraform init (destroy) CI, was the CI not created(check AWS)?: %s", err)
 		}
 
-		err = pkg.ExecShellWithVars(envs, config.TerraformPath, "destroy", "-auto-approve")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
 		if err != nil {
 			log.Printf("[WARN]: failed to terraform destroy CI, was the CI not created (check AWS)?: %s", err)
 		}
 
+		accessKeyCmd := "cat $HOME/.aws/credentials | grep aws_access_key_id | awk '{ printf $3 }'"
+		awsAccessKeyId, err := exec.Command("bash", "-c", accessKeyCmd).Output()
+		if err != nil {
+			log.Panicf("error: could not set aws key id: %s", err)
+		}
+
+		accessSecretCmd := "cat $HOME/.aws/credentials | grep aws_secret_access_key | awk '{ printf $3 }'"
+		awsSecret, err := exec.Command("bash", "-c", accessSecretCmd).Output()
+		if err != nil {
+			log.Panicf("error: could not set aws secret: %s", err)
+		}
+
+		envs["TF_VAR_aws_access_key_id"] = string(awsAccessKeyId)
+		envs["TF_VAR_aws_secret_access_key"] = string(awsSecret)
+
 		if viper.GetString("ci.flavor") == "github" {
 			envs["TF_VAR_github_token"] = os.Getenv("GITHUB_AUTH_TOKEN")
 			secretDirectory := fmt.Sprintf("%s/ci/terraform/secret", config.K1FolderPath)
-			err := os.Chdir(secretDirectory)
+			err = os.Chdir(secretDirectory)
 			if err != nil {
 				log.Panic("error: could not change directory to " + secretDirectory)
 			}
-			err = pkg.ExecShellWithVars(envs, config.TerraformPath, "init")
+			err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 			if err != nil {
 				log.Panicf("error: terraform init for ci secret failed %s", err)
 			}
-
-			err = pkg.ExecShellWithVars(envs, config.TerraformPath, "destroy", "-auto-approve")
+			err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
 			if err != nil {
-				log.Panicf("error: terraform destroy for ci secret failed %s", err)
+				log.Panicf("error: terraform apply for ci secret failed %s", err)
 			}
-			os.RemoveAll(fmt.Sprintf("%s/.terraform", secretDirectory))
 		}
 
 		viper.Set("gitlab.ci-pushed", false)

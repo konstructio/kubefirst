@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -50,15 +51,15 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		return nil
 	}
 
-	if viper.GetBool("github.enabled") && strings.Contains(path, "-gitlab.tf") {
-		log.Println("github is enabled, removing gitlab terraform file:", path)
+	if viper.GetString("gitprovider") == "github" && strings.Contains(path, "-gitlab.tf") {
+		log.Println("github provider specified, removing gitlab terraform file:", path)
 		err = os.Remove(path)
 		if err != nil {
 			log.Panic(err)
 		}
 		return nil
 	}
-	if !viper.GetBool("github.enabled") && strings.Contains(path, "-github.tf") {
+	if viper.GetString("gitprovider") == "gitlab" && strings.Contains(path, "-github.tf") {
 		log.Println("gitlab is enabled, removing github terraform file:", path)
 		err = os.Remove(path)
 		if err != nil {
@@ -110,7 +111,6 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		//Please, don't remove comments on this file unless you added it
 		// todo should Detokenize be a switch statement based on a value found in viper?
 		gitlabConfigured := viper.GetBool("gitlab.keyuploaded")
-		//githubConfigured := viper.GetBool("github.enabled")
 
 		newContents := string(read)
 
@@ -127,27 +127,27 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		kmsKeyId := viper.GetString("vault.kmskeyid")
 		clusterName := viper.GetString("cluster-name")
 		argocdOidcClientId := viper.GetString(("vault.oidc.argocd.client_id"))
-		githubRepoOwner := viper.GetString(("github.owner"))
 		githubRepoHost := viper.GetString(("github.host"))
-		githubUser := viper.GetString(("github.user"))
+		githubRepoOwner := viper.GetString(("github.owner"))
 		githubOrg := viper.GetString(("github.org"))
+		githubUser := viper.GetString(("github.user"))
 
-		//TODO:  We need to fix this
+		//TODO: We need to fix this
 		githubToken := os.Getenv("GITHUB_AUTH_TOKEN")
-		//TODO: Make this more clear
-		isGithubMode := viper.GetBool("github.enabled")
+
 		//todo: get from viper
 		gitopsRepo := "gitops"
 		repoPathHTTPSGitlab := "https://gitlab." + hostedZoneName + "/kubefirst/" + gitopsRepo
 
 		newContents = strings.Replace(newContents, "<GITHUB_USER>", githubUser, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_TOKEN>", githubToken, -1)
+		newContents = strings.Replace(newContents, "<KUBEFIRST_VERSION>", configs.K1Version, -1)
 
 		var repoPathHTTPS string
 		var repoPathSSH string
 		var repoPathPrefered string
 
-		if isGithubMode {
+		if viper.GetString("gitprovider") == "github" {
 			repoPathHTTPS = "https://" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
 			repoPathSSH = "git@" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
 			repoPathPrefered = repoPathSSH
@@ -388,6 +388,92 @@ func ValidateK1Folder(folderPath string) error {
 	if len(files) != 0 {
 		return fmt.Errorf("folder: %s has files that can be left overs from a previous installation, "+
 			"please use kubefirst clean command to be ready for a new installation", folderPath)
+	}
+
+	return nil
+}
+
+// AwaitHostNTimes - Wait for a Host to return a 200
+// - To return 200
+// - To return true if host is ready, or false if not
+// - Supports a number of times to test an endpoint
+// - Supports the grace period after status 200 to wait before returning
+func AwaitHostNTimes(url string, times int, gracePeriod time.Duration) {
+	log.Printf("AwaitHostNTimes %d called with grace period of: %d seconds", times, gracePeriod)
+	max := times
+	for i := 0; i < max; i++ {
+		resp, _ := http.Get(url)
+		if resp != nil && resp.StatusCode == 200 {
+			log.Printf("%s resolved, %s second grace period required...", url, gracePeriod)
+			time.Sleep(time.Second * gracePeriod)
+			return
+		} else {
+			log.Printf("%s not resolved, sleeping 10s", url)
+			time.Sleep(time.Second * 10)
+		}
+	}
+}
+
+// type NgrokOutput struct {
+// 	Tunnels []struct {
+// 		PublicURL string `json:"public_url"`
+// 	} `json:"tunnels"`
+// 	URI string `json:"uri"`
+// }
+
+// func OpenNgrokTunnel() string {
+
+// 	config := configs.ReadConfig()
+
+// 	var ngrokOutb, ngrokErrb bytes.Buffer
+// 	openNgrokTunnel := exec.Command(config.NgrokClientPath, "http", "4141")
+// 	openNgrokTunnel.Stdout = &ngrokOutb
+// 	openNgrokTunnel.Stderr = &ngrokErrb
+// 	err := openNgrokTunnel.Start()
+// 	url := "http://localhost:4040/api/tunnels"
+// 	outb, _, err := ExecShellReturnStrings("curl", url)
+// 	if err != nil {
+// 		log.Panicf("error starting ngrok on port 4141: %s", err)
+// 	}
+// 	ngrokOutput := &NgrokOutput{}
+// 	err = json.Unmarshal([]byte(outb), ngrokOutput)
+// 	if err != nil {
+// 		log.Println("error unmarshalling json from curl command ")
+// 	}
+// 	fmt.Println(ngrokOutput.Tunnels[0].PublicURL)
+// 	return ngrokOutput.Tunnels[0].PublicURL
+// }
+
+// this is temporary code
+func ReplaceS3Backend() error {
+
+	config := configs.ReadConfig()
+
+	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", config.K1FolderPath)
+
+	file, err := os.ReadFile(vaultMainFile)
+	if err != nil {
+		return err
+	}
+	newContents := strings.Replace(string(file), "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000", -1)
+
+	err = os.WriteFile(vaultMainFile, []byte(newContents), 0)
+	if err != nil {
+		return err
+	}
+
+	if viper.GetString("gitprovider") == "github" {
+		kubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
+		file2, err := os.ReadFile(kubefirstGitHubFile)
+		if err != nil {
+			return err
+		}
+		newContents2 := strings.Replace(string(file2), "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000", -1)
+
+		err = os.WriteFile(kubefirstGitHubFile, []byte(newContents2), 0)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

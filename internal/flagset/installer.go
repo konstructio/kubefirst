@@ -2,7 +2,6 @@ package flagset
 
 import (
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/kubefirst/kubefirst/configs"
@@ -21,6 +20,7 @@ type InstallerGenericFlags struct {
 	AdminEmail       string
 	BotPassword      string
 	Cloud            string
+	GitProvider      string
 	OrgGitops        string
 	BranchGitops     string //former: "version-gitops"
 	BranchMetaphor   string
@@ -34,7 +34,8 @@ func DefineInstallerGenericFlags(currentCommand *cobra.Command) {
 	// Generic Installer flags:
 	currentCommand.Flags().String("cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
 	currentCommand.Flags().String("admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
-	currentCommand.Flags().String("cloud", "", "the cloud to provision infrastructure in")
+	currentCommand.Flags().String("cloud", "k3d", "the cloud to provision infrastructure in")
+	currentCommand.Flags().String("git-provider", "github", "specify \"github\" or \"gitlab\" git provider. defaults to github.")
 	currentCommand.Flags().String("gitops-owner", "kubefirst", "git owner of gitops, this may be a user or a org to support forks for testing")
 	currentCommand.Flags().String("gitops-repo", "gitops", "version/branch used on git clone")
 	currentCommand.Flags().String("gitops-branch", "", "version/branch used on git clone - former: version-gitops flag")
@@ -59,6 +60,14 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 			log.Println(err)
 		}
 	}()
+
+	gitProvider, err := ReadConfigString(cmd, "git-provider")
+	if err != nil {
+		return InstallerGenericFlags{}, err
+	}
+	flags.GitProvider = gitProvider
+	log.Println("git provider:", gitProvider)
+	viper.Set("gitprovider", gitProvider)
 
 	adminEmail, err := ReadConfigString(cmd, "admin-email")
 	if err != nil {
@@ -167,10 +176,6 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	log.Println("option.kubefirst.experimental", experimentalMode)
 	flags.ExperimentalMode = experimentalMode
 
-	// TODO: reintroduce the next 3 lines after #511 is closed
-	//if viper.GetBool("github.enabled") && flags.BotPassword == "" {
-	//	return InstallerGenericFlags{}, fmt.Errorf("must provide bot-password argument for github installations of kubefirst")
-	//}
 	err = validateInstallationFlags()
 	if err != nil {
 		log.Println("Error validateInstallationFlags:", err)
@@ -209,18 +214,14 @@ func experimentalModeTweaks(flags InstallerGenericFlags) InstallerGenericFlags {
 func validateInstallationFlags() error {
 	//If you are changind this rules, please ensure to update:
 	// internal/flagset/init_test.go
-	if len(viper.GetString("adminemail")) < 1 {
-		message := "missing flag --admin-email"
-		log.Println(message)
-		return errors.New(message)
-	}
+	// todo validate on email address if not local
+	// if len(viper.GetString("adminemail")) < 1 {
+	// 	message := "missing flag --admin-email"
+	// 	log.Println(message)
+	// 	return errors.New(message)
+	// }
 	if len(viper.GetString("cloud")) < 1 {
 		message := "missing flag --cloud, supported values: " + CloudAws + ", " + CloudK3d
-		log.Println(message)
-		return errors.New(message)
-	}
-	if viper.GetString("cloud") == CloudLocal && !viper.GetBool("github.enabled") {
-		message := fmt.Sprintf(" flag --cloud %s is not supported for non-github installations. Please, provide the flags '--github-user ghuser --github-org ghorg' to be able to use local install  ", CloudK3d)
 		log.Println(message)
 		return errors.New(message)
 	}
