@@ -66,10 +66,15 @@ func main() {
 	// progress bar
 	progressPrinter.GetInstance()
 
-	kubefirstCmd := cli.NewCommand()
-	if err = kubefirstCmd.Execute(); err != nil {
+	coreKubefirstCmd := cli.NewCommand()
+	if err = coreKubefirstCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
+
+	//toolsKubefirstCmd := cli.NewToolCommand()
+	//if err = toolsKubefirstCmd.Execute(); err != nil {
+	//	os.Exit(1)
+	//}
 	//cmd.Execute()
 }
 

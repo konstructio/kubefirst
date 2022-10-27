@@ -32,7 +32,7 @@ kubefirst backupSSL
 kubefirst clean
 
 # Prepare a new installation:
-kubefirst init + <args>
+kubefirst prepare + <args>
 
 # During the Kubefirst installation process,
 # the installation will load the backup certificates to avoid issuing new certificates.
