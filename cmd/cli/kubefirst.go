@@ -4,6 +4,7 @@ import (
 	"github.com/kubefirst/kubefirst/cmd/cli/clean"
 	"github.com/kubefirst/kubefirst/cmd/cli/cluster"
 	"github.com/kubefirst/kubefirst/cmd/cli/initialization"
+	"github.com/kubefirst/kubefirst/cmd/cli/local"
 	"github.com/kubefirst/kubefirst/cmd/cli/tools"
 	"github.com/kubefirst/kubefirst/cmd/cli/version"
 	"github.com/spf13/cobra"
@@ -25,6 +26,7 @@ func createCliCommandTree(cmd *cobra.Command) {
 
 	cmd.AddCommand(initialization.NewCommand())
 	cmd.AddCommand(cluster.NewCommand())
+	cmd.AddCommand(local.NewCommand())
 
 	cmd.AddCommand(clean.NewCommand())
 	cmd.AddCommand(version.NewCommand())

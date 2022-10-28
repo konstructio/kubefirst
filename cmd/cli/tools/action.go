@@ -19,7 +19,3 @@ to quickly create a Cobra application.`,
 		fmt.Println("action called")
 	},
 }
-
-//func initialization() {
-//	cmd.rootCmd.AddCommand(actionCmd)
-//}

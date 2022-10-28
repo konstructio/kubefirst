@@ -32,6 +32,7 @@ var (
 	createCmdSilentMode   bool
 	createCmdUseTelemetry bool
 	createCmdDryRun       bool
+	enableConsole         bool
 )
 
 func CreateCommand() *cobra.Command {
@@ -51,8 +52,10 @@ func CreateCommand() *cobra.Command {
 	createCmd.Flags().BoolVar(&createCmdUseTelemetry, "use-telemetry", true, "installer will not send telemetry about this installation")
 	createCmd.Flags().BoolVar(&createCmdDryRun, "dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	createCmd.Flags().BoolVar(&createCmdSilentMode, "silent", false, "enable destroySilentMode mode will make the UI return less content to the screen")
-	//createCmd.Flags().StringP("config", "c", "", "File to be imported to bootstrap configs")
+	createCmd.Flags().BoolVar(&enableConsole, "enable-console", true, "")
 
+	// todo: setup config
+	//createCmd.Flags().StringP("config", "c", "", "File to be imported to bootstrap configs")
 	//viper.BindPFlag("config.file", currentCommand.Flags().Lookup("config-load"))
 	return createCmd
 
@@ -68,11 +71,6 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		log.Printf("[000] Create duration is %s", duration)
 
 	}()
-
-	//globalFlags, err := flagset.ProcessGlobalFlags(cmd)
-	//if err != nil {
-	//	return err
-	//}
 
 	if createCmdSilentMode {
 		pkg.InformUser(
@@ -223,7 +221,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	pkg.InformUser("Deploying metaphor applications", createCmdSilentMode)
-	err := deployMetaphorCmd.RunE(cmd, args)
+	err := deployMetaphorCommand().RunE(cmd, args)
 	if err != nil {
 		pkg.InformUser("Error deploy metaphor applications", createCmdSilentMode)
 		log.Println("Error running deployMetaphorCmd")
@@ -236,14 +234,6 @@ func runCreate(cmd *cobra.Command, args []string) error {
 			log.Println(err)
 		}
 	}
-
-	//kPortForwardAtlantis, err := k8s.PortForward(globalFlags.DryRun, "atlantis", "svc/atlantis", "4141:80")
-	//defer func() {
-	//	err = kPortForwardAtlantis.Process.Signal(syscall.SIGTERM)
-	//	if err != nil {
-	//		log.Println("error closing kPortForwardAtlantis")
-	//	}
-	//}()
 
 	// ---
 	// todo: (start) we can remove it, the secrets are now coming from Vault (run a full installation after removing to confirm)
@@ -380,14 +370,3 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	return nil
 
 }
-
-//func initialization() {
-//	cmd2.clusterCmd.AddCommand(createCmd)
-//	currentCommand := createCmd
-//	// todo: make this an optional switch and check for it or viper
-//	createCmd.Flags().Bool("destroy", false, "destroy resources")
-//	createCmd.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
-//	createCmd.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
-//	flagset.DefineGlobalFlags(currentCommand)
-//	flagset.DefineCreateFlags(currentCommand)
-//}

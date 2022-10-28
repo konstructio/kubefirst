@@ -1,6 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-*/
 package tools
 
 import (
@@ -47,7 +44,6 @@ var githubRemoveCmd = &cobra.Command{
 }
 
 func init() {
-	//cmd.actionCmd.AddCommand(githubRemoveCmd)
 	currentCommand := githubRemoveCmd
 	flagset.DefineGlobalFlags(currentCommand)
 }

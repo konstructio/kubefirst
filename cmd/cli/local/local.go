@@ -1,7 +1,18 @@
 package local
 
 import (
+	"github.com/kubefirst/kubefirst/cmd/cli/cluster"
+	"github.com/kubefirst/kubefirst/cmd/cli/initialization"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+var (
+	gitOpsBranch   string
+	metaphorBranch string
+	gitProvider    string
+	cloud          string
+	enableConsole  bool
 )
 
 func NewCommand() *cobra.Command {
@@ -12,71 +23,42 @@ func NewCommand() *cobra.Command {
 		RunE:  runLocalCommand,
 	}
 
+	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "main", "")
+	localCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "main", "")
+	localCmd.Flags().StringVar(&gitProvider, "git-provider", "github", "")
+	localCmd.Flags().StringVar(&cloud, "cloud", "k3d", "")
+	localCmd.Flags().BoolVar(&enableConsole, "enable-console", true, "")
+
 	return localCmd
 }
 
 func runLocalCommand(cmd *cobra.Command, args []string) error {
 
-	//initFlags := initialization.InitCmd.Flags()
-	////err := initFlags.Set("gitops-branch", "main")
-	//err := initFlags.Set("gitops-branch", "main")
-	//if err != nil {
-	//	return err
-	//}
-	////viper.Set("gitops.branch", "main")
-	//viper.Set("gitops.branch", "main")
-	//
-	//err = initFlags.Set("metaphor-branch", "main")
-	//if err != nil {
-	//	return err
-	//}
-	//viper.Set("metaphor.branch", "main")
-	//
-	//err = viper.WriteConfig()
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//err = initialization.InitCmd.ParseFlags(args)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//err = initialization.InitCmd.RunE(cmd, args)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//// create
-	//if err = cluster.createCmd.Flags().Set("enable-console", "true"); err != nil {
-	//	return err
-	//}
-	//
-	//viper.Set("metaphor.branch", "main")
-	//viper.Set("botpassword", "kubefirst-123")
-	//viper.Set("adminemail", "joao@kubeshop.io")
-	//err = cluster.createCmd.RunE(cmd, args)
-	//if err != nil {
-	//	return err
-	//}
-	//
+	viper.Set("gitops.branch", gitOpsBranch)
+	viper.Set("metaphor.branch", metaphorBranch)
+
+	err := viper.WriteConfig()
+	if err != nil {
+		return err
+	}
+
+	err = initialization.RunInit(cmd, args)
+	if err != nil {
+		return err
+	}
+
+	// create
+	if err = cluster.CreateCommand().Flags().Set("enable-console", "true"); err != nil {
+		return err
+	}
+
+	viper.Set("metaphor.branch", "main")
+	viper.Set("botpassword", "kubefirst-123")
+	viper.Set("adminemail", "joao@kubeshop.io")
+	err = cluster.CreateCommand().RunE(cmd, args)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
-
-//func init() {
-
-// Do we need this?
-//localCmd.Flags().Bool("clean", false, "delete any local kubefirst content ~/.kubefirst, ~/.k1")
-
-//Group Flags
-
-/*	cmd.rootCmd.AddCommand(localCmd)
-	currentCommand := localCmd
-	//log.SetPrefix("LOG: ")
-	//log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
-	flagset.DefineGlobalFlags(currentCommand)
-	flagset.DefineGithubCmdFlags(currentCommand)
-	flagset.DefineAWSFlags(currentCommand)
-	flagset.DefineInstallerGenericFlags(currentCommand)*/
-
-//}

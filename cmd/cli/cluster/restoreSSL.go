@@ -39,9 +39,3 @@ var restoreSSLCmd = &cobra.Command{
 		return nil
 	},
 }
-
-//func initialization() {
-//	cmd.rootCmd.AddCommand(restoreSSLCmd)
-//	//restoreSSLCmd.Flags().Bool("include-metaphor", false, "Include Metaphor Apps in process")
-//	flagset.DefineGlobalFlags(restoreSSLCmd)
-//}

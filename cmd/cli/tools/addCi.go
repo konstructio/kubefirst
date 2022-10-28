@@ -1,6 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-*/
 package tools
 
 import (
@@ -45,10 +42,4 @@ var addCiCmd = &cobra.Command{
 		log.Println(ciFlags)
 		return nil
 	},
-}
-
-func init() {
-	actionCmd.AddCommand(addCiCmd)
-	flagset.DefineCIFlags(addCiCmd)
-	flagset.DefineGlobalFlags(addCiCmd)
 }

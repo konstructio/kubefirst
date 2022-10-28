@@ -1,6 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-*/
 package tools
 
 import (
@@ -55,7 +52,6 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	//cmd.actionCmd.AddCommand(githubPopulateCmd)
 	currentCommand := githubPopulateCmd
 	flagset.DefineGlobalFlags(currentCommand)
 

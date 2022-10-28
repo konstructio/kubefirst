@@ -36,7 +36,7 @@ var (
 	gitOpsRepo     string
 	cloud          string
 	clusterName    string
-	awsNodeSpot    bool
+	awsNodeSpot    bool // todo: add
 	awsAssumeRole  string
 	awsHostedZone  string
 	metaphorBranch string
@@ -63,7 +63,7 @@ validated and configured.`,
 
 	initCmd.Flags().StringVar(&cloud, "cloud", "k3d", "the cloud to provision infrastructure in")
 
-	initCmd.Flags().StringVar(&clusterName, "cluster-name", "k3d-kubefirst", "the cluster name, used to identify resources on cloud provider")
+	initCmd.Flags().StringVar(&clusterName, "cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
 	initCmd.Flags().StringVar(&awsAssumeRole, "aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")
 	initCmd.Flags().StringVar(&awsHostedZone, "hosted-zone-name", "", "the domain to provision the kubefirst platform in")
 
@@ -76,7 +76,7 @@ validated and configured.`,
 	//initCmd.Flags().String("profile", "", "AWS profile located at ~/.aws/config")
 	//initCmd.Flags().String("region", "", "the region to provision the cloud resources in")
 
-	initCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "", "metaphro application branch")
+	initCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "main", "metaphro application branch")
 	initCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "main", "version/branch used on git clone - former: version-gitops flag")
 	initCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
 	//initCmd.Flags().StringP("config", "c", "", "File to be imported to bootstrap configs")
@@ -90,12 +90,12 @@ func RunInit(cmd *cobra.Command, args []string) error {
 	tools.RunInfo(cmd, args)
 	config := configs.ReadConfig()
 
+	// set default values
 	viper.Set("gitops.repo", gitOpsRepo)
+	viper.Set("gitops.owner", "kubefirst")
 	viper.Set("gitprovider", gitProvider)
+	viper.Set("metaphor.branch", metaphorBranch)
 	viper.WriteConfig()
-
-	//Please don't change the order of this block, wihtout updating
-	// internal/flagset/init_test.go
 
 	if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
 		return err
@@ -151,20 +151,8 @@ func RunInit(cmd *cobra.Command, args []string) error {
 		viper.Set("adminemail", adminEmail)
 		viper.WriteConfig()
 
-		//if installerFlags.BranchGitops = viper.GetString("gitops.branch"); err != nil {
-		//	return err
-		//}
-		//if installerFlags.BranchMetaphor = viper.GetString("metaphor.branch"); err != nil {
-		//	return err
-		//}
-		//if githubFlags.GithubOwner = viper.GetString("github.owner"); err != nil {
-		//	return err
-		//}
-		//
-		//if githubFlags.GithubUser = viper.GetString("github.user"); err != nil {
-		//	return err
-		//}
 	} else {
+		// todo: check github
 		// github or gitlab
 		//_, _, _, awsFlags, err = flagset.InitFlags(cmd)
 	}
@@ -236,8 +224,6 @@ func RunInit(cmd *cobra.Command, args []string) error {
 			log.Println(err)
 		}
 	}
-
-	// todo need to check flags and create config
 
 	// hosted zone name:
 	// name of the hosted zone to be used for the kubefirst install
@@ -361,20 +347,7 @@ func RunInit(cmd *cobra.Command, args []string) error {
 }
 
 func init() {
-	//cmd.rootCmd.AddCommand(InitCmd)
-	//currentCommand := InitCmd
 	log.Println("kubefirst started")
 	log.SetPrefix("LOG: ")
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
-
-	// Do we need this?
-	//InitCmd.Flags().Bool("clean", false, "delete any local kubefirst content ~/.kubefirst, ~/.k1")
-
-	//Group Flags
-	//flagset.DefineGlobalFlags(currentCommand)
-	//flagset.DefineGithubCmdFlags(currentCommand)
-	//flagset.DefineAWSFlags(currentCommand)
-	//flagset.DefineInstallerGenericFlags(currentCommand)
-
-	//validations happens on /internal/flagset
 }

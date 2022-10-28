@@ -1,6 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-*/
 package tools
 
 import (
@@ -26,7 +23,3 @@ func awsWhoamiCommand() *cobra.Command {
 	return awsWhoamiCmd
 
 }
-
-//func initialization() {
-//	cmd.actionCmd.AddCommand(awsWhoamiCmd)
-//}

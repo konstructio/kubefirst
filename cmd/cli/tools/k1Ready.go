@@ -113,7 +113,6 @@ var K1ReadyCmd = &cobra.Command{
 }
 
 func init() {
-	//cmd.actionCmd.AddCommand(K1ReadyCmd)
 	currentCommand := K1ReadyCmd
 	flagset.DefineGlobalFlags(currentCommand)
 

@@ -28,7 +28,3 @@ var console = &cobra.Command{
 		return nil
 	},
 }
-
-//func initialization() {
-//	cmd.rootCmd.AddCommand(console)
-//}

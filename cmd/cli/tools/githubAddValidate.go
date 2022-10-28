@@ -1,6 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-*/
 package tools
 
 import (
@@ -39,7 +36,5 @@ var githubAddValidate = &cobra.Command{
 }
 
 func init() {
-	//cmd.actionCmd.AddCommand(githubAddValidate)
 	flagset.DefineGithubCmdFlags(githubAddValidate)
-
 }

@@ -38,7 +38,3 @@ var checktoolsCmd = &cobra.Command{
 
 	},
 }
-
-func init() {
-	//cmd.rootCmd.AddCommand(checktoolsCmd)
-}

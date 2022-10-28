@@ -1,6 +1,3 @@
-// /*
-// Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-// */
 package cluster
 
 import (
@@ -40,10 +37,6 @@ func CreateGitHubCommand() *cobra.Command {
 func runCreateGitHubCommand(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
-	//globalFlags, err := flagset.ProcessGlobalFlags(cmd)
-	//if err != nil {
-	//	return err
-	//}
 
 	// todo: this is temporary, command flags should be independent, and has no dependency from other commands
 	silentMode, err := cmd.Flags().GetBool("silent")
@@ -68,10 +61,6 @@ func runCreateGitHubCommand(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 6)
 
 	progressPrinter.IncrementTracker("step-0", 1)
-
-	//if !globalFlags.UseTelemetry {
-	//	pkg.InformUser("Telemetry Disabled", silentMode)
-	//}
 
 	//* create github teams in the org and gitops repo
 	pkg.InformUser("Creating gitops/metaphor repos", silentMode)
@@ -230,14 +219,4 @@ func runCreateGitHubCommand(cmd *cobra.Command, args []string) error {
 	}
 	progressPrinter.IncrementTracker("step-apps", 1)
 	return nil
-}
-
-func initialization() {
-	//cmd.clusterCmd.AddCommand(createGithubCmd)
-	//currentCommand := createGithubCmd
-	//flagset.DefineGithubCmdFlags(currentCommand)
-	//flagset.DefineGlobalFlags(currentCommand)
-	//// todo: make this an optional switch and check for it or viper
-	//currentCommand.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
-	//currentCommand.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
 }

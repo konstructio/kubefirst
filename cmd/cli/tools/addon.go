@@ -16,7 +16,3 @@ var addonCmd = &cobra.Command{
 		fmt.Println("addon root command - call kubefirst addon --help to see more options")
 	},
 }
-
-func init() {
-	//cmd.rootCmd.AddCommand(addonCmd)
-}

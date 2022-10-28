@@ -35,7 +35,3 @@ var loadTemplateCmd = &cobra.Command{
 
 	},
 }
-
-func init() {
-	//cmd.actionCmd.AddCommand(loadTemplateCmd)
-}

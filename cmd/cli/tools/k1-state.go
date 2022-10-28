@@ -86,8 +86,6 @@ var k1state = &cobra.Command{
 }
 
 func init() {
-	//cmd.rootCmd.AddCommand(k1state)
-
 	k1state.Flags().Bool("push", false, "push Kubefirst config file to the S3 bucket")
 	k1state.Flags().Bool("pull", false, "pull Kubefirst config file to the S3 bucket")
 	k1state.Flags().String("region", "", "set S3 bucket region")

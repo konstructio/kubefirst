@@ -1,6 +1,3 @@
-// /*
-// Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-// */
 package cluster
 
 import (
@@ -49,11 +46,3 @@ var githubAddCmd = &cobra.Command{
 		return nil
 	},
 }
-
-//
-//func initialization() {
-//	cmd.actionCmd.AddCommand(githubAddCmd)
-//	currentCommand := githubAddCmd
-//	flagset.DefineGlobalFlags(currentCommand)
-//
-//}

@@ -1,6 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-*/
 package tools
 
 import (
@@ -61,8 +58,4 @@ var githubRemoveValidateCmd = &cobra.Command{
 		}
 		return nil
 	},
-}
-
-func init() {
-	//cmd.actionCmd.AddCommand(githubRemoveValidateCmd)
 }

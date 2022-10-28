@@ -433,14 +433,3 @@ var createGitlabCmd = &cobra.Command{
 		return nil
 	},
 }
-
-//
-////func initialization() {
-////	cmd.clusterCmd.AddCommand(createGitlabCmd)
-////	currentCommand := createGitlabCmd
-////	// todo: make this an optional switch and check for it or viper
-////	currentCommand.Flags().Bool("destroy", false, "destroy resources")
-////	currentCommand.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
-////	currentCommand.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
-////	flagset.DefineGlobalFlags(currentCommand)
-////}

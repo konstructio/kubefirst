@@ -20,7 +20,3 @@ var api = &cobra.Command{
 		return http.ListenAndServe(":9095", router)
 	},
 }
-
-//func initialization() {
-//	cmd.rootCmd.AddCommand(api)
-//}*/
