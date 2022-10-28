@@ -48,7 +48,7 @@ func CreateTracker(title string, total int64) *progress.Tracker {
 	return tracker
 }
 
-// SetupProgress prepare the progress bar setting its initial configuration
+// SetupProgress initialization the progress bar setting its initial configuration
 func SetupProgress(numTrackers int) {
 
 	fmt.Printf("Init actions: %d expected tasks ...\n\n", numTrackers)

@@ -29,7 +29,9 @@ func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, br
 		log.Println("Error removing dir(expected if dir not present):", err)
 	}
 
-	err = CloneTemplateRepoWithFallBack(githubOwner, repoName, directory, branch, tag)
+	// todo:
+	gitHubOrg := "kubefirst"
+	err = CloneTemplateRepoWithFallBack(gitHubOrg, repoName, directory, branch, tag)
 	if err != nil {
 		log.Panicf("Error cloning repo with fallback: %s", err)
 	}
@@ -37,7 +39,7 @@ func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, br
 		log.Printf("error cloning %s repository from github %s", folderName, err)
 		return directory, err
 	}
-	viper.Set(fmt.Sprintf("init.repos.%s.cloned", folderName), true)
+	viper.Set(fmt.Sprintf("initialization.repos.%s.cloned", folderName), true)
 	viper.WriteConfig()
 
 	log.Printf("cloned %s-template repository to directory %s/%s", folderName, config.K1FolderPath, folderName)
@@ -46,7 +48,7 @@ func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, br
 	pkg.Detokenize(directory)
 	log.Printf("detokenization of %s/%s complete", config.K1FolderPath, folderName)
 
-	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", folderName), true)
+	viper.Set(fmt.Sprintf("initialization.repos.%s.detokenized", folderName), true)
 	viper.WriteConfig()
 	return directory, nil
 }
@@ -210,6 +212,14 @@ func PushGitopsToSoftServe() {
 // CloneTemplateRepoWithFallBack - Tries to clone branch, if defined, else try to clone Tag
 // In the absence of matching tag/branch function will fail
 func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory string, branch string, fallbackTag string) error {
+	log.Println("---debug2---")
+	log.Println(githubOrg)
+	log.Println(repoName)
+	log.Println(directory)
+	log.Println(branch)
+	log.Println(fallbackTag)
+	log.Println("---debug2---")
+
 	defer viper.WriteConfig()
 	// todo need to refactor this and have the repoName include -template
 	repoURL := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)

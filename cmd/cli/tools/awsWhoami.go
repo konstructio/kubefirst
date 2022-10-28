@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package tools
 
@@ -28,6 +27,6 @@ func awsWhoamiCommand() *cobra.Command {
 
 }
 
-//func init() {
+//func initialization() {
 //	cmd.actionCmd.AddCommand(awsWhoamiCmd)
 //}

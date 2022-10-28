@@ -1,4 +1,6 @@
-package tools
+package clean
+
+// todo: move it to cli package
 
 import (
 	"bytes"
@@ -15,22 +17,38 @@ import (
 	"github.com/spf13/viper"
 )
 
-// CleanCommand removes all kubefirst resources created with the init command
-func CleanCommand() *cobra.Command {
+func NewCommand() *cobra.Command {
 	cleanCmd := &cobra.Command{
 		Use:   "clean",
-		Short: "removes all kubefirst resources created with the init command",
+		Short: "removes all kubefirst resources created with the initialization command",
 		Long: `Kubefirst creates files, folders and cloud buckets during installation at your environment. This command removes and 
 	re-create Kubefirst base files. To destroy cloud resources you need to specify additional flags (--destroy-buckets)`,
 		RunE: runClean,
 	}
 
 	cleanCmd.Flags().Bool("rm-logs", false, "remove logs folder")
-	cleanCmd.Flags().Bool("destroy-buckets", false, "destroy buckets created by init cmd")
+	cleanCmd.Flags().Bool("destroy-buckets", false, "destroy buckets created by initialization cmd")
 	cleanCmd.Flags().Bool("destroy-confirm", false, "when detroy-buckets flag is provided, we must provide this flag as well to confirm the destroy operation")
 
 	return cleanCmd
 }
+
+//// CleanCommand removes all kubefirst resources created with the initialization command
+//func CleanCommand() *cobra.Command {
+//	cleanCmd := &cobra.Command{
+//		Use:   "clean",
+//		Short: "removes all kubefirst resources created with the initialization command",
+//		Long: `Kubefirst creates files, folders and cloud buckets during installation at your environment. This command removes and
+//	re-create Kubefirst base files. To destroy cloud resources you need to specify additional flags (--destroy-buckets)`,
+//		RunE: runClean,
+//	}
+//
+//	cleanCmd.Flags().Bool("rm-logs", false, "remove logs folder")
+//	cleanCmd.Flags().Bool("destroy-buckets", false, "destroy buckets created by initialization cmd")
+//	cleanCmd.Flags().Bool("destroy-confirm", false, "when detroy-buckets flag is provided, we must provide this flag as well to confirm the destroy operation")
+//
+//	return cleanCmd
+//}
 
 func runClean(cmd *cobra.Command, args []string) error {
 
@@ -112,6 +130,6 @@ func runClean(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-//func init() {
+//func initialization() {
 //	cmd.rootCmd.AddCommand(cleanCmd)
 //}

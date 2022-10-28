@@ -3,7 +3,7 @@ package local
 import (
 	"github.com/kubefirst/kubefirst/cmd"
 	"github.com/kubefirst/kubefirst/cmd/cli/cluster"
-	"github.com/kubefirst/kubefirst/cmd/cli/prepare"
+	"github.com/kubefirst/kubefirst/cmd/cli/initialization"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -16,7 +16,7 @@ var localCmd = &cobra.Command{
 	Long:  "Kubefirst localhost enable a localhost installation without the requirement of a cloud provider.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		initFlags := prepare.InitCmd.Flags()
+		initFlags := initialization.InitCmd.Flags()
 		//err := initFlags.Set("gitops-branch", "main")
 		err := initFlags.Set("gitops-branch", "main")
 		if err != nil {
@@ -36,12 +36,12 @@ var localCmd = &cobra.Command{
 			return err
 		}
 
-		err = prepare.InitCmd.ParseFlags(args)
+		err = initialization.InitCmd.ParseFlags(args)
 		if err != nil {
 			return err
 		}
 
-		err = prepare.InitCmd.RunE(cmd, args)
+		err = initialization.InitCmd.RunE(cmd, args)
 		if err != nil {
 			return err
 		}

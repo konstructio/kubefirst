@@ -70,25 +70,26 @@ func Test_DefineSource_set_by_flag(t *testing.T) {
 }
 
 // Not able to test without a bit re-org of the new logic
-// func Test_DefineSource_set_by_config(t *testing.T) {
-// 	cmd := NewRootCmd()
-// 	b := bytes.NewBufferString("")
-// 	os.Unsetenv("KUBEFIRST_SAMPLE")
-// 	artifactsDir := os.Getenv("ARTIFACTS_SOURCE")
-// 	cmd.SetOut(b)
-// 	cmd.SetArgs([]string{"--config", artifactsDir + "/test/artifacts/init/sample.yaml"})
-// 	err := cmd.Execute()
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	out, err := ioutil.ReadAll(b)
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	if string(out) != "set-by-config" {
-// 		t.Errorf("expected \"%s\" got \"%s\"", "set-by-config", string(out))
-// 	}
-// }
+//
+//	func Test_DefineSource_set_by_config(t *testing.T) {
+//		cmd := NewRootCmd()
+//		b := bytes.NewBufferString("")
+//		os.Unsetenv("KUBEFIRST_SAMPLE")
+//		artifactsDir := os.Getenv("ARTIFACTS_SOURCE")
+//		cmd.SetOut(b)
+//		cmd.SetArgs([]string{"--config", artifactsDir + "/test/artifacts/initialization/sample.yaml"})
+//		err := cmd.Execute()
+//		if err != nil {
+//			t.Error(err)
+//		}
+//		out, err := ioutil.ReadAll(b)
+//		if err != nil {
+//			t.Error(err)
+//		}
+//		if string(out) != "set-by-config" {
+//			t.Errorf("expected \"%s\" got \"%s\"", "set-by-config", string(out))
+//		}
+//	}
 func Test_DefineSource_set_by_var(t *testing.T) {
 	cmd := NewRootCmd()
 	b := bytes.NewBufferString("")

@@ -75,9 +75,9 @@ configs:
         %s
 `, strings.ReplaceAll(privateKey, "\n", "\n        ")))
 
-	err := os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
+	err := os.WriteFile(fmt.Sprintf("%s/argocd-initialization-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
 	if err != nil {
-		log.Panicf("error: could not write argocd-init-values.yaml %s", err)
+		log.Panicf("error: could not write argocd-initialization-values.yaml %s", err)
 	}
 }
 

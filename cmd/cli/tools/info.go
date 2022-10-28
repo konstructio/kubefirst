@@ -61,6 +61,6 @@ func RunInfo(cmd *cobra.Command, args []string) {
 	fmt.Println(reports.StyleMessage(infoSummary.String()))
 }
 
-//func init() {
+//func initialization() {
 //	cmd.rootCmd.AddCommand(infoCmd)
 //}

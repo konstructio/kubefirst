@@ -12,7 +12,7 @@ var checktoolsCmd = &cobra.Command{
 	Use:   "checktools",
 	Short: "use to check compatibility of .kubefirst/tools",
 	Long: `Execute a compatibility check of the tools downloaded by the installer.
-	Execute After callint "init". If executed before init, tools will not be available. 
+	Execute After callint "initialization". If executed before initialization, tools will not be available. 
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		config := configs.ReadConfig()

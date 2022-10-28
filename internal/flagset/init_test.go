@@ -16,8 +16,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Test flags scenarions on init
-// Meant to validate init scenarios
+// Test flags scenarions on initialization
+// Meant to validate initialization scenarios
 // based on: https://gianarb.it/blog/golang-mockmania-cli-command-with-cobra
 
 // success
@@ -26,8 +26,8 @@ const success = "\nDONE"
 
 func FakeInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "fake-init",
-		Short: "Let's test init",
+		Use:   "fake-initialization",
+		Short: "Let's test initialization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config := configs.ReadConfig()
 			config.KubefirstConfigFilePath = "./logs/.k1_test"
@@ -52,8 +52,8 @@ func FakeInitCmd() *cobra.Command {
 
 func FakeInitAddonsTestCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "fake-init-addons",
-		Short: "Let's test init with addons",
+		Use:   "fake-initialization-addons",
+		Short: "Let's test initialization with addons",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, err := ProcessGlobalFlags(cmd)
 			if err != nil {
@@ -298,7 +298,7 @@ func Test_Init_by_var_aws_profile(t *testing.T) {
 //		b := bytes.NewBufferString("")
 //		artifactsDir := os.Getenv("ARTIFACTS_SOURCE")
 //		cmd.SetOut(b)
-//		cmd.SetArgs([]string{"--config", artifactsDir + "/test/artifacts/init/aws_profile.yaml"})
+//		cmd.SetArgs([]string{"--config", artifactsDir + "/test/artifacts/initialization/aws_profile.yaml"})
 //		err := cmd.Execute()
 //		if err != nil {
 //			t.Error(err)

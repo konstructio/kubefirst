@@ -12,7 +12,6 @@ func NewCommand() *cobra.Command {
 	}
 
 	toolsCmd.AddCommand(InfoCommand())
-	toolsCmd.AddCommand(CleanCommand())
 	toolsCmd.AddCommand(awsWhoamiCommand())
 
 	return toolsCmd

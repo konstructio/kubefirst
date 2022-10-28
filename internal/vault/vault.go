@@ -79,7 +79,7 @@ func ConfigureVault(dryRun bool) {
 		envs["TF_VAR_gitlab_token"] = viper.GetString("gitlab.token")
 	}
 
-	envs["VAULT_ADDR"] = "http://localhost:8200" //Should this come from init?
+	envs["VAULT_ADDR"] = "http://localhost:8200" //Should this come from initialization?
 	envs["VAULT_TOKEN"] = vaultToken
 	envs["AWS_SDK_LOAD_CONFIG"] = "1"
 
@@ -110,9 +110,9 @@ func ConfigureVault(dryRun bool) {
 		log.Panicf("error: could not change directory to " + directory)
 	}
 
-	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
+	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
 	if err != nil {
-		log.Panicf("error: terraform init failed %s", err)
+		log.Panicf("error: terraform initialization failed %s", err)
 	}
 	if !viper.GetBool("create.terraformapplied.vault") {
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")

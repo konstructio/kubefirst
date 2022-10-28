@@ -22,7 +22,8 @@ var loadTemplateCmd = &cobra.Command{
 			log.Println("github.repo.loaded already executed, skiped")
 			return nil
 		}
-		gitopsDir, err := gitClient.CloneRepoAndDetokenizeTemplate(viper.GetString("gitops.owner"), viper.GetString("gitops.repo"), "gitops", viper.GetString("gitops.branch"), viper.GetString("template.tag"))
+		gitOpsOwner := "kubefirst"
+		gitopsDir, err := gitClient.CloneRepoAndDetokenizeTemplate(gitOpsOwner, viper.GetString("gitops.repo"), "gitops", viper.GetString("gitops.branch"), viper.GetString("template.tag"))
 		if err != nil {
 			log.Printf("Error clonning and detokizing repo %s", "gitops")
 			return err

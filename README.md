@@ -79,7 +79,7 @@ Since Kubefirst 1.9 version, GitHub is also available as a Git platform provider
 To prepare the installation using GitLab you can:
 
 ```bash
-kubefirst prepare \
+kubefirst init \
 --cloud aws \
 --profile default \
 --region eu-central-1 \
@@ -93,7 +93,7 @@ kubefirst prepare \
 To prepare the installation using GitHub you can:
 
 ```bash
-kubefirst prepare \
+kubefirst init \
 --admin-email email@example.com.com \
 --cloud aws \
 --hosted-zone-name example.com \

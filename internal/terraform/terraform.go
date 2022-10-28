@@ -130,11 +130,11 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 
 		err := os.Chdir(directory)
 		if err != nil {
-			log.Panicf("error, directory does not exist - did you `kubefirst init`?: %s \nerror: %v", directory, err)
+			log.Panicf("error, directory does not exist - did you `kubefirst initialization`?: %s \nerror: %v", directory, err)
 		}
-		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
 		if err != nil {
-			log.Panic(fmt.Sprintf("error: terraform init failed %v", err))
+			log.Panic(fmt.Sprintf("error: terraform initialization failed %v", err))
 		}
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
 		if err != nil {
@@ -184,9 +184,9 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 			envs["TF_VAR_capacity_type"] = "SPOT"
 		}
 
-		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
 		if err != nil {
-			log.Panicf("failed to terraform init base %v", err)
+			log.Panicf("failed to terraform initialization base %v", err)
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
@@ -225,9 +225,9 @@ func ApplyECRTerraform(dryRun bool, directory string) {
 		if err != nil {
 			log.Panic("error: could not change directory to " + directory)
 		}
-		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
 		if err != nil {
-			log.Panicf("error: terraform init for ecr failed %s", err)
+			log.Panicf("error: terraform initialization for ecr failed %s", err)
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
@@ -255,9 +255,9 @@ func DestroyECRTerraform(skipECRTerraform bool) {
 
 		aws.ProfileInjection(&envs)
 
-		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
 		if err != nil {
-			log.Printf("[WARN]: failed to terraform init (destroy) ECR, was the ECR not created(check AWS)?: %s", err)
+			log.Printf("[WARN]: failed to terraform initialization (destroy) ECR, was the ECR not created(check AWS)?: %s", err)
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
@@ -292,9 +292,9 @@ func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
 	if err != nil {
 		log.Panic("error: could not change to directory " + tfEntrypoint)
 	}
-	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
+	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
 	if err != nil {
-		log.Panicf("error: terraform init for %s failed %s", tfEntrypoint, err)
+		log.Panicf("error: terraform initialization for %s failed %s", tfEntrypoint, err)
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, tfAction, "-auto-approve")
@@ -336,7 +336,7 @@ func OutputSingleValue(dryRun bool, directory, tfEntrypoint, outputName string) 
 }
 
 // ApplyUsersTerraform load environment variables into the host based on the git provider, change directory to the
-// Terraform required modules, terraform init, terraform apply and clean terraform files.
+// Terraform required modules, terraform initialization, terraform apply and clean terraform files.
 // todo: break it into smaller functions with no dependencies in order to allow unit tests
 func ApplyUsersTerraform(dryRun bool, directory string, gitProvider string) error {
 
@@ -378,9 +378,9 @@ func ApplyUsersTerraform(dryRun bool, directory string, gitProvider string) erro
 	if err != nil {
 		return fmt.Errorf("error: could not change directory to " + directory)
 	}
-	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
+	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
 	if err != nil {
-		return fmt.Errorf("error: terraform init for users failed %s", err)
+		return fmt.Errorf("error: terraform initialization for users failed %s", err)
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")

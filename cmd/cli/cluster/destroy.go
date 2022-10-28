@@ -121,10 +121,10 @@ func runDestroyCmd(cmd *cobra.Command, args []string) error {
 		skipDeleteRegister = true
 		skipBaseTerraform = true
 	}
-	progressPrinter.AddTracker("step-prepare", "Open Ports", 3)
+	progressPrinter.AddTracker("step-initialization", "Open Ports", 3)
 
 	pkg.InformUser("Open argocd port-forward", silentMode)
-	progressPrinter.IncrementTracker("step-prepare", 1)
+	progressPrinter.IncrementTracker("step-initialization", 1)
 
 	log.Println("destroying gitlab terraform")
 
@@ -140,7 +140,7 @@ func runDestroyCmd(cmd *cobra.Command, args []string) error {
 			}
 		}()
 		pkg.InformUser("Open gitlab port-forward", silentMode)
-		progressPrinter.IncrementTracker("step-prepare", 1)
+		progressPrinter.IncrementTracker("step-initialization", 1)
 
 		gitlab.DestroyGitlabTerraform(skipGitlabTerraform)
 	}
@@ -158,7 +158,7 @@ func runDestroyCmd(cmd *cobra.Command, args []string) error {
 			}
 		}()
 		pkg.InformUser("Open argocd port-forward", silentMode)
-		progressPrinter.IncrementTracker("step-prepare", 1)
+		progressPrinter.IncrementTracker("step-initialization", 1)
 
 		log.Println("deleting registry application in argocd")
 		// delete argocd registry

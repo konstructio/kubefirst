@@ -37,9 +37,9 @@ func ApplyGitHubTerraform(dryRun bool) {
 	if err != nil {
 		log.Panic("error: could not change directory to " + directory)
 	}
-	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
+	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
 	if err != nil {
-		log.Panicf("error: terraform init for github failed %s", err)
+		log.Panicf("error: terraform initialization for github failed %s", err)
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
@@ -76,9 +76,9 @@ func DestroyGitHubTerraform(dryRun bool) {
 	if err != nil {
 		log.Panic("error: could not change directory to " + directory)
 	}
-	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
+	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
 	if err != nil {
-		log.Panicf("error: terraform init for github failed %s", err)
+		log.Panicf("error: terraform initialization for github failed %s", err)
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")

@@ -20,6 +20,6 @@ to quickly create a Cobra application.`,
 	},
 }
 
-//func init() {
+//func initialization() {
 //	cmd.rootCmd.AddCommand(actionCmd)
 //}

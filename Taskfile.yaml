@@ -7,7 +7,7 @@ tasks:
     - go test -v ./... -coverpkg=./... -coverprofile cover.out
     - go tool cover -html cover.out -o coverage.html
   integration-tests:
-    - go run . prepare --profile default --cloud aws --region $AWS_REGION --aws-nodes-spot --cluster-name $CLUSTER_NAME --s3-suffix $SUFFIX_S3 --admin-email $EMAIL --hosted-zone-name $HOSTED_ZONE_NAME --gitops-branch $GITOPS_BRANCH --silent || echo $?
+    - go run . init --profile default --cloud aws --region $AWS_REGION --aws-nodes-spot --cluster-name $CLUSTER_NAME --s3-suffix $SUFFIX_S3 --admin-email $EMAIL --hosted-zone-name $HOSTED_ZONE_NAME --gitops-branch $GITOPS_BRANCH --silent || echo $?
     - go test -v -run TestAreS3BucketsLiveIntegration ./internal/aws || echo $?
     - go run . cluster create --silent || echo $?
     - go test -v -run TestArgoCDLivenessIntegration ./internal/argocd || echo $?

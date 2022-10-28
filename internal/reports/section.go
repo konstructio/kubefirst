@@ -13,7 +13,7 @@ import (
 func PrintSectionRepoGithub() []byte {
 	var handOffData bytes.Buffer
 
-	// todo construct these urls upfront on init
+	// todo construct these urls upfront on initialization
 	handOffData.WriteString("\n--- Github ")
 	handOffData.WriteString(strings.Repeat("-", 59))
 	handOffData.WriteString(fmt.Sprintf("\n owner: %s", viper.GetString("github.owner")))
@@ -213,9 +213,9 @@ func PrintSectionMetaphorFrontend() []byte {
 	}
 }
 
-//HandoffScreen - prints the handoff screen
+// HandoffScreen - prints the handoff screen
 func HandoffScreen(dryRun bool, silentMode bool) {
-	// prepare data for the handoff report
+	// initialization data for the handoff report
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, HandoffScreen skipped.")
 		return
@@ -247,9 +247,9 @@ func HandoffScreen(dryRun bool, silentMode bool) {
 
 }
 
-//HandoffScreen - prints the handoff screen
+// HandoffScreen - prints the handoff screen
 func LocalHandoffScreen(dryRun bool, silentMode bool) {
-	// prepare data for the handoff report
+	// initialization data for the handoff report
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, LocalHandoffScreen skipped.")
 		return

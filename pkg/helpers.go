@@ -370,7 +370,7 @@ func IsValidURL(rawURL string) error {
 // validation list:
 //   - If folder doesn't exist, try to create it
 //   - If folder exists, check if there are files
-//   - If folder exists, and has files, inform the user that clean command should be called before a new init
+//   - If folder exists, and has files, inform the user that clean command should be called before a new initialization
 func ValidateK1Folder(folderPath string) error {
 
 	if _, err := os.Stat(folderPath); errors.Is(err, os.ErrNotExist) {

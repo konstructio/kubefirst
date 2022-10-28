@@ -43,7 +43,7 @@ WORKDIR /home/developer/kubefirst
 
 COPY --chown=developer:developer . .
 
-# download dependencies and prepare fresh installation
+# download dependencies and initialization fresh installation
 RUN go mod download
 RUN go build -ldflags="-X github.com/kubefirst/kubefirst/configs.K1Version=${KUBEFIRST_VERSION}" .
 

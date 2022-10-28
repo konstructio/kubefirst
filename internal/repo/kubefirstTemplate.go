@@ -33,11 +33,13 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 		return
 	}
 	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
+	// todo:
+	githubOrg = "kubefirst"
 	err := gitClient.CloneTemplateRepoWithFallBack(githubOrg, repoName, directory, branch, tag)
 	if err != nil {
 		log.Panicf("Error cloning repo with fallback: %s", err)
 	}
-	viper.Set(fmt.Sprintf("init.repos.%s.cloned", repoName), true)
+	viper.Set(fmt.Sprintf("initialization.repos.%s.cloned", repoName), true)
 	viper.WriteConfig()
 
 	log.Printf("cloned %s-template repository to directory %s/%s", repoName, config.K1FolderPath, repoName)
@@ -73,7 +75,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 	pkg.Detokenize(directory)
 	log.Printf("detokenization of %s/%s complete", config.K1FolderPath, repoName)
 
-	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", repoName), true)
+	viper.Set(fmt.Sprintf("initialization.repos.%s.detokenized", repoName), true)
 	viper.WriteConfig()
 
 	repo, err := git.PlainOpen(directory)

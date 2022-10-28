@@ -111,7 +111,7 @@ func validateAwsFlags() error {
 	// internal/flagset/init_test.go
 	if viper.GetString("cloud") != CloudAws {
 		// To skip later validations
-		// TODO: Create test scenarios for init
+		// TODO: Create test scenarios for initialization
 		log.Println("Skipping AWS Validation:", viper.GetString("cloud"))
 		return nil
 	}
