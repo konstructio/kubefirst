@@ -20,7 +20,6 @@ import (
 	"github.com/segmentio/analytics-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"os"
 	"os/exec"
@@ -236,44 +235,44 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	// ---
-	// todo: (start) we can remove it, the secrets are now coming from Vault (run a full installation after removing to confirm)
+	//// todo: (start) we can remove it, the secrets are now coming from Vault (run a full installation after removing to confirm)
 	if viper.GetString("cloud") == flagset.CloudK3d {
-		clientset, err := k8s.GetClientSet(false)
-		atlantisSecrets, err := clientset.CoreV1().Secrets("atlantis").Get(context.TODO(), "atlantis-secrets", metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-
-		// todo: hardcoded
-		atlantisSecrets.Data["TF_VAR_vault_addr"] = []byte("http://vault.vault.svc.cluster.local:8200")
-		atlantisSecrets.Data["VAULT_ADDR"] = []byte("http://vault.vault.svc.cluster.local:8200")
-
-		_, err = clientset.CoreV1().Secrets("atlantis").Update(context.TODO(), atlantisSecrets, metav1.UpdateOptions{})
-		if err != nil {
-			return err
-		}
-
-		err = clientset.CoreV1().Pods("atlantis").Delete(context.TODO(), "atlantis-0", metav1.DeleteOptions{})
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println("---debug---")
-		log.Println("sleeping after kill atlantis pod")
-		log.Println("---debug---")
-
-		time.Sleep(10 * time.Second)
-
-		log.Println("---debug---")
-		log.Println("new port forward atlantis")
-		log.Println("---debug---")
-		kPortForwardAtlantis, err := k8s.PortForward(false, "atlantis", "svc/atlantis", "4141:80")
-		defer func() {
-			err = kPortForwardAtlantis.Process.Signal(syscall.SIGTERM)
-			if err != nil {
-				log.Println("error closing kPortForwardAtlantis")
-			}
-		}()
-		// todo: (end)
+		//	clientset, err := k8s.GetClientSet(false)
+		//	atlantisSecrets, err := clientset.CoreV1().Secrets("atlantis").Get(context.TODO(), "atlantis-secrets", metav1.GetOptions{})
+		//	if err != nil {
+		//		return err
+		//	}
+		//
+		//	// todo: hardcoded
+		//	atlantisSecrets.Data["TF_VAR_vault_addr"] = []byte("http://vault.vault.svc.cluster.local:8200")
+		//	atlantisSecrets.Data["VAULT_ADDR"] = []byte("http://vault.vault.svc.cluster.local:8200")
+		//
+		//	_, err = clientset.CoreV1().Secrets("atlantis").Update(context.TODO(), atlantisSecrets, metav1.UpdateOptions{})
+		//	if err != nil {
+		//		return err
+		//	}
+		//
+		//	err = clientset.CoreV1().Pods("atlantis").Delete(context.TODO(), "atlantis-0", metav1.DeleteOptions{})
+		//	if err != nil {
+		//		log.Fatal(err)
+		//	}
+		//	log.Println("---debug---")
+		//	log.Println("sleeping after kill atlantis pod")
+		//	log.Println("---debug---")
+		//
+		//	time.Sleep(10 * time.Second)
+		//
+		//	log.Println("---debug---")
+		//	log.Println("new port forward atlantis")
+		//	log.Println("---debug---")
+		//	kPortForwardAtlantis, err := k8s.PortForward(false, "atlantis", "svc/atlantis", "4141:80")
+		//	defer func() {
+		//		err = kPortForwardAtlantis.Process.Signal(syscall.SIGTERM)
+		//		if err != nil {
+		//			log.Println("error closing kPortForwardAtlantis")
+		//		}
+		//	}()
+		//	// todo: (end)
 
 		// todo: wire it up in the architecture / files / folder
 
@@ -360,10 +359,10 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	pkg.InformUser("Kubefirst installation finished successfully", createCmdSilentMode)
 
 	// todo: temporary code to enable console for localhost
-	err = postInstallCmd.RunE(cmd, args)
+	err = postInstallCommand().RunE(cmd, args)
 	if err != nil {
 		pkg.InformUser("Error starting apps from post-install", createCmdSilentMode)
-		log.Println("Error running postInstallCmd")
+		log.Println("Error running postInstallCmd", err)
 		return err
 	}
 

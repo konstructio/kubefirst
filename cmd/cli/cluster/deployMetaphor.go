@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var deployMetaphorDryRun bool
+
 // deployMetaphorCommand represents the deployMetaphor command
 func deployMetaphorCommand() *cobra.Command {
 	deployMetaphorCmd := &cobra.Command{
@@ -17,6 +19,7 @@ func deployMetaphorCommand() *cobra.Command {
 		Long:  `TBD`,
 		RunE:  runDeployMetaphorCmd,
 	}
+	deployMetaphorCmd.Flags().BoolVar(&deployMetaphorDryRun, "dry-run", false, "")
 	return deployMetaphorCmd
 }
 

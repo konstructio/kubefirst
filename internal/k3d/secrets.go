@@ -14,8 +14,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func AddK3DSecrets(dryrun bool) error {
-	clientset, err := k8s.GetClientSet(dryrun)
+func AddK3DSecrets(dryRun bool) error {
+	clientset, err := k8s.GetClientSet(dryRun)
 
 	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "github-runner", "vault"}
 	for i, s := range newNamespaces {

@@ -19,85 +19,79 @@ import (
 	"github.com/spf13/viper"
 )
 
-var postInstallCmd = &cobra.Command{
-	Use:   "post-install",
-	Short: "starts post install process",
-	Long:  "Starts post install process to open the Console UI",
-	RunE: func(cmd *cobra.Command, args []string) error {
+var (
+	postInstallEnableConsole bool
+	postInstallSilentMode    bool
+	postInstallDryRun        bool
+)
 
-		// todo: temporary
-		//flagset.DefineGlobalFlags(cmd)
-		if viper.GetString("cloud") == flagset.CloudLocal {
-			cmd.Flags().Bool("enable-console", true, "If hand-off screen will be presented on a browser UI")
-		}
-		//globalFlags, err := flagset.ProcessGlobalFlags(cmd)
-		//if err != nil {
-		//	return err
-		//}
-		globalFlags := flagset.GlobalFlags{DryRun: false, SilentMode: false, UseTelemetry: true}
+// todo: use Cobra lib. Post functions https://pkg.go.dev/github.com/spf13/cobra#Command (PostRunE)
+func postInstallCommand() *cobra.Command {
+	postInstallCmd := &cobra.Command{
+		Use:   "post-install",
+		Short: "starts post install process",
+		Long:  "Starts post install process to open the Console UI",
+		RunE:  runPostInstallCommand,
+	}
 
-		createFlags, err := flagset.ProcessCreateFlags(cmd)
-		if err != nil {
-			return err
-		}
-
-		cloud := viper.GetString("cloud")
-		if createFlags.EnableConsole && cloud != pkg.CloudK3d {
-			log.Println("Starting the presentation of console and api for the handoff screen")
-			go func() {
-				errInThread := api.RunE(cmd, args)
-				if errInThread != nil {
-					log.Println(errInThread)
-				}
-			}()
-			go func() {
-				errInThread := console.RunE(cmd, args)
-				if errInThread != nil {
-					log.Println(errInThread)
-				}
-			}()
-
-			log.Println("Kubefirst Console available at: http://localhost:9094", globalFlags.SilentMode)
-
-			openbrowser(pkg.LocalConsoleUI)
-
-		} else {
-			log.Println("Skipping the presentation of console and api for the handoff screen")
-		}
-
-		// open all port forwards, wait console ui be ready, and open console ui in the browser
-		if cloud == pkg.CloudK3d {
-			err := openPortForwardForKubeConConsole()
-			if err != nil {
-				log.Println(err)
-			}
-
-			err = isConsoleUIAvailable(pkg.LocalConsoleUI)
-			if err != nil {
-				log.Println(err)
-			}
-			openbrowser(pkg.LocalConsoleUI)
-		}
-
-		if viper.GetString("cloud") == flagset.CloudK3d {
-			reports.LocalHandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
-		} else {
-			reports.HandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
-		}
-
-		time.Sleep(time.Millisecond * 2000)
-		return nil
-	},
+	postInstallCmd.Flags().BoolVar(&postInstallEnableConsole, "enable-console", true, "")
+	postInstallCmd.Flags().BoolVar(&postInstallSilentMode, "silent", false, "")
+	postInstallCmd.Flags().BoolVar(&postInstallDryRun, "dry-run", false, "")
+	return postInstallCmd
 }
 
-//func initialization() {
-//cmd.rootCmd.AddCommand(postInstallCmd)
+func runPostInstallCommand(cmd *cobra.Command, args []string) error {
 
-// todo: temporary
-//flagset.DefineGlobalFlags(postInstallCmd)
-//postInstallCmd.Flags().Bool("enable-console", true, "If hand-off screen will be presented on a browser UI")
-//flagset.DefineCreateFlags(currentCommand)
-//}
+	// todo: this is temporary, command flags should be independent, and has no dependency from other commands
+
+	cloud := viper.GetString("cloud")
+
+	if postInstallDryRun && cloud != pkg.CloudK3d {
+		log.Println("Starting the presentation of console and api for the handoff screen")
+		go func() {
+			errInThread := api.RunE(cmd, args)
+			if errInThread != nil {
+				log.Println(errInThread)
+			}
+		}()
+		go func() {
+			errInThread := console.RunE(cmd, args)
+			if errInThread != nil {
+				log.Println(errInThread)
+			}
+		}()
+
+		log.Println("Kubefirst Console available at: http://localhost:9094", postInstallSilentMode)
+
+		openbrowser(pkg.LocalConsoleUI)
+
+	} else {
+		log.Println("Skipping the presentation of console and api for the handoff screen")
+	}
+
+	// open all port forwards, wait console ui be ready, and open console ui in the browser
+	if cloud == pkg.CloudK3d {
+		err := openPortForwardForKubeConConsole()
+		if err != nil {
+			log.Println(err)
+		}
+
+		err = isConsoleUIAvailable(pkg.LocalConsoleUI)
+		if err != nil {
+			log.Println(err)
+		}
+		openbrowser(pkg.LocalConsoleUI)
+	}
+
+	if viper.GetString("cloud") == flagset.CloudK3d {
+		reports.LocalHandoffScreen(postInstallDryRun, postInstallSilentMode)
+	} else {
+		reports.HandoffScreen(postInstallDryRun, postInstallSilentMode)
+	}
+
+	time.Sleep(time.Millisecond * 2000)
+	return nil
+}
 
 func openbrowser(url string) {
 	var err error

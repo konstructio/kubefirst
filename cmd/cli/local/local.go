@@ -13,6 +13,7 @@ var (
 	gitProvider    string
 	cloud          string
 	enableConsole  bool
+	dryRun         bool
 )
 
 func NewCommand() *cobra.Command {
@@ -28,6 +29,7 @@ func NewCommand() *cobra.Command {
 	localCmd.Flags().StringVar(&gitProvider, "git-provider", "github", "")
 	localCmd.Flags().StringVar(&cloud, "cloud", "k3d", "")
 	localCmd.Flags().BoolVar(&enableConsole, "enable-console", true, "")
+	localCmd.Flags().BoolVar(&dryRun, "dry-run", false, "")
 
 	return localCmd
 }
