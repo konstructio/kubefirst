@@ -16,7 +16,6 @@ import (
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
-	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k3d"
@@ -34,9 +33,18 @@ var createGithubK3dCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		config := configs.ReadConfig()
-		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
+		// todo: this is temporary, command flags should be independent, and has no dependency from other commands
+		silentMode, err := cmd.Flags().GetBool("silent")
 		if err != nil {
-			return err
+			log.Println(err)
+		}
+		useTelemetry, err := cmd.Flags().GetBool("use-telemetry")
+		if err != nil {
+			log.Println(err)
+		}
+		dryRun, err := cmd.Flags().GetBool("dry-run")
+		if err != nil {
+			log.Println(err)
 		}
 
 		//infoCmd need to be before the bars or it is printed in between bars:
@@ -47,23 +55,23 @@ var createGithubK3dCmd = &cobra.Command{
 		progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 		progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
 		progressPrinter.AddTracker("step-apps", "Install apps to cluster", 5)
-		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
+		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), silentMode)
 
 		progressPrinter.IncrementTracker("step-0", 1)
 
-		if !globalFlags.UseTelemetry {
-			pkg.InformUser("Telemetry Disabled", globalFlags.SilentMode)
+		if !useTelemetry {
+			pkg.InformUser("Telemetry Disabled", silentMode)
 		}
 
 		executionControl := viper.GetBool("terraform.github.apply.complete")
 		//* create github teams in the org and gitops repo
 		if !executionControl {
-			pkg.InformUser("Creating github resources with terraform", globalFlags.SilentMode)
+			pkg.InformUser("Creating github resources with terraform", silentMode)
 
 			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
-			terraform.InitApplyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+			terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
 
-			pkg.InformUser(fmt.Sprintf("Created gitops Repo in github.com/%s", viper.GetString("github.owner")), globalFlags.SilentMode)
+			pkg.InformUser(fmt.Sprintf("Created gitops Repo in github.com/%s", viper.GetString("github.owner")), silentMode)
 			progressPrinter.IncrementTracker("step-github", 1)
 		} else {
 			log.Println("already created github terraform resources")
@@ -76,7 +84,7 @@ var createGithubK3dCmd = &cobra.Command{
 		remoteName := "github"
 		executionControl = viper.GetBool("github.gitops.hydrated") // todo fix this executionControl value `github.detokenized-gitops.pushed`?
 		if !executionControl {
-			pkg.InformUser(fmt.Sprintf("pushing local detokenized gitops content to new remote github.com/%s", viper.GetString("github.owner")), globalFlags.SilentMode)
+			pkg.InformUser(fmt.Sprintf("pushing local detokenized gitops content to new remote github.com/%s", viper.GetString("github.owner")), silentMode)
 			gitClient.PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName)
 		} else {
 			log.Println("already hydrated the github gitops repository")
@@ -86,7 +94,7 @@ var createGithubK3dCmd = &cobra.Command{
 		//* create kubernetes cluster
 		executionControl = viper.GetBool("k3d.created")
 		if !executionControl {
-			pkg.InformUser("Creating K8S Cluster", globalFlags.SilentMode)
+			pkg.InformUser("Creating K8S Cluster", silentMode)
 			err = k3d.CreateK3dCluster()
 			if err != nil {
 				log.Println("Error installing k3d cluster")
@@ -102,7 +110,7 @@ var createGithubK3dCmd = &cobra.Command{
 		// todo there is a secret condition in AddK3DSecrets to this not checked
 		executionControl = viper.GetBool("kubernetes.vault.secret.created")
 		if !executionControl {
-			err = k3d.AddK3DSecrets(globalFlags.DryRun)
+			err = k3d.AddK3DSecrets(dryRun)
 			if err != nil {
 				log.Println("Error AddK3DSecrets")
 				return err
@@ -114,7 +122,7 @@ var createGithubK3dCmd = &cobra.Command{
 		//* create argocd intiial repository config
 		executionControl = viper.GetBool("argocd.initial-repository.created")
 		if !executionControl {
-			pkg.InformUser("create initial argocd repository", globalFlags.SilentMode)
+			pkg.InformUser("create initial argocd repository", silentMode)
 			//Enterprise users need to be able to set the hostname for git.
 			gitopsRepo := fmt.Sprintf("git@%s:%s/gitops.git", viper.GetString("github.host"), viper.GetString("github.owner"))
 			err = argocd.CreateInitialArgoCDRepository(gitopsRepo)
@@ -136,47 +144,47 @@ var createGithubK3dCmd = &cobra.Command{
 
 		executionControl = viper.GetBool("argocd.helm.repo.updated")
 		if !executionControl {
-			pkg.InformUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), globalFlags.SilentMode)
-			helm.AddRepoAndUpdateRepo(globalFlags.DryRun, helmRepo)
+			pkg.InformUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), silentMode)
+			helm.AddRepoAndUpdateRepo(dryRun, helmRepo)
 		}
 
 		//* helm install argocd
 		executionControl = viper.GetBool("argocd.helm.install.complete")
 		if !executionControl {
-			pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), globalFlags.SilentMode)
-			helm.Install(globalFlags.DryRun, helmRepo)
+			pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
+			helm.Install(dryRun, helmRepo)
 		}
 		progressPrinter.IncrementTracker("step-apps", 1)
 
 		//* argocd pods are running
 		executionControl = viper.GetBool("argocd.ready")
 		if !executionControl {
-			waitArgoCDToBeReady(globalFlags.DryRun)
-			pkg.InformUser("ArgoCD is running, continuing", globalFlags.SilentMode)
+			waitArgoCDToBeReady(dryRun)
+			pkg.InformUser("ArgoCD is running, continuing", silentMode)
 		} else {
 			log.Println("already waited for argocd to be ready")
 		}
 
 		//* establish port-forward
-		kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
+		kPortForwardArgocd, err = k8s.PortForward(dryRun, "argocd", "svc/argocd-server", "8080:80")
 		defer func() {
 			err = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 			if err != nil {
 				log.Println("Error closing kPortForwardArgocd")
 			}
 		}()
-		pkg.InformUser(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")), globalFlags.SilentMode)
+		pkg.InformUser(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")), silentMode)
 
 		//* argocd pods are ready, get and set credentials
 		executionControl = viper.GetBool("argocd.credentials.set")
 		if !executionControl {
-			pkg.InformUser("Setting argocd username and password credentials", globalFlags.SilentMode)
-			setArgocdCreds(globalFlags.DryRun)
-			pkg.InformUser("argocd username and password credentials set successfully", globalFlags.SilentMode)
+			pkg.InformUser("Setting argocd username and password credentials", silentMode)
+			setArgocdCreds(dryRun)
+			pkg.InformUser("argocd username and password credentials set successfully", silentMode)
 
-			pkg.InformUser("Getting an argocd auth token", globalFlags.SilentMode)
-			_ = argocd.GetArgocdAuthToken(globalFlags.DryRun)
-			pkg.InformUser("argocd admin auth token set", globalFlags.SilentMode)
+			pkg.InformUser("Getting an argocd auth token", silentMode)
+			_ = argocd.GetArgocdAuthToken(dryRun)
+			pkg.InformUser("argocd admin auth token set", silentMode)
 
 			viper.Set("argocd.credentials.set", true)
 			viper.WriteConfig()
@@ -185,8 +193,8 @@ var createGithubK3dCmd = &cobra.Command{
 		//* argocd sync registry and start sync waves
 		executionControl = viper.GetBool("argocd.registry.applied")
 		if !executionControl {
-			pkg.InformUser("applying the registry application to argocd", globalFlags.SilentMode)
-			err = argocd.ApplyRegistryLocal(globalFlags.DryRun)
+			pkg.InformUser("applying the registry application to argocd", silentMode)
+			err = argocd.ApplyRegistryLocal(dryRun)
 			if err != nil {
 				log.Println("Error applying registry application to argocd")
 				return err
@@ -198,14 +206,14 @@ var createGithubK3dCmd = &cobra.Command{
 		//* vault in running state
 		executionControl = viper.GetBool("vault.status.running")
 		if !executionControl {
-			pkg.InformUser("Waiting for vault to be ready", globalFlags.SilentMode)
-			waitVaultToBeRunning(globalFlags.DryRun)
+			pkg.InformUser("Waiting for vault to be ready", silentMode)
+			waitVaultToBeRunning(dryRun)
 			if err != nil {
 				log.Println("error waiting for vault to become running")
 				return err
 			}
 		}
-		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
+		kPortForwardVault, err := k8s.PortForward(dryRun, "vault", "svc/vault", "8200:8200")
 		defer func() {
 			err = kPortForwardVault.Process.Signal(syscall.SIGTERM)
 			if err != nil {
@@ -213,8 +221,8 @@ var createGithubK3dCmd = &cobra.Command{
 			}
 		}()
 
-		loopUntilPodIsReady(globalFlags.DryRun)
-		kPortForwardMinio, err := k8s.PortForward(globalFlags.DryRun, "minio", "svc/minio", "9000:9000")
+		loopUntilPodIsReady(dryRun)
+		kPortForwardMinio, err := k8s.PortForward(dryRun, "minio", "svc/minio", "9000:9000")
 		defer func() {
 			err = kPortForwardMinio.Process.Signal(syscall.SIGTERM)
 			if err != nil {
@@ -231,17 +239,17 @@ var createGithubK3dCmd = &cobra.Command{
 			viper.WriteConfig()
 
 			//* run vault terraform
-			pkg.InformUser("configuring vault with terraform", globalFlags.SilentMode)
+			pkg.InformUser("configuring vault with terraform", silentMode)
 			tfEntrypoint := config.GitOpsRepoPath + "/terraform/vault"
-			terraform.InitApplyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+			terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
 
-			pkg.InformUser("vault terraform executed successfully", globalFlags.SilentMode)
+			pkg.InformUser("vault terraform executed successfully", silentMode)
 
 			//* create vault configurerd secret
 			// todo remove this code
 			log.Println("creating vault configured secret")
-			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
-			pkg.InformUser("Vault secret created", globalFlags.SilentMode)
+			k8s.CreateVaultConfiguredSecret(dryRun, config)
+			pkg.InformUser("Vault secret created", silentMode)
 		} else {
 			log.Println("already executed vault terraform")
 		}
@@ -249,12 +257,12 @@ var createGithubK3dCmd = &cobra.Command{
 		//* create users
 		executionControl = viper.GetBool("terraform.users.apply.complete")
 		if !executionControl {
-			pkg.InformUser("applying users terraform", globalFlags.SilentMode)
+			pkg.InformUser("applying users terraform", silentMode)
 
 			tfEntrypoint := config.GitOpsRepoPath + "/terraform/users"
-			terraform.InitApplyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+			terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
 
-			pkg.InformUser("executed users terraform successfully", globalFlags.SilentMode)
+			pkg.InformUser("executed users terraform successfully", silentMode)
 			// progressPrinter.IncrementTracker("step-users", 1)
 		} else {
 			log.Println("already created users with terraform")
@@ -262,14 +270,14 @@ var createGithubK3dCmd = &cobra.Command{
 
 		// TODO: K3D =>  NEED TO REMOVE local-backend.tf and rename remote-backend.md
 
-		pkg.InformUser("Welcome to local kubefirst experience", globalFlags.SilentMode)
-		pkg.InformUser("To use your cluster port-forward - argocd", globalFlags.SilentMode)
-		pkg.InformUser("If not automatically injected, your kubeconfig is at:", globalFlags.SilentMode)
-		pkg.InformUser("k3d kubeconfig get "+viper.GetString("cluster-name"), globalFlags.SilentMode)
-		pkg.InformUser("Expose Argo-CD", globalFlags.SilentMode)
-		pkg.InformUser("kubectl -n argocd port-forward svc/argocd-server 8080:80", globalFlags.SilentMode)
-		pkg.InformUser("Argo User: "+viper.GetString("argocd.admin.username"), globalFlags.SilentMode)
-		pkg.InformUser("Argo Password: "+viper.GetString("argocd.admin.password"), globalFlags.SilentMode)
+		pkg.InformUser("Welcome to local kubefirst experience", silentMode)
+		pkg.InformUser("To use your cluster port-forward - argocd", silentMode)
+		pkg.InformUser("If not automatically injected, your kubeconfig is at:", silentMode)
+		pkg.InformUser("k3d kubeconfig get "+viper.GetString("cluster-name"), silentMode)
+		pkg.InformUser("Expose Argo-CD", silentMode)
+		pkg.InformUser("kubectl -n argocd port-forward svc/argocd-server 8080:80", silentMode)
+		pkg.InformUser("Argo User: "+viper.GetString("argocd.admin.username"), silentMode)
+		pkg.InformUser("Argo Password: "+viper.GetString("argocd.admin.password"), silentMode)
 		time.Sleep(1 * time.Second)
 		progressPrinter.IncrementTracker("step-apps", 1)
 		progressPrinter.IncrementTracker("step-base", 1)
@@ -277,10 +285,3 @@ var createGithubK3dCmd = &cobra.Command{
 		return nil
 	},
 }
-
-//func initialization() {
-//	cmd.clusterCmd.AddCommand(createGithubK3dCmd)
-//	currentCommand := createGithubK3dCmd
-//	flagset.DefineGithubCmdFlags(currentCommand)
-//	flagset.DefineGlobalFlags(currentCommand)
-//}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/kubefirst/kubefirst/cmd/cli"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
+	"github.com/spf13/cobra"
 	"log"
 	"os"
 	"time"
@@ -65,6 +66,9 @@ func main() {
 
 	// progress bar
 	progressPrinter.GetInstance()
+
+	// todo: what is this for?
+	cobra.OnInitialize()
 
 	coreKubefirstCmd := cli.NewCommand()
 	if err = coreKubefirstCmd.Execute(); err != nil {

@@ -26,8 +26,8 @@ const success = "\nDONE"
 
 func FakeInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "fake-initialization",
-		Short: "Let's test initialization",
+		Use:   "fake-init",
+		Short: "Let's test init",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config := configs.ReadConfig()
 			config.KubefirstConfigFilePath = "./logs/.k1_test"
@@ -52,8 +52,8 @@ func FakeInitCmd() *cobra.Command {
 
 func FakeInitAddonsTestCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "fake-initialization-addons",
-		Short: "Let's test initialization with addons",
+		Use:   "fake-init-addons",
+		Short: "Let's test init with addons",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, err := ProcessGlobalFlags(cmd)
 			if err != nil {

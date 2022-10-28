@@ -338,9 +338,9 @@ func CreateInitialArgoCDRepository(githubURL string) error {
 		return err
 	}
 
-	err = os.WriteFile(fmt.Sprintf("%s/argocd-initialization-values.yaml", config.K1FolderPath), argoCdRepoYaml, 0644)
+	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoCdRepoYaml, 0644)
 	if err != nil {
-		log.Printf("error: could not write argocd-initialization-values.yaml %s", err)
+		log.Printf("error: could not write argocd-init-values.yaml %s", err)
 		return err
 	}
 	viper.Set("argocd.initial-repository.created", true)

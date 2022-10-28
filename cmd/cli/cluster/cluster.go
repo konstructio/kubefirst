@@ -13,6 +13,7 @@ func NewCommand() *cobra.Command {
 	}
 
 	clusterCmd.AddCommand(CreateCommand())
+	clusterCmd.AddCommand(CreateGitHubCommand())
 	clusterCmd.AddCommand(DestroyCommand())
 
 	return clusterCmd

@@ -292,9 +292,9 @@ func ApplyGitlabTerraform(dryRun bool, directory string) {
 		if err != nil {
 			log.Panic("error: could not change directory to " + directory)
 		}
-		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
-			log.Panicf("error: terraform initialization for gitlab failed %s", err)
+			log.Panicf("error: terraform init for gitlab failed %s", err)
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
@@ -373,9 +373,9 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 	envs["GITLAB_BASE_URL"] = viper.GetString("gitlab.local.service")
 
 	if !skipGitlabTerraform && viper.GetString("gitprovider") == "gitlab" {
-		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
-			log.Panicf("failed to terraform initialization gitlab %s", err)
+			log.Panicf("failed to terraform init gitlab %s", err)
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")

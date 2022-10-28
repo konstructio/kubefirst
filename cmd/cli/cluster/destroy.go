@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	dryRun              bool
-	silentMode          bool
+	destroyDryRun       bool
+	destroySilentMode   bool
 	hostedZoneDelete    bool
 	skipBaseTerraform   bool
 	skipDeleteRegister  bool
@@ -36,8 +36,8 @@ func DestroyCommand() *cobra.Command {
 		Long:  "destroy all the resources installed via Kubefirst installer",
 		RunE:  runDestroyCmd,
 	}
-	destroyCmd.Flags().BoolVar(&dryRun, "dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
-	destroyCmd.Flags().BoolVar(&silentMode, "silent", false, "enable silent mode will make the UI return less content to the screen")
+	destroyCmd.Flags().BoolVar(&destroyDryRun, "dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
+	destroyCmd.Flags().BoolVar(&destroySilentMode, "silent", false, "enable silent mode will make the UI return less content to the screen")
 	destroyCmd.Flags().BoolVar(&hostedZoneDelete, "hosted-zone-delete", false, "delete full hosted zone, use --keep-base-hosted-zone in combination to keep base DNS records (NS, SOA, liveness)")
 	destroyCmd.Flags().BoolVar(&skipBaseTerraform, "skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
 	destroyCmd.Flags().BoolVar(&skipDeleteRegister, "skip-delete-register", false, "whether to skip deletion of register application")
@@ -51,10 +51,10 @@ func runDestroyCmd(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
 
-	if silentMode {
+	if destroySilentMode {
 		pkg.InformUser(
 			"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
-			silentMode,
+			destroySilentMode,
 		)
 	}
 
@@ -63,14 +63,14 @@ func runDestroyCmd(cmd *cobra.Command, args []string) error {
 
 		//* step 1.1 - open port-forward to state store and vault
 		// todo --skip-git-terraform
-		kPortForwardMinio, err := k8s.PortForward(dryRun, "minio", "svc/minio", "9000:9000")
+		kPortForwardMinio, err := k8s.PortForward(destroyDryRun, "minio", "svc/minio", "9000:9000")
 		defer func() {
 			err = kPortForwardMinio.Process.Signal(syscall.SIGTERM)
 			if err != nil {
 				log.Println("Error closing kPortForwardMinio")
 			}
 		}()
-		kPortForwardVault, err := k8s.PortForward(dryRun, "vault", "svc/vault", "8200:8200")
+		kPortForwardVault, err := k8s.PortForward(destroyDryRun, "vault", "svc/vault", "8200:8200")
 		defer func() {
 			err = kPortForwardVault.Process.Signal(syscall.SIGTERM)
 			if err != nil {
@@ -90,20 +90,20 @@ func runDestroyCmd(cmd *cobra.Command, args []string) error {
 		//* step 1.3 - terraform destroy github
 		githubTfApplied := viper.GetBool("terraform.github.apply.complete")
 		if githubTfApplied {
-			pkg.InformUser("terraform destroying github resources", silentMode)
+			pkg.InformUser("terraform destroying github resources", destroySilentMode)
 			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
-			terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint)
-			pkg.InformUser("successfully destroyed github resources", silentMode)
+			terraform.InitDestroyAutoApprove(destroyDryRun, tfEntrypoint)
+			pkg.InformUser("successfully destroyed github resources", destroySilentMode)
 		}
 
 		//* step 2 - delete k3d cluster
 		// this could be useful for us to chase down in eks and destroy everything
 		// in the cloud / cluster minus eks to iterate from argocd forward
 		// todo --skip-cluster-destroy
-		pkg.InformUser("deleting k3d cluster", silentMode)
+		pkg.InformUser("deleting k3d cluster", destroySilentMode)
 		k3d.DeleteK3dCluster()
-		pkg.InformUser("k3d cluster deleted", silentMode)
-		pkg.InformUser("be sure to run `kubefirst clean` before your next cloud provision", silentMode)
+		pkg.InformUser("k3d cluster deleted", destroySilentMode)
+		pkg.InformUser("be sure to run `kubefirst clean` before your next cloud provision", destroySilentMode)
 
 		//* step 3 - clean local .k1 dir
 		// err = cleanCmd.RunE(cmd, args)
@@ -114,33 +114,33 @@ func runDestroyCmd(cmd *cobra.Command, args []string) error {
 		os.Exit(0)
 	}
 
-	progressPrinter.SetupProgress(2, silentMode)
+	progressPrinter.SetupProgress(2, destroySilentMode)
 
-	if dryRun {
+	if destroyDryRun {
 		skipGitlabTerraform = true
 		skipDeleteRegister = true
 		skipBaseTerraform = true
 	}
-	progressPrinter.AddTracker("step-initialization", "Open Ports", 3)
+	progressPrinter.AddTracker("step-init", "Open Ports", 3)
 
-	pkg.InformUser("Open argocd port-forward", silentMode)
-	progressPrinter.IncrementTracker("step-initialization", 1)
+	pkg.InformUser("Open argocd port-forward", destroySilentMode)
+	progressPrinter.IncrementTracker("step-init", 1)
 
 	log.Println("destroying gitlab terraform")
 
 	progressPrinter.AddTracker("step-destroy", "Destroy Cloud", 4)
 	progressPrinter.IncrementTracker("step-destroy", 1)
-	pkg.InformUser("Destroying Gitlab", silentMode)
+	pkg.InformUser("Destroying Gitlab", destroySilentMode)
 	if !skipGitlabTerraform {
-		kPortForward, _ := k8s.PortForward(dryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
+		kPortForward, _ := k8s.PortForward(destroyDryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
 		defer func() {
 			if kPortForward != nil {
 				log.Println("Closed GitLab port forward")
 				_ = kPortForward.Process.Signal(syscall.SIGTERM)
 			}
 		}()
-		pkg.InformUser("Open gitlab port-forward", silentMode)
-		progressPrinter.IncrementTracker("step-initialization", 1)
+		pkg.InformUser("Open gitlab port-forward", destroySilentMode)
+		progressPrinter.IncrementTracker("step-init", 1)
 
 		gitlab.DestroyGitlabTerraform(skipGitlabTerraform)
 	}
@@ -150,26 +150,26 @@ func runDestroyCmd(cmd *cobra.Command, args []string) error {
 
 	//This should wrapped into a function, maybe to move to: k8s.DeleteRegistryApplication
 	if !skipDeleteRegister {
-		kPortForwardArgocd, _ := k8s.PortForward(dryRun, "argocd", "svc/argocd-server", "8080:80")
+		kPortForwardArgocd, _ := k8s.PortForward(destroyDryRun, "argocd", "svc/argocd-server", "8080:80")
 		defer func() {
 			if kPortForwardArgocd != nil {
 				log.Println("Closed argocd port forward")
 				_ = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 			}
 		}()
-		pkg.InformUser("Open argocd port-forward", silentMode)
-		progressPrinter.IncrementTracker("step-initialization", 1)
+		pkg.InformUser("Open argocd port-forward", destroySilentMode)
+		progressPrinter.IncrementTracker("step-init", 1)
 
 		log.Println("deleting registry application in argocd")
 		// delete argocd registry
-		pkg.InformUser("Destroying Registry Application", silentMode)
+		pkg.InformUser("Destroying Registry Application", destroySilentMode)
 		k8s.DeleteRegistryApplication(skipDeleteRegister)
 		progressPrinter.IncrementTracker("step-destroy", 1)
 		log.Println("registry application deleted")
 	}
 
 	log.Println("terraform destroy base")
-	pkg.InformUser("Destroying Cluster", silentMode)
+	pkg.InformUser("Destroying Cluster", destroySilentMode)
 	terraform.DestroyBaseTerraform(skipBaseTerraform)
 	progressPrinter.IncrementTracker("step-destroy", 1)
 
@@ -184,7 +184,7 @@ func runDestroyCmd(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	pkg.InformUser("All Destroyed", silentMode)
+	pkg.InformUser("All Destroyed", destroySilentMode)
 
 	log.Println("terraform base destruction complete")
 	fmt.Println("End of execution destroy")

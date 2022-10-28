@@ -29,7 +29,8 @@ func ApplyGitHubTerraform(dryRun bool) {
 	envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
 	envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
-	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botPublicKey")
+	envs["TF_VAR_atlantis_repo_webhook_url"] = viper.GetString("github.atlantis.webhook.url")
+	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botpublicKey")
 
 	directory := fmt.Sprintf("%s/gitops/terraform/github", config.K1FolderPath)
 
@@ -37,9 +38,9 @@ func ApplyGitHubTerraform(dryRun bool) {
 	if err != nil {
 		log.Panic("error: could not change directory to " + directory)
 	}
-	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
+	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 	if err != nil {
-		log.Panicf("error: terraform initialization for github failed %s", err)
+		log.Panicf("error: terraform init for github failed %s", err)
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
@@ -69,16 +70,16 @@ func DestroyGitHubTerraform(dryRun bool) {
 	envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
 	envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
-	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botPublicKey")
+	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botpublicKey")
 
 	directory := fmt.Sprintf("%s/gitops/terraform/github", config.K1FolderPath)
 	err := os.Chdir(directory)
 	if err != nil {
 		log.Panic("error: could not change directory to " + directory)
 	}
-	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
+	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 	if err != nil {
-		log.Panicf("error: terraform initialization for github failed %s", err)
+		log.Panicf("error: terraform init for github failed %s", err)
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")

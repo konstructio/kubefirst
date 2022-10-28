@@ -34,9 +34,9 @@ func ApplyCITerraform(dryRun bool, bucketName string) {
 		if err != nil {
 			log.Panic("error: could not change directory to " + directory)
 		}
-		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
-			log.Panicf("error: terraform initialization for ci failed %s", err)
+			log.Panicf("error: terraform init for ci failed %s", err)
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
@@ -63,9 +63,9 @@ func DestroyCITerraform(skipCITerraform bool) {
 		envs["AWS_PROFILE"] = viper.GetString("aws.profile")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 
-		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "initialization")
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
-			log.Printf("[WARN]: failed to terraform initialization (destroy) CI, was the CI not created(check AWS)?: %s", err)
+			log.Printf("[WARN]: failed to terraform init (destroy) CI, was the CI not created(check AWS)?: %s", err)
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")

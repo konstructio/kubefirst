@@ -41,6 +41,7 @@ var (
 	awsHostedZone  string
 	metaphorBranch string
 	gitProvider    string
+	adminEmail     string
 )
 
 func NewCommand() *cobra.Command {
@@ -49,12 +50,12 @@ func NewCommand() *cobra.Command {
 		Short: "Initialize your local machine to execute `create`",
 		Long: `Initialize the required resources to provision a full Cloud environment. At this step initial resources are
 validated and configured.`,
-		RunE: runInit,
+		RunE: RunInit,
 	}
 
 	initCmd.Flags().BoolVar(&useTelemetry, "use-telemetry", true, "installer will not send telemetry about this installation")
 	initCmd.Flags().BoolVar(&dryRun, "dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
-	initCmd.Flags().BoolVar(&silentMode, "silentMode", false, "enable silentMode mode will make the UI return less content to the screen")
+	initCmd.Flags().BoolVar(&silentMode, "silent", false, "enable silentMode mode will make the UI return less content to the screen")
 
 	initCmd.Flags().StringVar(&gitHubHost, "github-host", "github.com", "Github URL")
 	initCmd.Flags().StringVar(&gitHubOwner, "github-owner", "", "Github owner of repos")
@@ -62,11 +63,13 @@ validated and configured.`,
 
 	initCmd.Flags().StringVar(&cloud, "cloud", "k3d", "the cloud to provision infrastructure in")
 
-	initCmd.Flags().StringVar(&clusterName, "cluster-name", "kubefirst", "the cluster name, used to identify resources on cloud provider")
+	initCmd.Flags().StringVar(&clusterName, "cluster-name", "k3d-kubefirst", "the cluster name, used to identify resources on cloud provider")
 	initCmd.Flags().StringVar(&awsAssumeRole, "aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")
 	initCmd.Flags().StringVar(&awsHostedZone, "hosted-zone-name", "", "the domain to provision the kubefirst platform in")
 
 	initCmd.Flags().StringVar(&gitProvider, "git-provider", "github", "specify \"github\" or \"gitlab\" git provider. defaults to github.")
+
+	initCmd.Flags().StringVar(&adminEmail, "admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
 
 	//initCmd.Flags().BoolVar(&awsNodeSpot, "aws-nodes-spot", false, "nodes spot on AWS EKS compute nodes")
 	//initCmd.Flags().StringVar("s3-suffix", "", "unique identifier for s3 buckets")
@@ -82,12 +85,13 @@ validated and configured.`,
 	return initCmd
 }
 
-func runInit(cmd *cobra.Command, args []string) error {
+func RunInit(cmd *cobra.Command, args []string) error {
 
 	tools.RunInfo(cmd, args)
 	config := configs.ReadConfig()
 
 	viper.Set("gitops.repo", gitOpsRepo)
+	viper.Set("gitprovider", gitProvider)
 	viper.WriteConfig()
 
 	//Please don't change the order of this block, wihtout updating
@@ -142,6 +146,9 @@ func runInit(cmd *cobra.Command, args []string) error {
 	if cloudValue == pkg.CloudK3d {
 		viper.Set("gitops.branch", gitOpsBranch)
 		viper.Set("github.owner", viper.GetString("github.user"))
+		viper.Set("cloud", pkg.CloudK3d)
+		viper.Set("cluster-name", clusterName)
+		viper.Set("adminemail", adminEmail)
 		viper.WriteConfig()
 
 		//if installerFlags.BranchGitops = viper.GetString("gitops.branch"); err != nil {
@@ -195,7 +202,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), silentMode)
 
-	log.Println("sending initialization started metric")
+	log.Println("sending init started metric")
 
 	var telemetryHandler handlers.TelemetryHandler
 	if useTelemetry {
@@ -288,7 +295,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 		//! tracker 3
 		// todo: this doesn't default to testing the dns check
-		skipHostedZoneCheck := viper.GetBool("initialization.hostedzonecheck.enabled")
+		skipHostedZoneCheck := viper.GetBool("init.hostedzonecheck.enabled")
 		if !skipHostedZoneCheck {
 			hostedZoneLiveness := aws.TestHostedZoneLiveness(dryRun, awsHostedZone, hostedZoneId)
 			if !hostedZoneLiveness {
@@ -325,7 +332,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	log.Println("clone and detokenization of gitops-template repository complete")
 	progressPrinter.IncrementTracker("step-gitops", 1)
 
-	log.Println("sending initialization completed metric")
+	log.Println("sending init completed metric")
 
 	if useTelemetry {
 		telemetryInitCompleted, err := domain.NewTelemetry(
@@ -348,7 +355,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	progressPrinter.IncrementTracker("step-telemetry", 1)
 	time.Sleep(time.Millisecond * 100)
 
-	pkg.InformUser("initialization is done!\n", silentMode)
+	pkg.InformUser("init is done!\n", silentMode)
 
 	return nil
 }

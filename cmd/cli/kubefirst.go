@@ -13,16 +13,16 @@ func NewCommand() *cobra.Command {
 
 	coreKubefirstCli := &cobra.Command{
 		Use:   "kubefirst",
-		Short: "rewiring proposal",
+		Short: "Kubefirst CLI",
 	}
 
-	createCoreCliCommandTree(coreKubefirstCli)
+	createCliCommandTree(coreKubefirstCli)
 
 	return coreKubefirstCli
 }
 
-func createCoreCliCommandTree(cmd *cobra.Command) {
-	// todo: initialization should be initialization/initialization() conflict
+func createCliCommandTree(cmd *cobra.Command) {
+
 	cmd.AddCommand(initialization.NewCommand())
 	cmd.AddCommand(cluster.NewCommand())
 

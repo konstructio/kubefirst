@@ -20,14 +20,14 @@ import (
 func NewCommand() *cobra.Command {
 	cleanCmd := &cobra.Command{
 		Use:   "clean",
-		Short: "removes all kubefirst resources created with the initialization command",
+		Short: "removes all kubefirst resources created with the init command",
 		Long: `Kubefirst creates files, folders and cloud buckets during installation at your environment. This command removes and 
 	re-create Kubefirst base files. To destroy cloud resources you need to specify additional flags (--destroy-buckets)`,
 		RunE: runClean,
 	}
 
 	cleanCmd.Flags().Bool("rm-logs", false, "remove logs folder")
-	cleanCmd.Flags().Bool("destroy-buckets", false, "destroy buckets created by initialization cmd")
+	cleanCmd.Flags().Bool("destroy-buckets", false, "destroy buckets created by init cmd")
 	cleanCmd.Flags().Bool("destroy-confirm", false, "when detroy-buckets flag is provided, we must provide this flag as well to confirm the destroy operation")
 
 	return cleanCmd

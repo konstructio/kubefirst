@@ -28,11 +28,17 @@ import (
 	"time"
 )
 
+var (
+	createCmdSilentMode   bool
+	createCmdUseTelemetry bool
+	createCmdDryRun       bool
+)
+
 func CreateCommand() *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Creates a Kubefirst management cluster",
-		Long: "Based on Kubefirst initialization command, that creates the Kubefirst configuration file, this command start the" +
+		Long: "Based on Kubefirst init command, that creates the Kubefirst configuration file, this command start the" +
 			"cluster provisioning process spinning up the services, and validates the liveness of the provisioned " +
 			"services.",
 		RunE: runCreate,
@@ -41,6 +47,13 @@ func CreateCommand() *cobra.Command {
 	createCmd.Flags().Bool("destroy", false, "destroy resources")
 	createCmd.Flags().Bool("skip-gitlab", false, "Skip GitLab lab install and vault setup")
 	createCmd.Flags().Bool("skip-vault", false, "Skip post-gitClient lab install and vault setup")
+
+	createCmd.Flags().BoolVar(&createCmdUseTelemetry, "use-telemetry", true, "installer will not send telemetry about this installation")
+	createCmd.Flags().BoolVar(&createCmdDryRun, "dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
+	createCmd.Flags().BoolVar(&createCmdSilentMode, "silent", false, "enable destroySilentMode mode will make the UI return less content to the screen")
+	//createCmd.Flags().StringP("config", "c", "", "File to be imported to bootstrap configs")
+
+	//viper.BindPFlag("config.file", currentCommand.Flags().Lookup("config-load"))
 	return createCmd
 
 }
@@ -56,15 +69,15 @@ func runCreate(cmd *cobra.Command, args []string) error {
 
 	}()
 
-	globalFlags, err := flagset.ProcessGlobalFlags(cmd)
-	if err != nil {
-		return err
-	}
+	//globalFlags, err := flagset.ProcessGlobalFlags(cmd)
+	//if err != nil {
+	//	return err
+	//}
 
-	if globalFlags.SilentMode {
+	if createCmdSilentMode {
 		pkg.InformUser(
 			"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
-			globalFlags.SilentMode,
+			createCmdSilentMode,
 		)
 	}
 
@@ -72,7 +85,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	hostedZoneName := viper.GetString("aws.hostedzonename")
 
 	//* telemetry
-	if globalFlags.UseTelemetry {
+	if createCmdUseTelemetry {
 		// Instantiates a SegmentIO client to send messages to the segment API.
 		segmentIOClientStart := analytics.New(pkg.SegmentIOWriteKey)
 
@@ -129,7 +142,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 				}
 			} else {
 				// if not local it is AWS for now
-				err := createGithubCmd.RunE(cmd, args)
+				err := CreateGitHubCommand().RunE(cmd, args)
 				if err != nil {
 					return err
 				}
@@ -161,7 +174,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 
 			//* establish port-forward
 			var kPortForwardChartMuseum *exec.Cmd
-			kPortForwardChartMuseum, err = k8s.PortForward(globalFlags.DryRun, "chartmuseum", "svc/chartmuseum", "8181:8080")
+			kPortForwardChartMuseum, err := k8s.PortForward(createCmdDryRun, "chartmuseum", "svc/chartmuseum", "8181:8080")
 			defer func() {
 				err = kPortForwardChartMuseum.Process.Signal(syscall.SIGTERM)
 				if err != nil {
@@ -178,16 +191,16 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	} else {
 		// Relates to issue: https://github.com/kubefirst/kubefirst/issues/386
 		// Metaphor needs chart museum for CI works
-		pkg.InformUser("Waiting chartmuseum", globalFlags.SilentMode)
+		pkg.InformUser("Waiting chartmuseum", createCmdSilentMode)
 		for i := 1; i < 10; i++ {
-			chartMuseum := gitlab.AwaitHostNTimes("chartmuseum", globalFlags.DryRun, 20)
+			chartMuseum := gitlab.AwaitHostNTimes("chartmuseum", createCmdDryRun, 20)
 			if chartMuseum {
-				pkg.InformUser("Chartmuseum DNS is ready", globalFlags.SilentMode)
+				pkg.InformUser("Chartmuseum DNS is ready", createCmdSilentMode)
 				break
 			}
 		}
-		pkg.InformUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
-		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
+		pkg.InformUser("Removing self-signed Argo certificate", createCmdSilentMode)
+		clientset, err := k8s.GetClientSet(createCmdDryRun)
 		if err != nil {
 			log.Printf("Failed to get clientset for k8s : %s", err)
 			return err
@@ -198,7 +211,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 			log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
 		}
 
-		pkg.InformUser("Checking if cluster is ready for use by metaphor apps", globalFlags.SilentMode)
+		pkg.InformUser("Checking if cluster is ready for use by metaphor apps", createCmdSilentMode)
 		for i := 1; i < 10; i++ {
 			err = tools.K1ReadyCmd.RunE(cmd, args)
 			if err != nil {
@@ -209,16 +222,16 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	pkg.InformUser("Deploying metaphor applications", globalFlags.SilentMode)
-	err = deployMetaphorCmd.RunE(cmd, args)
+	pkg.InformUser("Deploying metaphor applications", createCmdSilentMode)
+	err := deployMetaphorCmd.RunE(cmd, args)
 	if err != nil {
-		pkg.InformUser("Error deploy metaphor applications", globalFlags.SilentMode)
+		pkg.InformUser("Error deploy metaphor applications", createCmdSilentMode)
 		log.Println("Error running deployMetaphorCmd")
 		return err
 	}
 
 	if viper.GetString("cloud") == flagset.CloudAws {
-		err = state.UploadKubefirstToStateStore(globalFlags.DryRun)
+		err := state.UploadKubefirstToStateStore(createCmdDryRun)
 		if err != nil {
 			log.Println(err)
 		}
@@ -323,7 +336,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 
 	log.Println("sending mgmt cluster install completed metric")
 
-	if globalFlags.UseTelemetry {
+	if createCmdUseTelemetry {
 		// Instantiates a SegmentIO client to send messages to the segment API.
 		segmentIOClientCompleted := analytics.New(pkg.SegmentIOWriteKey)
 
@@ -354,12 +367,12 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	log.Println("Kubefirst installation finished successfully")
-	pkg.InformUser("Kubefirst installation finished successfully", globalFlags.SilentMode)
+	pkg.InformUser("Kubefirst installation finished successfully", createCmdSilentMode)
 
 	// todo: temporary code to enable console for localhost
 	err = postInstallCmd.RunE(cmd, args)
 	if err != nil {
-		pkg.InformUser("Error starting apps from post-install", globalFlags.SilentMode)
+		pkg.InformUser("Error starting apps from post-install", createCmdSilentMode)
 		log.Println("Error running postInstallCmd")
 		return err
 	}

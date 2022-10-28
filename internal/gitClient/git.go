@@ -39,7 +39,7 @@ func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, br
 		log.Printf("error cloning %s repository from github %s", folderName, err)
 		return directory, err
 	}
-	viper.Set(fmt.Sprintf("initialization.repos.%s.cloned", folderName), true)
+	viper.Set(fmt.Sprintf("init.repos.%s.cloned", folderName), true)
 	viper.WriteConfig()
 
 	log.Printf("cloned %s-template repository to directory %s/%s", folderName, config.K1FolderPath, folderName)
@@ -48,7 +48,7 @@ func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, br
 	pkg.Detokenize(directory)
 	log.Printf("detokenization of %s/%s complete", config.K1FolderPath, folderName)
 
-	viper.Set(fmt.Sprintf("initialization.repos.%s.detokenized", folderName), true)
+	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", folderName), true)
 	viper.WriteConfig()
 	return directory, nil
 }
