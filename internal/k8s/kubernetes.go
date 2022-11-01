@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"time"
@@ -365,4 +367,90 @@ func (p *secret) patchSecret(k8sClient *kubernetes.Clientset, payload []PatchJso
 		return err
 	}
 	return nil
+}
+
+// todo: deprecate the other functions
+func LoopUntilPodIsReady(dryRun bool) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, loopUntilPodIsReady skipped.")
+		return
+	}
+	token := viper.GetString("vault.token")
+	if len(token) == 0 {
+
+		totalAttempts := 50
+		url := "http://localhost:8200/v1/sys/health"
+		for i := 0; i < totalAttempts; i++ {
+			log.Printf("vault is not ready yet, sleeping and checking again, attempt (%d/%d)", i+1, totalAttempts)
+			time.Sleep(10 * time.Second)
+
+			req, _ := http.NewRequest("GET", url, nil)
+
+			req.Header.Add("Content-Type", "application/json")
+
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				log.Println("error with http request Do, vault is not available", err)
+				// todo: temporary code
+				log.Println("trying to open port-forward again...")
+				go func() {
+					_, err := PortForward(false, "vault", "svc/vault", "8200:8200")
+					if err != nil {
+						log.Println("error opening Vault port forward")
+					}
+				}()
+				continue
+			}
+
+			defer res.Body.Close()
+			body, err := io.ReadAll(res.Body)
+			if err != nil {
+				log.Println("vault is available but the body is not what is expected ", err)
+				continue
+			}
+
+			var responseJson map[string]interface{}
+
+			if err := json.Unmarshal(body, &responseJson); err != nil {
+				log.Printf("vault is available but the body is not what is expected %s", err)
+				continue
+			}
+
+			_, ok := responseJson["initialized"]
+			if ok {
+				log.Printf("vault is initialized and is in the expected state")
+				return
+			}
+			log.Panic("vault was never initialized")
+		}
+		viper.Set("vault.status.running", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("vault token already exists, skipping vault health checks loopUntilPodIsReady")
+	}
+}
+
+// todo: deprecate the other functions
+func SetArgocdCreds(dryRun bool) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, setArgocdCreds skipped.")
+		viper.Set("argocd.admin.password", "dry-run-not-real-pwd")
+		viper.Set("argocd.admin.username", "dry-run-not-admin")
+		viper.WriteConfig()
+		return
+	}
+	clientset, err := GetClientSet(dryRun)
+	if err != nil {
+		panic(err.Error())
+	}
+	argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+
+	argocdPassword := GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
+	if argocdPassword == "" {
+		log.Panicf("Missing argocdPassword")
+	}
+
+	viper.Set("argocd.admin.password", argocdPassword)
+	viper.Set("argocd.admin.username", "admin")
+	viper.WriteConfig()
 }

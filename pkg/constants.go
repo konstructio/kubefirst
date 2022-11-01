@@ -8,6 +8,7 @@ const (
 	LocalConsoleUI      = "http://localhost:9094"
 	GitHubOAuthClientId = "2ced340927e0a6c49a45"
 	CloudK3d            = "k3d"
+	GitHubProviderName  = "github"
 )
 
 // SegmentIO constants

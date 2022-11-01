@@ -61,7 +61,7 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 	//Push
 
 	config := configs.ReadConfig()
-	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	token := viper.GetString("github.token")
 	if token == "" {
 		log.Println("Unauthorized: No token present")
 		return fmt.Errorf("missing github token")
@@ -212,6 +212,7 @@ func PushGitopsToSoftServe() {
 func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory string, branch string, fallbackTag string) error {
 	defer viper.WriteConfig()
 	// todo need to refactor this and have the repoName include -template
+	githubOrg = "kubefirst"
 	repoURL := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)
 
 	isMainBranch := true
@@ -326,7 +327,7 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 		},
 	})
 
-	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	token := viper.GetString("github.token")
 	if len(token) == 0 {
 		token = viper.GetString("github.token")
 	}
@@ -386,7 +387,7 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 		},
 	})
 
-	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	token := viper.GetString("github.token")
 	err = repo.Push(&git.PushOptions{
 		RemoteName: remoteName,
 		Auth: &http.BasicAuth{
@@ -474,7 +475,7 @@ func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName st
 		fmt.Println(err)
 	}
 
-	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	token := viper.GetString("github.token")
 	err = repo.Push(&git.PushOptions{
 		RemoteName: remoteName,
 		Auth: &http.BasicAuth{

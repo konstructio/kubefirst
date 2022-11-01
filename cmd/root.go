@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/kubefirst/kubefirst/cmd/local"
 	"os"
 
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
@@ -40,5 +41,8 @@ func init() {
 
 	// Cobra also supports local flags, which will only run, when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	// todo: temporary, move it into CLI tree
+	rootCmd.AddCommand(local.NewCommand())
 
 }

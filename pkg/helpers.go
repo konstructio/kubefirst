@@ -3,6 +3,7 @@ package pkg
 import (
 	"errors"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"log"
 	"math/rand"
 	"net/http"
@@ -133,7 +134,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubUser := viper.GetString(("github.user"))
 
 		//TODO: We need to fix this
-		githubToken := os.Getenv("GITHUB_AUTH_TOKEN")
+		githubToken := viper.GetString("github.token")
 
 		//todo: get from viper
 		gitopsRepo := "gitops"
@@ -477,4 +478,19 @@ func ReplaceS3Backend() error {
 	}
 
 	return nil
+}
+
+// todo: deprecate cmd.informUser
+func InformUser(message string, silentMode bool) {
+	// if in silent mode, send message to the screen
+	// silent mode will silent most of the messages, this function is not frequently called
+	if silentMode {
+		_, err := fmt.Fprintln(os.Stdout, message)
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+	log.Println(message)
+	progressPrinter.LogMessage(fmt.Sprintf("- %s", message))
 }
