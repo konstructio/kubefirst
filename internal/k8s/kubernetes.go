@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 
 	"github.com/itchyny/gojq"
@@ -453,4 +454,85 @@ func SetArgocdCreds(dryRun bool) {
 	viper.Set("argocd.admin.password", argocdPassword)
 	viper.Set("argocd.admin.username", "admin")
 	viper.WriteConfig()
+}
+
+// todo: this is temporary
+func OpenPortForwardForKubeConConsole() error {
+
+	var wg sync.WaitGroup
+	wg.Add(8)
+	// argo workflows
+	go func() {
+		_, err := PortForward(false, "argo", "svc/argo-server", "2746:2746")
+		if err != nil {
+			log.Println("error opening Argo Workflows port forward")
+		}
+		wg.Done()
+	}()
+	// argocd
+	go func() {
+		_, err := PortForward(false, "argocd", "svc/argocd-server", "8080:80")
+		if err != nil {
+			log.Println("error opening ArgoCD port forward")
+		}
+		wg.Done()
+	}()
+
+	// atlantis
+	go func() {
+		_, err := PortForward(false, "atlantis", "svc/atlantis", "4141:80")
+		if err != nil {
+			log.Println("error opening Atlantis port forward")
+		}
+		wg.Done()
+	}()
+
+	// chartmuseum
+	go func() {
+		_, err := PortForward(false, "chartmuseum", "svc/chartmuseum", "8181:8080")
+		if err != nil {
+			log.Println("error opening Chartmuseum port forward")
+		}
+		wg.Done()
+	}()
+
+	// vault
+	go func() {
+		_, err := PortForward(false, "vault", "svc/vault", "8200:8200")
+		if err != nil {
+			log.Println("error opening Vault port forward")
+		}
+		wg.Done()
+	}()
+
+	// minio
+	go func() {
+		_, err := PortForward(false, "minio", "svc/minio", "9000:9000")
+		if err != nil {
+			log.Println("error opening Minio port forward")
+		}
+		wg.Done()
+	}()
+
+	// minio console
+	go func() {
+		_, err := PortForward(false, "minio", "svc/minio-console", "9001:9001")
+		if err != nil {
+			log.Println("error opening Minio-console port forward")
+		}
+		wg.Done()
+	}()
+
+	// Kubecon console ui
+	go func() {
+		_, err := PortForward(false, "kubefirst", "svc/kubefirst-console", "9094:80")
+		if err != nil {
+			log.Println("error opening Kubefirst-console port forward")
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	return nil
 }

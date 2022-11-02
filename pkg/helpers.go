@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -493,4 +494,55 @@ func InformUser(message string, silentMode bool) {
 	}
 	log.Println(message)
 	progressPrinter.LogMessage(fmt.Sprintf("- %s", message))
+}
+
+func OpenBrowser(url string) error {
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		_, _, err = ExecShellReturnStrings("xdg-open", url)
+	case "windows":
+		_, _, err = ExecShellReturnStrings("rundll32", "url.dll,FileProtocolHandler", url)
+	case "darwin":
+		_, _, err = ExecShellReturnStrings("open", url)
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// todo: this is temporary
+func IsConsoleUIAvailable(url string) error {
+	attempts := 10
+	httpClient := http.DefaultClient
+	for i := 0; i < attempts; i++ {
+
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			log.Printf("unable to reach %q (%d/%d)", url, i+1, attempts)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			log.Printf("unable to reach %q (%d/%d)", url, i+1, attempts)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			log.Println("console UI is up and running")
+			return nil
+		}
+
+		log.Println("waiting UI console to be ready")
+		time.Sleep(5 * time.Second)
+	}
+
+	return nil
 }

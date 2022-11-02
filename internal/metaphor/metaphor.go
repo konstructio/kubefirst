@@ -2,6 +2,7 @@ package metaphor
 
 import (
 	"fmt"
+	"github.com/kubefirst/kubefirst/pkg"
 	"log"
 	"os"
 
@@ -94,5 +95,55 @@ func DeployMetaphorGithub(globalFlags flagset.GlobalFlags) error {
 
 	viper.Set("github.metaphor-pushed", true)
 	viper.WriteConfig()
+	return nil
+}
+
+// DeployMetaphorGithubLocal Deploy metaphor applications on github install
+func DeployMetaphorGithubLocal(dryRun bool, gitHubOwner string, metaphorBranch string, templateTag string) error {
+
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, DeployMetaphorGithub skipped.")
+		return nil
+	}
+
+	if viper.GetBool("github.metaphor-pushed") {
+		log.Println("github.metaphor-pushed already executed, skipped")
+		return nil
+	}
+
+	config := configs.ReadConfig()
+
+	tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+	err := os.Rename(fmt.Sprintf("%s/%s", tfEntrypoint, "metaphor-repos.md"), fmt.Sprintf("%s/%s", tfEntrypoint, "metaphor-repos.tf"))
+	if err != nil {
+		log.Println("error renaming metaphor-repos.md to metaphor-repos.tf", err)
+	}
+
+	gitClient.PushLocalRepoUpdates(pkg.GitHubHost, gitHubOwner, "gitops", "github")
+	terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
+
+	repos := [3]string{"metaphor", "metaphor-go", "metaphor-frontend"}
+	for _, element := range repos {
+		log.Println("Processing Repo:", element)
+		repo.PrepareKubefirstTemplateRepo(
+			dryRun,
+			config,
+			gitHubOwner,
+			element,
+			metaphorBranch,
+			templateTag,
+		)
+		log.Printf("clone and detokenization of %s-template repository complete", element)
+
+		gitClient.PushLocalRepoToEmptyRemote(pkg.GitHubHost, gitHubOwner, element, "github")
+
+	}
+
+	viper.Set("github.metaphor-pushed", true)
+	err = viper.WriteConfig()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

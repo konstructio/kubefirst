@@ -9,6 +9,7 @@ const (
 	GitHubOAuthClientId = "2ced340927e0a6c49a45"
 	CloudK3d            = "k3d"
 	GitHubProviderName  = "github"
+	GitHubHost          = "github.com"
 	LocalClusterName    = "kubefirst"
 )
 

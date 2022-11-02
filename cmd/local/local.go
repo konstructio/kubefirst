@@ -2,21 +2,19 @@ package local
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/domain"
-	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/internal/metaphor"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
-	"github.com/kubefirst/kubefirst/internal/repo"
 	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
@@ -25,8 +23,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log"
-	"net/http"
-	"os"
 	"os/exec"
 	"sync"
 	"syscall"
@@ -42,27 +38,32 @@ var (
 	awsHostedZone  string
 	metaphorBranch string
 	adminEmail     string
+	enableConsole  bool
 )
 
 func NewCommand() *cobra.Command {
 
 	localCmd := &cobra.Command{
-		Use:     "local",
-		Short:   "Kubefirst localhost installation",
-		Long:    "Kubefirst localhost enable a localhost installation without the requirement of a cloud provider.",
-		PreRunE: validateLocal,
-		RunE:    runLocal,
+		Use:      "local",
+		Short:    "Kubefirst localhost installation",
+		Long:     "Kubefirst localhost enable a localhost installation without the requirement of a cloud provider.",
+		PreRunE:  validateLocal,
+		RunE:     runLocal,
+		PostRunE: runPostLocal,
 	}
 
-	localCmd.Flags().BoolVar(&useTelemetry, "use-telemetry", true, "xinstaller will not send telemetry about this installation")
+	localCmd.Flags().BoolVar(&useTelemetry, "use-telemetry", true, "installer will not send telemetry about this installation")
 	localCmd.Flags().BoolVar(&dryRun, "dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	localCmd.Flags().BoolVar(&silentMode, "silent", false, "enable silentMode mode will make the UI return less content to the screen")
-	// todo: get it from GH token
+	// todo: get it from GH token , use it for console
 	localCmd.Flags().StringVar(&adminEmail, "admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
 
 	localCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "main", "metaphro application branch")
 	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "main", "version/branch used on git clone - former: version-gitops flag")
 	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
+
+	localCmd.Flags().BoolVar(&enableConsole, "enable-console", true, "If hand-off screen will be presented on a browser UI")
+	// todo:
 	//initCmd.Flags().StringP("config", "c", "", "File to be imported to bootstrap configs")
 	//viper.BindPFlag("config.file", currentCommand.Flags().Lookup("config-load"))
 
@@ -75,10 +76,6 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	//tools.RunInfo(cmd, args)
 
-	progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
-	progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
-	progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
-	progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 	progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 	progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
 	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 5)
@@ -91,43 +88,6 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), silentMode)
-
-	log.Println("sending init started metric")
-
-	log.Println("installing kubefirst dependencies")
-	progressPrinter.IncrementTracker("step-download", 1)
-	err := downloadManager.DownloadTools(config)
-	if err != nil {
-		return err
-	}
-	log.Println("dependency installation complete")
-	progressPrinter.IncrementTracker("step-download", 1)
-	err = downloadManager.DownloadLocalTools(config)
-	if err != nil {
-		return err
-	}
-
-	progressPrinter.IncrementTracker("step-download", 1)
-
-	log.Println("creating an ssh key pair for your new cloud infrastructure")
-	pkg.CreateSshKeyPair()
-	log.Println("ssh key pair creation complete")
-	progressPrinter.IncrementTracker("step-ssh", 1)
-
-	repo.PrepareKubefirstTemplateRepo(
-		dryRun,
-		config,
-		viper.GetString("github.owner"),
-		viper.GetString("gitops.repo"),
-		viper.GetString("gitops.branch"),
-		viper.GetString("template.tag"),
-	)
-	log.Println("clone and detokenization of gitops-template repository complete")
-	progressPrinter.IncrementTracker("step-gitops", 1)
-
-	log.Println("sending init completed metric")
-
-	pkg.InformUser("init is done!\n", silentMode)
 
 	// telemetry
 	if useTelemetry {
@@ -171,7 +131,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		if viper.GetString("gitprovider") == "github" {
 			log.Println("Installing Github version of Kubefirst")
 			viper.Set("git.mode", "github")
-			err = k3d.CreateK3dCluster()
+			err := k3d.CreateK3dCluster()
 			if err != nil {
 				return err
 			}
@@ -182,8 +142,6 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	var kPortForwardArgocd *exec.Cmd
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), silentMode)
-
-	progressPrinter.IncrementTracker("step-0", 1)
 
 	executionControl := viper.GetBool("terraform.github.apply.complete")
 	// create github teams in the org and gitops repo
@@ -217,7 +175,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("k3d.created")
 	if !executionControl {
 		pkg.InformUser("Creating K8S Cluster", silentMode)
-		err = k3d.CreateK3dCluster()
+		err := k3d.CreateK3dCluster()
 		if err != nil {
 			log.Println("Error installing k3d cluster")
 			return err
@@ -232,7 +190,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	executionControl = viper.GetBool("kubernetes.vault.secret.created")
 	if !executionControl {
-		err = k3d.AddK3DSecrets(dryRun)
+		err := k3d.AddK3DSecrets(dryRun)
 		if err != nil {
 			log.Println("Error AddK3DSecrets")
 			return err
@@ -247,7 +205,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("create initial argocd repository", silentMode)
 		//Enterprise users need to be able to set the hostname for git.
 		gitopsRepo := fmt.Sprintf("git@%s:%s/gitops.git", viper.GetString("github.host"), viper.GetString("github.owner"))
-		err = argocd.CreateInitialArgoCDRepository(gitopsRepo)
+		err := argocd.CreateInitialArgoCDRepository(gitopsRepo)
 		if err != nil {
 			log.Println("Error CreateInitialArgoCDRepository")
 			return err
@@ -289,7 +247,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	// establish port-forward
-	kPortForwardArgocd, err = k8s.PortForward(dryRun, "argocd", "svc/argocd-server", "8080:80")
+	kPortForwardArgocd, err := k8s.PortForward(dryRun, "argocd", "svc/argocd-server", "8080:80")
 	defer func() {
 		err = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 		if err != nil {
@@ -377,7 +335,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		log.Println("already executed vault terraform")
 	}
 
-	//* create users
+	// create users
 	executionControl = viper.GetBool("terraform.users.apply.complete")
 	if !executionControl {
 		pkg.InformUser("applying users terraform", silentMode)
@@ -424,24 +382,13 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		log.Println("already resolved host for chartmuseum, continuing")
 	}
 
-	// todo: uncomment it
-	//pkg.InformUser("Deploying metaphor applications", silentMode)
-	//err = deployMetaphorCmd.RunE(cmd, args)
-	//if err != nil {
-	//	pkg.InformUser("Error deploy metaphor applications", silentMode)
-	//	log.Println("Error running deployMetaphorCmd")
-	//	return err
-	//}
-
-	//kPortForwardAtlantis, err := k8s.PortForward(dryRun, "atlantis", "svc/atlantis", "4141:80")
-	//defer func() {
-	//	err = kPortForwardAtlantis.Process.Signal(syscall.SIGTERM)
-	//	if err != nil {
-	//		log.Println("error closing kPortForwardAtlantis")
-	//	}
-	//}()
-
-	// ---
+	pkg.InformUser("Deploying metaphor applications", silentMode)
+	err = metaphor.DeployMetaphorGithubLocal(dryRun, githubOwner, metaphorBranch, "")
+	if err != nil {
+		pkg.InformUser("Error deploy metaphor applications", silentMode)
+		log.Println("Error running deployMetaphorCmd")
+		log.Println(err)
+	}
 
 	// update terraform s3 backend to internal k8s dns (s3/minio bucket)
 	err = pkg.ReplaceTerraformS3Backend()
@@ -450,13 +397,10 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	// create a new branch and push changes
-	githubHost = viper.GetString("github.host")
-	githubOwner = viper.GetString("github.owner")
-	remoteName = "github"
-	localRepo = "gitops"
 	branchName := "update-s3-backend"
 	branchNameRef := plumbing.ReferenceName("refs/heads/" + branchName)
 
+	// force update cloned gitops-template terraform files to use Minio backend
 	err = gitClient.UpdateLocalTerraformFilesAndPush(
 		githubHost,
 		githubOwner,
@@ -468,11 +412,11 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		log.Println(err)
 	}
 
-	fmt.Println("sleeping after commit...")
+	log.Println("sleeping after git commit with Minio backend update for Terraform")
 	time.Sleep(3 * time.Second)
 
-	// create a PR, atlantis will identify it's a terraform change/file update and,
-	// trigger atlantis plan
+	// create a PR, atlantis will identify it's a Terraform change/file update and trigger atlantis plan
+	// it's a goroutine since it can run in background
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -531,139 +475,9 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	log.Println("Kubefirst installation finished successfully")
 	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
 
-	// todo: temporary code to enable console for localhost / enable it back!
-	//err = postInstallCmd.RunE(cmd, args)
-	//if err != nil {
-	//	pkg.InformUser("Error starting apps from post-install", silentMode)
-	//	log.Println("Error running postInstallCmd")
-	//	return err
-	//}
-
 	// waiting GitHub/atlantis step
 	wg.Wait()
 
 	return nil
 
-}
-
-func validateLocal(cmd *cobra.Command, args []string) error {
-
-	config := configs.ReadConfig()
-
-	var telemetryHandler handlers.TelemetryHandler
-	if useTelemetry {
-		// Instantiates a SegmentIO client to use send messages to the segment API.
-		segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
-
-		// SegmentIO library works with queue that is based on timing, we explicit close the http client connection
-		// to force flush in case there is still some pending message in the SegmentIO library queue.
-		defer func(segmentIOClient analytics.Client) {
-			err := segmentIOClient.Close()
-			if err != nil {
-				log.Println(err)
-			}
-		}(segmentIOClient)
-
-		// validate telemetryDomain data
-		telemetryDomain, err := domain.NewTelemetry(
-			pkg.MetricInitStarted,
-			awsHostedZone,
-			configs.K1Version,
-		)
-		if err != nil {
-			log.Println(err)
-		}
-		telemetryService := services.NewSegmentIoService(segmentIOClient)
-		telemetryHandler = handlers.NewTelemetryHandler(telemetryService)
-
-		err = telemetryHandler.SendCountMetric(telemetryDomain)
-		if err != nil {
-			log.Println(err)
-		}
-	}
-
-	if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
-		return err
-	}
-
-	// set default values to kubefirst file
-	viper.Set("gitops.repo", gitOpsRepo)
-	viper.Set("gitops.owner", "kubefirst")
-	viper.Set("gitprovider", pkg.GitHubProviderName)
-	viper.Set("metaphor.branch", metaphorBranch)
-
-	viper.Set("gitops.branch", gitOpsBranch)
-	viper.Set("github.owner", viper.GetString("github.user"))
-	viper.Set("cloud", pkg.CloudK3d)
-	viper.Set("cluster-name", pkg.LocalClusterName)
-	viper.Set("adminemail", adminEmail)
-
-	// todo: set constants
-	viper.Set("argocd.local.service", "http://localhost:8080")
-	viper.Set("gitlab.local.service", "http://localhost:8888")
-	viper.Set("vault.local.service", "http://localhost:8200")
-	// used for letsencrypt notifications and the gitlab root account
-
-	atlantisWebhookSecret := pkg.Random(20)
-	viper.Set("github.atlantis.webhook.secret", atlantisWebhookSecret)
-
-	viper.WriteConfig()
-
-	err := viper.WriteConfig()
-	if err != nil {
-		return err
-	}
-
-	// todo: wrap business logic into the handler
-	if config.GitHubPersonalAccessToken == "" {
-
-		httpClient := http.DefaultClient
-		gitHubService := services.NewGitHubService(httpClient)
-		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-		gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
-		if err != nil {
-			return err
-		}
-
-		if len(gitHubAccessToken) == 0 {
-			return errors.New("unable to retrieve a GitHub token for the user")
-		}
-
-		viper.Set("github.token", gitHubAccessToken)
-		err = viper.WriteConfig()
-		if err != nil {
-			return err
-		}
-
-		// todo: set common way to load env. values (viper->struct->load-env)
-		// todo: use viper file to load it, not load env. value
-		if err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
-			return err
-		}
-		log.Println("\nGITHUB_AUTH_TOKEN set via OAuth")
-	}
-
-	if silentMode {
-		pkg.InformUser(
-			"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
-			silentMode,
-		)
-	}
-
-	if useTelemetry {
-		telemetryInitCompleted, err := domain.NewTelemetry(
-			pkg.MetricInitCompleted,
-			awsHostedZone,
-			configs.K1Version,
-		)
-		if err != nil {
-			log.Println(err)
-		}
-		err = telemetryHandler.SendCountMetric(telemetryInitCompleted)
-		if err != nil {
-			log.Println(err)
-		}
-	}
-
-	return nil
 }
