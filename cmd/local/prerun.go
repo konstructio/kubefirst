@@ -2,6 +2,7 @@ package local
 
 import (
 	"errors"
+	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
@@ -21,11 +22,6 @@ import (
 func validateLocal(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
-
-	progressPrinter.AddTracker("step-0", "Process Parameters", 1)
-	progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
-	progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
-	progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
 
 	log.Println("sending init started metric")
 
@@ -61,9 +57,23 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	progressPrinter.AddTracker("step-0", "Process Parameters", 1)
+	progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
+	progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
+	progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
+
 	if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
 		return err
 	}
+
+	// check disk
+	free, err := pkg.GetDiskFree()
+	if err != nil {
+		return err
+	}
+	fmt.Println("---debug---")
+	fmt.Println(free)
+	fmt.Println("---debug---")
 
 	// set default values to kubefirst file
 	viper.Set("gitops.repo", gitOpsRepo)
@@ -88,7 +98,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	viper.WriteConfig()
 
-	err := viper.WriteConfig()
+	err = viper.WriteConfig()
 	if err != nil {
 		return err
 	}
