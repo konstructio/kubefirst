@@ -402,7 +402,7 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 }
 
 // todo: refactor
-func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName string, branchDestiny plumbing.ReferenceName) {
+func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remoteName string, branchDestiny plumbing.ReferenceName) error {
 
 	cfg := configs.ReadConfig()
 
@@ -419,16 +419,12 @@ func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName st
 	url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, localRepo)
 	log.Printf("git push to  remote: %s url: %s", remoteName, url)
 
-	w, _ := repo.Worktree()
-
-	//headRef, err := repo.Head()
-	//ref := plumbing.NewHashReference(branchDestiny, headRef.Hash())
-	//if err = repo.Storer.SetReference(ref); err != nil {
-	//	log.Panic(err)
-	//}
+	w, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
 
 	err = w.Checkout(&git.CheckoutOptions{
-		//Branch: plumbing.ReferenceName("ref/heads/update-s3-backend"),
 		Branch: branchDestiny,
 		Create: true,
 	})
@@ -437,19 +433,6 @@ func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName st
 	}
 
 	log.Println("Committing new changes... PushLocalRepoUpdates")
-	//status, err := w.Status()
-	//if err != nil {
-	//	log.Println("error getting worktree status", err)
-	//}
-
-	//for file, s := range status {
-	//	//log.Printf("the file is %s the status is %v", file, s.Worktree)
-	//	fmt.Printf("the file is %s the status is %v", file, s.Worktree)
-	//	_, err = w.Add(file)
-	//	if err != nil {
-	//		log.Println("error getting worktree status", err)
-	//	}
-	//}
 
 	if viper.GetString("gitprovider") == "github" {
 		kubefirstGitHubFile := "terraform/users/kubefirst-github.tf"
@@ -487,4 +470,6 @@ func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName st
 		log.Panicf("error pushing to remote %s: %s", remoteName, err)
 	}
 	log.Println("successfully pushed detokenized gitops content to github/", viper.GetString("github.owner"))
+
+	return nil
 }

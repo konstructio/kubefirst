@@ -9,6 +9,7 @@ const (
 	GitHubOAuthClientId = "2ced340927e0a6c49a45"
 	CloudK3d            = "k3d"
 	GitHubProviderName  = "github"
+	LocalClusterName    = "kubefirst"
 )
 
 // SegmentIO constants
@@ -20,4 +21,12 @@ const (
 	MetricInitCompleted               = "kubefirst.init.completed"
 	MetricMgmtClusterInstallStarted   = "kubefirst.mgmt_cluster_install.started"
 	MetricMgmtClusterInstallCompleted = "kubefirst.mgmt_cluster_install.completed"
+)
+
+const (
+	HelmRepoName         = "argo"
+	HelmRepoURL          = "https://argoproj.github.io/argo-helm"
+	HelmRepoChartName    = "argo-cd"
+	HelmRepoNamespace    = "argocd"
+	HelmRepoChartVersion = "4.10.5"
 )

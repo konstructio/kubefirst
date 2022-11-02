@@ -446,7 +446,7 @@ func AwaitHostNTimes(url string, times int, gracePeriod time.Duration) {
 // }
 
 // this is temporary code
-func ReplaceS3Backend() error {
+func ReplaceTerraformS3Backend() error {
 
 	config := configs.ReadConfig()
 
