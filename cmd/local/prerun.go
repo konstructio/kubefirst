@@ -3,6 +3,7 @@ package local
 import (
 	"errors"
 	"fmt"
+	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
@@ -67,13 +68,19 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	// check disk
-	free, err := pkg.GetDiskFree()
+	free, err := pkg.GetAvailableDiskSize()
 	if err != nil {
 		return err
 	}
-	fmt.Println("---debug---")
-	fmt.Println(free)
-	fmt.Println("---debug---")
+
+	// convert available disk size to GB format
+	availableDiskSize := float64(free) / humanize.GByte
+	if availableDiskSize < pkg.MinimumAvailableDiskSize {
+		return fmt.Errorf(
+			"there is not enough space to proceed with the installation, a minimum of %s is required to proceed",
+			availableDiskSize,
+		)
+	}
 
 	// set default values to kubefirst file
 	viper.Set("gitops.repo", gitOpsRepo)
