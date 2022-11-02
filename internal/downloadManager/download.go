@@ -52,10 +52,8 @@ func DownloadTools(config *configs.Config) error {
 	log.Println("starting downloads...")
 	toolsDirPath := fmt.Sprintf("%s/tools", config.K1FolderPath)
 
-	var err error
-
 	// create folder if it doesn't exist
-	err = createDirIfDontExist(toolsDirPath)
+	err := createDirIfDontExist(toolsDirPath)
 	if err != nil {
 		return err
 	}
@@ -80,19 +78,19 @@ func DownloadTools(config *configs.Config) error {
 		log.Printf("Downloading kubectl from: %s", kubectlDownloadUrl)
 		err = downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
 		if err != nil {
-			log.Println(err)
+			log.Panic(err)
 		}
 
 		err = os.Chmod(config.KubectlClientPath, 0755)
 		if err != nil {
-			log.Println(err)
+			log.Panic(err)
 		}
 
 		log.Println("going to print the kubeconfig env in runtime", os.Getenv("KUBECONFIG"))
 
-		kubectlStdOut, kubectlStdErr, errKubectl := pkg.ExecShellReturnStrings(config.KubectlClientPath, "version", "--client", "--short")
+		kubectlStdOut, kubectlStdErr, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "version", "--client", "--short")
 		log.Printf("-> kubectl version:\n\t%s\n\t%s\n", kubectlStdOut, kubectlStdErr)
-		if errKubectl != nil {
+		if err != nil {
 			log.Panicf("failed to call kubectlVersionCmd.Run(): %v", err)
 		}
 		wg.Done()
@@ -115,7 +113,7 @@ func DownloadTools(config *configs.Config) error {
 		terraformDownloadZipPath := fmt.Sprintf("%s/tools/terraform.zip", config.K1FolderPath)
 		err = downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
 		if err != nil {
-			log.Println("error reading terraform file", err)
+			log.Panic("error reading terraform file", err)
 		}
 
 		unzipDirectory := fmt.Sprintf("%s/tools", config.K1FolderPath)
@@ -123,16 +121,16 @@ func DownloadTools(config *configs.Config) error {
 
 		err = os.Chmod(unzipDirectory, 0777)
 		if err != nil {
-			log.Println(err)
+			log.Panic(err)
 		}
 
 		err = os.Chmod(fmt.Sprintf("%s/terraform", unzipDirectory), 0755)
 		if err != nil {
-			log.Println(err)
+			log.Panic(err)
 		}
 		err = os.RemoveAll(fmt.Sprintf("%s/terraform.zip", toolsDirPath))
 		if err != nil {
-			log.Println(err)
+			log.Panic(err)
 		}
 		wg.Done()
 		log.Println("Terraform download finished")
@@ -151,7 +149,7 @@ func DownloadTools(config *configs.Config) error {
 
 		err = downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
 		if err != nil {
-			log.Println(err)
+			log.Panic(err)
 		}
 
 		helmTarDownload, err := os.Open(helmDownloadTarGzPath)
@@ -166,7 +164,7 @@ func DownloadTools(config *configs.Config) error {
 		)
 		err = os.Chmod(config.HelmClientPath, 0755)
 		if err != nil {
-			log.Println(err)
+			log.Panic(err)
 		}
 
 		helmStdOut, helmStdErr, errHelm := pkg.ExecShellReturnStrings(
@@ -196,8 +194,7 @@ func DownloadTools(config *configs.Config) error {
 		consoleDownloadZipPath := fmt.Sprintf("%s/tools/console.zip", config.K1FolderPath)
 		err = downloadFile(consoleDownloadZipPath, consoleDownloadUrl)
 		if err != nil {
-			log.Println("error reading console file")
-			log.Println(err)
+			log.Panic("error reading console file")
 		}
 
 		unzipConsoleDirectory := fmt.Sprintf("%s/tools/console", config.K1FolderPath)
@@ -233,7 +230,7 @@ func downloadFile(localFilename string, url string) error {
 
 	// check server response
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad status: %s", resp.Status)
+		return fmt.Errorf("unable to download the required filed, the HTTP return status is: %s", resp.Status)
 	}
 
 	// writer the body to the file
