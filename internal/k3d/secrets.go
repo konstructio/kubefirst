@@ -5,13 +5,11 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"log"
-	"os"
-
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/spf13/viper"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"log"
 )
 
 func AddK3DSecrets(dryrun bool) error {
@@ -49,9 +47,9 @@ func AddK3DSecrets(dryrun bool) error {
 		"BASIC_AUTH_USER":       []byte("k-ray"),
 		"BASIC_AUTH_PASS":       []byte("feedkraystars"),
 		"USERNAME":              []byte(viper.GetString("github.user")),
-		"PERSONAL_ACCESS_TOKEN": []byte(os.Getenv("GITHUB_AUTH_TOKEN")),
+		"PERSONAL_ACCESS_TOKEN": []byte(viper.GetString("github.token")),
 		"username":              []byte(viper.GetString("github.user")),
-		"password":              []byte(os.Getenv("GITHUB_AUTH_TOKEN")),
+		"password":              []byte(viper.GetString("github.token")),
 	}
 	argoCiSecrets := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "ci-secrets", Namespace: "argo"},
@@ -65,7 +63,7 @@ func AddK3DSecrets(dryrun bool) error {
 	viper.Set("kubernetes.argo-ci.secret.created", true)
 	viper.WriteConfig()
 
-	usernamePasswordString := fmt.Sprintf("%s:%s", viper.GetString("github.user"), os.Getenv("GITHUB_AUTH_TOKEN"))
+	usernamePasswordString := fmt.Sprintf("%s:%s", viper.GetString("github.user"), viper.GetString("github.token"))
 	usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
 
 	dockerConfigString := fmt.Sprintf(`{"auths": {"https://ghcr.io/": {"auth": "%s"}}}`, usernamePasswordStringB64)
@@ -82,7 +80,7 @@ func AddK3DSecrets(dryrun bool) error {
 	viper.WriteConfig()
 
 	dataArgoCd := map[string][]byte{
-		"password": []byte(os.Getenv("GITHUB_AUTH_TOKEN")),
+		"password": []byte(viper.GetString("github.token")),
 		"url":      []byte(fmt.Sprintf("https://%s/%s/gitops.git", viper.GetString("github.host"), viper.GetString("github.owner"))),
 		"username": []byte(viper.GetString("github.user")),
 	}
@@ -155,7 +153,7 @@ func AddK3DSecrets(dryrun bool) error {
 	viper.WriteConfig()
 
 	dataGh := map[string][]byte{
-		"github_token": []byte(os.Getenv("GITHUB_AUTH_TOKEN")),
+		"github_token": []byte(viper.GetString("github.token")),
 	}
 	ghRunnerSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "controller-manager", Namespace: "github-runner"},

@@ -3,13 +3,11 @@ package githubWrapper
 import (
 	"context"
 	"fmt"
+	"github.com/google/go-github/v45/github"
 	"github.com/spf13/viper"
+	"golang.org/x/oauth2"
 	"log"
 	"net/http"
-	"os"
-
-	"github.com/google/go-github/v45/github"
-	"golang.org/x/oauth2"
 )
 
 type GithubSession struct {
@@ -21,7 +19,7 @@ type GithubSession struct {
 
 // New - Create a new client for github wrapper
 func New() GithubSession {
-	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	token := viper.GetString("github.token")
 	if token == "" {
 		log.Fatal("Unauthorized: No token present")
 	}

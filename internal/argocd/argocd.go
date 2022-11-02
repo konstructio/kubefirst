@@ -402,3 +402,37 @@ func IsAppSynched(token string, applicationName string) (bool, error) {
 	}
 	return false, nil
 }
+
+// todo: document it, deprecate the other waitArgoCDToBeReady
+func WaitArgoCDToBeReady(dryRun bool) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, waitArgoCDToBeReady skipped.")
+		return
+	}
+	config := configs.ReadConfig()
+	x := 50
+	for i := 0; i < x; i++ {
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/argocd")
+		if err != nil {
+			log.Println("Waiting argocd to be born")
+			time.Sleep(10 * time.Second)
+		} else {
+			log.Println("argocd namespace found, continuing")
+			time.Sleep(5 * time.Second)
+			break
+		}
+	}
+	for i := 0; i < x; i++ {
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
+		if err != nil {
+			log.Println("Waiting for argocd pods to create, checking in 10 seconds")
+			time.Sleep(10 * time.Second)
+		} else {
+			log.Println("argocd pods found, waiting for them to be running")
+			viper.Set("argocd.ready", true)
+			viper.WriteConfig()
+			time.Sleep(15 * time.Second)
+			break
+		}
+	}
+}
