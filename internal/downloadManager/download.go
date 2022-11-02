@@ -13,12 +13,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 )
 
-// DownloadLocalTools - Dowload extra tools needed for local installations scenarios
+// DownloadLocalTools - Download extra tools needed for local installations scenarios
 func DownloadLocalTools(config *configs.Config) error {
 	toolsDirPath := fmt.Sprintf("%s/tools", config.K1FolderPath)
 	err := createDirIfDontExist(toolsDirPath)
@@ -45,9 +46,12 @@ func DownloadLocalTools(config *configs.Config) error {
 	return nil
 }
 
-// DownloadTools - Dowload tools needed for all installations scenarios
+// DownloadTools prepare download folder, and download the required installation tools for download. The downloads
+// are done via Go routines, and error are handler by the error channel. In case of some error in the download process,
+// the errorChannel will receive the error message, and process it back to the function caller.
 func DownloadTools(config *configs.Config) error {
 
+	log.Println("starting downloads...")
 	toolsDirPath := fmt.Sprintf("%s/tools", config.K1FolderPath)
 
 	// create folder if it doesn't exist
@@ -56,133 +60,183 @@ func DownloadTools(config *configs.Config) error {
 		return err
 	}
 
-	kVersion := config.KubectlVersion
-	if config.LocalOs == "darwin" && config.LocalArchitecture == "arm64" {
-		kVersion = config.KubectlVersionM1
-	}
+	errorChannel := make(chan error)
+	wgDone := make(chan bool)
+	// create a waiting group (translating: create a queue of functions, and only pass the wg.Wait() function down
+	// bellow after all the wg.Add(4) functions are done (wg.Done)
+	var wg sync.WaitGroup
+	wg.Add(4)
 
-	kubectlDownloadUrl := fmt.Sprintf(
-		"https://dl.k8s.io/release/%s/bin/%s/%s/kubectl",
-		kVersion,
-		config.LocalOs,
-		config.LocalArchitecture,
-	)
-	log.Printf("Downloading kubectl from: %s", kubectlDownloadUrl)
-	err = downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
-	if err != nil {
+	go func() {
+		kVersion := config.KubectlVersion
+		if config.LocalOs == "darwin" && config.LocalArchitecture == "arm64" {
+			kVersion = config.KubectlVersionM1
+		}
+
+		kubectlDownloadUrl := fmt.Sprintf(
+			"https://dl.k8s.io/release/%s/bin/%s/%s/kubectl",
+			kVersion,
+			config.LocalOs,
+			config.LocalArchitecture,
+		)
+		log.Printf("Downloading kubectl from: %s", kubectlDownloadUrl)
+		err = downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+
+		err = os.Chmod(config.KubectlClientPath, 0755)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+
+		log.Println("going to print the kubeconfig env in runtime", os.Getenv("KUBECONFIG"))
+
+		kubectlStdOut, kubectlStdErr, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "version", "--client", "--short")
+		log.Printf("-> kubectl version:\n\t%s\n\t%s\n", kubectlStdOut, kubectlStdErr)
+		if err != nil {
+			errorChannel <- fmt.Errorf("failed to call kubectlVersionCmd.Run(): %v", err)
+			return
+		}
+		wg.Done()
+		log.Println("Kubectl download finished")
+	}()
+
+	go func() {
+
+		// todo: adopt latest helmVersion := "v3.9.0"
+		terraformVersion := config.TerraformVersion
+
+		terraformDownloadUrl := fmt.Sprintf(
+			"https://releases.hashicorp.com/terraform/%s/terraform_%s_%s_%s.zip",
+			terraformVersion,
+			terraformVersion,
+			config.LocalOs,
+			config.LocalArchitecture,
+		)
+		log.Printf("Downloading terraform from %s", terraformDownloadUrl)
+		terraformDownloadZipPath := fmt.Sprintf("%s/tools/terraform.zip", config.K1FolderPath)
+		err = downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
+		if err != nil {
+			errorChannel <- fmt.Errorf("error reading terraform file, %v", err)
+			return
+		}
+
+		unzipDirectory := fmt.Sprintf("%s/tools", config.K1FolderPath)
+		unzip(terraformDownloadZipPath, unzipDirectory)
+
+		err = os.Chmod(unzipDirectory, 0777)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+
+		err = os.Chmod(fmt.Sprintf("%s/terraform", unzipDirectory), 0755)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		err = os.RemoveAll(fmt.Sprintf("%s/terraform.zip", toolsDirPath))
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		wg.Done()
+		log.Println("Terraform download finished")
+	}()
+
+	go func() {
+		helmVersion := config.HelmVersion
+		helmDownloadUrl := fmt.Sprintf(
+			"https://get.helm.sh/helm-%s-%s-%s.tar.gz",
+			helmVersion,
+			config.LocalOs,
+			config.LocalArchitecture,
+		)
+		log.Printf("Downloading terraform from %s", helmDownloadUrl)
+		helmDownloadTarGzPath := fmt.Sprintf("%s/tools/helm.tar.gz", config.K1FolderPath)
+
+		err = downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+
+		helmTarDownload, err := os.Open(helmDownloadTarGzPath)
+		if err != nil {
+			errorChannel <- fmt.Errorf("could not read helm download content")
+			return
+		}
+
+		extractFileFromTarGz(
+			helmTarDownload,
+			fmt.Sprintf("%s-%s/helm", config.LocalOs, config.LocalArchitecture),
+			config.HelmClientPath,
+		)
+		err = os.Chmod(config.HelmClientPath, 0755)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+
+		// currently argocd init values is generated by kubefirst ssh
+		// todo helm install argocd --create-namespace --wait --values ~/.kubefirst/argocd-init-values.yaml argo/argo-cd
+		helmStdOut, helmStdErr, err := pkg.ExecShellReturnStrings(
+			config.HelmClientPath,
+			"version",
+			"--client",
+			"--short",
+		)
+		if err != nil {
+			errorChannel <- fmt.Errorf("error executing helm version command: %v", err)
+			return
+		}
+
+		log.Printf("-> Helm version:\n\t%s\n\t%s\n", helmStdOut, helmStdErr)
+
+		wg.Done()
+
+		log.Println("Helm download finished")
+
+	}()
+
+	go func() {
+		consoleVersion := config.ConsoleVersion
+
+		consoleDownloadUrl := fmt.Sprintf("https://github.com/kubefirst/console/releases/download/%s/%s.zip", consoleVersion, consoleVersion)
+		log.Printf("Downloading console from %s", consoleDownloadUrl)
+		consoleDownloadZipPath := fmt.Sprintf("%s/tools/console.zip", config.K1FolderPath)
+		err = downloadFile(consoleDownloadZipPath, consoleDownloadUrl)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+
+		unzipConsoleDirectory := fmt.Sprintf("%s/tools/console", config.K1FolderPath)
+		err = unzip(consoleDownloadZipPath, unzipConsoleDirectory)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		wg.Done()
+		log.Println("Console download finished")
+	}()
+
+	go func() {
+		wg.Wait()
+		close(wgDone)
+	}()
+
+	select {
+	case <-wgDone:
+		log.Println("downloads finished")
+		return nil
+	case err = <-errorChannel:
+		close(errorChannel)
 		return err
 	}
-
-	err = os.Chmod(config.KubectlClientPath, 0755)
-	if err != nil {
-		return err
-	}
-
-	// todo: delete it ->
-	// todo: this kubeconfig is not available to us until we have run the terraform in base/
-	//err = os.Setenv("KUBECONFIG", config.KubeConfigPath)
-	//if err != nil {
-	//	return err
-	//}
-
-	log.Println("going to print the kubeconfig env in runtime", os.Getenv("KUBECONFIG"))
-
-	kubectlStdOut, kubectlStdErr, errKubectl := pkg.ExecShellReturnStrings(config.KubectlClientPath, "version", "--client", "--short")
-	log.Printf("-> kubectl version:\n\t%s\n\t%s\n", kubectlStdOut, kubectlStdErr)
-	if errKubectl != nil {
-		log.Panicf("failed to call kubectlVersionCmd.Run(): %v", err)
-	}
-
-	// todo: adopt latest helmVersion := "v3.9.0"
-	terraformVersion := config.TerraformVersion
-
-	terraformDownloadUrl := fmt.Sprintf(
-		"https://releases.hashicorp.com/terraform/%s/terraform_%s_%s_%s.zip",
-		terraformVersion,
-		terraformVersion,
-		config.LocalOs,
-		config.LocalArchitecture,
-	)
-	log.Printf("Downloading terraform from %s", terraformDownloadUrl)
-	terraformDownloadZipPath := fmt.Sprintf("%s/tools/terraform.zip", config.K1FolderPath)
-	err = downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
-	if err != nil {
-		log.Println("error reading terraform file")
-		return err
-	}
-
-	unzipDirectory := fmt.Sprintf("%s/tools", config.K1FolderPath)
-	unzip(terraformDownloadZipPath, unzipDirectory)
-
-	err = os.Chmod(unzipDirectory, 0777)
-	if err != nil {
-		return err
-	}
-
-	err = os.Chmod(fmt.Sprintf("%s/terraform", unzipDirectory), 0755)
-	if err != nil {
-		return err
-	}
-	os.RemoveAll(fmt.Sprintf("%s/terraform.zip", toolsDirPath))
-
-	helmVersion := config.HelmVersion
-	helmDownloadUrl := fmt.Sprintf(
-		"https://get.helm.sh/helm-%s-%s-%s.tar.gz",
-		helmVersion,
-		config.LocalOs,
-		config.LocalArchitecture,
-	)
-	log.Printf("Downloading terraform from %s", helmDownloadUrl)
-	helmDownloadTarGzPath := fmt.Sprintf("%s/tools/helm.tar.gz", config.K1FolderPath)
-	err = downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
-	if err != nil {
-		return err
-	}
-
-	helmTarDownload, err := os.Open(helmDownloadTarGzPath)
-	if err != nil {
-		log.Panicf("could not read helm download content")
-	}
-
-	extractFileFromTarGz(
-		helmTarDownload,
-		fmt.Sprintf("%s-%s/helm", config.LocalOs, config.LocalArchitecture),
-		config.HelmClientPath,
-	)
-	err = os.Chmod(config.HelmClientPath, 0755)
-	if err != nil {
-		return err
-	}
-
-	consoleVersion := config.ConsoleVersion
-
-	consoleDownloadUrl := fmt.Sprintf("https://github.com/kubefirst/console/releases/download/%s/%s.zip", consoleVersion, consoleVersion)
-	log.Printf("Downloading console from %s", consoleDownloadUrl)
-	consoleDownloadZipPath := fmt.Sprintf("%s/tools/console.zip", config.K1FolderPath)
-	err = downloadFile(consoleDownloadZipPath, consoleDownloadUrl)
-	if err != nil {
-		log.Println("error reading console file")
-		return err
-	}
-
-	unzipConsoleDirectory := fmt.Sprintf("%s/tools/console", config.K1FolderPath)
-	unzip(consoleDownloadZipPath, unzipConsoleDirectory)
-
-	helmStdOut, helmStdErr, errHelm := pkg.ExecShellReturnStrings(
-		config.HelmClientPath,
-		"version",
-		"--client",
-		"--short",
-	)
-
-	log.Printf("-> kubectl version:\n\t%s\n\t%s\n", helmStdOut, helmStdErr)
-	// currently argocd init values is generated by kubefirst ssh
-	// todo helm install argocd --create-namespace --wait --values ~/.kubefirst/argocd-init-values.yaml argo/argo-cd
-	if errHelm != nil {
-		log.Panicf("error executing helm version command: %v", err)
-	}
-
-	return nil
 }
 
 // downloadFile Downloads a file from the "url" parameter, localFilename is the file destination in the local machine.
@@ -203,7 +257,7 @@ func downloadFile(localFilename string, url string) error {
 
 	// check server response
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad status: %s", resp.Status)
+		return fmt.Errorf("unable to download the required filed, the HTTP return status is: %s", resp.Status)
 	}
 
 	// writer the body to the file
@@ -255,11 +309,11 @@ func extractFileFromTarGz(gzipStream io.Reader, tarAddress string, targetFilePat
 	}
 }
 
-func unzip(zipFilepath string, unzipDirectory string) {
+func unzip(zipFilepath string, unzipDirectory string) error {
 	dst := unzipDirectory
 	archive, err := zip.OpenReader(zipFilepath)
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 	defer archive.Close()
 
@@ -268,36 +322,39 @@ func unzip(zipFilepath string, unzipDirectory string) {
 		log.Println("unzipping file ", filePath)
 
 		if !strings.HasPrefix(filePath, filepath.Clean(dst)+string(os.PathSeparator)) {
-			log.Println("invalid file path")
-			return
+			return errors.New("invalid file path")
 		}
 		if f.FileInfo().IsDir() {
 			log.Println("creating directory...")
-			os.MkdirAll(filePath, os.ModePerm)
+			err = os.MkdirAll(filePath, os.ModePerm)
+			if err != nil {
+				return err
+			}
 			continue
 		}
 
 		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-			log.Panic(err)
+			return err
 		}
 
 		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			log.Panic(err)
+			return err
 		}
 
 		fileInArchive, err := f.Open()
 		if err != nil {
-			log.Panic(err)
+			return err
 		}
 
 		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-			log.Panic(err)
+			return err
 		}
 
 		dstFile.Close()
 		fileInArchive.Close()
 	}
+	return nil
 }
 
 func createDirIfDontExist(toolsDirPath string) error {

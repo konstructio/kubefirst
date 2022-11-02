@@ -24,6 +24,11 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
 
+	progressPrinter.AddTracker("step-0", "Process Parameters", 1)
+	progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
+	progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
+	progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
+
 	log.Println("sending init started metric")
 
 	var telemetryHandler handlers.TelemetryHandler
