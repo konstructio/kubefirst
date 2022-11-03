@@ -80,7 +80,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	// convert available disk size to GB format
 	availableDiskSize := float64(free) / humanize.GByte
-	if availableDiskSize > pkg.MinimumAvailableDiskSize {
+	if availableDiskSize < pkg.MinimumAvailableDiskSize {
 		return fmt.Errorf(
 			"there is not enough space to proceed with the installation, a minimum of %d GB is required to proceed",
 			pkg.MinimumAvailableDiskSize,

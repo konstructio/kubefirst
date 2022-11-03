@@ -61,11 +61,7 @@ func NewCommand() *cobra.Command {
 	localCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "main", "metaphro application branch")
 	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "main", "version/branch used on git clone - former: version-gitops flag")
 	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
-
 	localCmd.Flags().BoolVar(&enableConsole, "enable-console", true, "If hand-off screen will be presented on a browser UI")
-	// todo:
-	//initCmd.Flags().StringP("config", "c", "", "File to be imported to bootstrap configs")
-	//viper.BindPFlag("config.file", currentCommand.Flags().Lookup("config-load"))
 
 	return localCmd
 }
