@@ -267,7 +267,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 			// todo: wire it up in the architecture / files / folder
 
 			// update terraform s3 backend to internal k8s dns (s3/minio bucket)
-			err = pkg.ReplaceS3Backend()
+			err = pkg.ReplaceTerraformS3Backend()
 			if err != nil {
 				return err
 			}
@@ -280,7 +280,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 			branchName := "update-s3-backend"
 			branchNameRef := plumbing.ReferenceName("refs/heads/" + branchName)
 
-			gitClient.UpdateLocalTFFilesAndPush(
+			gitClient.UpdateLocalTerraformFilesAndPush(
 				githubHost,
 				githubOwner,
 				localRepo,
