@@ -30,13 +30,13 @@ func ApplyCITerraform(dryRun bool, bucketName string) {
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_bucket_ci"] = bucketName
 
-		accessKeyCmd := "cat $HOME/.aws/credentials | grep aws_access_key_id | awk '{ print $3 }'"
+		accessKeyCmd := "cat $HOME/.aws/credentials | grep aws_access_key_id | awk '{ printf $3 }'"
 		awsAccessKeyId, err := exec.Command("bash", "-c", accessKeyCmd).Output()
 		if err != nil {
 			log.Panicf("error: could not set aws key id: %s", err)
 		}
 
-		accessSecretCmd := "cat $HOME/.aws/credentials | grep aws_secret_access_key | awk '{ print $3 }'"
+		accessSecretCmd := "cat $HOME/.aws/credentials | grep aws_secret_access_key | awk '{ printf $3 }'"
 		awsSecret, err := exec.Command("bash", "-c", accessSecretCmd).Output()
 		if err != nil {
 			log.Panicf("error: could not set aws secret: %s", err)
