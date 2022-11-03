@@ -43,7 +43,7 @@ validated and configured.`,
 		}
 
 		// command line flags
-		cloudValue, err := cmd.Flags().GetString("cloud")
+		cloudValue, err := flagset.ReadConfigString(cmd, "cloud")
 		if err != nil {
 			return err
 		}
@@ -71,7 +71,7 @@ validated and configured.`,
 			}
 		}
 
-		providerValue, err := cmd.Flags().GetString("git-provider")
+		providerValue, err := flagset.ReadConfigString(cmd, "git-provider")
 		if err != nil {
 			return err
 		}
