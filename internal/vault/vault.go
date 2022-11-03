@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+	"time"
 
 	vault "github.com/hashicorp/vault/api"
 	"github.com/kubefirst/kubefirst/configs"
@@ -195,4 +196,43 @@ func GetOidcClientCredentials(dryRun bool) {
 	}
 	viper.WriteConfig()
 
+}
+
+func WaitVaultToBeRunning(dryRun bool) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, waitVaultToBeRunning skipped.")
+		return
+	}
+	token := viper.GetString("vault.token")
+	if len(token) == 0 {
+		config := configs.ReadConfig()
+		x := 50
+		for i := 0; i < x; i++ {
+			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/vault")
+			if err != nil {
+				log.Println("Waiting vault to be born")
+				time.Sleep(10 * time.Second)
+			} else {
+				log.Println("vault namespace found, continuing")
+				time.Sleep(25 * time.Second)
+				break
+			}
+		}
+
+		//! failing
+		x = 50
+		for i := 0; i < x; i++ {
+			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "get", "pods", "-l", "app.kubernetes.io/instance=vault")
+			if err != nil {
+				log.Println("Waiting vault pods to create")
+				time.Sleep(10 * time.Second)
+			} else {
+				log.Println("vault pods found, continuing")
+				time.Sleep(15 * time.Second)
+				break
+			}
+		}
+	} else {
+		log.Println("vault token arleady exists, skipping vault health checks waitVaultToBeRunning")
+	}
 }

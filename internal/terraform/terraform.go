@@ -97,7 +97,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 	case "users":
 		envs["VAULT_TOKEN"] = viper.GetString("vault.token")
 		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
-		envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
+		envs["GITHUB_TOKEN"] = viper.GetString("github.token")
 		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 		return envs
 	}
@@ -358,7 +358,7 @@ func ApplyUsersTerraform(dryRun bool, directory string, gitProvider string) erro
 	envs := map[string]string{}
 
 	if gitProvider == "github" {
-		envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_AUTH_TOKEN")
+		envs["GITHUB_TOKEN"] = viper.GetString("github.token")
 		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 	} else if gitProvider == "gitlab" {
 		envs["GITLAB_TOKEN"] = viper.GetString("gitlab.token")

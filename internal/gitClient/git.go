@@ -61,7 +61,7 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 	//Push
 
 	config := configs.ReadConfig()
-	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	token := viper.GetString("github.token")
 	if token == "" {
 		log.Println("Unauthorized: No token present")
 		return fmt.Errorf("missing github token")
@@ -212,6 +212,7 @@ func PushGitopsToSoftServe() {
 func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory string, branch string, fallbackTag string) error {
 	defer viper.WriteConfig()
 	// todo need to refactor this and have the repoName include -template
+	githubOrg = "kubefirst"
 	repoURL := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)
 
 	isMainBranch := true
@@ -326,7 +327,7 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 		},
 	})
 
-	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	token := viper.GetString("github.token")
 	if len(token) == 0 {
 		token = viper.GetString("github.token")
 	}
@@ -386,7 +387,7 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 		},
 	})
 
-	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	token := viper.GetString("github.token")
 	err = repo.Push(&git.PushOptions{
 		RemoteName: remoteName,
 		Auth: &http.BasicAuth{
@@ -401,7 +402,7 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 }
 
 // todo: refactor
-func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName string, branchDestiny plumbing.ReferenceName) {
+func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remoteName string, branchDestiny plumbing.ReferenceName) error {
 
 	cfg := configs.ReadConfig()
 
@@ -418,16 +419,12 @@ func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName st
 	url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, localRepo)
 	log.Printf("git push to  remote: %s url: %s", remoteName, url)
 
-	w, _ := repo.Worktree()
-
-	//headRef, err := repo.Head()
-	//ref := plumbing.NewHashReference(branchDestiny, headRef.Hash())
-	//if err = repo.Storer.SetReference(ref); err != nil {
-	//	log.Panic(err)
-	//}
+	w, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
 
 	err = w.Checkout(&git.CheckoutOptions{
-		//Branch: plumbing.ReferenceName("ref/heads/update-s3-backend"),
 		Branch: branchDestiny,
 		Create: true,
 	})
@@ -436,19 +433,6 @@ func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName st
 	}
 
 	log.Println("Committing new changes... PushLocalRepoUpdates")
-	//status, err := w.Status()
-	//if err != nil {
-	//	log.Println("error getting worktree status", err)
-	//}
-
-	//for file, s := range status {
-	//	//log.Printf("the file is %s the status is %v", file, s.Worktree)
-	//	fmt.Printf("the file is %s the status is %v", file, s.Worktree)
-	//	_, err = w.Add(file)
-	//	if err != nil {
-	//		log.Println("error getting worktree status", err)
-	//	}
-	//}
 
 	if viper.GetString("gitprovider") == "github" {
 		kubefirstGitHubFile := "terraform/users/kubefirst-github.tf"
@@ -474,7 +458,7 @@ func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName st
 		fmt.Println(err)
 	}
 
-	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	token := viper.GetString("github.token")
 	err = repo.Push(&git.PushOptions{
 		RemoteName: remoteName,
 		Auth: &http.BasicAuth{
@@ -486,4 +470,6 @@ func UpdateLocalTFFilesAndPush(githubHost, githubOwner, localRepo, remoteName st
 		log.Panicf("error pushing to remote %s: %s", remoteName, err)
 	}
 	log.Println("successfully pushed detokenized gitops content to github/", viper.GetString("github.owner"))
+
+	return nil
 }

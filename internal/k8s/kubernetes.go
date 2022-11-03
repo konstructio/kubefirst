@@ -5,9 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 
 	"github.com/itchyny/gojq"
@@ -364,5 +367,172 @@ func (p *secret) patchSecret(k8sClient *kubernetes.Clientset, payload []PatchJso
 		log.Printf("Error patching secret : %s", err)
 		return err
 	}
+	return nil
+}
+
+// todo: deprecate the other functions
+func LoopUntilPodIsReady(dryRun bool) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, loopUntilPodIsReady skipped.")
+		return
+	}
+	token := viper.GetString("vault.token")
+	if len(token) == 0 {
+
+		totalAttempts := 50
+		url := "http://localhost:8200/v1/sys/health"
+		for i := 0; i < totalAttempts; i++ {
+			log.Printf("vault is not ready yet, sleeping and checking again, attempt (%d/%d)", i+1, totalAttempts)
+			time.Sleep(10 * time.Second)
+
+			req, _ := http.NewRequest("GET", url, nil)
+
+			req.Header.Add("Content-Type", "application/json")
+
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				log.Println("error with http request Do, vault is not available", err)
+				// todo: temporary code
+				log.Println("trying to open port-forward again...")
+				go func() {
+					_, err := PortForward(false, "vault", "svc/vault", "8200:8200")
+					if err != nil {
+						log.Println("error opening Vault port forward")
+					}
+				}()
+				continue
+			}
+
+			defer res.Body.Close()
+			body, err := io.ReadAll(res.Body)
+			if err != nil {
+				log.Println("vault is available but the body is not what is expected ", err)
+				continue
+			}
+
+			var responseJson map[string]interface{}
+
+			if err := json.Unmarshal(body, &responseJson); err != nil {
+				log.Printf("vault is available but the body is not what is expected %s", err)
+				continue
+			}
+
+			_, ok := responseJson["initialized"]
+			if ok {
+				log.Printf("vault is initialized and is in the expected state")
+				return
+			}
+			log.Panic("vault was never initialized")
+		}
+		viper.Set("vault.status.running", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("vault token already exists, skipping vault health checks loopUntilPodIsReady")
+	}
+}
+
+// todo: deprecate the other functions
+func SetArgocdCreds(dryRun bool) {
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, setArgocdCreds skipped.")
+		viper.Set("argocd.admin.password", "dry-run-not-real-pwd")
+		viper.Set("argocd.admin.username", "dry-run-not-admin")
+		viper.WriteConfig()
+		return
+	}
+	clientset, err := GetClientSet(dryRun)
+	if err != nil {
+		panic(err.Error())
+	}
+	argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+
+	argocdPassword := GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
+	if argocdPassword == "" {
+		log.Panicf("Missing argocdPassword")
+	}
+
+	viper.Set("argocd.admin.password", argocdPassword)
+	viper.Set("argocd.admin.username", "admin")
+	viper.WriteConfig()
+}
+
+// todo: this is temporary
+func OpenPortForwardForKubeConConsole() error {
+
+	var wg sync.WaitGroup
+	wg.Add(8)
+	// argo workflows
+	go func() {
+		_, err := PortForward(false, "argo", "svc/argo-server", "2746:2746")
+		if err != nil {
+			log.Println("error opening Argo Workflows port forward")
+		}
+		wg.Done()
+	}()
+	// argocd
+	go func() {
+		_, err := PortForward(false, "argocd", "svc/argocd-server", "8080:80")
+		if err != nil {
+			log.Println("error opening ArgoCD port forward")
+		}
+		wg.Done()
+	}()
+
+	// atlantis
+	go func() {
+		_, err := PortForward(false, "atlantis", "svc/atlantis", "4141:80")
+		if err != nil {
+			log.Println("error opening Atlantis port forward")
+		}
+		wg.Done()
+	}()
+
+	// chartmuseum
+	go func() {
+		_, err := PortForward(false, "chartmuseum", "svc/chartmuseum", "8181:8080")
+		if err != nil {
+			log.Println("error opening Chartmuseum port forward")
+		}
+		wg.Done()
+	}()
+
+	// vault
+	go func() {
+		_, err := PortForward(false, "vault", "svc/vault", "8200:8200")
+		if err != nil {
+			log.Println("error opening Vault port forward")
+		}
+		wg.Done()
+	}()
+
+	// minio
+	go func() {
+		_, err := PortForward(false, "minio", "svc/minio", "9000:9000")
+		if err != nil {
+			log.Println("error opening Minio port forward")
+		}
+		wg.Done()
+	}()
+
+	// minio console
+	go func() {
+		_, err := PortForward(false, "minio", "svc/minio-console", "9001:9001")
+		if err != nil {
+			log.Println("error opening Minio-console port forward")
+		}
+		wg.Done()
+	}()
+
+	// Kubecon console ui
+	go func() {
+		_, err := PortForward(false, "kubefirst", "svc/kubefirst-console", "9094:80")
+		if err != nil {
+			log.Println("error opening Kubefirst-console port forward")
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
+
 	return nil
 }

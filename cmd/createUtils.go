@@ -19,6 +19,7 @@ import (
 )
 
 // todo: move it to internals/ArgoCD
+// deprecated
 func setArgocdCreds(dryRun bool) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, setArgocdCreds skipped.")
@@ -43,6 +44,7 @@ func setArgocdCreds(dryRun bool) {
 	viper.WriteConfig()
 }
 
+// deprecated
 func waitArgoCDToBeReady(dryRun bool) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, waitArgoCDToBeReady skipped.")
@@ -76,6 +78,7 @@ func waitArgoCDToBeReady(dryRun bool) {
 	}
 }
 
+// deprecated
 func waitVaultToBeRunning(dryRun bool) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, waitVaultToBeRunning skipped.")
@@ -115,6 +118,7 @@ func waitVaultToBeRunning(dryRun bool) {
 	}
 }
 
+// deprecated
 func loopUntilPodIsReady(dryRun bool) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, loopUntilPodIsReady skipped.")

@@ -75,7 +75,7 @@ func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 	viper.Set("github.user", flags.GithubUser)
 	viper.WriteConfig()
 
-	gitProvider, err := cmd.Flags().GetString("git-provider")
+	gitProvider, err := ReadConfigString(cmd, "git-provider")
 	if err != nil {
 		log.Print(err)
 	}

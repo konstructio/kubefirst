@@ -3,12 +3,14 @@ package pkg
 import (
 	"errors"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -133,7 +135,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubUser := viper.GetString(("github.user"))
 
 		//TODO: We need to fix this
-		githubToken := os.Getenv("GITHUB_AUTH_TOKEN")
+		githubToken := viper.GetString("github.token")
 
 		//todo: get from viper
 		gitopsRepo := "gitops"
@@ -445,7 +447,7 @@ func AwaitHostNTimes(url string, times int, gracePeriod time.Duration) {
 // }
 
 // this is temporary code
-func ReplaceS3Backend() error {
+func ReplaceTerraformS3Backend() error {
 
 	config := configs.ReadConfig()
 
@@ -474,6 +476,72 @@ func ReplaceS3Backend() error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// todo: deprecate cmd.informUser
+func InformUser(message string, silentMode bool) {
+	// if in silent mode, send message to the screen
+	// silent mode will silent most of the messages, this function is not frequently called
+	if silentMode {
+		_, err := fmt.Fprintln(os.Stdout, message)
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+	log.Println(message)
+	progressPrinter.LogMessage(fmt.Sprintf("- %s", message))
+}
+
+func OpenBrowser(url string) error {
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		_, _, err = ExecShellReturnStrings("xdg-open", url)
+	case "windows":
+		_, _, err = ExecShellReturnStrings("rundll32", "url.dll,FileProtocolHandler", url)
+	case "darwin":
+		_, _, err = ExecShellReturnStrings("open", url)
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// todo: this is temporary
+func IsConsoleUIAvailable(url string) error {
+	attempts := 10
+	httpClient := http.DefaultClient
+	for i := 0; i < attempts; i++ {
+
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			log.Printf("unable to reach %q (%d/%d)", url, i+1, attempts)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			log.Printf("unable to reach %q (%d/%d)", url, i+1, attempts)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			log.Println("console UI is up and running")
+			return nil
+		}
+
+		log.Println("waiting UI console to be ready")
+		time.Sleep(5 * time.Second)
 	}
 
 	return nil

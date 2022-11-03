@@ -65,7 +65,7 @@ func init() {
 
 	//Group Flags
 
-	rootCmd.AddCommand(localCmd)
+	//rootCmd.AddCommand(localCmd)
 	currentCommand := localCmd
 	//log.SetPrefix("LOG: ")
 	//log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)

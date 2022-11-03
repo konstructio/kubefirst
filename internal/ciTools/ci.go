@@ -5,11 +5,13 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/repo"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
 
@@ -48,6 +50,16 @@ func DeployOnGitlab(globalFlags flagset.GlobalFlags, bucketName string) error {
 		ciLocation = fmt.Sprintf("%s/ci/components/argo-gitlab/ci.yaml", config.K1FolderPath)
 	}
 
+	err = DetokenizeCI("<CI_GITOPS_BRANCH>", viper.GetString("ci.gitops.branch"), ciLocation)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = DetokenizeCI("<CI_METAPHOR_BRANCH>", viper.GetString("ci.metaphor.branch"), ciLocation)
+	if err != nil {
+		log.Println(err)
+	}
+
 	err = DetokenizeCI("<CI_CLUSTER_NAME>", viper.GetString("ci.cluster.name"), ciLocation)
 	if err != nil {
 		log.Println(err)
@@ -61,6 +73,10 @@ func DeployOnGitlab(globalFlags flagset.GlobalFlags, bucketName string) error {
 		log.Println(err)
 	}
 	err = DetokenizeCI("<FLAVOR>", viper.GetString("ci.flavor"), workflowLocation)
+	if err != nil {
+		log.Println(err)
+	}
+	err = DetokenizeCI("<CI_KUBEFIRST_BRANCH>", viper.GetString("ci.kubefirst.branch"), workflowLocation)
 	if err != nil {
 		log.Println(err)
 	}
@@ -121,5 +137,56 @@ func DetokenizeCI(old, new, ciLocation string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func DestroyGitRepository(globalFlags flagset.GlobalFlags) error {
+	domain := viper.GetString("aws.hostedzonename")
+	url := fmt.Sprintf("https://gitlab.%s/api/v4/projects/kubefirst%%2Fci", domain)
+	_, _, err := pkg.ExecShellReturnStrings("curl", "-H", "-vL", "-X", "DELETE", url, "-H", "Content-Type: application/json", "-H", fmt.Sprintf("Private-Token: %s", viper.GetString("gitlab.token")))
+	if err != nil {
+		log.Panicf("error: delete CI repository: %s", err)
+		return err
+	}
+	return nil
+}
+
+func ApplyTemplates(globalFlags flagset.GlobalFlags) error {
+	config := configs.ReadConfig()
+	if globalFlags.DryRun {
+		log.Printf("[#99] Dry-run mode, ApplyTemplates skipped.")
+		return nil
+	}
+
+	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argo", "apply", "-f", fmt.Sprintf("%s/ci/components/templates/cwft-k1-ci.yaml", config.K1FolderPath))
+	if err != nil {
+		log.Printf("failed to execute kubectl apply of cwft-k1-ci: %s", err)
+		return err
+	}
+
+	time.Sleep(45 * time.Second)
+	viper.Set("ci.cwft-k1-ci.applied", true)
+	viper.WriteConfig()
+
+	return nil
+}
+
+func DeleteTemplates(globalFlags flagset.GlobalFlags) error {
+	config := configs.ReadConfig()
+	if globalFlags.DryRun {
+		log.Printf("[#99] Dry-run mode, ApplyTemplates skipped.")
+		return nil
+	}
+
+	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argo", "delete", "-f", fmt.Sprintf("%s/ci/components/templates/cwft-k1-ci.yaml", config.K1FolderPath))
+	if err != nil {
+		log.Printf("failed to execute kubectl delete of cwft-k1-ci: %s", err)
+		return err
+	}
+
+	time.Sleep(45 * time.Second)
+	viper.Set("ci.cwft-k1-ci.deleted", true)
+	viper.WriteConfig()
+
 	return nil
 }
