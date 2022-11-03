@@ -121,8 +121,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 		log.Println("error getting worktree status", err)
 	}
 
-	for file, s := range status {
-		log.Printf("the file is %s the status is %v", file, s.Worktree)
+	for file, _ := range status {
 		_, err = w.Add(file)
 		if err != nil {
 			log.Println("error getting worktree status", err)
