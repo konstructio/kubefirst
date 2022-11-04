@@ -73,5 +73,5 @@ func init() {
 	flagset.DefineGithubCmdFlags(currentCommand)
 	flagset.DefineAWSFlags(currentCommand)
 	flagset.DefineInstallerGenericFlags(currentCommand)
-
+	flagset.InitFlags(currentCommand)
 }
