@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
 	yaml2 "gopkg.in/yaml.v2"
@@ -118,6 +117,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents := string(read)
 		config := configs.ReadConfig()
 
+		cloudK3d := "k3d"
 		cloud := viper.GetString("cloud")
 		botPublicKey := viper.GetString("botpublickey")
 		hostedZoneId := viper.GetString("aws.hostedzoneid")
@@ -232,7 +232,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
 		}
 		
-		if cloud == flagset.CloudK3d {
+		if cloud == cloudK3d {
 			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
 			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", config.LocalArgoWorkflowsURL, -1)
 			newContents = strings.Replace(newContents, "<VAULT_URL>", config.LocalVaultURL, -1)
