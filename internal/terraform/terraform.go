@@ -48,6 +48,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 			envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
 			envs["VAULT_TOKEN"] = viper.GetString("vault.token")
 			envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
+			envs["TF_VAR_atlantis_repo_webhook_url"] = viper.GetString("github.atlantis.webhook.url")
 			envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botpublickey")
 			return envs
 		}
