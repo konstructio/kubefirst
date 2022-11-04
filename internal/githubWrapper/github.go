@@ -8,6 +8,8 @@ import (
 	"golang.org/x/oauth2"
 	"log"
 	"net/http"
+	"strings"
+	"time"
 )
 
 type GithubSession struct {
@@ -178,4 +180,51 @@ func (g GithubSession) CommentPR(prNumber int, body string) error {
 
 	return nil
 
+}
+
+// SearchWordInPullRequestComment look for a specific sentence in a GitHub Pull Request comment
+func (g GithubSession) SearchWordInPullRequestComment(gitHubUser string, gitOpsRepo string, searchFor string) (bool, error) {
+
+	comments, r, err := g.gitClient.Issues.ListComments(
+		context.Background(),
+		gitHubUser,
+		gitOpsRepo,
+		1,
+		&github.IssueListCommentsOptions{},
+	)
+	if err != nil {
+		return false, err
+	}
+
+	if r.StatusCode != http.StatusOK {
+		return false, nil
+	}
+
+	for _, v := range comments {
+		if strings.Contains(*v.Body, searchFor) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// todo: not sure if this is the right place for this function
+func (g GithubSession) RetrySearchPullRequestComment(
+	gitHubUser string,
+	gitOpsRepo string,
+	searchFor string,
+	logMessage string,
+) (bool, error) {
+
+	for i := 0; i < 30; i++ {
+		ok, err := g.SearchWordInPullRequestComment(gitHubUser, gitOpsRepo, searchFor)
+		if err != nil || !ok {
+			log.Println(logMessage)
+			time.Sleep(10 * time.Second)
+			continue
+		}
+		return true, nil
+	}
+	return false, nil
 }
