@@ -11,6 +11,7 @@ package swagger
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -43,6 +44,58 @@ func ConfigsGet(w http.ResponseWriter, r *http.Request) {
 		{
 			Key:   "HOSTED_ZONE_NAME",
 			Value: viper.GetString("aws.hostedzonename"),
+		},
+		{
+			Key:   "VAULT_URL",
+			Value: fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename")),
+		},
+		{
+			Key:   "ATLANTIS_URL",
+			Value: fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename")),
+		},
+		{
+			Key:   "ARGO_WORKFLOWS_URL",
+			Value: fmt.Sprintf("https://argo.%s", viper.GetString("aws.hostedzonename")),
+		},
+		{
+			Key:   "ARGO_CD_URL",
+			Value: fmt.Sprintf("https://argocd.%s", viper.GetString("aws.hostedzonename")),
+		},
+		{
+			Key:   "METAPHOR_DEV",
+			Value: fmt.Sprintf("https://metaphor-development.%s", viper.GetString("aws.hostedzonename")),
+		},
+		{
+			Key:   "METAPHOR_GO_DEV",
+			Value: fmt.Sprintf("https://metaphor-go-development.%s", viper.GetString("aws.hostedzonename")),
+		},
+		{
+			Key:   "METAPHOR_FRONT_DEV",
+			Value: fmt.Sprintf("https://metaphor-frontend-development.%s", viper.GetString("aws.hostedzonename")),
+		},
+		{
+			Key:   "METAPHOR_STAGING",
+			Value: fmt.Sprintf("https://metaphor-staging.%s", viper.GetString("aws.hostedzonename")),
+		},
+		{
+			Key:   "METAPHOR_GO_STAGING",
+			Value: fmt.Sprintf("https://metaphor-go-staging.%s", viper.GetString("aws.hostedzonename")),
+		},
+		{
+			Key:   "METAPHOR_FRONT_STAGING",
+			Value: fmt.Sprintf("https://metaphor-frontend-staging.%s", viper.GetString("aws.hostedzonename")),
+		},
+		{
+			Key:   "METAPHOR_PROD",
+			Value: fmt.Sprintf("https://metaphor-production.%s", viper.GetString("aws.hostedzonename")),
+		},
+		{
+			Key:   "METAPHOR_GO_PROD",
+			Value: fmt.Sprintf("https://metaphor-go-production.%s", viper.GetString("aws.hostedzonename")),
+		},
+		{
+			Key:   "METAPHOR_FRONT_PROD",
+			Value: fmt.Sprintf("https://metaphor-frontend-production.%s", viper.GetString("aws.hostedzonename")),
 		},
 	}
 

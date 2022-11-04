@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
 	yaml2 "gopkg.in/yaml.v2"
@@ -115,7 +116,9 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		gitlabConfigured := viper.GetBool("gitlab.keyuploaded")
 
 		newContents := string(read)
+		config := configs.ReadConfig()
 
+		cloud := viper.GetString("cloud")
 		botPublicKey := viper.GetString("botpublickey")
 		hostedZoneId := viper.GetString("aws.hostedzoneid")
 		hostedZoneName := viper.GetString("aws.hostedzonename")
@@ -227,6 +230,44 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_NAME>", hostedZoneName, -1)
 			newContents = strings.Replace(newContents, "<AWS_DEFAULT_REGION>", region, -1)
 			newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
+		}
+		
+		if cloud == flagset.CloudK3d {
+			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
+			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", config.LocalArgoWorkflowsURL, -1)
+			newContents = strings.Replace(newContents, "<VAULT_URL>", config.LocalVaultURL, -1)
+			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", config.LocalArgoURL, -1)
+			newContents = strings.Replace(newContents, "<ATLANTIS_URL>", config.LocalAtlantisURL, -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", config.LocalMetaphorDev, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_DEV>", config.LocalMetaphorGoDev, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEV>", config.LocalMetaphorFrontDev, -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_STAGING>", config.LocalMetaphorStaging, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_STAGING>", config.LocalMetaphorGoStaging, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING>", config.LocalMetaphorFrontStaging, -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_PROD>", config.LocalMetaphorProd, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_PROD>", config.LocalMetaphorGoProd, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", config.LocalMetaphorFrontProd, -1)
+		} else {
+			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
+			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", fmt.Sprintf("https://argo.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<VAULT_URL>", fmt.Sprintf("https://vault.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", fmt.Sprintf("https://argocd.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<ATLANTIS_URL>", fmt.Sprintf("https://atlantis.%s", hostedZoneName), -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", fmt.Sprintf("https://metaphor-development.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_DEV>", fmt.Sprintf("https://metaphor-go-development.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEV>", fmt.Sprintf("https://metaphor-frontend-development.%s", hostedZoneName), -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_STAGING>", fmt.Sprintf("https://metaphor-staging.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_STAGING>", fmt.Sprintf("https://metaphor-go-staging.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING>", fmt.Sprintf("https://metaphor-frontend-staging.%s", hostedZoneName), -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_PROD>", fmt.Sprintf("https://metaphor-production.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_PROD>", fmt.Sprintf("https://metaphor-go-production.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", fmt.Sprintf("https://metaphor-frontend-production.%s", hostedZoneName), -1)
 		}
 
 		if removeFile {
