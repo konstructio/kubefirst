@@ -114,6 +114,7 @@ func AddK3DSecrets(dryrun bool) error {
 		"GITHUB_OWNER":                        []byte(viper.GetString("github.owner")),
 		"GITHUB_TOKEN":                        []byte(viper.GetString("github.token")),
 		"TF_VAR_atlantis_repo_webhook_secret": []byte(viper.GetString("github.atlantis.webhook.secret")),
+		"TF_VAR_atlantis_repo_webhook_url": []byte(viper.GetString("github.atlantis.webhook.url")),
 		"TF_VAR_email_address":                []byte(viper.GetString("adminemail")),
 		"TF_VAR_github_token":                 []byte(viper.GetString("github.token")),
 		"TF_VAR_kubefirst_bot_ssh_public_key": []byte(viper.GetString("botpublickey")),

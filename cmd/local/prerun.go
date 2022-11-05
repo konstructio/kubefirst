@@ -98,8 +98,6 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	atlantisWebhookSecret := pkg.Random(20)
 	viper.Set("github.atlantis.webhook.secret", atlantisWebhookSecret)
 
-	viper.WriteConfig()
-
 	err = viper.WriteConfig()
 	if err != nil {
 		return err
