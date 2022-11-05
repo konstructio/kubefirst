@@ -9,8 +9,8 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
       - darwin
+#      - windows
     ldflags:
       - -X github.com/kubefirst/kubefirst/configs.K1Version={{.Version}}
       
