@@ -547,3 +547,25 @@ func OpenAtlantisPortForward() error {
 	}
 	return nil
 }
+
+//func OpenGenericPortForward(dryRun bool) error {
+//	clientset, err := GetClientSet(dryRun)
+//	if err != nil {
+//		panic(err.Error())
+//	}
+//
+//	url := clientset.CoreV1().RESTClient().
+//		Post().
+//		Prefix("api/v1").
+//		Resource("pods").
+//		Namespace("atlantis").MaxRetries(10).
+//		Name("atlantis-0").SubResource("portforward").URL()
+//
+//	fmt.Println("---debug---")
+//	fmt.Println(url)
+//	fmt.Println("---sleeping..---")
+//	time.Sleep(10 * time.Second)
+//
+//	return nil
+//
+//}
