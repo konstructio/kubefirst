@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"github.com/kubefirst/kubefirst/internal/k8s"
 	"log"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/k8s"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/reports"
@@ -56,7 +57,7 @@ var postInstallCmd = &cobra.Command{
 
 			err := pkg.OpenBrowser(pkg.LocalConsoleUI)
 			if err != nil {
-				return err
+				log.Println(err)
 			}
 
 		} else {
@@ -75,8 +76,8 @@ var postInstallCmd = &cobra.Command{
 				log.Println(err)
 			}
 			err = pkg.OpenBrowser(pkg.LocalConsoleUI)
-			if err != nil {
-				return err
+			if pkg.OpenBrowser(pkg.LocalConsoleUI) != nil {
+				log.Println(err)
 			}
 		}
 
