@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -480,9 +481,9 @@ func OpenPortForwardForKubeConConsole() error {
 
 	// atlantis
 	go func() {
-		_, err := PortForward(false, "atlantis", "svc/atlantis", "4141:80")
+		err := OpenAtlantisPortForward()
 		if err != nil {
-			log.Println("error opening Atlantis port forward")
+			log.Println(err)
 		}
 		wg.Done()
 	}()
@@ -534,5 +535,15 @@ func OpenPortForwardForKubeConConsole() error {
 
 	wg.Wait()
 
+	return nil
+}
+
+// OpenAtlantisPortForward opens port forward for Atlantis
+func OpenAtlantisPortForward() error {
+
+	_, err := PortForward(false, "atlantis", "svc/atlantis", "4141:80")
+	if err != nil {
+		return errors.New("error opening Atlantis port forward")
+	}
 	return nil
 }

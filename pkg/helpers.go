@@ -115,7 +115,10 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		gitlabConfigured := viper.GetBool("gitlab.keyuploaded")
 
 		newContents := string(read)
+		config := configs.ReadConfig()
 
+		cloudK3d := "k3d"
+		cloud := viper.GetString("cloud")
 		botPublicKey := viper.GetString("botpublickey")
 		hostedZoneId := viper.GetString("aws.hostedzoneid")
 		hostedZoneName := viper.GetString("aws.hostedzonename")
@@ -227,6 +230,44 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<AWS_HOSTED_ZONE_NAME>", hostedZoneName, -1)
 			newContents = strings.Replace(newContents, "<AWS_DEFAULT_REGION>", region, -1)
 			newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
+		}
+		
+		if cloud == cloudK3d {
+			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
+			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", config.LocalArgoWorkflowsURL, -1)
+			newContents = strings.Replace(newContents, "<VAULT_URL>", config.LocalVaultURL, -1)
+			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", config.LocalArgoURL, -1)
+			newContents = strings.Replace(newContents, "<ATLANTIS_URL>", config.LocalAtlantisURL, -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", config.LocalMetaphorDev, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_DEV>", config.LocalMetaphorGoDev, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEV>", config.LocalMetaphorFrontDev, -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_STAGING>", config.LocalMetaphorStaging, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_STAGING>", config.LocalMetaphorGoStaging, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING>", config.LocalMetaphorFrontStaging, -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_PROD>", config.LocalMetaphorProd, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_PROD>", config.LocalMetaphorGoProd, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", config.LocalMetaphorFrontProd, -1)
+		} else {
+			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
+			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", fmt.Sprintf("https://argo.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<VAULT_URL>", fmt.Sprintf("https://vault.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", fmt.Sprintf("https://argocd.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<ATLANTIS_URL>", fmt.Sprintf("https://atlantis.%s", hostedZoneName), -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", fmt.Sprintf("https://metaphor-development.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_DEV>", fmt.Sprintf("https://metaphor-go-development.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEV>", fmt.Sprintf("https://metaphor-frontend-development.%s", hostedZoneName), -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_STAGING>", fmt.Sprintf("https://metaphor-staging.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_STAGING>", fmt.Sprintf("https://metaphor-go-staging.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING>", fmt.Sprintf("https://metaphor-frontend-staging.%s", hostedZoneName), -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_PROD>", fmt.Sprintf("https://metaphor-production.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_PROD>", fmt.Sprintf("https://metaphor-go-production.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", fmt.Sprintf("https://metaphor-frontend-production.%s", hostedZoneName), -1)
 		}
 
 		if removeFile {
@@ -416,36 +457,6 @@ func AwaitHostNTimes(url string, times int, gracePeriod time.Duration) {
 	}
 }
 
-// type NgrokOutput struct {
-// 	Tunnels []struct {
-// 		PublicURL string `json:"public_url"`
-// 	} `json:"tunnels"`
-// 	URI string `json:"uri"`
-// }
-
-// func OpenNgrokTunnel() string {
-
-// 	config := configs.ReadConfig()
-
-// 	var ngrokOutb, ngrokErrb bytes.Buffer
-// 	openNgrokTunnel := exec.Command(config.NgrokClientPath, "http", "4141")
-// 	openNgrokTunnel.Stdout = &ngrokOutb
-// 	openNgrokTunnel.Stderr = &ngrokErrb
-// 	err := openNgrokTunnel.Start()
-// 	url := "http://localhost:4040/api/tunnels"
-// 	outb, _, err := ExecShellReturnStrings("curl", url)
-// 	if err != nil {
-// 		log.Panicf("error starting ngrok on port 4141: %s", err)
-// 	}
-// 	ngrokOutput := &NgrokOutput{}
-// 	err = json.Unmarshal([]byte(outb), ngrokOutput)
-// 	if err != nil {
-// 		log.Println("error unmarshalling json from curl command ")
-// 	}
-// 	fmt.Println(ngrokOutput.Tunnels[0].PublicURL)
-// 	return ngrokOutput.Tunnels[0].PublicURL
-// }
-
 // this is temporary code
 func ReplaceTerraformS3Backend() error {
 
@@ -545,4 +556,12 @@ func IsConsoleUIAvailable(url string) error {
 	}
 
 	return nil
+}
+
+func OpenLogFile(path string) (*os.File, error) {
+	logFile, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+	if err != nil {
+		return nil, err
+	}
+	return logFile, nil
 }
