@@ -38,7 +38,6 @@ type Config struct {
 	NgrokClientPath         string
 	TerraformClientPath     string
 	K3dPath                 string
-	ConsoleVersion          string
 
 	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
 	ClusterName    string `env:"CLUSTER_NAME"`
@@ -114,7 +113,6 @@ func ReadConfig() *Config {
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.NgrokVersion = "v3"
 	config.TerraformVersion = "1.0.11"
-	config.ConsoleVersion = "1.0.3"
 	config.ArgoCDChartHelmVersion = "4.10.5"
 	config.ArgoCDInitValuesYamlPath = fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath)
 	// todo adopt latest helmVersion := "v3.9.0"

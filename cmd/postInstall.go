@@ -4,6 +4,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"log"
 	"time"
+	"fmt"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/reports"
@@ -20,6 +21,7 @@ var postInstallCmd = &cobra.Command{
 	Long:  "Starts post install process to open the Console UI",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
+		clusterConsoleURL := fmt.Sprintf("https://kubefirst.%s", viper.GetString("aws.hostedzonename"))
 		// todo: temporary
 		//flagset.DefineGlobalFlags(cmd)
 		if viper.GetString("cloud") == flagset.CloudLocal {
@@ -38,23 +40,12 @@ var postInstallCmd = &cobra.Command{
 
 		cloud := viper.GetString("cloud")
 		if createFlags.EnableConsole && cloud != pkg.CloudK3d {
-			log.Println("Starting the presentation of console and api for the handoff screen")
-			go func() {
-				errInThread := api.RunE(cmd, args)
-				if errInThread != nil {
-					log.Println(errInThread)
-				}
-			}()
-			go func() {
-				errInThread := console.RunE(cmd, args)
-				if errInThread != nil {
-					log.Println(errInThread)
-				}
-			}()
+			err = pkg.IsConsoleUIAvailable(clusterConsoleURL)
+			if err != nil {
+				log.Println(err)
+			}
 
-			log.Println("Kubefirst Console available at: http://localhost:9094", globalFlags.SilentMode)
-
-			err := pkg.OpenBrowser(pkg.LocalConsoleUI)
+			err := pkg.OpenBrowser(clusterConsoleURL)
 			if err != nil {
 				return err
 			}
