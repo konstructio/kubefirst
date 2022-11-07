@@ -58,6 +58,23 @@ type Config struct {
 	MetaphorTemplateURL string
 	GitopsTemplateURL   string
 
+	LocalArgoWorkflowsURL			string
+	LocalVaultURL					string
+	LocalArgoURL					string
+	LocalAtlantisURL				string
+
+	LocalMetaphorDev				string
+	LocalMetaphorGoDev				string
+	LocalMetaphorFrontDev			string
+
+	LocalMetaphorStaging			string
+	LocalMetaphorGoStaging			string
+	LocalMetaphorFrontStaging		string
+
+	LocalMetaphorProd				string
+	LocalMetaphorGoProd				string
+	LocalMetaphorFrontProd			string
+
 	GitHubPersonalAccessToken string `env:"GITHUB_AUTH_TOKEN"`
 }
 
@@ -97,7 +114,7 @@ func ReadConfig() *Config {
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.NgrokVersion = "v3"
 	config.TerraformVersion = "1.0.11"
-	config.ConsoleVersion = "1.0.2"
+	config.ConsoleVersion = "1.0.3"
 	config.ArgoCDChartHelmVersion = "4.10.5"
 	config.ArgoCDInitValuesYamlPath = fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath)
 	// todo adopt latest helmVersion := "v3.9.0"
@@ -109,6 +126,24 @@ func ReadConfig() *Config {
 
 	config.MetaphorTemplateURL = "https://github.com/kubefirst/metaphor-template.git"
 	config.GitopsTemplateURL = "https://github.com/kubefirst/gitops-template-gh.git"
+	// Local Configs URL
+	config.LocalArgoWorkflowsURL = "http://localhost:2746"
+	config.LocalVaultURL = "http://localhost:8200"
+	config.LocalArgoURL = "http://localhost:8080"
+	config.LocalAtlantisURL = "http://localhost:4141"
+
+	config.LocalMetaphorDev = "http://localhost:3000"
+	config.LocalMetaphorGoDev = "http://localhost:5000"
+	config.LocalMetaphorFrontDev = "http://localhost:4000"
+
+	config.LocalMetaphorStaging = "http://localhost:3001"
+	config.LocalMetaphorGoStaging = "http://localhost:5001"
+	config.LocalMetaphorFrontStaging = "http://localhost:4001"
+
+	config.LocalMetaphorProd = "http://localhost:3002"
+	config.LocalMetaphorGoProd = "http://localhost:5002"
+	config.LocalMetaphorFrontProd = "http://localhost:4002"
+
 	// If the AWS_SDK_LOAD_CONFIG environment variable is set to a truthy value the shared config file (~/.aws/config)
 	// will also be loaded in addition to the shared credentials file (~/.aws/credentials).
 	// AWS SDK client will take it in advance

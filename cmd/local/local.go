@@ -61,11 +61,7 @@ func NewCommand() *cobra.Command {
 	localCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "main", "metaphro application branch")
 	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "main", "version/branch used on git clone - former: version-gitops flag")
 	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
-
 	localCmd.Flags().BoolVar(&enableConsole, "enable-console", true, "If hand-off screen will be presented on a browser UI")
-	// todo:
-	//initCmd.Flags().StringP("config", "c", "", "File to be imported to bootstrap configs")
-	//viper.BindPFlag("config.file", currentCommand.Flags().Lookup("config-load"))
 
 	return localCmd
 }
@@ -420,23 +416,38 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
+		err := k8s.OpenAtlantisPortForward()
+		if err != nil {
+			log.Println(err)
+		}
+
 		gitHubClient := githubWrapper.New()
 		err = gitHubClient.CreatePR(branchName)
 		if err != nil {
 			fmt.Println(err)
 		}
-		log.Println("sleeping after create PR, atlantis plan should be running...")
+		log.Println(`waiting "atlantis plan" to start...`)
 		time.Sleep(5 * time.Second)
 
-		// todo: confirm apply isn't necessary
-		//fmt.Println("sleeping before apply...")
-		//time.Sleep(120 * time.Second)
-		//
-		//// after 120 seconds, it will comment in the PR with atlantis plan
-		//err = gitHubClient.CommentPR(1, "atlantis apply")
-		//if err != nil {
-		//	log.Println(err)
-		//}
+		ok, err := gitHubClient.RetrySearchPullRequestComment(
+			githubOwner,
+			gitOpsRepo,
+			"To **apply** all unapplied plans from this pull request, comment",
+			`waiting "atlantis plan" finish to proceed...`,
+		)
+		if err != nil {
+			log.Println(err)
+		}
+
+		if !ok {
+			log.Println(`unable to run "atlantis plan"`)
+			wg.Done()
+			return
+		}
+
+		err = gitHubClient.CommentPR(1, "atlantis apply")
+		if err != nil {
+		}
 		wg.Done()
 	}()
 

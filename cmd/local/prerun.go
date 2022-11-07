@@ -24,11 +24,6 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
 
-	progressPrinter.AddTracker("step-0", "Process Parameters", 1)
-	progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
-	progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
-	progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
-
 	log.Println("sending init started metric")
 
 	var telemetryHandler handlers.TelemetryHandler
@@ -63,11 +58,6 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	progressPrinter.AddTracker("step-0", "Process Parameters", 1)
-	progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
-	progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
-	progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
-
 	if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
 		return err
 	}
@@ -80,7 +70,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	// convert available disk size to GB format
 	availableDiskSize := float64(free) / humanize.GByte
-	if availableDiskSize > pkg.MinimumAvailableDiskSize {
+	if availableDiskSize < pkg.MinimumAvailableDiskSize {
 		return fmt.Errorf(
 			"there is not enough space to proceed with the installation, a minimum of %d GB is required to proceed",
 			pkg.MinimumAvailableDiskSize,
@@ -107,8 +97,6 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	atlantisWebhookSecret := pkg.Random(20)
 	viper.Set("github.atlantis.webhook.secret", atlantisWebhookSecret)
-
-	viper.WriteConfig()
 
 	err = viper.WriteConfig()
 	if err != nil {
@@ -150,6 +138,13 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 			silentMode,
 		)
 	}
+
+	progressPrinter.SetupProgress(8, silentMode)
+
+	progressPrinter.AddTracker("step-0", "Process Parameters", 1)
+	progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
+	progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
+	progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
 
 	log.Println("installing kubefirst dependencies")
 	progressPrinter.IncrementTracker("step-download", 1)
