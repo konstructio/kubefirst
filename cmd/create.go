@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"syscall"
 
@@ -93,16 +92,6 @@ cluster provisioning process spinning up the services, and validates the livenes
 				log.Println(err)
 			}
 		}
-
-		token := os.Getenv("GITHUB_AUTH_TOKEN")
-		if len(token) == 0 {
-			token = viper.GetString("github.token")
-			err := os.Setenv("GITHUB_AUTH_TOKEN", token)
-			if err != nil {
-				return err
-			}
-		}
-
 		if viper.GetString("cloud") == flagset.CloudK3d {
 			// todo need to add go channel to control when ngrok should close
 			go pkg.RunNgrok(context.TODO(), pkg.LocalAtlantisURL)

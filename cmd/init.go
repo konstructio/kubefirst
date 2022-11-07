@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/segmentio/analytics-go"
 
@@ -77,10 +79,17 @@ validated and configured.`,
 		}
 
 		if providerValue == "github" {
-			if os.Getenv("GITHUB_AUTH_TOKEN") != "" {
-				viper.Set("github.token", os.Getenv("GITHUB_AUTH_TOKEN"))
+			githubToken, err := githubWrapper.GetToken()
+			if err != nil {
+				log.Println("Error trying to capture github token")
+			}
+			if githubToken != "" {
+				//viper.Set("github.token", os.Getenv("GITHUB_AUTH_TOKEN"))
+				log.Println("Github token found")
+				// Do nothing, we dont set to viper anymore
 			} else {
-				log.Fatal("cannot create a cluster without a github auth token. please export your GITHUB_AUTH_TOKEN in your terminal.")
+				log.Println("cannot create a cluster without a github auth token. please export your GITHUB_AUTH_TOKEN in your terminal.")
+				return fmt.Errorf("missing github token, unable to continue")
 			}
 		}
 

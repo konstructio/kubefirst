@@ -7,6 +7,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
@@ -26,14 +27,18 @@ func ApplyGitHubTerraform(dryRun bool) {
 	envs["AWS_SDK_LOAD_CONFIG"] = "1"
 	aws.ProfileInjection(&envs)
 	// Prepare for terraform gitlab execution
-	envs["GITHUB_TOKEN"] = viper.GetString("github.token")
+	token, err := githubWrapper.GetToken()
+	if err != nil {
+		log.Fatal("Error trying to capture token")
+	}
+	envs["GITHUB_TOKEN"] = token
 	envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
 	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botPublicKey")
 
 	directory := fmt.Sprintf("%s/gitops/terraform/github", config.K1FolderPath)
 
-	err := os.Chdir(directory)
+	err = os.Chdir(directory)
 	if err != nil {
 		log.Panic("error: could not change directory to " + directory)
 	}
@@ -66,13 +71,17 @@ func DestroyGitHubTerraform(dryRun bool) {
 	envs["AWS_SDK_LOAD_CONFIG"] = "1"
 	aws.ProfileInjection(&envs)
 	// Prepare for terraform gitlab execution
-	envs["GITHUB_TOKEN"] = viper.GetString("github.token")
+	token, err := githubWrapper.GetToken()
+	if err != nil {
+		log.Fatal("Error trying to capture token")
+	}
+	envs["GITHUB_TOKEN"] = token
 	envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
 	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botPublicKey")
 
 	directory := fmt.Sprintf("%s/gitops/terraform/github", config.K1FolderPath)
-	err := os.Chdir(directory)
+	err = os.Chdir(directory)
 	if err != nil {
 		log.Panic("error: could not change directory to " + directory)
 	}

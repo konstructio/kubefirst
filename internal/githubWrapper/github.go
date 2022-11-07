@@ -3,13 +3,15 @@ package githubWrapper
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/google/go-github/v45/github"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
-	"log"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type GithubSession struct {
@@ -21,7 +23,11 @@ type GithubSession struct {
 
 // New - Create a new client for github wrapper
 func New() GithubSession {
-	token := viper.GetString("github.token")
+	token, err := GetToken()
+	if err != nil {
+		log.Fatal("Error trying to capture token")
+	}
+
 	if token == "" {
 		log.Fatal("Unauthorized: No token present")
 	}
@@ -227,4 +233,28 @@ func (g GithubSession) RetrySearchPullRequestComment(
 		return true, nil
 	}
 	return false, nil
+}
+
+// GetToken - This functions wraps the logic to discover github token while we work on way supported to provide it.
+func GetToken() (string, error) {
+
+	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	if len(token) < 1 {
+		token = viper.GetString("github.token")
+		log.Println("GITHUB_AUTH_TOKEN not found on env variable, but found in viper")
+	} else {
+		log.Println("GITHUB_AUTH_TOKEN found on env variable")
+		return token, nil
+	}
+
+	if len(token) < 1 {
+		log.Println("GITHUB_AUTH_TOKEN not found on env variable neither in viper")
+		return "", fmt.Errorf("github token not found")
+	}
+	// If token found any other place the var must be set.
+	err := os.Setenv("GITHUB_AUTH_TOKEN", token)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }

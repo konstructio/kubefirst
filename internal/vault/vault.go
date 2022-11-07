@@ -14,6 +14,7 @@ import (
 	vault "github.com/hashicorp/vault/api"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,6 +80,12 @@ func ConfigureVault(dryRun bool) {
 		envs["TF_VAR_gitlab_runner_token"] = viper.GetString("gitlab.runnertoken")
 		envs["TF_VAR_gitlab_token"] = viper.GetString("gitlab.token")
 	}
+	token, err := githubWrapper.GetToken()
+	//this method seems to not be checking for gitprovider type. Not erroring on lack of token.
+	if err != nil {
+		log.Println("Error trying to capture token:", err)
+
+	}
 
 	envs["VAULT_ADDR"] = "http://localhost:8200" //Should this come from init?
 	envs["VAULT_TOKEN"] = vaultToken
@@ -92,7 +99,7 @@ func ConfigureVault(dryRun bool) {
 	envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 	envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 	envs["TF_VAR_email_address"] = viper.GetString("adminemail")
-	envs["TF_VAR_github_token"] = viper.GetString("github.token")
+	envs["TF_VAR_github_token"] = token
 	envs["TF_VAR_hosted_zone_id"] = viper.GetString("aws.hostedzoneid") //# TODO: are we using this?
 	envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 	envs["TF_VAR_vault_token"] = vaultToken

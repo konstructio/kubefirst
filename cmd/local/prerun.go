@@ -3,6 +3,10 @@ package local
 import (
 	"errors"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/domain"
@@ -15,9 +19,6 @@ import (
 	"github.com/segmentio/analytics-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"net/http"
-	"os"
 )
 
 func validateLocal(cmd *cobra.Command, args []string) error {
@@ -118,7 +119,11 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 			return errors.New("unable to retrieve a GitHub token for the user")
 		}
 
-		viper.Set("github.token", gitHubAccessToken)
+		err = os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken)
+		if err != nil {
+			log.Println("Error setting GITHUB_AUTH_TOKEN")
+			return err
+		}
 		err = viper.WriteConfig()
 		if err != nil {
 			return err

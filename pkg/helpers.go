@@ -3,7 +3,6 @@ package pkg
 import (
 	"errors"
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"log"
 	"math/rand"
 	"net/http"
@@ -13,6 +12,9 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/githubWrapper"
+	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/viper"
@@ -138,7 +140,10 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubUser := viper.GetString(("github.user"))
 
 		//TODO: We need to fix this
-		githubToken := viper.GetString("github.token")
+		githubToken, err := githubWrapper.GetToken()
+		if err != nil {
+			log.Println("Error trying to capture github token")
+		}
 
 		//todo: get from viper
 		gitopsRepo := "gitops"
@@ -231,7 +236,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<AWS_DEFAULT_REGION>", region, -1)
 			newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
 		}
-		
+
 		if cloud == cloudK3d {
 			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
 			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", config.LocalArgoWorkflowsURL, -1)

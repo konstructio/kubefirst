@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"time"
 
@@ -97,7 +98,12 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 			githubOwner := getGithubOwner(gitHubAccessToken)
 
 			fmt.Printf("\n\nGitHub token set!\n\n")
-			viper.Set("github.token", gitHubAccessToken)
+			//viper.Set("github.token", gitHubAccessToken)
+			err = os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken)
+			if err != nil {
+				log.Println("Error setting GITHUB_AUTH_TOKEN")
+				return "", err
+			}
 			viper.Set("github.user", githubOwner) // TODO: deal with it
 			viper.Set("github.owner", githubOwner)
 			viper.WriteConfig()

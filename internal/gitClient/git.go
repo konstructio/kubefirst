@@ -13,6 +13,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/pkg"
 	cp "github.com/otiai10/copy"
 	"github.com/spf13/viper"
@@ -61,13 +62,18 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 	//Push
 
 	config := configs.ReadConfig()
-	token := viper.GetString("github.token")
+	token, err := githubWrapper.GetToken()
+	if err != nil {
+		log.Println("Error trying to capture token")
+		return fmt.Errorf("error trying to capture token")
+	}
+
 	if token == "" {
 		log.Println("Unauthorized: No token present")
 		return fmt.Errorf("missing github token")
 	}
 	directory := fmt.Sprintf("%s/push-%s", config.K1FolderPath, repo)
-	err := os.RemoveAll(directory)
+	err = os.RemoveAll(directory)
 	if err != nil {
 		log.Println("Error removing dir(expected if dir not present):", err)
 	}
@@ -327,9 +333,10 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 		},
 	})
 
-	token := viper.GetString("github.token")
-	if len(token) == 0 {
-		token = viper.GetString("github.token")
+	token, err := githubWrapper.GetToken()
+	if err != nil {
+		log.Println("Error trying to capture token")
+		return fmt.Errorf("error trying to capture token")
 	}
 
 	err = repo.Push(&git.PushOptions{
@@ -387,7 +394,10 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 		},
 	})
 
-	token := viper.GetString("github.token")
+	token, err := githubWrapper.GetToken()
+	if err != nil {
+		log.Fatal("Error trying to capture token")
+	}
 	err = repo.Push(&git.PushOptions{
 		RemoteName: remoteName,
 		Auth: &http.BasicAuth{
@@ -458,7 +468,11 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 		fmt.Println(err)
 	}
 
-	token := viper.GetString("github.token")
+	token, err := githubWrapper.GetToken()
+	if err != nil {
+		log.Println("Error trying to capture token")
+		return fmt.Errorf("error trying to capture token")
+	}
 	err = repo.Push(&git.PushOptions{
 		RemoteName: remoteName,
 		Auth: &http.BasicAuth{
