@@ -33,12 +33,19 @@ var initCmd = &cobra.Command{
 	Long: `Initialize the required resources to provision a full Cloud environment. At this step initial resources are
 validated and configured.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-
 		infoCmd.Run(cmd, args)
 		config := configs.ReadConfig()
 
 		//Please don't change the order of this block, wihtout updating
 		// internal/flagset/init_test.go
+		var globalFlags flagset.GlobalFlags
+		var installerFlags flagset.InstallerGenericFlags
+		var awsFlags flagset.AwsFlags
+		var githubFlags flagset.GithubAddCmdFlags
+		globalFlags, githubFlags, installerFlags, awsFlags, err := flagset.InitFlags(cmd)
+		if err != nil {
+			return err
+		}
 
 		if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
 			return err
@@ -93,14 +100,10 @@ validated and configured.`,
 			}
 		}
 
-		var globalFlags flagset.GlobalFlags
-		var installerFlags flagset.InstallerGenericFlags
-		var awsFlags flagset.AwsFlags
-		var githubFlags flagset.GithubAddCmdFlags
-
 		if cloudValue == pkg.CloudK3d {
 
-			globalFlags, _, installerFlags, awsFlags, err = flagset.InitFlags(cmd)
+			//Why?
+			//globalFlags, _, installerFlags, awsFlags, err = flagset.InitFlags(cmd)
 			viper.Set("gitops.branch", "main")
 			viper.Set("github.owner", viper.GetString("github.user"))
 			viper.WriteConfig()
@@ -120,7 +123,8 @@ validated and configured.`,
 			}
 		} else {
 			// github or gitlab
-			globalFlags, githubFlags, installerFlags, awsFlags, err = flagset.InitFlags(cmd)
+			//globalFlags, githubFlags, installerFlags, awsFlags, err = flagset.InitFlags(cmd)
+			log.Println("do nothing")
 		}
 		if err != nil {
 			return err

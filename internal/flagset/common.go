@@ -101,6 +101,6 @@ func InjectConfigs(extraConfig string) {
 	v.SetConfigType("yaml")
 	v.SetConfigFile(extraConfig)
 	_ = v.ReadInConfig()
-	//log.Println(v.AllSettings())
+	log.Println(v.AllSettings())
 	viper.MergeConfigMap(v.AllSettings())
 }

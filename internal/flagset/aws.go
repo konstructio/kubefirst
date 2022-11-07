@@ -89,13 +89,13 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	viper.Set("aws.arn", arnRole)
 	flags.AssumeRole = arnRole
 
-	hostedZoneName, _ := ReadConfigString(cmd, "hosted-zone-name")
+	hostedZoneName, err := ReadConfigString(cmd, "hosted-zone-name")
 	if err != nil {
 		return flags, err
 	}
 	viper.Set("aws.hostedzonename", hostedZoneName)
 	flags.HostedZoneName = hostedZoneName
-
+	viper.WriteConfig()
 	err = validateAwsFlags()
 	if err != nil {
 		log.Println("Error validateAwsFlags:", err)

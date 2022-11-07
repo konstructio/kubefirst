@@ -3,3 +3,4 @@ config:
   cloud: aws
   hosted-zone-name: my.domain.com
   profile: default
+  region: eu-central-1

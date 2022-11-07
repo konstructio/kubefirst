@@ -263,6 +263,7 @@ func Test_Init_aws_basic_with_profile_and_arn(t *testing.T) {
 //}
 
 // Test_Init_by_var_aws_profile
+// Test_Init_by_var_aws_profile - this test is meant to validate values passed to init using Env var instead of flags
 func Test_Init_by_var_aws_profile(t *testing.T) {
 	cmd := FakeInitCmd()
 	b := bytes.NewBufferString("")
@@ -274,8 +275,10 @@ func Test_Init_by_var_aws_profile(t *testing.T) {
 	defer os.Unsetenv("KUBEFIRST_PROFILE")
 	os.Setenv("KUBEFIRST_HOSTED_ZONE_NAME", "mydomain.com")
 	defer os.Unsetenv("KUBEFIRST_HOSTED_ZONE_NAME")
+	os.Setenv("KUBEFIRST_REGION", "eu-central-1")
+	defer os.Unsetenv("KUBEFIRST_REGION")
 	cmd.SetOut(b)
-	cmd.SetArgs([]string{"--region", "eu-central-1", "--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--profile", "default"})
+	//cmd.SetArgs([]string{"--region", "eu-central-1", "--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--profile", "default"})
 	err := cmd.Execute()
 	if err != nil {
 		t.Error(err)
@@ -292,25 +295,25 @@ func Test_Init_by_var_aws_profile(t *testing.T) {
 
 // Test_Init_aws_basic_with_profile
 // simulates: `kubefirst --admin-email user@domain.com --cloud aws --cloud aws --hosted-zone-name my.domain.com --profile default
-//
-//	func Test_Init_aws_basic_with_profile_config(t *testing.T) {
-//		cmd := FakeInitCmd()
-//		b := bytes.NewBufferString("")
-//		artifactsDir := os.Getenv("ARTIFACTS_SOURCE")
-//		cmd.SetOut(b)
-//		cmd.SetArgs([]string{"--config", artifactsDir + "/test/artifacts/init/aws_profile.yaml"})
-//		err := cmd.Execute()
-//		if err != nil {
-//			t.Error(err)
-//		}
-//		out, err := ioutil.ReadAll(b)
-//		if err != nil {
-//			t.Error(err)
-//		}
-//		if string(out) != success {
-//			t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
-//		}
-//	}
+// using only the file
+func Test_Init_aws_basic_with_profile_config(t *testing.T) {
+	cmd := FakeInitCmd()
+	b := bytes.NewBufferString("")
+	artifactsDir := os.Getenv("ARTIFACTS_SOURCE")
+	cmd.SetOut(b)
+	cmd.SetArgs([]string{"--config", artifactsDir + "/test/artifacts/init/aws_profile.yaml"})
+	err := cmd.Execute()
+	if err != nil {
+		t.Error(err)
+	}
+	out, err := ioutil.ReadAll(b)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(out) != success {
+		t.Errorf("expected  to fail validation, but got \"%s\"", string(out))
+	}
+}
 func Test_Init_Addons_Gitlab(t *testing.T) {
 	viper.Set("addons", "")
 	cmd := FakeInitAddonsTestCmd()

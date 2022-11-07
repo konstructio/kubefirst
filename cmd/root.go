@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/cmd/local"
-	"github.com/kubefirst/kubefirst/configs"
 	"os"
 
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
@@ -17,10 +15,10 @@ var rootCmd = &cobra.Command{
 	Long: `kubefirst management cluster installer provisions an
 	open source application delivery platform in under an hour. 
 	checkout the docs at docs.kubefirst.io.`,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// wire viper config for flags for all commands
-		return configs.InitializeViperConfig(cmd)
-	},
+	// PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	// 	// wire viper config for flags for all commands
+	// 	return configs.InitializeViperConfig(cmd)
+	// },
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("To learn more about kubefirst, run:")
 		fmt.Println("  kubefirst help")
@@ -42,5 +40,5 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize()
-	rootCmd.AddCommand(local.NewCommand())
+	//rootCmd.AddCommand(local.NewCommand())
 }
