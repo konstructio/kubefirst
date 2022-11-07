@@ -335,8 +335,8 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 
 	token, err := githubWrapper.GetToken()
 	if err != nil {
+		//does this support gitlab too?
 		log.Println("Error trying to capture token")
-		return fmt.Errorf("error trying to capture token")
 	}
 
 	err = repo.Push(&git.PushOptions{
