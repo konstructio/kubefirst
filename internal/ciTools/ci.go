@@ -92,6 +92,61 @@ func DeployOnGitlab(globalFlags flagset.GlobalFlags, bucketName string) error {
 		}
 	}
 
+	// TODO: To find a way to have a prefix on detoken function to avoid to replicate this logic
+	// pkg/helpers.go
+	ciRepo := "ci"
+	hostedZoneName := viper.GetString("aws.hostedzonename")
+	githubRepoHost := viper.GetString(("github.host"))
+	githubRepoOwner := viper.GetString(("github.owner"))
+	var repoPathHTTPS string
+	var repoPathSSH string
+	var repoPathPrefered string
+
+	if viper.GetString("gitprovider") == "github" {
+		repoPathHTTPS = "https://" + githubRepoHost + "/" + githubRepoOwner + "/" + ciRepo
+		repoPathSSH = "git@" + githubRepoHost + "/" + githubRepoOwner + "/" + ciRepo
+		repoPathPrefered = repoPathSSH
+		err = DetokenizeCI("<CI_CHECKOUT_CWFT_TEMPLATE>", "git-checkout-with-gitops-ssh", ciLocation)
+		if err != nil {
+			log.Println(err)
+		}
+	} else {
+		//not github = GITLAB
+		repoPathHTTPSGitlab := "https://gitlab." + hostedZoneName + "/kubefirst/" + ciRepo
+		repoPathHTTPS = repoPathHTTPSGitlab
+		repoPathSSH = "git@gitlab." + hostedZoneName + "/kubefirst/" + ciRepo
+		//gitlab prefer HTTPS - for general use
+		repoPathPrefered = repoPathHTTPS
+		err = DetokenizeCI("<CI_CHECKOUT_CWFT_TEMPLATE>", "git-checkout-with-gitops", ciLocation)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	repoPathNoProtocol := strings.Replace(repoPathHTTPS, "https://", "", -1)
+
+	//for enforcing HTTPS
+	err = DetokenizeCI("<FULL_REPO_CI_URL_HTTPS>", repoPathHTTPS, ciLocation)
+	if err != nil {
+		log.Println(err)
+	}
+	err = DetokenizeCI("<FULL_REPO_CI_URL_NO_HTTPS>", repoPathNoProtocol, ciLocation)
+	if err != nil {
+		log.Println(err)
+	}
+	//for enforcing SSH
+	err = DetokenizeCI("<FULL_REPO_CI_URL_SSH>", repoPathSSH, ciLocation)
+	if err != nil {
+		log.Println(err)
+	}
+	//gitlab prefer HTTPS - for general use
+	err = DetokenizeCI("<FULL_REPO_CI_URL>", repoPathPrefered, ciLocation)
+	if err != nil {
+		log.Println(err)
+	}
+
+	// TODO: To find a way to have a prefix on detoken function to avoid to replicate this logic ^^^^
+	// pkg/helpers.go
+
 	if !viper.GetBool("gitlab.ci-pushed") {
 		log.Println("Pushing ci repo to origin gitlab")
 		gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "ci")
@@ -158,7 +213,7 @@ func ApplyTemplates(globalFlags flagset.GlobalFlags) error {
 		return nil
 	}
 
-	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argo", "apply", "-f", fmt.Sprintf("%s/ci/components/templates/cwft-k1-ci.yaml", config.K1FolderPath))
+	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/ci-application.yaml", config.K1FolderPath))
 	if err != nil {
 		log.Printf("failed to execute kubectl apply of cwft-k1-ci: %s", err)
 		return err
@@ -174,11 +229,11 @@ func ApplyTemplates(globalFlags flagset.GlobalFlags) error {
 func DeleteTemplates(globalFlags flagset.GlobalFlags) error {
 	config := configs.ReadConfig()
 	if globalFlags.DryRun {
-		log.Printf("[#99] Dry-run mode, ApplyTemplates skipped.")
+		log.Printf("[#99] Dry-run mode, DeleteTemplates skipped.")
 		return nil
 	}
 
-	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argo", "delete", "-f", fmt.Sprintf("%s/ci/components/templates/cwft-k1-ci.yaml", config.K1FolderPath))
+	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "delete", "-f", fmt.Sprintf("%s/ci-application.yaml", config.K1FolderPath))
 	if err != nil {
 		log.Printf("failed to execute kubectl delete of cwft-k1-ci: %s", err)
 		return err
