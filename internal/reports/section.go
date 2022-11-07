@@ -213,7 +213,7 @@ func PrintSectionMetaphorFrontend() []byte {
 	}
 }
 
-//HandoffScreen - prints the handoff screen
+// HandoffScreen - prints the handoff screen
 func HandoffScreen(dryRun bool, silentMode bool) {
 	// prepare data for the handoff report
 	if dryRun {
@@ -247,7 +247,7 @@ func HandoffScreen(dryRun bool, silentMode bool) {
 
 }
 
-//HandoffScreen - prints the handoff screen
+// HandoffScreen - prints the handoff screen
 func LocalHandoffScreen(dryRun bool, silentMode bool) {
 	// prepare data for the handoff report
 	if dryRun {
@@ -277,7 +277,7 @@ func LocalHandoffScreen(dryRun bool, silentMode bool) {
 func GitHubAuthToken(userCode, verificationUri string) string {
 	var gitHubTokenReport bytes.Buffer
 	gitHubTokenReport.WriteString(strings.Repeat("-", 69))
-	gitHubTokenReport.WriteString("\nNo GITHUB_AUTH_TOKEN env variable found!\nUse the code below to get a temporary GitHub Personal Access Token and continue\n")
+	gitHubTokenReport.WriteString("\nNo KUBEFIRST_GITHUB_AUTH_TOKEN env variable found!\nUse the code below to get a temporary GitHub Personal Access Token and continue\n")
 	gitHubTokenReport.WriteString(strings.Repeat("-", 69) + "\n")
 	gitHubTokenReport.WriteString("1. copy the code: 📋 " + userCode + " 📋\n\n")
 	gitHubTokenReport.WriteString("2. paste the code at the GitHub page: " + verificationUri + "\n")

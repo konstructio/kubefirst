@@ -61,7 +61,7 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 	//Push
 
 	config := configs.ReadConfig()
-	token := viper.GetString("github.token")
+	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	if token == "" {
 		log.Println("Unauthorized: No token present")
 		return fmt.Errorf("missing github token")
@@ -327,9 +327,9 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 		},
 	})
 
-	token := viper.GetString("github.token")
+	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	if len(token) == 0 {
-		token = viper.GetString("github.token")
+		log.Println("no GITHUB KUBEFIRST_GITHUB_AUTH_TOKEN provided, unable to use GitHub API")
 	}
 
 	err = repo.Push(&git.PushOptions{
@@ -387,7 +387,7 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 		},
 	})
 
-	token := viper.GetString("github.token")
+	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	err = repo.Push(&git.PushOptions{
 		RemoteName: remoteName,
 		Auth: &http.BasicAuth{
@@ -458,7 +458,7 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 		fmt.Println(err)
 	}
 
-	token := viper.GetString("github.token")
+	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	err = repo.Push(&git.PushOptions{
 		RemoteName: remoteName,
 		Auth: &http.BasicAuth{

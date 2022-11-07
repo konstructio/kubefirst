@@ -118,7 +118,10 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 			return errors.New("unable to retrieve a GitHub token for the user")
 		}
 
-		viper.Set("github.token", gitHubAccessToken)
+		err = os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken)
+		if err != nil {
+			return errors.New("unable to set KUBEFIRST_GITHUB_AUTH_TOKEN")
+		}
 		err = viper.WriteConfig()
 		if err != nil {
 			return err
@@ -126,10 +129,10 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 		// todo: set common way to load env. values (viper->struct->load-env)
 		// todo: use viper file to load it, not load env. value
-		if err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
+		if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
 			return err
 		}
-		log.Println("\nGITHUB_AUTH_TOKEN set via OAuth")
+		log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
 	}
 
 	if silentMode {
