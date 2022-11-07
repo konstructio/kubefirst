@@ -49,22 +49,26 @@ func InitializeViperConfig(cmd *cobra.Command) error {
 	v := viper.New()
 
 	// Set the base name of the config file, without the file extension.
-	v.SetConfigName(defaultConfigFilename)
-	v.SetConfigType("yaml")
+	//v.SetConfigName(defaultConfigFilename)
+	//v.SetConfigType("yaml")
 
 	// Set as many paths as you like where viper should look for the
 	// config file. We are only looking in the current working directory.
-	v.AddConfigPath(".")
+	//v.AddConfigPath(".")
 
 	// Attempt to read the config file, gracefully ignoring errors
 	// caused by a config file not being found. Return an error
 	// if we cannot parse the config file.
-	if err := v.ReadInConfig(); err != nil {
-		// It's okay if there isn't a config file
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return err
-		}
-	}
+	//if err := v.ReadInConfig(); err != nil {
+	//	// It's okay if there isn't a config file
+	//
+	//	fmt.Println(err)
+	//
+	//	if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+	//		return err
+	//	}
+	//
+	//}
 
 	// When we bind flags to environment variables expect that the
 	// environment variables are prefixed, e.g. a flag like --number
