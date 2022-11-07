@@ -63,6 +63,8 @@ func NewCommand() *cobra.Command {
 	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
 	localCmd.Flags().BoolVar(&enableConsole, "enable-console", true, "If hand-off screen will be presented on a browser UI")
 
+	localCmd.AddCommand(NewCommandConnect())
+
 	return localCmd
 }
 

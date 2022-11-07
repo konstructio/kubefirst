@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -198,7 +199,9 @@ func PortForward(dryRun bool, namespace string, filter string, ports string) (*e
 	kPortForward.Stdout = &kPortForwardOutb
 	kPortForward.Stderr = &kPortForwardErrb
 	err := kPortForward.Start()
-	log.Printf("kubectl port-forward started for (%s) available at http://localhost:%s", filter, ports)
+
+	// make port forward port available for log
+	log.Printf("kubectl port-forward started for (%s) available at http://localhost:%s", filter, strings.Split(ports, ":")[0])
 	//defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
 
 	//Please, don't remove this sleep, pf takes a while to be ready to search calls.
