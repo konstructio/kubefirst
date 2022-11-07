@@ -36,6 +36,11 @@ var addCiCmd = &cobra.Command{
 			return err
 		}
 
+		err = ciTools.ApplyTemplates(globalFlags)
+		if err != nil {
+			return err
+		}
+
 		if viper.GetString("gitprovider") == "gitlab" {
 			ciTools.DeployOnGitlab(globalFlags, bucketName)
 		}

@@ -9,14 +9,17 @@ import (
 
 // CIFlags - Global flags
 type CIFlags struct {
-	BranchCI         string
-	DestroyBucket    bool
-	CIClusterName    string
-	CIS3Suffix       string
-	CIHostedZoneName string
-	CIFlavor         string
-	CIGithubUser     string
-	CIGithubOwner    string
+	BranchCI          string
+	DestroyBucket     bool
+	CIClusterName     string
+	CIS3Suffix        string
+	CIHostedZoneName  string
+	CIFlavor          string
+	CIGithubUser      string
+	CIGithubOwner     string
+	BranchGitopsCI    string
+	BranchMetaphorCI  string
+	BranchKubefirstCI string
 }
 
 // DefineCIFlags - Define global flags
@@ -29,6 +32,9 @@ func DefineCIFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("ci-flavor", "", "inform which flavor will be installed")
 	currentCommand.Flags().String("ci-github-user", "", "inform which github user will be used")
 	currentCommand.Flags().String("ci-github-owner", "", "inform which github owner will be used")
+	currentCommand.Flags().String("ci-gitops-branch", "", "version/branch used on git clone for gitops setup instruction")
+	currentCommand.Flags().String("ci-metaphor-branch", "", "version/branch used on git clone for metaphor setup instruction")
+	currentCommand.Flags().String("ci-kubefirst-branch", "", "version/branch used on git clone for kubefirst setup instruction")
 }
 
 // ProcessCIFlags - process global flags shared between commands like silent, dry-run and use-telemetry
@@ -42,6 +48,30 @@ func ProcessCIFlags(cmd *cobra.Command) (CIFlags, error) {
 	}
 	flags.BranchCI = branchCI
 	viper.Set("ci.branch", branchCI)
+
+	branchGitopsCI, err := ReadConfigString(cmd, "ci-gitops-branch")
+	if err != nil {
+		log.Printf("Error Processing - ci-gitops-branch flag, error: %v", err)
+		return flags, err
+	}
+	flags.BranchGitopsCI = branchGitopsCI
+	viper.Set("ci.gitops.branch", branchGitopsCI)
+
+	branchMetaphorCI, err := ReadConfigString(cmd, "ci-metaphor-branch")
+	if err != nil {
+		log.Printf("Error Processing - ci-metaphor-branch flag, error: %v", err)
+		return flags, err
+	}
+	flags.BranchMetaphorCI = branchMetaphorCI
+	viper.Set("ci.metaphor.branch", branchMetaphorCI)
+
+	branchKubefirstCI, err := ReadConfigString(cmd, "ci-kubefirst-branch")
+	if err != nil {
+		log.Printf("Error Processing - ci-kubefirst-branch flag, error: %v", err)
+		return flags, err
+	}
+	flags.BranchKubefirstCI = branchKubefirstCI
+	viper.Set("ci.kubefirst.branch", branchKubefirstCI)
 
 	destroyBucket, err := ReadConfigBool(cmd, "destroy-bucket")
 	if err != nil {
