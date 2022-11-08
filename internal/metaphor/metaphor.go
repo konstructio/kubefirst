@@ -2,9 +2,10 @@ package metaphor
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/pkg"
 	"log"
 	"os"
+
+	"github.com/kubefirst/kubefirst/pkg"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/flagset"

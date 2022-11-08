@@ -93,11 +93,11 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 			log.Println(err)
 		}
 
+		// todo: move this logic away, and host it into the caller
 		if len(gitHubAccessToken) > 0 {
-			githubOwner := getGithubOwner(gitHubAccessToken)
+			githubOwner := GetGithubOwner(gitHubAccessToken)
 
 			fmt.Printf("\n\nGitHub token set!\n\n")
-			viper.Set("github.token", gitHubAccessToken)
 			viper.Set("github.user", githubOwner) // TODO: deal with it
 			viper.Set("github.owner", githubOwner)
 			viper.WriteConfig()
@@ -111,7 +111,8 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 	return gitHubAccessToken, nil
 }
 
-func getGithubOwner(gitHubAccessToken string) string {
+// todo: make it a method
+func GetGithubOwner(gitHubAccessToken string) string {
 
 	req, err := http.NewRequest(http.MethodGet, "https://api.github.com/user", nil)
 	if err != nil {

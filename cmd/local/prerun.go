@@ -3,8 +3,13 @@ package local
 import (
 	"errors"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/addon"
 	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/handlers"
@@ -15,9 +20,6 @@ import (
 	"github.com/segmentio/analytics-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"net/http"
-	"os"
 )
 
 func validateLocal(cmd *cobra.Command, args []string) error {
@@ -93,6 +95,8 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	viper.Set("argocd.local.service", "http://localhost:8080")
 	viper.Set("gitlab.local.service", "http://localhost:8888")
 	viper.Set("vault.local.service", "http://localhost:8200")
+	addon.AddAddon("github")
+	addon.AddAddon("k3d")
 	// used for letsencrypt notifications and the gitlab root account
 
 	atlantisWebhookSecret := pkg.Random(20)
@@ -105,7 +109,6 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	// todo: wrap business logic into the handler
 	if config.GitHubPersonalAccessToken == "" {
-
 		httpClient := http.DefaultClient
 		gitHubService := services.NewGitHubService(httpClient)
 		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
@@ -118,18 +121,23 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 			return errors.New("unable to retrieve a GitHub token for the user")
 		}
 
-		viper.Set("github.token", gitHubAccessToken)
-		err = viper.WriteConfig()
+		err = os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken)
 		if err != nil {
-			return err
+			return errors.New("unable to set KUBEFIRST_GITHUB_AUTH_TOKEN")
 		}
 
 		// todo: set common way to load env. values (viper->struct->load-env)
 		// todo: use viper file to load it, not load env. value
-		if err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
+		if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
 			return err
 		}
-		log.Println("\nGITHUB_AUTH_TOKEN set via OAuth")
+		log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
+	} else {
+		// get GitHub data to set user and owner based on the provided token
+		// todo: here its acting as a helper function, todo-> make it a method from github handler
+		githubOwner := handlers.GetGithubOwner(os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN"))
+		viper.Set("github.user", githubOwner) // TODO: deal with it
+		viper.Set("github.owner", githubOwner)
 	}
 
 	if silentMode {

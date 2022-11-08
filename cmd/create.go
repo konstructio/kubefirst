@@ -94,13 +94,9 @@ cluster provisioning process spinning up the services, and validates the livenes
 			}
 		}
 
-		token := os.Getenv("GITHUB_AUTH_TOKEN")
+		token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 		if len(token) == 0 {
-			token = viper.GetString("github.token")
-			err := os.Setenv("GITHUB_AUTH_TOKEN", token)
-			if err != nil {
-				return err
-			}
+			errors.New("GitHub token not provided")
 		}
 
 		if viper.GetString("cloud") == flagset.CloudK3d {

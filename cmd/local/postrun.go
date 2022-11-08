@@ -49,7 +49,7 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 	}
 	err = pkg.OpenBrowser(pkg.ConsoleUILocalURL)
 	if err != nil {
-		return err
+		log.Println(err)
 	}
 
 	reports.LocalHandoffScreen(dryRun, silentMode)

@@ -137,8 +137,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubOrg := viper.GetString(("github.org"))
 		githubUser := viper.GetString(("github.user"))
 
-		//TODO: We need to fix this
-		githubToken := viper.GetString("github.token")
+		githubToken := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 
 		//todo: get from viper
 		gitopsRepo := "gitops"
@@ -231,7 +230,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<AWS_DEFAULT_REGION>", region, -1)
 			newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
 		}
-		
+
 		if cloud == cloudK3d {
 			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
 			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", config.LocalArgoWorkflowsURL, -1)
