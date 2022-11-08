@@ -74,10 +74,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 	progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
-	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 5)
-
-	progressPrinter.IncrementTracker("step-base", 1)
-	progressPrinter.IncrementTracker("step-base", 1)
+	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 4)
 
 	if useTelemetry {
 		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 1)

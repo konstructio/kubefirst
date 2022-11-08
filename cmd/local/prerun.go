@@ -122,10 +122,6 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return errors.New("unable to set KUBEFIRST_GITHUB_AUTH_TOKEN")
 		}
-		err = viper.WriteConfig()
-		if err != nil {
-			return err
-		}
 
 		// todo: set common way to load env. values (viper->struct->load-env)
 		// todo: use viper file to load it, not load env. value
