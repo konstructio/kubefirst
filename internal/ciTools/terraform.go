@@ -62,7 +62,7 @@ func ApplyCITerraform(dryRun bool, bucketName string) {
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 
 		if viper.GetString("ci.flavor") == "github" {
-			envs["TF_VAR_github_token"] = os.Getenv("GITHUB_AUTH_TOKEN")
+			envs["TF_VAR_github_token"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 			secretDirectory := fmt.Sprintf("%s/ci/terraform/secret", config.K1FolderPath)
 			err := os.Chdir(secretDirectory)
 			if err != nil {
@@ -124,7 +124,7 @@ func DestroyCITerraform(skipCITerraform bool) {
 		envs["TF_VAR_aws_secret_access_key"] = string(awsSecret)
 
 		if viper.GetString("ci.flavor") == "github" {
-			envs["TF_VAR_github_token"] = os.Getenv("GITHUB_AUTH_TOKEN")
+			envs["TF_VAR_github_token"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 			secretDirectory := fmt.Sprintf("%s/ci/terraform/secret", config.K1FolderPath)
 			err = os.Chdir(secretDirectory)
 			if err != nil {
