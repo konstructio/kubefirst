@@ -64,10 +64,10 @@ validated and configured.`,
 				}
 
 				// todo: set common way to load env. values (viper->struct->load-env)
-				if err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
+				if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
 					return err
 				}
-				log.Println("\nGITHUB_AUTH_TOKEN set via OAuth")
+				log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
 			}
 		}
 
@@ -77,10 +77,10 @@ validated and configured.`,
 		}
 
 		if providerValue == "github" {
-			if os.Getenv("GITHUB_AUTH_TOKEN") != "" {
-				viper.Set("github.token", os.Getenv("GITHUB_AUTH_TOKEN"))
+			if os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN") != "" {
+				viper.Set("github.token", os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN"))
 			} else {
-				log.Fatal("cannot create a cluster without a github auth token. please export your GITHUB_AUTH_TOKEN in your terminal.")
+				log.Fatal("cannot create a cluster without a github auth token. please export your KUBEFIRST_GITHUB_AUTH_TOKEN in your terminal.")
 			}
 		}
 
