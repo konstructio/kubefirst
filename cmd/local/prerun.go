@@ -137,13 +137,12 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	// get GitHub data to set user and owner based on the provided token
 	githubOwner := gitHubHandler.GetGithubOwner(config.GitHubPersonalAccessToken)
 
-	viper.Set("github.user", githubOwner) // TODO: deal with it
+	viper.Set("github.user", githubOwner)
 	viper.Set("github.owner", githubOwner)
 	err = viper.WriteConfig()
 	if err != nil {
 		return err
 	}
-	return nil
 
 	if silentMode {
 		pkg.InformUser(
