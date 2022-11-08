@@ -108,10 +108,10 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	// todo: wrap business logic into the handler
+	httpClient := http.DefaultClient
+	gitHubService := services.NewGitHubService(httpClient)
+	gitHubHandler := handlers.NewGitHubHandler(gitHubService)
 	if config.GitHubPersonalAccessToken == "" {
-		httpClient := http.DefaultClient
-		gitHubService := services.NewGitHubService(httpClient)
-		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
 		gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
 		if err != nil {
 			return err
@@ -132,13 +132,18 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
-	} else {
-		// get GitHub data to set user and owner based on the provided token
-		// todo: here its acting as a helper function, todo-> make it a method from github handler
-		githubOwner := handlers.GetGithubOwner(os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN"))
-		viper.Set("github.user", githubOwner) // TODO: deal with it
-		viper.Set("github.owner", githubOwner)
 	}
+
+	// get GitHub data to set user and owner based on the provided token
+	githubOwner := gitHubHandler.GetGithubOwner(config.GitHubPersonalAccessToken)
+
+	viper.Set("github.user", githubOwner) // TODO: deal with it
+	viper.Set("github.owner", githubOwner)
+	err = viper.WriteConfig()
+	if err != nil {
+		return err
+	}
+	return nil
 
 	if silentMode {
 		pkg.InformUser(
