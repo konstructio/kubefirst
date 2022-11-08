@@ -103,7 +103,7 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 }
 
 // todo: make it a method
-func (handler GitHubHandler) GetGithubOwner(gitHubAccessToken string) string {
+func (handler GitHubHandler) GetGitHubUser(gitHubAccessToken string) string {
 
 	req, err := http.NewRequest(http.MethodGet, "https://api.github.com/user", nil)
 	if err != nil {

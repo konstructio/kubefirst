@@ -48,27 +48,34 @@ validated and configured.`,
 			return err
 		}
 
-		if cloudValue == flagset.CloudK3d {
-			if config.GitHubPersonalAccessToken == "" {
+		httpClient := http.DefaultClient
+		gitHubService := services.NewGitHubService(httpClient)
+		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
 
-				httpClient := http.DefaultClient
-				gitHubService := services.NewGitHubService(httpClient)
-				gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-				gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
-				if err != nil {
-					return err
-				}
+		if cloudValue == flagset.CloudK3d && config.GitHubPersonalAccessToken == "" {
 
-				if len(gitHubAccessToken) == 0 {
-					return errors.New("unable to retrieve a GitHub token for the user")
-				}
-
-				// todo: set common way to load env. values (viper->struct->load-env)
-				if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
-					return err
-				}
-				log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
+			gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
+			if err != nil {
+				return err
 			}
+
+			if len(gitHubAccessToken) == 0 {
+				return errors.New("unable to retrieve a GitHub token for the user")
+			}
+
+			// todo: set common way to load env. values (viper->struct->load-env)
+			if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
+				return err
+			}
+			log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
+		}
+
+		// get GitHub data to set user and owner based on the provided token
+		githubUser := gitHubHandler.GetGitHubUser(config.GitHubPersonalAccessToken)
+		viper.Set("github.user", githubUser)
+		err = viper.WriteConfig()
+		if err != nil {
+			return err
 		}
 
 		providerValue, err := flagset.ReadConfigString(cmd, "git-provider")
@@ -76,12 +83,8 @@ validated and configured.`,
 			return err
 		}
 
-		if providerValue == "github" {
-			if os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN") != "" {
-				viper.Set("github.token", os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN"))
-			} else {
-				log.Fatal("cannot create a cluster without a github auth token. please export your KUBEFIRST_GITHUB_AUTH_TOKEN in your terminal.")
-			}
+		if providerValue == pkg.GitHubProviderName && config.GitHubPersonalAccessToken == "" {
+			log.Fatal("cannot create a cluster without a github auth token. please export your KUBEFIRST_GITHUB_AUTH_TOKEN in your terminal.")
 		}
 
 		var globalFlags flagset.GlobalFlags
@@ -103,10 +106,6 @@ validated and configured.`,
 				return err
 			}
 			if githubFlags.GithubOwner = viper.GetString("github.owner"); err != nil {
-				return err
-			}
-
-			if githubFlags.GithubUser = viper.GetString("github.user"); err != nil {
 				return err
 			}
 		} else {

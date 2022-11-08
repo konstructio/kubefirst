@@ -119,13 +119,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		if len(gitHubAccessToken) == 0 {
 			return errors.New("unable to retrieve a GitHub token for the user")
 		}
-
-		viper.Set("github.token", gitHubAccessToken)
-		err = viper.WriteConfig()
-		if err != nil {
-			return err
-		}
-
+	
 		// todo: set common way to load env. values (viper->struct->load-env)
 		// todo: use viper file to load it, not load env. value
 		if err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
@@ -135,10 +129,10 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	// get GitHub data to set user and owner based on the provided token
-	githubOwner := gitHubHandler.GetGithubOwner(config.GitHubPersonalAccessToken)
+	githubUser := gitHubHandler.GetGitHubUser(config.GitHubPersonalAccessToken)
 
-	viper.Set("github.user", githubOwner)
-	viper.Set("github.owner", githubOwner)
+	viper.Set("github.user", githubUser)
+	viper.Set("github.owner", githubUser)
 	err = viper.WriteConfig()
 	if err != nil {
 		return err
