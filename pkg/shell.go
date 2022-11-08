@@ -14,6 +14,7 @@ import (
 func ExecShellReturnStrings(command string, args ...string) (string, string, error) {
 	var outb, errb bytes.Buffer
 	k := exec.Command(command, args...)
+	//  log.Println("Command:", k.String()) //Do not remove this line used for some debugging, will be wrapped by debug log some day.
 	k.Stdout = &outb
 	k.Stderr = &errb
 	err := k.Run()
