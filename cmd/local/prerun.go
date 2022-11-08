@@ -3,8 +3,13 @@ package local
 import (
 	"errors"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/addon"
 	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/handlers"
@@ -15,9 +20,6 @@ import (
 	"github.com/segmentio/analytics-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"net/http"
-	"os"
 )
 
 func validateLocal(cmd *cobra.Command, args []string) error {
@@ -93,6 +95,8 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	viper.Set("argocd.local.service", "http://localhost:8080")
 	viper.Set("gitlab.local.service", "http://localhost:8888")
 	viper.Set("vault.local.service", "http://localhost:8200")
+	addon.AddAddon("github")
+	addon.AddAddon("k3d")
 	// used for letsencrypt notifications and the gitlab root account
 
 	atlantisWebhookSecret := pkg.Random(20)
