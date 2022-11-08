@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"syscall"
@@ -94,9 +95,40 @@ cluster provisioning process spinning up the services, and validates the livenes
 			}
 		}
 
-		token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
-		if len(token) == 0 {
-			errors.New("GitHub token not provided")
+		httpClient := http.DefaultClient
+		gitHubService := services.NewGitHubService(httpClient)
+		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
+
+		providerValue := viper.GetString("gitprovider")
+
+		config := configs.ReadConfig()
+		gitHubAccessToken := config.GitHubPersonalAccessToken
+		if providerValue == pkg.GitHubProviderName && gitHubAccessToken == "" {
+
+			gitHubAccessToken, err = gitHubHandler.AuthenticateUser()
+			if err != nil {
+				return err
+			}
+
+			if gitHubAccessToken == "" {
+				return errors.New("cannot create a cluster without a github auth token. please export your " +
+					"KUBEFIRST_GITHUB_AUTH_TOKEN in your terminal",
+				)
+			}
+
+			// todo: set common way to load env. values (viper->struct->load-env)
+			if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
+				return err
+			}
+			log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
+		}
+
+		// get GitHub data to set user and owner based on the provided token
+		githubUser := gitHubHandler.GetGitHubUser(gitHubAccessToken)
+		viper.Set("github.user", githubUser)
+		err = viper.WriteConfig()
+		if err != nil {
+			return err
 		}
 
 		if viper.GetString("cloud") == flagset.CloudK3d {

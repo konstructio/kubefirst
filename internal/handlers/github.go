@@ -92,7 +92,10 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 			log.Println(err)
 		}
 
-		fmt.Printf("\n\nGitHub token set!\n\n")
+		if len(gitHubAccessToken) > 0 {
+			fmt.Printf("\n\nGitHub token set!\n\n")
+			return gitHubAccessToken, nil
+		}
 
 		fmt.Printf("\rwaiting for authorization (%d seconds)", (attemptsControl)-5)
 		attemptsControl -= 5
@@ -133,7 +136,7 @@ func (handler GitHubHandler) GetGitHubUser(gitHubAccessToken string) string {
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println(githubUser.Login)
+	log.Println("GitHub user: ", githubUser.Login)
 	return githubUser.Login
 
 }

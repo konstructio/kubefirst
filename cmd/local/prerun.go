@@ -116,10 +116,10 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		if len(gitHubAccessToken) == 0 {
+		if gitHubAccessToken == "" {
 			return errors.New("unable to retrieve a GitHub token for the user")
 		}
-	
+
 		// todo: set common way to load env. values (viper->struct->load-env)
 		// todo: use viper file to load it, not load env. value
 		if err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
