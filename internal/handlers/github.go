@@ -137,39 +137,3 @@ func (handler GitHubHandler) GetGithubOwner(gitHubAccessToken string) string {
 	return githubUser.Login
 
 }
-
-//// todo: make it a method
-//func GetGithubOwner(gitHubAccessToken string) string {
-//
-//	req, err := http.NewRequest(http.MethodGet, "https://api.github.com/user", nil)
-//	if err != nil {
-//		log.Println("error setting request")
-//	}
-//	req.Header.Add("Content-Type", pkg.JSONContentType)
-//	req.Header.Add("Accept", "application/vnd.github+json")
-//	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", gitHubAccessToken))
-//
-//	res, err := http.DefaultClient.Do(req)
-//	if err != nil {
-//		log.Println("error doing request")
-//	}
-//
-//	defer res.Body.Close()
-//	body, err := io.ReadAll(res.Body)
-//	if err != nil {
-//		log.Println("error unmarshalling request")
-//	}
-//
-//	type GitHubUser struct {
-//		Login string `json:"login"`
-//	}
-//
-//	var githubUser GitHubUser
-//	err = json.Unmarshal(body, &githubUser)
-//	if err != nil {
-//		log.Println(err)
-//	}
-//	log.Println(githubUser.Login)
-//	return githubUser.Login
-//
-//}

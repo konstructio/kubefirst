@@ -3,10 +3,6 @@ package local
 import (
 	"errors"
 	"fmt"
-	"log"
-	"net/http"
-	"os"
-
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/addon"
@@ -20,6 +16,9 @@ import (
 	"github.com/segmentio/analytics-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log"
+	"net/http"
+	"os"
 )
 
 func validateLocal(cmd *cobra.Command, args []string) error {
@@ -121,14 +120,15 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 			return errors.New("unable to retrieve a GitHub token for the user")
 		}
 
-		err = os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken)
+		viper.Set("github.token", gitHubAccessToken)
+		err = viper.WriteConfig()
 		if err != nil {
-			return errors.New("unable to set KUBEFIRST_GITHUB_AUTH_TOKEN")
+			return err
 		}
 
 		// todo: set common way to load env. values (viper->struct->load-env)
 		// todo: use viper file to load it, not load env. value
-		if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
+		if err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
 			return err
 		}
 		log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")

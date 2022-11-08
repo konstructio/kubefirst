@@ -55,7 +55,7 @@ var postInstallCmd = &cobra.Command{
 
 			log.Println("Kubefirst Console available at: http://localhost:9094", globalFlags.SilentMode)
 
-			err := pkg.OpenBrowser(pkg.LocalConsoleUI)
+			err := pkg.OpenBrowser(pkg.ConsoleUILocalURL)
 			if err != nil {
 				log.Println(err)
 			}
@@ -71,12 +71,12 @@ var postInstallCmd = &cobra.Command{
 				log.Println(err)
 			}
 
-			err = pkg.IsConsoleUIAvailable(pkg.LocalConsoleUI)
+			err = pkg.IsConsoleUIAvailable(pkg.ConsoleUILocalURL)
 			if err != nil {
 				log.Println(err)
 			}
-			err = pkg.OpenBrowser(pkg.LocalConsoleUI)
-			if pkg.OpenBrowser(pkg.LocalConsoleUI) != nil {
+			err = pkg.OpenBrowser(pkg.ConsoleUILocalURL)
+			if pkg.OpenBrowser(pkg.ConsoleUILocalURL) != nil {
 				log.Println(err)
 			}
 		}

@@ -43,11 +43,11 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 	// 	log.Println(http.ListenAndServe(":9094", nil))
 	// }()
 
-	err = pkg.IsConsoleUIAvailable(pkg.LocalConsoleUI)
+	err = pkg.IsConsoleUIAvailable(pkg.ConsoleUILocalURL)
 	if err != nil {
 		log.Println(err)
 	}
-	err = pkg.OpenBrowser(pkg.LocalConsoleUI)
+	err = pkg.OpenBrowser(pkg.ConsoleUILocalURL)
 	if err != nil {
 		log.Println(err)
 	}
