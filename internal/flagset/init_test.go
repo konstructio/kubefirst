@@ -111,8 +111,8 @@ func FakeInitAddonsTestCmd() *cobra.Command {
 // Test_Init_k3d_basic
 // simulates: `kubefirst --admin-email user@domain.com --cloud k3d --github-user ghuser --github-org ghorg
 func Test_Init_k3d_basic_github(t *testing.T) {
-	os.Setenv("GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
-	defer os.Unsetenv("GITHUB_AUTH_TOKEN")
+	os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
+	defer os.Unsetenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	cmd := FakeInitCmd()
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
@@ -331,8 +331,8 @@ func Test_Init_Addons_Gitlab(t *testing.T) {
 }
 
 func Test_Init_Addons_Github(t *testing.T) {
-	os.Setenv("GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
-	defer os.Unsetenv("GITHUB_AUTH_TOKEN")
+	os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
+	defer os.Unsetenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	viper.Set("addons", "")
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
@@ -352,8 +352,8 @@ func Test_Init_Addons_Github(t *testing.T) {
 }
 
 func Test_Init_Addons_Github_Kusk(t *testing.T) {
-	os.Setenv("GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
-	defer os.Unsetenv("GITHUB_AUTH_TOKEN")
+	os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
+	defer os.Unsetenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	viper.Set("addons", "")
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
