@@ -127,6 +127,12 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 			envs["TF_VAR_lifecycle_nodes"] = "SPOT"
 		}
 
+		nodes_graviton := viper.GetBool("aws.nodes_graviton")
+		if nodes_graviton {
+			envs["TF_VAR_ami_type"] = "AL2_ARM_64"
+			envs["TF_VAR_instance_types"] = "m6g.medium"
+		}
+
 		log.Println("tf env vars: ", envs)
 
 		err := os.Chdir(directory)
