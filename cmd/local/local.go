@@ -3,6 +3,12 @@ package local
 import (
 	"context"
 	"fmt"
+	"log"
+	"os/exec"
+	"sync"
+	"syscall"
+	"time"
+
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
@@ -22,11 +28,6 @@ import (
 	"github.com/segmentio/analytics-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"os/exec"
-	"sync"
-	"syscall"
-	"time"
 )
 
 var (
@@ -63,6 +64,8 @@ func NewCommand() *cobra.Command {
 	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
 	localCmd.Flags().BoolVar(&enableConsole, "enable-console", true, "If hand-off screen will be presented on a browser UI")
 
+	localCmd.AddCommand(NewCommandConnect())
+
 	return localCmd
 }
 
@@ -74,10 +77,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 	progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
-	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 5)
-
-	progressPrinter.IncrementTracker("step-base", 1)
-	progressPrinter.IncrementTracker("step-base", 1)
+	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 4)
 
 	if useTelemetry {
 		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 1)
@@ -176,10 +176,10 @@ func runLocal(cmd *cobra.Command, args []string) error {
 			log.Println("Error installing k3d cluster")
 			return err
 		}
-		progressPrinter.IncrementTracker("step-base", 1)
 	} else {
 		log.Println("already created k3d cluster")
 	}
+	progressPrinter.IncrementTracker("step-base", 1)
 	progressPrinter.IncrementTracker("step-github", 1)
 
 	// add secrets to cluster

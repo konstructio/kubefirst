@@ -38,7 +38,7 @@ import (
 
 const (
 	// The name of our config file, without the file extension because viper supports many different config file languages.
-	defaultConfigFilename = "kubefirst"
+	defaultConfigFilename = "kubefirst-config"
 
 	// The environment variable prefix of all environment variables bound to our command line flags.
 	// For example, --number is bound to STING_NUMBER.
@@ -59,12 +59,13 @@ func InitializeViperConfig(cmd *cobra.Command) error {
 	// Attempt to read the config file, gracefully ignoring errors
 	// caused by a config file not being found. Return an error
 	// if we cannot parse the config file.
-	if err := v.ReadInConfig(); err != nil {
-		// It's okay if there isn't a config file
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return err
-		}
-	}
+	//if err := v.ReadInConfig(); err != nil {
+	// It's okay if there isn't a config file
+	//if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+	//	return err
+	//}
+	//return err
+	//}
 
 	// When we bind flags to environment variables expect that the
 	// environment variables are prefixed, e.g. a flag like --number

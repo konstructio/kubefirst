@@ -1,8 +1,12 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/services"
+	"github.com/kubefirst/kubefirst/pkg"
 	"log"
+	"net/http"
 	"os"
 	"syscall"
 	"time"
@@ -45,6 +49,38 @@ var destroyCmd = &cobra.Command{
 				"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
 				globalFlags.SilentMode,
 			)
+		}
+
+		// todo: wrap business logic into the handler
+		if viper.GetString("cloud") == pkg.CloudK3d && config.GitHubPersonalAccessToken == "" {
+
+			httpClient := http.DefaultClient
+			gitHubService := services.NewGitHubService(httpClient)
+			gitHubHandler := handlers.NewGitHubHandler(gitHubService)
+			gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
+			if err != nil {
+				return err
+			}
+
+			if len(gitHubAccessToken) == 0 {
+				return errors.New("unable to retrieve a GitHub token for the user")
+			}
+
+			err = os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken)
+			if err != nil {
+				return errors.New("unable to set KUBEFIRST_GITHUB_AUTH_TOKEN")
+			}
+			err = viper.WriteConfig()
+			if err != nil {
+				return err
+			}
+
+			// todo: set common way to load env. values (viper->struct->load-env)
+			// todo: use viper file to load it, not load env. value
+			if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
+				return err
+			}
+			log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
 		}
 
 		if viper.GetString("cloud") == "k3d" {

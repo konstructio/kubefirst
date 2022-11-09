@@ -57,24 +57,24 @@ type Config struct {
 	MetaphorTemplateURL string
 	GitopsTemplateURL   string
 
-	LocalArgoWorkflowsURL			string
-	LocalVaultURL					string
-	LocalArgoURL					string
-	LocalAtlantisURL				string
+	LocalArgoWorkflowsURL string
+	LocalVaultURL         string
+	LocalArgoURL          string
+	LocalAtlantisURL      string
 
-	LocalMetaphorDev				string
-	LocalMetaphorGoDev				string
-	LocalMetaphorFrontDev			string
+	LocalMetaphorDev      string
+	LocalMetaphorGoDev    string
+	LocalMetaphorFrontDev string
 
-	LocalMetaphorStaging			string
-	LocalMetaphorGoStaging			string
-	LocalMetaphorFrontStaging		string
+	LocalMetaphorStaging      string
+	LocalMetaphorGoStaging    string
+	LocalMetaphorFrontStaging string
 
-	LocalMetaphorProd				string
-	LocalMetaphorGoProd				string
-	LocalMetaphorFrontProd			string
+	LocalMetaphorProd      string
+	LocalMetaphorGoProd    string
+	LocalMetaphorFrontProd string
 
-	GitHubPersonalAccessToken string `env:"GITHUB_AUTH_TOKEN"`
+	GitHubPersonalAccessToken string `env:"KUBEFIRST_GITHUB_AUTH_TOKEN"`
 }
 
 // ReadConfig - load default values from kubefirst installer

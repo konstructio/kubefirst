@@ -27,13 +27,13 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 
 	log.Println("Starting the presentation of console and api for the handoff screen")
 
-	err = pkg.IsConsoleUIAvailable(pkg.LocalConsoleUI)
+	err = pkg.IsConsoleUIAvailable(pkg.ConsoleUILocalURL)
 	if err != nil {
 		log.Println(err)
 	}
-	err = pkg.OpenBrowser(pkg.LocalConsoleUI)
+	err = pkg.OpenBrowser(pkg.ConsoleUILocalURL)
 	if err != nil {
-		return err
+		log.Println(err)
 	}
 
 	reports.LocalHandoffScreen(dryRun, silentMode)

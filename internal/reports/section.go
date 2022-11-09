@@ -3,6 +3,7 @@ package reports
 import (
 	"bytes"
 	"fmt"
+	"github.com/kubefirst/kubefirst/pkg"
 	"log"
 	"strings"
 
@@ -213,7 +214,7 @@ func PrintSectionMetaphorFrontend() []byte {
 	}
 }
 
-//HandoffScreen - prints the handoff screen
+// HandoffScreen - prints the handoff screen
 func HandoffScreen(dryRun bool, silentMode bool) {
 	// prepare data for the handoff report
 	if dryRun {
@@ -247,7 +248,7 @@ func HandoffScreen(dryRun bool, silentMode bool) {
 
 }
 
-//HandoffScreen - prints the handoff screen
+// HandoffScreen - prints the handoff screen
 func LocalHandoffScreen(dryRun bool, silentMode bool) {
 	// prepare data for the handoff report
 	if dryRun {
@@ -277,7 +278,7 @@ func LocalHandoffScreen(dryRun bool, silentMode bool) {
 func GitHubAuthToken(userCode, verificationUri string) string {
 	var gitHubTokenReport bytes.Buffer
 	gitHubTokenReport.WriteString(strings.Repeat("-", 69))
-	gitHubTokenReport.WriteString("\nNo GITHUB_AUTH_TOKEN env variable found!\nUse the code below to get a temporary GitHub Personal Access Token and continue\n")
+	gitHubTokenReport.WriteString("\nNo KUBEFIRST_GITHUB_AUTH_TOKEN env variable found!\nUse the code below to get a temporary GitHub Personal Access Token and continue\n")
 	gitHubTokenReport.WriteString(strings.Repeat("-", 69) + "\n")
 	gitHubTokenReport.WriteString("1. copy the code: 📋 " + userCode + " 📋\n\n")
 	gitHubTokenReport.WriteString("2. paste the code at the GitHub page: " + verificationUri + "\n")
@@ -285,4 +286,25 @@ func GitHubAuthToken(userCode, verificationUri string) string {
 	gitHubTokenReport.WriteString("\n\nA GitHub Personal Access Token is required to provision GitHub repositories and run workflows in GitHub.\n\n")
 
 	return gitHubTokenReport.String()
+}
+
+// LocalConnectSummary builds a string containing local service URLs
+func LocalConnectSummary() string {
+
+	var localConnect bytes.Buffer
+
+	localConnect.WriteString(strings.Repeat("-", 70))
+	localConnect.WriteString("\nKubefirst Local:\n")
+	localConnect.WriteString(strings.Repeat("-", 70))
+
+	localConnect.WriteString(fmt.Sprintf("\n\nKubefirst Console UI: %s\n", pkg.ConsoleUILocalURL))
+	localConnect.WriteString(fmt.Sprintf("ChartmuseumLocalURL: %s\n", pkg.ChartmuseumLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Argo: %s\n", pkg.ArgoLocalURL))
+	localConnect.WriteString(fmt.Sprintf("ArgoCD: %s\n", pkg.ArgoCDLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Vault: %s\n", pkg.VaultLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Atlantis: %s\n", pkg.AtlantisLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Minio: %s\n", pkg.MinioURL))
+	localConnect.WriteString(fmt.Sprintf("Minio Console: %s\n", pkg.MinioConsoleURL))
+
+	return localConnect.String()
 }
