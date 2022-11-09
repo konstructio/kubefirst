@@ -3,6 +3,12 @@ package local
 import (
 	"context"
 	"fmt"
+	"log"
+	"os/exec"
+	"sync"
+	"syscall"
+	"time"
+
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
@@ -22,11 +28,6 @@ import (
 	"github.com/segmentio/analytics-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"os/exec"
-	"sync"
-	"syscall"
-	"time"
 )
 
 var (
@@ -173,10 +174,10 @@ func runLocal(cmd *cobra.Command, args []string) error {
 			log.Println("Error installing k3d cluster")
 			return err
 		}
-		progressPrinter.IncrementTracker("step-base", 1)
 	} else {
 		log.Println("already created k3d cluster")
 	}
+	progressPrinter.IncrementTracker("step-base", 1)
 	progressPrinter.IncrementTracker("step-github", 1)
 
 	// add secrets to cluster
