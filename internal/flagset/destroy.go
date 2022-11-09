@@ -10,6 +10,7 @@ import (
 // DestroyFlags - Global flags
 type DestroyFlags struct {
 	SkipGitlabTerraform           bool
+	SkipGithubTerraform           bool
 	SkipDeleteRegistryApplication bool
 	SkipBaseTerraform             bool
 	HostedZoneDelete              bool
@@ -19,6 +20,7 @@ type DestroyFlags struct {
 // DefineDestroyFlags - Define global flags
 func DefineDestroyFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().Bool("skip-gitlab-terraform", false, "whether to skip the terraform destroy against gitlab - note: if you already deleted registry it doesnt exist")
+	currentCommand.Flags().Bool("skip-github-terraform", false, "whether to skip the terraform destroy against github - note: if you already deleted registry it doesnt exist")
 	currentCommand.Flags().Bool("skip-delete-register", false, "whether to skip deletion of register application")
 	currentCommand.Flags().Bool("skip-base-terraform", false, "whether to skip the terraform destroy against base install - note: if you already deleted registry it doesnt exist")
 
@@ -36,6 +38,13 @@ func ProcessDestroyFlags(cmd *cobra.Command) (DestroyFlags, error) {
 		return flags, err
 	}
 	flags.SkipGitlabTerraform = skipGitlabTerraform
+
+	skipGithubTerraform, err := ReadConfigBool(cmd, "skip-github-terraform")
+	if err != nil {
+		log.Printf("Error Processing - skip-github-terraform, error: %v", err)
+		return flags, err
+	}
+	flags.SkipGithubTerraform = skipGithubTerraform
 
 	skipDeleteRegistryApplication, err := ReadConfigBool(cmd, "skip-delete-register")
 	if err != nil {
