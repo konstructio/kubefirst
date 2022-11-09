@@ -63,9 +63,9 @@ func DownloadTools(config *configs.Config) error {
 	errorChannel := make(chan error)
 	wgDone := make(chan bool)
 	// create a waiting group (translating: create a queue of functions, and only pass the wg.Wait() function down
-	// bellow after all the wg.Add(4) functions are done (wg.Done)
+	// bellow after all the wg.Add(3) functions are done (wg.Done)
 	var wg sync.WaitGroup
-	wg.Add(4)
+	wg.Add(3)
 
 	go func() {
 		kVersion := config.KubectlVersion
@@ -200,28 +200,6 @@ func DownloadTools(config *configs.Config) error {
 
 		log.Println("Helm download finished")
 
-	}()
-
-	go func() {
-		consoleVersion := config.ConsoleVersion
-
-		consoleDownloadUrl := fmt.Sprintf("https://github.com/kubefirst/console/releases/download/%s/%s.zip", consoleVersion, consoleVersion)
-		log.Printf("Downloading console from %s", consoleDownloadUrl)
-		consoleDownloadZipPath := fmt.Sprintf("%s/tools/console.zip", config.K1FolderPath)
-		err = downloadFile(consoleDownloadZipPath, consoleDownloadUrl)
-		if err != nil {
-			errorChannel <- err
-			return
-		}
-
-		unzipConsoleDirectory := fmt.Sprintf("%s/tools/console", config.K1FolderPath)
-		err = unzip(consoleDownloadZipPath, unzipConsoleDirectory)
-		if err != nil {
-			errorChannel <- err
-			return
-		}
-		wg.Done()
-		log.Println("Console download finished")
 	}()
 
 	go func() {
