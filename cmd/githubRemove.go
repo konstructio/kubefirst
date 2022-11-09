@@ -28,7 +28,7 @@ var githubRemoveCmd = &cobra.Command{
 			return nil
 		}
 
-		log.Println("Org used:", viper.GetString("github.org"))
+		log.Println("Org used:", viper.GetString("github.owner"))
 		log.Println("dry-run:", globalFlags.DryRun)
 
 		if viper.GetBool("github.terraformapplied.gitops") {

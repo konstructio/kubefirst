@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -42,33 +43,11 @@ validated and configured.`,
 			return err
 		}
 
-		// command line flags
-		cloudValue, err := flagset.ReadConfigString(cmd, "cloud")
+		// github or gitlab
+		globalFlags, _, installerFlags, awsFlags, err := flagset.InitFlags(cmd)
+
 		if err != nil {
 			return err
-		}
-
-		if cloudValue == flagset.CloudK3d {
-			if config.GitHubPersonalAccessToken == "" {
-
-				httpClient := http.DefaultClient
-				gitHubService := services.NewGitHubService(httpClient)
-				gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-				gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
-				if err != nil {
-					return err
-				}
-
-				if len(gitHubAccessToken) == 0 {
-					return errors.New("unable to retrieve a GitHub token for the user")
-				}
-
-				// todo: set common way to load env. values (viper->struct->load-env)
-				if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
-					return err
-				}
-				log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
-			}
 		}
 
 		providerValue, err := flagset.ReadConfigString(cmd, "git-provider")
@@ -76,43 +55,34 @@ validated and configured.`,
 			return err
 		}
 
-		if providerValue == "github" {
-			if os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN") != "" {
-				viper.Set("github.token", os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN"))
-			} else {
-				log.Fatal("cannot create a cluster without a github auth token. please export your KUBEFIRST_GITHUB_AUTH_TOKEN in your terminal.")
+		gitHubAccessToken := config.GitHubPersonalAccessToken
+		httpClient := http.DefaultClient
+		gitHubService := services.NewGitHubService(httpClient)
+		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
+		if providerValue == pkg.GitHubProviderName && gitHubAccessToken == "" {
+
+			gitHubAccessToken, err = gitHubHandler.AuthenticateUser()
+			if err != nil {
+				return err
 			}
+
+			if gitHubAccessToken == "" {
+				return errors.New("cannot create a cluster without a github auth token. please export your " +
+					"KUBEFIRST_GITHUB_AUTH_TOKEN in your terminal",
+				)
+			}
+
+			// todo: set common way to load env. values (viper->struct->load-env)
+			if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
+				return err
+			}
+			log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
 		}
 
-		var globalFlags flagset.GlobalFlags
-		var installerFlags flagset.InstallerGenericFlags
-		var awsFlags flagset.AwsFlags
-		var githubFlags flagset.GithubAddCmdFlags
-
-		if cloudValue == pkg.CloudK3d {
-
-			globalFlags, _, installerFlags, awsFlags, err = flagset.InitFlags(cmd)
-			viper.Set("gitops.branch", "main")
-			viper.Set("github.owner", viper.GetString("github.user"))
-			viper.WriteConfig()
-
-			if installerFlags.BranchGitops = viper.GetString("gitops.branch"); err != nil {
-				return err
-			}
-			if installerFlags.BranchMetaphor = viper.GetString("metaphor.branch"); err != nil {
-				return err
-			}
-			if githubFlags.GithubOwner = viper.GetString("github.owner"); err != nil {
-				return err
-			}
-
-			if githubFlags.GithubUser = viper.GetString("github.user"); err != nil {
-				return err
-			}
-		} else {
-			// github or gitlab
-			globalFlags, githubFlags, installerFlags, awsFlags, err = flagset.InitFlags(cmd)
-		}
+		// get GitHub data to set user and owner based on the provided token
+		githubUser := gitHubHandler.GetGitHubUser(gitHubAccessToken)
+		viper.Set("github.user", githubUser)
+		err = viper.WriteConfig()
 		if err != nil {
 			return err
 		}
@@ -122,6 +92,13 @@ validated and configured.`,
 				"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
 				globalFlags.SilentMode,
 			)
+		}
+
+		if viper.GetString("cloud") != flagset.CloudAws {
+			log.Println("Not cloud mode attempt to create using cloud cli")
+			if err != nil {
+				return fmt.Errorf("not support mode of install via this command, only cloud install supported")
+			}
 		}
 
 		if len(awsFlags.AssumeRole) > 0 {
@@ -201,7 +178,11 @@ validated and configured.`,
 
 		atlantisWebhookSecret := pkg.Random(20)
 		viper.Set("github.atlantis.webhook.secret", atlantisWebhookSecret)
-
+		currentOwner, err := flagset.ReadConfigString(cmd, "github-owner")
+		if err != nil {
+			return err
+		}
+		viper.Set("github.owner", currentOwner)
 		viper.WriteConfig()
 
 		//! tracker 0
