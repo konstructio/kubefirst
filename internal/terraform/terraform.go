@@ -130,7 +130,7 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		nodes_graviton := viper.GetBool("aws.nodes_graviton")
 		if nodes_graviton {
 			envs["TF_VAR_ami_type"] = "AL2_ARM_64"
-			envs["TF_VAR_instance_type"] = "t3a.medium"
+			envs["TF_VAR_instance_type"] = "t4g.medium"
 		}
 
 		log.Println("tf env vars: ", envs)
@@ -193,7 +193,7 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		nodes_graviton := viper.GetBool("aws.nodes_graviton")
 		if nodes_graviton {
 			envs["TF_VAR_ami_type"] = "AL2_ARM_64"
-			envs["TF_VAR_instance_type"] = "t3a.medium"
+			envs["TF_VAR_instance_type"] = "t4g.medium"
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
