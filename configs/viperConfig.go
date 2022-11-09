@@ -38,7 +38,7 @@ import (
 
 const (
 	// The name of our config file, without the file extension because viper supports many different config file languages.
-	defaultConfigFilename = "kubefirst"
+	defaultConfigFilename = "kubefirst-config"
 
 	// The environment variable prefix of all environment variables bound to our command line flags.
 	// For example, --number is bound to STING_NUMBER.
