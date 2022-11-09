@@ -1,18 +1,10 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
-	"syscall"
-
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/kubefirst/kubefirst/internal/gitClient"
-	"github.com/kubefirst/kubefirst/internal/githubWrapper"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"log"
 	"time"
@@ -59,6 +51,13 @@ cluster provisioning process spinning up the services, and validates the livenes
 				"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
 				globalFlags.SilentMode,
 			)
+		}
+
+		if viper.GetString("cloud") != flagset.CloudAws {
+			log.Println("Not cloud mode attempt to create using cloud cli")
+			if err != nil {
+				return fmt.Errorf("not support mode of install via this command, only cloud install supported")
+			}
 		}
 
 		// todo remove this dependency from create.go
@@ -131,44 +130,25 @@ cluster provisioning process spinning up the services, and validates the livenes
 			return err
 		}
 
-		if viper.GetString("cloud") == flagset.CloudK3d {
-			// todo need to add go channel to control when ngrok should close
-			go pkg.RunNgrok(context.TODO(), pkg.LocalAtlantisURL)
-			time.Sleep(5 * time.Second)
-		}
-
 		if !viper.GetBool("kubefirst.done") {
 			if viper.GetString("gitprovider") == "github" {
 				log.Println("Installing Github version of Kubefirst")
 				viper.Set("git.mode", "github")
-				if viper.GetString("cloud") == flagset.CloudLocal {
-					// if not local it is AWS for now
-					err := createGithubK3dCmd.RunE(cmd, args)
-					if err != nil {
-						return err
-					}
-				} else {
-					// if not local it is AWS for now
-					err := createGithubCmd.RunE(cmd, args)
-					if err != nil {
-						return err
-					}
+				// if not local it is AWS for now
+				err := createGithubCmd.RunE(cmd, args)
+				if err != nil {
+					return err
 				}
 
 			} else {
 				log.Println("Installing GitLab version of Kubefirst")
 				viper.Set("git.mode", "gitlab")
-				if viper.GetString("cloud") == flagset.CloudLocal {
-					// We don't support gitlab on local yet
-					return errors.New("gitlab is not supported on kubefirst local")
-
-				} else {
-					// if not local it is AWS for now
-					err := createGitlabCmd.RunE(cmd, args)
-					if err != nil {
-						return err
-					}
+				// if not local it is AWS for now
+				err := createGitlabCmd.RunE(cmd, args)
+				if err != nil {
+					return err
 				}
+
 			}
 			viper.Set("kubefirst.done", true)
 			viper.WriteConfig()
@@ -176,56 +156,35 @@ cluster provisioning process spinning up the services, and validates the livenes
 			log.Println("already executed create command, continuing for readiness checks")
 		}
 
-		if viper.GetString("cloud") == flagset.CloudLocal {
-			if !viper.GetBool("chartmuseum.host.resolved") {
+		// Relates to issue: https://github.com/kubefirst/kubefirst/issues/386
+		// Metaphor needs chart museum for CI works
+		informUser("Waiting chartmuseum", globalFlags.SilentMode)
+		for i := 1; i < 10; i++ {
+			chartMuseum := gitlab.AwaitHostNTimes("chartmuseum", globalFlags.DryRun, 20)
+			if chartMuseum {
+				informUser("Chartmuseum DNS is ready", globalFlags.SilentMode)
+				break
+			}
+		}
+		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
+		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
+		if err != nil {
+			log.Printf("Failed to get clientset for k8s : %s", err)
+			return err
+		}
+		argocdPodClient := clientset.CoreV1().Pods("argocd")
+		err = k8s.RemoveSelfSignedCertArgoCD(argocdPodClient)
+		if err != nil {
+			log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
+		}
 
-				//* establish port-forward
-				var kPortForwardChartMuseum *exec.Cmd
-				kPortForwardChartMuseum, err = k8s.PortForward(globalFlags.DryRun, "chartmuseum", "svc/chartmuseum", "8181:8080")
-				defer func() {
-					err = kPortForwardChartMuseum.Process.Signal(syscall.SIGTERM)
-					if err != nil {
-						log.Println("Error closing kPortForwardChartMuseum")
-					}
-				}()
-				pkg.AwaitHostNTimes("http://localhost:8181/health", 5, 5)
-				viper.Set("chartmuseum.host.resolved", true)
-				viper.WriteConfig()
+		informUser("Checking if cluster is ready for use by metaphor apps", globalFlags.SilentMode)
+		for i := 1; i < 10; i++ {
+			err = k1ReadyCmd.RunE(cmd, args)
+			if err != nil {
+				log.Println(err)
 			} else {
-				log.Println("already resolved host for chartmuseum, continuing")
-			}
-
-		} else {
-			// Relates to issue: https://github.com/kubefirst/kubefirst/issues/386
-			// Metaphor needs chart museum for CI works
-			informUser("Waiting chartmuseum", globalFlags.SilentMode)
-			for i := 1; i < 10; i++ {
-				chartMuseum := gitlab.AwaitHostNTimes("chartmuseum", globalFlags.DryRun, 20)
-				if chartMuseum {
-					informUser("Chartmuseum DNS is ready", globalFlags.SilentMode)
-					break
-				}
-			}
-			informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
-			clientset, err := k8s.GetClientSet(globalFlags.DryRun)
-			if err != nil {
-				log.Printf("Failed to get clientset for k8s : %s", err)
-				return err
-			}
-			argocdPodClient := clientset.CoreV1().Pods("argocd")
-			err = k8s.RemoveSelfSignedCertArgoCD(argocdPodClient)
-			if err != nil {
-				log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
-			}
-
-			informUser("Checking if cluster is ready for use by metaphor apps", globalFlags.SilentMode)
-			for i := 1; i < 10; i++ {
-				err = k1ReadyCmd.RunE(cmd, args)
-				if err != nil {
-					log.Println(err)
-				} else {
-					break
-				}
+				break
 			}
 		}
 
@@ -241,103 +200,6 @@ cluster provisioning process spinning up the services, and validates the livenes
 			err = state.UploadKubefirstToStateStore(globalFlags.DryRun)
 			if err != nil {
 				log.Println(err)
-			}
-		}
-
-		//kPortForwardAtlantis, err := k8s.PortForward(globalFlags.DryRun, "atlantis", "svc/atlantis", "4141:80")
-		//defer func() {
-		//	err = kPortForwardAtlantis.Process.Signal(syscall.SIGTERM)
-		//	if err != nil {
-		//		log.Println("error closing kPortForwardAtlantis")
-		//	}
-		//}()
-
-		// ---
-		// todo: (start) we can remove it, the secrets are now coming from Vault (run a full installation after removing to confirm)
-		if viper.GetString("cloud") == flagset.CloudK3d {
-			clientset, err := k8s.GetClientSet(false)
-			atlantisSecrets, err := clientset.CoreV1().Secrets("atlantis").Get(context.TODO(), "atlantis-secrets", metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-
-			// todo: hardcoded
-			atlantisSecrets.Data["TF_VAR_vault_addr"] = []byte("http://vault.vault.svc.cluster.local:8200")
-			atlantisSecrets.Data["VAULT_ADDR"] = []byte("http://vault.vault.svc.cluster.local:8200")
-
-			_, err = clientset.CoreV1().Secrets("atlantis").Update(context.TODO(), atlantisSecrets, metav1.UpdateOptions{})
-			if err != nil {
-				return err
-			}
-
-			err = clientset.CoreV1().Pods("atlantis").Delete(context.TODO(), "atlantis-0", metav1.DeleteOptions{})
-			if err != nil {
-				log.Fatal(err)
-			}
-			log.Println("---debug---")
-			log.Println("sleeping after kill atlantis pod")
-			log.Println("---debug---")
-
-			time.Sleep(10 * time.Second)
-
-			log.Println("---debug---")
-			log.Println("new port forward atlantis")
-			log.Println("---debug---")
-			kPortForwardAtlantis, err := k8s.PortForward(false, "atlantis", "svc/atlantis", "4141:80")
-			defer func() {
-				err = kPortForwardAtlantis.Process.Signal(syscall.SIGTERM)
-				if err != nil {
-					log.Println("error closing kPortForwardAtlantis")
-				}
-			}()
-			// todo: (end)
-
-			// todo: wire it up in the architecture / files / folder
-
-			// update terraform s3 backend to internal k8s dns (s3/minio bucket)
-			err = pkg.ReplaceTerraformS3Backend()
-			if err != nil {
-				return err
-			}
-
-			// create a new branch and push changes
-			githubHost := viper.GetString("github.host")
-			githubOwner := viper.GetString("github.owner")
-			remoteName := "github"
-			localRepo := "gitops"
-			branchName := "update-s3-backend"
-			branchNameRef := plumbing.ReferenceName("refs/heads/" + branchName)
-
-			gitClient.UpdateLocalTerraformFilesAndPush(
-				githubHost,
-				githubOwner,
-				localRepo,
-				remoteName,
-				branchNameRef,
-			)
-
-			fmt.Println("sleeping after commit...")
-			time.Sleep(3 * time.Second)
-
-			// create a PR, atlantis will identify it's a terraform change/file update and,
-			// trigger atlantis plan
-			g := githubWrapper.New()
-			err = g.CreatePR(branchName)
-			if err != nil {
-				fmt.Println(err)
-			}
-			log.Println("sleeping after create PR...")
-			time.Sleep(5 * time.Second)
-			log.Println("sleeping... atlantis plan should be running")
-			time.Sleep(5 * time.Second)
-
-			fmt.Println("sleeping before apply...")
-			time.Sleep(120 * time.Second)
-
-			// after 120 seconds, it will comment in the PR with atlantis plan
-			err = g.CommentPR(1, "atlantis apply")
-			if err != nil {
-				fmt.Println(err)
 			}
 		}
 
