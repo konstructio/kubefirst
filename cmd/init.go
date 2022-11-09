@@ -178,7 +178,11 @@ validated and configured.`,
 
 		atlantisWebhookSecret := pkg.Random(20)
 		viper.Set("github.atlantis.webhook.secret", atlantisWebhookSecret)
-
+		currentOwner, err := flagset.ReadConfigString(cmd, "github-owner")
+		if err != nil {
+			return err
+		}
+		viper.Set("github.owner", currentOwner)
 		viper.WriteConfig()
 
 		//! tracker 0
