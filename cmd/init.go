@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -39,37 +40,9 @@ validated and configured.`,
 			return err
 		}
 
-		// command line flags
-		cloudValue, err := flagset.ReadConfigString(cmd, "cloud")
-		if err != nil {
-			return err
-		}
+		// github or gitlab
+		globalFlags, _, installerFlags, awsFlags, err := flagset.InitFlags(cmd)
 
-		var globalFlags flagset.GlobalFlags
-		var installerFlags flagset.InstallerGenericFlags
-		var awsFlags flagset.AwsFlags
-		var githubFlags flagset.GithubAddCmdFlags
-
-		if cloudValue == pkg.CloudK3d {
-
-			globalFlags, _, installerFlags, awsFlags, err = flagset.InitFlags(cmd)
-			viper.Set("gitops.branch", "main")
-			viper.Set("github.owner", viper.GetString("github.user"))
-			viper.WriteConfig()
-
-			if installerFlags.BranchGitops = viper.GetString("gitops.branch"); err != nil {
-				return err
-			}
-			if installerFlags.BranchMetaphor = viper.GetString("metaphor.branch"); err != nil {
-				return err
-			}
-			if githubFlags.GithubOwner = viper.GetString("github.owner"); err != nil {
-				return err
-			}
-		} else {
-			// github or gitlab
-			globalFlags, githubFlags, installerFlags, awsFlags, err = flagset.InitFlags(cmd)
-		}
 		if err != nil {
 			return err
 		}
@@ -79,6 +52,13 @@ validated and configured.`,
 				"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
 				globalFlags.SilentMode,
 			)
+		}
+
+		if viper.GetString("cloud") != flagset.CloudAws {
+			log.Println("Not cloud mode attempt to create using cloud cli")
+			if err != nil {
+				return fmt.Errorf("not support mode of install via this command, only cloud install supported")
+			}
 		}
 
 		if len(awsFlags.AssumeRole) > 0 {
