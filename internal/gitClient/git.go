@@ -19,6 +19,12 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// Github - git-provider github
+const Github = "github"
+
+// Gitlab - git-provider github
+const Gitlab = "gitlab"
+
 // CloneRepoAndDetokenizeTemplate - clone repo using CloneRepoAndDetokenizeTemplate that uses fallback rule to try to capture version
 func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, branch string, tag string) (string, error) {
 	config := configs.ReadConfig()

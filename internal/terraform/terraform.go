@@ -196,6 +196,7 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		}
 		viper.Set("destroy.terraformdestroy.base", true)
 		viper.WriteConfig()
+		log.Println("terraform base destruction complete")
 	} else {
 		log.Println("skip:  destroyBaseTerraform")
 	}
