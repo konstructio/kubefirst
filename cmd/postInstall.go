@@ -3,7 +3,6 @@ package cmd
 import (
 	"log"
 	"time"
-	"fmt"
 
 	"github.com/kubefirst/kubefirst/internal/k8s"
 
@@ -21,8 +20,6 @@ var postInstallCmd = &cobra.Command{
 	Short: "starts post install process",
 	Long:  "Starts post install process to open the Console UI",
 	RunE: func(cmd *cobra.Command, args []string) error {
-
-		clusterConsoleURL := fmt.Sprintf("https://kubefirst.%s", viper.GetString("aws.hostedzonename"))
 		// todo: temporary
 		//flagset.DefineGlobalFlags(cmd)
 		if viper.GetString("cloud") == flagset.CloudLocal {
@@ -41,12 +38,17 @@ var postInstallCmd = &cobra.Command{
 
 		cloud := viper.GetString("cloud")
 		if createFlags.EnableConsole && cloud != pkg.CloudK3d {
-			err = pkg.IsConsoleUIAvailable(clusterConsoleURL)
+			err := k8s.OpenPortForwardForCloudConConsole()
 			if err != nil {
 				log.Println(err)
 			}
 
-			err := pkg.OpenBrowser(clusterConsoleURL)
+			err = pkg.IsConsoleUIAvailable(pkg.ConsoleUILocalURL)
+			if err != nil {
+				log.Println(err)
+			}
+
+			err = pkg.OpenBrowser(pkg.ConsoleUILocalURL)
 			if err != nil {
 				log.Println(err)
 			}

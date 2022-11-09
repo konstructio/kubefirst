@@ -461,6 +461,24 @@ func SetArgocdCreds(dryRun bool) {
 }
 
 // todo: this is temporary
+func OpenPortForwardForCloudConConsole() error {
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Cloud Console UI
+	go func() {
+		_, err := PortForward(false, "kubefirst", "svc/kubefirst-console", "9094:80")
+		if err != nil {
+			log.Println("error opening Kubefirst-console port forward")
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	return nil
+}
+
 func OpenPortForwardForKubeConConsole() error {
 
 	var wg sync.WaitGroup
