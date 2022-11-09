@@ -190,6 +190,11 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		if nodes_spot {
 			envs["TF_VAR_capacity_type"] = "SPOT"
 		}
+		nodes_graviton := viper.GetBool("aws.nodes_graviton")
+		if nodes_graviton {
+			envs["TF_VAR_ami_type"] = "AL2_ARM_64"
+			envs["TF_VAR_instance_types"] = "m6g.medium"
+		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
