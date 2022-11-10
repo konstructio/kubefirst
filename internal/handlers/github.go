@@ -84,8 +84,8 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 
 	// todo: improve the logic for the counter
 	var gitHubAccessToken string
-	var attempts = 10
-	var attemptsControl = attempts + 90
+	var attempts = 18       // 18 * 5 = 90 seconds
+	var secondsControl = 95 // 95 to start with 95-5=90
 	for i := 0; i < attempts; i++ {
 		gitHubAccessToken, err = handler.service.CheckUserCodeConfirmation(gitHubDeviceFlow.DeviceCode)
 		if err != nil {
@@ -97,11 +97,12 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 			return gitHubAccessToken, nil
 		}
 
-		fmt.Printf("\rwaiting for authorization (%d seconds)", (attemptsControl)-5)
-		attemptsControl -= 5
+		secondsControl -= 5
+		fmt.Printf("\rwaiting for authorization (%d seconds)", secondsControl)
 		// todo: handle github interval https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps#response-parameters
 		time.Sleep(5 * time.Second)
 	}
+	fmt.Println("") // will avoid writing the next print in the same line
 	return gitHubAccessToken, nil
 }
 
