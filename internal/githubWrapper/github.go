@@ -3,14 +3,15 @@ package githubWrapper
 import (
 	"context"
 	"fmt"
-	"github.com/google/go-github/v45/github"
-	"github.com/spf13/viper"
-	"golang.org/x/oauth2"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/google/go-github/v45/github"
+	"github.com/spf13/viper"
+	"golang.org/x/oauth2"
 )
 
 type GithubSession struct {
@@ -87,6 +88,19 @@ func (g GithubSession) RemoveRepo(owner string, name string) error {
 		return fmt.Errorf("error removing private repo: %s - %s", name, err)
 	}
 	log.Printf("Successfully removed repo: %v\n", name)
+	return nil
+}
+
+// RemoveTeam - Remove  a team
+func (g GithubSession) RemoveTeam(owner string, team string) error {
+	if team == "" {
+		log.Fatal("No name:  repos must be given a name")
+	}
+	_, err := g.gitClient.Teams.DeleteTeamBySlug(g.context, owner, team)
+	if err != nil {
+		return fmt.Errorf("error removing team: %s - %s", team, err)
+	}
+	log.Printf("Successfully removed team: %v\n", team)
 	return nil
 }
 
