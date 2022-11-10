@@ -31,20 +31,24 @@ var addCiCmd = &cobra.Command{
 			return err
 		}
 
+		log.Print("Creating bucket...")
 		bucketName, err := ciTools.CreateBucket()
 		if err != nil {
 			return err
 		}
 
+		if viper.GetString("gitprovider") == "gitlab" {
+			log.Print("Deploying CI on Gitlab...")
+			ciTools.DeployOnGitlab(globalFlags, bucketName)
+		}
+
+		log.Print("Applying templates...")
 		err = ciTools.ApplyTemplates(globalFlags)
 		if err != nil {
 			return err
 		}
 
-		if viper.GetString("gitprovider") == "gitlab" {
-			ciTools.DeployOnGitlab(globalFlags, bucketName)
-		}
-
+		log.Print("Applying terraform...")
 		ciTools.ApplyCITerraform(globalFlags.DryRun, bucketName)
 
 		log.Println(ciFlags)

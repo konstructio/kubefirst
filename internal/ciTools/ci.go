@@ -45,9 +45,9 @@ func DeployOnGitlab(globalFlags flagset.GlobalFlags, bucketName string) error {
 	workflowLocation := fmt.Sprintf("%s/ci/.gitlab-ci.yml", config.K1FolderPath)
 
 	if viper.GetString("ci.flavor") == "github" {
-		ciLocation = fmt.Sprintf("%s/ci/components/argo-github/ci.yaml", config.K1FolderPath)
+		ciLocation = fmt.Sprintf("%s/ci/.argo/ci-github.yaml", config.K1FolderPath)
 	} else {
-		ciLocation = fmt.Sprintf("%s/ci/components/argo-gitlab/ci.yaml", config.K1FolderPath)
+		ciLocation = fmt.Sprintf("%s/ci/.argo/ci-gitlab.yaml", config.K1FolderPath)
 	}
 
 	err = DetokenizeCI("<CI_GITOPS_BRANCH>", viper.GetString("ci.gitops.branch"), ciLocation)
@@ -76,7 +76,7 @@ func DeployOnGitlab(globalFlags flagset.GlobalFlags, bucketName string) error {
 	if err != nil {
 		log.Println(err)
 	}
-	err = DetokenizeCI("<CI_KUBEFIRST_BRANCH>", viper.GetString("ci.kubefirst.branch"), workflowLocation)
+	err = DetokenizeCI("<CI_KUBEFIRST_BRANCH>", viper.GetString("ci.kubefirst.branch"), ciLocation)
 	if err != nil {
 		log.Println(err)
 	}
@@ -158,7 +158,7 @@ func ApplyTemplates(globalFlags flagset.GlobalFlags) error {
 		return nil
 	}
 
-	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argo", "apply", "-f", fmt.Sprintf("%s/ci/components/templates/cwft-k1-ci.yaml", config.K1FolderPath))
+	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argo", "apply", "-f", fmt.Sprintf("%s/ci/components/cwft-k1-ci.yaml", config.K1FolderPath))
 	if err != nil {
 		log.Printf("failed to execute kubectl apply of cwft-k1-ci: %s", err)
 		return err
@@ -178,7 +178,7 @@ func DeleteTemplates(globalFlags flagset.GlobalFlags) error {
 		return nil
 	}
 
-	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argo", "delete", "-f", fmt.Sprintf("%s/ci/components/templates/cwft-k1-ci.yaml", config.K1FolderPath))
+	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argo", "delete", "-f", fmt.Sprintf("%s/ci/components/cwft-k1-ci.yaml", config.K1FolderPath))
 	if err != nil {
 		log.Printf("failed to execute kubectl delete of cwft-k1-ci: %s", err)
 		return err
