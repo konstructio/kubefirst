@@ -278,12 +278,12 @@ func LocalHandoffScreen(dryRun bool, silentMode bool) {
 func GitHubAuthToken(userCode, verificationUri string) string {
 	var gitHubTokenReport bytes.Buffer
 	gitHubTokenReport.WriteString(strings.Repeat("-", 69))
-	gitHubTokenReport.WriteString("\nNo KUBEFIRST_GITHUB_AUTH_TOKEN env variable found!\nUse the code below to get a temporary GitHub Personal Access Token and continue\n")
+	gitHubTokenReport.WriteString("\nNo KUBEFIRST_GITHUB_AUTH_TOKEN env variable found!\nUse the code below to get a temporary GitHub Access Token and continue\n")
 	gitHubTokenReport.WriteString(strings.Repeat("-", 69) + "\n")
 	gitHubTokenReport.WriteString("1. copy the code: 📋 " + userCode + " 📋\n\n")
 	gitHubTokenReport.WriteString("2. paste the code at the GitHub page: " + verificationUri + "\n")
 	gitHubTokenReport.WriteString("3. authorize your organization")
-	gitHubTokenReport.WriteString("\n\nA GitHub Personal Access Token is required to provision GitHub repositories and run workflows in GitHub.\n\n")
+	gitHubTokenReport.WriteString("\n\nA GitHub Access Token is required to provision GitHub repositories and run workflows in GitHub.")
 
 	return gitHubTokenReport.String()
 }
