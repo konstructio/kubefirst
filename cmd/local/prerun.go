@@ -110,8 +110,10 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	httpClient := http.DefaultClient
 	gitHubService := services.NewGitHubService(httpClient)
 	gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-	if config.GitHubPersonalAccessToken == "" {
-		gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
+
+	gitHubAccessToken := config.GitHubPersonalAccessToken
+	if gitHubAccessToken == "" {
+		gitHubAccessToken, err = gitHubHandler.AuthenticateUser()
 		if err != nil {
 			return err
 		}
@@ -129,7 +131,10 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	// get GitHub data to set user and owner based on the provided token
-	githubUser := gitHubHandler.GetGitHubUser(config.GitHubPersonalAccessToken)
+	githubUser, err := gitHubHandler.GetGitHubUser(gitHubAccessToken)
+	if err != nil {
+		return err
+	}
 
 	viper.Set("github.user", githubUser)
 	viper.Set("github.owner", githubUser)

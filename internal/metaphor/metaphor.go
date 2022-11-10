@@ -120,6 +120,11 @@ func DeployMetaphorGithubLocal(dryRun bool, gitHubOwner string, metaphorBranch s
 		log.Println("error renaming metaphor-repos.md to metaphor-repos.tf", err)
 	}
 
+	err = os.Rename(fmt.Sprintf("%s/%s", tfEntrypoint, "remote-backend.md"), fmt.Sprintf("%s/%s", tfEntrypoint, "remote-backend.tf"))
+	if err != nil {
+		log.Println("error renaming remote-backend.md to remote-backend.tf", err)
+	}
+
 	gitClient.PushLocalRepoUpdates(pkg.GitHubHost, gitHubOwner, "gitops", "github")
 	terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
 
