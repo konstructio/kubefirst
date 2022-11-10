@@ -48,7 +48,6 @@ var destroyCmd = &cobra.Command{
 		}
 
 		log.Println("terraform base destruction complete")
-		fmt.Println("End of execution destroy")
 		time.Sleep(time.Millisecond * 100)
 
 		return nil
