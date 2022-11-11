@@ -14,9 +14,11 @@ This is an initial implementation of Config. Please keep in mind we're still wor
 environment variables and general config data.
 */
 
+const DefaultK1Version = "development"
+
 // K1Version is used on version command. The value is dynamically updated on build time via ldflag. Built Kubefirst
 // versions will follow semver value like 1.9.0, when not using the built version, "development" is used.
-var K1Version = "development"
+var K1Version = DefaultK1Version
 
 // Config host application configuration
 // todo: some of these values can be moved to the .env

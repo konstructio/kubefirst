@@ -78,6 +78,19 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		)
 	}
 
+	// if non-development/built/released version, set template tag version to clone tagged templates, in that way
+	// the current built version, uses the same template version.
+	// example: kubefirst version 1.10.3, has template repositories (gitops and metaphor's) tags set as 1.10.3
+	// when Kubefirst download the templates, it will download the tag version that matches Kubefirst version
+	if configs.K1Version != configs.DefaultK1Version {
+		log.Println("loading tag values for built version")
+		log.Printf("Kubefirst version %q, tags %q", configs.K1Version, config.K3dVersion)
+		// in order to make the fallback tags work, set gitops branch as empty
+		gitOpsBranch = ""
+		templateTag = configs.K1Version
+		viper.Set("template.tag", templateTag)
+	}
+
 	// set default values to kubefirst file
 	viper.Set("gitops.repo", gitOpsRepo)
 	viper.Set("gitops.owner", "kubefirst")
