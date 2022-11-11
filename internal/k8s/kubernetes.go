@@ -485,17 +485,25 @@ func OpenPortForwardForKubeConConsole() error {
 	wg.Add(8)
 	// argo workflows
 	go func() {
-		_, err := PortForward(false, "argo", "svc/argo-server", "2746:2746")
+		output, err := PortForward(false, "argo", "svc/argo-server", "2746:2746")
 		if err != nil {
 			log.Println("error opening Argo Workflows port forward")
+		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
 		}
 		wg.Done()
 	}()
 	// argocd
 	go func() {
-		_, err := PortForward(false, "argocd", "svc/argocd-server", "8080:80")
+		output, err := PortForward(false, "argocd", "svc/argocd-server", "8080:80")
 		if err != nil {
 			log.Println("error opening ArgoCD port forward")
+		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
 		}
 		wg.Done()
 	}()
@@ -511,45 +519,66 @@ func OpenPortForwardForKubeConConsole() error {
 
 	// chartmuseum
 	go func() {
-		_, err := PortForward(false, "chartmuseum", "svc/chartmuseum", "8181:8080")
+		output, err := PortForward(false, "chartmuseum", "svc/chartmuseum", "8181:8080")
 		if err != nil {
 			log.Println("error opening Chartmuseum port forward")
+		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
 		}
 		wg.Done()
 	}()
 
 	// vault
 	go func() {
-		_, err := PortForward(false, "vault", "svc/vault", "8200:8200")
+		output, err := PortForward(false, "vault", "svc/vault", "8200:8200")
 		if err != nil {
 			log.Println("error opening Vault port forward")
 		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
+		}
+
 		wg.Done()
 	}()
 
 	// minio
 	go func() {
-		_, err := PortForward(false, "minio", "svc/minio", "9000:9000")
+		output, err := PortForward(false, "minio", "svc/minio", "9000:9000")
 		if err != nil {
 			log.Println("error opening Minio port forward")
+		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
 		}
 		wg.Done()
 	}()
 
 	// minio console
 	go func() {
-		_, err := PortForward(false, "minio", "svc/minio-console", "9001:9001")
+		output, err := PortForward(false, "minio", "svc/minio-console", "9001:9001")
 		if err != nil {
 			log.Println("error opening Minio-console port forward")
+		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
 		}
 		wg.Done()
 	}()
 
 	// Kubecon console ui
 	go func() {
-		_, err := PortForward(false, "kubefirst", "svc/kubefirst-console", "9094:80")
+		output, err := PortForward(false, "kubefirst", "svc/kubefirst-console", "9094:80")
 		if err != nil {
 			log.Println("error opening Kubefirst-console port forward")
+		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
 		}
 		wg.Done()
 	}()
@@ -562,9 +591,14 @@ func OpenPortForwardForKubeConConsole() error {
 // OpenAtlantisPortForward opens port forward for Atlantis
 func OpenAtlantisPortForward() error {
 
-	_, err := PortForward(false, "atlantis", "svc/atlantis", "4141:80")
+	output, err := PortForward(false, "atlantis", "svc/atlantis", "4141:80")
 	if err != nil {
 		return errors.New("error opening Atlantis port forward")
 	}
+	stderr := fmt.Sprint(output.Stderr)
+	if len(stderr) > 0 {
+		return errors.New(stderr)
+	}
+
 	return nil
 }
