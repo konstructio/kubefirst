@@ -6,12 +6,13 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/kubefirst/kubefirst/pkg"
 	"log"
 	"net/http"
 	"os"
 	"syscall"
 	"time"
+
+	"github.com/kubefirst/kubefirst/pkg"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/flagset"
@@ -113,7 +114,7 @@ var destroyLocalGithubCmd = &cobra.Command{
 		if githubTfApplied {
 			informUser("terraform destroying github resources", globalFlags.SilentMode)
 			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
-			terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+			terraform.InitReconfigureDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
 			informUser("successfully destroyed github resources", globalFlags.SilentMode)
 		}
 
