@@ -95,6 +95,8 @@ var destroyLocalGithubCmd = &cobra.Command{
 		//* step 1.3 - open port-forward to state store and terraform destroy github
 		kPortForwardMinio, err := k8s.PortForward(globalFlags.DryRun, "minio", "svc/minio", "9000:9000")
 		time.Sleep(20 * time.Second)
+
+		//* step 1.3 - terraform destroy github
 		githubTfApplied := viper.GetBool("terraform.github.apply.complete")
 		if githubTfApplied {
 			informUser("terraform destroying github resources", globalFlags.SilentMode)
