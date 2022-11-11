@@ -82,8 +82,15 @@ var destroyLocalGithubCmd = &cobra.Command{
 
 		// todo add progress bars to this
 
-		//* step 1.1 - open port-forward to vault
+		//* step 1.1 - open port-forward to state store and vault
 		// todo --skip-git-terraform
+		kPortForwardMinio, err := k8s.PortForward(globalFlags.DryRun, "minio", "svc/minio", "9000:9000")
+		defer func() {
+			err = kPortForwardMinio.Process.Signal(syscall.SIGTERM)
+			if err != nil {
+				log.Println("Error closing kPortForwardMinio")
+			}
+		}()
 		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
 		defer func() {
 			err = kPortForwardVault.Process.Signal(syscall.SIGTERM)
@@ -92,8 +99,6 @@ var destroyLocalGithubCmd = &cobra.Command{
 			}
 		}()
 
-		//* step 1.3 - open port-forward to state store and terraform destroy github
-		kPortForwardMinio, err := k8s.PortForward(globalFlags.DryRun, "minio", "svc/minio", "9000:9000")
 		time.Sleep(20 * time.Second)
 
 		//* step 1.3 - terraform destroy github
@@ -104,13 +109,6 @@ var destroyLocalGithubCmd = &cobra.Command{
 			terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
 			informUser("successfully destroyed github resources", globalFlags.SilentMode)
 		}
-
-		defer func() {
-			err = kPortForwardMinio.Process.Signal(syscall.SIGTERM)
-			if err != nil {
-				log.Println("Error closing kPortForwardMinio")
-			}
-		}()
 
 		//* step 2 - delete k3d cluster
 		// this could be useful for us to chase down in eks and destroy everything
