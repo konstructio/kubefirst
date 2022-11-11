@@ -303,8 +303,6 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 
 	localDirectory := fmt.Sprintf("%s/%s", cfg.K1FolderPath, localRepo)
 
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate", cfg.K1FolderPath))
-
 	log.Println("opening repository with gitClient: ", localDirectory)
 	repo, err := git.PlainOpen(localDirectory)
 	if err != nil {
