@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -22,6 +23,10 @@ type GitHubDeviceFlow struct {
 	VerificationUri string `json:"verification_uri"`
 	ExpiresIn       int    `json:"expires_in"`
 	Interval        int    `json:"interval"`
+}
+
+type GitHubUser struct {
+	Login string `json:"login"`
 }
 
 // GitHubHandler receives a GitHubService
@@ -107,37 +112,47 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 }
 
 // todo: make it a method
-func (handler GitHubHandler) GetGitHubUser(gitHubAccessToken string) string {
+func (handler GitHubHandler) GetGitHubUser(gitHubAccessToken string) (string, error) {
 
 	req, err := http.NewRequest(http.MethodGet, "https://api.github.com/user", nil)
 	if err != nil {
 		log.Println("error setting request")
 	}
+
 	req.Header.Add("Content-Type", pkg.JSONContentType)
 	req.Header.Add("Accept", "application/vnd.github+json")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", gitHubAccessToken))
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error doing request")
+		return "", err
 	}
 
 	defer res.Body.Close()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error unmarshalling request")
+		return "", err
 	}
 
-	type GitHubUser struct {
-		Login string `json:"login"`
+	if res.StatusCode != http.StatusOK {
+		return "", fmt.Errorf(
+			"something went wrong calling GitHub API, http status code is: %d, and response is: %q",
+			res.StatusCode,
+			string(body),
+		)
 	}
 
 	var githubUser GitHubUser
 	err = json.Unmarshal(body, &githubUser)
 	if err != nil {
-		log.Println(err)
+		return "", err
 	}
+
+	if len(githubUser.Login) == 0 {
+		return "", errors.New("unable to retrieve username via GitHub API")
+	}
+
 	log.Println("GitHub user: ", githubUser.Login)
-	return githubUser.Login
+	return githubUser.Login, nil
 
 }

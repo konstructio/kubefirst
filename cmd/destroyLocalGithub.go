@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -12,6 +11,8 @@ import (
 	"os"
 	"syscall"
 	"time"
+
+	"github.com/kubefirst/kubefirst/pkg"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/flagset"
@@ -81,6 +82,12 @@ var destroyLocalGithubCmd = &cobra.Command{
 			log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
 		}
 
+		// todo: temporary code
+		err = pkg.ReplaceTerraformS3BackendBack()
+		if err != nil {
+			return err
+		}
+
 		// todo add progress bars to this
 
 		//* step 1.1 - open port-forward to state store and vault
@@ -100,12 +107,14 @@ var destroyLocalGithubCmd = &cobra.Command{
 			}
 		}()
 
+		time.Sleep(20 * time.Second)
+
 		//* step 1.3 - terraform destroy github
 		githubTfApplied := viper.GetBool("terraform.github.apply.complete")
 		if githubTfApplied {
 			informUser("terraform destroying github resources", globalFlags.SilentMode)
 			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
-			terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+			terraform.InitReconfigureDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
 			informUser("successfully destroyed github resources", globalFlags.SilentMode)
 		}
 

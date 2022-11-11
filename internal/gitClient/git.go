@@ -415,6 +415,10 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 	localDirectory := fmt.Sprintf("%s/%s", cfg.K1FolderPath, localRepo)
 	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform", cfg.K1FolderPath))
 	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform.lock.hcl", cfg.K1FolderPath))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform", cfg.K1FolderPath))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform.lock.hcl", cfg.K1FolderPath))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate", cfg.K1FolderPath))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate.backup", cfg.K1FolderPath))
 
 	log.Println("opening repository with gitClient: ", localDirectory)
 	repo, err := git.PlainOpen(localDirectory)
@@ -441,8 +445,13 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 	log.Println("Committing new changes... PushLocalRepoUpdates")
 
 	if viper.GetString("gitprovider") == "github" {
-		kubefirstGitHubFile := "terraform/users/kubefirst-github.tf"
-		_, err = w.Add(kubefirstGitHubFile)
+		gitHubRemoteBackendFiled := "terraform/users/kubefirst-github.tf"
+		_, err = w.Add(gitHubRemoteBackendFiled)
+		if err != nil {
+			log.Println(err)
+		}
+		remoteBackendFile := "terraform/github/remote-backend.tf"
+		_, err = w.Add(remoteBackendFile)
 		if err != nil {
 			log.Println(err)
 		}
