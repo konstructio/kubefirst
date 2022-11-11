@@ -527,7 +527,7 @@ func ReplaceTerraformS3BackendBack() error {
 	}
 
 	// update GitHub Terraform content
-	if viper.GetString("gitprovider") == "github" {
+	if viper.GetString("gitprovider") == "github" && viper.GetString("cloud") == CloudK3d {
 		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
 		kubefirstGitHubFile, err := os.ReadFile(fullPathKubefirstGitHubFile)
 		if err != nil {
