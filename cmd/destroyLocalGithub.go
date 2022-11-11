@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -99,6 +98,8 @@ var destroyLocalGithubCmd = &cobra.Command{
 				log.Println("Error closing kPortForwardVault")
 			}
 		}()
+
+		time.Sleep(20 * time.Second)
 
 		//* step 1.3 - terraform destroy github
 		githubTfApplied := viper.GetBool("terraform.github.apply.complete")

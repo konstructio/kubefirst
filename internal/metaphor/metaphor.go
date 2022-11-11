@@ -126,7 +126,7 @@ func DeployMetaphorGithubLocal(dryRun bool, gitHubOwner string, metaphorBranch s
 	}
 
 	gitClient.PushLocalRepoUpdates(pkg.GitHubHost, gitHubOwner, "gitops", "github")
-	terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
+	terraform.InitMigrateApplyAutoApprove(dryRun, tfEntrypoint)
 
 	repos := [3]string{"metaphor", "metaphor-go", "metaphor-frontend"}
 	for _, element := range repos {

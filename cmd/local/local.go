@@ -318,6 +318,8 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
+	time.Sleep(20 * time.Second)
+
 	// configure vault with terraform
 	executionControl = viper.GetBool("terraform.vault.apply.complete")
 	if !executionControl {
