@@ -6,6 +6,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/kubefirst/kubefirst/pkg"
 	"log"
 	"net/http"
 	"os"
@@ -78,6 +79,12 @@ var destroyLocalGithubCmd = &cobra.Command{
 				return err
 			}
 			log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
+		}
+
+		// todo: temporary code
+		err = pkg.ReplaceTerraformS3BackendBack()
+		if err != nil {
+			return err
 		}
 
 		// todo add progress bars to this
