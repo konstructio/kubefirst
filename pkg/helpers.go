@@ -3,7 +3,6 @@ package pkg
 import (
 	"errors"
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"log"
 	"math/rand"
 	"net/http"
@@ -13,6 +12,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/viper"
@@ -518,7 +519,7 @@ func ReplaceTerraformS3BackendBack() error {
 	if err != nil {
 		return err
 	}
-	newContents := strings.Replace(string(file), "http://minio.minio.svc.cluster.local:9000", "http://127.0.0.1:9000 ", -1)
+	newContents := strings.Replace(string(file), "http://minio.minio.svc.cluster.local:9000", "http://127.0.0.1:9000", -1)
 
 	err = os.WriteFile(vaultMainFile, []byte(newContents), 0)
 	if err != nil {
@@ -532,7 +533,7 @@ func ReplaceTerraformS3BackendBack() error {
 		if err != nil {
 			return err
 		}
-		kubefirstGitHubChange := strings.Replace(string(kubefirstGitHubFile), "http://minio.minio.svc.cluster.local:9000", "http://127.0.0.1:9000 ", -1)
+		kubefirstGitHubChange := strings.Replace(string(kubefirstGitHubFile), "http://minio.minio.svc.cluster.local:9000", "http://127.0.0.1:9000", -1)
 
 		err = os.WriteFile(fullPathKubefirstGitHubFile, []byte(kubefirstGitHubChange), 0)
 		if err != nil {
@@ -545,7 +546,7 @@ func ReplaceTerraformS3BackendBack() error {
 		if err != nil {
 			return err
 		}
-		remoteBackendChange := strings.Replace(string(remoteBackendFile), "http://minio.minio.svc.cluster.local:9000", "http://127.0.0.1:9000 ", -1)
+		remoteBackendChange := strings.Replace(string(remoteBackendFile), "http://minio.minio.svc.cluster.local:9000", "http://127.0.0.1:9000", -1)
 
 		err = os.WriteFile(fullPathRemoteBackendFile, []byte(remoteBackendChange), 0)
 		if err != nil {
