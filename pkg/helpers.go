@@ -461,6 +461,7 @@ func ReplaceTerraformS3Backend() error {
 
 	config := configs.ReadConfig()
 
+	// todo: create a function for file content replacement
 	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", config.K1FolderPath)
 
 	file, err := os.ReadFile(vaultMainFile)
@@ -474,15 +475,29 @@ func ReplaceTerraformS3Backend() error {
 		return err
 	}
 
+	// update GitHub Terraform content
 	if viper.GetString("gitprovider") == "github" {
-		kubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
-		file2, err := os.ReadFile(kubefirstGitHubFile)
+		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
+		kubefirstGitHubFile, err := os.ReadFile(fullPathKubefirstGitHubFile)
 		if err != nil {
 			return err
 		}
-		newContents2 := strings.Replace(string(file2), "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000", -1)
+		kubefirstGitHubChange := strings.Replace(string(kubefirstGitHubFile), "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000", -1)
 
-		err = os.WriteFile(kubefirstGitHubFile, []byte(newContents2), 0)
+		err = os.WriteFile(fullPathKubefirstGitHubFile, []byte(kubefirstGitHubChange), 0)
+		if err != nil {
+			return err
+		}
+
+		// change remote-backend.tf
+		fullPathRemoteBackendFile := fmt.Sprintf("%s/gitops/terraform/github/remote-backend.tf", config.K1FolderPath)
+		remoteBackendFile, err := os.ReadFile(fullPathRemoteBackendFile)
+		if err != nil {
+			return err
+		}
+		remoteBackendChange := strings.Replace(string(remoteBackendFile), "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000", -1)
+
+		err = os.WriteFile(fullPathRemoteBackendFile, []byte(remoteBackendChange), 0)
 		if err != nil {
 			return err
 		}
