@@ -325,7 +325,7 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 			log.Println("error getting worktree status", err)
 		}
 	}
-	w.Commit("setting new remote upstream to github", &git.CommitOptions{
+	w.Commit("[ci skip] setting new remote upstream to github", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
 			Email: "kubefirst-bot@kubefirst.com",

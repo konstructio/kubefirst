@@ -127,7 +127,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 			log.Println("error getting worktree status", err)
 		}
 	}
-	w.Commit(fmt.Sprintf("committing detokenized %s content", repoName), &git.CommitOptions{
+	w.Commit(fmt.Sprintf("[ci skip] committing detokenized %s content", repoName), &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
 			Email: "kubefirst-bot@kubefirst.com",
