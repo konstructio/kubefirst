@@ -43,12 +43,12 @@ var postInstallCmd = &cobra.Command{
 				log.Println(err)
 			}
 
-			err = pkg.IsConsoleUIAvailable(pkg.ConsoleUILocalURL)
+			err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURL)
 			if err != nil {
 				log.Println(err)
 			}
 
-			err = pkg.OpenBrowser(pkg.ConsoleUILocalURL)
+			err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURL)
 			if err != nil {
 				log.Println(err)
 			}
@@ -64,12 +64,12 @@ var postInstallCmd = &cobra.Command{
 				log.Println(err)
 			}
 
-			err = pkg.IsConsoleUIAvailable(pkg.ConsoleUILocalURL)
+			err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURL)
 			if err != nil {
 				log.Println(err)
 			}
-			err = pkg.OpenBrowser(pkg.ConsoleUILocalURL)
-			if pkg.OpenBrowser(pkg.ConsoleUILocalURL) != nil {
+			err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURL)
+			if pkg.OpenBrowser(pkg.KubefirstConsoleLocalURL) != nil {
 				log.Println(err)
 			}
 		}

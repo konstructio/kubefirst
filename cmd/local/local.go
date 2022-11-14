@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os/exec"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing"
@@ -72,6 +70,9 @@ func NewCommand() *cobra.Command {
 
 	// on error, doesnt show helper/usage
 	localCmd.SilenceUsage = true
+
+	// wire up new commands
+	localCmd.AddCommand(NewCommandConnect())
 
 	return localCmd
 }
@@ -143,7 +144,6 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 
-	var kPortForwardArgocd *exec.Cmd
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), silentMode)
 
 	executionControl := viper.GetBool("terraform.github.apply.complete")
@@ -249,14 +249,18 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		log.Println("already waited for argocd to be ready")
 	}
 
-	// establish port-forward
-	kPortForwardArgocd, err := k8s.PortForward(dryRun, "argocd", "svc/argocd-server", "8080:80")
+	// ArgoCD port-forward
+	argoCDStopChannel := make(chan struct{}, 1)
 	defer func() {
-		err = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Println("Error closing kPortForwardArgocd")
-		}
+		close(argoCDStopChannel)
 	}()
+	k8s.OpenPortForwardWrapper(
+		pkg.ArgoCDPodName,
+		pkg.ArgoCDNamespace,
+		pkg.ArgoCDPodPort,
+		pkg.ArgoCDPodLocalPort,
+		argoCDStopChannel,
+	)
 	pkg.InformUser(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")), silentMode)
 
 	// argocd pods are ready, get and set credentials
@@ -278,7 +282,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.registry.applied")
 	if !executionControl {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
-		err = argocd.ApplyRegistryLocal(dryRun)
+		err := argocd.ApplyRegistryLocal(dryRun)
 		if err != nil {
 			log.Println("Error applying registry application to argocd")
 			return err
@@ -292,28 +296,36 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		pkg.InformUser("Waiting for vault to be ready", silentMode)
 		vault.WaitVaultToBeRunning(dryRun)
-		if err != nil {
-			log.Println("error waiting for vault to become running")
-			return err
-		}
 	}
-	kPortForwardVault, err := k8s.PortForward(dryRun, "vault", "svc/vault", "8200:8200")
+
+	// Vault port-forward
+	vaultStopChannel := make(chan struct{}, 1)
 	defer func() {
-		err = kPortForwardVault.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Println("Error closing kPortForwardVault")
-		}
+		close(vaultStopChannel)
 	}()
+	k8s.OpenPortForwardWrapper(
+		pkg.VaultPodName,
+		pkg.VaultNamespace,
+		pkg.VaultPodPort,
+		pkg.VaultPodLocalPort,
+		vaultStopChannel,
+	)
 
 	k8s.LoopUntilPodIsReady(dryRun)
-	kPortForwardMinio, err := k8s.PortForward(dryRun, "minio", "svc/minio", "9000:9000")
-	defer func() {
-		err = kPortForwardMinio.Process.Signal(syscall.SIGTERM)
-		if err != nil {
-			log.Println("Error closing kPortForwardMinio")
-		}
-	}()
 
+	minioStopChannel := make(chan struct{}, 1)
+	defer func() {
+		close(minioStopChannel)
+	}()
+	k8s.OpenPortForwardWrapper(
+		pkg.MinioPodName,
+		pkg.MinioNamespace,
+		pkg.MinioPodPort,
+		pkg.MinioPodLocalPort,
+		minioStopChannel,
+	)
+
+	// todo: can I remove it?
 	time.Sleep(20 * time.Second)
 
 	// configure vault with terraform
@@ -370,16 +382,19 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.IncrementTracker("step-apps", 1)
 
 	if !viper.GetBool("chartmuseum.host.resolved") {
-
-		//* establish port-forward
-		var kPortForwardChartMuseum *exec.Cmd
-		kPortForwardChartMuseum, err = k8s.PortForward(dryRun, "chartmuseum", "svc/chartmuseum", "8181:8080")
+		// Chartmuseum port-forward
+		chartmuseumStopChannel := make(chan struct{}, 1)
 		defer func() {
-			err = kPortForwardChartMuseum.Process.Signal(syscall.SIGTERM)
-			if err != nil {
-				log.Println("Error closing kPortForwardChartMuseum")
-			}
+			close(chartmuseumStopChannel)
 		}()
+		k8s.OpenPortForwardWrapper(
+			pkg.ChartmuseumPodName,
+			pkg.ChartmuseumNamespace,
+			pkg.ChartmuseumPodPort,
+			pkg.ChartmuseumPodLocalPort,
+			chartmuseumStopChannel,
+		)
+
 		pkg.AwaitHostNTimes("http://localhost:8181/health", 5, 5)
 		viper.Set("chartmuseum.host.resolved", true)
 		viper.WriteConfig()
@@ -388,7 +403,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	pkg.InformUser("Deploying metaphor applications", silentMode)
-	err = metaphor.DeployMetaphorGithubLocal(dryRun, githubOwner, metaphorBranch, "")
+	err := metaphor.DeployMetaphorGithubLocal(dryRun, githubOwner, metaphorBranch, "")
 	if err != nil {
 		pkg.InformUser("Error deploy metaphor applications", silentMode)
 		log.Println("Error running deployMetaphorCmd")
@@ -425,10 +440,18 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		err := k8s.OpenAtlantisPortForward()
-		if err != nil {
-			log.Println(err)
-		}
+		// Atlantis port-forward
+		atlantisStopChannel := make(chan struct{}, 1)
+		defer func() {
+			close(atlantisStopChannel)
+		}()
+		k8s.OpenPortForwardWrapper(
+			pkg.AtlantisPodName,
+			pkg.AtlantisNamespace,
+			pkg.AtlantisPodPort,
+			pkg.AtlantisPodLocalPort,
+			atlantisStopChannel,
+		)
 
 		gitHubClient := githubWrapper.New()
 		err = gitHubClient.CreatePR(branchName)

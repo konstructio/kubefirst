@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -12,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/itchyny/gojq"
@@ -186,6 +184,7 @@ func GetClientSet(dryRun bool) (*kubernetes.Clientset, error) {
 	return clientset, nil
 }
 
+// deprecated
 // PortForward - opens port-forward to services
 func PortForward(dryRun bool, namespace string, filter string, ports string) (*exec.Cmd, error) {
 	if dryRun {
@@ -458,147 +457,4 @@ func SetArgocdCreds(dryRun bool) {
 	viper.Set("argocd.admin.password", argocdPassword)
 	viper.Set("argocd.admin.username", "admin")
 	viper.WriteConfig()
-}
-
-// todo: this is temporary
-func OpenPortForwardForCloudConConsole() error {
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	// Cloud Console UI
-	go func() {
-		_, err := PortForward(false, "kubefirst", "svc/kubefirst-console", "9094:80")
-		if err != nil {
-			log.Println("error opening Kubefirst-console port forward")
-		}
-		wg.Done()
-	}()
-
-	wg.Wait()
-
-	return nil
-}
-
-func OpenPortForwardForKubeConConsole() error {
-
-	var wg sync.WaitGroup
-	wg.Add(8)
-	// argo workflows
-	go func() {
-		output, err := PortForward(false, "argo", "svc/argo-server", "2746:2746")
-		if err != nil {
-			log.Println("error opening Argo Workflows port forward")
-		}
-		stderr := fmt.Sprint(output.Stderr)
-		if len(stderr) > 0 {
-			log.Println(stderr)
-		}
-		wg.Done()
-	}()
-	// argocd
-	go func() {
-		output, err := PortForward(false, "argocd", "svc/argocd-server", "8080:80")
-		if err != nil {
-			log.Println("error opening ArgoCD port forward")
-		}
-		stderr := fmt.Sprint(output.Stderr)
-		if len(stderr) > 0 {
-			log.Println(stderr)
-		}
-		wg.Done()
-	}()
-
-	// atlantis
-	go func() {
-		err := OpenAtlantisPortForward()
-		if err != nil {
-			log.Println(err)
-		}
-		wg.Done()
-	}()
-
-	// chartmuseum
-	go func() {
-		output, err := PortForward(false, "chartmuseum", "svc/chartmuseum", "8181:8080")
-		if err != nil {
-			log.Println("error opening Chartmuseum port forward")
-		}
-		stderr := fmt.Sprint(output.Stderr)
-		if len(stderr) > 0 {
-			log.Println(stderr)
-		}
-		wg.Done()
-	}()
-
-	// vault
-	go func() {
-		output, err := PortForward(false, "vault", "svc/vault", "8200:8200")
-		if err != nil {
-			log.Println("error opening Vault port forward")
-		}
-		stderr := fmt.Sprint(output.Stderr)
-		if len(stderr) > 0 {
-			log.Println(stderr)
-		}
-
-		wg.Done()
-	}()
-
-	// minio
-	go func() {
-		output, err := PortForward(false, "minio", "svc/minio", "9000:9000")
-		if err != nil {
-			log.Println("error opening Minio port forward")
-		}
-		stderr := fmt.Sprint(output.Stderr)
-		if len(stderr) > 0 {
-			log.Println(stderr)
-		}
-		wg.Done()
-	}()
-
-	// minio console
-	go func() {
-		output, err := PortForward(false, "minio", "svc/minio-console", "9001:9001")
-		if err != nil {
-			log.Println("error opening Minio-console port forward")
-		}
-		stderr := fmt.Sprint(output.Stderr)
-		if len(stderr) > 0 {
-			log.Println(stderr)
-		}
-		wg.Done()
-	}()
-
-	// Kubecon console ui
-	go func() {
-		output, err := PortForward(false, "kubefirst", "svc/kubefirst-console", "9094:80")
-		if err != nil {
-			log.Println("error opening Kubefirst-console port forward")
-		}
-		stderr := fmt.Sprint(output.Stderr)
-		if len(stderr) > 0 {
-			log.Println(stderr)
-		}
-		wg.Done()
-	}()
-
-	wg.Wait()
-
-	return nil
-}
-
-// OpenAtlantisPortForward opens port forward for Atlantis
-func OpenAtlantisPortForward() error {
-
-	output, err := PortForward(false, "atlantis", "svc/atlantis", "4141:80")
-	if err != nil {
-		return errors.New("error opening Atlantis port forward")
-	}
-	stderr := fmt.Sprint(output.Stderr)
-	if len(stderr) > 0 {
-		return errors.New(stderr)
-	}
-
-	return nil
 }
