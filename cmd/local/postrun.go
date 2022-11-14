@@ -1,13 +1,15 @@
 package local
 
 import (
-	"log"
-	"time"
-
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
+	"log"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 )
 
 func runPostLocal(cmd *cobra.Command, args []string) error {
@@ -17,13 +19,42 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// open all port forwards, wait console ui be ready, and open console ui in the browser
-	err := k8s.OpenPortForwardForKubeConConsole()
-	if err != nil {
-		log.Println(err)
-	}
+	// every port forward has its own closing control. when a channel is closed, the port forward is close.
+	vaultStopChannel := make(chan struct{}, 1)
+	argoStopChannel := make(chan struct{}, 1)
+	argoCDStopChannel := make(chan struct{}, 1)
+	chartmuseumStopChannel := make(chan struct{}, 1)
+	minioStopChannel := make(chan struct{}, 1)
+	minioConsoleStopChannel := make(chan struct{}, 1)
+	kubefirstConsoleStopChannel := make(chan struct{}, 1)
+	AtlantisStopChannel := make(chan struct{}, 1)
 
-	time.Sleep(time.Millisecond * 2000)
+	// guarantee it will close the port forwards even on a process kill
+	defer func() {
+		close(vaultStopChannel)
+		close(argoStopChannel)
+		close(argoCDStopChannel)
+		close(chartmuseumStopChannel)
+		close(minioStopChannel)
+		close(minioConsoleStopChannel)
+		close(kubefirstConsoleStopChannel)
+		close(AtlantisStopChannel)
+		log.Println("leaving port-forward command, port forwards are now closed")
+	}()
+
+	err := k8s.OpenPortForwardForLocal(
+		vaultStopChannel,
+		argoStopChannel,
+		argoCDStopChannel,
+		chartmuseumStopChannel,
+		minioStopChannel,
+		minioConsoleStopChannel,
+		kubefirstConsoleStopChannel,
+		AtlantisStopChannel,
+	)
+	if err != nil {
+		return err
+	}
 
 	log.Println("Starting the presentation of console and api for the handoff screen")
 
@@ -39,6 +70,16 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 	reports.LocalHandoffScreen(dryRun, silentMode)
 
 	log.Println("Kubefirst Console available at: http://localhost:9094", silentMode)
+
+	// managing termination signal from the terminal
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		<-sigs
+		wg.Done()
+	}()
 
 	return nil
 }

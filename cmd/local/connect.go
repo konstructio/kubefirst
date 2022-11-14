@@ -47,6 +47,7 @@ func runConnect(cmd *cobra.Command, args []string) error {
 		close(minioConsoleStopChannel)
 		close(kubefirstConsoleStopChannel)
 		close(AtlantisStopChannel)
+		log.Println("leaving port-forward command, port forwards are now closed")
 	}()
 
 	err := k8s.OpenPortForwardForLocal(
@@ -76,15 +77,6 @@ func runConnect(cmd *cobra.Command, args []string) error {
 	wg.Add(1)
 	go func() {
 		<-sigs
-		close(vaultStopChannel)
-		close(argoStopChannel)
-		close(argoCDStopChannel)
-		close(chartmuseumStopChannel)
-		close(minioStopChannel)
-		close(minioConsoleStopChannel)
-		close(kubefirstConsoleStopChannel)
-		close(AtlantisStopChannel)
-		log.Println("leaving port-forward command, port forwards are now closed")
 		wg.Done()
 	}()
 
