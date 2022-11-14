@@ -479,13 +479,13 @@ func OpenPortForwardForCloudConConsole() error {
 	return nil
 }
 
-// OpenPortForwardForLocalConnectWrapper is a wrapper function to instantiate the necessary resources for Kubefirst
-// console. OpenPortForwardForLocalConnectWrapper receives channels as arguments, when this channels are closed, the
+// OpenPortForwardForLocal is a wrapper function to instantiate the necessary resources for Kubefirst
+// console. OpenPortForwardForLocal receives channels as arguments, when this channels are closed, the
 // port forwards are also closed.
 //
 // Every port forward that is open, is open in a Go routine, the function exists when all the (wg.Add(x)) x Go
 // routines are done.
-func OpenPortForwardForLocalConnectWrapper(
+func OpenPortForwardForLocal(
 	vaultStopChannel chan struct{},
 	argoStopChannel chan struct{},
 	argoCDStopChannel chan struct{},
@@ -501,55 +501,57 @@ func OpenPortForwardForLocalConnectWrapper(
 
 	// Vault
 	go func() {
-		OpenManagedPortForward(pkg.VaultPodName, pkg.VaultNamespace, pkg.VaultPodPort, pkg.VaultPodLocalPort, vaultStopChannel)
+		OpenPortForwardWrapper(pkg.VaultPodName, pkg.VaultNamespace, pkg.VaultPodPort, pkg.VaultPodLocalPort, vaultStopChannel)
 		wg.Done()
 	}()
 
 	// Argo
 	go func() {
-		OpenManagedPortForward(pkg.ArgoPodName, pkg.ArgoNamespace, pkg.ArgoPodPort, pkg.ArgoPodLocalPort, argoStopChannel)
+		OpenPortForwardWrapper(pkg.ArgoPodName, pkg.ArgoNamespace, pkg.ArgoPodPort, pkg.ArgoPodLocalPort, argoStopChannel)
 		wg.Done()
 	}()
 
 	// ArgoCD
 	go func() {
-		OpenManagedPortForward(pkg.ArgoCDPodName, pkg.ArgoCDNamespace, pkg.ArgoCDPodPort, pkg.ArgoCDPodLocalPort, argoCDStopChannel)
+		OpenPortForwardWrapper(pkg.ArgoCDPodName, pkg.ArgoCDNamespace, pkg.ArgoCDPodPort, pkg.ArgoCDPodLocalPort, argoCDStopChannel)
 		wg.Done()
 	}()
 
 	// chartmuseum
 	go func() {
-		OpenManagedPortForward(pkg.ChartmuseumPodName, pkg.ChartmuseumNamespace, pkg.ChartmuseumPodPort, pkg.ChartmuseumPodLocalPort, chartmuseumStopChannel)
+		OpenPortForwardWrapper(pkg.ChartmuseumPodName, pkg.ChartmuseumNamespace, pkg.ChartmuseumPodPort, pkg.ChartmuseumPodLocalPort, chartmuseumStopChannel)
 		wg.Done()
 	}()
 
 	// Minio
 	go func() {
-		OpenManagedPortForward(pkg.MinioPodName, pkg.MinioNamespace, pkg.MinioPodPort, pkg.MinioPodLocalPort, minioStopChannel)
+		OpenPortForwardWrapper(pkg.MinioPodName, pkg.MinioNamespace, pkg.MinioPodPort, pkg.MinioPodLocalPort, minioStopChannel)
 		wg.Done()
 	}()
 
 	// Minio Console
 	go func() {
-		OpenManagedPortForward(pkg.MinioConsolePodName, pkg.MinioConsoleNamespace, pkg.MinioConsolePodPort, pkg.MinioConsolePodLocalPort, minioConsoleStopChannel)
+		OpenPortForwardWrapper(pkg.MinioConsolePodName, pkg.MinioConsoleNamespace, pkg.MinioConsolePodPort, pkg.MinioConsolePodLocalPort, minioConsoleStopChannel)
 		wg.Done()
 	}()
 
 	// Kubefirst console
 	go func() {
-		OpenManagedPortForward(pkg.KubefirstConsolePodName, pkg.KubefirstConsoleNamespace, pkg.KubefirstConsolePodPort, pkg.KubefirstConsolePodLocalPort, kubefirstConsoleStopChannel)
+		OpenPortForwardWrapper(pkg.KubefirstConsolePodName, pkg.KubefirstConsoleNamespace, pkg.KubefirstConsolePodPort, pkg.KubefirstConsolePodLocalPort, kubefirstConsoleStopChannel)
 		wg.Done()
 	}()
 
 	// Atlantis
 	go func() {
-		OpenManagedPortForward(pkg.AtlantisPodName, pkg.AtlantisNamespace, pkg.AtlantisPodPort, pkg.AtlantisPodLocalPort, AtlantisStopChannel)
+		OpenPortForwardWrapper(pkg.AtlantisPodName, pkg.AtlantisNamespace, pkg.AtlantisPodPort, pkg.AtlantisPodLocalPort, AtlantisStopChannel)
 		wg.Done()
 	}()
 
 	wg.Wait()
 	return nil
 }
+
+// deprecated
 func OpenPortForwardForKubeConConsole() error {
 
 	var wg sync.WaitGroup

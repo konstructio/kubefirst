@@ -15,9 +15,10 @@ import (
 func NewCommandConnect() *cobra.Command {
 	connectCmd := &cobra.Command{
 		Use:   "connect",
-		Short: "",
-		Long:  "",
-		RunE:  runConnect,
+		Short: "connect will open all Kubefirst services port forwards and load",
+		Long: "connect opens all Kubefirst service ports, it makes the services available to allow local request to " +
+			"the deployed services",
+		RunE: runConnect,
 	}
 
 	return connectCmd
@@ -35,7 +36,7 @@ func runConnect(cmd *cobra.Command, args []string) error {
 	minioConsoleStopChannel := make(chan struct{}, 1)
 	kubefirstConsoleStopChannel := make(chan struct{}, 1)
 	AtlantisStopChannel := make(chan struct{}, 1)
-	err := k8s.OpenPortForwardForLocalConnectWrapper(
+	err := k8s.OpenPortForwardForLocal(
 		vaultStopChannel,
 		argoStopChannel,
 		argoCDStopChannel,

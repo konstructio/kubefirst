@@ -37,7 +37,23 @@ type PortForwardAPodRequest struct {
 	ReadyCh chan struct{}
 }
 
-func OpenManagedPortForward(podName string, namespace string, podPort int, podLocalPort int, stopChannel chan struct{}) {
+// OpenPortForwardWrapper wrapper for PortForwardPod function. This functions make it easier to open and close port
+// forward request. By providing the function parameters, the function will manage to create the port forward. The
+// parameter for the stopChannel controls when the port forward must be closed.
+//
+// Example:
+//
+//	vaultStopChannel := make(chan struct{}, 1)
+//	go func() {
+//		OpenPortForwardWrapper(
+//			pkg.VaultPodName,
+//			pkg.VaultNamespace,
+//			pkg.VaultPodPort,
+//			pkg.VaultPodLocalPort,
+//			vaultStopChannel)
+//		wg.Done()
+//	}()
+func OpenPortForwardWrapper(podName string, namespace string, podPort int, podLocalPort int, stopChannel chan struct{}) {
 
 	config1 := configs.ReadConfig()
 	kubeconfig := config1.KubeConfigPath
@@ -63,77 +79,35 @@ func OpenManagedPortForward(podName string, namespace string, podPort int, podLo
 		StopCh:    stopChannel,
 		ReadyCh:   readyCh,
 	}
-	fmt.Println("---debug---")
-	fmt.Println(portForwardRequest.PodPort)
-	fmt.Println(portForwardRequest.LocalPort)
-	fmt.Println(portForwardRequest.Pod.Namespace)
-	fmt.Println(portForwardRequest.Pod.Name)
-	fmt.Println("---debug---")
 
 	clientset, err := GetClientSet(false)
 
 	go func() {
-		err = PortForwardAKubefirstPod(clientset, portForwardRequest)
+		err = PortForwardPod(clientset, portForwardRequest)
 		if err != nil {
 			log.Println(err)
 		}
 	}()
 
-	fmt.Println("Port forwarding is ready to get traffic. have fun!")
-
 	select {
 	case <-stopChannel:
-		fmt.Println("leaving...")
+		log.Println("leaving...")
 		close(stopChannel)
 		close(readyCh)
 		break
 	case <-readyCh:
-		fmt.Println("accepting connections")
+		log.Println("port forwarding is ready to get traffic")
 	}
 
-	fmt.Printf("Pod %q at namespace %q has port forward accepting connections at port %d\n", podName, namespace, podLocalPort)
+	log.Printf("Pod %q at namespace %q has port forward accepting connections at port %d\n", podName, namespace, podLocalPort)
 	//<-stopChannel
 
 	return
 }
 
-func PortForwardAPod(req PortForwardAPodRequest) error {
-	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", req.Pod.Namespace, req.Pod.Name)
-	hostIP := strings.TrimLeft(req.RestConfig.Host, "htps:/")
-
-	transport, upgrader, err := spdy.RoundTripperFor(req.RestConfig)
-	if err != nil {
-		return err
-	}
-
-	dialer := spdy.NewDialer(
-		upgrader,
-		&http.Client{Transport: transport},
-		http.MethodPost,
-		&url.URL{
-			Scheme: "https",
-			Path:   path,
-			Host:   hostIP,
-		},
-	)
-	fw, err := portforward.New(
-		dialer,
-		[]string{fmt.Sprintf(
-			"%d:%d",
-			req.LocalPort,
-			req.PodPort)},
-		req.StopCh,
-		req.ReadyCh,
-		os.Stdout,
-		os.Stderr)
-	if err != nil {
-		return err
-	}
-
-	return fw.ForwardPorts()
-}
-
-func PortForwardAKubefirstPod(clientset *kubernetes.Clientset, req PortForwardAPodRequest) error {
+// PortForwardPod receives a PortForwardAPodRequest, and enable port forward for the specified resource. If the provided
+// Pod name matches a running Pod, it will try to port forward for that Pod on the specified port.
+func PortForwardPod(clientset *kubernetes.Clientset, req PortForwardAPodRequest) error {
 
 	podList, err := clientset.CoreV1().Pods(req.Pod.Namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil || len(podList.Items) == 0 {
@@ -168,9 +142,6 @@ func PortForwardAKubefirstPod(clientset *kubernetes.Clientset, req PortForwardAP
 			Host:   hostIP,
 		},
 	)
-	fmt.Println("---debug2---")
-	fmt.Println(path + hostIP)
-	fmt.Println("---debug2---")
 
 	fw, err := portforward.New(
 		dialer,
