@@ -81,7 +81,8 @@ func AddK3DSecrets(dryrun bool) error {
 
 	developmentDockerSecrets := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "development"},
-		Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
+		Type:       "kubernetes.io/dockerconfigjson",
+		Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
 	}
 	_, err = clientset.CoreV1().Secrets("development").Create(context.TODO(), developmentDockerSecrets, metav1.CreateOptions{})
 	if err != nil {
@@ -91,7 +92,8 @@ func AddK3DSecrets(dryrun bool) error {
 
 	stagingDockerSecrets := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "staging"},
-		Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
+		Type:       "kubernetes.io/dockerconfigjson",
+		Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
 	}
 	_, err = clientset.CoreV1().Secrets("staging").Create(context.TODO(), stagingDockerSecrets, metav1.CreateOptions{})
 	if err != nil {
@@ -101,7 +103,8 @@ func AddK3DSecrets(dryrun bool) error {
 
 	productionDockerSecrets := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "production"},
-		Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
+		Type:       "kubernetes.io/dockerconfigjson",
+		Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
 	}
 	_, err = clientset.CoreV1().Secrets("production").Create(context.TODO(), productionDockerSecrets, metav1.CreateOptions{})
 	if err != nil {
