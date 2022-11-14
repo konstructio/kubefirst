@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"syscall"
 	"time"
 
 	"github.com/kubefirst/kubefirst/pkg"
@@ -92,20 +91,33 @@ var destroyLocalGithubCmd = &cobra.Command{
 
 		//* step 1.1 - open port-forward to state store and vault
 		// todo --skip-git-terraform
-		kPortForwardMinio, err := k8s.PortForward(globalFlags.DryRun, "minio", "svc/minio", "9000:9000")
+
+		// Vault port-forward
+		vaultStopChannel := make(chan struct{}, 1)
 		defer func() {
-			err = kPortForwardMinio.Process.Signal(syscall.SIGTERM)
-			if err != nil {
-				log.Println("Error closing kPortForwardMinio")
-			}
+			close(vaultStopChannel)
 		}()
-		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
+		k8s.OpenPortForwardWrapper(
+			pkg.VaultPodName,
+			pkg.VaultNamespace,
+			pkg.VaultPodPort,
+			pkg.VaultPodLocalPort,
+			vaultStopChannel,
+		)
+
+		k8s.LoopUntilPodIsReady(globalFlags.DryRun)
+
+		minioStopChannel := make(chan struct{}, 1)
 		defer func() {
-			err = kPortForwardVault.Process.Signal(syscall.SIGTERM)
-			if err != nil {
-				log.Println("Error closing kPortForwardVault")
-			}
+			close(minioStopChannel)
 		}()
+		k8s.OpenPortForwardWrapper(
+			pkg.MinioPodName,
+			pkg.MinioNamespace,
+			pkg.MinioPodPort,
+			pkg.MinioPodLocalPort,
+			minioStopChannel,
+		)
 
 		time.Sleep(20 * time.Second)
 
@@ -123,7 +135,10 @@ var destroyLocalGithubCmd = &cobra.Command{
 		// in the cloud / cluster minus eks to iterate from argocd forward
 		// todo --skip-cluster-destroy
 		informUser("deleting k3d cluster", globalFlags.SilentMode)
-		k3d.DeleteK3dCluster()
+		err = k3d.DeleteK3dCluster()
+		if err != nil {
+			return err
+		}
 		informUser("k3d cluster deleted", globalFlags.SilentMode)
 		informUser("be sure to run `kubefirst clean` before your next cloud provision", globalFlags.SilentMode)
 
