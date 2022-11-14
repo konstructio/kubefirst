@@ -96,7 +96,7 @@ func AddK3DSecrets(dryrun bool) error {
 	_, err = clientset.CoreV1().Secrets("staging").Create(context.TODO(), stagingDockerSecrets, metav1.CreateOptions{})
 	if err != nil {
 		log.Println("Error:", err)
-		return errors.New("error creating kubernetes secret: development/docker-config")
+		return errors.New("error creating kubernetes secret: staging/docker-config")
 	}
 
 	productionDockerSecrets := &v1.Secret{
@@ -106,7 +106,7 @@ func AddK3DSecrets(dryrun bool) error {
 	_, err = clientset.CoreV1().Secrets("production").Create(context.TODO(), productionDockerSecrets, metav1.CreateOptions{})
 	if err != nil {
 		log.Println("Error:", err)
-		return errors.New("error creating kubernetes secret: development/docker-config")
+		return errors.New("error creating kubernetes secret: production/docker-config")
 	}
 	viper.Set("kubernetes.argo-docker.secret.created", true)
 	viper.WriteConfig()
