@@ -3,7 +3,6 @@ package pkg
 import (
 	"errors"
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"log"
 	"math/rand"
 	"net/http"
@@ -13,6 +12,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/spf13/viper"
@@ -136,6 +137,16 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubRepoOwner := viper.GetString("github.owner")
 		githubOrg := viper.GetString("github.owner")
 		githubUser := viper.GetString("github.user")
+
+		nodes_graviton := viper.GetBool("aws.nodes_graviton")
+
+		if nodes_graviton {
+			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_REGISTRY>", "voucher/vouch-proxy", -1)
+			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_TAG>", "latest-arm", -1)
+		} else {
+			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_REGISTRY>", "quay.io/vouch/vouch-proxy", -1)
+			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_TAG>", "0.36", -1)
+		}
 
 		githubToken := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 
