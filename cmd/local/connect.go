@@ -8,6 +8,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
+	"sync"
+	"time"
 )
 
 func NewCommandConnect() *cobra.Command {
@@ -22,13 +24,10 @@ func NewCommandConnect() *cobra.Command {
 }
 
 func runConnect(cmd *cobra.Command, args []string) error {
-	fmt.Println("---debug---")
-	fmt.Println("hi")
 	//err := k8s.OpenGenericPortForward(false)
 	//if err != nil {
 	//	fmt.Println(err)
 	//}
-	fmt.Println("---debug---")
 
 	config1 := configs.ReadConfig()
 	kubeconfig := config1.KubeConfigPath
@@ -49,12 +48,13 @@ func runConnect(cmd *cobra.Command, args []string) error {
 	//	ErrOut: os.Stderr,
 	//}
 
-	pfReq := k8s.PortForwardAPodRequest{
+	// todo: constants for podName, PodPort and localPort, namespace
+	portForwardRequest := k8s.PortForwardAPodRequest{
 		RestConfig: cfg,
 		Pod: v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "atlantis-0",
-				Namespace: "atlantis",
+				Name:      "vault-0",
+				Namespace: "vault",
 			},
 		},
 		//Service: v1.Service{
@@ -63,8 +63,8 @@ func runConnect(cmd *cobra.Command, args []string) error {
 		//		Namespace: "argocd",
 		//	},
 		//},
-		PodPort:   80,
-		LocalPort: 4141,
+		PodPort:   8200,
+		LocalPort: 8200,
 		StopCh:    stopCh,
 		ReadyCh:   readyCh,
 	}
@@ -73,23 +73,40 @@ func runConnect(cmd *cobra.Command, args []string) error {
 	//	panic(err)
 	//}
 	clientset, err := k8s.GetClientSet(false)
-	err = k8s.PortForwardAKubefirstPod(clientset, pfReq)
-	if err != nil {
-		panic(err)
-	}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		err = k8s.PortForwardAKubefirstPod(clientset, portForwardRequest)
+		if err != nil {
+			panic(err)
+		}
+		<-readyCh
+	}()
 	//err = k8s.PortForwardTESTING(pfReq)
 	//if err != nil {
 	//	panic(err)
 	//}
 	//
-	<-readyCh
 
-	println("Port forwarding is ready to get traffic. have fun!")
+	fmt.Println("Port forwarding is ready to get traffic. have fun!")
 	//
-	////select {
-	////case <-readyCh:
-	////	break
-	////}
+	go func() {
+		time.Sleep(10 * time.Second)
+		fmt.Println("---debug---")
+		fmt.Println("stop call")
+		fmt.Println("---debug---")
+
+		<-stopCh
+	}()
+	select {
+	case <-stopCh:
+		fmt.Println("leaving...")
+		wg.Done()
+		break
+	case <-readyCh:
+		fmt.Println("accepting connections")
+	}
+	wg.Wait()
 
 	return nil
 }

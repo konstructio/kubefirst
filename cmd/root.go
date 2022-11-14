@@ -43,4 +43,5 @@ func Execute() {
 func init() {
 	cobra.OnInitialize()
 	rootCmd.AddCommand(local.NewCommand())
+	rootCmd.AddCommand(NewDevCommand())
 }
