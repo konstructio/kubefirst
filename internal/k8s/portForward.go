@@ -118,6 +118,8 @@ func OpenPortForwardForCloudConConsole() error {
 }
 
 // deprecated
+// OpenPortForwardForKubeConConsole was deprecated by OpenPortForwardForLocal, that handles port forwards using k8s
+// go client.
 func OpenPortForwardForKubeConConsole() error {
 
 	var wg sync.WaitGroup
