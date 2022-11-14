@@ -19,6 +19,12 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// Github - git-provider github
+const Github = "github"
+
+// Gitlab - git-provider github
+const Gitlab = "gitlab"
+
 // CloneRepoAndDetokenizeTemplate - clone repo using CloneRepoAndDetokenizeTemplate that uses fallback rule to try to capture version
 func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, branch string, tag string) (string, error) {
 	config := configs.ReadConfig()
@@ -61,7 +67,7 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 	//Push
 
 	config := configs.ReadConfig()
-	token := viper.GetString("github.token")
+	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	if token == "" {
 		log.Println("Unauthorized: No token present")
 		return fmt.Errorf("missing github token")
@@ -319,7 +325,7 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 			log.Println("error getting worktree status", err)
 		}
 	}
-	w.Commit("setting new remote upstream to github", &git.CommitOptions{
+	w.Commit("[ci skip] setting new remote upstream to github", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
 			Email: "kubefirst-bot@kubefirst.com",
@@ -327,9 +333,9 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 		},
 	})
 
-	token := viper.GetString("github.token")
+	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	if len(token) == 0 {
-		token = viper.GetString("github.token")
+		log.Println("no GITHUB KUBEFIRST_GITHUB_AUTH_TOKEN provided, unable to use GitHub API")
 	}
 
 	err = repo.Push(&git.PushOptions{
@@ -387,7 +393,7 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 		},
 	})
 
-	token := viper.GetString("github.token")
+	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	err = repo.Push(&git.PushOptions{
 		RemoteName: remoteName,
 		Auth: &http.BasicAuth{
@@ -409,6 +415,10 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 	localDirectory := fmt.Sprintf("%s/%s", cfg.K1FolderPath, localRepo)
 	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform", cfg.K1FolderPath))
 	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform.lock.hcl", cfg.K1FolderPath))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform", cfg.K1FolderPath))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform.lock.hcl", cfg.K1FolderPath))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate", cfg.K1FolderPath))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate.backup", cfg.K1FolderPath))
 
 	log.Println("opening repository with gitClient: ", localDirectory)
 	repo, err := git.PlainOpen(localDirectory)
@@ -435,8 +445,13 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 	log.Println("Committing new changes... PushLocalRepoUpdates")
 
 	if viper.GetString("gitprovider") == "github" {
-		kubefirstGitHubFile := "terraform/users/kubefirst-github.tf"
-		_, err = w.Add(kubefirstGitHubFile)
+		gitHubRemoteBackendFiled := "terraform/users/kubefirst-github.tf"
+		_, err = w.Add(gitHubRemoteBackendFiled)
+		if err != nil {
+			log.Println(err)
+		}
+		remoteBackendFile := "terraform/github/remote-backend.tf"
+		_, err = w.Add(remoteBackendFile)
 		if err != nil {
 			log.Println(err)
 		}
@@ -458,7 +473,7 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 		fmt.Println(err)
 	}
 
-	token := viper.GetString("github.token")
+	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	err = repo.Push(&git.PushOptions{
 		RemoteName: remoteName,
 		Auth: &http.BasicAuth{

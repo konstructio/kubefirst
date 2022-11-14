@@ -27,29 +27,13 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 
 	log.Println("Starting the presentation of console and api for the handoff screen")
 
-	// todo: fix the memory leak, there is no joint point after the process fork
-	// go func() {
-	// 	log.Printf("Console API started")
-	// 	consoleApiRouter := sw.NewRouter()
-	// 	log.Println(http.ListenAndServe(":9095", consoleApiRouter))
-	// }()
-	// go func() {
-	// 	config := configs.ReadConfig()
-	// 	distFolder := fmt.Sprintf("%s/tools/console/dist", config.K1FolderPath)
-	// 	fileServer := http.FileServer(http.Dir(distFolder))
-	// 	http.Handle("/", fileServer)
-
-	// 	log.Printf("Starting server at port 9094\n")
-	// 	log.Println(http.ListenAndServe(":9094", nil))
-	// }()
-
-	err = pkg.IsConsoleUIAvailable(pkg.LocalConsoleUI)
+	err = pkg.IsConsoleUIAvailable(pkg.ConsoleUILocalURL)
 	if err != nil {
 		log.Println(err)
 	}
-	err = pkg.OpenBrowser(pkg.LocalConsoleUI)
+	err = pkg.OpenBrowser(pkg.ConsoleUILocalURL)
 	if err != nil {
-		return err
+		log.Println(err)
 	}
 
 	reports.LocalHandoffScreen(dryRun, silentMode)

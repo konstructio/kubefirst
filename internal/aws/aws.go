@@ -44,6 +44,17 @@ type ARecord struct {
 	AliasTarget *route53Types.AliasTarget
 }
 
+// Some systems fail to resolve TXT records, so try to use Google as a backup
+var backupResolver = &net.Resolver{
+	PreferGo: true,
+	Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+		d := net.Dialer{
+			Timeout: time.Millisecond * time.Duration(10000),
+		}
+		return d.DialContext(ctx, network, "8.8.8.8:53")
+	},
+}
+
 // NewAws instantiate a new AWS configuration. This function is used to provide initial connection to AWS services.
 // todo: update AWS functions in this file to work as methods of AWS struct
 // example:
@@ -232,6 +243,9 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) bo
 
 		log.Println(route53RecordName)
 		ips, err := net.LookupTXT(route53RecordName)
+		if err != nil {
+			ips, err = backupResolver.LookupTXT(context.Background(), route53RecordName)
+		}
 
 		log.Println(ips)
 

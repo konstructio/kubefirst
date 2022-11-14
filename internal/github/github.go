@@ -26,7 +26,7 @@ func ApplyGitHubTerraform(dryRun bool) {
 	envs["AWS_SDK_LOAD_CONFIG"] = "1"
 	aws.ProfileInjection(&envs)
 	// Prepare for terraform gitlab execution
-	envs["GITHUB_TOKEN"] = viper.GetString("github.token")
+	envs["GITHUB_TOKEN"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
 	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botPublicKey")
@@ -66,7 +66,7 @@ func DestroyGitHubTerraform(dryRun bool) {
 	envs["AWS_SDK_LOAD_CONFIG"] = "1"
 	aws.ProfileInjection(&envs)
 	// Prepare for terraform gitlab execution
-	envs["GITHUB_TOKEN"] = viper.GetString("github.token")
+	envs["GITHUB_TOKEN"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
 	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botPublicKey")

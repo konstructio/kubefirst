@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/addon"
 	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/handlers"
@@ -77,6 +78,19 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		)
 	}
 
+	// if non-development/built/released version, set template tag version to clone tagged templates, in that way
+	// the current built version, uses the same template version.
+	// example: kubefirst version 1.10.3, has template repositories (gitops and metaphor's) tags set as 1.10.3
+	// when Kubefirst download the templates, it will download the tag version that matches Kubefirst version
+	if configs.K1Version != configs.DefaultK1Version {
+		log.Println("loading tag values for built version")
+		log.Printf("Kubefirst version %q, tags %q", configs.K1Version, config.K3dVersion)
+		// in order to make the fallback tags work, set gitops branch as empty
+		gitOpsBranch = ""
+		templateTag = configs.K1Version
+		viper.Set("template.tag", templateTag)
+	}
+
 	// set default values to kubefirst file
 	viper.Set("gitops.repo", gitOpsRepo)
 	viper.Set("gitops.owner", "kubefirst")
@@ -93,6 +107,8 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	viper.Set("argocd.local.service", "http://localhost:8080")
 	viper.Set("gitlab.local.service", "http://localhost:8888")
 	viper.Set("vault.local.service", "http://localhost:8200")
+	addon.AddAddon("github")
+	addon.AddAddon("k3d")
 	// used for letsencrypt notifications and the gitlab root account
 
 	atlantisWebhookSecret := pkg.Random(20)
@@ -104,32 +120,40 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	// todo: wrap business logic into the handler
-	if config.GitHubPersonalAccessToken == "" {
+	httpClient := http.DefaultClient
+	gitHubService := services.NewGitHubService(httpClient)
+	gitHubHandler := handlers.NewGitHubHandler(gitHubService)
 
-		httpClient := http.DefaultClient
-		gitHubService := services.NewGitHubService(httpClient)
-		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-		gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
+	gitHubAccessToken := config.GitHubPersonalAccessToken
+	if gitHubAccessToken == "" {
+		gitHubAccessToken, err = gitHubHandler.AuthenticateUser()
 		if err != nil {
 			return err
 		}
 
-		if len(gitHubAccessToken) == 0 {
+		if gitHubAccessToken == "" {
 			return errors.New("unable to retrieve a GitHub token for the user")
-		}
-
-		viper.Set("github.token", gitHubAccessToken)
-		err = viper.WriteConfig()
-		if err != nil {
-			return err
 		}
 
 		// todo: set common way to load env. values (viper->struct->load-env)
 		// todo: use viper file to load it, not load env. value
-		if err := os.Setenv("GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
+		if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
 			return err
 		}
-		log.Println("\nGITHUB_AUTH_TOKEN set via OAuth")
+		log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
+	}
+
+	// get GitHub data to set user and owner based on the provided token
+	githubUser, err := gitHubHandler.GetGitHubUser(gitHubAccessToken)
+	if err != nil {
+		return err
+	}
+
+	viper.Set("github.user", githubUser)
+	viper.Set("github.owner", githubUser)
+	err = viper.WriteConfig()
+	if err != nil {
+		return err
 	}
 
 	if silentMode {

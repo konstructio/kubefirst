@@ -153,7 +153,7 @@ spec:
           - name: appDir
             value: "{{workflow.parameters.appDir}}"
           - name: commitMessage
-            value: "[CI SKIP] setting {{workflow.parameters.appName}} {{workflow.parameters.environment}} to chart version {{steps.get-initial-chart-version.outputs.result}}"
+            value: "[ci skip] setting {{workflow.parameters.appName}} {{workflow.parameters.environment}} to chart version {{steps.get-initial-chart-version.outputs.result}}"
           - name: repoPath
             value: gitlab.mgmt.kubefirst.com/kubefirst/{{workflow.parameters.appName}}
 

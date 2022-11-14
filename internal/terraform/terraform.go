@@ -4,16 +4,15 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
-	"os"
-	"os/exec"
-	"strings"
-
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
+	"log"
+	"os"
+	"os/exec"
+	"strings"
 )
 
 func terraformConfig(terraformEntryPoint string) map[string]string {
@@ -42,7 +41,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 
 		if viper.GetString("cloud") == flagset.CloudLocal {
 			envs["TF_VAR_email_address"] = viper.GetString("adminemail")
-			envs["TF_VAR_github_token"] = viper.GetString("github.token")
+			envs["TF_VAR_github_token"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 			envs["TF_VAR_vault_addr"] = viper.GetString("vault.local.service")
 			envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
 			envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
@@ -65,7 +64,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_email_address"] = viper.GetString("adminemail")
-		envs["TF_VAR_github_token"] = viper.GetString("github.token")
+		envs["TF_VAR_github_token"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 		envs["TF_VAR_hosted_zone_id"] = viper.GetString("aws.hostedzoneid") //# TODO: are we using this?
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 		envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
@@ -80,7 +79,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		fmt.Println("gitlab")
 		return envs
 	case "github":
-		envs["GITHUB_TOKEN"] = viper.GetString("github.token")
+		envs["GITHUB_TOKEN"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 		envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
 		envs["TF_VAR_atlantis_repo_webhook_url"] = viper.GetString("github.atlantis.webhook.url")
@@ -88,7 +87,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 
 		// todo: add validation for localhost
 		envs["TF_VAR_email_address"] = viper.GetString("adminemail")
-		envs["TF_VAR_github_token"] = viper.GetString("github.token")
+		envs["TF_VAR_github_token"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 		envs["TF_VAR_vault_addr"] = viper.GetString("vault.local.service")
 		envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
 		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
@@ -98,7 +97,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 	case "users":
 		envs["VAULT_TOKEN"] = viper.GetString("vault.token")
 		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
-		envs["GITHUB_TOKEN"] = viper.GetString("github.token")
+		envs["GITHUB_TOKEN"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 		return envs
 	}
@@ -196,6 +195,7 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		}
 		viper.Set("destroy.terraformdestroy.base", true)
 		viper.WriteConfig()
+		log.Println("terraform base destruction complete")
 	} else {
 		log.Println("skip:  destroyBaseTerraform")
 	}
@@ -308,6 +308,85 @@ func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
 	viper.WriteConfig()
 }
 
+func initAndMigrateActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
+
+	config := configs.ReadConfig()
+	tfEntrypointSplit := strings.Split(tfEntrypoint, "/")
+	kubefirstConfigProperty := tfEntrypointSplit[len(tfEntrypointSplit)-1]
+	log.Printf("Entered Init%s%sTerraform", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
+
+	kubefirstConfigPath := fmt.Sprintf("terraform.%s.%s.complete", kubefirstConfigProperty, tfAction)
+
+	log.Printf("Executing Init%s%sTerraform", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, Init%s%sTerraform skipped", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
+	}
+
+	envs := terraformConfig(kubefirstConfigProperty)
+	log.Println("tf env vars: ", envs)
+
+	err := os.Chdir(tfEntrypoint)
+	if err != nil {
+		log.Panic("error: could not change to directory " + tfEntrypoint)
+	}
+
+	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init", "-migrate-state", "-force-copy")
+	if err != nil {
+		log.Panicf("error: terraform init for %s failed %s", tfEntrypoint, err)
+	}
+
+	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, tfAction, "-auto-approve")
+	if err != nil {
+		log.Panicf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
+	}
+	os.RemoveAll(fmt.Sprintf("%s/.terraform/", tfEntrypoint))
+	os.Remove(fmt.Sprintf("%s/.terraform.lock.hcl", tfEntrypoint))
+	viper.Set(kubefirstConfigPath, true)
+	viper.WriteConfig()
+}
+
+func initAndReconfigureActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
+
+	config := configs.ReadConfig()
+	tfEntrypointSplit := strings.Split(tfEntrypoint, "/")
+	kubefirstConfigProperty := tfEntrypointSplit[len(tfEntrypointSplit)-1]
+	log.Printf("Entered Init%s%sTerraform", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
+
+	kubefirstConfigPath := fmt.Sprintf("terraform.%s.%s.complete", kubefirstConfigProperty, tfAction)
+
+	log.Printf("Executing Init%s%sTerraform", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
+	if dryRun {
+		log.Printf("[#99] Dry-run mode, Init%s%sTerraform skipped", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
+	}
+
+	envs := terraformConfig(kubefirstConfigProperty)
+	log.Println("tf env vars: ", envs)
+
+	err := os.Chdir(tfEntrypoint)
+	if err != nil {
+		log.Panic("error: could not change to directory " + tfEntrypoint)
+	}
+
+	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init", "-reconfigure")
+	if err != nil {
+		log.Panicf("error: terraform init for %s failed %s", tfEntrypoint, err)
+	}
+
+	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, tfAction, "-auto-approve")
+	if err != nil {
+		log.Panicf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
+	}
+	os.RemoveAll(fmt.Sprintf("%s/.terraform/", tfEntrypoint))
+	os.Remove(fmt.Sprintf("%s/.terraform.lock.hcl", tfEntrypoint))
+	viper.Set(kubefirstConfigPath, true)
+	viper.WriteConfig()
+}
+
+func InitMigrateApplyAutoApprove(dryRun bool, tfEntrypoint string) {
+	tfAction := "apply"
+	initAndMigrateActionAutoApprove(dryRun, tfAction, tfEntrypoint)
+}
+
 func InitApplyAutoApprove(dryRun bool, tfEntrypoint string) {
 	tfAction := "apply"
 	initActionAutoApprove(dryRun, tfAction, tfEntrypoint)
@@ -316,6 +395,11 @@ func InitApplyAutoApprove(dryRun bool, tfEntrypoint string) {
 func InitDestroyAutoApprove(dryRun bool, tfEntrypoint string) {
 	tfAction := "destroy"
 	initActionAutoApprove(dryRun, tfAction, tfEntrypoint)
+}
+
+func InitReconfigureDestroyAutoApprove(dryRun bool, tfEntrypoint string) {
+	tfAction := "destroy"
+	initAndReconfigureActionAutoApprove(dryRun, tfAction, tfEntrypoint)
 }
 
 // todo need to write something that outputs -json type and can get multiple values
@@ -359,7 +443,7 @@ func ApplyUsersTerraform(dryRun bool, directory string, gitProvider string) erro
 	envs := map[string]string{}
 
 	if gitProvider == "github" {
-		envs["GITHUB_TOKEN"] = viper.GetString("github.token")
+		envs["GITHUB_TOKEN"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 	} else if gitProvider == "gitlab" {
 		envs["GITLAB_TOKEN"] = viper.GetString("gitlab.token")

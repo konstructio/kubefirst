@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"github.com/kubefirst/kubefirst/internal/k8s"
 	"log"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/k8s"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/reports"
@@ -19,7 +20,6 @@ var postInstallCmd = &cobra.Command{
 	Short: "starts post install process",
 	Long:  "Starts post install process to open the Console UI",
 	RunE: func(cmd *cobra.Command, args []string) error {
-
 		// todo: temporary
 		//flagset.DefineGlobalFlags(cmd)
 		if viper.GetString("cloud") == flagset.CloudLocal {
@@ -38,25 +38,19 @@ var postInstallCmd = &cobra.Command{
 
 		cloud := viper.GetString("cloud")
 		if createFlags.EnableConsole && cloud != pkg.CloudK3d {
-			log.Println("Starting the presentation of console and api for the handoff screen")
-			go func() {
-				errInThread := api.RunE(cmd, args)
-				if errInThread != nil {
-					log.Println(errInThread)
-				}
-			}()
-			go func() {
-				errInThread := console.RunE(cmd, args)
-				if errInThread != nil {
-					log.Println(errInThread)
-				}
-			}()
-
-			log.Println("Kubefirst Console available at: http://localhost:9094", globalFlags.SilentMode)
-
-			err := pkg.OpenBrowser(pkg.LocalConsoleUI)
+			err := k8s.OpenPortForwardForCloudConConsole()
 			if err != nil {
-				return err
+				log.Println(err)
+			}
+
+			err = pkg.IsConsoleUIAvailable(pkg.ConsoleUILocalURL)
+			if err != nil {
+				log.Println(err)
+			}
+
+			err = pkg.OpenBrowser(pkg.ConsoleUILocalURL)
+			if err != nil {
+				log.Println(err)
 			}
 
 		} else {
@@ -70,13 +64,13 @@ var postInstallCmd = &cobra.Command{
 				log.Println(err)
 			}
 
-			err = pkg.IsConsoleUIAvailable(pkg.LocalConsoleUI)
+			err = pkg.IsConsoleUIAvailable(pkg.ConsoleUILocalURL)
 			if err != nil {
 				log.Println(err)
 			}
-			err = pkg.OpenBrowser(pkg.LocalConsoleUI)
-			if err != nil {
-				return err
+			err = pkg.OpenBrowser(pkg.ConsoleUILocalURL)
+			if pkg.OpenBrowser(pkg.ConsoleUILocalURL) != nil {
+				log.Println(err)
 			}
 		}
 

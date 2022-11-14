@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -38,11 +37,22 @@ var destroyCiCmd = &cobra.Command{
 
 		ciTools.DestroyCITerraform(globalFlags.DryRun)
 
+		err = ciTools.DeleteTemplates(globalFlags)
+		if err != nil {
+			return err
+		}
+
 		if ciFlags.DestroyBucket {
 			err = ciTools.DestroyBucket()
 			if err != nil {
 				return err
 			}
+		}
+
+		err = ciTools.DestroyGitRepository(globalFlags)
+		if err != nil {
+			log.Panicf("error to destroy ci repostory:  %s", err)
+			//return err
 		}
 
 		err = os.RemoveAll(ciDirectory)

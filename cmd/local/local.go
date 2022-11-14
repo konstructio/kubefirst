@@ -3,6 +3,12 @@ package local
 import (
 	"context"
 	"fmt"
+	"log"
+	"os/exec"
+	"sync"
+	"syscall"
+	"time"
+
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
@@ -22,23 +28,19 @@ import (
 	"github.com/segmentio/analytics-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"os/exec"
-	"sync"
-	"syscall"
-	"time"
 )
 
 var (
 	useTelemetry   bool
 	dryRun         bool
 	silentMode     bool
+	enableConsole  bool
 	gitOpsBranch   string
 	gitOpsRepo     string
 	awsHostedZone  string
 	metaphorBranch string
 	adminEmail     string
-	enableConsole  bool
+	templateTag    string
 )
 
 func NewCommand() *cobra.Command {
@@ -55,13 +57,21 @@ func NewCommand() *cobra.Command {
 	localCmd.Flags().BoolVar(&useTelemetry, "use-telemetry", true, "installer will not send telemetry about this installation")
 	localCmd.Flags().BoolVar(&dryRun, "dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	localCmd.Flags().BoolVar(&silentMode, "silent", false, "enable silentMode mode will make the UI return less content to the screen")
+	localCmd.Flags().BoolVar(&enableConsole, "enable-console", true, "If hand-off screen will be presented on a browser UI")
+
 	// todo: get it from GH token , use it for console
 	localCmd.Flags().StringVar(&adminEmail, "admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
-
-	localCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "main", "metaphro application branch")
-	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "main", "version/branch used on git clone - former: version-gitops flag")
+	localCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "main", "metaphor application branch")
+	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "main", "version/branch used on git clone")
 	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
-	localCmd.Flags().BoolVar(&enableConsole, "enable-console", true, "If hand-off screen will be presented on a browser UI")
+	localCmd.Flags().StringVar(&templateTag, "template-tag", "",
+		"when running a built version, and ldflag is set for the Kubefirst version, it will use this tag value to clone the templates (gitops and metaphor's)",
+	)
+
+	localCmd.AddCommand(NewCommandConnect())
+
+	// on error, doesnt show helper/usage
+	localCmd.SilenceUsage = true
 
 	// wire up new commands
 	localCmd.AddCommand(NewCommandConnect())
@@ -77,10 +87,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 	progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
-	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 5)
-
-	progressPrinter.IncrementTracker("step-base", 1)
-	progressPrinter.IncrementTracker("step-base", 1)
+	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 4)
 
 	if useTelemetry {
 		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 1)
@@ -179,10 +186,10 @@ func runLocal(cmd *cobra.Command, args []string) error {
 			log.Println("Error installing k3d cluster")
 			return err
 		}
-		progressPrinter.IncrementTracker("step-base", 1)
 	} else {
 		log.Println("already created k3d cluster")
 	}
+	progressPrinter.IncrementTracker("step-base", 1)
 	progressPrinter.IncrementTracker("step-github", 1)
 
 	// add secrets to cluster
@@ -309,6 +316,8 @@ func runLocal(cmd *cobra.Command, args []string) error {
 			log.Println("Error closing kPortForwardMinio")
 		}
 	}()
+
+	time.Sleep(20 * time.Second)
 
 	// configure vault with terraform
 	executionControl = viper.GetBool("terraform.vault.apply.complete")

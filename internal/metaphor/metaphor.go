@@ -2,9 +2,10 @@ package metaphor
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/pkg"
 	"log"
 	"os"
+
+	"github.com/kubefirst/kubefirst/pkg"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/flagset"
@@ -119,8 +120,13 @@ func DeployMetaphorGithubLocal(dryRun bool, gitHubOwner string, metaphorBranch s
 		log.Println("error renaming metaphor-repos.md to metaphor-repos.tf", err)
 	}
 
+	err = os.Rename(fmt.Sprintf("%s/%s", tfEntrypoint, "remote-backend.md"), fmt.Sprintf("%s/%s", tfEntrypoint, "remote-backend.tf"))
+	if err != nil {
+		log.Println("error renaming remote-backend.md to remote-backend.tf", err)
+	}
+
 	gitClient.PushLocalRepoUpdates(pkg.GitHubHost, gitHubOwner, "gitops", "github")
-	terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
+	terraform.InitMigrateApplyAutoApprove(dryRun, tfEntrypoint)
 
 	repos := [3]string{"metaphor", "metaphor-go", "metaphor-frontend"}
 	for _, element := range repos {
