@@ -2,8 +2,10 @@ package k8s
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -16,6 +18,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 )
 
 type PortForwardAPodRequest struct {
@@ -164,4 +167,233 @@ func PortForwardPod(clientset *kubernetes.Clientset, req PortForwardAPodRequest)
 
 	return nil
 
+}
+
+// OpenPortForwardForLocal is a wrapper function to instantiate the necessary resources for Kubefirst
+// console. OpenPortForwardForLocal receives channels as arguments, when this channels are closed, the
+// port forwards are also closed.
+//
+// Every port forward that is open, is open in a Go routine, the function exists when all the (wg.Add(x)) x Go
+// routines are done.
+func OpenPortForwardForLocal(
+	vaultStopChannel chan struct{},
+	argoStopChannel chan struct{},
+	argoCDStopChannel chan struct{},
+	chartmuseumStopChannel chan struct{},
+	minioStopChannel chan struct{},
+	minioConsoleStopChannel chan struct{},
+	kubefirstConsoleStopChannel chan struct{},
+	AtlantisStopChannel chan struct{},
+) error {
+
+	var wg sync.WaitGroup
+	wg.Add(8)
+
+	// Vault
+	go func() {
+		OpenPortForwardWrapper(pkg.VaultPodName, pkg.VaultNamespace, pkg.VaultPodPort, pkg.VaultPodLocalPort, vaultStopChannel)
+		wg.Done()
+	}()
+
+	// Argo
+	go func() {
+		OpenPortForwardWrapper(pkg.ArgoPodName, pkg.ArgoNamespace, pkg.ArgoPodPort, pkg.ArgoPodLocalPort, argoStopChannel)
+		wg.Done()
+	}()
+
+	// ArgoCD
+	go func() {
+		OpenPortForwardWrapper(pkg.ArgoCDPodName, pkg.ArgoCDNamespace, pkg.ArgoCDPodPort, pkg.ArgoCDPodLocalPort, argoCDStopChannel)
+		wg.Done()
+	}()
+
+	// chartmuseum
+	go func() {
+		OpenPortForwardWrapper(pkg.ChartmuseumPodName, pkg.ChartmuseumNamespace, pkg.ChartmuseumPodPort, pkg.ChartmuseumPodLocalPort, chartmuseumStopChannel)
+		wg.Done()
+	}()
+
+	// Minio
+	go func() {
+		OpenPortForwardWrapper(pkg.MinioPodName, pkg.MinioNamespace, pkg.MinioPodPort, pkg.MinioPodLocalPort, minioStopChannel)
+		wg.Done()
+	}()
+
+	// Minio Console
+	go func() {
+		OpenPortForwardWrapper(pkg.MinioConsolePodName, pkg.MinioConsoleNamespace, pkg.MinioConsolePodPort, pkg.MinioConsolePodLocalPort, minioConsoleStopChannel)
+		wg.Done()
+	}()
+
+	// Kubefirst console
+	go func() {
+		OpenPortForwardWrapper(pkg.KubefirstConsolePodName, pkg.KubefirstConsoleNamespace, pkg.KubefirstConsolePodPort, pkg.KubefirstConsolePodLocalPort, kubefirstConsoleStopChannel)
+		wg.Done()
+	}()
+
+	// Atlantis
+	go func() {
+		OpenPortForwardWrapper(pkg.AtlantisPodName, pkg.AtlantisNamespace, pkg.AtlantisPodPort, pkg.AtlantisPodLocalPort, AtlantisStopChannel)
+		wg.Done()
+	}()
+
+	wg.Wait()
+	return nil
+}
+
+// todo: this is temporary
+func OpenPortForwardForCloudConConsole() error {
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Cloud Console UI
+	go func() {
+		_, err := PortForward(false, "kubefirst", "svc/kubefirst-console", "9094:80")
+		if err != nil {
+			log.Println("error opening Kubefirst-console port forward")
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	return nil
+}
+
+// deprecated
+func OpenPortForwardForKubeConConsole() error {
+
+	var wg sync.WaitGroup
+	wg.Add(8)
+	// argo workflows
+	go func() {
+		output, err := PortForward(false, "argo", "svc/argo-server", "2746:2746")
+		if err != nil {
+			log.Println("error opening Argo Workflows port forward")
+		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
+		}
+		wg.Done()
+	}()
+	// argocd
+	go func() {
+		output, err := PortForward(false, "argocd", "svc/argocd-server", "8080:80")
+		if err != nil {
+			log.Println("error opening ArgoCD port forward")
+		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
+		}
+		wg.Done()
+	}()
+
+	// atlantis
+	go func() {
+		err := OpenAtlantisPortForward()
+		if err != nil {
+			log.Println(err)
+		}
+		wg.Done()
+	}()
+
+	// chartmuseum
+	go func() {
+		output, err := PortForward(false, "chartmuseum", "svc/chartmuseum", "8181:8080")
+		if err != nil {
+			log.Println("error opening Chartmuseum port forward")
+		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
+		}
+		wg.Done()
+	}()
+
+	// vault
+	go func() {
+		output, err := PortForward(false, "vault", "svc/vault", "8200:8200")
+		if err != nil {
+			log.Println("error opening Vault port forward")
+		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
+		}
+
+		wg.Done()
+	}()
+
+	// minio
+	go func() {
+		output, err := PortForward(false, "minio", "svc/minio", "9000:9000")
+		if err != nil {
+			log.Println("error opening Minio port forward")
+		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
+		}
+		wg.Done()
+	}()
+
+	// minio console
+	go func() {
+		output, err := PortForward(false, "minio", "svc/minio", "9000:9000")
+		if err != nil {
+			log.Println("error opening Minio port forward")
+		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
+		}
+		wg.Done()
+	}()
+
+	// minio console
+	go func() {
+		output, err := PortForward(false, "minio", "svc/minio-console", "9001:9001")
+		if err != nil {
+			log.Println("error opening Minio-console port forward")
+		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
+		}
+		wg.Done()
+	}()
+
+	// Kubecon console ui
+	go func() {
+		output, err := PortForward(false, "kubefirst", "svc/kubefirst-console", "9094:80")
+		if err != nil {
+			log.Println("error opening Kubefirst-console port forward")
+		}
+		stderr := fmt.Sprint(output.Stderr)
+		if len(stderr) > 0 {
+			log.Println(stderr)
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	return nil
+}
+
+// OpenAtlantisPortForward opens port forward for Atlantis
+func OpenAtlantisPortForward() error {
+
+	output, err := PortForward(false, "atlantis", "svc/atlantis", "4141:80")
+	if err != nil {
+		return errors.New("error opening Atlantis port forward")
+	}
+	stderr := fmt.Sprint(output.Stderr)
+	if len(stderr) > 0 {
+		return errors.New(stderr)
+	}
+
+	return nil
 }

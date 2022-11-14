@@ -15,9 +15,9 @@ import (
 func NewCommandConnect() *cobra.Command {
 	connectCmd := &cobra.Command{
 		Use:   "connect",
-		Short: "connect will open all Kubefirst services port forwards and load",
-		Long: "connect opens all Kubefirst service ports, it makes the services available to allow local request to " +
-			"the deployed services",
+		Short: "connect will open all Kubefirst services port forwards",
+		Long: "connect opens all Kubefirst service ports for local connection, it makes the services available to" +
+			"allow local request to the deployed services",
 		RunE: runConnect,
 	}
 
@@ -27,7 +27,7 @@ func NewCommandConnect() *cobra.Command {
 func runConnect(cmd *cobra.Command, args []string) error {
 	log.Println("opening Port Forward for console...")
 
-	// every port forward has its own closing control. when a channel is closed, the port forward is also closed.
+	// every port forward has its own closing control. when a channel is closed, the port forward is close.
 	vaultStopChannel := make(chan struct{}, 1)
 	argoStopChannel := make(chan struct{}, 1)
 	argoCDStopChannel := make(chan struct{}, 1)
@@ -36,6 +36,19 @@ func runConnect(cmd *cobra.Command, args []string) error {
 	minioConsoleStopChannel := make(chan struct{}, 1)
 	kubefirstConsoleStopChannel := make(chan struct{}, 1)
 	AtlantisStopChannel := make(chan struct{}, 1)
+
+	// guarantee it will close the port forwards even on a process kill
+	defer func() {
+		close(vaultStopChannel)
+		close(argoStopChannel)
+		close(argoCDStopChannel)
+		close(chartmuseumStopChannel)
+		close(minioStopChannel)
+		close(minioConsoleStopChannel)
+		close(kubefirstConsoleStopChannel)
+		close(AtlantisStopChannel)
+	}()
+
 	err := k8s.OpenPortForwardForLocal(
 		vaultStopChannel,
 		argoStopChannel,
