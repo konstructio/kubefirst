@@ -5,18 +5,19 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/spf13/viper"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"log"
-	"os"
 )
 
 func AddK3DSecrets(dryrun bool) error {
 	clientset, err := k8s.GetClientSet(dryrun)
 
-	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "github-runner", "vault"}
+	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "github-runner", "vault", "development", "staging", "production"}
 	for i, s := range newNamespaces {
 		namespace := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s}}
 		_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
@@ -76,6 +77,36 @@ func AddK3DSecrets(dryrun bool) error {
 	if err != nil {
 		log.Println("Error:", err)
 		return errors.New("error creating kubernetes secret: argo/docker-config")
+	}
+
+	developmentDockerSecrets := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "development"},
+		Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
+	}
+	_, err = clientset.CoreV1().Secrets("development").Create(context.TODO(), developmentDockerSecrets, metav1.CreateOptions{})
+	if err != nil {
+		log.Println("Error:", err)
+		return errors.New("error creating kubernetes secret: development/docker-config")
+	}
+
+	stagingDockerSecrets := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "staging"},
+		Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
+	}
+	_, err = clientset.CoreV1().Secrets("staging").Create(context.TODO(), stagingDockerSecrets, metav1.CreateOptions{})
+	if err != nil {
+		log.Println("Error:", err)
+		return errors.New("error creating kubernetes secret: staging/docker-config")
+	}
+
+	productionDockerSecrets := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "production"},
+		Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
+	}
+	_, err = clientset.CoreV1().Secrets("production").Create(context.TODO(), productionDockerSecrets, metav1.CreateOptions{})
+	if err != nil {
+		log.Println("Error:", err)
+		return errors.New("error creating kubernetes secret: production/docker-config")
 	}
 	viper.Set("kubernetes.argo-docker.secret.created", true)
 	viper.WriteConfig()
