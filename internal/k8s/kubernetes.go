@@ -184,6 +184,7 @@ func GetClientSet(dryRun bool) (*kubernetes.Clientset, error) {
 	return clientset, nil
 }
 
+// deprecated
 // PortForward - opens port-forward to services
 func PortForward(dryRun bool, namespace string, filter string, ports string) (*exec.Cmd, error) {
 	if dryRun {
