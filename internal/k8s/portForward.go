@@ -83,8 +83,8 @@ func PortForwardPod(clientset *kubernetes.Clientset, req PortForwardAPodRequest)
 			req.PodPort)},
 		req.StopCh,
 		req.ReadyCh,
-		os.Stdout,
-		os.Stderr)
+		nil,
+		nil)
 	if err != nil {
 		return err
 	}
