@@ -123,14 +123,16 @@ cluster provisioning process spinning up the services, and validates the livenes
 		}
 
 		// get GitHub data to set user and owner based on the provided token
-		githubUser, err := gitHubHandler.GetGitHubUser(gitHubAccessToken)
-		if err != nil {
-			return err
-		}
-		viper.Set("github.user", githubUser)
-		err = viper.WriteConfig()
-		if err != nil {
-			return err
+		if providerValue == pkg.GitHubProviderName {
+			githubUser, err := gitHubHandler.GetGitHubUser(gitHubAccessToken)
+			if err != nil {
+				return err
+			}
+			viper.Set("github.user", githubUser)
+			err = viper.WriteConfig()
+			if err != nil {
+				return err
+			}
 		}
 
 		if !viper.GetBool("kubefirst.done") {
