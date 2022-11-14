@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -17,6 +18,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53Types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -988,4 +991,82 @@ func ProfileInjection(envs *map[string]string) {
 	} else {
 		log.Print("Skipping AWS Profile loading due Assume Role...")
 	}
+}
+
+func DestroyLoadBalancer(clusterName string) error {
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := NewAws()
+	if err != nil {
+		log.Printf("Failed to load config: %v", err)
+		return err
+	}
+
+	searchLoadBalancerCmd := fmt.Sprintf("for i in $(aws elb describe-load-balancers | jq -r '.LoadBalancerDescriptions[].LoadBalancerName');"+
+		"do aws elb describe-tags --load-balancer-names \"$i\" | jq -ce '.TagDescriptions[].Tags[] | select( .Key == \"kubernetes.io/cluster/%s\" and .Value == \"owned\")' &&"+
+		"echo \"$i\" ;done | sed -n '2 p' | tr -d '\n\r'", clusterName)
+
+	loadBalancerName, err := exec.Command("bash", "-c", searchLoadBalancerCmd).Output()
+	if err != nil {
+		log.Panicf("error: could not read load balancer name: %s", err)
+	}
+
+	loadBalancerNameString := string(loadBalancerName)
+
+	if len(loadBalancerNameString) > 0 {
+		loadBalancerClient := elasticloadbalancing.NewFromConfig(awsConfig)
+
+		loadBalancerInput := elasticloadbalancing.DeleteLoadBalancerInput{
+			LoadBalancerName: &loadBalancerNameString,
+		}
+
+		log.Printf("trying to delete load balancer %s\n", loadBalancerNameString)
+
+		_, err = loadBalancerClient.DeleteLoadBalancer(context.Background(), &loadBalancerInput)
+
+		if err != nil {
+			return err
+		}
+
+		log.Printf("deleted load balancer %s\n", loadBalancerNameString)
+	}
+
+	return nil
+}
+
+func DestroySecurityGroup(clusterName string) error {
+	// todo: use method approach to avoid new AWS client initializations
+	awsConfig, err := NewAws()
+	if err != nil {
+		log.Printf("Failed to load config: %v", err)
+		return err
+	}
+
+	searchSecurityGroupCmd := fmt.Sprintf("aws ec2 describe-security-groups --filters Name=tag:kubernetes.io/cluster/%s,Values=owned "+
+		"| jq -r '.SecurityGroups[].GroupId' | tr -d '\n\r'", clusterName)
+
+	securityGroupId, err := exec.Command("bash", "-c", searchSecurityGroupCmd).Output()
+	if err != nil {
+		log.Panicf("error: could not read security group id: %s", err)
+	}
+
+	securityGroupIdString := string(securityGroupId)
+
+	if len(securityGroupIdString) > 0 {
+		securityGroupClient := ec2.NewFromConfig(awsConfig)
+
+		securityGroupInput := ec2.DeleteSecurityGroupInput{
+			GroupId: &securityGroupIdString,
+		}
+
+		log.Printf("trying to delete security group %s\n", securityGroupIdString)
+
+		_, err = securityGroupClient.DeleteSecurityGroup(context.Background(), &securityGroupInput)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("deleted security group %s\n", securityGroupIdString)
+	}
+
+	return nil
 }
