@@ -80,15 +80,17 @@ validated and configured.`,
 		}
 
 		// get GitHub data to set user and owner based on the provided token
-		githubUser, err := gitHubHandler.GetGitHubUser(gitHubAccessToken)
-		if err != nil {
-			return err
-		}
+		if providerValue == pkg.GitHubProviderName {
+			githubUser, err := gitHubHandler.GetGitHubUser(gitHubAccessToken)
+			if err != nil {
+				return err
+			}
 
-		viper.Set("github.user", githubUser)
-		err = viper.WriteConfig()
-		if err != nil {
-			return err
+			viper.Set("github.user", githubUser)
+			err = viper.WriteConfig()
+			if err != nil {
+				return err
+			}
 		}
 
 		if globalFlags.SilentMode {
