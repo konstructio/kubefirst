@@ -4,15 +4,17 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"strings"
+	"time"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
-	"log"
-	"os"
-	"os/exec"
-	"strings"
 )
 
 func terraformConfig(terraformEntryPoint string) map[string]string {
@@ -184,6 +186,17 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 			envs["TF_VAR_capacity_type"] = "SPOT"
 		}
 
+		err = aws.DestroyLoadBalancer(viper.GetString("cluster-name"))
+		if err != nil {
+			log.Panicf("Failed to destroy load balancer: %v", err)
+		}
+
+		err = aws.DestroySecurityGroup(viper.GetString("cluster-name"))
+		if err != nil {
+			log.Panicf("Failed to destroy security group: %v", err)
+		}
+
+		time.Sleep(45 * time.Second)
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
 			log.Panicf("failed to terraform init base %v", err)
