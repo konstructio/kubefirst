@@ -297,7 +297,7 @@ func LocalConnectSummary() string {
 	localConnect.WriteString("\nKubefirst Local:\n")
 	localConnect.WriteString(strings.Repeat("-", 70))
 
-	localConnect.WriteString(fmt.Sprintf("\n\nKubefirst Console UI: %s\n", pkg.ConsoleUILocalURL))
+	localConnect.WriteString(fmt.Sprintf("\n\nKubefirst Console UI: %s\n", pkg.KubefirstConsoleLocalURL))
 	localConnect.WriteString(fmt.Sprintf("ChartmuseumLocalURL: %s\n", pkg.ChartmuseumLocalURL))
 	localConnect.WriteString(fmt.Sprintf("Argo: %s\n", pkg.ArgoLocalURL))
 	localConnect.WriteString(fmt.Sprintf("ArgoCD: %s\n", pkg.ArgoCDLocalURL))

@@ -2,14 +2,14 @@ package local
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/spf13/cobra"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/clientcmd"
 	"log"
-	"time"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 )
 
 func NewCommandConnect() *cobra.Command {
@@ -23,182 +23,58 @@ func NewCommandConnect() *cobra.Command {
 	return connectCmd
 }
 
-func portForward(podName string, namespace string, podPort int, podLocalPort int, stopChannel chan struct{}) {
-
-	config1 := configs.ReadConfig()
-	kubeconfig := config1.KubeConfigPath
-	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		log.Println(err)
-	}
-
-	// readyCh communicate when the port forward is ready to get traffic
-	readyCh := make(chan struct{})
-
-	// todo: constants for podName, PodPort and localPort, namespace
-	portForwardRequest := k8s.PortForwardAPodRequest{
-		RestConfig: cfg,
-		Pod: v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      podName,
-				Namespace: namespace,
-			},
-		},
-		PodPort:   podPort,
-		LocalPort: podLocalPort,
-		StopCh:    stopChannel,
-		ReadyCh:   readyCh,
-	}
-
-	clientset, err := k8s.GetClientSet(false)
-
-	go func() {
-		fmt.Println("---debug---")
-		fmt.Println("opening port forward")
-		fmt.Println("---debug---")
-
-		err = k8s.PortForwardAKubefirstPod(clientset, portForwardRequest)
-		if err != nil {
-			log.Println(err)
-		}
-	}()
-
-	fmt.Println("Port forwarding is ready to get traffic. have fun!")
-
-	select {
-	case <-stopChannel:
-		fmt.Println("leaving...")
-		close(stopChannel)
-		close(readyCh)
-		break
-	case <-readyCh:
-		fmt.Println("accepting connections")
-	}
-
-	fmt.Println("---debug---")
-	fmt.Println("waiting...")
-	fmt.Println("---debug---")
-
-	fmt.Printf("Pod %q at namespace %q has port forward accepting connections at port %d\n", podName, namespace, podLocalPort)
-	<-stopChannel
-
-	return
-}
-
 func runConnect(cmd *cobra.Command, args []string) error {
-	//err := k8s.OpenGenericPortForward(false)
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-	//
-	//config1 := configs.ReadConfig()
-	//kubeconfig := config1.KubeConfigPath
-	//cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//stopCh := make(chan struct{}, 1)
-	//// readyCh communicate when the port forward is ready to get traffic
-	//readyCh := make(chan struct{})
-	//// stream is used to tell the port forwarder where to place its output or
-	//// where to expect input if needed. For the port forwarding we just need
-	//// the output eventually
-	////stream := genericclioptions.IOStreams{
-	////	In:     os.Stdin,
-	////	Out:    os.Stdout,
-	////	ErrOut: os.Stderr,
-	////}
-	//
-	//// todo: constants for podName, PodPort and localPort, namespace
-	//portForwardRequest := k8s.PortForwardAPodRequest{
-	//	RestConfig: cfg,
-	//	Pod: v1.Pod{
-	//		ObjectMeta: metav1.ObjectMeta{
-	//			Name:      "vault-0",
-	//			Namespace: "vault",
-	//		},
-	//	},
-	//	//Service: v1.Service{
-	//	//	ObjectMeta: metav1.ObjectMeta{
-	//	//		Name:      "argocd-server",
-	//	//		Namespace: "argocd",
-	//	//	},
-	//	//},
-	//	PodPort:   8200,
-	//	LocalPort: 8200,
-	//	StopCh:    stopCh,
-	//	ReadyCh:   readyCh,
-	//}
-	////err = k8s.PortForwardAPod(pfReq)
-	////if err != nil {
-	////	panic(err)
-	////}
-	//clientset, err := k8s.GetClientSet(false)
-	//
-	//go func() {
-	//	fmt.Println("---debug---")
-	//	fmt.Println("opening port forward")
-	//	fmt.Println("---debug---")
-	//
-	//	err = k8s.PortForwardAKubefirstPod(clientset, portForwardRequest)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//}()
-	//
-	////err = k8s.PortForwardTESTING(pfReq)
-	////if err != nil {
-	////	panic(err)
-	////}
-	////
-	//
-	//fmt.Println("Port forwarding is ready to get traffic. have fun!")
-	////
-	//go func() {
-	//	time.Sleep(10 * time.Second)
-	//	fmt.Println("---debug---")
-	//	fmt.Println("stop call")
-	//	fmt.Println("---debug---")
-	//	close(stopCh)
-	//
-	//}()
-	//
-	//select {
-	//case <-stopCh:
-	//	fmt.Println("leaving...")
-	//	close(stopCh)
-	//	close(readyCh)
-	//	break
-	//case <-readyCh:
-	//	fmt.Println("accepting connections")
-	//}
-	//
-	//fmt.Println("---debug---")
-	//fmt.Println("waiting...")
-	//fmt.Println("---debug---")
-	//
-	//<-stopCh
+	log.Println("opening Port Forward for console...")
 
+	// every port forward has its own closing control. when a channel is closed, the port forward is also closed.
 	vaultStopChannel := make(chan struct{}, 1)
+	argoStopChannel := make(chan struct{}, 1)
+	argoCDStopChannel := make(chan struct{}, 1)
+	chartmuseumStopChannel := make(chan struct{}, 1)
+	minioStopChannel := make(chan struct{}, 1)
+	minioConsoleStopChannel := make(chan struct{}, 1)
+	kubefirstConsoleStopChannel := make(chan struct{}, 1)
+	AtlantisStopChannel := make(chan struct{}, 1)
+	err := k8s.OpenPortForwardForLocalConnectWrapper(
+		vaultStopChannel,
+		argoStopChannel,
+		argoCDStopChannel,
+		chartmuseumStopChannel,
+		minioStopChannel,
+		minioConsoleStopChannel,
+		kubefirstConsoleStopChannel,
+		AtlantisStopChannel,
+	)
+	if err != nil {
+		return err
+	}
+
+	// style UI with local URLs
+	fmt.Println(reports.StyleMessage(reports.LocalConnectSummary()))
+
+	log.Println("Kubefirst port forward done")
+	log.Println("hanging port forwards until ctrl+c is called")
+
+	// managing termination signal from the terminal
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-		portForward(VaultPodName, VaultNamespace, VaultPodPort, VaultPorLocalPort, vaultStopChannel)
+		<-sigs
+		close(vaultStopChannel)
+		close(argoStopChannel)
+		close(argoCDStopChannel)
+		close(chartmuseumStopChannel)
+		close(minioStopChannel)
+		close(minioConsoleStopChannel)
+		close(kubefirstConsoleStopChannel)
+		close(AtlantisStopChannel)
+		log.Println("leaving port-forward command, port forwards are now closed")
+		wg.Done()
 	}()
 
-	time.Sleep(10 * time.Second)
-	fmt.Println("---debug---")
-	fmt.Println("stop call")
-	fmt.Println("---debug---")
-	defer func() {
-		close(vaultStopChannel)
-	}()
+	wg.Wait()
 
 	return nil
 }
-
-const (
-	VaultPodName      = "vault-0"
-	VaultNamespace    = "vault"
-	VaultPodPort      = 8200
-	VaultPorLocalPort = 8200
-)

@@ -3,12 +3,15 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"github.com/kubefirst/kubefirst/configs"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -32,6 +35,66 @@ type PortForwardAPodRequest struct {
 	StopCh <-chan struct{}
 	// ReadyCh communicates when the tunnel is ready to receive traffic
 	ReadyCh chan struct{}
+}
+
+func OpenManagedPortForward(podName string, namespace string, podPort int, podLocalPort int, stopChannel chan struct{}) {
+
+	config1 := configs.ReadConfig()
+	kubeconfig := config1.KubeConfigPath
+	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		log.Println(err)
+	}
+
+	// readyCh communicate when the port forward is ready to get traffic
+	readyCh := make(chan struct{})
+
+	// todo: constants for podName, PodPort and localPort, namespace
+	portForwardRequest := PortForwardAPodRequest{
+		RestConfig: cfg,
+		Pod: v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      podName,
+				Namespace: namespace,
+			},
+		},
+		PodPort:   podPort,
+		LocalPort: podLocalPort,
+		StopCh:    stopChannel,
+		ReadyCh:   readyCh,
+	}
+	fmt.Println("---debug---")
+	fmt.Println(portForwardRequest.PodPort)
+	fmt.Println(portForwardRequest.LocalPort)
+	fmt.Println(portForwardRequest.Pod.Namespace)
+	fmt.Println(portForwardRequest.Pod.Name)
+	fmt.Println("---debug---")
+
+	clientset, err := GetClientSet(false)
+
+	go func() {
+		err = PortForwardAKubefirstPod(clientset, portForwardRequest)
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
+	fmt.Println("Port forwarding is ready to get traffic. have fun!")
+
+	select {
+	case <-stopChannel:
+		fmt.Println("leaving...")
+		close(stopChannel)
+		close(readyCh)
+		break
+	case <-readyCh:
+		fmt.Println("accepting connections")
+	}
+
+	fmt.Printf("Pod %q at namespace %q has port forward accepting connections at port %d\n", podName, namespace, podLocalPort)
+	//<-stopChannel
+
+	return
 }
 
 func PortForwardAPod(req PortForwardAPodRequest) error {
@@ -80,13 +143,10 @@ func PortForwardAKubefirstPod(clientset *kubernetes.Clientset, req PortForwardAP
 
 	var runningPod *v1.Pod
 	for _, pod := range podList.Items {
-		fmt.Println("---debug---")
-		fmt.Println(pod.Name)
-		fmt.Println("---debug---")
-
 		// pick the first pod found to be running
 		if pod.Status.Phase == v1.PodRunning && strings.HasPrefix(pod.Name, req.Pod.Name) {
 			runningPod = &pod
+			break
 		}
 	}
 
@@ -108,6 +168,10 @@ func PortForwardAKubefirstPod(clientset *kubernetes.Clientset, req PortForwardAP
 			Host:   hostIP,
 		},
 	)
+	fmt.Println("---debug2---")
+	fmt.Println(path + hostIP)
+	fmt.Println("---debug2---")
+
 	fw, err := portforward.New(
 		dialer,
 		[]string{fmt.Sprintf(
