@@ -122,6 +122,11 @@ func PortForwardAKubefirstPod(clientset *kubernetes.Clientset, req PortForwardAP
 		return err
 	}
 
-	return fw.ForwardPorts()
+	err = fw.ForwardPorts()
+	if err != nil {
+		return err
+	}
+
+	return nil
 
 }
