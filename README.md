@@ -7,9 +7,9 @@
 </p>
 
 <p align="center">
-  <a href="https://docs.kubefirst.io/kubefirst/install.html">Install</a>&nbsp;|&nbsp;
-  <a href="https://docs.kubefirst.io/index.html">Documentation</a>&nbsp;|&nbsp;
+  <a href="https://docs.kubefirst.io/">Install</a>&nbsp;|&nbsp;
   <a href="https://twitter.com/kubefirst">Twitter</a>&nbsp;|&nbsp;
+  <a href="https://www.linkedin.com/company/kubefirst">LinkedIn</a>&nbsp;|&nbsp;
   <a href="https://join.slack.com/t/kubefirst/shared_invite/zt-r0r9cfts-OVnH0ooELDLm9n9p2aU7fw">Slack</a>&nbsp;|&nbsp;
   <a href="https://kubeshop.io/blog-projects/kubefirst">Blog</a>
 </p>
