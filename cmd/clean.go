@@ -74,6 +74,13 @@ re-create Kubefirst base files. To destroy cloud resources you need to specify a
 			return fmt.Errorf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1FolderPath, err)
 		}
 
+		// re-create .kubefirst file
+		kubefirstFile, err := os.Create(config.KubefirstConfigFilePath)
+		if err != nil {
+			return fmt.Errorf("error: could not create `$HOME/.kubefirst` file:", err)
+		}
+		kubefirstFile.Close()
+
 		// re-create base
 		log.Printf("%q config file and %q folder were deleted and re-created", config.KubefirstConfigFilePath, config.K1FolderPath)
 
