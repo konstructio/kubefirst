@@ -63,6 +63,7 @@ type Config struct {
 	LocalVaultURL         string
 	LocalArgoURL          string
 	LocalAtlantisURL      string
+	LocalChartmuseumURL   string
 
 	LocalMetaphorDev      string
 	LocalMetaphorGoDev    string
@@ -131,6 +132,7 @@ func ReadConfig() *Config {
 	config.LocalVaultURL = "http://localhost:8200"
 	config.LocalArgoURL = "http://localhost:8080"
 	config.LocalAtlantisURL = "http://localhost:4141"
+	config.LocalChartmuseumURL = "http://localhost:8181"
 
 	config.LocalMetaphorDev = "http://localhost:3000"
 	config.LocalMetaphorGoDev = "http://localhost:5000"
