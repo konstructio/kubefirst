@@ -160,6 +160,15 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<COMMIT_CWFT_TEMPLATE>", "git-commit-ssh", -1)
 			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NS>", "github-runner", -1)
 			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NAME>", "github-runner", -1)
+
+			newContents = strings.Replace(newContents, "<GIT_PROVIDER>", "GitHub", -1)
+			newContents = strings.Replace(newContents, "<GIT_NAMESPACE>", "N/A", -1)
+			newContents = strings.Replace(newContents, "<GIT_DESCRIPTION>", "GitHub hosted git", -1)
+			newContents = strings.Replace(newContents, "<GIT_URL>", repoPathHTTPS, -1)
+			newContents = strings.Replace(newContents, "<GIT_RUNNER>", "GitHub Action Runner", -1)
+			newContents = strings.Replace(newContents, "<GIT_RUNNER_NS>", "github-runner", -1)
+			newContents = strings.Replace(newContents, "<GIT_RUNNER_DESCRIPTION>", "Self Hosted GitHub Action Runner", -1)
+
 		} else {
 			//not github = GITLAB
 			repoPathHTTPS = repoPathHTTPSGitlab
@@ -177,6 +186,13 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<COMMIT_CWFT_TEMPLATE>", "git-commit", -1)
 			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NS>", "default", -1)
 			newContents = strings.Replace(newContents, "<GIT_REPO_RUNNER_NAME>", "gitlab-runner", -1)
+			newContents = strings.Replace(newContents, "<GIT_PROVIDER>", "GitLab", -1)
+			newContents = strings.Replace(newContents, "<GIT_NAMESPACE>", "gitlab", -1)
+			newContents = strings.Replace(newContents, "<GIT_DESCRIPTION>", "Privately Hosted GitLab in cluster", -1)
+			newContents = strings.Replace(newContents, "<GIT_URL>", fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", viper.GetString("aws.hostedzonename")), -1)
+			newContents = strings.Replace(newContents, "<GIT_RUNNER>", "GitLab Runner", -1)
+			newContents = strings.Replace(newContents, "<GIT_RUNNER_NS>", "gitlab-runner", -1)
+			newContents = strings.Replace(newContents, "<GIT_RUNNER_DESCRIPTION>", "Self Hosted GitLab CI Executor", -1)
 		}
 		/*
 			if gitlabConfigured {
@@ -238,6 +254,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<VAULT_URL>", config.LocalVaultURL, -1)
 			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", config.LocalArgoURL, -1)
 			newContents = strings.Replace(newContents, "<ATLANTIS_URL>", config.LocalAtlantisURL, -1)
+			newContents = strings.Replace(newContents, "<CHARTMUSEUM_URL>", config.LocalChartmuseumURL, -1)
 
 			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", config.LocalMetaphorDev, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_GO_DEV>", config.LocalMetaphorGoDev, -1)
@@ -256,6 +273,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<VAULT_URL>", fmt.Sprintf("https://vault.%s", hostedZoneName), -1)
 			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", fmt.Sprintf("https://argocd.%s", hostedZoneName), -1)
 			newContents = strings.Replace(newContents, "<ATLANTIS_URL>", fmt.Sprintf("https://atlantis.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<CHARTMUSEUM_URL>", fmt.Sprintf("https://chartmuseum.%s", hostedZoneName), -1)
 
 			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", fmt.Sprintf("https://metaphor-development.%s", hostedZoneName), -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_GO_DEV>", fmt.Sprintf("https://metaphor-go-development.%s", hostedZoneName), -1)
