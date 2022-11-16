@@ -3,27 +3,24 @@ package local
 import (
 	"context"
 	"fmt"
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
-	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
-	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/metaphor"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
-	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/pkg"
-	"github.com/segmentio/analytics-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -35,7 +32,6 @@ var (
 	enableConsole  bool
 	gitOpsBranch   string
 	gitOpsRepo     string
-	awsHostedZone  string
 	metaphorBranch string
 	adminEmail     string
 	templateTag    string
@@ -66,8 +62,6 @@ func NewCommand() *cobra.Command {
 		"when running a built version, and ldflag is set for the Kubefirst version, it will use this tag value to clone the templates (gitops and metaphor's)",
 	)
 
-	localCmd.AddCommand(NewCommandConnect())
-
 	// on error, doesnt show helper/usage
 	localCmd.SilenceUsage = true
 
@@ -87,42 +81,13 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
 	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 4)
 
-	if useTelemetry {
-		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 1)
-	}
-
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), silentMode)
 
-	// telemetry
 	if useTelemetry {
-		// Instantiates a SegmentIO client to send messages to the segment API.
-		segmentIOClientStart := analytics.New(pkg.SegmentIOWriteKey)
-
-		// SegmentIO library works with queue that is based on timing, we explicit close the http client connection
-		// to force flush in case there is still some pending message in the SegmentIO library queue.
-		defer func(segmentIOClient analytics.Client) {
-			err := segmentIOClient.Close()
-			if err != nil {
-				log.Println(err)
-			}
-		}(segmentIOClientStart)
-
-		telemetryDomainStart, err := domain.NewTelemetry(
-			pkg.MetricMgmtClusterInstallStarted,
-			"",
-			configs.K1Version,
-		)
-		if err != nil {
+		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 2)
+		if err := wrappers.SendTelemetry("", pkg.MetricMgmtClusterInstallStarted); err != nil {
 			log.Println(err)
 		}
-		telemetryServiceStart := services.NewSegmentIoService(segmentIOClientStart)
-		telemetryHandlerStart := handlers.NewTelemetryHandler(telemetryServiceStart)
-
-		err = telemetryHandlerStart.SendCountMetric(telemetryDomainStart)
-		if err != nil {
-			log.Println(err)
-		}
-
 		progressPrinter.IncrementTracker("step-telemetry", 1)
 	}
 
@@ -486,33 +451,10 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	log.Println("sending mgmt cluster install completed metric")
 
 	if useTelemetry {
-		// Instantiates a SegmentIO client to send messages to the segment API.
-		segmentIOClientCompleted := analytics.New(pkg.SegmentIOWriteKey)
-
-		// SegmentIO library works with queue that is based on timing, we explicit close the http client connection
-		// to force flush in case there is still some pending message in the SegmentIO library queue.
-		defer func(segmentIOClientCompleted analytics.Client) {
-			err := segmentIOClientCompleted.Close()
-			if err != nil {
-				log.Println(err)
-			}
-		}(segmentIOClientCompleted)
-
-		telemetryDomainCompleted, err := domain.NewTelemetry(
-			pkg.MetricMgmtClusterInstallCompleted,
-			"",
-			configs.K1Version,
-		)
-		if err != nil {
+		if err = wrappers.SendTelemetry("", pkg.MetricMgmtClusterInstallCompleted); err != nil {
 			log.Println(err)
 		}
-		telemetryServiceCompleted := services.NewSegmentIoService(segmentIOClientCompleted)
-		telemetryHandlerCompleted := handlers.NewTelemetryHandler(telemetryServiceCompleted)
-
-		err = telemetryHandlerCompleted.SendCountMetric(telemetryDomainCompleted)
-		if err != nil {
-			log.Println(err)
-		}
+		progressPrinter.IncrementTracker("step-telemetry", 1)
 	}
 
 	log.Println("Kubefirst installation finished successfully")

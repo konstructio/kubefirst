@@ -6,14 +6,13 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/addon"
-	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/repo"
 	"github.com/kubefirst/kubefirst/internal/services"
+	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
-	"github.com/segmentio/analytics-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log"
@@ -27,34 +26,8 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	log.Println("sending init started metric")
 
-	var telemetryHandler handlers.TelemetryHandler
 	if useTelemetry {
-		// Instantiates a SegmentIO client to use send messages to the segment API.
-		segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
-
-		// SegmentIO library works with queue that is based on timing, we explicit close the http client connection
-		// to force flush in case there is still some pending message in the SegmentIO library queue.
-		defer func(segmentIOClient analytics.Client) {
-			err := segmentIOClient.Close()
-			if err != nil {
-				log.Println(err)
-			}
-		}(segmentIOClient)
-
-		// validate telemetryDomain data
-		telemetryDomain, err := domain.NewTelemetry(
-			pkg.MetricInitStarted,
-			awsHostedZone,
-			configs.K1Version,
-		)
-		if err != nil {
-			log.Println(err)
-		}
-		telemetryService := services.NewSegmentIoService(segmentIOClient)
-		telemetryHandler = handlers.NewTelemetryHandler(telemetryService)
-
-		err = telemetryHandler.SendCountMetric(telemetryDomain)
-		if err != nil {
+		if err := wrappers.SendTelemetry("", pkg.MetricInitStarted); err != nil {
 			log.Println(err)
 		}
 	}
@@ -103,16 +76,15 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	viper.Set("cluster-name", pkg.LocalClusterName)
 	viper.Set("adminemail", adminEmail)
 
-	// todo: set constants
-	viper.Set("argocd.local.service", "http://localhost:8080")
-	viper.Set("gitlab.local.service", "http://localhost:8888")
-	viper.Set("vault.local.service", "http://localhost:8200")
+	viper.Set("argocd.local.service", pkg.ArgoCDLocalURL)
+	viper.Set("vault.local.service", pkg.VaultLocalURL)
+
+	// addons
 	addon.AddAddon("github")
 	addon.AddAddon("k3d")
 	// used for letsencrypt notifications and the gitlab root account
 
-	atlantisWebhookSecret := pkg.Random(20)
-	viper.Set("github.atlantis.webhook.secret", atlantisWebhookSecret)
+	viper.Set("github.atlantis.webhook.secret", pkg.Random(20))
 
 	err = viper.WriteConfig()
 	if err != nil {
@@ -206,16 +178,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	pkg.InformUser("init is done!\n", silentMode)
 
 	if useTelemetry {
-		telemetryInitCompleted, err := domain.NewTelemetry(
-			pkg.MetricInitCompleted,
-			awsHostedZone,
-			configs.K1Version,
-		)
-		if err != nil {
-			log.Println(err)
-		}
-		err = telemetryHandler.SendCountMetric(telemetryInitCompleted)
-		if err != nil {
+		if err = wrappers.SendTelemetry("", pkg.MetricInitCompleted); err != nil {
 			log.Println(err)
 		}
 	}
