@@ -10,9 +10,9 @@ import (
 	"log"
 )
 
-// SendTelemetry is a wrapper function that instantiate SegmentIO handler, service, and sends a track activity to
+// SendSegmentIoTelemetry is a wrapper function that instantiate SegmentIO handler, service, and sends a track activity to
 // SegmentIO.
-func SendTelemetry(hostedZone string, metricName string) error {
+func SendSegmentIoTelemetry(hostedZone string, metricName string) error {
 	// Instantiates a SegmentIO client to use send messages to the segment API.
 	segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
 

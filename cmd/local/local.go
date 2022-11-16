@@ -85,7 +85,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	if useTelemetry {
 		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 2)
-		if err := wrappers.SendTelemetry("", pkg.MetricMgmtClusterInstallStarted); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallStarted); err != nil {
 			log.Println(err)
 		}
 		progressPrinter.IncrementTracker("step-telemetry", 1)
@@ -451,7 +451,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	log.Println("sending mgmt cluster install completed metric")
 
 	if useTelemetry {
-		if err = wrappers.SendTelemetry("", pkg.MetricMgmtClusterInstallCompleted); err != nil {
+		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted); err != nil {
 			log.Println(err)
 		}
 		progressPrinter.IncrementTracker("step-telemetry", 1)
