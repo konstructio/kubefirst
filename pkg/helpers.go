@@ -475,49 +475,62 @@ func AwaitHostNTimes(url string, times int, gracePeriod time.Duration) {
 	}
 }
 
-// this is temporary code
-func ReplaceTerraformS3Backend() error {
+// replaceFileContent receives a file path, oldContent and newContent. oldContent is the previous value that is in the
+// file, newContent is the new content you want to replace.
+//
+// Example:
+//   err := replaceFileContent(vaultMainFile, "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000")
+func replaceFileContent(filPath string, oldContent string, newContent string) error {
+
+	file, err := os.ReadFile(filPath)
+	if err != nil {
+		return err
+	}
+
+	updatedLine := strings.Replace(string(file), oldContent, newContent, -1)
+
+	if err = os.WriteFile(filPath, []byte(updatedLine), 0); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdateTerraformS3BackendForK8sAddress during the installation process, Terraform must reach port-forwarded resources
+// to be able to communicate with the services. When Kubefirst finish the installation, and Terraform needs to
+// communicate with the services, it must use the internal Kubernetes addresses.
+func UpdateTerraformS3BackendForK8sAddress() error {
 
 	config := configs.ReadConfig()
 
 	// todo: create a function for file content replacement
 	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", config.K1FolderPath)
-
-	file, err := os.ReadFile(vaultMainFile)
-	if err != nil {
-		return err
-	}
-	newContents := strings.Replace(string(file), "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000", -1)
-
-	err = os.WriteFile(vaultMainFile, []byte(newContents), 0)
-	if err != nil {
+	if err := replaceFileContent(
+		vaultMainFile,
+		"http://127.0.0.1:9000",
+		"http://minio.minio.svc.cluster.local:9000",
+	); err != nil {
 		return err
 	}
 
 	// update GitHub Terraform content
 	if viper.GetString("gitprovider") == "github" {
 		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
-		kubefirstGitHubFile, err := os.ReadFile(fullPathKubefirstGitHubFile)
-		if err != nil {
-			return err
-		}
-		kubefirstGitHubChange := strings.Replace(string(kubefirstGitHubFile), "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000", -1)
-
-		err = os.WriteFile(fullPathKubefirstGitHubFile, []byte(kubefirstGitHubChange), 0)
-		if err != nil {
+		if err := replaceFileContent(
+			fullPathKubefirstGitHubFile,
+			"http://127.0.0.1:9000",
+			"http://minio.minio.svc.cluster.local:9000",
+		); err != nil {
 			return err
 		}
 
 		// change remote-backend.tf
 		fullPathRemoteBackendFile := fmt.Sprintf("%s/gitops/terraform/github/remote-backend.tf", config.K1FolderPath)
-		remoteBackendFile, err := os.ReadFile(fullPathRemoteBackendFile)
-		if err != nil {
-			return err
-		}
-		remoteBackendChange := strings.Replace(string(remoteBackendFile), "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000", -1)
-
-		err = os.WriteFile(fullPathRemoteBackendFile, []byte(remoteBackendChange), 0)
-		if err != nil {
+		if err := replaceFileContent(
+			fullPathRemoteBackendFile,
+			"http://127.0.0.1:9000",
+			"http://minio.minio.svc.cluster.local:9000",
+		); err != nil {
 			return err
 		}
 	}
@@ -525,49 +538,40 @@ func ReplaceTerraformS3Backend() error {
 	return nil
 }
 
-// todo: this is temporary
-func ReplaceTerraformS3BackendBack() error {
+// UpdateTerraformS3BackendForLocalhostAddress during the destroy process, Terraform must reach port-forwarded resources
+// to be able to communicate with the services.
+func UpdateTerraformS3BackendForLocalhostAddress() error {
 
 	config := configs.ReadConfig()
 
 	// todo: create a function for file content replacement
 	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", config.K1FolderPath)
-
-	file, err := os.ReadFile(vaultMainFile)
-	if err != nil {
-		return err
-	}
-	newContents := strings.Replace(string(file), "http://minio.minio.svc.cluster.local:9000", "http://127.0.0.1:9000", -1)
-
-	err = os.WriteFile(vaultMainFile, []byte(newContents), 0)
-	if err != nil {
+	if err := replaceFileContent(
+		vaultMainFile,
+		"http://minio.minio.svc.cluster.local:9000",
+		"http://127.0.0.1:9000",
+	); err != nil {
 		return err
 	}
 
 	// update GitHub Terraform content
-	if viper.GetString("gitprovider") == "github" && viper.GetString("cloud") == CloudK3d {
+	if viper.GetString("gitprovider") == "github" {
 		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
-		kubefirstGitHubFile, err := os.ReadFile(fullPathKubefirstGitHubFile)
-		if err != nil {
-			return err
-		}
-		kubefirstGitHubChange := strings.Replace(string(kubefirstGitHubFile), "http://minio.minio.svc.cluster.local:9000", "http://127.0.0.1:9000", -1)
-
-		err = os.WriteFile(fullPathKubefirstGitHubFile, []byte(kubefirstGitHubChange), 0)
-		if err != nil {
+		if err := replaceFileContent(
+			fullPathKubefirstGitHubFile,
+			"http://minio.minio.svc.cluster.local:9000",
+			"http://127.0.0.1:9000",
+		); err != nil {
 			return err
 		}
 
 		// change remote-backend.tf
 		fullPathRemoteBackendFile := fmt.Sprintf("%s/gitops/terraform/github/remote-backend.tf", config.K1FolderPath)
-		remoteBackendFile, err := os.ReadFile(fullPathRemoteBackendFile)
-		if err != nil {
-			return err
-		}
-		remoteBackendChange := strings.Replace(string(remoteBackendFile), "http://minio.minio.svc.cluster.local:9000", "http://127.0.0.1:9000", -1)
-
-		err = os.WriteFile(fullPathRemoteBackendFile, []byte(remoteBackendChange), 0)
-		if err != nil {
+		if err := replaceFileContent(
+			fullPathRemoteBackendFile,
+			"http://minio.minio.svc.cluster.local:9000",
+			"http://127.0.0.1:9000",
+		); err != nil {
 			return err
 		}
 	}

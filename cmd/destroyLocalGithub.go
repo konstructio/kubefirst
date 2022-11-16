@@ -82,7 +82,7 @@ var destroyLocalGithubCmd = &cobra.Command{
 		}
 
 		// todo: temporary code
-		err = pkg.ReplaceTerraformS3BackendBack()
+		err = pkg.UpdateTerraformS3BackendForLocalhostAddress()
 		if err != nil {
 			return err
 		}
