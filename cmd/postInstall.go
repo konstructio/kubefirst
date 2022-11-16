@@ -22,7 +22,7 @@ var postInstallCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// todo: temporary
 		//flagset.DefineGlobalFlags(cmd)
-		if viper.GetString("cloud") == flagset.CloudLocal {
+		if viper.GetString("cloud") == pkg.CloudK3d {
 			cmd.Flags().Bool("enable-console", true, "If hand-off screen will be presented on a browser UI")
 		}
 		//globalFlags, err := flagset.ProcessGlobalFlags(cmd)
@@ -74,7 +74,7 @@ var postInstallCmd = &cobra.Command{
 			}
 		}
 
-		if viper.GetString("cloud") == flagset.CloudK3d {
+		if viper.GetString("cloud") == pkg.CloudK3d {
 			reports.LocalHandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)
 		} else {
 			reports.HandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)

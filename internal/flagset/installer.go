@@ -2,6 +2,7 @@ package flagset
 
 import (
 	"errors"
+	"github.com/kubefirst/kubefirst/pkg"
 	"log"
 
 	"github.com/kubefirst/kubefirst/configs"
@@ -11,8 +12,6 @@ import (
 )
 
 const CloudAws = "aws"
-const CloudLocal = "k3d"
-const CloudK3d = "k3d"
 
 // DefineInstallerGenericFlags - define installer  flags for CLI
 type InstallerGenericFlags struct {
@@ -162,7 +161,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 		//Adds mandatory addon for non-local install
 		addon.AddAddon("cloud")
 	}
-	if flags.Cloud == CloudK3d {
+	if flags.Cloud == pkg.CloudK3d {
 		//Adds mandatory addon for local install
 		addon.AddAddon("k3d")
 	}
@@ -221,7 +220,7 @@ func validateInstallationFlags() error {
 	// 	return errors.New(message)
 	// }
 	if len(viper.GetString("cloud")) < 1 {
-		message := "missing flag --cloud, supported values: " + CloudAws + ", " + CloudK3d
+		message := "missing flag --cloud, supported values: " + CloudAws + ", " + pkg.CloudK3d
 		log.Println(message)
 		return errors.New(message)
 	}

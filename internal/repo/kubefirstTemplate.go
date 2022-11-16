@@ -11,7 +11,6 @@ import (
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/pkg"
 	cp "github.com/otiai10/copy"
@@ -41,10 +40,10 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 	viper.WriteConfig()
 
 	log.Printf("cloned %s-template repository to directory %s/%s", repoName, config.K1FolderPath, repoName)
-	if viper.GetString("cloud") == flagset.CloudK3d && !viper.GetBool("github.gitops.hydrated") {
+	if viper.GetString("cloud") == pkg.CloudK3d && !viper.GetBool("github.gitops.hydrated") {
 		UpdateForLocalMode(directory)
 	}
-	if viper.GetString("cloud") == flagset.CloudK3d && strings.Contains(repoName, "metaphor") {
+	if viper.GetString("cloud") == pkg.CloudK3d && strings.Contains(repoName, "metaphor") {
 		os.RemoveAll(fmt.Sprintf("%s/.argo", directory))
 		os.RemoveAll(fmt.Sprintf("%s/.github", directory))
 		opt := cp.Options{
