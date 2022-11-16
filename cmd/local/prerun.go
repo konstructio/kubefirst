@@ -1,7 +1,6 @@
 package local
 
 import (
-	"errors"
 	"fmt"
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
@@ -17,7 +16,7 @@ import (
 	"github.com/spf13/viper"
 	"log"
 	"net/http"
-	"os"
+	"time"
 )
 
 func validateLocal(cmd *cobra.Command, args []string) error {
@@ -27,7 +26,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	log.Println("sending init started metric")
 
 	if useTelemetry {
-		if err := wrappers.SendTelemetry("", pkg.MetricInitStarted); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted); err != nil {
 			log.Println(err)
 		}
 	}
@@ -91,28 +90,12 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// todo: wrap business logic into the handler
 	httpClient := http.DefaultClient
 	gitHubService := services.NewGitHubService(httpClient)
 	gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-
-	gitHubAccessToken := config.GitHubPersonalAccessToken
-	if gitHubAccessToken == "" {
-		gitHubAccessToken, err = gitHubHandler.AuthenticateUser()
-		if err != nil {
-			return err
-		}
-
-		if gitHubAccessToken == "" {
-			return errors.New("unable to retrieve a GitHub token for the user")
-		}
-
-		// todo: set common way to load env. values (viper->struct->load-env)
-		// todo: use viper file to load it, not load env. value
-		if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
-			return err
-		}
-		log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
+	gitHubAccessToken, err := wrappers.AuthenticateGitHubUserWrapper(config, gitHubHandler)
+	if err != nil {
+		return err
 	}
 
 	// get GitHub data to set user and owner based on the provided token
@@ -135,7 +118,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		)
 	}
 
-	progressPrinter.SetupProgress(8, silentMode)
+	progressPrinter.SetupProgress(6, silentMode)
 
 	progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 	progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
@@ -178,12 +161,13 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	pkg.InformUser("init is done!\n", silentMode)
 
 	if useTelemetry {
-		if err = wrappers.SendTelemetry("", pkg.MetricInitCompleted); err != nil {
+		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted); err != nil {
 			log.Println(err)
 		}
 	}
 
 	progressPrinter.IncrementTracker("step-0", 1)
+	time.Sleep(100 * time.Millisecond) // necessary to wait progress bar to finish
 
 	return nil
 }
