@@ -12,7 +12,6 @@ import (
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
-	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
@@ -41,7 +40,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		return envs
 	case "vault":
 
-		if viper.GetString("cloud") == flagset.CloudLocal {
+		if viper.GetString("cloud") == pkg.CloudK3d {
 			envs["TF_VAR_email_address"] = viper.GetString("adminemail")
 			envs["TF_VAR_github_token"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 			envs["TF_VAR_vault_addr"] = viper.GetString("vault.local.service")

@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
@@ -25,7 +24,7 @@ func TestArgoCDLivenessIntegration(t *testing.T) {
 	}
 
 	var argoURL string
-	if viper.GetString("cloud") == flagset.CloudK3d {
+	if viper.GetString("cloud") == pkg.CloudK3d {
 		argoURL = "http://localhost:8080"
 	} else {
 		argoURL = fmt.Sprintf("https://argocd.%s", viper.GetString("aws.hostedzonename"))
@@ -60,7 +59,7 @@ func TestArgoWorkflowLivenessIntegration(t *testing.T) {
 	}
 
 	var argoURL string
-	if viper.GetString("cloud") == flagset.CloudK3d {
+	if viper.GetString("cloud") == pkg.CloudK3d {
 		argoURL = "http://localhost:2746"
 	} else {
 		argoURL = fmt.Sprintf("https://argo.%s", viper.GetString("aws.hostedzonename"))

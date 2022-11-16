@@ -7,7 +7,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/spf13/viper"
 )
 
@@ -63,7 +62,7 @@ func PrintSectionAws() []byte {
 func PrintSectionVault() []byte {
 
 	var vaultURL string
-	if viper.GetString("cloud") == flagset.CloudK3d {
+	if viper.GetString("cloud") == pkg.CloudK3d {
 		vaultURL = "http://localhost:8200"
 	} else {
 		vaultURL = fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename"))
@@ -80,7 +79,7 @@ func PrintSectionVault() []byte {
 func PrintSectionArgoCD() []byte {
 
 	var argoCdURL string
-	if viper.GetString("cloud") == flagset.CloudK3d {
+	if viper.GetString("cloud") == pkg.CloudK3d {
 		argoCdURL = "http://localhost:8080"
 	} else {
 		argoCdURL = fmt.Sprintf("https://argocd.%s", viper.GetString("aws.hostedzonename"))
@@ -99,7 +98,7 @@ func PrintSectionArgoCD() []byte {
 func PrintSectionArgoWorkflows() []byte {
 
 	var argoWorkflowsURL string
-	if viper.GetString("cloud") == flagset.CloudK3d {
+	if viper.GetString("cloud") == pkg.CloudK3d {
 		argoWorkflowsURL = "http://localhost:2746"
 	} else {
 		argoWorkflowsURL = fmt.Sprintf("https://argo.%s", viper.GetString("aws.hostedzonename"))
@@ -110,7 +109,7 @@ func PrintSectionArgoWorkflows() []byte {
 	handOffData.WriteString(strings.Repeat("-", 51))
 	handOffData.WriteString(fmt.Sprintf("\n URL: %s", argoWorkflowsURL))
 
-	if viper.GetString("cloud") == flagset.CloudK3d {
+	if viper.GetString("cloud") == pkg.CloudK3d {
 		return handOffData.Bytes()
 	} else {
 		handOffData.WriteString("\n sso credentials only ")
@@ -123,7 +122,7 @@ func PrintSectionArgoWorkflows() []byte {
 func PrintSectionAtlantis() []byte {
 
 	var atlantisUrl string
-	if viper.GetString("cloud") == flagset.CloudK3d {
+	if viper.GetString("cloud") == pkg.CloudK3d {
 		atlantisUrl = "http://localhost:4141"
 	} else {
 		atlantisUrl = fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename"))
@@ -140,7 +139,7 @@ func PrintSectionAtlantis() []byte {
 func PrintSectionMuseum() []byte {
 
 	var chartmuseumURL string
-	if viper.GetString("cloud") == flagset.CloudK3d {
+	if viper.GetString("cloud") == pkg.CloudK3d {
 		chartmuseumURL = "http://localhost:8181"
 	} else {
 		chartmuseumURL = fmt.Sprintf("https://chartmuseum.%s", viper.GetString("aws.hostedzonename"))
@@ -151,7 +150,7 @@ func PrintSectionMuseum() []byte {
 	handOffData.WriteString(strings.Repeat("-", 54))
 	handOffData.WriteString(fmt.Sprintf("\n URL: %s", chartmuseumURL))
 
-	if viper.GetString("cloud") == flagset.CloudK3d {
+	if viper.GetString("cloud") == pkg.CloudK3d {
 		return handOffData.Bytes()
 	} else {
 		handOffData.WriteString("\n see vault for credentials ")
@@ -188,7 +187,7 @@ func PrintSectionMetaphorGo() []byte {
 
 func PrintSectionMetaphorFrontend() []byte {
 	var handOffData bytes.Buffer
-	if viper.GetString("cloud") == flagset.CloudK3d {
+	if viper.GetString("cloud") == pkg.CloudK3d {
 		handOffData.WriteString("\n--- Metaphor ")
 		handOffData.WriteString(strings.Repeat("-", 57))
 		handOffData.WriteString("\n To access the metaphor applications you'll need to \n`kubectl port-forward` to the kubernetes service")
