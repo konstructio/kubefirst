@@ -411,7 +411,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	// update terraform s3 backend to internal k8s dns (s3/minio bucket)
-	err = pkg.ReplaceTerraformS3Backend()
+	err = pkg.UpdateTerraformS3BackendForK8sAddress()
 	if err != nil {
 		return err
 	}
