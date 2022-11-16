@@ -18,13 +18,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 )
 
 func validateLocal(cmd *cobra.Command, args []string) error {
-
-	//
-	installStartTime = time.Now()
 
 	config := configs.ReadConfig()
 
