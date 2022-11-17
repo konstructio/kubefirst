@@ -94,7 +94,12 @@ kubefirst init \
 --region eu-central-1 \
 --admin-email user@example.com \
 --cluster-name your_cluster_name \
---hosted-zone-name domain.example
+--hosted-zone-name domain.example \
+--s3-suffix you-s3-bucket-name \
+--gitops-branch main \
+--metaphor-branch main \
+--git-provider gitlab \
+--aws-nodes-spot
 ```
 
 ### GitHub
@@ -102,15 +107,17 @@ kubefirst init \
 To prepare the installation using GitHub you can:
 
 ```bash
+export KUBEFIRST_GITHUB_AUTH_TOKEN=your_github_auth_token
+
 kubefirst init \
---admin-email email@example.com.com \
+--admin-email yourname@example.com \
 --cloud aws \
 --hosted-zone-name example.com \
 --region eu-central-1 \
 --cluster-name example_com \
 --profile default \
---github-user example-github-username \
---github-org example-organization \
+--github-user yourgithubhandle \
+--github-owner yourgithuborganization \
 --gitops-branch main \
 --metaphor-branch main
 ```
@@ -154,7 +161,7 @@ Kubefirst provides extra tooling for handling the provisioning work.
 |:---------------|:----------------------------------------------------------|
 | clean          | removes all kubefirst resources locally for new execution |
 | cluster create | create a kubefirst management cluster                     |
-| destroy        | destroy the kubefirst management cluster                  |
+| cluster destroy| destroy the kubefirst management cluster                  |
 | info           | provides general Kubefirst setup data                     |
 | init           | initialize your local machine to execute `create`         |
 | version        | print the version number for kubefirst-cli"               |

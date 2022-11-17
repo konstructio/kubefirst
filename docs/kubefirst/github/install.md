@@ -51,36 +51,37 @@ token with the following permissions:
 Expose the new token to your local environment so the kubefirst cli can leverage it:
 
 ```
-export GITHUB_AUTH_TOKEN=your-new-token
+export KUBEFIRST_GITHUB_AUTH_TOKEN=your-new-token
 ```
 
 ### Step 3 - `kubefirst init`
 
-With your new GITHUB_AUTH_TOKEN exported, let's init your local setup providing values for the following flags:
+With your new KUBEFIRST_GITHUB_AUTH_TOKEN exported, let's init your local setup providing values for the following flags:
 
-| Flag               | Description                                                                                                                            | Example                    |
-|--------------------|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------|
+| Flag               | Description                                                                                                                            | Example                     |
+|--------------------|----------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|
 | --admin-email      | an email address that can be used for certificate renewal alerts and the gitlab root account                                           | your_name@yourcompany.com   |
-| --bot-password     | required: provide a password to use for the initial bot user in the kubefirst platform sso system in vault.                           | replace-this-password-value |
 | --cloud            | we only support aws, gcp coming soon                                                                                                   | aws                         |
-| --hosted-zone-name | name of the platform's hosted zone domain - this will drive the URLs of your tools (gitlab.yourdomain.com, argocd.yourdomain.com, etc) | yourdomain.com           |
-| --cluster-name     | the name of your cluster                                                                                                               | my_kubefirst_cluster        |
-| --region           | name of the aws region in which to place your region specific resources                                                                | us-east-1                  |
-| --profile          | name of the aws profile the cli should leverage                                                                                        | default                    |
-| --github-user      |                                                                                                                                        | your_username              |
-| --github-org       | your_organization                                                                                                                      | your_organization          |
+| --hosted-zone-name | name of the platform's hosted zone domain - this will drive the URLs of your tools (gitlab.yourdomain.com, argocd.yourdomain.com, etc) | yourdomain.com              |
+| --cluster-name     | the name of your cluster                                                                                                               | your_cluster_name           |
+| --region           | name of the aws region in which to place your region specific resources                                                                | us-east-1                   |
+| --profile          | name of the aws profile the cli should leverage                                                                                        | default                     |
+| --github-user      | name of your github user                                                                                                               | your_username               |
+| --github-org       | name of your github organization name                                                                                                  | your_organization           |
+| --aws-nodes-spot   | nodes spot on AWS EKS compute nodes                                                                                                    | true                        |
 
-```
+```bash
+export KUBEFIRST_GITHUB_AUTH_TOKEN=your-new-token
+
 kubefirst init \
-    --admin-email yourname@yourcompany.com \
-    --bot-password replace-this-password-value \
-    --cloud aws \
-    --hosted-zone-name yourdomain.com \
-    --region us-east-1 \
-    --profile default \
-    --cluster-name my_kubefirst_cluster \
-    --github-user your_username \
-    --github-org your_organization
+--admin-email your_name@yourcompany.com \
+--cloud aws \
+--hosted-zone-name yourdomain.com \
+--region us-east-1 \
+--profile default \
+--cluster-name your_cluster_name \
+--github-user yourgithubhandle \
+--github-owner yourgithuborganization
 ```
 
 The `init` process produces a directory of utilities, a state file, and some staged platform content that can now be found at `~/.kubefirst`
