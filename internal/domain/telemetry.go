@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+
 	"github.com/denisbrodbeck/machineid"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
@@ -36,11 +37,11 @@ func NewTelemetry(metricName string, domain string, CLIVersion string) (Telemetr
 			MetricName: metricName,
 			Domain:     domain,
 			CLIVersion: CLIVersion,
-			MachineId: machineId,
+			MachineId:  machineId,
 		}, nil
 	}
 
-	domain, err := pkg.RemoveSubDomain(domain)
+	domain, err = pkg.RemoveSubDomain(domain)
 	if err != nil {
 		return Telemetry{}, err
 	}
@@ -49,6 +50,6 @@ func NewTelemetry(metricName string, domain string, CLIVersion string) (Telemetr
 		MetricName: metricName,
 		Domain:     domain,
 		CLIVersion: CLIVersion,
-		MachineId: machineId,
+		MachineId:  machineId,
 	}, nil
 }
