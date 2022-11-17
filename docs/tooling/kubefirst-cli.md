@@ -94,7 +94,7 @@ Optional: Skip GitLab Terraform if the registry has already been deleted.
 
 ```
 Usage:
-kubefirst destroy [flags]
+kubefirst cluster destroy [flags]
 
 Flags:
 --dry-run                 Set to dry-run mode, no changes done on cloud provider selected.

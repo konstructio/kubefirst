@@ -19,7 +19,7 @@ that demonstrate how it all pieces together.
 - We'd love to advise your project on next steps - see our available white glove and commercial services.
 
 _Note: This infrastructure will run in your AWS cloud and is subject to associated AWS fees - about $10/day USD. 
-to run. Removal of this infrastructure is also automated with a single `kubefirst destroy` command._
+to run. Removal of this infrastructure is also automated with a single `kubefirst cluster destroy` command._
 
 ## Console UI
 
@@ -30,7 +30,7 @@ Once you run `cluster create` command at the end of the installation will open a
 
 ## Destroying
 
-Kubefirst also makes it easy to destroy a previsioned cluster. By calling the `kubefirst destroy` command, all provisioned
+Kubefirst also makes it easy to destroy a previsioned cluster. By calling the `kubefirst cluster destroy` command, all provisioned
 resources are deleted. This is a process that takes some minutes to be finished, since all created resources need to 
 be properly destroyed.
 

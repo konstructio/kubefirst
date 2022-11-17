@@ -35,16 +35,51 @@ There are a number of other ways to install kubefirst for different operating sy
 
 Then init your local setup providing values for the following flags:
 
-| Flag | Description | Example |
-| ---- | ----------- | ------- |
-| --admin-email | an email address that can be used for certificate renewal alerts and the gitlab root account | yourname@yourcompany.com |
-| --cloud | we only support aws, gcp coming soon | aws |
-| --hosted-zone-name | name of the platform's hosted zone domain - this will drive the URLs of your tools (gitlab.yourdomain.com, argocd.yourdomain.com, etc) | yourdomain.com |
-| --region | name of the aws region in which to place your region specific resources | us-east-1 |
-| --profile | name of the aws profile the cli should leverage | default |
+| Flag              | Description                                                                                                                           | Example                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| --admin-email     | an email address that can be used for certificate renewal alerts and the gitlab root account                                          | yourname@yourcompany.com  |
+| --cloud           | we only support aws, gcp coming soon                                                                                                  | aws                       |
+| --hosted-zone-name| name of the platform's hosted zone domain - this will drive the URLs of your tools (gitlab.yourdomain.com, argocd.yourdomain.com, etc)| yourdomain.com            |
+| --region          | name of the aws region in which to place your region specific resources                                                               | us-east-1                 |
+| --profile         | name of the aws profile the cli should leverage                                                                                       | default                   |
+| --cluster-name    | name of the cluster name, used to identify resources on cloud provider                                                                | your_cluster_name         |
+| --s3-suffix       | unique identifier for s3 buckets                                                                                                      | you-s3-bucket-name        |
+| --git-provider    | specify \"github\" or \"gitlab\" git provider                                                                                         | gitlab                    |
+| --aws-nodes-spot  | nodes spot on AWS EKS compute nodes                                                                                                   | true                      |
 
+```bash
+kubefirst init \
+--admin-email yourname@yourcompany.com \
+--cloud aws \
+--hosted-zone-name yourdomain.com \
+--region us-east-1 \
+--profile default \
+--cluster-name your_cluster_name \
+--s3-suffix you-s3-bucket-name \
+--git-provider gitlab \
+--aws-nodes-spot
 ```
-kubefirst init --admin-email yourname@yourcompany.com --cloud aws --hosted-zone-name yourdomain.com --region us-east-1 --profile default
+
+#### Using a config file
+
+```yaml
+# config.yaml
+config:
+  admin-email: your_name@yourcompany.com
+  cloud: aws
+  hosted-zone-name: yourdomain.com
+  region: us-east-1
+  profile: default
+  cluster-name: your_cluster_name
+  s3-suffix: you-s3-bucket-name
+  git-provider: gitlab
+  aws-nodes-spot: true
+```
+
+```bash
+export KUBEFIRST_GITHUB_AUTH_TOKEN=your-new-token
+
+kubefirst init -c config.yaml
 ```
 
 The `init` process produces a directory of utilities, a state file, and some staged platform content that can now be 
