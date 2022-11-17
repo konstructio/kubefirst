@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/denisbrodbeck/machineid"
 	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/spf13/viper"
 )
 
 // Telemetry data that will be consumed by handlers and services
