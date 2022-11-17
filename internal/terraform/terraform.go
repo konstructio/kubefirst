@@ -190,12 +190,22 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 			log.Panicf("Failed to destroy load balancer: %v", err)
 		}
 
+		time.Sleep(45 * time.Second)
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
+		if err != nil {
+			log.Printf("failed to terraform init base %v", err)
+		}
+
+		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
+		if err != nil {
+			log.Printf("failed to terraform destroy base %v", err)
+		}
+
 		err = aws.DestroySecurityGroup(viper.GetString("cluster-name"))
 		if err != nil {
 			log.Panicf("Failed to destroy security group: %v", err)
 		}
 
-		time.Sleep(45 * time.Second)
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
 			log.Panicf("failed to terraform init base %v", err)
@@ -205,6 +215,7 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		if err != nil {
 			log.Panicf("failed to terraform destroy base %v", err)
 		}
+
 		viper.Set("destroy.terraformdestroy.base", true)
 		viper.WriteConfig()
 		log.Println("terraform base destruction complete")
