@@ -25,6 +25,8 @@ func NewTelemetry(metricName string, domain string, CLIVersion string) (Telemetr
 	// hostedzone is not provided, we assume it's a localhost installation
 	if len(domain) == 0 {
 		machineId, err := machineid.ID()
+		viper.Set("machineid", machineId)
+		viper.WriteConfig()
 		if err != nil {
 			return Telemetry{}, err
 		}
