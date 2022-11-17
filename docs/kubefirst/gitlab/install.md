@@ -60,6 +60,28 @@ kubefirst init \
 --aws-nodes-spot
 ```
 
+#### Using a config file
+
+```yaml
+# config.yaml
+config:
+  admin-email: your_name@yourcompany.com
+  cloud: aws
+  hosted-zone-name: yourdomain.com
+  region: us-east-1
+  profile: default
+  cluster-name: your_cluster_name
+  s3-suffix: you-s3-bucket-name
+  git-provider: gitlab
+  aws-nodes-spot: true
+```
+
+```bash
+export KUBEFIRST_GITHUB_AUTH_TOKEN=your-new-token
+
+kubefirst init -c config.yaml
+```
+
 The `init` process produces a directory of utilities, a state file, and some staged platform content that can now be 
 found at `~/.kubefirst`. [Here](../../tooling/kubefirst-cli.md) you can find more details about `init` command.
 <!-- TODO: check final state file name above - state file collides with directory -->
