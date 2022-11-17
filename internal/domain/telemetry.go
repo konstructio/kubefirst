@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+
 	"github.com/denisbrodbeck/machineid"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
@@ -12,6 +13,7 @@ type Telemetry struct {
 	MetricName string
 	Domain     string
 	CLIVersion string
+	MachineId  string
 }
 
 // NewTelemetry is the Telemetry domain. When instantiating new Telemetries, we're able to validate domain specific
@@ -21,25 +23,25 @@ func NewTelemetry(metricName string, domain string, CLIVersion string) (Telemetr
 	if len(metricName) == 0 {
 		return Telemetry{}, errors.New("unable to create metric, missing metric name")
 	}
-
+	machineId, err := machineid.ID()
+	if err != nil {
+		return Telemetry{}, err
+	}
+	viper.Set("machineid", machineId)
+	viper.WriteConfig()
 	// localhost installation doesn't provide hostedzone that are mainly used as domain in this context. In case a
 	// hostedzone is not provided, we assume it's a localhost installation
 	if len(domain) == 0 {
-		machineId, err := machineid.ID()
-		viper.Set("machineid", machineId)
-		viper.WriteConfig()
-		if err != nil {
-			return Telemetry{}, err
-		}
 		domain = machineId
 		return Telemetry{
 			MetricName: metricName,
 			Domain:     domain,
 			CLIVersion: CLIVersion,
+			MachineId:  machineId,
 		}, nil
 	}
 
-	domain, err := pkg.RemoveSubDomain(domain)
+	domain, err = pkg.RemoveSubDomain(domain)
 	if err != nil {
 		return Telemetry{}, err
 	}
@@ -48,5 +50,6 @@ func NewTelemetry(metricName string, domain string, CLIVersion string) (Telemetr
 		MetricName: metricName,
 		Domain:     domain,
 		CLIVersion: CLIVersion,
+		MachineId:  machineId,
 	}, nil
 }
