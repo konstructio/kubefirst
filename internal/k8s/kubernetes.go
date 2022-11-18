@@ -461,43 +461,12 @@ func SetArgocdCreds(dryRun bool) {
 	viper.WriteConfig()
 }
 
-// DeleteIngress receives namespace and name to delete a Ingress object.
+// IngressCreate creates a Ingress object based on the provided parameters.
 //
 // Example:
 //
-//	err := k8s.DeleteIngress("default", "simple-go-api")
-func DeleteIngress(namespace string, name string) error {
-
-	// todo: method
-	clientset, err := GetClientSet(false)
-	if err != nil {
-		return err
-	}
-
-	err = clientset.NetworkingV1().Ingresses(namespace).Delete(
-		context.Background(),
-		name,
-		metaV1.DeleteOptions{
-			TypeMeta: metaV1.TypeMeta{
-				Kind: "Ingress",
-			},
-		},
-	)
-	if err != nil {
-		return err
-	}
-
-	log.Println("Ingress object deleted")
-
-	return nil
-}
-
-// CreateIngress creates a Ingress object based on the provided parameters.
-//
-// Example:
-//
-//	err := k8s.CreateIngress("default", "simple-go-api", "api.localhost", "simple-go-api-service", 7001)
-func CreateIngress(namespace string, name string, host string, serviceName string, port int32) error {
+//	err := k8s.IngressCreate("default", "simple-go-api", "api.localhost", "simple-go-api-service", 7001)
+func IngressCreate(namespace string, name string, host string, serviceName string, port int32) error {
 
 	// todo: method
 	clientset, err := GetClientSet(false)
@@ -552,6 +521,37 @@ func CreateIngress(namespace string, name string, host string, serviceName strin
 	}
 
 	log.Println(ingressObject.Status.String())
+
+	return nil
+}
+
+// IngressDelete receives namespace and name to delete a Ingress object.
+//
+// Example:
+//
+//	err := k8s.IngressDelete("default", "simple-go-api")
+func IngressDelete(namespace string, name string) error {
+
+	// todo: method
+	clientset, err := GetClientSet(false)
+	if err != nil {
+		return err
+	}
+
+	err = clientset.NetworkingV1().Ingresses(namespace).Delete(
+		context.Background(),
+		name,
+		metaV1.DeleteOptions{
+			TypeMeta: metaV1.TypeMeta{
+				Kind: "Ingress",
+			},
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	log.Println("Ingress object deleted")
 
 	return nil
 }
