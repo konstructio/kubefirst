@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	networking "k8s.io/api/networking/v1"
 	"log"
 	"net/http"
 	"os"
@@ -256,6 +257,7 @@ func WaitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, pod
 	}
 }
 
+// todo: delete unused function
 func PatchSecret(k8sClient coreV1Types.SecretInterface, secretName, key, val string) {
 	secret, err := k8sClient.Get(context.TODO(), secretName, metaV1.GetOptions{})
 	if err != nil {
@@ -457,4 +459,99 @@ func SetArgocdCreds(dryRun bool) {
 	viper.Set("argocd.admin.password", argocdPassword)
 	viper.Set("argocd.admin.username", "admin")
 	viper.WriteConfig()
+}
+
+// DeleteIngress receives namespace and name to delete a Ingress object.
+//
+// Example:
+//
+//	err := k8s.DeleteIngress("default", "simple-go-api")
+func DeleteIngress(namespace string, name string) error {
+
+	// todo: method
+	clientset, err := GetClientSet(false)
+	if err != nil {
+		return err
+	}
+
+	err = clientset.NetworkingV1().Ingresses(namespace).Delete(
+		context.Background(),
+		name,
+		metaV1.DeleteOptions{
+			TypeMeta: metaV1.TypeMeta{
+				Kind: "Ingress",
+			},
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	log.Println("Ingress object deleted")
+
+	return nil
+}
+
+// CreateIngress creates a Ingress object based on the provided parameters.
+//
+// Example:
+//
+//	err := k8s.CreateIngress("default", "simple-go-api", "api.localhost", "simple-go-api-service", 7001)
+func CreateIngress(namespace string, name string, host string, serviceName string, port int32) error {
+
+	// todo: method
+	clientset, err := GetClientSet(false)
+	if err != nil {
+		return err
+	}
+
+	pathPrefix := networking.PathTypePrefix
+
+	ingressConfig := networking.Ingress{
+		TypeMeta: metaV1.TypeMeta{
+			Kind: "Ingress",
+		},
+		ObjectMeta: metaV1.ObjectMeta{
+			Name:        name,
+			Annotations: map[string]string{"ingress.kubernetes.io/ssl-redirect": "false"},
+		},
+		Spec: networking.IngressSpec{
+			Rules: []networking.IngressRule{{
+				Host: host,
+				IngressRuleValue: networking.IngressRuleValue{
+					HTTP: &networking.HTTPIngressRuleValue{
+						Paths: []networking.HTTPIngressPath{{
+							Path:     "/",
+							PathType: &pathPrefix,
+							Backend: networking.IngressBackend{
+								Service: &networking.IngressServiceBackend{
+									Name: serviceName,
+									Port: networking.ServiceBackendPort{
+										Number: port,
+									},
+								},
+							},
+						}},
+					},
+				},
+			}},
+		},
+	}
+
+	ingressObject, err := clientset.NetworkingV1().Ingresses(namespace).Create(
+		context.Background(),
+		&ingressConfig,
+		metaV1.CreateOptions{
+			TypeMeta: metaV1.TypeMeta{
+				Kind: "Ingress",
+			},
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	log.Println(ingressObject.Status.String())
+
+	return nil
 }
