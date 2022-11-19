@@ -195,3 +195,4 @@ Did you know our superhero mascot K-Ray gets its frictionless superpowers from a
 
 [![Star History Chart](https://api.star-history.com/svg?repos=kubefirst/kubefirst&type=Date)](https://star-history.com/#kubefirst/kubefirst&Date)
 
+
