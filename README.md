@@ -30,13 +30,23 @@ managed with automated Infrastructure as Code, GitOps asset management and appli
 sample application delivered to development, staging, and production, and so much more. It's an open source platform 
 ready to be customized to suit your company's needs.
 
-- [DNS Setup](#dns-setup)
-- [Installing the CLI](#installing-the-cli)
-- [Initialization](#initialization)
-- [Creation](#creation)
-- [Access ArgoCD](#access-argocd)
-- [Destroy](#destroy)
-- [Available Commands](#available-commands)
+- [Kubefirst CLI](#kubefirst-cli)
+  - [DNS Setup](#dns-setup)
+  - [Installing the CLI](#installing-the-cli)
+  - [Other installation techniques:](#other-installation-techniques)
+  - [Initialization](#initialization)
+    - [localhost](#localhost)
+    - [GitLab](#gitlab)
+    - [GitHub](#github)
+  - [Creation](#creation)
+  - [Destroy](#destroy)
+- [What to do next](#what-to-do-next)
+- [If you want learn more](#if-you-want-learn-more)
+  - [Access ArgoCD](#access-argocd)
+  - [Available Commands](#available-commands)
+  - [The Provisioning Process](#the-provisioning-process)
+  - [Experimental Mode (we discourage it)](#experimental-mode-we-discourage-it)
+  - [Feed K-Ray](#feed-k-ray)
 
 ![kubefirst architecture diagram](/images/kubefirst-arch.png)
 
@@ -184,3 +194,4 @@ We use external repositories during the provisioning process, and the version/ta
 Did you know our superhero mascot K-Ray gets its frictionless superpowers from a healthy diet of GitHub stars? K-Ray gets soooo hungry too - you wouldn't believe it. Feed K-Ray a GitHub star ⭐ above to bookmark our project and keep K-Ray happy!!
 
 [![Star History Chart](https://api.star-history.com/svg?repos=kubefirst/kubefirst&type=Date)](https://star-history.com/#kubefirst/kubefirst&Date)
+
