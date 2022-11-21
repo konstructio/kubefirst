@@ -654,3 +654,14 @@ func OpenLogFile(path string) (*os.File, error) {
 	}
 	return logFile, nil
 }
+
+func GetFileContent(filePath string) ([]byte, error) {
+
+	byteData, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return byteData, nil
+
+}

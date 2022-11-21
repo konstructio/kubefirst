@@ -667,12 +667,12 @@ func IngressDelete(namespace string, name string) error {
 //	return nil
 //}
 
-// CreateMapStringSecret creates a key for a specific namespace.
+// CreateSecret creates a key for a specific namespace.
 //
 //	namespace: namespace where secret will be created
 //	secretName: secret name to be stored at a Kubernetes object
-//	data: a single or collection of strings that will be stored as a Kubernetes secret
-func CreateMapStringSecret(namespace string, secretName string, data map[string]string) error {
+//	data: a single or collection of []bytes that will be stored as a Kubernetes secret
+func CreateSecret(namespace string, secretName string, data map[string][]byte) error {
 
 	// todo: method
 	clientset, err := GetClientSet(false)
@@ -685,7 +685,7 @@ func CreateMapStringSecret(namespace string, secretName string, data map[string]
 			Name:      secretName,
 			Namespace: namespace,
 		},
-		StringData: data,
+		Data: data,
 	}
 
 	_, err = clientset.CoreV1().Secrets(namespace).Create(
