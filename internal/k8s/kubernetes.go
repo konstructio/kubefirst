@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	v1 "k8s.io/api/core/v1"
 	networking "k8s.io/api/networking/v1"
 	"log"
 	"net/http"
@@ -665,3 +666,36 @@ func IngressDelete(namespace string, name string) error {
 //
 //	return nil
 //}
+
+// CreateMapStringSecret creates a key for a specific namespace.
+//
+//	namespace: namespace where secret will be created
+//	secretName: secret name to be stored at a Kubernetes object
+//	data: a single or collection of strings that will be stored as a Kubernetes secret
+func CreateMapStringSecret(namespace string, secretName string, data map[string]string) error {
+
+	// todo: method
+	clientset, err := GetClientSet(false)
+	if err != nil {
+		return err
+	}
+
+	secret := v1.Secret{
+		ObjectMeta: metaV1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+		},
+		StringData: data,
+	}
+
+	_, err = clientset.CoreV1().Secrets(namespace).Create(
+		context.Background(),
+		&secret,
+		metaV1.CreateOptions{},
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

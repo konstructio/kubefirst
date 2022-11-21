@@ -9,6 +9,7 @@ const (
 	GitHubHost               = "github.com"
 	LocalClusterName         = "kubefirst"
 	MinimumAvailableDiskSize = 10 // 10 GB
+	LocalDNS                 = "localdev.me"
 )
 
 // SegmentIO constants
