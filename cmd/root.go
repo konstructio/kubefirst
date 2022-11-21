@@ -43,4 +43,6 @@ func Execute() {
 func init() {
 	cobra.OnInitialize()
 	rootCmd.AddCommand(local.NewCommand())
+	// todo: remove me before merging
+	rootCmd.AddCommand(NewDevCommand())
 }

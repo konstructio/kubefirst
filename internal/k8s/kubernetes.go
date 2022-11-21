@@ -465,8 +465,8 @@ func SetArgocdCreds(dryRun bool) {
 //
 // Example:
 //
-//	err := k8s.IngressCreate("default", "simple-go-api", "api.localhost", "simple-go-api-service", 7001)
-func IngressCreate(namespace string, name string, host string, serviceName string, port int32) error {
+//	err := k8s.IngressCreate("default", "simple-go-api", 7001)
+func IngressCreate(namespace string, serviceName string, port int32) error {
 
 	// todo: method
 	clientset, err := GetClientSet(false)
@@ -481,12 +481,12 @@ func IngressCreate(namespace string, name string, host string, serviceName strin
 			Kind: "Ingress",
 		},
 		ObjectMeta: metaV1.ObjectMeta{
-			Name:        name,
+			Name:        namespace,
 			Annotations: map[string]string{"ingress.kubernetes.io/ssl-redirect": "false"},
 		},
 		Spec: networking.IngressSpec{
 			Rules: []networking.IngressRule{{
-				Host: host,
+				Host: "vault.localhost",
 				IngressRuleValue: networking.IngressRuleValue{
 					HTTP: &networking.HTTPIngressRuleValue{
 						Paths: []networking.HTTPIngressPath{{
@@ -510,11 +510,7 @@ func IngressCreate(namespace string, name string, host string, serviceName strin
 	ingressObject, err := clientset.NetworkingV1().Ingresses(namespace).Create(
 		context.Background(),
 		&ingressConfig,
-		metaV1.CreateOptions{
-			TypeMeta: metaV1.TypeMeta{
-				Kind: "Ingress",
-			},
-		},
+		metaV1.CreateOptions{},
 	)
 	if err != nil {
 		return err
@@ -555,3 +551,117 @@ func IngressDelete(namespace string, name string) error {
 
 	return nil
 }
+
+// todo: maybe not necessary / clean up before merging
+//func IngressAddRule(namespace string, ingressName string, serviceName string, port int32) error {
+//
+//	// todo: method
+//	clientset, err := GetClientSet(false)
+//	if err != nil {
+//		return err
+//	}
+//
+//	l, err := clientset.NetworkingV1().Ingresses(namespace).List(
+//		context.Background(),
+//		metaV1.ListOptions{
+//			TypeMeta: metaV1.TypeMeta{
+//				Kind: "Ingress",
+//			},
+//		},
+//	)
+//	if err != nil {
+//		return err
+//	}
+//
+//	pathPrefix := networking.PathTypePrefix
+//	//ingressConfig := networking.Ingress{
+//	//	TypeMeta: metaV1.TypeMeta{
+//	//		Kind: "Ingress",
+//	//	},
+//	//	ObjectMeta: metaV1.ObjectMeta{
+//	//		Name:        name,
+//	//		Annotations: map[string]string{"ingress.kubernetes.io/ssl-redirect": "false"},
+//	//	},
+//	//	Spec: networking.IngressSpec{
+//	//		Rules: []networking.IngressRule{{
+//	//			Host: "api.localhost",
+//	//			IngressRuleValue: networking.IngressRuleValue{
+//	//				HTTP: &networking.HTTPIngressRuleValue{
+//	//					Paths: []networking.HTTPIngressPath{{
+//	//						Path:     "/",
+//	//						PathType: &pathPrefix,
+//	//
+//	//						Backend: networking.IngressBackend{
+//	//							Service: &networking.IngressServiceBackend{
+//	//								Name: "simple-go-api2",
+//	//								Port: networking.ServiceBackendPort{
+//	//									Number: 7001,
+//	//								},
+//	//							},
+//	//						},
+//	//					}},
+//	//				},
+//	//			},
+//	//		}},
+//	//	},
+//	//}
+//
+//	var foundIngress *networking.Ingress
+//	for _, v := range l.Items {
+//		fmt.Println(v.Name)
+//
+//		if v.Name == ingressName {
+//			fmt.Println("---debug---")
+//			fmt.Println("found!")
+//			fmt.Println("---debug---")
+//
+//			foundIngress = v.DeepCopy()
+//			break
+//		}
+//	}
+//
+//	//foundIngress.TypeMeta = metaV1.TypeMeta{
+//	//	Kind: "Ingress",
+//	//}
+//	//foundIngress.TypeMeta.APIVersion = "Ingress"
+//	//foundIngress.Name = "new123"
+//	//foundIngress.UID = k8sTypes.UID(uuid.New().String())
+//	vaultRules := networking.IngressRule{
+//		//Host: "vault.localhost",
+//		IngressRuleValue: networking.IngressRuleValue{
+//			HTTP: &networking.HTTPIngressRuleValue{
+//				Paths: []networking.HTTPIngressPath{{
+//					Path:     "/" + serviceName,
+//					PathType: &pathPrefix,
+//
+//					Backend: networking.IngressBackend{
+//						Service: &networking.IngressServiceBackend{
+//							Name: serviceName,
+//							Port: networking.ServiceBackendPort{
+//								Number: 8200,
+//							},
+//						},
+//					},
+//				}},
+//			},
+//		},
+//	}
+//	//foundIngress.Spec.Rules[0].Host = "api2.localhost"
+//	foundIngress.Spec.Rules = append(foundIngress.Spec.Rules, vaultRules)
+//
+//	u, err := clientset.NetworkingV1().Ingresses(namespace).Update(
+//		context.Background(),
+//		foundIngress,
+//		metaV1.UpdateOptions{
+//			TypeMeta: metaV1.TypeMeta{
+//				Kind: "Ingress",
+//			}},
+//	)
+//	if err != nil {
+//		return err
+//	}
+//
+//	fmt.Println(u)
+//
+//	return nil
+//}
