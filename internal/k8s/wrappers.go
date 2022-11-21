@@ -1,13 +1,14 @@
 package k8s
 
 import (
+	"log"
+	"sync"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
-	"log"
-	"sync"
 )
 
 // OpenPortForwardForLocal is a wrapper function to instantiate the necessary resources for Kubefirst
@@ -25,6 +26,9 @@ func OpenPortForwardForLocal(
 	minioConsoleStopChannel chan struct{},
 	kubefirstConsoleStopChannel chan struct{},
 	AtlantisStopChannel chan struct{},
+	MetaphorFrontendDevelopmentStopChannel chan struct{},
+	MetaphorGoDevelopmentStopChannel chan struct{},
+	MetaphorDevelopmentStopChannel chan struct{},
 ) error {
 
 	var wg sync.WaitGroup
@@ -32,49 +36,67 @@ func OpenPortForwardForLocal(
 
 	// Vault
 	go func() {
-		OpenPortForwardWrapper(pkg.VaultPodName, pkg.VaultNamespace, pkg.VaultPodPort, pkg.VaultPodLocalPort, vaultStopChannel)
+		OpenPortForwardPodWrapper(pkg.VaultPodName, pkg.VaultNamespace, pkg.VaultPodPort, pkg.VaultPodLocalPort, vaultStopChannel)
 		wg.Done()
 	}()
 
 	// Argo
 	go func() {
-		OpenPortForwardWrapper(pkg.ArgoPodName, pkg.ArgoNamespace, pkg.ArgoPodPort, pkg.ArgoPodLocalPort, argoStopChannel)
+		OpenPortForwardPodWrapper(pkg.ArgoPodName, pkg.ArgoNamespace, pkg.ArgoPodPort, pkg.ArgoPodLocalPort, argoStopChannel)
 		wg.Done()
 	}()
 
 	// ArgoCD
 	go func() {
-		OpenPortForwardWrapper(pkg.ArgoCDPodName, pkg.ArgoCDNamespace, pkg.ArgoCDPodPort, pkg.ArgoCDPodLocalPort, argoCDStopChannel)
+		OpenPortForwardPodWrapper(pkg.ArgoCDPodName, pkg.ArgoCDNamespace, pkg.ArgoCDPodPort, pkg.ArgoCDPodLocalPort, argoCDStopChannel)
 		wg.Done()
 	}()
 
 	// chartmuseum
 	go func() {
-		OpenPortForwardWrapper(pkg.ChartmuseumPodName, pkg.ChartmuseumNamespace, pkg.ChartmuseumPodPort, pkg.ChartmuseumPodLocalPort, chartmuseumStopChannel)
+		OpenPortForwardPodWrapper(pkg.ChartmuseumPodName, pkg.ChartmuseumNamespace, pkg.ChartmuseumPodPort, pkg.ChartmuseumPodLocalPort, chartmuseumStopChannel)
 		wg.Done()
 	}()
 
 	// Minio
 	go func() {
-		OpenPortForwardWrapper(pkg.MinioPodName, pkg.MinioNamespace, pkg.MinioPodPort, pkg.MinioPodLocalPort, minioStopChannel)
+		OpenPortForwardPodWrapper(pkg.MinioPodName, pkg.MinioNamespace, pkg.MinioPodPort, pkg.MinioPodLocalPort, minioStopChannel)
 		wg.Done()
 	}()
 
 	// Minio Console
 	go func() {
-		OpenPortForwardWrapper(pkg.MinioConsolePodName, pkg.MinioConsoleNamespace, pkg.MinioConsolePodPort, pkg.MinioConsolePodLocalPort, minioConsoleStopChannel)
+		OpenPortForwardPodWrapper(pkg.MinioConsolePodName, pkg.MinioConsoleNamespace, pkg.MinioConsolePodPort, pkg.MinioConsolePodLocalPort, minioConsoleStopChannel)
 		wg.Done()
 	}()
 
 	// Kubefirst console
 	go func() {
-		OpenPortForwardWrapper(pkg.KubefirstConsolePodName, pkg.KubefirstConsoleNamespace, pkg.KubefirstConsolePodPort, pkg.KubefirstConsolePodLocalPort, kubefirstConsoleStopChannel)
+		OpenPortForwardPodWrapper(pkg.KubefirstConsolePodName, pkg.KubefirstConsoleNamespace, pkg.KubefirstConsolePodPort, pkg.KubefirstConsolePodLocalPort, kubefirstConsoleStopChannel)
 		wg.Done()
 	}()
 
 	// Atlantis
 	go func() {
-		OpenPortForwardWrapper(pkg.AtlantisPodName, pkg.AtlantisNamespace, pkg.AtlantisPodPort, pkg.AtlantisPodLocalPort, AtlantisStopChannel)
+		OpenPortForwardPodWrapper(pkg.AtlantisPodName, pkg.AtlantisNamespace, pkg.AtlantisPodPort, pkg.AtlantisPodLocalPort, AtlantisStopChannel)
+		wg.Done()
+	}()
+
+	// MetaphorFrontendDevelopment
+	go func() {
+		OpenPortForwardServiceWrapper(pkg.MetaphorFrontendDevelopmentServiceName, pkg.MetaphorFrontendDevelopmentNamespace, pkg.MetaphorFrontendDevelopmentServicePort, pkg.MetaphorFrontendDevelopmentServiceLocalPort, MetaphorFrontendDevelopmentStopChannel)
+		wg.Done()
+	}()
+
+	// MetaphorGoDevelopment
+	go func() {
+		OpenPortForwardServiceWrapper(pkg.MetaphorGoDevelopmentServiceName, pkg.MetaphorGoDevelopmentNamespace, pkg.MetaphorGoDevelopmentServicePort, pkg.MetaphorGoDevelopmentServiceLocalPort, MetaphorGoDevelopmentStopChannel)
+		wg.Done()
+	}()
+
+	// MetaphorDevelopment
+	go func() {
+		OpenPortForwardServiceWrapper(pkg.MetaphorDevelopmentServiceName, pkg.MetaphorDevelopmentNamespace, pkg.MetaphorDevelopmentServicePort, pkg.MetaphorDevelopmentServiceLocalPort, MetaphorDevelopmentStopChannel)
 		wg.Done()
 	}()
 
@@ -98,7 +120,7 @@ func OpenPortForwardForLocal(
 //			vaultStopChannel)
 //		wg.Done()
 //	}()
-func OpenPortForwardWrapper(podName string, namespace string, podPort int, podLocalPort int, stopChannel chan struct{}) {
+func OpenPortForwardPodWrapper(podName string, namespace string, podPort int, podLocalPort int, stopChannel chan struct{}) {
 
 	config1 := configs.ReadConfig()
 	kubeconfig := config1.KubeConfigPath
@@ -111,6 +133,7 @@ func OpenPortForwardWrapper(podName string, namespace string, podPort int, podLo
 	readyCh := make(chan struct{})
 
 	// todo: constants for podName, PodPort and localPort, namespace
+
 	portForwardRequest := PortForwardAPodRequest{
 		RestConfig: cfg,
 		Pod: v1.Pod{
@@ -146,6 +169,57 @@ func OpenPortForwardWrapper(podName string, namespace string, podPort int, podLo
 
 	log.Printf("Pod %q at namespace %q has port-forward accepting local connections at port %d\n", podName, namespace, podLocalPort)
 	//<-stopChannel
+	return
+}
 
+func OpenPortForwardServiceWrapper(serviceName string, namespace string, servicePort int, serviceLocalPort int, stopChannel chan struct{}) {
+
+	config1 := configs.ReadConfig()
+	kubeconfig := config1.KubeConfigPath
+	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		log.Println(err)
+	}
+
+	// readyCh communicate when the port forward is ready to get traffic
+	readyCh := make(chan struct{})
+
+	// todo: constants for podName, PodPort and localPort, namespace
+
+	portForwardRequest := PortForwardAServiceRequest{
+		RestConfig: cfg,
+		Service: v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      serviceName,
+				Namespace: namespace,
+			},
+		},
+		ServicePort: servicePort,
+		LocalPort:   serviceLocalPort,
+		StopCh:      stopChannel,
+		ReadyCh:     readyCh,
+	}
+
+	clientset, err := GetClientSet(false)
+
+	go func() {
+		err = PortForwardService(clientset, portForwardRequest)
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
+	select {
+	case <-stopChannel:
+		log.Println("leaving...")
+		close(stopChannel)
+		close(readyCh)
+		break
+	case <-readyCh:
+		log.Println("port forwarding is ready to get traffic")
+	}
+
+	log.Printf("Service %q at namespace %q has port-forward accepting local connections at port %d\n", serviceName, namespace, serviceLocalPort)
+	//<-stopChannel
 	return
 }

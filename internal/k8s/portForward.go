@@ -4,18 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/portforward"
-	"k8s.io/client-go/transport/spdy"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 	"sync"
+
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/portforward"
+	"k8s.io/client-go/transport/spdy"
 )
 
 type PortForwardAPodRequest struct {
@@ -27,6 +28,25 @@ type PortForwardAPodRequest struct {
 	LocalPort int
 	// PodPort is the target port for the pod
 	PodPort int
+
+	//// Steams configures where to write or read input from
+	//Streams genericclioptions.IOStreams
+
+	// StopCh is the channel used to manage the port forward lifecycle
+	StopCh <-chan struct{}
+	// ReadyCh communicates when the tunnel is ready to receive traffic
+	ReadyCh chan struct{}
+}
+
+type PortForwardAServiceRequest struct {
+	// RestConfig is the kubernetes config
+	RestConfig *rest.Config
+	// Service is the selected service for this port forwarding
+	Service v1.Service
+	// LocalPort is the local port that will be selected to expose the ServicePort
+	LocalPort int
+	// ServicePort is the target port for the service
+	ServicePort int
 
 	//// Steams configures where to write or read input from
 	//Streams genericclioptions.IOStreams
@@ -96,6 +116,28 @@ func PortForwardPod(clientset *kubernetes.Clientset, req PortForwardAPodRequest)
 
 	return nil
 
+}
+
+// PortForwardService receives a PortForwardAServiceRequest, and enable port forward for the specified resource. If the provided
+// Service name matches a running Service, it will try to port forward for that Service on the specified port.
+func PortForwardService(clientset *kubernetes.Clientset, req PortForwardAServiceRequest) error {
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	ports := fmt.Sprintf("%d:%d", req.LocalPort, req.ServicePort)
+	// Cloud Console UI
+	go func() {
+		_, err := PortForward(false, req.Service.Namespace, fmt.Sprintf("svc/%s", req.Service.Name), ports)
+		if err != nil {
+			log.Println("error opening Kubefirst-console port forward")
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	return nil
 }
 
 // todo: this is temporary
