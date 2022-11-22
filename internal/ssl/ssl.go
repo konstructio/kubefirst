@@ -243,36 +243,64 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 }
 
 func InstallCALocal(config *configs.Config) {
-	_, _, err := pkg.ExecShellReturnStrings(config.mkCertPath, "-install")
+	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, "-install")
 	if err != nil {
 		log.Printf("failed to uninstall CA of mkCert: %s", err)
 	}
 }
 
 func UninstallCALocal(config *configs.Config) {
-	_, _, err := pkg.ExecShellReturnStrings(config.mkCertPath, "-uninstall")
+	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, "-uninstall")
 	if err != nil {
 		log.Printf("failed to uninstall CA of mkCert: %s", err)
 	}
 }
 
 func CreateCertsLocal(config *configs.Config) {
-	log.Printf("Generating certificate argo.localdev.me on %s", config.mkCertPath)
-	_, _, err := pkg.ExecShellReturnStrings(config.mkCertPath, "argo.localdev.me", "-cert-file", "argo-cert.pem", "-key-file", "argo-key.pem")
+	log.Printf("Generating certificate argo.localdev.me on %s", config.MkCertPath)
+	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, "argo.localdev.me", "-cert-file", "argo-cert.pem", "-key-file", "argo-key.pem")
 	if err != nil {
 		log.Printf("failed to generate Argo certificate using mkCert: %s", err)
 	}
 
-	log.Printf("Generating certificate argocd.localdev.me on %s", config.mkCertPath)
-	_, _, err = pkg.ExecShellReturnStrings(config.mkCertPath, "argocd.localdev.me", "-cert-file", "argocd-cert.pem", "-key-file", "argocd-key.pem")
+	log.Printf("Generating certificate argocd.localdev.me on %s", config.MkCertPath)
+	_, _, err = pkg.ExecShellReturnStrings(config.MkCertPath, "argocd.localdev.me", "-cert-file", "argocd-cert.pem", "-key-file", "argocd-key.pem")
 	if err != nil {
 		log.Printf("failed to generate ArgoCD certificate using mkCert: %s", err)
 	}
 
-	log.Printf("Generating certificate vault.localdev.me on %s", config.mkCertPath)
-	_, _, err = pkg.ExecShellReturnStrings(config.mkCertPath, "vault.localdev.me", "-cert-file", "vault-cert.pem", "-key-file", "vault-key.pem")
+	log.Printf("Generating certificate vault.localdev.me on %s", config.MkCertPath)
+	_, _, err = pkg.ExecShellReturnStrings(config.MkCertPath, "vault.localdev.me", "-cert-file", "vault-cert.pem", "-key-file", "vault-key.pem")
 	if err != nil {
 		log.Printf("failed to generate Vault certificate using mkCert: %s", err)
 	}
+}
 
+func CreateCertificatesForLocalWrapper(config *configs.Config, applicationList []string) error {
+
+	for _, value := range applicationList {
+
+		if err := createCertificateForLocal(config, value); err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
+
+func createCertificateForLocal(config *configs.Config, appName string) error {
+
+	fullAppAddress := appName + "." + pkg.LocalDNS
+	certFileName := appName + "-cert.pem"
+	keyFileName := appName + "-key.pem"
+
+	log.Printf("generating certificate %s.localdev.me on %s", appName, config.MkCertPath)
+
+	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, fullAppAddress, "-cert-file", certFileName, "-key-file", keyFileName)
+	if err != nil {
+		return fmt.Errorf("failed to generate %s SSL certificate using MkCert: %v", appName, err)
+	}
+
+	return nil
 }

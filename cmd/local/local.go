@@ -58,7 +58,11 @@ func NewCommand() *cobra.Command {
 	// todo: get it from GH token , use it for console
 	localCmd.Flags().StringVar(&adminEmail, "admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
 	localCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "main", "metaphor application branch")
-	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "main", "version/branch used on git clone")
+	// todo: UPDATE IT BEFORE MERGING
+	// todo: UPDATE IT BEFORE MERGING
+	// todo: UPDATE IT BEFORE MERGING
+	// todo: UPDATE IT BEFORE MERGING
+	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "add-ingress-localhost", "version/branch used on git clone")
 	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
 	localCmd.Flags().StringVar(&templateTag, "template-tag", "",
 		"when running a built version, and ldflag is set for the Kubefirst version, it will use this tag value to clone the templates (gitops and metaphor's)",
@@ -156,10 +160,10 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.IncrementTracker("step-base", 1)
 	progressPrinter.IncrementTracker("step-github", 1)
 
-	//create local certs using mkcert tool
-	log.Println("Installing CA from mkcert")
+	// create local certs using MKCert tool
+	log.Println("Installing CA from MKCert")
 	ssl.InstallCALocal(config)
-	log.Println("Creating local certs using mkcert")
+	log.Println("Creating local certs using MKCert")
 	ssl.CreateCertsLocal(config)
 
 	// add secrets to cluster

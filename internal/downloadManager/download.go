@@ -20,6 +20,7 @@ import (
 )
 
 // DownloadLocalTools - Download extra tools needed for local installations scenarios
+// todo: download in parallel
 func DownloadLocalTools(config *configs.Config) error {
 	toolsDirPath := fmt.Sprintf("%s/tools", config.K1FolderPath)
 	err := createDirIfDontExist(toolsDirPath)
@@ -46,16 +47,16 @@ func DownloadLocalTools(config *configs.Config) error {
 	// https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-darwin-amd64
 	mkCertDownloadUrl := fmt.Sprintf(
 		"https://github.com/FiloSottile/mkcert/releases/download/%s/mkcert-%s-%s-%s",
-		config.mkCertVersion,
-		config.mkCertVersion,
+		config.MkCertVersion,
+		config.MkCertVersion,
 		config.LocalOs,
 		config.LocalArchitecture,
 	)
-	err = downloadFile(config.mkCertPath, mkCertDownloadUrl)
+	err = downloadFile(config.MkCertPath, mkCertDownloadUrl)
 	if err != nil {
 		return err
 	}
-	err = os.Chmod(config.mkCertPath, 0755)
+	err = os.Chmod(config.MkCertPath, 0755)
 	if err != nil {
 		return err
 	}

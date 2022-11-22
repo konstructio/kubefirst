@@ -118,7 +118,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		)
 	}
 
-	progressPrinter.SetupProgress(6, silentMode)
+	progressPrinter.SetupProgress(4, silentMode)
 
 	progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 	progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
