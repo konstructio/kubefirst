@@ -3,11 +3,12 @@ package local
 import (
 	"context"
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/wrappers"
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/kubefirst/kubefirst/internal/argocd"
@@ -18,6 +19,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/metaphor"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
+	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -153,6 +155,12 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	}
 	progressPrinter.IncrementTracker("step-base", 1)
 	progressPrinter.IncrementTracker("step-github", 1)
+
+	//create local certs using mkcert tool
+	log.Println("Installing CA from mkcert")
+	ssl.InstallCALocal(config)
+	log.Println("Creating local certs using mkcert")
+	ssl.CreateCertsLocal(config)
 
 	// add secrets to cluster
 	// todo there is a secret condition in AddK3DSecrets to this not checked
