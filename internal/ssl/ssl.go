@@ -241,3 +241,38 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 	viper.WriteConfig()
 	return nil
 }
+
+func InstallCALocal(config *configs.Config) {
+	_, _, err := pkg.ExecShellReturnStrings(config.mkCertPath, "-install")
+	if err != nil {
+		log.Printf("failed to uninstall CA of mkCert: %s", err)
+	}
+}
+
+func UninstallCALocal(config *configs.Config) {
+	_, _, err := pkg.ExecShellReturnStrings(config.mkCertPath, "-uninstall")
+	if err != nil {
+		log.Printf("failed to uninstall CA of mkCert: %s", err)
+	}
+}
+
+func CreateCertsLocal(config *configs.Config) {
+	log.Printf("Generating certificate argo.localdev.me on %s", config.mkCertPath)
+	_, _, err := pkg.ExecShellReturnStrings(config.mkCertPath, "argo.localdev.me", "-cert-file", "argo-cert.pem", "-key-file", "argo-key.pem")
+	if err != nil {
+		log.Printf("failed to generate Argo certificate using mkCert: %s", err)
+	}
+
+	log.Printf("Generating certificate argocd.localdev.me on %s", config.mkCertPath)
+	_, _, err = pkg.ExecShellReturnStrings(config.mkCertPath, "argocd.localdev.me", "-cert-file", "argocd-cert.pem", "-key-file", "argocd-key.pem")
+	if err != nil {
+		log.Printf("failed to generate ArgoCD certificate using mkCert: %s", err)
+	}
+
+	log.Printf("Generating certificate vault.localdev.me on %s", config.mkCertPath)
+	_, _, err = pkg.ExecShellReturnStrings(config.mkCertPath, "vault.localdev.me", "-cert-file", "vault-cert.pem", "-key-file", "vault-key.pem")
+	if err != nil {
+		log.Printf("failed to generate Vault certificate using mkCert: %s", err)
+	}
+
+}
