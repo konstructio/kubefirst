@@ -165,7 +165,7 @@ func OpenPortForwardForCloudConConsole() error {
 func OpenPortForwardForKubeConConsole() error {
 
 	var wg sync.WaitGroup
-	wg.Add(8)
+	wg.Add(7)
 	// argo workflows
 	go func() {
 		output, err := PortForward(false, "argo", "svc/argo-server", "2746:2746")
@@ -228,19 +228,6 @@ func OpenPortForwardForKubeConConsole() error {
 	}()
 
 	// minio
-	go func() {
-		output, err := PortForward(false, "minio", "svc/minio", "9000:9000")
-		if err != nil {
-			log.Println("error opening Minio port forward")
-		}
-		stderr := fmt.Sprint(output.Stderr)
-		if len(stderr) > 0 {
-			log.Println(stderr)
-		}
-		wg.Done()
-	}()
-
-	// minio console
 	go func() {
 		output, err := PortForward(false, "minio", "svc/minio", "9000:9000")
 		if err != nil {
