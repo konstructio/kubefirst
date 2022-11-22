@@ -655,7 +655,13 @@ func OpenLogFile(path string) (*os.File, error) {
 	return logFile, nil
 }
 
+// GetFileContent receives a file path, and return its content.
 func GetFileContent(filePath string) ([]byte, error) {
+
+	// check if file exists
+	if _, err := os.Stat(filePath); err != nil && os.IsNotExist(err) {
+		return nil, err
+	}
 
 	byteData, err := os.ReadFile(filePath)
 	if err != nil {
@@ -663,5 +669,4 @@ func GetFileContent(filePath string) ([]byte, error) {
 	}
 
 	return byteData, nil
-
 }
