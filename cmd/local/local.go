@@ -3,11 +3,12 @@ package local
 import (
 	"context"
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/wrappers"
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/kubefirst/kubefirst/internal/argocd"
@@ -219,7 +220,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	defer func() {
 		close(argoCDStopChannel)
 	}()
-	k8s.OpenPortForwardWrapper(
+	k8s.OpenPortForwardPodWrapper(
 		pkg.ArgoCDPodName,
 		pkg.ArgoCDNamespace,
 		pkg.ArgoCDPodPort,
@@ -268,7 +269,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	defer func() {
 		close(vaultStopChannel)
 	}()
-	k8s.OpenPortForwardWrapper(
+	k8s.OpenPortForwardPodWrapper(
 		pkg.VaultPodName,
 		pkg.VaultNamespace,
 		pkg.VaultPodPort,
@@ -282,7 +283,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	defer func() {
 		close(minioStopChannel)
 	}()
-	k8s.OpenPortForwardWrapper(
+	k8s.OpenPortForwardPodWrapper(
 		pkg.MinioPodName,
 		pkg.MinioNamespace,
 		pkg.MinioPodPort,
@@ -352,7 +353,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		defer func() {
 			close(chartmuseumStopChannel)
 		}()
-		k8s.OpenPortForwardWrapper(
+		k8s.OpenPortForwardPodWrapper(
 			pkg.ChartmuseumPodName,
 			pkg.ChartmuseumNamespace,
 			pkg.ChartmuseumPodPort,
@@ -410,7 +411,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		defer func() {
 			close(atlantisStopChannel)
 		}()
-		k8s.OpenPortForwardWrapper(
+		k8s.OpenPortForwardPodWrapper(
 			pkg.AtlantisPodName,
 			pkg.AtlantisNamespace,
 			pkg.AtlantisPodPort,

@@ -97,7 +97,7 @@ var destroyLocalGithubCmd = &cobra.Command{
 		defer func() {
 			close(vaultStopChannel)
 		}()
-		k8s.OpenPortForwardWrapper(
+		k8s.OpenPortForwardPodWrapper(
 			pkg.VaultPodName,
 			pkg.VaultNamespace,
 			pkg.VaultPodPort,
@@ -111,7 +111,7 @@ var destroyLocalGithubCmd = &cobra.Command{
 		defer func() {
 			close(minioStopChannel)
 		}()
-		k8s.OpenPortForwardWrapper(
+		k8s.OpenPortForwardPodWrapper(
 			pkg.MinioPodName,
 			pkg.MinioNamespace,
 			pkg.MinioPodPort,

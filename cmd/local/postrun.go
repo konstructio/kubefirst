@@ -1,15 +1,16 @@
 package local
 
 import (
-	"github.com/kubefirst/kubefirst/internal/k8s"
-	"github.com/kubefirst/kubefirst/internal/reports"
-	"github.com/kubefirst/kubefirst/pkg"
-	"github.com/spf13/cobra"
 	"log"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+
+	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/spf13/cobra"
 )
 
 func runPostLocal(cmd *cobra.Command, args []string) error {
@@ -28,6 +29,9 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 	minioConsoleStopChannel := make(chan struct{}, 1)
 	kubefirstConsoleStopChannel := make(chan struct{}, 1)
 	AtlantisStopChannel := make(chan struct{}, 1)
+	MetaphorFrontendDevelopmentStopChannel := make(chan struct{}, 1)
+	MetaphorGoDevelopmentStopChannel := make(chan struct{}, 1)
+	MetaphorDevelopmentStopChannel := make(chan struct{}, 1)
 
 	// guarantee it will close the port forwards even on a process kill
 	defer func() {
@@ -39,6 +43,9 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 		close(minioConsoleStopChannel)
 		close(kubefirstConsoleStopChannel)
 		close(AtlantisStopChannel)
+		close(MetaphorFrontendDevelopmentStopChannel)
+		close(MetaphorGoDevelopmentStopChannel)
+		close(MetaphorDevelopmentStopChannel)
 		log.Println("leaving port-forward command, port forwards are now closed")
 	}()
 
@@ -51,6 +58,9 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 		minioConsoleStopChannel,
 		kubefirstConsoleStopChannel,
 		AtlantisStopChannel,
+		MetaphorFrontendDevelopmentStopChannel,
+		MetaphorGoDevelopmentStopChannel,
+		MetaphorDevelopmentStopChannel,
 	)
 	if err != nil {
 		return err

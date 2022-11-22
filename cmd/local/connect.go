@@ -36,6 +36,9 @@ func runConnect(cmd *cobra.Command, args []string) error {
 	minioConsoleStopChannel := make(chan struct{}, 1)
 	kubefirstConsoleStopChannel := make(chan struct{}, 1)
 	AtlantisStopChannel := make(chan struct{}, 1)
+	MetaphorFrontendDevelopmentStopChannel := make(chan struct{}, 1)
+	MetaphorGoDevelopmentStopChannel := make(chan struct{}, 1)
+	MetaphorDevelopmentStopChannel := make(chan struct{}, 1)
 
 	// guarantee it will close the port forwards even on a process kill
 	defer func() {
@@ -47,6 +50,9 @@ func runConnect(cmd *cobra.Command, args []string) error {
 		close(minioConsoleStopChannel)
 		close(kubefirstConsoleStopChannel)
 		close(AtlantisStopChannel)
+		close(MetaphorFrontendDevelopmentStopChannel)
+		close(MetaphorGoDevelopmentStopChannel)
+		close(MetaphorDevelopmentStopChannel)
 		log.Println("leaving port-forward command, port forwards are now closed")
 	}()
 
@@ -59,6 +65,9 @@ func runConnect(cmd *cobra.Command, args []string) error {
 		minioConsoleStopChannel,
 		kubefirstConsoleStopChannel,
 		AtlantisStopChannel,
+		MetaphorFrontendDevelopmentStopChannel,
+		MetaphorGoDevelopmentStopChannel,
+		MetaphorDevelopmentStopChannel,
 	)
 	if err != nil {
 		return err

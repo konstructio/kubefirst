@@ -3,9 +3,10 @@ package reports
 import (
 	"bytes"
 	"fmt"
-	"github.com/kubefirst/kubefirst/pkg"
 	"log"
 	"strings"
+
+	"github.com/kubefirst/kubefirst/pkg"
 
 	"github.com/spf13/viper"
 )
@@ -296,14 +297,17 @@ func LocalConnectSummary() string {
 	localConnect.WriteString("\nKubefirst Local:\n")
 	localConnect.WriteString(strings.Repeat("-", 70))
 
-	localConnect.WriteString(fmt.Sprintf("\n\nKubefirst Console UI: %s\n", pkg.KubefirstConsoleLocalURL))
-	localConnect.WriteString(fmt.Sprintf("ChartmuseumLocalURL: %s\n", pkg.ChartmuseumLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Argo: %s\n", pkg.ArgoLocalURL))
-	localConnect.WriteString(fmt.Sprintf("ArgoCD: %s\n", pkg.ArgoCDLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Vault: %s\n", pkg.VaultLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Atlantis: %s\n", pkg.AtlantisLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Minio: %s\n", pkg.MinioURL))
-	localConnect.WriteString(fmt.Sprintf("Minio Console: %s\n", pkg.MinioConsoleURL))
+	localConnect.WriteString(fmt.Sprintf("\n\nKubefirst Console     %s\n", pkg.KubefirstConsoleLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Chart Museum:         %s\n", pkg.ChartmuseumLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Argo:                 %s/workflows\n", pkg.ArgoLocalURL))
+	localConnect.WriteString(fmt.Sprintf("ArgoCD:               %s\n", pkg.ArgoCDLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Vault:                %s\n", pkg.VaultLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Atlantis:             %s\n", pkg.AtlantisLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Minio:                %s\n", pkg.MinioURL))
+	localConnect.WriteString(fmt.Sprintf("Minio Console:        %s\n", pkg.MinioConsoleURL))
+	localConnect.WriteString(fmt.Sprintf("Metaphor Frontend:    %s\n", pkg.MetaphorFrontendDevelopmentLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Metaphor Go:          %s/app\n", pkg.MetaphorGoDevelopmentLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Metaphor:             %s/app\n", pkg.MetaphorDevelopmentLocalURL))
 
 	return localConnect.String()
 }

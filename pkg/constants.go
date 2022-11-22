@@ -104,3 +104,30 @@ const (
 	AtlantisLocalURL     = "http://localhost:4141"
 	LocalAtlantisURL     = "localhost:4141" // todo:
 )
+
+// MetaphorFrontendDevelopment
+const (
+	MetaphorFrontendDevelopmentServiceName      = "metaphor-frontend-development"
+	MetaphorFrontendDevelopmentNamespace        = "development"
+	MetaphorFrontendDevelopmentServicePort      = 443
+	MetaphorFrontendDevelopmentServiceLocalPort = 4000
+	MetaphorFrontendDevelopmentLocalURL         = "http://localhost:4000"
+)
+
+// MetaphorGoDevelopment
+const (
+	MetaphorGoDevelopmentServiceName      = "metaphor-go-development"
+	MetaphorGoDevelopmentNamespace        = "development"
+	MetaphorGoDevelopmentServicePort      = 443
+	MetaphorGoDevelopmentServiceLocalPort = 5000
+	MetaphorGoDevelopmentLocalURL         = "http://localhost:5000"
+)
+
+// MetaphorDevelopment
+const (
+	MetaphorDevelopmentServiceName      = "metaphor-development"
+	MetaphorDevelopmentNamespace        = "development"
+	MetaphorDevelopmentServicePort      = 443
+	MetaphorDevelopmentServiceLocalPort = 3000
+	MetaphorDevelopmentLocalURL         = "http://localhost:3000"
+)
