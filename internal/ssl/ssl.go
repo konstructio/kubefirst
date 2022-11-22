@@ -278,7 +278,7 @@ func UninstallCALocal(config *configs.Config) {
 
 // CreateCertificatesForLocalWrapper groups a certification creation call into a wrapper. The provided application
 // list is used to create SSL certificates for each of the provided application.
-func CreateCertificatesForLocalWrapper(config *configs.Config, applicationList []string) error {
+func CreateCertificatesForLocalWrapper(config *configs.Config) error {
 
 	// create folder
 	// todo: check permission
@@ -287,7 +287,7 @@ func CreateCertificatesForLocalWrapper(config *configs.Config, applicationList [
 		return err
 	}
 
-	for _, appName := range applicationList {
+	for _, appName := range config.AppListForCertificate {
 		if err := createCertificateForLocal(config, appName); err != nil {
 			return err
 		}

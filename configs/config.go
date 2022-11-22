@@ -43,6 +43,9 @@ type Config struct {
 	MkCertPath              string
 	MkCertPemFilesPath      string
 
+	// todo: add remaining apps
+	AppListForCertificate []string
+
 	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
 	ClusterName    string `env:"CLUSTER_NAME"`
 	AwsRegion      string `env:"AWS_REGION"`
@@ -131,6 +134,7 @@ func ReadConfig() *Config {
 	config.MkCertVersion = "v1.4.4"
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
+	config.AppListForCertificate = []string{"argocd", "argo", "vault"}
 
 	config.MetaphorTemplateURL = "https://github.com/kubefirst/metaphor-template.git"
 	config.GitopsTemplateURL = "https://github.com/kubefirst/gitops-template-gh.git"

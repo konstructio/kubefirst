@@ -1,6 +1,7 @@
 package local
 
 import (
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -55,6 +56,14 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	config := configs.ReadConfig()
+
+	log.Println("storing certificates into application secrets namespace")
+	if err = k8s.CreateSecretsFromCertificatesForLocalWrapper(config); err != nil {
+		log.Println(err)
+	}
+	log.Println("storing certificates into application secrets namespace done")
 
 	log.Println("Starting the presentation of console and api for the handoff screen")
 

@@ -26,16 +26,14 @@ func runDev(cmd *cobra.Command, args []string) error {
 	ssl.InstallCALocal(config)
 	log.Println("creating local certs using MkCert")
 	//ssl.CreateCertsLocal(config)
-	// todo: add remaining apps
-	appListForCertificate := []string{"argocd", "argo", "vault"}
-	err := ssl.CreateCertificatesForLocalWrapper(config, appListForCertificate)
+	err := ssl.CreateCertificatesForLocalWrapper(config)
 	if err != nil {
 		return err
 	}
 	log.Println("creating local certificates done")
 
 	log.Println("storing certificates into application secrets namespace")
-	if err := k8s.CreateSecretsFromCertificatesForLocalWrapper(config, appListForCertificate); err != nil {
+	if err := k8s.CreateSecretsFromCertificatesForLocalWrapper(config); err != nil {
 		log.Println(err)
 	}
 	//log.Println("storing certificates into application secrets namespace done")

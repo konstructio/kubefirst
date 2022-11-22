@@ -164,19 +164,11 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	log.Println("installing CA from MkCert")
 	ssl.InstallCALocal(config)
 
-	// todo: add remaining apps
-	appListForCertificate := []string{"argocd", "argo, vault"}
 	log.Println("creating local certificates")
-	if err := ssl.CreateCertificatesForLocalWrapper(config, appListForCertificate); err != nil {
+	if err := ssl.CreateCertificatesForLocalWrapper(config); err != nil {
 		log.Println(err)
 	}
 	log.Println("creating local certificates done")
-
-	log.Println("storing certificates into application secrets namespace")
-	if err := k8s.CreateSecretsFromCertificatesForLocalWrapper(config, appListForCertificate); err != nil {
-		log.Println(err)
-	}
-	log.Println("storing certificates into application secrets namespace done")
 
 	// add secrets to cluster
 	// todo there is a secret condition in AddK3DSecrets to this not checked
