@@ -65,19 +65,19 @@ func CreateSshKeyPair() {
 		privateKey := viper.GetString("botprivatekey")
 
 		var argocdInitValuesYaml = []byte(fmt.Sprintf(`
-	configs:
-	 repositories:
-	   soft-serve-gitops:
-	     url: ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops
-	     insecure: 'true'
-	     type: gitClient
-	     name: soft-serve-gitops
-	 credentialTemplates:
-	   ssh-creds:
-	     url: ssh://soft-serve.soft-serve.svc.cluster.local:22
-	     sshPrivateKey: |
-	       %s
-	`, strings.ReplaceAll(privateKey, "\n", "\n        ")))
+configs:
+ repositories:
+   soft-serve-gitops:
+	 url: ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops
+	 insecure: 'true'
+	 type: gitClient
+	 name: soft-serve-gitops
+ credentialTemplates:
+   ssh-creds:
+	 url: ssh://soft-serve.soft-serve.svc.cluster.local:22
+	 sshPrivateKey: |
+	   %s
+`, strings.ReplaceAll(privateKey, "\n", "\n        ")))
 
 		err := os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
 		if err != nil {
