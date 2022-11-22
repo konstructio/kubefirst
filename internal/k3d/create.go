@@ -27,7 +27,8 @@ func CreateK3dCluster() error {
 			"--registry-create", "k3d-"+viper.GetString("cluster-name")+"-registry:63630",
 			"--k3s-arg", `--kubelet-arg=eviction-hard=imagefs.available<1%,nodefs.available<1%@agent:*`,
 			"--k3s-arg", `--kubelet-arg=eviction-minimum-reclaim=imagefs.available=1%,nodefs.available=1%@agent:*`,
-			"--port", "80:80@loadbalancer")
+			"--port", "80:80@loadbalancer",
+			"--port", "443:443@loadbalancer")
 		if err != nil {
 			log.Println("error creating k3d cluster")
 			return errors.New("error creating k3d cluster")
