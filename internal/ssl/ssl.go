@@ -282,8 +282,8 @@ func CreateCertificatesForLocalWrapper(config *configs.Config, applicationList [
 
 	// create folder
 	// todo: check permission
-	err := os.Mkdir(config.MkCertPath+"certs", 0755)
-	if err != nil {
+	err := os.Mkdir(config.MkCertPemFilesPath, 0755)
+	if err != nil && os.IsNotExist(err) {
 		return err
 	}
 
@@ -300,7 +300,7 @@ func CreateCertificatesForLocalWrapper(config *configs.Config, applicationList [
 // the certificates, store them in files, and store the certificates in the host trusted store.
 func createCertificateForLocal(config *configs.Config, appName string) error {
 
-	certsFolder := config.MkCertPath + "/certs/"
+	certsFolder := config.MkCertPemFilesPath
 
 	fullAppAddress := appName + "." + pkg.LocalDNS      // example: app-name.localdev.me
 	certFileName := certsFolder + appName + "-cert.pem" // example: app-name-cert.pem

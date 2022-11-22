@@ -153,18 +153,18 @@ func OpenPortForwardWrapper(podName string, namespace string, podPort int, podLo
 func CreateSecretsFromCertificatesForLocalWrapper(config *configs.Config, applicationList []string) error {
 	for _, appName := range applicationList {
 
-		certsFolder := config.MkCertPath + "/certs/"
+		certsFolder := config.MkCertPemFilesPath
 
 		certFileName := certsFolder + appName + "-cert.pem" // example: app-name-cert.pem
 		keyFileName := certsFolder + appName + "-key.pem"   // example: app-name-key.pem
 
 		// open file content
-		certContent, err := pkg.GetFileContent(config.MkCertPath + certFileName)
+		certContent, err := pkg.GetFileContent(certFileName)
 		if err != nil {
 			return err
 		}
 
-		keyContent, err := pkg.GetFileContent(config.MkCertPath + keyFileName)
+		keyContent, err := pkg.GetFileContent(keyFileName)
 		if err != nil {
 			return err
 		}

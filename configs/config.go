@@ -41,6 +41,7 @@ type Config struct {
 	TerraformClientPath     string
 	K3dPath                 string
 	MkCertPath              string
+	MkCertPemFilesPath      string
 
 	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
 	ClusterName    string `env:"CLUSTER_NAME"`
@@ -117,6 +118,8 @@ func ReadConfig() *Config {
 	config.K3dPath = fmt.Sprintf("%s/tools/k3d", config.K1FolderPath)
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.MkCertPath = fmt.Sprintf("%s/tools/mkcert", config.K1FolderPath)
+	config.MkCertPath = fmt.Sprintf("%s/tools/mkcert", config.K1FolderPath)
+	config.MkCertPemFilesPath = fmt.Sprintf("%s/tools/certs/", config.K1FolderPath)
 	config.NgrokVersion = "v3"
 	config.TerraformVersion = "1.0.11"
 	config.ArgoCDChartHelmVersion = "4.10.5"
