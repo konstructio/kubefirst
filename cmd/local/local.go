@@ -171,9 +171,15 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.initial-repository.created")
 	if !executionControl {
 		pkg.InformUser("create initial argocd repository", silentMode)
-		//Enterprise users need to be able to set the hostname for git.
-		gitopsRepo := fmt.Sprintf("git@%s:%s/gitops.git", viper.GetString("github.host"), viper.GetString("github.owner"))
-		err := argocd.CreateInitialArgoCDRepository(gitopsRepo)
+		// Enterprise users need to be able to set the hostname for git.
+		gitOpsRepo := fmt.Sprintf("git@%s:%s/gitops.git", viper.GetString("github.host"), viper.GetString("github.owner"))
+
+		argoCDConfig := argocd.GetArgoCDInitialLocalConfig(
+			gitOpsRepo,
+			viper.GetString("botprivatekey"),
+		)
+
+		err := argocd.CreateInitialArgoCDRepository(config, argoCDConfig)
 		if err != nil {
 			log.Println("Error CreateInitialArgoCDRepository")
 			return err
