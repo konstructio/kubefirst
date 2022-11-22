@@ -115,8 +115,8 @@ func ReadConfig() *Config {
 	config.TerraformClientPath = fmt.Sprintf("%s/tools/terraform", config.K1FolderPath)
 	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
 	config.K3dPath = fmt.Sprintf("%s/tools/k3d", config.K1FolderPath)
-	config.MkCertPath = fmt.Sprintf("%s/tools/mkcert", config.K1FolderPath)
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
+	config.MkCertPath = fmt.Sprintf("%s/tools/mkcert", config.K1FolderPath)
 	config.NgrokVersion = "v3"
 	config.TerraformVersion = "1.0.11"
 	config.ArgoCDChartHelmVersion = "4.10.5"

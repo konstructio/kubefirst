@@ -163,8 +163,8 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	// create local certs using MKCert tool
 	log.Println("Installing CA from MkCert")
 	ssl.InstallCALocal(config)
-	log.Println("Creating local certs using MkCert")
-	ssl.CreateCertsLocal(config)
+	//log.Println("Creating local certs using MkCert")
+	//ssl.CreateCertsLocal(config)
 
 	// todo: add remaining apps
 	appListForCertificate := []string{"argocd", "argo, vault"}

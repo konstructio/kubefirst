@@ -256,32 +256,39 @@ func UninstallCALocal(config *configs.Config) {
 	}
 }
 
-func CreateCertsLocal(config *configs.Config) {
-	log.Printf("Generating certificate argo.localdev.me on %s", config.MkCertPath)
-	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, "argo.localdev.me", "-cert-file", "argo-cert.pem", "-key-file", "argo-key.pem")
-	if err != nil {
-		log.Printf("failed to generate Argo certificate using mkCert: %s", err)
-	}
-
-	log.Printf("Generating certificate argocd.localdev.me on %s", config.MkCertPath)
-	_, _, err = pkg.ExecShellReturnStrings(config.MkCertPath, "argocd.localdev.me", "-cert-file", "argocd-cert.pem", "-key-file", "argocd-key.pem")
-	if err != nil {
-		log.Printf("failed to generate ArgoCD certificate using mkCert: %s", err)
-	}
-
-	log.Printf("Generating certificate vault.localdev.me on %s", config.MkCertPath)
-	_, _, err = pkg.ExecShellReturnStrings(config.MkCertPath, "vault.localdev.me", "-cert-file", "vault-cert.pem", "-key-file", "vault-key.pem")
-	if err != nil {
-		log.Printf("failed to generate Vault certificate using mkCert: %s", err)
-	}
-}
+//func CreateCertsLocal(config *configs.Config) {
+//	log.Printf("Generating certificate argo.localdev.me on %s", config.MkCertPath)
+//	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, "argo.localdev.me", "-cert-file", "argo-cert.pem", "-key-file", "argo-key.pem")
+//	if err != nil {
+//		log.Printf("failed to generate Argo certificate using mkCert: %s", err)
+//	}
+//
+//	log.Printf("Generating certificate argocd.localdev.me on %s", config.MkCertPath)
+//	_, _, err = pkg.ExecShellReturnStrings(config.MkCertPath, "argocd.localdev.me", "-cert-file", "argocd-cert.pem", "-key-file", "argocd-key.pem")
+//	if err != nil {
+//		log.Printf("failed to generate ArgoCD certificate using mkCert: %s", err)
+//	}
+//
+//	log.Printf("Generating certificate vault.localdev.me on %s", config.MkCertPath)
+//	_, _, err = pkg.ExecShellReturnStrings(config.MkCertPath, "vault.localdev.me", "-cert-file", "vault-cert.pem", "-key-file", "vault-key.pem")
+//	if err != nil {
+//		log.Printf("failed to generate Vault certificate using mkCert: %s", err)
+//	}
+//}
 
 // CreateCertificatesForLocalWrapper groups a certification creation call into a wrapper. The provided application
 // list is used to create SSL certificates for each of the provided application.
 func CreateCertificatesForLocalWrapper(config *configs.Config, applicationList []string) error {
 
-	for _, value := range applicationList {
-		if err := createCertificateForLocal(config, value); err != nil {
+	// create folder
+	// todo: check permission
+	err := os.Mkdir(config.MkCertPath+"certs", 0755)
+	if err != nil {
+		return err
+	}
+
+	for _, appName := range applicationList {
+		if err := createCertificateForLocal(config, appName); err != nil {
 			return err
 		}
 	}
@@ -293,13 +300,15 @@ func CreateCertificatesForLocalWrapper(config *configs.Config, applicationList [
 // the certificates, store them in files, and store the certificates in the host trusted store.
 func createCertificateForLocal(config *configs.Config, appName string) error {
 
-	fullAppAddress := appName + "." + pkg.LocalDNS // example: app-name.localdev.me
-	certFileName := appName + "-cert.pem"          // example: app-name-cert.pem
-	keyFileName := appName + "-key.pem"            // example: app-name-key.pem
+	certsFolder := config.MkCertPath + "/certs/"
+
+	fullAppAddress := appName + "." + pkg.LocalDNS      // example: app-name.localdev.me
+	certFileName := certsFolder + appName + "-cert.pem" // example: app-name-cert.pem
+	keyFileName := certsFolder + appName + "-key.pem"   // example: app-name-key.pem
 
 	log.Printf("generating certificate %s.localdev.me on %s", appName, config.MkCertPath)
 
-	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, fullAppAddress, "-cert-file", certFileName, "-key-file", keyFileName)
+	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, "-cert-file", certFileName, "-key-file", keyFileName, pkg.LocalDNS, fullAppAddress)
 	if err != nil {
 		return fmt.Errorf("failed to generate %s SSL certificate using MkCert: %v", appName, err)
 	}
