@@ -161,10 +161,24 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.IncrementTracker("step-github", 1)
 
 	// create local certs using MKCert tool
-	log.Println("Installing CA from MKCert")
+	log.Println("Installing CA from MkCert")
 	ssl.InstallCALocal(config)
-	log.Println("Creating local certs using MKCert")
+	log.Println("Creating local certs using MkCert")
 	ssl.CreateCertsLocal(config)
+
+	// todo: add remaining apps
+	appListForCertificate := []string{"argocd", "argo, vault"}
+	log.Println("creating local certificates")
+	if err := ssl.CreateCertificatesForLocalWrapper(config, appListForCertificate); err != nil {
+		log.Println(err)
+	}
+	log.Println("creating local certificates done")
+
+	log.Println("storing certificates into application secrets namespace")
+	if err := k8s.CreateSecretsFromCertificatesForLocalWrapper(config, appListForCertificate); err != nil {
+		log.Println(err)
+	}
+	log.Println("storing certificates into application secrets namespace done")
 
 	// add secrets to cluster
 	// todo there is a secret condition in AddK3DSecrets to this not checked

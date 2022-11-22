@@ -276,24 +276,26 @@ func CreateCertsLocal(config *configs.Config) {
 	}
 }
 
+// CreateCertificatesForLocalWrapper groups a certification creation call into a wrapper. The provided application
+// list is used to create SSL certificates for each of the provided application.
 func CreateCertificatesForLocalWrapper(config *configs.Config, applicationList []string) error {
 
 	for _, value := range applicationList {
-
 		if err := createCertificateForLocal(config, value); err != nil {
 			return err
 		}
-
 	}
 
 	return nil
 }
 
+// createCertificateForLocal issue certificates for a specific application. MkCert is the tool who is going to create
+// the certificates, store them in files, and store the certificates in the host trusted store.
 func createCertificateForLocal(config *configs.Config, appName string) error {
 
-	fullAppAddress := appName + "." + pkg.LocalDNS
-	certFileName := appName + "-cert.pem"
-	keyFileName := appName + "-key.pem"
+	fullAppAddress := appName + "." + pkg.LocalDNS // example: app-name.localdev.me
+	certFileName := appName + "-cert.pem"          // example: app-name-cert.pem
+	keyFileName := appName + "-key.pem"            // example: app-name-key.pem
 
 	log.Printf("generating certificate %s.localdev.me on %s", appName, config.MkCertPath)
 
