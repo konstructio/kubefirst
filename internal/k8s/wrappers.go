@@ -171,8 +171,8 @@ func CreateSecretsFromCertificatesForLocalWrapper(config *configs.Config) error 
 		}
 
 		data := make(map[string][]byte)
-		data["privKey"] = certContent
-		data["pubKey"] = keyContent
+		data["tls.crt"] = certContent
+		data["tls.key"] = keyContent
 
 		// save content into secret
 		err = CreateSecret(appName, appName+"-tls", data)
