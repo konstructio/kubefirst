@@ -40,12 +40,14 @@ type Config struct {
 	NgrokClientPath         string
 	TerraformClientPath     string
 	K3dPath                 string
+	mkCertPath              string
 
 	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
 	ClusterName    string `env:"CLUSTER_NAME"`
 	AwsRegion      string `env:"AWS_REGION"`
 
 	K3dVersion       string
+	mkCertVersion    string
 	KubectlVersion   string `env:"KUBECTL_VERSION" envDefault:"v1.20.0"`
 	KubectlVersionM1 string
 	TerraformVersion string
@@ -113,6 +115,7 @@ func ReadConfig() *Config {
 	config.TerraformClientPath = fmt.Sprintf("%s/tools/terraform", config.K1FolderPath)
 	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
 	config.K3dPath = fmt.Sprintf("%s/tools/k3d", config.K1FolderPath)
+	config.mkCertPath = fmt.Sprintf("%s/tools/mkcert", config.K1FolderPath)
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.NgrokVersion = "v3"
 	config.TerraformVersion = "1.0.11"
@@ -122,6 +125,7 @@ func ReadConfig() *Config {
 	config.HelmVersion = "v3.6.1"
 	config.KubectlVersionM1 = "v1.21.14"
 	config.K3dVersion = "v5.4.6"
+	config.mkCertVersion = "v1.4.4"
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
