@@ -45,17 +45,9 @@ type Config struct {
 		Ingress   struct {
 			Enabled     string `yaml:"enabled"`
 			Annotations struct {
-				IngressKubernetesIoRewriteTarget   string `yaml:"ingress.kubernetes.io/rewrite-target"`
-				IngressKubernetesIoBackendProtocol string `yaml:"ingress.kubernetes.io/backend-protocol"`
-
-				IngressKubernetesIoActionsSslRedirect struct {
-					Type           string `json:"Type"`
-					RedirectConfig struct {
-						Protocol   string `json:"Protocol"`
-						Port       string `json:"Port"`
-						StatusCode string `json:"StatusCode"`
-					} `json:"RedirectConfig"`
-				} `json:"ingress.kubernetes.io/actions.ssl-redirect"`
+				IngressKubernetesIoRewriteTarget      string `yaml:"ingress.kubernetes.io/rewrite-target"`
+				IngressKubernetesIoBackendProtocol    string `yaml:"ingress.kubernetes.io/backend-protocol"`
+				IngressKubernetesIoActionsSslRedirect string `json:"ingress.kubernetes.io/actions.ssl-redirect"`
 			} `yaml:"annotations"`
 			Hosts []string    `yaml:"hosts"`
 			TLS   []TLSConfig `yaml:"tls"`
@@ -476,12 +468,9 @@ func GetArgoCDInitialLocalConfig(gitOpsRepo string, botPrivateKey string) Config
 	argoCDConfig.Server.Ingress.Enabled = "true"
 	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoRewriteTarget = "/"
 	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoBackendProtocol = "HTTPS"
-	argoCDConfig.Server.Ingress.Hosts = []string{"argocd.localhost"}
+	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoActionsSslRedirect = `'{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'`
 
-	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoActionsSslRedirect.Type = "redirect"
-	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoActionsSslRedirect.RedirectConfig.Protocol = "HTTPS"
-	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoActionsSslRedirect.RedirectConfig.Port = "443"
-	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoActionsSslRedirect.RedirectConfig.StatusCode = "HTTP_301"
+	argoCDConfig.Server.Ingress.Hosts = []string{"argocd.localhost"}
 
 	return argoCDConfig
 }

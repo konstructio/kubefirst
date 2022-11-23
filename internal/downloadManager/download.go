@@ -20,7 +20,6 @@ import (
 )
 
 // DownloadLocalTools - Download extra tools needed for local installations scenarios
-// todo: download in parallel
 func DownloadLocalTools(config *configs.Config) error {
 	toolsDirPath := fmt.Sprintf("%s/tools", config.K1FolderPath)
 	err := createDirIfDontExist(toolsDirPath)

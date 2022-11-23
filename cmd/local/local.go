@@ -160,9 +160,12 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.IncrementTracker("step-base", 1)
 	progressPrinter.IncrementTracker("step-github", 1)
 
-	// create local certs using MKCert tool
+	//
+	// create local certs using MkCert tool
+	//
 	log.Println("installing CA from MkCert")
 	ssl.InstallCALocal(config)
+	log.Println("installing CA from MkCert done")
 
 	log.Println("creating local certificates")
 	if err := ssl.CreateCertificatesForLocalWrapper(config); err != nil {

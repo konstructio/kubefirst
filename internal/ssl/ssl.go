@@ -249,32 +249,13 @@ func InstallCALocal(config *configs.Config) {
 	}
 }
 
+// todo: make destroy call it
 func UninstallCALocal(config *configs.Config) {
 	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, "-uninstall")
 	if err != nil {
 		log.Printf("failed to uninstall CA of mkCert: %s", err)
 	}
 }
-
-//func CreateCertsLocal(config *configs.Config) {
-//	log.Printf("Generating certificate argo.localdev.me on %s", config.MkCertPath)
-//	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, "argo.localdev.me", "-cert-file", "argo-cert.pem", "-key-file", "argo-key.pem")
-//	if err != nil {
-//		log.Printf("failed to generate Argo certificate using mkCert: %s", err)
-//	}
-//
-//	log.Printf("Generating certificate argocd.localdev.me on %s", config.MkCertPath)
-//	_, _, err = pkg.ExecShellReturnStrings(config.MkCertPath, "argocd.localdev.me", "-cert-file", "argocd-cert.pem", "-key-file", "argocd-key.pem")
-//	if err != nil {
-//		log.Printf("failed to generate ArgoCD certificate using mkCert: %s", err)
-//	}
-//
-//	log.Printf("Generating certificate vault.localdev.me on %s", config.MkCertPath)
-//	_, _, err = pkg.ExecShellReturnStrings(config.MkCertPath, "vault.localdev.me", "-cert-file", "vault-cert.pem", "-key-file", "vault-key.pem")
-//	if err != nil {
-//		log.Printf("failed to generate Vault certificate using mkCert: %s", err)
-//	}
-//}
 
 // CreateCertificatesForLocalWrapper groups a certification creation call into a wrapper. The provided application
 // list is used to create SSL certificates for each of the provided application.
@@ -300,15 +281,21 @@ func CreateCertificatesForLocalWrapper(config *configs.Config) error {
 // the certificates, store them in files, and store the certificates in the host trusted store.
 func createCertificateForLocal(config *configs.Config, appName string) error {
 
-	certsFolder := config.MkCertPemFilesPath
-
-	fullAppAddress := appName + "." + pkg.LocalDNS      // example: app-name.localdev.me
-	certFileName := certsFolder + appName + "-cert.pem" // example: app-name-cert.pem
-	keyFileName := certsFolder + appName + "-key.pem"   // example: app-name-key.pem
+	fullAppAddress := appName + "." + pkg.LocalDNS                    // example: app-name.localdev.me
+	certFileName := config.MkCertPemFilesPath + appName + "-cert.pem" // example: app-name-cert.pem
+	keyFileName := config.MkCertPemFilesPath + appName + "-key.pem"   // example: app-name-key.pem
 
 	log.Printf("generating certificate %s.localdev.me on %s", appName, config.MkCertPath)
 
-	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, "-cert-file", certFileName, "-key-file", keyFileName, pkg.LocalDNS, fullAppAddress)
+	_, _, err := pkg.ExecShellReturnStrings(
+		config.MkCertPath,
+		"-cert-file",
+		certFileName,
+		"-key-file",
+		keyFileName,
+		pkg.LocalDNS,
+		fullAppAddress,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to generate %s SSL certificate using MkCert: %v", appName, err)
 	}
