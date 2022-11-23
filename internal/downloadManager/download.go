@@ -28,40 +28,67 @@ func DownloadLocalTools(config *configs.Config) error {
 		return err
 	}
 
-	// https://github.com/k3d-io/k3d/releases/download/v5.4.6/k3d-linux-amd64
-	k3dDownloadUrl := fmt.Sprintf(
-		"https://github.com/k3d-io/k3d/releases/download/%s/k3d-%s-%s",
-		config.K3dVersion,
-		config.LocalOs,
-		config.LocalArchitecture,
-	)
-	err = downloadFile(config.K3dPath, k3dDownloadUrl)
-	if err != nil {
-		return err
-	}
-	err = os.Chmod(config.K3dPath, 0755)
-	if err != nil {
-		return err
-	}
+	var wg sync.WaitGroup
+	errorChannel := make(chan error)
+	wgDone := make(chan bool)
+	wg.Add(2)
 
-	// https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-darwin-amd64
-	mkCertDownloadUrl := fmt.Sprintf(
-		"https://github.com/FiloSottile/mkcert/releases/download/%s/mkcert-%s-%s-%s",
-		config.MkCertVersion,
-		config.MkCertVersion,
-		config.LocalOs,
-		config.LocalArchitecture,
-	)
-	err = downloadFile(config.MkCertPath, mkCertDownloadUrl)
-	if err != nil {
-		return err
-	}
-	err = os.Chmod(config.MkCertPath, 0755)
-	if err != nil {
-		return err
-	}
+	go func() {
+		// https://github.com/k3d-io/k3d/releases/download/v5.4.6/k3d-linux-amd64
+		k3dDownloadUrl := fmt.Sprintf(
+			"https://github.com/k3d-io/k3d/releases/download/%s/k3d-%s-%s",
+			config.K3dVersion,
+			config.LocalOs,
+			config.LocalArchitecture,
+		)
+		err = downloadFile(config.K3dPath, k3dDownloadUrl)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		err = os.Chmod(config.K3dPath, 0755)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		wg.Done()
+	}()
 
-	return nil
+	go func() {
+		// https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-darwin-amd64
+		mkCertDownloadUrl := fmt.Sprintf(
+			"https://github.com/FiloSottile/mkcert/releases/download/%s/mkcert-%s-%s-%s",
+			config.MkCertVersion,
+			config.MkCertVersion,
+			config.LocalOs,
+			config.LocalArchitecture,
+		)
+		err = downloadFile(config.MkCertPath, mkCertDownloadUrl)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		err = os.Chmod(config.MkCertPath, 0755)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		wg.Wait()
+		close(wgDone)
+	}()
+
+	select {
+	case <-wgDone:
+		log.Println("download finished")
+		return nil
+	case err = <-errorChannel:
+		close(errorChannel)
+		return err
+	}
 }
 
 // DownloadTools prepare download folder, and download the required installation tools for download. The downloads
