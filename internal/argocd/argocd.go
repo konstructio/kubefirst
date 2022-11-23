@@ -47,7 +47,7 @@ type Config struct {
 			Annotations struct {
 				IngressKubernetesIoRewriteTarget      string `yaml:"ingress.kubernetes.io/rewrite-target"`
 				IngressKubernetesIoBackendProtocol    string `yaml:"ingress.kubernetes.io/backend-protocol"`
-				IngressKubernetesIoActionsSslRedirect string `json:"ingress.kubernetes.io/actions.ssl-redirect"`
+				IngressKubernetesIoActionsSslRedirect string `yaml:"ingress.kubernetes.io/actions.ssl-redirect"`
 			} `yaml:"annotations"`
 			Hosts []string    `yaml:"hosts"`
 			TLS   []TLSConfig `yaml:"tls"`
