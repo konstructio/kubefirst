@@ -121,7 +121,6 @@ func ReadConfig() *Config {
 	config.K3dPath = fmt.Sprintf("%s/tools/k3d", config.K1FolderPath)
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.MkCertPath = fmt.Sprintf("%s/tools/mkcert", config.K1FolderPath)
-	config.MkCertPath = fmt.Sprintf("%s/tools/mkcert", config.K1FolderPath)
 	config.MkCertPemFilesPath = fmt.Sprintf("%s/tools/certs/", config.K1FolderPath)
 	config.NgrokVersion = "v3"
 	config.TerraformVersion = "1.0.11"
@@ -134,7 +133,9 @@ func ReadConfig() *Config {
 	config.MkCertVersion = "v1.4.4"
 
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
-	config.AppListForCertificate = []string{"argocd", "argo", "vault"}
+	config.AppListForCertificate = []string{
+		"argocd", "argo", "vault", "chartmuseum", "minio", "minio-console", "atlantis", "kubefirst-console",
+	}
 
 	config.MetaphorTemplateURL = "https://github.com/kubefirst/metaphor-template.git"
 	config.GitopsTemplateURL = "https://github.com/kubefirst/gitops-template-gh.git"
