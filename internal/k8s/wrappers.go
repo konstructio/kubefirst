@@ -154,10 +154,10 @@ func CreateSecretsFromCertificatesForLocalWrapper(config *configs.Config) error 
 
 	for _, appName := range config.AppListForCertificate {
 
-		certsFolder := config.MkCertPemFilesPath
+		certFileName := config.MkCertPemFilesPath + appName + "-cert.pem" // example: app-name-cert.pem
+		keyFileName := config.MkCertPemFilesPath + appName + "-key.pem"   // example: app-name-key.pem
 
-		certFileName := certsFolder + appName + "-cert.pem" // example: app-name-cert.pem
-		keyFileName := certsFolder + appName + "-key.pem"   // example: app-name-key.pem
+		log.Printf("creating TLS k8s secret for %s", appName)
 
 		// open file content
 		certContent, err := pkg.GetFileContent(certFileName)
@@ -177,8 +177,10 @@ func CreateSecretsFromCertificatesForLocalWrapper(config *configs.Config) error 
 		// save content into secret
 		err = CreateSecret(appName, appName+"-tls", data)
 		if err != nil {
-			return err
+			log.Println(err)
 		}
+
+		log.Printf("creating TLS k8s secret for %s done", appName)
 	}
 
 	return nil

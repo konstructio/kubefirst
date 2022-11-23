@@ -136,6 +136,11 @@ func ReadConfig() *Config {
 	config.AppListForCertificate = []string{
 		"argocd", "argo", "vault", "chartmuseum", "minio", "minio-console", "atlantis", "kubefirst-console",
 	}
+	// todo: parei aqui
+	type AppListForCert struct {
+		namespace string
+		appName   string
+	}
 
 	config.MetaphorTemplateURL = "https://github.com/kubefirst/metaphor-template.git"
 	config.GitopsTemplateURL = "https://github.com/kubefirst/gitops-template-gh.git"
