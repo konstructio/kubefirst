@@ -670,3 +670,48 @@ func GetFileContent(filePath string) ([]byte, error) {
 
 	return byteData, nil
 }
+
+type CertificateAppList struct {
+	Namespace string
+	AppName   string
+}
+
+func GetCertificateAppList() []CertificateAppList {
+
+	certificateAppList := []CertificateAppList{
+		{
+			Namespace: "argo",
+			AppName:   "argo",
+		},
+		{
+			Namespace: "argocd",
+			AppName:   "argocd",
+		},
+		{
+			Namespace: "atlantis",
+			AppName:   "atlantis",
+		},
+		{
+			Namespace: "chartmuseum",
+			AppName:   "chartmuseum",
+		},
+		{
+			Namespace: "vault",
+			AppName:   "vault",
+		},
+		{
+			Namespace: "minio",
+			AppName:   "minio",
+		},
+		{
+			Namespace: "minio",
+			AppName:   "minio-console",
+		},
+		{
+			Namespace: "kubefirst",
+			AppName:   "kubefirst-console",
+		},
+	}
+
+	return certificateAppList
+}

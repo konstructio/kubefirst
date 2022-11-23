@@ -268,8 +268,8 @@ func CreateCertificatesForLocalWrapper(config *configs.Config) error {
 		return err
 	}
 
-	for _, appName := range config.AppListForCertificate {
-		if err := createCertificateForLocal(config, appName); err != nil {
+	for _, cert := range pkg.GetCertificateAppList() {
+		if err := createCertificateForLocal(config, cert); err != nil {
 			return err
 		}
 	}
@@ -279,13 +279,13 @@ func CreateCertificatesForLocalWrapper(config *configs.Config) error {
 
 // createCertificateForLocal issue certificates for a specific application. MkCert is the tool who is going to create
 // the certificates, store them in files, and store the certificates in the host trusted store.
-func createCertificateForLocal(config *configs.Config, appName string) error {
+func createCertificateForLocal(config *configs.Config, app pkg.CertificateAppList) error {
 
-	fullAppAddress := appName + "." + pkg.LocalDNS                    // example: app-name.localdev.me
-	certFileName := config.MkCertPemFilesPath + appName + "-cert.pem" // example: app-name-cert.pem
-	keyFileName := config.MkCertPemFilesPath + appName + "-key.pem"   // example: app-name-key.pem
+	fullAppAddress := app.AppName + "." + pkg.LocalDNS                    // example: app-name.localdev.me
+	certFileName := config.MkCertPemFilesPath + app.AppName + "-cert.pem" // example: app-name-cert.pem
+	keyFileName := config.MkCertPemFilesPath + app.AppName + "-key.pem"   // example: app-name-key.pem
 
-	log.Printf("generating certificate %s.localdev.me on %s", appName, config.MkCertPath)
+	log.Printf("generating certificate %s.localdev.me on %s", app.AppName, config.MkCertPath)
 
 	_, _, err := pkg.ExecShellReturnStrings(
 		config.MkCertPath,
@@ -297,7 +297,7 @@ func createCertificateForLocal(config *configs.Config, appName string) error {
 		fullAppAddress,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to generate %s SSL certificate using MkCert: %v", appName, err)
+		return fmt.Errorf("failed to generate %s SSL certificate using MkCert: %v", app.AppName, err)
 	}
 
 	return nil
