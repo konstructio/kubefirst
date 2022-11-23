@@ -1,16 +1,18 @@
 package local
 
 import (
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/k8s"
-	"github.com/kubefirst/kubefirst/internal/reports"
-	"github.com/kubefirst/kubefirst/pkg"
-	"github.com/spf13/cobra"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/spf13/cobra"
 )
 
 func runPostLocal(cmd *cobra.Command, args []string) error {
@@ -77,6 +79,11 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	reports.LocalHandoffScreen(dryRun, silentMode)
+
+	_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/ingressroute.yaml", config.K1FolderPath))
+	if err != nil {
+		log.Printf("failed to create ingress route to argocd: %s", err)
+	}
 
 	log.Println("Kubefirst Console available at: http://localhost:9094", silentMode)
 

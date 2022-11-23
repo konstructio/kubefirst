@@ -469,8 +469,7 @@ func GetArgoCDInitialLocalConfig(gitOpsRepo string, botPrivateKey string) Config
 	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoRewriteTarget = "/"
 	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoBackendProtocol = "HTTPS"
 	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoActionsSslRedirect = `'{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'`
-
-	argoCDConfig.Server.Ingress.Hosts = []string{"argocd.localhost"}
+	argoCDConfig.Server.Ingress.Hosts = []string{"argocd.localdev.me"}
 
 	return argoCDConfig
 }
