@@ -30,7 +30,6 @@ var destroyLocalGithubCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Long:  `TDB`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("destroy-local-github called")
 		config := configs.ReadConfig()
 
 		destroyFlags, err := flagset.ProcessDestroyFlags(cmd)
