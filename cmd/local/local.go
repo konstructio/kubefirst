@@ -100,7 +100,6 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	// todo need to add go channel to control when ngrok should close
 	// and use context to handle closing the open goroutine/connection
 	go pkg.RunNgrok(context.TODO(), pkg.LocalAtlantisURL)
-	time.Sleep(5 * time.Second)
 
 	if !viper.GetBool("kubefirst.done") {
 		if viper.GetString("gitprovider") == "github" {
@@ -275,9 +274,6 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	k8s.LoopUntilPodIsReady(dryRun)
-
-	// todo: can I remove it?
-	time.Sleep(20 * time.Second)
 
 	// configure vault with terraform
 	executionControl = viper.GetBool("terraform.vault.apply.complete")

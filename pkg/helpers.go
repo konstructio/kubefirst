@@ -574,7 +574,7 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 			"http://minio.minio.svc.cluster.local:9000",
 			MinioURL,
 		); err != nil {
-			return err
+			log.Println(err)
 		}
 	}
 
