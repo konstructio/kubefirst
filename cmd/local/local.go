@@ -62,7 +62,7 @@ func NewCommand() *cobra.Command {
 	// todo: UPDATE IT BEFORE MERGING
 	// todo: UPDATE IT BEFORE MERGING
 	// todo: UPDATE IT BEFORE MERGING
-	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "update_minio_localdev", "version/branch used on git clone")
+	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "add-ingress-localhost", "version/branch used on git clone")
 	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
 	localCmd.Flags().StringVar(&templateTag, "template-tag", "",
 		"when running a built version, and ldflag is set for the Kubefirst version, it will use this tag value to clone the templates (gitops and metaphor's)",
