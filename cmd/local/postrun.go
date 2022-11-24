@@ -48,7 +48,7 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 		log.Printf("failed to create ingress route to argocd: %s", err)
 	}
 
-	log.Printf("Kubefirst Console available at: %s", pkg.KubefirstConsoleLocalURLTLS)
+	log.Printf("Kubefirst Console available at: %s", pkg.KubefirstConsoleLocalURL)
 
 	// managing termination signal from the terminal
 	sigs := make(chan os.Signal, 1)
