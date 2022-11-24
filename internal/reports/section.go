@@ -38,12 +38,12 @@ func PrintSectionRepoGitlab() []byte {
 	return handOffData.Bytes()
 }
 
-func PrintSectionOverview() []byte {
+func PrintSectionOverview(kubefirstConsoleURL string) []byte {
 	var handOffData bytes.Buffer
 	handOffData.WriteString(strings.Repeat("-", 70))
 	handOffData.WriteString(fmt.Sprintf("\nCluster %q is up and running!:", viper.GetString("cluster-name")))
 	handOffData.WriteString("\nThis information is available at $HOME/.kubefirst ")
-	handOffData.WriteString("\n\nAccess the kubefirst-console from your browser at:\n" + pkg.KubefirstConsoleLocalURLTLS + "\n")
+	handOffData.WriteString("\n\nAccess the kubefirst-console from your browser at:\n" + kubefirstConsoleURL + "\n")
 	handOffData.WriteString("\nPress ESC to leave this screen and return to your shell.")
 
 	return handOffData.Bytes()
@@ -227,7 +227,7 @@ func HandoffScreen(dryRun bool, silentMode bool) {
 	}
 
 	var handOffData bytes.Buffer
-	handOffData.Write(PrintSectionOverview())
+	handOffData.Write(PrintSectionOverview(pkg.KubefirstConsoleLocalURLCloud))
 	handOffData.Write(PrintSectionAws())
 	if viper.GetString("gitprovider") == "github" {
 		handOffData.Write(PrintSectionRepoGithub())
@@ -261,7 +261,7 @@ func LocalHandoffScreen(dryRun bool, silentMode bool) {
 	}
 
 	var handOffData bytes.Buffer
-	handOffData.Write(PrintSectionOverview())
+	handOffData.Write(PrintSectionOverview(pkg.KubefirstConsoleLocalURLTLS))
 	handOffData.Write(PrintSectionRepoGithub())
 	handOffData.Write(PrintSectionVault())
 	handOffData.Write(PrintSectionArgoCD())
@@ -296,14 +296,14 @@ func LocalConnectSummary() string {
 	localConnect.WriteString("\nKubefirst Local:\n")
 	localConnect.WriteString(strings.Repeat("-", 70))
 
-	localConnect.WriteString(fmt.Sprintf("\n\nKubefirst Console UI: %s\n", pkg.KubefirstConsoleLocalURL))
-	localConnect.WriteString(fmt.Sprintf("ChartmuseumLocalURL: %s\n", pkg.ChartmuseumLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Argo: %s\n", pkg.ArgoLocalURL))
-	localConnect.WriteString(fmt.Sprintf("ArgoCD: %s\n", pkg.ArgoCDLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Vault: %s\n", pkg.VaultLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Atlantis: %s\n", pkg.AtlantisLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Minio: %s\n", pkg.MinioURL))
-	localConnect.WriteString(fmt.Sprintf("Minio Console: %s\n", pkg.MinioConsoleURL))
+	localConnect.WriteString(fmt.Sprintf("\n\nKubefirst Console UI: %s\n", pkg.KubefirstConsoleLocalURLTLS))
+	localConnect.WriteString(fmt.Sprintf("ChartmuseumLocalURL: %s\n", pkg.ChartmuseumLocalURLTLS))
+	localConnect.WriteString(fmt.Sprintf("Argo: %s\n", pkg.ArgoLocalURLTLS))
+	localConnect.WriteString(fmt.Sprintf("ArgoCD: %s\n", pkg.ArgoCDLocalURLTLS))
+	localConnect.WriteString(fmt.Sprintf("Vault: %s\n", pkg.VaultLocalURLTLS))
+	localConnect.WriteString(fmt.Sprintf("Atlantis: %s\n", pkg.AtlantisLocalURLTLS))
+	localConnect.WriteString(fmt.Sprintf("Minio: %s\n", pkg.MinioURLTLS))
+	localConnect.WriteString(fmt.Sprintf("Minio Console: %s\n", pkg.MinioConsoleURLTLS))
 
 	return localConnect.String()
 }

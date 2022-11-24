@@ -376,6 +376,7 @@ func (p *secret) patchSecret(k8sClient *kubernetes.Clientset, payload []PatchJso
 }
 
 // todo: deprecate the other functions
+// this is used for local only (create/destroy)
 func LoopUntilPodIsReady(dryRun bool) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, loopUntilPodIsReady skipped.")
