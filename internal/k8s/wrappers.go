@@ -157,7 +157,7 @@ func CreateSecretsFromCertificatesForLocalWrapper(config *configs.Config) error 
 		certFileName := config.MkCertPemFilesPath + app.AppName + "-cert.pem" // example: app-name-cert.pem
 		keyFileName := config.MkCertPemFilesPath + app.AppName + "-key.pem"   // example: app-name-key.pem
 
-		log.Printf("creating TLS k8s secret for %s", app.AppName)
+		log.Printf("creating TLS k8s secret for %s...", app.AppName)
 
 		// open file content
 		certContent, err := pkg.GetFileContent(certFileName)

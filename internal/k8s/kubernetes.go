@@ -386,7 +386,8 @@ func LoopUntilPodIsReady(dryRun bool) {
 	if len(token) == 0 {
 
 		totalAttempts := 50
-		url := "http://localhost:8200/v1/sys/health"
+		//url := "http://localhost:8200/v1/sys/health"
+		url := pkg.VaultLocalURL + "/v1/sys/health"
 		for i := 0; i < totalAttempts; i++ {
 			log.Printf("vault is not ready yet, sleeping and checking again, attempt (%d/%d)", i+1, totalAttempts)
 			time.Sleep(10 * time.Second)

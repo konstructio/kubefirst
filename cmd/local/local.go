@@ -62,7 +62,7 @@ func NewCommand() *cobra.Command {
 	// todo: UPDATE IT BEFORE MERGING
 	// todo: UPDATE IT BEFORE MERGING
 	// todo: UPDATE IT BEFORE MERGING
-	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "add-ingress-localhost", "version/branch used on git clone")
+	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "update_minio_localdev", "version/branch used on git clone")
 	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
 	localCmd.Flags().StringVar(&templateTag, "template-tag", "",
 		"when running a built version, and ldflag is set for the Kubefirst version, it will use this tag value to clone the templates (gitops and metaphor's)",
@@ -99,6 +99,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	// todo need to add go channel to control when ngrok should close
 	// and use context to handle closing the open goroutine/connection
+	//go pkg.RunNgrok(context.TODO(), pkg.AtlantisLocalURL)
 	go pkg.RunNgrok(context.TODO(), pkg.LocalAtlantisURL)
 	time.Sleep(5 * time.Second)
 
@@ -240,18 +241,18 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	// ArgoCD port-forward
-	argoCDStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(argoCDStopChannel)
-	}()
-	k8s.OpenPortForwardWrapper(
-		pkg.ArgoCDPodName,
-		pkg.ArgoCDNamespace,
-		pkg.ArgoCDPodPort,
-		pkg.ArgoCDPodLocalPort,
-		argoCDStopChannel,
-	)
-	pkg.InformUser(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")), silentMode)
+	//argoCDStopChannel := make(chan struct{}, 1)
+	//defer func() {
+	//	close(argoCDStopChannel)
+	//}()
+	//k8s.OpenPortForwardWrapper(
+	//	pkg.ArgoCDPodName,
+	//	pkg.ArgoCDNamespace,
+	//	pkg.ArgoCDPodPort,
+	//	pkg.ArgoCDPodLocalPort,
+	//	argoCDStopChannel,
+	//)
+	//pkg.InformUser(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")), silentMode)
 
 	// argocd pods are ready, get and set credentials
 	executionControl = viper.GetBool("argocd.credentials.set")
@@ -289,34 +290,34 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	// Vault port-forward
-	vaultStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(vaultStopChannel)
-	}()
-	k8s.OpenPortForwardWrapper(
-		pkg.VaultPodName,
-		pkg.VaultNamespace,
-		pkg.VaultPodPort,
-		pkg.VaultPodLocalPort,
-		vaultStopChannel,
-	)
+	//vaultStopChannel := make(chan struct{}, 1)
+	//defer func() {
+	//	close(vaultStopChannel)
+	//}()
+	//k8s.OpenPortForwardWrapper(
+	//	pkg.VaultPodName,
+	//	pkg.VaultNamespace,
+	//	pkg.VaultPodPort,
+	//	pkg.VaultPodLocalPort,
+	//	vaultStopChannel,
+	//)
 
 	k8s.LoopUntilPodIsReady(dryRun)
 
-	minioStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(minioStopChannel)
-	}()
-	k8s.OpenPortForwardWrapper(
-		pkg.MinioPodName,
-		pkg.MinioNamespace,
-		pkg.MinioPodPort,
-		pkg.MinioPodLocalPort,
-		minioStopChannel,
-	)
+	//minioStopChannel := make(chan struct{}, 1)
+	//defer func() {
+	//	close(minioStopChannel)
+	//}()
+	//k8s.OpenPortForwardWrapper(
+	//	pkg.MinioPodName,
+	//	pkg.MinioNamespace,
+	//	pkg.MinioPodPort,
+	//	pkg.MinioPodLocalPort,
+	//	minioStopChannel,
+	//)
 
 	// todo: can I remove it?
-	time.Sleep(20 * time.Second)
+	//time.Sleep(20 * time.Second)
 
 	// configure vault with terraform
 	executionControl = viper.GetBool("terraform.vault.apply.complete")
@@ -373,19 +374,20 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	if !viper.GetBool("chartmuseum.host.resolved") {
 		// Chartmuseum port-forward
-		chartmuseumStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(chartmuseumStopChannel)
-		}()
-		k8s.OpenPortForwardWrapper(
-			pkg.ChartmuseumPodName,
-			pkg.ChartmuseumNamespace,
-			pkg.ChartmuseumPodPort,
-			pkg.ChartmuseumPodLocalPort,
-			chartmuseumStopChannel,
-		)
+		//chartmuseumStopChannel := make(chan struct{}, 1)
+		//defer func() {
+		//	close(chartmuseumStopChannel)
+		//}()
+		//k8s.OpenPortForwardWrapper(
+		//	pkg.ChartmuseumPodName,
+		//	pkg.ChartmuseumNamespace,
+		//	pkg.ChartmuseumPodPort,
+		//	pkg.ChartmuseumPodLocalPort,
+		//	chartmuseumStopChannel,
+		//)
 
-		pkg.AwaitHostNTimes("http://localhost:8181/health", 5, 5)
+		//pkg.AwaitHostNTimes("http://localhost:8181/health", 5, 5)
+		pkg.AwaitHostNTimes(pkg.ChartmuseumLocalURL+"/health", 5, 5)
 		viper.Set("chartmuseum.host.resolved", true)
 		viper.WriteConfig()
 	} else {
