@@ -3,17 +3,25 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"io"
-	"log"
-	"net"
-
 	"github.com/ngrok/ngrok-go"
 	"github.com/ngrok/ngrok-go/config"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
+	"io"
+	"log"
+	"net"
 )
 
 func RunNgrok(ctx context.Context, dest string) {
+
+	// todo: use it when atlantis port forward missing port in address issued is fixed
+	//atlantisURL, err := url.Parse(dest)
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//
+	//dest = atlantisURL.Host + ":80"
+
 	tunnel, err := ngrok.StartTunnel(ctx, config.HTTPEndpoint(), ngrok.WithAuthtokenFromEnv())
 	if err != nil {
 		log.Println(err)
@@ -32,6 +40,7 @@ func RunNgrok(ctx context.Context, dest string) {
 		log.Println("accepted connection from", conn.RemoteAddr())
 
 		go func() {
+
 			err := handleConn(ctx, dest, conn)
 			log.Println("connection closed:", err)
 		}()

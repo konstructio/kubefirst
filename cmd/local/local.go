@@ -239,20 +239,6 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		log.Println("already waited for argocd to be ready")
 	}
 
-	// ArgoCD port-forward
-	argoCDStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(argoCDStopChannel)
-	}()
-	k8s.OpenPortForwardWrapper(
-		pkg.ArgoCDPodName,
-		pkg.ArgoCDNamespace,
-		pkg.ArgoCDPodPort,
-		pkg.ArgoCDPodLocalPort,
-		argoCDStopChannel,
-	)
-	pkg.InformUser(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")), silentMode)
-
 	// argocd pods are ready, get and set credentials
 	executionControl = viper.GetBool("argocd.credentials.set")
 	if !executionControl {
@@ -288,32 +274,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		vault.WaitVaultToBeRunning(dryRun)
 	}
 
-	// Vault port-forward
-	vaultStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(vaultStopChannel)
-	}()
-	k8s.OpenPortForwardWrapper(
-		pkg.VaultPodName,
-		pkg.VaultNamespace,
-		pkg.VaultPodPort,
-		pkg.VaultPodLocalPort,
-		vaultStopChannel,
-	)
-
 	k8s.LoopUntilPodIsReady(dryRun)
-
-	minioStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(minioStopChannel)
-	}()
-	k8s.OpenPortForwardWrapper(
-		pkg.MinioPodName,
-		pkg.MinioNamespace,
-		pkg.MinioPodPort,
-		pkg.MinioPodLocalPort,
-		minioStopChannel,
-	)
 
 	// todo: can I remove it?
 	time.Sleep(20 * time.Second)
@@ -372,20 +333,8 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.IncrementTracker("step-apps", 1)
 
 	if !viper.GetBool("chartmuseum.host.resolved") {
-		// Chartmuseum port-forward
-		chartmuseumStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(chartmuseumStopChannel)
-		}()
-		k8s.OpenPortForwardWrapper(
-			pkg.ChartmuseumPodName,
-			pkg.ChartmuseumNamespace,
-			pkg.ChartmuseumPodPort,
-			pkg.ChartmuseumPodLocalPort,
-			chartmuseumStopChannel,
-		)
 
-		pkg.AwaitHostNTimes("http://localhost:8181/health", 5, 5)
+		pkg.AwaitHostNTimes(pkg.ChartmuseumLocalURL+"/health", 5, 5)
 		viper.Set("chartmuseum.host.resolved", true)
 		viper.WriteConfig()
 	} else {

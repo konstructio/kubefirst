@@ -509,7 +509,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", config.K1FolderPath)
 	if err := replaceFileContent(
 		vaultMainFile,
-		"http://127.0.0.1:9000",
+		MinioURL,
 		"http://minio.minio.svc.cluster.local:9000",
 	); err != nil {
 		return err
@@ -520,7 +520,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
 		if err := replaceFileContent(
 			fullPathKubefirstGitHubFile,
-			"http://127.0.0.1:9000",
+			MinioURL,
 			"http://minio.minio.svc.cluster.local:9000",
 		); err != nil {
 			return err
@@ -530,7 +530,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 		fullPathRemoteBackendFile := fmt.Sprintf("%s/gitops/terraform/github/remote-backend.tf", config.K1FolderPath)
 		if err := replaceFileContent(
 			fullPathRemoteBackendFile,
-			"http://127.0.0.1:9000",
+			MinioURL,
 			"http://minio.minio.svc.cluster.local:9000",
 		); err != nil {
 			return err
@@ -551,7 +551,7 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 	if err := replaceFileContent(
 		vaultMainFile,
 		"http://minio.minio.svc.cluster.local:9000",
-		"http://127.0.0.1:9000",
+		MinioURL,
 	); err != nil {
 		return err
 	}
@@ -562,7 +562,7 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 		if err := replaceFileContent(
 			fullPathKubefirstGitHubFile,
 			"http://minio.minio.svc.cluster.local:9000",
-			"http://127.0.0.1:9000",
+			MinioURL,
 		); err != nil {
 			return err
 		}
@@ -572,7 +572,7 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 		if err := replaceFileContent(
 			fullPathRemoteBackendFile,
 			"http://minio.minio.svc.cluster.local:9000",
-			"http://127.0.0.1:9000",
+			MinioURL,
 		); err != nil {
 			return err
 		}

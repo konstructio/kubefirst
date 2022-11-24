@@ -22,54 +22,54 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// every port forward has its own closing control. when a channel is closed, the port forward is close.
-	vaultStopChannel := make(chan struct{}, 1)
-	argoStopChannel := make(chan struct{}, 1)
-	argoCDStopChannel := make(chan struct{}, 1)
-	chartmuseumStopChannel := make(chan struct{}, 1)
-	minioStopChannel := make(chan struct{}, 1)
-	minioConsoleStopChannel := make(chan struct{}, 1)
-	kubefirstConsoleStopChannel := make(chan struct{}, 1)
-	AtlantisStopChannel := make(chan struct{}, 1)
-
-	// guarantee it will close the port forwards even on a process kill
-	defer func() {
-		close(vaultStopChannel)
-		close(argoStopChannel)
-		close(argoCDStopChannel)
-		close(chartmuseumStopChannel)
-		close(minioStopChannel)
-		close(minioConsoleStopChannel)
-		close(kubefirstConsoleStopChannel)
-		close(AtlantisStopChannel)
-		log.Println("leaving port-forward command, port forwards are now closed")
-	}()
-
-	err := k8s.OpenPortForwardForLocal(
-		vaultStopChannel,
-		argoStopChannel,
-		argoCDStopChannel,
-		chartmuseumStopChannel,
-		minioStopChannel,
-		minioConsoleStopChannel,
-		kubefirstConsoleStopChannel,
-		AtlantisStopChannel,
-	)
-	if err != nil {
-		return err
-	}
+	//// every port forward has its own closing control. when a channel is closed, the port forward is close.
+	//vaultStopChannel := make(chan struct{}, 1)
+	//argoStopChannel := make(chan struct{}, 1)
+	//argoCDStopChannel := make(chan struct{}, 1)
+	//chartmuseumStopChannel := make(chan struct{}, 1)
+	//minioStopChannel := make(chan struct{}, 1)
+	//minioConsoleStopChannel := make(chan struct{}, 1)
+	//kubefirstConsoleStopChannel := make(chan struct{}, 1)
+	//AtlantisStopChannel := make(chan struct{}, 1)
+	//
+	//// guarantee it will close the port forwards even on a process kill
+	//defer func() {
+	//	close(vaultStopChannel)
+	//	close(argoStopChannel)
+	//	close(argoCDStopChannel)
+	//	close(chartmuseumStopChannel)
+	//	close(minioStopChannel)
+	//	close(minioConsoleStopChannel)
+	//	close(kubefirstConsoleStopChannel)
+	//	close(AtlantisStopChannel)
+	//	log.Println("leaving port-forward command, port forwards are now closed")
+	//}()
+	//
+	//err := k8s.OpenPortForwardForLocal(
+	//	vaultStopChannel,
+	//	argoStopChannel,
+	//	argoCDStopChannel,
+	//	chartmuseumStopChannel,
+	//	minioStopChannel,
+	//	minioConsoleStopChannel,
+	//	kubefirstConsoleStopChannel,
+	//	AtlantisStopChannel,
+	//)
+	//if err != nil {
+	//	return err
+	//}
 
 	config := configs.ReadConfig()
 
 	log.Println("storing certificates into application secrets namespace")
-	if err = k8s.CreateSecretsFromCertificatesForLocalWrapper(config); err != nil {
+	if err := k8s.CreateSecretsFromCertificatesForLocalWrapper(config); err != nil {
 		log.Println(err)
 	}
 	log.Println("storing certificates into application secrets namespace done")
 
 	log.Println("Starting the presentation of console and api for the handoff screen")
 
-	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURL)
+	err := pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURL)
 	if err != nil {
 		log.Println(err)
 	}
@@ -85,7 +85,7 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 		log.Printf("failed to create ingress route to argocd: %s", err)
 	}
 
-	log.Println("Kubefirst Console available at: http://localhost:9094", silentMode)
+	log.Printf("Kubefirst Console available at: %s", pkg.KubefirstConsoleLocalURL)
 
 	// managing termination signal from the terminal
 	sigs := make(chan os.Signal, 1)

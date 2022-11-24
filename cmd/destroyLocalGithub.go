@@ -81,7 +81,6 @@ var destroyLocalGithubCmd = &cobra.Command{
 			log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
 		}
 
-		// todo: temporary code
 		err = pkg.UpdateTerraformS3BackendForLocalhostAddress()
 		if err != nil {
 			return err
@@ -92,33 +91,9 @@ var destroyLocalGithubCmd = &cobra.Command{
 		//* step 1.1 - open port-forward to state store and vault
 		// todo --skip-git-terraform
 
-		// Vault port-forward
-		vaultStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(vaultStopChannel)
-		}()
-		k8s.OpenPortForwardWrapper(
-			pkg.VaultPodName,
-			pkg.VaultNamespace,
-			pkg.VaultPodPort,
-			pkg.VaultPodLocalPort,
-			vaultStopChannel,
-		)
-
 		k8s.LoopUntilPodIsReady(globalFlags.DryRun)
 
-		minioStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(minioStopChannel)
-		}()
-		k8s.OpenPortForwardWrapper(
-			pkg.MinioPodName,
-			pkg.MinioNamespace,
-			pkg.MinioPodPort,
-			pkg.MinioPodLocalPort,
-			minioStopChannel,
-		)
-
+		// todo: remove it
 		time.Sleep(20 * time.Second)
 
 		//* step 1.3 - terraform destroy github
