@@ -22,43 +22,6 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	//// every port forward has its own closing control. when a channel is closed, the port forward is close.
-	//vaultStopChannel := make(chan struct{}, 1)
-	//argoStopChannel := make(chan struct{}, 1)
-	//argoCDStopChannel := make(chan struct{}, 1)
-	//chartmuseumStopChannel := make(chan struct{}, 1)
-	//minioStopChannel := make(chan struct{}, 1)
-	//minioConsoleStopChannel := make(chan struct{}, 1)
-	//kubefirstConsoleStopChannel := make(chan struct{}, 1)
-	//AtlantisStopChannel := make(chan struct{}, 1)
-	//
-	//// guarantee it will close the port forwards even on a process kill
-	//defer func() {
-	//	close(vaultStopChannel)
-	//	close(argoStopChannel)
-	//	close(argoCDStopChannel)
-	//	close(chartmuseumStopChannel)
-	//	close(minioStopChannel)
-	//	close(minioConsoleStopChannel)
-	//	close(kubefirstConsoleStopChannel)
-	//	close(AtlantisStopChannel)
-	//	log.Println("leaving port-forward command, port forwards are now closed")
-	//}()
-	//
-	//err := k8s.OpenPortForwardForLocal(
-	//	vaultStopChannel,
-	//	argoStopChannel,
-	//	argoCDStopChannel,
-	//	chartmuseumStopChannel,
-	//	minioStopChannel,
-	//	minioConsoleStopChannel,
-	//	kubefirstConsoleStopChannel,
-	//	AtlantisStopChannel,
-	//)
-	//if err != nil {
-	//	return err
-	//}
-
 	config := configs.ReadConfig()
 
 	log.Println("storing certificates into application secrets namespace")
