@@ -1,14 +1,16 @@
 package pkg
 
 const (
-	JSONContentType          = "application/json"
-	SoftServerURI            = "ssh://127.0.0.1:8022/config"
-	GitHubOAuthClientId      = "2ced340927e0a6c49a45"
-	CloudK3d                 = "k3d"
-	GitHubProviderName       = "github"
-	GitHubHost               = "github.com"
-	LocalClusterName         = "kubefirst"
-	MinimumAvailableDiskSize = 10 // 10 GB
+	JSONContentType              = "application/json"
+	SoftServerURI                = "ssh://127.0.0.1:8022/config"
+	GitHubOAuthClientId          = "2ced340927e0a6c49a45"
+	CloudK3d                     = "k3d"
+	GitHubProviderName           = "github"
+	GitHubHost                   = "github.com"
+	LocalClusterName             = "kubefirst"
+	MinimumAvailableDiskSize     = 10 // 10 GB
+	KubefirstGitOpsRepository    = "gitops"
+	KubefirstGitOpsRepositoryURL = "https://github.com/kubefirst/gitops-template"
 )
 
 // SegmentIO constants

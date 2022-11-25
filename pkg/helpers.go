@@ -479,7 +479,8 @@ func AwaitHostNTimes(url string, times int, gracePeriod time.Duration) {
 // file, newContent is the new content you want to replace.
 //
 // Example:
-//   err := replaceFileContent(vaultMainFile, "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000")
+//
+//	err := replaceFileContent(vaultMainFile, "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000")
 func replaceFileContent(filPath string, oldContent string, newContent string) error {
 
 	file, err := os.ReadFile(filPath)
@@ -651,4 +652,39 @@ func OpenLogFile(path string) (*os.File, error) {
 		return nil, err
 	}
 	return logFile, nil
+}
+
+// todo: delete it
+func GetBranchVersion(k1Version string, gitOpsBranch string, metaphorBranch string) (string, string) {
+
+	if k1Version == configs.DefaultK1Version {
+
+		log.Printf("Kubefirst version %q, tags %q", configs.K1Version, configs.K1Version)
+		// if gitops branch is not set
+		if len(gitOpsBranch) == 0 {
+			gitOpsBranch = "main"
+		}
+		if len(metaphorBranch) == 0 {
+			metaphorBranch = "main"
+		}
+
+		log.Printf(
+			"this development execution is using GitOps branch: %s, and Metaphor branches: %s",
+			gitOpsBranch,
+			metaphorBranch,
+		)
+
+		return gitOpsBranch, metaphorBranch
+	}
+
+	log.Println("loading tag values for built version")
+	log.Printf("Kubefirst version %q, tags %q", configs.K1Version, configs.K1Version)
+
+	// K1Version holds the value from LDFLAG
+	// during build the LDFLAG is set to a specific version/tag,
+	// this tag will target a tag in the template repositories
+	gitOpsBranch = configs.K1Version
+	metaphorBranch = configs.K1Version
+
+	return gitOpsBranch, metaphorBranch
 }

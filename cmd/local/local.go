@@ -32,7 +32,6 @@ var (
 	silentMode     bool
 	enableConsole  bool
 	gitOpsBranch   string
-	gitOpsRepo     string
 	metaphorBranch string
 	adminEmail     string
 	templateTag    string
@@ -58,7 +57,6 @@ func NewCommand() *cobra.Command {
 	localCmd.Flags().StringVar(&adminEmail, "admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
 	localCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "main", "metaphor application branch")
 	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "main", "version/branch used on git clone")
-	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
 	localCmd.Flags().StringVar(&templateTag, "template-tag", "",
 		"when running a built version, and ldflag is set for the Kubefirst version, it will use this tag value to clone the templates (gitops and metaphor's)",
 	)
@@ -117,7 +115,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		pkg.InformUser("Creating github resources with terraform", silentMode)
 
-		tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+		tfEntrypoint := config.GitOpsLocalRepoPath + "/terraform/github"
 		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
 
 		pkg.InformUser(fmt.Sprintf("Created gitops Repo in github.com/%s", viper.GetString("github.owner")), silentMode)
@@ -304,7 +302,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 		//* run vault terraform
 		pkg.InformUser("configuring vault with terraform", silentMode)
-		tfEntrypoint := config.GitOpsRepoPath + "/terraform/vault"
+		tfEntrypoint := config.GitOpsLocalRepoPath + "/terraform/vault"
 		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
 
 		pkg.InformUser("vault terraform executed successfully", silentMode)
@@ -323,7 +321,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		pkg.InformUser("applying users terraform", silentMode)
 
-		tfEntrypoint := config.GitOpsRepoPath + "/terraform/users"
+		tfEntrypoint := config.GitOpsLocalRepoPath + "/terraform/users"
 		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
 
 		pkg.InformUser("executed users terraform successfully", silentMode)
@@ -429,7 +427,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 		ok, err := gitHubClient.RetrySearchPullRequestComment(
 			githubOwner,
-			gitOpsRepo,
+			pkg.KubefirstGitOpsRepository,
 			"To **apply** all unapplied plans from this pull request, comment",
 			`waiting "atlantis plan" finish to proceed...`,
 		)
