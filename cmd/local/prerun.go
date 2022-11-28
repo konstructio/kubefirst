@@ -179,15 +179,14 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-
 		viper.Set("init.repos.gitops.cloned", true)
+		viper.Set(fmt.Sprintf("git.clone.%s.branch", repoName), gitOpsBranch)
 		if err = viper.WriteConfig(); err != nil {
-			return err
+			log.Println(err)
 		}
 
 	} else {
 		// use tag
-
 		gitHubOrg := "kubefirst"
 		repoName := "gitops"
 
@@ -202,9 +201,10 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
+		viper.Set(fmt.Sprintf("git.clone.%s.tag", repoName), tag)
 		viper.Set("init.repos.gitops.cloned", true)
 		if err = viper.WriteConfig(); err != nil {
-			return err
+			log.Println(err)
 		}
 	}
 
@@ -216,6 +216,10 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	pkg.Detokenize(config.GitOpsLocalRepoPath)
+	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", pkg.KubefirstGitOpsRepository), true)
+	if err = viper.WriteConfig(); err != nil {
+		log.Println(err)
+	}
 
 	err = gitClient.CreateGitHubRemote(config.GitOpsLocalRepoPath, githubUser, pkg.KubefirstGitOpsRepository)
 	if err != nil {
