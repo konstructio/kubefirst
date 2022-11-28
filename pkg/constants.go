@@ -104,12 +104,13 @@ const (
 
 // Atlantis
 const (
-	AtlantisPodName      = "atlantis-0"
-	AtlantisNamespace    = "atlantis"
-	AtlantisPodPort      = 4141
-	AtlantisPodLocalPort = 4141
-	AtlantisLocalURL     = "http://atlantis.localdev.me"
-	AtlantisLocalURLTLS  = "https://atlantis.localdev.me"
-	LocalAtlantisURL     = "localhost:4141" // todo:
+	AtlantisPodName           = "atlantis-0"
+	AtlantisNamespace         = "atlantis"
+	AtlantisPodPort           = 4141
+	AtlantisPodLocalPort      = 4141
+	AtlantisLocalURLTEST      = "atlantis.localdev.me"
+	AtlantisLocalURL          = "http://atlantis.localdev.me"
+	AtlantisLocalURLTLS       = "https://atlantis.localdev.me"
+	LocalAtlantisURLTEMPORARY = "localhost:4141" // todo:
 	//LocalAtlantisURL = "atlantis.localdev.me" // todo:
 )
