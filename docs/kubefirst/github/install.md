@@ -69,6 +69,7 @@ With your new KUBEFIRST_GITHUB_AUTH_TOKEN exported, let's init your local setup 
 | --s3-suffix        | unique identifier for s3 buckets                                                                                                       | you-s3-bucket-name        |
 | --github-user      | name of your github user                                                                                                               | your_username             |
 | --github-org       | name of your github organization name                                                                                                  | your_organization         |
+| --aws-nodes-graviton| Graviton nodes (ARM) on AWS EKS compute nodes                                                                                         | true                      |
 | --aws-nodes-spot   | nodes spot on AWS EKS compute nodes                                                                                                    | true                      |
 
 ```bash
