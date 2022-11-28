@@ -1,7 +1,6 @@
 package local
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -99,7 +98,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	// todo need to add go channel to control when ngrok should close
 	// and use context to handle closing the open goroutine/connection
-	go pkg.RunNgrok(context.TODO(), pkg.LocalAtlantisURL)
+	//go pkg.RunNgrok(context.TODO(), pkg.LocalAtlantisURL)
 
 	if !viper.GetBool("kubefirst.done") {
 		if viper.GetString("gitprovider") == "github" {
