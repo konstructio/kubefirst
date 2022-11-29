@@ -33,7 +33,7 @@ func RunNgrok(ctx context.Context, dest string) {
 
 		go func() {
 			err := handleConn(ctx, dest, conn)
-			log.Info().Msgf("connection closed: %s", err)
+			log.Info().Msgf("connection closed: %v", err)
 		}()
 	}
 }

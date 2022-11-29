@@ -12,6 +12,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -20,6 +21,11 @@ import (
 )
 
 func validateLocal(cmd *cobra.Command, args []string) error {
+
+	// set log level
+	log.Info().Msgf("setting log level to: %s", logLevel)
+	zerologLevel := pkg.GetLogLevelByString(logLevel)
+	zerolog.SetGlobalLevel(zerologLevel)
 
 	config := configs.ReadConfig()
 

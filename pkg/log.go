@@ -22,5 +22,32 @@ func ZerologSetup(logFile *os.File) zerolog.Logger {
 		return file + ":" + strconv.Itoa(line)
 	}
 
-	return log.Output(zerolog.ConsoleWriter{Out: logFile, NoColor: false}).With().Caller().Logger()
+	// default log level
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+
+	return log.Output(zerolog.ConsoleWriter{Out: logFile, NoColor: true}).With().Caller().Logger()
+	//return log.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: true}).With().Caller().Logger()
+}
+
+// GetLogLevelByString receives a log level string, and returns it's related zerolog Level iota
+// panic (zerolog.PanicLevel, 5)
+// fatal (zerolog.FatalLevel, 4)
+// error (zerolog.ErrorLevel, 3)
+// warn (zerolog.WarnLevel, 2)
+// info (zerolog.InfoLevel, 1)
+// debug (zerolog.DebugLevel, 0)
+// trace (zerolog.TraceLevel, -1)
+func GetLogLevelByString(logLevel string) zerolog.Level {
+
+	level := make(map[string]zerolog.Level)
+	level["trace"] = zerolog.TraceLevel
+	level["debug"] = zerolog.DebugLevel
+	level["info"] = zerolog.InfoLevel
+	level["warning"] = zerolog.WarnLevel
+	level["error"] = zerolog.ErrorLevel
+	level["fatal"] = zerolog.FatalLevel
+	level["panic"] = zerolog.PanicLevel
+
+	return level[logLevel]
+
 }

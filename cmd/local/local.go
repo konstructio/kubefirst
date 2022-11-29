@@ -36,6 +36,7 @@ var (
 	metaphorBranch string
 	adminEmail     string
 	templateTag    string
+	logLevel       string
 )
 
 func NewCommand() *cobra.Command {
@@ -61,6 +62,12 @@ func NewCommand() *cobra.Command {
 	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
 	localCmd.Flags().StringVar(&templateTag, "template-tag", "",
 		"when running a built version, and ldflag is set for the Kubefirst version, it will use this tag value to clone the templates (gitops and metaphor's)",
+	)
+	localCmd.Flags().StringVar(
+		&logLevel,
+		"log-level",
+		"debug",
+		"available log levels are: trace, debug, info, warning, error, fatal, panic",
 	)
 
 	// on error, doesnt show helper/usage
