@@ -6,7 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"os"
 	"strings"
 
@@ -26,34 +26,34 @@ func CreateSshKeyPair() {
 	// generate GitLab keys
 	if publicKey == "" && viper.GetString("gitprovider") == "gitlab" {
 
-		log.Println("generating new key pair for GitLab")
+		log.Info().Msg("generating new key pair for GitLab")
 		publicKey, privateKey, err := generateGitLabKeys()
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 
 		viper.Set("botpublickey", publicKey)
 		viper.Set("botprivatekey", privateKey)
 		err = viper.WriteConfig()
 		if err != nil {
-			log.Panicf("error: could not write to viper config")
+			log.Panic().Msg("error: could not write to viper config")
 		}
 	}
 
 	// generate GitHub keys
 	if publicKey == "" && viper.GetString("gitprovider") == "github" {
 
-		log.Println("generating new key pair for GitHub")
+		log.Info().Msg("generating new key pair for GitHub")
 		publicKey, privateKey, err := generateGitHubKeys()
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 
 		viper.Set("botpublickey", publicKey)
 		viper.Set("botprivatekey", privateKey)
 		err = viper.WriteConfig()
 		if err != nil {
-			log.Panicf("error: could not write to viper config")
+			log.Panic().Msg("error: could not write to viper config")
 		}
 
 	}
@@ -77,8 +77,9 @@ configs:
 
 	err := os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
 	if err != nil {
-		log.Panicf("error: could not write argocd-init-values.yaml %s", err)
+		log.Panic().Msg("error: could not write to viper config")
 	}
+
 }
 
 func PublicKey() (*goGitSsh.PublicKeys, error) {
@@ -144,13 +145,14 @@ func ModConfigYaml() {
 
 	file, err := os.ReadFile("./config.yaml")
 	if err != nil {
-		log.Println("error reading file", err)
+		log.Error().Err(err).Msg("error reading file")
 	}
 
 	newFile := strings.Replace(string(file), "allow-keyless: false", "allow-keyless: true", -1)
 
 	err = os.WriteFile("./config.yaml", []byte(newFile), 0)
 	if err != nil {
-		panic(err)
+		log.Panic().Msg("error: could not write to viper config")
 	}
+
 }

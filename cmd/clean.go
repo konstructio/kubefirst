@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"os"
 	"strings"
 
@@ -85,7 +85,7 @@ re-create Kubefirst base files. To destroy cloud resources you need to specify a
 		}
 
 		// re-create base
-		log.Printf("%q config file and %q folder were deleted and re-created", config.KubefirstConfigFilePath, config.K1FolderPath)
+		log.Info().Msgf("%q config file and %q folder were deleted and re-created", config.KubefirstConfigFilePath, config.K1FolderPath)
 
 		var cleanSummary bytes.Buffer
 		cleanSummary.WriteString(strings.Repeat("-", 70))

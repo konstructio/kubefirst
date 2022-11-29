@@ -5,7 +5,8 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
+	stdLog "log"
 	"os"
 	"time"
 
@@ -21,7 +22,7 @@ func main() {
 
 	currentFolder, err := os.Getwd()
 	if err != nil {
-		log.Panicf("unable to get current folder location, error is: %s", err)
+		stdLog.Panicf("unable to get current folder location, error is: %s", err)
 	}
 	logsFolder := fmt.Sprintf("%s/%s", currentFolder, "logs")
 	// we're ignoring folder creation handling at the moment
@@ -30,37 +31,39 @@ func main() {
 
 	logfile := fmt.Sprintf("%s/log_%d.log", logsFolder, epoch)
 	fmt.Printf("Logging at: %s \n", logfile)
-
-	config := configs.ReadConfig()
-
-	err = pkg.SetupViper(config)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	viper.Set("log-folder-location", logsFolder)
-	err = viper.WriteConfig()
-	if err != nil {
-		log.Panicf("unable to set log-file-location, error is: %s", err)
-	}
-
 	file, err := pkg.OpenLogFile(logfile)
 	if err != nil {
-		log.Panicf("unable to store log location, error is: %s", err)
+		stdLog.Panicf("unable to store log location, error is: %s", err)
 	}
 
 	// handle file close request
 	defer func(file *os.File) {
-		err := file.Close()
+		err = file.Close()
 		if err != nil {
 			log.Print(err)
 		}
 	}(file)
 
-	// setup logging
-	log.SetOutput(file)
-	log.SetPrefix("LOG: ")
-	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
+	// setup default logging
+	// this Go standard log is active to keep compatibility with current code base
+	stdLog.SetOutput(file)
+	stdLog.SetPrefix("LOG: ")
+	stdLog.SetFlags(stdLog.Ldate | stdLog.Lmicroseconds | stdLog.Llongfile)
+
+	// setup Zerolog
+	log.Logger = pkg.ZerologSetup(file)
+
+	config := configs.ReadConfig()
+	// setup Viper (for non-local resources)
+	if err = pkg.SetupViper(config); err != nil {
+		stdLog.Panic(err)
+	}
+
+	viper.Set("log-folder-location", logsFolder)
+	err = viper.WriteConfig()
+	if err != nil {
+		stdLog.Panicf("unable to set log-file-location, error is: %s", err)
+	}
 
 	cmd.Execute()
 }

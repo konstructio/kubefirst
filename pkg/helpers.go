@@ -3,7 +3,7 @@ package pkg
 import (
 	"errors"
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -36,7 +36,7 @@ func Detokenize(path string) {
 
 	err := filepath.Walk(path, DetokenizeDirectory)
 	if err != nil {
-		log.Panic(err)
+		log.Panic().Msg(err.Error())
 	}
 }
 
@@ -55,18 +55,18 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	}
 
 	if viper.GetString("gitprovider") == "github" && strings.Contains(path, "-gitlab.tf") {
-		log.Println("github provider specified, removing gitlab terraform file:", path)
+		log.Info().Msgf("github provider specified, removing gitlab terraform file: %s", path)
 		err = os.Remove(path)
 		if err != nil {
-			log.Panic(err)
+			log.Panic().Msg(err.Error())
 		}
 		return nil
 	}
 	if viper.GetString("gitprovider") == "gitlab" && strings.Contains(path, "-github.tf") {
-		log.Println("gitlab is enabled, removing github terraform file:", path)
+		log.Info().Msgf("gitlab is enabled, removing github terraform file: %s", path)
 		err = os.Remove(path)
 		if err != nil {
-			log.Panic(err)
+			log.Panic().Msg(err.Error())
 		}
 		return nil
 	}
@@ -74,13 +74,13 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	matched, err := filepath.Match("*", fi.Name())
 
 	if err != nil {
-		log.Panic(err)
+		log.Panic().Msg(err.Error())
 	}
 
 	if matched {
 		read, err := os.ReadFile(path)
 		if err != nil {
-			log.Panic(err)
+			log.Panic().Msg(err.Error())
 		}
 
 		var registryAddon RegistryAddon
@@ -88,25 +88,19 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		removeFile := false
 
 		err = yaml2.Unmarshal(read, &registryAddon)
-		if err != nil {
-			log.Println("trying read the file in yaml format: ", path, err)
-		} else {
+		if err == nil {
 			enableCheck = true
 		}
 
 		//reading the addons list
 		addons := viper.GetStringSlice("addons")
-		log.Println("it is a yaml file, processing:", path)
 
 		if enableCheck {
 			if !slices.Contains(addons, registryAddon.Metadata.Annotations.AddonsKubefirstIoName) {
-				log.Println("check if we need remove due unmatch annotation with k1 addons list: ", registryAddon.Metadata.Annotations)
 				r := RegistryAddon{}
 				if registryAddon.Metadata.Annotations != r.Metadata.Annotations {
 					removeFile = true
-					log.Println("yes, this file will be removed")
-				} else {
-					log.Println("no, this file will not be removed")
+					log.Info().Msg("yes, this file will be removed")
 				}
 			}
 		}
@@ -303,12 +297,12 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		if removeFile {
 			err = os.Remove(path)
 			if err != nil {
-				log.Panic(err)
+				log.Panic().Msg(err.Error())
 			}
 		} else {
 			err = os.WriteFile(path, []byte(newContents), 0)
 			if err != nil {
-				log.Panic(err)
+				log.Panic().Msg(err.Error())
 			}
 		}
 
@@ -340,7 +334,7 @@ func SetupViper(config *configs.Config) error {
 		return fmt.Errorf("unable to read config file, error is: %s", err)
 	}
 
-	log.Println("Using config file:", viper.ConfigFileUsed())
+	log.Info().Msgf("Using config file: %s", viper.ConfigFileUsed())
 
 	return nil
 }
@@ -491,7 +485,8 @@ func AwaitHostNTimes(url string, times int, gracePeriod time.Duration) {
 // file, newContent is the new content you want to replace.
 //
 // Example:
-//   err := replaceFileContent(vaultMainFile, "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000")
+//
+//	err := replaceFileContent(vaultMainFile, "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000")
 func replaceFileContent(filPath string, oldContent string, newContent string) error {
 
 	file, err := os.ReadFile(filPath)
@@ -598,11 +593,11 @@ func InformUser(message string, silentMode bool) {
 	if silentMode {
 		_, err := fmt.Fprintln(os.Stdout, message)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 		return
 	}
-	log.Println(message)
+	log.Info().Msg(message)
 	progressPrinter.LogMessage(fmt.Sprintf("- %s", message))
 }
 
@@ -646,11 +641,11 @@ func IsConsoleUIAvailable(url string) error {
 		}
 
 		if resp.StatusCode == http.StatusOK {
-			log.Println("console UI is up and running")
+			log.Info().Msg("console UI is up and running")
 			return nil
 		}
 
-		log.Println("waiting UI console to be ready")
+		log.Info().Msg("waiting UI console to be ready")
 		time.Sleep(5 * time.Second)
 	}
 

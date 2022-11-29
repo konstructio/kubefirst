@@ -3,8 +3,8 @@ package pkg
 import (
 	"context"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"io"
-	"log"
 	"net"
 
 	"github.com/ngrok/ngrok-go"
@@ -16,7 +16,7 @@ import (
 func RunNgrok(ctx context.Context, dest string) {
 	tunnel, err := ngrok.StartTunnel(ctx, config.HTTPEndpoint(), ngrok.WithAuthtokenFromEnv())
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 
 	fmt.Println("tunnel created: ", tunnel.URL())
@@ -26,14 +26,14 @@ func RunNgrok(ctx context.Context, dest string) {
 	for {
 		conn, err := tunnel.Accept()
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 
-		log.Println("accepted connection from", conn.RemoteAddr())
+		log.Info().Msgf("accepted connection from %s", conn.RemoteAddr())
 
 		go func() {
 			err := handleConn(ctx, dest, conn)
-			log.Println("connection closed:", err)
+			log.Info().Msgf("connection closed: %s", err)
 		}()
 	}
 }

@@ -3,7 +3,7 @@ package local
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"sync"
 	"time"
 
@@ -87,7 +87,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	if useTelemetry {
 		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 2)
 		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallStarted); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 		progressPrinter.IncrementTracker("step-telemetry", 1)
 	}
@@ -99,7 +99,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	if !viper.GetBool("kubefirst.done") {
 		if viper.GetString("gitprovider") == "github" {
-			log.Println("Installing Github version of Kubefirst")
+			log.Info().Msg("Installing Github version of Kubefirst")
 			viper.Set("git.mode", "github")
 			err := k3d.CreateK3dCluster()
 			if err != nil {
@@ -123,7 +123,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		pkg.InformUser(fmt.Sprintf("Created gitops Repo in github.com/%s", viper.GetString("github.owner")), silentMode)
 		progressPrinter.IncrementTracker("step-github", 1)
 	} else {
-		log.Println("already created github terraform resources")
+		log.Info().Msg("already created github terraform resources")
 	}
 
 	// push our locally detokenized gitops repo to remote github
@@ -136,7 +136,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		pkg.InformUser(fmt.Sprintf("pushing local detokenized gitops content to new remote github.com/%s", viper.GetString("github.owner")), silentMode)
 		gitClient.PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName)
 	} else {
-		log.Println("already hydrated the github gitops repository")
+		log.Info().Msg("already hydrated the github gitops repository")
 	}
 	progressPrinter.IncrementTracker("step-github", 1)
 
@@ -146,11 +146,11 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("Creating K8S Cluster", silentMode)
 		err := k3d.CreateK3dCluster()
 		if err != nil {
-			log.Println("Error installing k3d cluster")
+			log.Error().Err(err).Msg("Error installing k3d cluster")
 			return err
 		}
 	} else {
-		log.Println("already created k3d cluster")
+		log.Info().Msg("already created k3d cluster")
 	}
 	progressPrinter.IncrementTracker("step-base", 1)
 	progressPrinter.IncrementTracker("step-github", 1)
@@ -161,11 +161,11 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		err := k3d.AddK3DSecrets(dryRun)
 		if err != nil {
-			log.Println("Error AddK3DSecrets")
+			log.Error().Err(err).Msg("Error AddK3DSecrets")
 			return err
 		}
 	} else {
-		log.Println("already added secrets to k3d cluster")
+		log.Info().Msg("already added secrets to k3d cluster")
 	}
 
 	// create argocd initial repository config
@@ -176,11 +176,11 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		gitopsRepo := fmt.Sprintf("git@%s:%s/gitops.git", viper.GetString("github.host"), viper.GetString("github.owner"))
 		err := argocd.CreateInitialArgoCDRepository(gitopsRepo)
 		if err != nil {
-			log.Println("Error CreateInitialArgoCDRepository")
+			log.Error().Err(err).Msg("Error CreateInitialArgoCDRepository")
 			return err
 		}
 	} else {
-		log.Println("already created initial argocd repository")
+		log.Info().Msg("already created initial argocd repository")
 	}
 
 	// helm add argo repository && update
@@ -212,7 +212,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		argocd.WaitArgoCDToBeReady(dryRun)
 		pkg.InformUser("ArgoCD is running, continuing", silentMode)
 	} else {
-		log.Println("already waited for argocd to be ready")
+		log.Info().Msg("already waited for argocd to be ready")
 	}
 
 	// ArgoCD port-forward
@@ -250,7 +250,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
 		err := argocd.ApplyRegistryLocal(dryRun)
 		if err != nil {
-			log.Println("Error applying registry application to argocd")
+			log.Error().Err(err).Msg("Error applying registry application to argocd")
 			return err
 		}
 	}
@@ -311,11 +311,11 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 		//* create vault configurerd secret
 		// todo remove this code
-		log.Println("creating vault configured secret")
+		log.Info().Msg("creating vault configured secret")
 		k8s.CreateVaultConfiguredSecret(dryRun, config)
 		pkg.InformUser("Vault secret created", silentMode)
 	} else {
-		log.Println("already executed vault terraform")
+		log.Info().Msg("already executed vault terraform")
 	}
 
 	// create users
@@ -329,7 +329,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("executed users terraform successfully", silentMode)
 		// progressPrinter.IncrementTracker("step-users", 1)
 	} else {
-		log.Println("already created users with terraform")
+		log.Info().Msg("already created users with terraform")
 	}
 
 	// TODO: K3D =>  NEED TO REMOVE local-backend.tf and rename remote-backend.md
@@ -365,15 +365,14 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		viper.Set("chartmuseum.host.resolved", true)
 		viper.WriteConfig()
 	} else {
-		log.Println("already resolved host for chartmuseum, continuing")
+		log.Info().Msg("already resolved host for chartmuseum, continuing")
 	}
 
 	pkg.InformUser("Deploying metaphor applications", silentMode)
 	err := metaphor.DeployMetaphorGithubLocal(dryRun, githubOwner, metaphorBranch, "")
 	if err != nil {
 		pkg.InformUser("Error deploy metaphor applications", silentMode)
-		log.Println("Error running deployMetaphorCmd")
-		log.Println(err)
+		log.Error().Err(err).Msg("Error running deployMetaphorCmd")
 	}
 
 	// update terraform s3 backend to internal k8s dns (s3/minio bucket)
@@ -395,10 +394,10 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		branchNameRef,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 
-	log.Println("sleeping after git commit with Minio backend update for Terraform")
+	log.Info().Msg("sleeping after git commit with Minio backend update for Terraform")
 	time.Sleep(3 * time.Second)
 
 	// create a PR, atlantis will identify it's a Terraform change/file update and trigger atlantis plan
@@ -422,9 +421,9 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		gitHubClient := githubWrapper.New()
 		err = gitHubClient.CreatePR(branchName)
 		if err != nil {
-			fmt.Println(err)
+			log.Error().Err(err).Msg("")
 		}
-		log.Println(`waiting "atlantis plan" to start...`)
+		log.Info().Msg(`waiting "atlantis plan" to start...`)
 		time.Sleep(5 * time.Second)
 
 		ok, err := gitHubClient.RetrySearchPullRequestComment(
@@ -434,31 +433,31 @@ func runLocal(cmd *cobra.Command, args []string) error {
 			`waiting "atlantis plan" finish to proceed...`,
 		)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 
 		if !ok {
-			log.Println(`unable to run "atlantis plan"`)
+			log.Info().Msg(`unable to run "atlantis plan"`)
 			wg.Done()
 			return
 		}
 
-		err = gitHubClient.CommentPR(1, "atlantis apply")
-		if err != nil {
+		if err := gitHubClient.CommentPR(1, "atlantis apply"); err != nil {
+			log.Error().Err(err).Msg("")
 		}
 		wg.Done()
 	}()
 
-	log.Println("sending mgmt cluster install completed metric")
+	log.Info().Msg("sending mgmt cluster install completed metric")
 
 	if useTelemetry {
 		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 		progressPrinter.IncrementTracker("step-telemetry", 1)
 	}
 
-	log.Println("Kubefirst installation finished successfully")
+	log.Info().Msg("Kubefirst installation finished successfully")
 	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
 
 	// waiting GitHub/atlantis step

@@ -12,9 +12,9 @@ import (
 	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
 	"net/http"
 	"time"
 )
@@ -23,11 +23,11 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
 
-	log.Println("sending init started metric")
+	log.Info().Msg("sending init started metric")
 
 	if useTelemetry {
 		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 	}
 
@@ -55,8 +55,8 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	// example: kubefirst version 1.10.3, has template repositories (gitops and metaphor's) tags set as 1.10.3
 	// when Kubefirst download the templates, it will download the tag version that matches Kubefirst version
 	if configs.K1Version != configs.DefaultK1Version {
-		log.Println("loading tag values for built version")
-		log.Printf("Kubefirst version %q, tags %q", configs.K1Version, config.K3dVersion)
+		log.Info().Msg("loading tag values for built version")
+		log.Info().Msgf("Kubefirst version %q, tags %q", configs.K1Version, config.K3dVersion)
 		// in order to make the fallback tags work, set gitops branch as empty
 		gitOpsBranch = ""
 		templateTag = configs.K1Version
@@ -125,13 +125,14 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
 	progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
 
-	log.Println("installing kubefirst dependencies")
+	log.Info().Msg("installing kubefirst dependencies")
+
 	progressPrinter.IncrementTracker("step-download", 1)
 	err = downloadManager.DownloadTools(config)
 	if err != nil {
 		return err
 	}
-	log.Println("dependency installation complete")
+	log.Info().Msg("dependency installation complete")
 	progressPrinter.IncrementTracker("step-download", 1)
 	err = downloadManager.DownloadLocalTools(config)
 	if err != nil {
@@ -140,9 +141,9 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.IncrementTracker("step-download", 1)
 
-	log.Println("creating an ssh key pair for your new cloud infrastructure")
+	log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
 	pkg.CreateSshKeyPair()
-	log.Println("ssh key pair creation complete")
+	log.Info().Msg("ssh key pair creation complete")
 	progressPrinter.IncrementTracker("step-ssh", 1)
 
 	repo.PrepareKubefirstTemplateRepo(
@@ -153,16 +154,16 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		viper.GetString("gitops.branch"),
 		viper.GetString("template.tag"),
 	)
-	log.Println("clone and detokenization of gitops-template repository complete")
+	log.Info().Msg("clone and detokenization of gitops-template repository complete")
 	progressPrinter.IncrementTracker("step-gitops", 1)
 
-	log.Println("sending init completed metric")
+	log.Info().Msg("sending init completed metric")
 
-	pkg.InformUser("init is done!\n", silentMode)
+	pkg.InformUser("init is done!", silentMode)
 
 	if useTelemetry {
 		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 	}
 

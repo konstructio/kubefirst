@@ -1,7 +1,7 @@
 package local
 
 import (
-	"log"
+	"github.com/rs/zerolog/log"
 	"os"
 	"os/signal"
 	"sync"
@@ -16,7 +16,7 @@ import (
 func runPostLocal(cmd *cobra.Command, args []string) error {
 
 	if !enableConsole {
-		log.Println("not calling console, console flag is disabled")
+		log.Info().Msg("not calling console, console flag is disabled")
 		return nil
 	}
 
@@ -46,7 +46,7 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 		close(MetaphorFrontendDevelopmentStopChannel)
 		close(MetaphorGoDevelopmentStopChannel)
 		close(MetaphorDevelopmentStopChannel)
-		log.Println("leaving port-forward command, port forwards are now closed")
+		log.Info().Msg("leaving port-forward command, port forwards are now closed")
 	}()
 
 	err := k8s.OpenPortForwardForLocal(
@@ -66,20 +66,20 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	log.Println("Starting the presentation of console and api for the handoff screen")
+	log.Info().Msg("Starting the presentation of console and api for the handoff screen")
 
 	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURL)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURL)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 
 	reports.LocalHandoffScreen(dryRun, silentMode)
 
-	log.Println("Kubefirst Console available at: http://localhost:9094", silentMode)
+	log.Info().Msgf("Kubefirst Console available at: http://localhost:9094", silentMode)
 
 	// managing termination signal from the terminal
 	sigs := make(chan os.Signal, 1)
