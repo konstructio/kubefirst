@@ -77,7 +77,7 @@ func PortForwardPod(clientset *kubernetes.Clientset, req PortForwardAPodRequest)
 	}
 
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", runningPod.Namespace, runningPod.Name)
-	hostIP := strings.TrimLeft(req.RestConfig.Host, "htps:/")
+	hostIP := strings.TrimLeft(req.RestConfig.Host, "https:/")
 
 	transport, upgrader, err := spdy.RoundTripperFor(req.RestConfig)
 	if err != nil {

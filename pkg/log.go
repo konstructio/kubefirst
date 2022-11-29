@@ -25,8 +25,8 @@ func ZerologSetup(logFile *os.File) zerolog.Logger {
 	// default log level
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
-	return log.Output(zerolog.ConsoleWriter{Out: logFile, NoColor: true}).With().Caller().Logger()
-	//return log.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: true}).With().Caller().Logger()
+	return log.Output(zerolog.ConsoleWriter{Out: logFile, NoColor: false}).With().Caller().Logger()
+	//return log.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: false}).With().Caller().Logger()
 }
 
 // GetLogLevelByString receives a log level string, and returns it's related zerolog Level iota

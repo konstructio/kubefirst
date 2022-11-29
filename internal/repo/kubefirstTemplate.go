@@ -20,15 +20,15 @@ import (
 // PrepareKubefirstTemplateRepo - Prepare template repo to be used by installer
 func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg, repoName string, branch string, tag string) {
 
-	log.Info().Msg("---debug---")
-	log.Info().Msg(githubOrg)
-	log.Info().Msg(repoName)
-	log.Info().Msg(branch)
-	log.Info().Msg(tag)
-	log.Info().Msg("---debug---")
+	log.Info().
+		Str("GitHub Organization", githubOrg).
+		Str("Repository", repoName).
+		Str("Branch", branch).
+		Str("Tag", tag).
+		Msg("")
 
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, PrepareKubefirstTemplateRepo skipped.")
+		log.Info().Msg("[#99] Dry-run mode, PrepareKubefirstTemplateRepo skipped.")
 		return
 	}
 	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
@@ -39,7 +39,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 	viper.Set(fmt.Sprintf("init.repos.%s.cloned", repoName), true)
 	viper.WriteConfig()
 
-	log.Printf("cloned %s-template repository to directory %s/%s", repoName, config.K1FolderPath, repoName)
+	log.Info().Msgf("cloned %s-template repository to directory %s/%s", repoName, config.K1FolderPath, repoName)
 	if viper.GetString("cloud") == pkg.CloudK3d && !viper.GetBool("github.gitops.hydrated") {
 		UpdateForLocalMode(directory)
 	}
@@ -60,17 +60,17 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 		}
 		err = cp.Copy(config.GitOpsRepoPath+"/argo-workflows/.argo", directory+"/.argo", opt)
 		if err != nil {
-			log.Info().Msgf("Error populating argo-workflows .argo/ with local setup: %s", err)
+			log.Error().Err(err).Msgf("Error populating argo-workflows .argo/ with local setup: %s", err)
 		}
 		err = cp.Copy(config.GitOpsRepoPath+"/argo-workflows/.github", directory+"/.github", opt)
 		if err != nil {
-			log.Info().Msgf("Error populating argo-workflows with .github/ with local setup: %s", err)
+			log.Error().Err(err).Msgf("Error populating argo-workflows with .github/ with local setup: %s", err)
 		}
 	}
 
-	log.Printf("detokenizing %s/%s", config.K1FolderPath, repoName)
+	log.Info().Msgf("detokenizing %s/%s", config.K1FolderPath, repoName)
 	pkg.Detokenize(directory)
-	log.Printf("detokenization of %s/%s complete", config.K1FolderPath, repoName)
+	log.Info().Msgf("detokenization of %s/%s complete", config.K1FolderPath, repoName)
 
 	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", repoName), true)
 	viper.WriteConfig()
@@ -82,14 +82,14 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 		githubOwner := viper.GetString("github.owner")
 
 		url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, repoName)
-		log.Printf("git remote add github %s", url)
+		log.Info().Msgf("git remote add github %s", url)
 		_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
 			Name: "github",
 			URLs: []string{url},
 		})
 	} else {
 		domain := viper.GetString("aws.hostedzonename")
-		log.Printf("creating git remote gitlab")
+		log.Info().Msg("creating git remote gitlab")
 		log.Info().Msgf("git remote add gitlab at url ", fmt.Sprintf("https://gitlab.%s/kubefirst/%s.git", domain, repoName))
 		if err != nil {
 			log.Panic().Msgf("error opening the directory %s: %s", directory, err)
@@ -114,7 +114,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 
 	w, _ := repo.Worktree()
 
-	log.Printf("committing detokenized %s content", repoName)
+	log.Info().Msgf("committing detokenized %s content", repoName)
 	status, err := w.Status()
 	if err != nil {
 		log.Error().Err(err).Msg("error getting worktree status")
