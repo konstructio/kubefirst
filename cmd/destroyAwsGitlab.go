@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -69,14 +68,6 @@ var destroyAwsGitlabCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-destroy", 1)
 		informUser("Destroying Gitlab", globalFlags.SilentMode)
 		if !destroyFlags.SkipGitlabTerraform {
-			kPortForward, _ := k8s.PortForward(globalFlags.DryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
-			defer func() {
-				if kPortForward != nil {
-					log.Println("Closed GitLab port forward")
-					_ = kPortForward.Process.Signal(syscall.SIGTERM)
-				}
-			}()
-			informUser("Open gitlab port-forward", globalFlags.SilentMode)
 			gitlab.DestroyGitlabTerraform(destroyFlags.SkipGitlabTerraform)
 		}
 		progressPrinter.IncrementTracker("step-prepare", 1)
