@@ -1,7 +1,9 @@
 <p align="center">
-  ![Kubefirst Logo](images/kubefirst.svg#gh-light-mode-only)![Kubefirst Logo](images/kubefirst-light.svg#gh-dark-mode-only)
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/kubefirst-light.svg" alt="Kubefirst Logo">
+    <img alt="" src="images/kubefirst.svg">
+  </picture>
 </p>
-
 <p align="center">
   GitOps Infrastructure & Application Delivery Platform
 </p>
