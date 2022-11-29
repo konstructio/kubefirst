@@ -138,7 +138,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 
 // UpdateForLocalMode - Tweak for local install on templates
 func UpdateForLocalMode(directory string) error {
-	log.Info().Msgf("Working Directory:", directory)
+	log.Info().Msgf("Working Directory: %s", directory)
 	//Tweak folder
 	os.RemoveAll(directory + "/components")
 	os.RemoveAll(directory + "/registry")

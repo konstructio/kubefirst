@@ -19,11 +19,11 @@ func ExecShellReturnStrings(command string, args ...string) (string, string, err
 	k.Stderr = &errb
 	err := k.Run()
 	if err != nil {
-		log.Printf("Error executing command: %v\n", err)
+		log.Info().Msgf("Error executing command: %v", err)
 	}
-	log.Printf("Command Execution: %s\n", command)
-	log.Printf("OUT: %s\n", outb.String())
-	log.Printf("ERR: %s\n", errb.String())
+	log.Info().Msgf("Command Execution: %s", command)
+	log.Info().Msgf("OUT: %s", outb.String())
+	log.Info().Msgf("ERR: %s", errb.String())
 	return outb.String(), errb.String(), err
 }
 
@@ -32,11 +32,11 @@ func ExecShellReturnStrings(command string, args ...string) (string, string, err
 //   - Map of Vars loaded
 func ExecShellWithVars(osvars map[string]string, command string, args ...string) error {
 
-	log.Printf("INFO: Running %s", command)
+	log.Info().Msgf("INFO: Running %s", command)
 	for k, v := range osvars {
 		os.Setenv(k, v)
 		suppressedValue := strings.Repeat("*", len(v))
-		log.Printf(" export %s = %s", k, suppressedValue)
+		log.Info().Msgf(" export %s = %s", k, suppressedValue)
 	}
 	cmd := exec.Command(command, args...)
 	cmdReaderOut, err := cmd.StdoutPipe()
