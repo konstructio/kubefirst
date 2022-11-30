@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -318,8 +319,7 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 		log.Println("error getting worktree status", err)
 	}
 
-	for file, s := range status {
-		log.Printf("the file is %s the status is %v", file, s.Worktree)
+	for file, _ := range status {
 		_, err = w.Add(file)
 		if err != nil {
 			log.Println("error getting worktree status", err)
@@ -485,6 +485,105 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 		log.Panicf("error pushing to remote %s: %s", remoteName, err)
 	}
 	log.Println("successfully pushed detokenized gitops content to github/", viper.GetString("github.owner"))
+
+	return nil
+}
+
+// CloneBranch clone a branch and returns a pointer to git.Repository
+func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
+
+	log.Printf("git cloning by branch, branch: %s", configs.K1Version)
+
+	repo, err := git.PlainClone(repoLocalPath, false, &git.CloneOptions{
+		URL:           repoURL,
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		SingleBranch:  true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return repo, nil
+}
+
+// CheckoutBranch checkout a branch
+func CheckoutBranch(repo *git.Repository, branch string) error {
+
+	tree, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	err = tree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName(branch),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CloneTag clone a repository using a tag value, and returns a pointer to *git.Repository
+func CloneTag(repoLocalPath string, githubOrg string, repoName string, tag string) (*git.Repository, error) {
+
+	// todo: repoURL como param
+	repoURL := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)
+
+	log.Printf("git cloning by tag, tag: %s", configs.K1Version)
+
+	repo, err := git.PlainClone(repoLocalPath, false, &git.CloneOptions{
+		URL:           repoURL,
+		ReferenceName: plumbing.NewTagReferenceName(tag),
+		SingleBranch:  true,
+	})
+	if err != nil {
+		log.Printf("error cloning %s-template repository from GitHub using tag %s", repoName, configs.K1Version)
+		return nil, err
+	}
+
+	return repo, nil
+}
+
+// CheckoutTag repository checkout based on a tag
+func CheckoutTag(repo *git.Repository, tag string) error {
+
+	tree, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	err = tree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.ReferenceName("refs/tags/" + tag),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CreateGitHubRemote create a remote repository entry
+func CreateGitHubRemote(gitOpsLocalRepoPath string, gitHubUser string, repoName string) error {
+
+	log.Println("creating git remote (github)...")
+
+	repo, err := git.PlainOpen(gitOpsLocalRepoPath)
+	if err != nil {
+		return err
+	}
+
+	repoURL := fmt.Sprintf("https://github.com/%s/%s", gitHubUser, repoName)
+
+	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
+		Name: "github",
+		URLs: []string{repoURL},
+	})
+	if err != nil {
+		return err
+	}
+
+	log.Println("creating git remote (github) done")
 
 	return nil
 }

@@ -75,7 +75,7 @@ func DeployMetaphorGithub(globalFlags flagset.GlobalFlags) error {
 	}
 	config := configs.ReadConfig()
 
-	tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+	tfEntrypoint := config.GitOpsLocalRepoPath + "/terraform/github"
 	err := os.Rename(fmt.Sprintf("%s/%s", tfEntrypoint, "metaphor-repos.md"), fmt.Sprintf("%s/%s", tfEntrypoint, "metaphor-repos.tf"))
 	if err != nil {
 		log.Println("error renaming metaphor-repos.md to metaphor-repos.tf", err)
@@ -114,7 +114,7 @@ func DeployMetaphorGithubLocal(dryRun bool, gitHubOwner string, metaphorBranch s
 
 	config := configs.ReadConfig()
 
-	tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+	tfEntrypoint := config.GitOpsLocalRepoPath + "/terraform/github"
 	err := os.Rename(fmt.Sprintf("%s/%s", tfEntrypoint, "metaphor-repos.md"), fmt.Sprintf("%s/%s", tfEntrypoint, "metaphor-repos.tf"))
 	if err != nil {
 		log.Println("error renaming metaphor-repos.md to metaphor-repos.tf", err)

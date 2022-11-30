@@ -20,7 +20,6 @@ import (
 
 func CreateSshKeyPair() {
 
-	config := configs.ReadConfig()
 	publicKey := viper.GetString("botpublickey")
 
 	// generate GitLab keys
@@ -58,28 +57,33 @@ func CreateSshKeyPair() {
 
 	}
 	publicKey = viper.GetString("botpublickey")
-	privateKey := viper.GetString("botprivatekey")
 
-	var argocdInitValuesYaml = []byte(fmt.Sprintf(`
+	// todo: break it into smaller function
+	if viper.GetString("gitprovider") != CloudK3d {
+
+		config := configs.ReadConfig()
+		privateKey := viper.GetString("botprivatekey")
+
+		var argocdInitValuesYaml = []byte(fmt.Sprintf(`
 configs:
-  repositories:
-    soft-serve-gitops:
-      url: ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops
-      insecure: 'true'
-      type: gitClient
-      name: soft-serve-gitops
-  credentialTemplates:
-    ssh-creds:
-      url: ssh://soft-serve.soft-serve.svc.cluster.local:22
-      sshPrivateKey: |
-        %s
+ repositories:
+   soft-serve-gitops:
+	 url: ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops
+	 insecure: 'true'
+	 type: gitClient
+	 name: soft-serve-gitops
+ credentialTemplates:
+   ssh-creds:
+	 url: ssh://soft-serve.soft-serve.svc.cluster.local:22
+	 sshPrivateKey: |
+	   %s
 `, strings.ReplaceAll(privateKey, "\n", "\n        ")))
 
-	err := os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
-	if err != nil {
-		log.Panic().Msg("error: could not write to viper config")
+		err := os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
+		if err != nil {
+			log.Panic().Msgf("error: could not write argocd-init-values.yaml %s", err)
+		}
 	}
-
 }
 
 func PublicKey() (*goGitSsh.PublicKeys, error) {
@@ -154,5 +158,4 @@ func ModConfigYaml() {
 	if err != nil {
 		log.Panic().Msg("error: could not write to viper config")
 	}
-
 }

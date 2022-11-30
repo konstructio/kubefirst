@@ -30,7 +30,6 @@ var destroyLocalGithubCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Long:  `TDB`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("destroy-local-github called")
 		config := configs.ReadConfig()
 
 		destroyFlags, err := flagset.ProcessDestroyFlags(cmd)
@@ -81,7 +80,6 @@ var destroyLocalGithubCmd = &cobra.Command{
 			log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
 		}
 
-		// todo: temporary code
 		err = pkg.UpdateTerraformS3BackendForLocalhostAddress()
 		if err != nil {
 			return err
@@ -92,40 +90,16 @@ var destroyLocalGithubCmd = &cobra.Command{
 		//* step 1.1 - open port-forward to state store and vault
 		// todo --skip-git-terraform
 
-		// Vault port-forward
-		vaultStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(vaultStopChannel)
-		}()
-		k8s.OpenPortForwardPodWrapper(
-			pkg.VaultPodName,
-			pkg.VaultNamespace,
-			pkg.VaultPodPort,
-			pkg.VaultPodLocalPort,
-			vaultStopChannel,
-		)
-
 		k8s.LoopUntilPodIsReady(globalFlags.DryRun)
 
-		minioStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(minioStopChannel)
-		}()
-		k8s.OpenPortForwardPodWrapper(
-			pkg.MinioPodName,
-			pkg.MinioNamespace,
-			pkg.MinioPodPort,
-			pkg.MinioPodLocalPort,
-			minioStopChannel,
-		)
-
+		// todo: remove it
 		time.Sleep(20 * time.Second)
 
 		//* step 1.3 - terraform destroy github
 		githubTfApplied := viper.GetBool("terraform.github.apply.complete")
 		if githubTfApplied {
 			informUser("terraform destroying github resources", globalFlags.SilentMode)
-			tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+			tfEntrypoint := config.GitOpsLocalRepoPath + "/terraform/github"
 			terraform.InitReconfigureDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
 			informUser("successfully destroyed github resources", globalFlags.SilentMode)
 		}
