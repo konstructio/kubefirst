@@ -371,6 +371,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	// create a PR, atlantis will identify it's a Terraform change/file update and trigger atlantis plan
 	// it's a goroutine since it can run in background
+	k8s.OpenAtlantisPortForward()
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -379,7 +380,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		defer func() {
 			close(atlantisStopChannel)
 		}()
-		k8s.OpenPortForwardWrapper(
+		k8s.OpenPortForwardPodWrapper(
 			pkg.AtlantisPodName,
 			pkg.AtlantisNamespace,
 			pkg.AtlantisPodPort,

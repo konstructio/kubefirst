@@ -135,10 +135,10 @@ func ReadConfig() *Config {
 	config.MetaphorTemplateURL = "https://github.com/kubefirst/metaphor-template.git"
 	config.GitopsTemplateURL = "https://github.com/kubefirst/gitops-template-gh.git"
 	// Local Configs URL
-	config.LocalArgoWorkflowsURL = "http://localhost:2746"
-	config.LocalVaultURL = "http://localhost:8200"
-	config.LocalArgoURL = "http://localhost:8080"
-	config.LocalAtlantisURL = "http://localhost:4141"
+	config.LocalArgoWorkflowsURL = "http://argo.localdev.me"
+	config.LocalVaultURL = "http://vault.localdev.me"
+	config.LocalArgoURL = "http://argocd.localdev.me"
+	config.LocalAtlantisURL = "http://atlantis.localdev.me"
 	config.LocalChartmuseumURL = "http://localhost:8181"
 
 	config.LocalMetaphorDev = "http://localhost:3000"
