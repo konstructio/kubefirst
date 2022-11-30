@@ -657,41 +657,6 @@ func OpenLogFile(path string) (*os.File, error) {
 	return logFile, nil
 }
 
-// todo: delete it
-func GetBranchVersion(k1Version string, gitOpsBranch string, metaphorBranch string) (string, string) {
-
-	if k1Version == configs.DefaultK1Version {
-
-		log.Printf("Kubefirst version %q, tags %q", configs.K1Version, configs.K1Version)
-		// if gitops branch is not set
-		if len(gitOpsBranch) == 0 {
-			gitOpsBranch = "main"
-		}
-		if len(metaphorBranch) == 0 {
-			metaphorBranch = "main"
-		}
-
-		log.Printf(
-			"this development execution is using GitOps branch: %s, and Metaphor branches: %s",
-			gitOpsBranch,
-			metaphorBranch,
-		)
-
-		return gitOpsBranch, metaphorBranch
-	}
-
-	log.Println("loading tag values for built version")
-	log.Printf("Kubefirst version %q, tags %q", configs.K1Version, configs.K1Version)
-
-	// K1Version holds the value from LDFLAG
-	// during build the LDFLAG is set to a specific version/tag,
-	// this tag will target a tag in the template repositories
-	gitOpsBranch = configs.K1Version
-	metaphorBranch = configs.K1Version
-
-	return gitOpsBranch, metaphorBranch
-}
-
 // GetFileContent receives a file path, and return its content.
 func GetFileContent(filePath string) ([]byte, error) {
 

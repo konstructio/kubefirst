@@ -489,6 +489,7 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 	return nil
 }
 
+// CloneBranch clone a branch and returns a pointer to git.Repository
 func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
 
 	log.Printf("git cloning by branch, branch: %s", configs.K1Version)
@@ -505,6 +506,7 @@ func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repo
 	return repo, nil
 }
 
+// CheckoutBranch checkout a branch
 func CheckoutBranch(repo *git.Repository, branch string) error {
 
 	tree, err := repo.Worktree()
@@ -522,6 +524,7 @@ func CheckoutBranch(repo *git.Repository, branch string) error {
 	return nil
 }
 
+// CloneTag clone a repository using a tag value, and returns a pointer to *git.Repository
 func CloneTag(repoLocalPath string, githubOrg string, repoName string, tag string) (*git.Repository, error) {
 
 	// todo: repoURL como param
@@ -545,6 +548,7 @@ func CloneTag(repoLocalPath string, githubOrg string, repoName string, tag strin
 	//		viper.Set(fmt.Sprintf("git.clone.%s.tag", repoName), fallbackTag)
 }
 
+// CheckoutTag repository checkout based on a tag
 func CheckoutTag(repo *git.Repository, tag string) error {
 
 	tree, err := repo.Worktree()
@@ -562,6 +566,7 @@ func CheckoutTag(repo *git.Repository, tag string) error {
 	return nil
 }
 
+// CreateGitHubRemote create a remote repository entry
 func CreateGitHubRemote(gitOpsLocalRepoPath string, gitHubUser string, repoName string) error {
 
 	log.Println("creating git remote (github)...")
