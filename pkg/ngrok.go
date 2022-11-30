@@ -13,7 +13,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func RunNgrok(ctx context.Context, dest string) {
+func RunNgrok(ctx context.Context) {
 
 	// todo: use it when atlantis port forward missing port in address issued is fixed
 	//atlantisURL, err := url.Parse(dest)
@@ -43,14 +43,14 @@ func RunNgrok(ctx context.Context, dest string) {
 
 		go func() {
 
-			err := handleConn(ctx, dest, conn)
+			err := handleConn(ctx, conn)
 			log.Println("connection closed:", err)
 		}()
 	}
 }
 
-func handleConn(ctx context.Context, dest string, conn net.Conn) error {
-	next, err := net.Dial("tcp", dest)
+func handleConn(ctx context.Context, conn net.Conn) error {
+	next, err := net.Dial("tcp", ":80")
 	if err != nil {
 		return err
 	}

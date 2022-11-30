@@ -79,7 +79,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	viper.Set("argocd.local.service", pkg.ArgoCDLocalURL)
 	viper.Set("vault.local.service", pkg.VaultLocalURL)
-	go pkg.RunNgrok(context.TODO(), pkg.AtlantisLocalURL)
+	go pkg.RunNgrok(context.TODO())
 
 	// addons
 	addon.AddAddon("github")
