@@ -39,12 +39,12 @@ func PrintSectionRepoGitlab() []byte {
 	return handOffData.Bytes()
 }
 
-func PrintSectionOverview() []byte {
+func PrintSectionOverview(kubefirstConsoleURL string) []byte {
 	var handOffData bytes.Buffer
 	handOffData.WriteString(strings.Repeat("-", 70))
 	handOffData.WriteString(fmt.Sprintf("\nCluster %q is up and running!:", viper.GetString("cluster-name")))
 	handOffData.WriteString("\nThis information is available at $HOME/.kubefirst ")
-	handOffData.WriteString("\n\nAccess the kubefirst-console from your browser at:\n http://localhost:9094\n")
+	handOffData.WriteString("\n\nAccess the kubefirst-console from your browser at:\n" + kubefirstConsoleURL + "\n")
 	handOffData.WriteString("\nPress ESC to leave this screen and return to your shell.")
 
 	return handOffData.Bytes()
@@ -228,7 +228,7 @@ func HandoffScreen(dryRun bool, silentMode bool) {
 	}
 
 	var handOffData bytes.Buffer
-	handOffData.Write(PrintSectionOverview())
+	handOffData.Write(PrintSectionOverview(pkg.KubefirstConsoleLocalURLCloud))
 	handOffData.Write(PrintSectionAws())
 	if viper.GetString("gitprovider") == "github" {
 		handOffData.Write(PrintSectionRepoGithub())
@@ -248,7 +248,7 @@ func HandoffScreen(dryRun bool, silentMode bool) {
 
 }
 
-// HandoffScreen - prints the handoff screen
+// LocalHandoffScreen prints the handoff screen
 func LocalHandoffScreen(dryRun bool, silentMode bool) {
 	// prepare data for the handoff report
 	if dryRun {
@@ -262,7 +262,7 @@ func LocalHandoffScreen(dryRun bool, silentMode bool) {
 	}
 
 	var handOffData bytes.Buffer
-	handOffData.Write(PrintSectionOverview())
+	handOffData.Write(PrintSectionOverview(pkg.KubefirstConsoleLocalURLTLS))
 	handOffData.Write(PrintSectionRepoGithub())
 	handOffData.Write(PrintSectionVault())
 	handOffData.Write(PrintSectionArgoCD())
@@ -297,16 +297,14 @@ func LocalConnectSummary() string {
 	localConnect.WriteString("\nKubefirst Local:\n")
 	localConnect.WriteString(strings.Repeat("-", 70))
 
-	localConnect.WriteString(fmt.Sprintf("\n\nKubefirst Console:    %s\n", pkg.KubefirstConsoleLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Chart Museum:         %s\n", pkg.ChartmuseumLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Argo:                 %s/workflows\n", pkg.ArgoLocalURL))
-	localConnect.WriteString(fmt.Sprintf("ArgoCD:               %s\n", pkg.ArgoCDLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Vault:                %s\n", pkg.VaultLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Atlantis:             %s\n", pkg.AtlantisLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Minio Console:        %s\n", pkg.MinioConsoleURL))
-	localConnect.WriteString(fmt.Sprintf("Metaphor Frontend:    %s\n", pkg.MetaphorFrontendDevelopmentLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Metaphor Go:          %s/app\n", pkg.MetaphorGoDevelopmentLocalURL))
-	localConnect.WriteString(fmt.Sprintf("Metaphor:             %s/app\n", pkg.MetaphorDevelopmentLocalURL))
+	localConnect.WriteString(fmt.Sprintf("\n\nKubefirst Console UI: %s\n", pkg.KubefirstConsoleLocalURLTLS))
+	localConnect.WriteString(fmt.Sprintf("ChartmuseumLocalURL: %s\n", pkg.ChartmuseumLocalURLTLS))
+	localConnect.WriteString(fmt.Sprintf("Argo: %s\n", pkg.ArgoLocalURLTLS))
+	localConnect.WriteString(fmt.Sprintf("ArgoCD: %s\n", pkg.ArgoCDLocalURLTLS))
+	localConnect.WriteString(fmt.Sprintf("Vault: %s\n", pkg.VaultLocalURLTLS))
+	localConnect.WriteString(fmt.Sprintf("Atlantis: %s\n", pkg.AtlantisLocalURLTLS))
+	localConnect.WriteString(fmt.Sprintf("Minio: %s\n", pkg.MinioURLTLS))
+	localConnect.WriteString(fmt.Sprintf("Minio Console: %s\n", pkg.MinioConsoleURLTLS))
 
 	return localConnect.String()
 }
