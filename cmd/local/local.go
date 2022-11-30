@@ -61,7 +61,7 @@ func NewCommand() *cobra.Command {
 	// todo: UPDATE IT BEFORE MERGING
 	// todo: UPDATE IT BEFORE MERGING
 	// todo: UPDATE IT BEFORE MERGING
-	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "add-ingress-localhost", "version/branch used on git clone")
+	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "fix_atlantis_tcp", "version/branch used on git clone")
 	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
 	localCmd.Flags().StringVar(&templateTag, "template-tag", "",
 		"when running a built version, and ldflag is set for the Kubefirst version, it will use this tag value to clone the templates (gitops and metaphor's)",
@@ -374,19 +374,6 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		// Atlantis port-forward
-		atlantisStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(atlantisStopChannel)
-		}()
-		k8s.OpenPortForwardPodWrapper(
-			pkg.AtlantisPodName,
-			pkg.AtlantisNamespace,
-			pkg.AtlantisPodPort,
-			pkg.AtlantisPodLocalPort,
-			atlantisStopChannel,
-		)
-
 		gitHubClient := githubWrapper.New()
 		err = gitHubClient.CreatePR(branchName)
 		if err != nil {

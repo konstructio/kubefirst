@@ -137,7 +137,11 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubRepoOwner := viper.GetString("github.owner")
 		githubOrg := viper.GetString("github.owner")
 		githubUser := viper.GetString("github.user")
-		ngrokUrl := viper.GetString("ngrok.url")
+
+		ngrokURL, err := url.Parse(viper.GetString("ngrok.url"))
+		if err != nil {
+			log.Println(err)
+		}
 
 		githubToken := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 
@@ -148,7 +152,8 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<GITHUB_USER>", githubUser, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_TOKEN>", githubToken, -1)
 		newContents = strings.Replace(newContents, "<KUBEFIRST_VERSION>", configs.K1Version, -1)
-		newContents = strings.Replace(newContents, "<NGROK_HOST>", ngrokUrl, -1)
+		newContents = strings.Replace(newContents, "<NGROK_URL>", ngrokURL.String(), -1)
+		newContents = strings.Replace(newContents, "<NGROK_HOST>", ngrokURL.Host, -1)
 
 		var repoPathHTTPS string
 		var repoPathSSH string
