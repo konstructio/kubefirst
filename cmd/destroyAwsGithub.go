@@ -95,7 +95,7 @@ var destroyAwsGithubCmd = &cobra.Command{
 			githubTfApplied := viper.GetBool("terraform.github.apply.complete")
 			if githubTfApplied {
 				informUser("terraform destroying github resources", globalFlags.SilentMode)
-				tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+				tfEntrypoint := config.GitOpsLocalRepoPath + "/terraform/github"
 				terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
 				informUser("successfully destroyed github resources", globalFlags.SilentMode)
 			}

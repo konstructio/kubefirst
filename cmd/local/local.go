@@ -120,7 +120,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		pkg.InformUser("Creating github resources with terraform", silentMode)
 
-		tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+		tfEntrypoint := config.GitOpsLocalRepoPath + "/terraform/github"
 		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
 
 		pkg.InformUser(fmt.Sprintf("Created gitops Repo in github.com/%s", viper.GetString("github.owner")), silentMode)
@@ -284,7 +284,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 		//* run vault terraform
 		pkg.InformUser("configuring vault with terraform", silentMode)
-		tfEntrypoint := config.GitOpsRepoPath + "/terraform/vault"
+		tfEntrypoint := config.GitOpsLocalRepoPath + "/terraform/vault"
 		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
 
 		pkg.InformUser("vault terraform executed successfully", silentMode)
@@ -303,7 +303,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		pkg.InformUser("applying users terraform", silentMode)
 
-		tfEntrypoint := config.GitOpsRepoPath + "/terraform/users"
+		tfEntrypoint := config.GitOpsLocalRepoPath + "/terraform/users"
 		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
 
 		pkg.InformUser("executed users terraform successfully", silentMode)
@@ -371,7 +371,6 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	// create a PR, atlantis will identify it's a Terraform change/file update and trigger atlantis plan
 	// it's a goroutine since it can run in background
-	k8s.OpenAtlantisPortForward()
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -398,7 +397,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 		ok, err := gitHubClient.RetrySearchPullRequestComment(
 			githubOwner,
-			gitOpsRepo,
+			pkg.KubefirstGitOpsRepository,
 			"To **apply** all unapplied plans from this pull request, comment",
 			`waiting "atlantis plan" finish to proceed...`,
 		)
@@ -414,6 +413,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 		err = gitHubClient.CommentPR(1, "atlantis apply")
 		if err != nil {
+			log.Println(err)
 		}
 		wg.Done()
 	}()
