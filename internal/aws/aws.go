@@ -993,6 +993,68 @@ func ProfileInjection(envs *map[string]string) {
 	}
 }
 
+func DestroyLoadBalancerByName(elbName string) error {
+	awsConfig, err := NewAws()
+	if err != nil {
+		log.Printf("Failed to load config: %v", err)
+		return err
+	}
+	loadBalancerNameString := string(elbName)
+
+	if len(loadBalancerNameString) > 0 {
+		loadBalancerClient := elasticloadbalancing.NewFromConfig(awsConfig)
+
+		loadBalancerInput := elasticloadbalancing.DeleteLoadBalancerInput{
+			LoadBalancerName: &loadBalancerNameString,
+		}
+
+		log.Printf("trying to delete load balancer %s\n", loadBalancerNameString)
+
+		_, err = loadBalancerClient.DeleteLoadBalancer(context.Background(), &loadBalancerInput)
+
+		if err != nil {
+			return err
+		}
+
+		log.Printf("deleted load balancer %s\n", loadBalancerNameString)
+	}
+
+	return nil
+}
+
+func DestroySecurityGroupNyName(securityGroupName string) error {
+	// todo: use method approach to avoid new AWS client initializations
+	awsRegion := viper.GetString("aws.region")
+	awsProfile := viper.GetString("aws.profile")
+	awsConfig, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithRegion(awsRegion),
+		config.WithSharedConfigProfile(awsProfile),
+	)
+	if err != nil {
+		log.Println("error: ", err)
+	}
+
+	if len(securityGroupName) > 0 {
+		securityGroupClient := ec2.NewFromConfig(awsConfig)
+
+		securityGroupInput := ec2.DeleteSecurityGroupInput{
+
+			GroupName: &securityGroupName,
+		}
+
+		log.Printf("trying to delete security group %s\n", securityGroupName)
+
+		_, err = securityGroupClient.DeleteSecurityGroup(context.Background(), &securityGroupInput)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("deleted security group %s\n", securityGroupName)
+	}
+
+	return nil
+}
 func DestroyLoadBalancer(clusterName string) error {
 	// todo: use method approach to avoid new AWS client initializations
 	awsConfig, err := NewAws()
@@ -1069,4 +1131,12 @@ func DestroySecurityGroup(clusterName string) error {
 	}
 
 	return nil
+}
+
+func GetELBDetails(ingressHost string) (string, string, error) {
+	elb := strings.Split(ingressHost, "-")[0]
+	securityGroup := "k8s-elb-" + elb
+
+	return elb, securityGroup, nil
+
 }

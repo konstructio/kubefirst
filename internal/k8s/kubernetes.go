@@ -458,3 +458,18 @@ func SetArgocdCreds(dryRun bool) {
 	viper.Set("argocd.admin.username", "admin")
 	viper.WriteConfig()
 }
+
+func GetIngressHost(k8sClient *kubernetes.Clientset, namespace string, name string) string {
+
+	ingress, err := k8sClient.NetworkingV1().Ingresses(namespace).Get(context.TODO(), name, metaV1.GetOptions{})
+	if err != nil {
+		log.Println(fmt.Sprintf("error getting key: %s from ingress: %s", namespace, name), err)
+	}
+
+	if ingress != nil {
+		ingressLB := ingress.Status.LoadBalancer.Ingress[0]
+		return ingressLB.Hostname
+
+	}
+	return ""
+}
