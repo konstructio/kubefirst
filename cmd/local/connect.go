@@ -3,8 +3,8 @@ package local
 import (
 	"fmt"
 	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 func NewCommandConnect() *cobra.Command {
@@ -20,13 +20,13 @@ func NewCommandConnect() *cobra.Command {
 }
 
 func runConnect(cmd *cobra.Command, args []string) error {
-	log.Println("opening Port Forward for console...")
+	log.Info().Msg("opening Port Forward for console...")
 
 	// style UI with local URLs
 	fmt.Println(reports.StyleMessage(reports.LocalConnectSummary()))
 
-	log.Println("Kubefirst port forward done")
-	log.Println("hanging port forwards until ctrl+c is called")
+	log.Info().Msg("Kubefirst port forward done")
+	log.Info().Msg("hanging port forwards until ctrl+c is called")
 
 	return nil
 }

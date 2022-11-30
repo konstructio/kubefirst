@@ -2,7 +2,7 @@ package local
 
 import (
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"os"
 	"os/signal"
 	"sync"
@@ -18,37 +18,38 @@ import (
 func runPostLocal(cmd *cobra.Command, args []string) error {
 
 	if !enableConsole {
-		log.Println("not calling console, console flag is disabled")
+		log.Info().Msg("not calling console, console flag is disabled")
 		return nil
 	}
 
 	config := configs.ReadConfig()
 
-	log.Println("storing certificates into application secrets namespace")
+	log.Info().Msg("storing certificates into application secrets namespace")
 	if err := k8s.CreateSecretsFromCertificatesForLocalWrapper(config); err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
-	log.Println("storing certificates into application secrets namespace done")
+	log.Info().Msg("storing certificates into application secrets namespace done")
 
-	log.Println("Starting the presentation of console and api for the handoff screen")
+	log.Info().Msg("Starting the presentation of console and api for the handoff screen")
 
 	err := pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURL)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURL)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 
 	reports.LocalHandoffScreen(dryRun, silentMode)
 
+	log.Info().Msgf("Kubefirst Console available at: http://localhost:9094", silentMode)
 	_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/ingressroute.yaml", config.K1FolderPath))
 	if err != nil {
 		log.Printf("failed to create ingress route to argocd: %s", err)
 	}
 
-	log.Printf("Kubefirst Console available at: %s", pkg.KubefirstConsoleLocalURLTLS)
+	log.Info().Msgf("Kubefirst Console available at: http://localhost:9094", silentMode)
 
 	// managing termination signal from the terminal
 	sigs := make(chan os.Signal, 1)

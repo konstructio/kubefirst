@@ -3,7 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"runtime"
 	"strings"
 
@@ -44,11 +44,11 @@ var infoCmd = &cobra.Command{
 
 		err := configs.CheckKubefirstConfigFile(config)
 		if err != nil {
-			log.Println("Config file check:", err)
+			log.Error().Err(err).Msg("config file check")
 		}
 		err = configs.CheckKubefirstDir(config)
 		if err != nil {
-			log.Println("Installer dir check:", err)
+			log.Error().Err(err).Msg("installer dir check")
 		}
 		fmt.Printf("----------- \n")
 

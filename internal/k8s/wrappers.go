@@ -1,7 +1,7 @@
 package k8s
 
 import (
-	"log"
+	"github.com/rs/zerolog/log"
 	"sync"
 
 	"github.com/kubefirst/kubefirst/configs"
@@ -104,7 +104,7 @@ func OpenPortForwardForLocal(
 	return nil
 }
 
-// OpenPortForwardWrapper wrapper for PortForwardPod function. This functions make it easier to open and close port
+// OpenPortForwardPodWrapper wrapper for PortForwardPod function. This functions make it easier to open and close port
 // forward request. By providing the function parameters, the function will manage to create the port forward. The
 // parameter for the stopChannel controls when the port forward must be closed.
 //
@@ -126,7 +126,7 @@ func OpenPortForwardPodWrapper(podName string, namespace string, podPort int, po
 	kubeconfig := config1.KubeConfigPath
 	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 
 	// readyCh communicate when the port forward is ready to get traffic
@@ -153,21 +153,22 @@ func OpenPortForwardPodWrapper(podName string, namespace string, podPort int, po
 	go func() {
 		err = PortForwardPod(clientset, portForwardRequest)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 	}()
 
 	select {
 	case <-stopChannel:
-		log.Println("leaving...")
+		log.Info().Msg("leaving...")
 		close(stopChannel)
 		close(readyCh)
 		break
 	case <-readyCh:
-		log.Println("port forwarding is ready to get traffic")
+		log.Info().Msg("port forwarding is ready to get traffic")
 	}
 
-	log.Printf("Pod %q at namespace %q has port-forward accepting local connections at port %d\n", podName, namespace, podLocalPort)
+	log.Info().Msgf("Pod %q at namespace %q has port-forward accepting local connections at port %d\n", podName, namespace, podLocalPort)
+
 	//<-stopChannel
 	return
 }
@@ -178,7 +179,7 @@ func OpenPortForwardServiceWrapper(serviceName string, namespace string, service
 	kubeconfig := config1.KubeConfigPath
 	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 
 	// readyCh communicate when the port forward is ready to get traffic
@@ -205,22 +206,21 @@ func OpenPortForwardServiceWrapper(serviceName string, namespace string, service
 	go func() {
 		err = PortForwardService(clientset, portForwardRequest)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 	}()
 
 	select {
 	case <-stopChannel:
-		log.Println("leaving...")
+		log.Info().Msg("leaving...")
 		close(stopChannel)
 		close(readyCh)
 		break
 	case <-readyCh:
-		log.Println("port forwarding is ready to get traffic")
+		log.Info().Msg("port forwarding is ready to get traffic")
 	}
 
-	log.Printf("Service %q at namespace %q has port-forward accepting local connections at port %d\n", serviceName, namespace, serviceLocalPort)
-	//<-stopChannel
+	log.Info().Msgf("Service %q at namespace %q has port-forward accepting local connections at port %d\n", serviceName, namespace, serviceLocalPort)
 	return
 }
 
@@ -251,7 +251,7 @@ func CreateSecretsFromCertificatesForLocalWrapper(config *configs.Config) error 
 		// save content into secret
 		err = CreateSecret(app.Namespace, app.AppName+"-tls", data)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 
 		log.Printf("creating TLS k8s secret for %s done", app.AppName)

@@ -5,9 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"io"
 	v1 "k8s.io/api/core/v1"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -47,7 +47,7 @@ type PatchJson struct {
 func GetPodNameByLabel(podsClient coreV1Types.PodInterface, label string) string {
 	pods, err := podsClient.List(context.TODO(), metaV1.ListOptions{LabelSelector: label})
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 
 	gitlabToolboxPodName = pods.Items[0].Name
@@ -58,16 +58,16 @@ func GetPodNameByLabel(podsClient coreV1Types.PodInterface, label string) string
 func DeletePodByLabel(podsClient coreV1Types.PodInterface, label string) {
 	err := podsClient.DeleteCollection(context.TODO(), metaV1.DeleteOptions{}, metaV1.ListOptions{LabelSelector: label})
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	} else {
-		log.Printf("Success delete of pods with label(%s).", label)
+		log.Info().Msgf("Success delete of pods with label(%s).", label)
 	}
 }
 
 func GetSecretValue(k8sClient coreV1Types.SecretInterface, secretName, key string) string {
 	secret, err := k8sClient.Get(context.TODO(), secretName, metaV1.GetOptions{})
 	if err != nil {
-		log.Println(fmt.Sprintf("error getting key: %s from secret: %s", key, secretName), err)
+		log.Error().Err(err).Msgf("error getting key: %s from secret: %s", key, secretName)
 	}
 	return string(secret.Data[key])
 }
@@ -76,18 +76,18 @@ func DeleteRegistryApplication(skipDeleteRegistryApplication bool) {
 
 	if !skipDeleteRegistryApplication {
 
-		log.Println("refreshing argocd session token")
+		log.Info().Msgf("refreshing argocd session token")
 		argocd.GetArgocdAuthToken(false)
 
 		url := "https://localhost:8080/api/v1/applications/registry"
 		_, _, err := pkg.ExecShellReturnStrings("curl", "-k", "-vL", "-X", "DELETE", url, "-H", fmt.Sprintf("Authorization: Bearer %s", viper.GetString("argocd.admin.apitoken")))
 		if err != nil {
-			log.Panicf("error: delete registry applicatoin from argocd failed: %s", err)
+			log.Panic().Err(err).Msg("error: delete registry applicatoin from argocd failed")
 		}
-		log.Println("waiting for argocd deletion to complete")
+		log.Info().Msg("waiting for argocd deletion to complete")
 		time.Sleep(300 * time.Second)
 	} else {
-		log.Println("skip:  deleteRegistryApplication")
+		log.Info().Msg("skip:  deleteRegistryApplication")
 	}
 }
 
@@ -153,7 +153,7 @@ func GetResourcesByJq(dynamic dynamic.Interface, ctx context.Context, group stri
 			} else {
 				boolResult, ok := result.(bool)
 				if !ok {
-					fmt.Println("Query returned non-boolean value")
+					log.Info().Msg("Query returned non-boolean value")
 				} else if boolResult {
 					resources = append(resources, item)
 				}
@@ -166,19 +166,19 @@ func GetResourcesByJq(dynamic dynamic.Interface, ctx context.Context, group stri
 // GetClientSet - Get reference to k8s credentials to use APIS
 func GetClientSet(dryRun bool) (*kubernetes.Clientset, error) {
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, GetClientSet skipped.")
+		log.Info().Msgf("[#99] Dry-run mode, GetClientSet skipped.")
 		return nil, nil
 	}
 	config := configs.ReadConfig()
 
 	kubeconfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
 	if err != nil {
-		log.Printf("Error getting kubeconfig: %s", err)
+		log.Error().Err(err).Msg("Error getting kubeconfig")
 		return nil, err
 	}
 	clientset, err := kubernetes.NewForConfig(kubeconfig)
 	if err != nil {
-		log.Printf("Error getting clientset: %s", err)
+		log.Error().Err(err).Msg("Error getting clientset")
 		return clientset, err
 	}
 
@@ -189,7 +189,7 @@ func GetClientSet(dryRun bool) (*kubernetes.Clientset, error) {
 // PortForward - opens port-forward to services
 func PortForward(dryRun bool, namespace string, filter string, ports string) (*exec.Cmd, error) {
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, K8sPortForward skipped.")
+		log.Info().Msg("[#99] Dry-run mode, K8sPortForward skipped.")
 		return nil, nil
 	}
 	config := configs.ReadConfig()
@@ -201,7 +201,7 @@ func PortForward(dryRun bool, namespace string, filter string, ports string) (*e
 	err := kPortForward.Start()
 
 	// make port forward port available for log
-	log.Printf("kubectl port-forward started for (%s) available at http://localhost:%s", filter, strings.Split(ports, ":")[0])
+	log.Info().Msgf("kubectl port-forward started for (%s) available at http://localhost:%s", filter, strings.Split(ports, ":")[0])
 	//defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
 
 	//Please, don't remove this sleep, pf takes a while to be ready to search calls.
@@ -209,12 +209,12 @@ func PortForward(dryRun bool, namespace string, filter string, ports string) (*e
 	//this sleep protects that.
 	//Please, don't remove this comment either.
 	time.Sleep(time.Second * 5)
-	log.Println(config.KubectlClientPath, " ", "--kubeconfig", " ", config.KubeConfigPath, " ", "-n", " ", namespace, " ", "port-forward", " ", filter, " ", ports)
+	log.Info().Msgf("%s %s %s %s %s %s %s %s", config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "port-forward", filter, ports)
 	if err != nil {
 		// If it doesn't error, we kinda don't care much.
-		log.Printf("Commad Execution STDOUT: %s", kPortForwardOutb.String())
-		log.Printf("Commad Execution STDERR: %s", kPortForwardErrb.String())
-		log.Printf("error: failed to port-forward to %s in main thread %s", filter, err)
+		log.Info().Msgf("Commad Execution STDOUT: %s", kPortForwardOutb.String())
+		log.Error().Err(err).Msgf("Commad Execution STDERR: %s", kPortForwardErrb.String())
+		log.Error().Err(err).Msgf("$error: failed to port-forward to %s in main thread", filter)
 		return kPortForward, err
 	}
 
@@ -223,7 +223,7 @@ func PortForward(dryRun bool, namespace string, filter string, ports string) (*e
 
 func WaitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, podLabel string) {
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, WaitForNamespaceandPods skipped")
+		log.Info().Msg("[#99] Dry-run mode, WaitForNamespaceandPods skipped")
 		return
 	}
 	if !viper.GetBool("create.softserve.ready") {
@@ -231,10 +231,10 @@ func WaitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, pod
 		for i := 0; i < x; i++ {
 			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "get", fmt.Sprintf("namespace/%s", namespace))
 			if err != nil {
-				log.Println(fmt.Sprintf("waiting for %s namespace to create ", namespace))
+				log.Info().Msg(fmt.Sprintf("waiting for %s namespace to create ", namespace))
 				time.Sleep(10 * time.Second)
 			} else {
-				log.Println(fmt.Sprintf("namespace %s found, continuing", namespace))
+				log.Info().Msg(fmt.Sprintf("namespace %s found, continuing", namespace))
 				time.Sleep(10 * time.Second)
 				i = 51
 			}
@@ -242,10 +242,10 @@ func WaitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, pod
 		for i := 0; i < x; i++ {
 			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "get", "pods", "-l", podLabel)
 			if err != nil {
-				log.Println(fmt.Sprintf("waiting for %s pods to create ", namespace))
+				log.Info().Msg(fmt.Sprintf("waiting for %s pods to create ", namespace))
 				time.Sleep(10 * time.Second)
 			} else {
-				log.Println(fmt.Sprintf("%s pods found, continuing", namespace))
+				log.Info().Msg(fmt.Sprintf("%s pods found, continuing", namespace))
 				time.Sleep(10 * time.Second)
 				break
 			}
@@ -253,7 +253,7 @@ func WaitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, pod
 		viper.Set("create.softserve.ready", true)
 		viper.WriteConfig()
 	} else {
-		log.Println("soft-serve is ready, skipping")
+		log.Info().Msg("soft-serve is ready, skipping")
 	}
 }
 
@@ -261,7 +261,7 @@ func WaitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, pod
 func PatchSecret(k8sClient coreV1Types.SecretInterface, secretName, key, val string) {
 	secret, err := k8sClient.Get(context.TODO(), secretName, metaV1.GetOptions{})
 	if err != nil {
-		log.Println(fmt.Sprintf("error getting key: %s from secret: %s", key, secretName), err)
+		log.Error().Err(err).Msgf("error getting key: %s from secret: %s", key, secretName)
 	}
 	secret.Data[key] = []byte(val)
 	k8sClient.Update(context.TODO(), secret, metaV1.UpdateOptions{})
@@ -269,7 +269,7 @@ func PatchSecret(k8sClient coreV1Types.SecretInterface, secretName, key, val str
 
 func CreateVaultConfiguredSecret(dryRun bool, config *configs.Config) {
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, CreateVaultConfiguredSecret skipped.")
+		log.Info().Msg("[#99] Dry-run mode, CreateVaultConfiguredSecret skipped.")
 		return
 	}
 	if !viper.GetBool("vault.configuredsecret") {
@@ -282,20 +282,20 @@ func CreateVaultConfiguredSecret(dryRun bool, config *configs.Config) {
 		k.Stderr = os.Stderr
 		err := k.Run()
 		if err != nil {
-			log.Panicf("failed to create secret for vault-configured: %s", err)
+			log.Panic().Err(err).Msg("failed to create secret for vault-configured")
 		}
-		log.Printf("the secret create output is: %s", output.String())
+		log.Info().Msgf("the secret create output is: %s", output.String())
 
 		viper.Set("vault.configuredsecret", true)
 		viper.WriteConfig()
 	} else {
-		log.Println("vault secret already created")
+		log.Info().Msg("vault secret already created")
 	}
 }
 
 func WaitForGitlab(dryRun bool, config *configs.Config) {
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, WaitForGitlab skipped.")
+		log.Info().Msg("[#99] Dry-run mode, WaitForGitlab skipped.")
 		return
 	}
 	var output bytes.Buffer
@@ -306,25 +306,25 @@ func WaitForGitlab(dryRun bool, config *configs.Config) {
 	k.Stderr = os.Stderr
 	err := k.Run()
 	if err != nil {
-		log.Panicf("failed to execute kubectl wait for gitlab pods with label app=webservice: %s \n%s", output.String(), err)
+		log.Panic().Msgf("failed to execute kubectl wait for gitlab pods with label app=webservice: %s \n%s", output.String())
 	}
-	log.Printf("the output is: %s", output.String())
+	log.Info().Msgf("the output is: %s", output.String())
 }
 
 func RemoveSelfSignedCertArgoCD(argocdPodClient coreV1Types.PodInterface) error {
-	log.Printf("Removing Self-Signed Certificate from argocd-secret")
+	log.Info().Msg("Removing Self-Signed Certificate from argocd-secret")
 
-	log.Printf("Removing tls.crt")
+	log.Info().Msgf("Removing tls.crt")
 	err := clearSecretField("argocd", "argocd-secret", "/data/tls.crt")
 	if err != nil {
-		log.Printf("err removing tls.crt from argo-secret: %s", err)
+		log.Error().Err(err).Msg("errror removing tls.crt from argo-secret")
 		return err
 	}
 
-	log.Printf("Removing tls.key")
+	log.Info().Msgf("Removing tls.key")
 	err = clearSecretField("argocd", "argocd-secret", "/data/tls.key")
 	if err != nil {
-		log.Printf("err removing tls.crt from argo-secret: %s", err)
+		log.Error().Err(err).Msg("error removing tls.crt from argo-secret")
 		return err
 	}
 
@@ -336,7 +336,7 @@ func RemoveSelfSignedCertArgoCD(argocdPodClient coreV1Types.PodInterface) error 
 
 // remove field from k8s secret using sdk
 func clearSecretField(namespace, name, field string) error {
-	log.Printf("Prepare secret to be patched: ns: %s name: %s path: %s", namespace, name, field)
+	log.Info().Msgf("Prepare secret to be patched: ns: %s name: %s path: %s", namespace, name, field)
 	secret := secret{
 		namespace: namespace,
 		name:      name,
@@ -349,13 +349,13 @@ func clearSecretField(namespace, name, field string) error {
 
 	clientset, err := GetClientSet(false)
 	if err != nil {
-		log.Printf("Error creating k8s clientset : %s", err)
+		log.Error().Err(err).Msg("error creating k8s clientset")
 		return err
 	}
 
 	err = secret.patchSecret(clientset, payload)
 	if err != nil {
-		log.Printf("Error calling patchSecret : %s", err)
+		log.Error().Err(err).Msg("error calling patchSecret")
 		return err
 	}
 	return nil
@@ -365,11 +365,11 @@ func (p *secret) patchSecret(k8sClient *kubernetes.Clientset, payload []PatchJso
 
 	payloadBytes, _ := json.Marshal(payload)
 
-	log.Printf("Patching secret on K8S via SDK")
+	log.Info().Msg("Patching secret on K8S via SDK")
 	_, err := k8sClient.CoreV1().Secrets(p.namespace).Patch(context.TODO(), p.name, k8sTypes.JSONPatchType, payloadBytes, metaV1.PatchOptions{})
 
 	if err != nil {
-		log.Printf("Error patching secret : %s", err)
+		log.Error().Err(err).Msg("error patching secret ")
 		return err
 	}
 	return nil
@@ -379,7 +379,7 @@ func (p *secret) patchSecret(k8sClient *kubernetes.Clientset, payload []PatchJso
 // this is used for local only (create/destroy)
 func LoopUntilPodIsReady(dryRun bool) {
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, loopUntilPodIsReady skipped.")
+		log.Info().Msg("[#99] Dry-run mode, loopUntilPodIsReady skipped.")
 		return
 	}
 	token := viper.GetString("vault.token")
@@ -388,7 +388,7 @@ func LoopUntilPodIsReady(dryRun bool) {
 		totalAttempts := 50
 		url := pkg.VaultLocalURL + "/v1/sys/health"
 		for i := 0; i < totalAttempts; i++ {
-			log.Printf("vault is not ready yet, sleeping and checking again, attempt (%d/%d)", i+1, totalAttempts)
+			log.Info().Msgf("vault is not ready yet, sleeping and checking again, attempt (%d/%d)", i+1, totalAttempts)
 			time.Sleep(10 * time.Second)
 
 			req, _ := http.NewRequest("GET", url, nil)
@@ -397,13 +397,13 @@ func LoopUntilPodIsReady(dryRun bool) {
 
 			res, err := http.DefaultClient.Do(req)
 			if err != nil {
-				log.Println("error with http request Do, vault is not available", err)
+				log.Warn().Err(err).Msg("error with http request Do, vault is not available")
 				// todo: temporary code
-				log.Println("trying to open port-forward again...")
+				log.Info().Msgf("trying to open port-forward again...")
 				go func() {
 					_, err := PortForward(false, "vault", "svc/vault", "8200:8200")
 					if err != nil {
-						log.Println("error opening Vault port forward")
+						log.Error().Err(err).Msg("error opening Vault port forward")
 					}
 				}()
 				continue
@@ -412,35 +412,35 @@ func LoopUntilPodIsReady(dryRun bool) {
 			defer res.Body.Close()
 			body, err := io.ReadAll(res.Body)
 			if err != nil {
-				log.Println("vault is available but the body is not what is expected ", err)
+				log.Error().Err(err).Msg("vault is available but the body is not what is expected")
 				continue
 			}
 
 			var responseJson map[string]interface{}
 
-			if err := json.Unmarshal(body, &responseJson); err != nil {
-				log.Printf("vault is available but the body is not what is expected %s", err)
+			if err = json.Unmarshal(body, &responseJson); err != nil {
+				log.Error().Err(err).Msg("vault is available but the body is not what is expected")
 				continue
 			}
 
 			_, ok := responseJson["initialized"]
 			if ok {
-				log.Printf("vault is initialized and is in the expected state")
+				log.Info().Msgf("vault is initialized and is in the expected state")
 				return
 			}
-			log.Panic("vault was never initialized")
+			log.Panic().Msg("vault was never initialized")
 		}
 		viper.Set("vault.status.running", true)
 		viper.WriteConfig()
 	} else {
-		log.Println("vault token already exists, skipping vault health checks loopUntilPodIsReady")
+		log.Info().Msgf("vault token already exists, skipping vault health checks loopUntilPodIsReady")
 	}
 }
 
 // todo: deprecate the other functions
 func SetArgocdCreds(dryRun bool) {
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, setArgocdCreds skipped.")
+		log.Info().Msg("[#99] Dry-run mode, setArgocdCreds skipped.")
 		viper.Set("argocd.admin.password", "dry-run-not-real-pwd")
 		viper.Set("argocd.admin.username", "dry-run-not-admin")
 		viper.WriteConfig()
@@ -454,7 +454,7 @@ func SetArgocdCreds(dryRun bool) {
 
 	argocdPassword := GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
 	if argocdPassword == "" {
-		log.Panicf("Missing argocdPassword")
+		log.Panic().Msg("Missing argocdPassword")
 	}
 
 	viper.Set("argocd.admin.password", argocdPassword)
