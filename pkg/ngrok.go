@@ -3,13 +3,14 @@ package pkg
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
+	"net"
+
 	"github.com/ngrok/ngrok-go"
 	"github.com/ngrok/ngrok-go/config"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
-	"io"
-	"log"
-	"net"
 )
 
 func RunNgrok(ctx context.Context, dest string) {
@@ -29,6 +30,7 @@ func RunNgrok(ctx context.Context, dest string) {
 
 	fmt.Println("tunnel created: ", tunnel.URL())
 	viper.Set("github.atlantis.webhook.url", tunnel.URL()+"/events")
+	viper.Set("ngrok.url", tunnel.URL())
 	viper.WriteConfig()
 
 	for {
