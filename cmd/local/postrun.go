@@ -1,6 +1,7 @@
 package local
 
 import (
+	"fmt"
 	"github.com/rs/zerolog/log"
 	"os"
 	"os/signal"
@@ -23,11 +24,11 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
 
-	log.Println("storing certificates into application secrets namespace")
+	log.Info().Msg("storing certificates into application secrets namespace")
 	if err := k8s.CreateSecretsFromCertificatesForLocalWrapper(config); err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
-	log.Println("storing certificates into application secrets namespace done")
+	log.Info().Msg("storing certificates into application secrets namespace done")
 
 	log.Info().Msg("Starting the presentation of console and api for the handoff screen")
 

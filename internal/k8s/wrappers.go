@@ -251,7 +251,7 @@ func CreateSecretsFromCertificatesForLocalWrapper(config *configs.Config) error 
 		// save content into secret
 		err = CreateSecret(app.Namespace, app.AppName+"-tls", data)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 
 		log.Printf("creating TLS k8s secret for %s done", app.AppName)

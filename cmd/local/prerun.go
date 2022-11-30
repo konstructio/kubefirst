@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"fmt"
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
@@ -164,7 +165,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		viper.Set("init.repos.gitops.cloned", true)
 		viper.Set(fmt.Sprintf("git.clone.%s.branch", repoName), gitOpsBranch)
 		if err = viper.WriteConfig(); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 
 	} else {
@@ -186,7 +187,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		viper.Set(fmt.Sprintf("git.clone.%s.tag", repoName), tag)
 		viper.Set("init.repos.gitops.cloned", true)
 		if err = viper.WriteConfig(); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 	}
 
@@ -200,7 +201,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	pkg.Detokenize(config.GitOpsLocalRepoPath)
 	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", pkg.KubefirstGitOpsRepository), true)
 	if err = viper.WriteConfig(); err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 
 	err = gitClient.CreateGitHubRemote(config.GitOpsLocalRepoPath, githubUser, pkg.KubefirstGitOpsRepository)

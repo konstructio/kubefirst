@@ -82,7 +82,7 @@ func DownloadLocalTools(config *configs.Config) error {
 
 	select {
 	case <-wgDone:
-		log.Println("download finished")
+		log.Info().Msg("download finished")
 		return nil
 	case err = <-errorChannel:
 		close(errorChannel)

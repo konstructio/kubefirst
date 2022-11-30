@@ -1,7 +1,6 @@
 package local
 
 import (
-	"context"
 	"fmt"
 	"github.com/rs/zerolog/log"
 	"sync"
@@ -169,15 +168,15 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	//
 	// create local certs using MkCert tool
 	//
-	log.Println("installing CA from MkCert")
+	log.Info().Msg("installing CA from MkCert")
 	ssl.InstallCALocal(config)
-	log.Println("installing CA from MkCert done")
+	log.Info().Msg("installing CA from MkCert done")
 
-	log.Println("creating local certificates")
+	log.Info().Msg("creating local certificates")
 	if err := ssl.CreateCertificatesForLocalWrapper(config); err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
-	log.Println("creating local certificates done")
+	log.Info().Msg("creating local certificates done")
 
 	// add secrets to cluster
 	// todo there is a secret condition in AddK3DSecrets to this not checked
