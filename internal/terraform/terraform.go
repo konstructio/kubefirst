@@ -208,10 +208,13 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		if err != nil {
 			log.Panicf("Failed to destroy load balancer: %v", err)
 		}
-		err = aws.DestroySecurityGroupNyName(security_group)
-		if err != nil {
-			log.Panicf("Failed to destroy load balancer security group: %v", err)
-		}
+		/*
+			Removed for now, to be fixed later.
+			err = aws.DestroySecurityGroupNyName(security_group)
+			if err != nil {
+				log.Panicf("Failed to destroy load balancer security group: %v", err)
+			}
+		*/
 
 		time.Sleep(45 * time.Second)
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
