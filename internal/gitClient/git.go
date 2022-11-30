@@ -543,9 +543,6 @@ func CloneTag(repoLocalPath string, githubOrg string, repoName string, tag strin
 	}
 
 	return repo, nil
-
-	// todo: ?
-	//		viper.Set(fmt.Sprintf("git.clone.%s.tag", repoName), fallbackTag)
 }
 
 // CheckoutTag repository checkout based on a tag
