@@ -210,7 +210,7 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		}
 		err = aws.DestroySecurityGroupNyName(security_group)
 		if err != nil {
-			log.Panicf("Failed to destroy load balancer: %v", err)
+			log.Panicf("Failed to destroy load balancer security group: %v", err)
 		}
 
 		time.Sleep(45 * time.Second)
