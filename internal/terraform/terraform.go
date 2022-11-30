@@ -197,9 +197,9 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 			envs["TF_VAR_instance_type"] = "t4g.medium"
 		}
 
-		clientset, err := k8s.GetClientSet(false)
+		clientset, err := k8s.GetClientSet(skipBaseTerraform)
 		if err != nil {
-			log.Panic(err.Error())
+			log.Panicf("Failed to get kubectl client: %v", err)
 		}
 		host := k8s.GetIngressHost(clientset, "argocd", "argocd-server")
 		elb, security_group, _ := aws.GetELBDetails(host)
