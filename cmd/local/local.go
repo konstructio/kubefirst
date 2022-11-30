@@ -374,19 +374,6 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		// Atlantis port-forward
-		atlantisStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(atlantisStopChannel)
-		}()
-		k8s.OpenPortForwardPodWrapper(
-			pkg.AtlantisPodName,
-			pkg.AtlantisNamespace,
-			pkg.AtlantisPodPort,
-			pkg.AtlantisPodLocalPort,
-			atlantisStopChannel,
-		)
-
 		gitHubClient := githubWrapper.New()
 		err = gitHubClient.CreatePR(branchName)
 		if err != nil {
