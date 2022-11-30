@@ -203,6 +203,8 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		}
 		host := k8s.GetIngressHost(clientset, "argocd", "argocd-server")
 		elb, security_group, _ := aws.GetELBDetails(host)
+		log.Println("ELB in use:", elb)
+		log.Println("Security Group in use:", security_group)
 
 		err = aws.DestroyLoadBalancerByName(elb)
 		if err != nil {

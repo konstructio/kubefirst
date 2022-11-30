@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53Types "github.com/aws/aws-sdk-go-v2/service/route53/types"
@@ -1139,4 +1140,40 @@ func GetELBDetails(ingressHost string) (string, string, error) {
 
 	return elb, securityGroup, nil
 
+}
+
+func GetVPC(clusterName string) string {
+	awsConfig, err := NewAws()
+	if err != nil {
+		log.Printf("Failed to load config: %v", err)
+	}
+
+	ec2Client := ec2.NewFromConfig(awsConfig)
+
+	filterType := "tag:ClusterName"
+	vpcData, err := ec2Client.DescribeVpcs(context.Background(), &ec2.DescribeVpcsInput{
+		Filters: []ec2Types.Filter{
+			{
+				Name:   &filterType,
+				Values: []string{clusterName},
+			},
+		},
+	})
+	if err != nil {
+		log.Printf("%v", err)
+	}
+
+	if len(vpcData.Vpcs) > 0 {
+		log.Printf("there is no VPC for the cluster %q", clusterName)
+	}
+
+	for _, v := range vpcData.Vpcs {
+		log.Printf("%s", v)
+		log.Print("vpc:", &v.VpcId)
+		log.Print("vpc:", v.State)
+		if v.State == "available" {
+			log.Printf("there is a VPC for the %q cluster, but the status is not available", clusterName)
+		}
+	}
+	return ""
 }
