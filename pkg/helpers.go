@@ -134,7 +134,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 
 		ngrokURL, err := url.Parse(viper.GetString("ngrok.url"))
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 
 		githubToken := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
