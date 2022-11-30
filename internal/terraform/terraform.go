@@ -12,6 +12,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
@@ -196,7 +197,18 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 			envs["TF_VAR_instance_type"] = "t4g.medium"
 		}
 
-		err = aws.DestroyLoadBalancer(viper.GetString("cluster-name"))
+		clientset, err := k8s.GetClientSet(false)
+		if err != nil {
+			log.Panic(err.Error())
+		}
+		host := k8s.GetIngressHost(clientset, "argocd", "argocd-server")
+		elb, security_group, _ := aws.GetELBDetails(host)
+
+		err = aws.DestroyLoadBalancerByName(elb)
+		if err != nil {
+			log.Panicf("Failed to destroy load balancer: %v", err)
+		}
+		err = aws.DestroySecurityGroupNyName(security_group)
 		if err != nil {
 			log.Panicf("Failed to destroy load balancer: %v", err)
 		}
