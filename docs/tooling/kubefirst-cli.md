@@ -42,6 +42,7 @@ kubefirst init [flags]
 Flags:
 --admin-email string        The email address for the administrator as well as for Lets-Encrypt certificate emails.
 --aws-assume-role string    Instead of using AWS IAM user credentials, AWS AssumeRole feature generates role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html.
+--aws-nodes-graviton        nodes Graviton on AWS EKS compute nodes, more info [https://aws.amazon.com/ec2/graviton/]
 --aws-nodes-spot            Nodes spot on AWS EKS compute nodes.
 --clean                     Delete any local Kubefirst content ~/.kubefirst, ~/.k1.
 --cloud string              The cloud in which to provision infrastructure.

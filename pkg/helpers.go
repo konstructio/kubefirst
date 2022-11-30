@@ -139,6 +139,18 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubUser := viper.GetString("github.user")
 		ngrokUrl := viper.GetString("ngrok.url")
 
+		//due to vouch proxy keep arm image in other repo than amd image we need a logic to solve this
+		//issue: https://github.com/vouch/vouch-proxy/issues/406
+		//issue on k1: https://github.com/kubefirst/kubefirst/issues/724
+		nodes_graviton := viper.GetBool("aws.nodes_graviton")
+		if nodes_graviton {
+			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_REGISTRY>", "voucher/vouch-proxy", -1)
+			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_TAG>", "latest-arm", -1)
+		} else {
+			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_REGISTRY>", "quay.io/vouch/vouch-proxy", -1)
+			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_TAG>", "0.36", -1)
+		}
+
 		githubToken := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 
 		//todo: get from viper
