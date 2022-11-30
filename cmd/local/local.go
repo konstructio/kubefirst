@@ -1,7 +1,6 @@
 package local
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -414,6 +413,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 		err = gitHubClient.CommentPR(1, "atlantis apply")
 		if err != nil {
+			log.Println(err)
 		}
 		wg.Done()
 	}()

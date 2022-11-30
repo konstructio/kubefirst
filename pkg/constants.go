@@ -11,7 +11,7 @@ const (
 	MinimumAvailableDiskSize     = 10 // 10 GB
 	KubefirstGitOpsRepository    = "gitops"
 	KubefirstGitOpsRepositoryURL = "https://github.com/kubefirst/gitops-template"
-	LocalDNS                 	 = "localdev.me"
+	LocalDNS                     = "localdev.me"
 )
 
 // SegmentIO constants
