@@ -19,6 +19,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/metaphor"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
+	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -32,6 +33,7 @@ var (
 	silentMode     bool
 	enableConsole  bool
 	gitOpsBranch   string
+	gitOpsRepo     string
 	metaphorBranch string
 	adminEmail     string
 	templateTag    string
@@ -56,7 +58,12 @@ func NewCommand() *cobra.Command {
 	// todo: get it from GH token , use it for console
 	localCmd.Flags().StringVar(&adminEmail, "admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
 	localCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "main", "metaphor application branch")
-	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "main", "version/branch used on git clone")
+	// todo: UPDATE IT BEFORE MERGING
+	// todo: UPDATE IT BEFORE MERGING
+	// todo: UPDATE IT BEFORE MERGING
+	// todo: UPDATE IT BEFORE MERGING
+	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "add-ingress-localhost", "version/branch used on git clone")
+	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
 	localCmd.Flags().StringVar(&templateTag, "template-tag", "",
 		"when running a built version, and ldflag is set for the Kubefirst version, it will use this tag value to clone the templates (gitops and metaphor's)",
 	)
@@ -92,8 +99,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	// todo need to add go channel to control when ngrok should close
 	// and use context to handle closing the open goroutine/connection
-	go pkg.RunNgrok(context.TODO(), pkg.LocalAtlantisURL)
-	time.Sleep(5 * time.Second)
+	//go pkg.RunNgrok(context.TODO(), pkg.LocalAtlantisURL)
 
 	if !viper.GetBool("kubefirst.done") {
 		if viper.GetString("gitprovider") == "github" {
@@ -153,6 +159,19 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.IncrementTracker("step-base", 1)
 	progressPrinter.IncrementTracker("step-github", 1)
 
+	//
+	// create local certs using MkCert tool
+	//
+	log.Println("installing CA from MkCert")
+	ssl.InstallCALocal(config)
+	log.Println("installing CA from MkCert done")
+
+	log.Println("creating local certificates")
+	if err := ssl.CreateCertificatesForLocalWrapper(config); err != nil {
+		log.Println(err)
+	}
+	log.Println("creating local certificates done")
+
 	// add secrets to cluster
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	executionControl = viper.GetBool("kubernetes.vault.secret.created")
@@ -170,9 +189,15 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.initial-repository.created")
 	if !executionControl {
 		pkg.InformUser("create initial argocd repository", silentMode)
-		//Enterprise users need to be able to set the hostname for git.
-		gitopsRepo := fmt.Sprintf("git@%s:%s/gitops.git", viper.GetString("github.host"), viper.GetString("github.owner"))
-		err := argocd.CreateInitialArgoCDRepository(gitopsRepo)
+		// Enterprise users need to be able to set the hostname for git.
+		gitOpsRepo := fmt.Sprintf("git@%s:%s/gitops.git", viper.GetString("github.host"), viper.GetString("github.owner"))
+
+		argoCDConfig := argocd.GetArgoCDInitialLocalConfig(
+			gitOpsRepo,
+			viper.GetString("botprivatekey"),
+		)
+
+		err := argocd.CreateInitialArgoCDRepository(config, argoCDConfig)
 		if err != nil {
 			log.Println("Error CreateInitialArgoCDRepository")
 			return err
@@ -213,20 +238,6 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		log.Println("already waited for argocd to be ready")
 	}
 
-	// ArgoCD port-forward
-	argoCDStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(argoCDStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		pkg.ArgoCDPodName,
-		pkg.ArgoCDNamespace,
-		pkg.ArgoCDPodPort,
-		pkg.ArgoCDPodLocalPort,
-		argoCDStopChannel,
-	)
-	pkg.InformUser(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")), silentMode)
-
 	// argocd pods are ready, get and set credentials
 	executionControl = viper.GetBool("argocd.credentials.set")
 	if !executionControl {
@@ -262,35 +273,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		vault.WaitVaultToBeRunning(dryRun)
 	}
 
-	// Vault port-forward
-	vaultStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(vaultStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		pkg.VaultPodName,
-		pkg.VaultNamespace,
-		pkg.VaultPodPort,
-		pkg.VaultPodLocalPort,
-		vaultStopChannel,
-	)
-
 	k8s.LoopUntilPodIsReady(dryRun)
-
-	minioStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(minioStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		pkg.MinioPodName,
-		pkg.MinioNamespace,
-		pkg.MinioPodPort,
-		pkg.MinioPodLocalPort,
-		minioStopChannel,
-	)
-
-	// todo: can I remove it?
-	time.Sleep(20 * time.Second)
 
 	// configure vault with terraform
 	executionControl = viper.GetBool("terraform.vault.apply.complete")
@@ -346,20 +329,8 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.IncrementTracker("step-apps", 1)
 
 	if !viper.GetBool("chartmuseum.host.resolved") {
-		// Chartmuseum port-forward
-		chartmuseumStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(chartmuseumStopChannel)
-		}()
-		k8s.OpenPortForwardPodWrapper(
-			pkg.ChartmuseumPodName,
-			pkg.ChartmuseumNamespace,
-			pkg.ChartmuseumPodPort,
-			pkg.ChartmuseumPodLocalPort,
-			chartmuseumStopChannel,
-		)
 
-		pkg.AwaitHostNTimes("http://localhost:8181/health", 5, 5)
+		pkg.AwaitHostNTimes(pkg.ChartmuseumLocalURL+"/health", 5, 5)
 		viper.Set("chartmuseum.host.resolved", true)
 		viper.WriteConfig()
 	} else {

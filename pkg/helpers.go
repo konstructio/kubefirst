@@ -137,6 +137,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubRepoOwner := viper.GetString("github.owner")
 		githubOrg := viper.GetString("github.owner")
 		githubUser := viper.GetString("github.user")
+		ngrokUrl := viper.GetString("ngrok.url")
 
 		githubToken := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 
@@ -147,6 +148,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<GITHUB_USER>", githubUser, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_TOKEN>", githubToken, -1)
 		newContents = strings.Replace(newContents, "<KUBEFIRST_VERSION>", configs.K1Version, -1)
+		newContents = strings.Replace(newContents, "<NGROK_HOST>", ngrokUrl, -1)
 
 		var repoPathHTTPS string
 		var repoPathSSH string
@@ -267,6 +269,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<METAPHOR_PROD>", config.LocalMetaphorProd, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_GO_PROD>", config.LocalMetaphorGoProd, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", config.LocalMetaphorFrontProd, -1)
+			newContents = strings.Replace(newContents, "<LOCAL_DNS>", LocalDNS, -1)
 		} else {
 			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
 			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", fmt.Sprintf("https://argo.%s", hostedZoneName), -1)
@@ -508,7 +511,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", config.K1FolderPath)
 	if err := replaceFileContent(
 		vaultMainFile,
-		"http://127.0.0.1:9000",
+		MinioURL,
 		"http://minio.minio.svc.cluster.local:9000",
 	); err != nil {
 		return err
@@ -519,7 +522,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
 		if err := replaceFileContent(
 			fullPathKubefirstGitHubFile,
-			"http://127.0.0.1:9000",
+			MinioURL,
 			"http://minio.minio.svc.cluster.local:9000",
 		); err != nil {
 			return err
@@ -529,7 +532,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 		fullPathRemoteBackendFile := fmt.Sprintf("%s/gitops/terraform/github/remote-backend.tf", config.K1FolderPath)
 		if err := replaceFileContent(
 			fullPathRemoteBackendFile,
-			"http://127.0.0.1:9000",
+			MinioURL,
 			"http://minio.minio.svc.cluster.local:9000",
 		); err != nil {
 			return err
@@ -550,7 +553,7 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 	if err := replaceFileContent(
 		vaultMainFile,
 		"http://minio.minio.svc.cluster.local:9000",
-		"http://127.0.0.1:9000",
+		MinioURL,
 	); err != nil {
 		return err
 	}
@@ -561,7 +564,7 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 		if err := replaceFileContent(
 			fullPathKubefirstGitHubFile,
 			"http://minio.minio.svc.cluster.local:9000",
-			"http://127.0.0.1:9000",
+			MinioURL,
 		); err != nil {
 			return err
 		}
@@ -571,9 +574,9 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 		if err := replaceFileContent(
 			fullPathRemoteBackendFile,
 			"http://minio.minio.svc.cluster.local:9000",
-			"http://127.0.0.1:9000",
+			MinioURL,
 		); err != nil {
-			return err
+			log.Println(err)
 		}
 	}
 
@@ -687,4 +690,65 @@ func GetBranchVersion(k1Version string, gitOpsBranch string, metaphorBranch stri
 	metaphorBranch = configs.K1Version
 
 	return gitOpsBranch, metaphorBranch
+}
+
+// GetFileContent receives a file path, and return its content.
+func GetFileContent(filePath string) ([]byte, error) {
+
+	// check if file exists
+	if _, err := os.Stat(filePath); err != nil && os.IsNotExist(err) {
+		return nil, err
+	}
+
+	byteData, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return byteData, nil
+}
+
+type CertificateAppList struct {
+	Namespace string
+	AppName   string
+}
+
+func GetCertificateAppList() []CertificateAppList {
+
+	certificateAppList := []CertificateAppList{
+		{
+			Namespace: "argo",
+			AppName:   "argo",
+		},
+		{
+			Namespace: "argocd",
+			AppName:   "argocd",
+		},
+		{
+			Namespace: "atlantis",
+			AppName:   "atlantis",
+		},
+		{
+			Namespace: "chartmuseum",
+			AppName:   "chartmuseum",
+		},
+		{
+			Namespace: "vault",
+			AppName:   "vault",
+		},
+		{
+			Namespace: "minio",
+			AppName:   "minio",
+		},
+		{
+			Namespace: "minio",
+			AppName:   "minio-console",
+		},
+		{
+			Namespace: "kubefirst",
+			AppName:   "kubefirst-console",
+		},
+	}
+
+	return certificateAppList
 }

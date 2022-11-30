@@ -22,3 +22,6 @@ tasks:
     - go test -v -run TestIsEKSDestroyedIntegration ./internal/aws || echo $?
     - go run . clean --destroy-buckets --destroy-confirm || echo $?
     - aws s3 sync $HOME/kubefirst/logs s3://$CICD_LOGS_BUCKET
+  integration-test-for-tls-localdev:
+    # GOFLAGS="-count=1" disable cache on tests
+    - GOFLAGS="-count=1" go test -v -run TestArgoCertificateIntegration ./internal/ssl

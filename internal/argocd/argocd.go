@@ -23,8 +23,8 @@ import (
 
 var ArgocdSecretClient coreV1Types.SecretInterface
 
-// ConfigRepo - Sample config struct
-type ConfigRepo struct {
+// Config ArgoCD configuration
+type Config struct {
 	Configs struct {
 		Repositories struct {
 			RepoGitops struct {
@@ -40,6 +40,24 @@ type ConfigRepo struct {
 			} `yaml:"ssh-creds"`
 		} `yaml:"credentialTemplates"`
 	} `yaml:"configs"`
+	Server struct {
+		ExtraArgs []string `yaml:"extraArgs"`
+		Ingress   struct {
+			Enabled     string `yaml:"enabled"`
+			Annotations struct {
+				IngressKubernetesIoRewriteTarget      string `yaml:"ingress.kubernetes.io/rewrite-target"`
+				IngressKubernetesIoBackendProtocol    string `yaml:"ingress.kubernetes.io/backend-protocol"`
+				IngressKubernetesIoActionsSslRedirect string `yaml:"ingress.kubernetes.io/actions.ssl-redirect"`
+			} `yaml:"annotations"`
+			Hosts []string    `yaml:"hosts"`
+			TLS   []TLSConfig `yaml:"tls"`
+		} `yaml:"ingress"`
+	} `yaml:"server"`
+}
+
+type TLSConfig struct {
+	Hosts      []string `yaml:"hosts"`
+	SecretName string   `yaml:"secretName"`
 }
 
 // SyncRetry tries to Sync ArgoCD as many times as requested by the attempts' parameter. On successful request, returns
@@ -301,50 +319,43 @@ func ApplyRegistry(dryRun bool) error {
 func ApplyRegistryLocal(dryRun bool) error {
 	config := configs.ReadConfig()
 
-	if viper.GetBool("argocd.registry.applied") {
+	if viper.GetBool("argocd.registry.applied") || dryRun {
 		log.Println("skipped ApplyRegistryLocal - ")
 		return nil
 	}
 
-	if !dryRun {
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/registry.yaml", config.K1FolderPath))
-		if err != nil {
-			log.Printf("failed to execute localhost kubectl apply of registry-base: %s", err)
-			return err
-		}
-		time.Sleep(45 * time.Second)
-		viper.Set("argocd.registry.applied", true)
-		viper.WriteConfig()
+	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/registry.yaml", config.K1FolderPath))
+	if err != nil {
+		log.Printf("failed to execute localhost kubectl apply of registry-base: %s", err)
+		return err
 	}
+	time.Sleep(45 * time.Second)
+	viper.Set("argocd.registry.applied", true)
+	viper.WriteConfig()
+
 	return nil
 }
 
-// CreateInitialArgoCDRepository - Fill and create argocd-init-values.yaml for Github installs
-func CreateInitialArgoCDRepository(githubURL string) error {
-	config := configs.ReadConfig()
-
-	privateKey := viper.GetString("botprivatekey")
-
-	argoConfig := ConfigRepo{}
-	argoConfig.Configs.Repositories.RepoGitops.URL = githubURL
-	argoConfig.Configs.Repositories.RepoGitops.Type = "git"
-	argoConfig.Configs.Repositories.RepoGitops.Name = "github-gitops"
-	argoConfig.Configs.CredentialTemplates.SSHCreds.URL = githubURL
-	argoConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = privateKey
+// CreateInitialArgoCDRepository - Fill and create `argocd-init-values.yaml` for GitHub installs.
+// The `argocd-init-values.yaml` is applied during helm install.
+func CreateInitialArgoCDRepository(config *configs.Config, argoConfig Config) error {
 
 	argoCdRepoYaml, err := yaml2.Marshal(&argoConfig)
 	if err != nil {
-		log.Printf("error: marshaling yaml for argo config %s", err)
-		return err
+		return fmt.Errorf("error: marshaling yaml for argo config %s", err)
 	}
 
 	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoCdRepoYaml, 0644)
 	if err != nil {
-		log.Printf("error: could not write argocd-init-values.yaml %s", err)
-		return err
+		return fmt.Errorf("error: could not write argocd-init-values.yaml %s", err)
 	}
 	viper.Set("argocd.initial-repository.created", true)
-	viper.WriteConfig()
+
+	err = viper.WriteConfig()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -435,4 +446,49 @@ func WaitArgoCDToBeReady(dryRun bool) {
 			break
 		}
 	}
+}
+
+// GetArgoCDInitialLocalConfig build a Config struct for local installation
+func GetArgoCDInitialLocalConfig(gitOpsRepo string, botPrivateKey string) Config {
+
+	argoCDConfig := Config{}
+
+	// Repo config
+	argoCDConfig.Configs.Repositories.RepoGitops.URL = gitOpsRepo
+	argoCDConfig.Configs.Repositories.RepoGitops.Type = "git"
+	argoCDConfig.Configs.Repositories.RepoGitops.Name = "github-gitops"
+
+	// Credentials
+	argoCDConfig.Configs.CredentialTemplates.SSHCreds.URL = gitOpsRepo
+	argoCDConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = botPrivateKey
+
+	// Ingress
+	argoCDConfig.Server.ExtraArgs = []string{"--insecure"}
+	argoCDConfig.Server.Ingress.Enabled = "true"
+	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoRewriteTarget = "/"
+	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoBackendProtocol = "HTTPS"
+	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoActionsSslRedirect = `{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}`
+	argoCDConfig.Server.Ingress.Hosts = []string{"argocd.localdev.me"}
+
+	argoCDConfig.Server.Ingress.TLS = []TLSConfig{
+		{
+			Hosts:      []string{"argocd.localdev.me"},
+			SecretName: "argocd-tls",
+		},
+	}
+
+	return argoCDConfig
+}
+
+// GetArgoCDInitialCloudConfig build a Config struct for Cloud installation
+func GetArgoCDInitialCloudConfig(gitOpsRepo string, botPrivateKey string) Config {
+
+	argoCDConfig := Config{}
+	argoCDConfig.Configs.Repositories.RepoGitops.URL = gitOpsRepo
+	argoCDConfig.Configs.Repositories.RepoGitops.Type = "git"
+	argoCDConfig.Configs.Repositories.RepoGitops.Name = "github-gitops"
+	argoCDConfig.Configs.CredentialTemplates.SSHCreds.URL = gitOpsRepo
+	argoCDConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = botPrivateKey
+
+	return argoCDConfig
 }

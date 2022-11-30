@@ -40,12 +40,15 @@ type Config struct {
 	NgrokClientPath         string
 	TerraformClientPath     string
 	K3dPath                 string
+	MkCertPath              string
+	MkCertPemFilesPath      string
 
 	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
 	ClusterName    string `env:"CLUSTER_NAME"`
 	AwsRegion      string `env:"AWS_REGION"`
 
 	K3dVersion       string
+	MkCertVersion    string
 	KubectlVersion   string `env:"KUBECTL_VERSION" envDefault:"v1.20.0"`
 	KubectlVersionM1 string
 	TerraformVersion string
@@ -122,16 +125,20 @@ func ReadConfig() *Config {
 	config.HelmVersion = "v3.6.1"
 	config.KubectlVersionM1 = "v1.21.14"
 	config.K3dVersion = "v5.4.6"
-
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
+
+	// certificates
+	config.MkCertPath = fmt.Sprintf("%s/tools/mkcert", config.K1FolderPath)
+	config.MkCertPemFilesPath = fmt.Sprintf("%s/tools/certs/", config.K1FolderPath)
+	config.MkCertVersion = "v1.4.4"
 
 	config.MetaphorTemplateURL = "https://github.com/kubefirst/metaphor-template.git"
 	config.GitopsTemplateURL = "https://github.com/kubefirst/gitops-template-gh.git"
 	// Local Configs URL
-	config.LocalArgoWorkflowsURL = "http://localhost:2746"
-	config.LocalVaultURL = "http://localhost:8200"
-	config.LocalArgoURL = "http://localhost:8080"
-	config.LocalAtlantisURL = "http://localhost:4141"
+	config.LocalArgoWorkflowsURL = "http://argo.localdev.me"
+	config.LocalVaultURL = "http://vault.localdev.me"
+	config.LocalArgoURL = "http://argocd.localdev.me"
+	config.LocalAtlantisURL = "http://atlantis.localdev.me"
 	config.LocalChartmuseumURL = "http://localhost:8181"
 
 	config.LocalMetaphorDev = "http://localhost:3000"

@@ -14,6 +14,15 @@ import (
 )
 
 func RunNgrok(ctx context.Context, dest string) {
+
+	// todo: use it when atlantis port forward missing port in address issued is fixed
+	//atlantisURL, err := url.Parse(dest)
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//
+	//dest = atlantisURL.Host + ":80"
+
 	tunnel, err := ngrok.StartTunnel(ctx, config.HTTPEndpoint(), ngrok.WithAuthtokenFromEnv())
 	if err != nil {
 		log.Println(err)
@@ -21,6 +30,7 @@ func RunNgrok(ctx context.Context, dest string) {
 
 	fmt.Println("tunnel created: ", tunnel.URL())
 	viper.Set("github.atlantis.webhook.url", tunnel.URL()+"/events")
+	viper.Set("ngrok.url", tunnel.URL())
 	viper.WriteConfig()
 
 	for {
@@ -32,6 +42,7 @@ func RunNgrok(ctx context.Context, dest string) {
 		log.Println("accepted connection from", conn.RemoteAddr())
 
 		go func() {
+
 			err := handleConn(ctx, dest, conn)
 			log.Println("connection closed:", err)
 		}()

@@ -1,7 +1,12 @@
 package local
 
 import (
+	"context"
 	"fmt"
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/addon"
@@ -15,9 +20,6 @@ import (
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"net/http"
-	"time"
 )
 
 func validateLocal(cmd *cobra.Command, args []string) error {
@@ -91,6 +93,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	viper.Set("argocd.local.service", pkg.ArgoCDLocalURL)
 	viper.Set("vault.local.service", pkg.VaultLocalURL)
+	go pkg.RunNgrok(context.TODO(), pkg.LocalAtlantisURLTEMPORARY)
 
 	// addons
 	addon.AddAddon("github")
@@ -132,7 +135,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		)
 	}
 
-	progressPrinter.SetupProgress(6, silentMode)
+	progressPrinter.SetupProgress(4, silentMode)
 
 	progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 	progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)

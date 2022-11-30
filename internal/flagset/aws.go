@@ -15,18 +15,20 @@ func DefineAWSFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("s3-suffix", "", "unique identifier for s3 buckets")
 	currentCommand.Flags().String("aws-assume-role", "", "instead of using AWS IAM user credentials, AWS AssumeRole feature generate role based credentials, more at https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html")
 	currentCommand.Flags().Bool("aws-nodes-spot", false, "nodes spot on AWS EKS compute nodes")
+	currentCommand.Flags().Bool("aws-nodes-graviton", false, "nodes Graviton on AWS EKS compute nodes, more info [https://aws.amazon.com/ec2/graviton/]")
 	currentCommand.Flags().String("profile", "", "AWS profile located at ~/.aws/config")
 	currentCommand.Flags().String("hosted-zone-name", "", "the domain to provision the kubefirst platform in")
 	currentCommand.Flags().String("region", "", "the region to provision the cloud resources in")
 }
 
 type AwsFlags struct {
-	Profile         string
-	Region          string
-	S3Suffix        string
-	AssumeRole      string
-	UseSpotInstance bool
-	HostedZoneName  string
+	Profile          string
+	Region           string
+	S3Suffix         string
+	AssumeRole       string
+	UseSpotInstance  bool
+	UseNodesGraviton bool
+	HostedZoneName   string
 }
 
 // ProcessAwsFlags - Read values of CLI parameters for aws flags
@@ -72,6 +74,15 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	viper.Set("aws.nodes_spot", nodesSpot)
 	log.Println("aws.nodes_spot: ", nodesSpot)
 	flags.UseSpotInstance = nodesSpot
+
+	enableGraviton, err := ReadConfigBool(cmd, "aws-nodes-graviton")
+	if err != nil {
+		log.Println(err)
+		return flags, err
+	}
+	viper.Set("aws.nodes_graviton", enableGraviton)
+	log.Println("aws.nodes_graviton: ", enableGraviton)
+	flags.UseNodesGraviton = enableGraviton
 
 	bucketRand, err := ReadConfigString(cmd, "s3-suffix")
 	if err != nil {
@@ -135,5 +146,11 @@ func validateAwsFlags() error {
 		log.Println("must provide only one of these arguments: profile or aws-assume-role")
 		return errors.New("must provide only one of these arguments: profile or aws-assume-role")
 	}
+
+	if viper.GetString("gitprovider") == "gitlab" && viper.GetBool("aws.nodes_graviton") {
+		log.Println("GitLab only support x86 compute nodes")
+		return errors.New("GitLab only support x86 compute nodes")
+	}
+
 	return nil
 }

@@ -370,7 +370,7 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 		log.Panicf("error: could not change directory to " + directory)
 	}
 
-	envs["GITLAB_BASE_URL"] = viper.GetString("gitlab.local.service")
+	envs["GITLAB_BASE_URL"] = fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename"))
 
 	if !skipGitlabTerraform && viper.GetString("gitprovider") == "gitlab" {
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")

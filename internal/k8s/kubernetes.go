@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	v1 "k8s.io/api/core/v1"
 	"log"
 	"net/http"
 	"os"
@@ -256,6 +257,7 @@ func WaitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, pod
 	}
 }
 
+// todo: delete unused function
 func PatchSecret(k8sClient coreV1Types.SecretInterface, secretName, key, val string) {
 	secret, err := k8sClient.Get(context.TODO(), secretName, metaV1.GetOptions{})
 	if err != nil {
@@ -374,6 +376,7 @@ func (p *secret) patchSecret(k8sClient *kubernetes.Clientset, payload []PatchJso
 }
 
 // todo: deprecate the other functions
+// this is used for local only (create/destroy)
 func LoopUntilPodIsReady(dryRun bool) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, loopUntilPodIsReady skipped.")
@@ -383,7 +386,7 @@ func LoopUntilPodIsReady(dryRun bool) {
 	if len(token) == 0 {
 
 		totalAttempts := 50
-		url := "http://localhost:8200/v1/sys/health"
+		url := pkg.VaultLocalURL + "/v1/sys/health"
 		for i := 0; i < totalAttempts; i++ {
 			log.Printf("vault is not ready yet, sleeping and checking again, attempt (%d/%d)", i+1, totalAttempts)
 			time.Sleep(10 * time.Second)
@@ -457,4 +460,37 @@ func SetArgocdCreds(dryRun bool) {
 	viper.Set("argocd.admin.password", argocdPassword)
 	viper.Set("argocd.admin.username", "admin")
 	viper.WriteConfig()
+}
+
+// CreateSecret creates a key for a specific namespace.
+//
+//	namespace: namespace where secret will be created
+//	secretName: secret name to be stored at a Kubernetes object
+//	data: a single or collection of []bytes that will be stored as a Kubernetes secret
+func CreateSecret(namespace string, secretName string, data map[string][]byte) error {
+
+	// todo: method
+	clientset, err := GetClientSet(false)
+	if err != nil {
+		return err
+	}
+
+	secret := v1.Secret{
+		ObjectMeta: metaV1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+		},
+		Data: data,
+	}
+
+	_, err = clientset.CoreV1().Secrets(namespace).Create(
+		context.Background(),
+		&secret,
+		metaV1.CreateOptions{},
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
