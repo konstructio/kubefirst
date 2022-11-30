@@ -467,9 +467,10 @@ func GetIngressHost(k8sClient *kubernetes.Clientset, namespace string, name stri
 	}
 
 	if ingress != nil {
-		ingressLB := ingress.Status.LoadBalancer.Ingress[0]
-		return ingressLB.Hostname
-
+		if len(ingress.Status.LoadBalancer.Ingress) > 0 {
+			ingressLB := ingress.Status.LoadBalancer.Ingress[0]
+			return ingressLB.Hostname
+		}
 	}
 	return ""
 }
