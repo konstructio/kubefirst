@@ -12,7 +12,6 @@ import (
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
-	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
@@ -197,26 +196,10 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 			envs["TF_VAR_instance_type"] = "t4g.medium"
 		}
 
-		clientset, err := k8s.GetClientSet(skipBaseTerraform)
-		if err != nil {
-			log.Panicf("Failed to get kubectl client: %v", err)
-		}
-		host := k8s.GetIngressHost(clientset, "argocd", "argocd-server")
-		elb, security_group, _ := aws.GetELBDetails(host)
-		log.Println("ELB in use:", elb)
-		log.Println("Security Group in use:", security_group)
-
-		err = aws.DestroyLoadBalancerByName(elb)
+		err = aws.DestroyLoadBalancerByName(viper.GetString("aws.elb.name"))
 		if err != nil {
 			log.Panicf("Failed to destroy load balancer: %v", err)
 		}
-		/*
-			Removed for now, to be fixed later.
-			err = aws.DestroySecurityGroupNyName(security_group)
-			if err != nil {
-				log.Panicf("Failed to destroy load balancer security group: %v", err)
-			}
-		*/
 
 		time.Sleep(45 * time.Second)
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
@@ -229,9 +212,13 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 			log.Printf("failed to terraform destroy base %v", err)
 		}
 
-		err = aws.DestroySecurityGroup(viper.GetString("cluster-name"))
-		if err != nil {
-			log.Panicf("Failed to destroy security group: %v", err)
+		//destroy all found sg
+		for _, sg := range viper.GetStringSlice("aws.elb.sg") {
+			log.Println("Removing Security Group:", sg)
+			err = aws.DestroySecurityGroupById(sg)
+			if err != nil {
+				log.Panicf("Failed to destroy security group: %v", err)
+			}
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
