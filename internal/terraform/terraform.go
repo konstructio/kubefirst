@@ -196,7 +196,7 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 			envs["TF_VAR_instance_type"] = "t4g.medium"
 		}
 
-		err = aws.DestroyLoadBalancer(viper.GetString("cluster-name"))
+		err = aws.DestroyLoadBalancerByName(viper.GetString("aws.elb.name"))
 		if err != nil {
 			log.Panicf("Failed to destroy load balancer: %v", err)
 		}
@@ -212,9 +212,13 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 			log.Printf("failed to terraform destroy base %v", err)
 		}
 
-		err = aws.DestroySecurityGroup(viper.GetString("cluster-name"))
-		if err != nil {
-			log.Panicf("Failed to destroy security group: %v", err)
+		//destroy all found sg
+		for _, sg := range viper.GetStringSlice("aws.elb.sg") {
+			log.Println("Removing Security Group:", sg)
+			err = aws.DestroySecurityGroupById(sg)
+			if err != nil {
+				log.Panicf("Failed to destroy security group: %v", err)
+			}
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
