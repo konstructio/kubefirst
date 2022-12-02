@@ -76,42 +76,17 @@ With your new KUBEFIRST_GITHUB_AUTH_TOKEN exported, let's init your local setup 
 export KUBEFIRST_GITHUB_AUTH_TOKEN=your-new-token
 
 kubefirst init \
---admin-email your_name@yourcompany.com \
+--admin-email yourname@yourcompany.com \
 --cloud aws \
 --hosted-zone-name yourdomain.com \
 --region us-east-1 \
 --profile default \
---cluster-name your_cluster_name \
---s3-suffix you-s3-bucket-name \
---github-user yourgithubhandle \
---github-owner yourgithuborganization
-```
-
-#### Using a config file
-
-```yaml
-# config.yaml
-config:
-  admin-email: your_name@yourcompany.com
-  cloud: aws
-  hosted-zone-name: yourdomain.com
-  region: us-east-1
-  profile: default
-  cluster-name: your_cluster_name
-  s3-suffix: you-s3-bucket-name
-  github-user: yourgithubhandle
-  github-owner: yourgithuborganization
-```
-
-```bash
-export KUBEFIRST_GITHUB_AUTH_TOKEN=your-new-token
-
-kubefirst init -c config.yaml
+--cluster-name your-cluster-name \
+--github-user your-bot-users-github-username \
+--github-owner your-github-organization-name
 ```
 
 The `init` process produces a directory of utilities, a state file, and some staged platform content that can now be found at `~/.kubefirst`
-
-<!-- TODO: check final state file name above - state file collides with directory -->
 
 ### Step 3 - `kubefirst cluster create`
 
@@ -120,5 +95,3 @@ Now it's time to create the platform, to do so, simply run
 ```
 kubefirst cluster create
 ```
-
-<!-- TODO: check final state command above - talk through stack vs cluster with team -->
