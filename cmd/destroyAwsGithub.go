@@ -110,7 +110,7 @@ var destroyAwsGithubCmd = &cobra.Command{
 			os.RemoveAll(config.GitOpsRepoPath)
 
 			log.Println("cloning fresh gitops directory from github owner's private gitops")
-			gitClient.ClonePrivateRepo(fmt.Sprintf("https://github.com/%s/gitops", viper.GetString("github.owner")), "main", config.GitOpsRepoPath)
+			gitClient.ClonePrivateRepo(fmt.Sprintf("https://github.com/%s/gitops", viper.GetString("github.owner")), config.GitOpsRepoPath)
 
 			informUser("Removing ingress-nginx load balancer", globalFlags.SilentMode)
 

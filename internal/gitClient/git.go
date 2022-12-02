@@ -157,8 +157,8 @@ func CloneGitOpsRepo() {
 	log.Println("downloaded gitops repo from template to directory", config.K1FolderPath, "/gitops")
 }
 
-func ClonePrivateRepo(gitRepoUrl, branch, gitRepoDestinationDir string) {
-	log.Printf("Trying to clone branch(%s):%s ", branch, gitRepoUrl)
+func ClonePrivateRepo(gitRepoUrl, gitRepoDestinationDir string) {
+	log.Printf("Trying to clone repo %s ", gitRepoUrl)
 	
 	_, err := git.PlainClone(gitRepoDestinationDir, false, &git.CloneOptions{
 		Auth: &http.BasicAuth{
@@ -168,7 +168,7 @@ func ClonePrivateRepo(gitRepoUrl, branch, gitRepoDestinationDir string) {
 		SingleBranch:  true,
 	})
 	if err != nil {
-		log.Fatalf("error cloning git repository %s branch", gitRepoUrl, branch)
+		log.Fatalf("error cloning git repository %s", gitRepoUrl)
 	}
 }
 
