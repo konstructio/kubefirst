@@ -159,16 +159,17 @@ func CloneGitOpsRepo() {
 
 func ClonePrivateRepo(gitRepoUrl, gitRepoDestinationDir string) {
 	log.Printf("Trying to clone repo %s ", gitRepoUrl)
-	
+
 	_, err := git.PlainClone(gitRepoDestinationDir, false, &git.CloneOptions{
 		Auth: &http.BasicAuth{
 			Username: viper.GetString("github.user"),
 			Password: os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")},
-		URL:      gitRepoUrl,
+		ReferenceName: plumbing.NewBranchReferenceName("main"),
+		URL:           gitRepoUrl,
 		SingleBranch:  true,
 	})
 	if err != nil {
-		log.Fatalf("error cloning git repository %s", gitRepoUrl)
+		log.Fatalln("error cloning git repository", gitRepoUrl, err)
 	}
 }
 

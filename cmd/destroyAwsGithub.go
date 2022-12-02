@@ -87,9 +87,6 @@ var destroyAwsGithubCmd = &cobra.Command{
 		}
 		progressPrinter.AddTracker("step-prepare", "Open Ports", 3)
 
-		informUser("Open argocd port-forward", globalFlags.SilentMode)
-		progressPrinter.IncrementTracker("step-prepare", 1)
-
 		progressPrinter.AddTracker("step-destroy", "Destroy Cloud", 4)
 		progressPrinter.IncrementTracker("step-destroy", 1)
 
@@ -117,7 +114,7 @@ var destroyAwsGithubCmd = &cobra.Command{
 			log.Println("removing ingress-nginx.yaml from local gitops repo registry")
 			os.Remove(fmt.Sprintf("%s/registry/ingress-nginx.yaml", config.GitOpsRepoPath))
 
-			gitClient.PushLocalRepoUpdates("github.com", viper.GetString("github.owner"), "gitops", "github")
+			gitClient.PushLocalRepoUpdates("github.com", viper.GetString("github.owner"), "gitops", "origin")
 			token, err := argocd.GetArgoCDToken("admin", viper.GetString("argocd.admin.password"))
 			if err != nil {
 				log.Fatal("could not collect argocd token", err)
