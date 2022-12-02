@@ -368,7 +368,7 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 	}
 
 	url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, localRepo)
-	log.Printf("git push to  remote: %s url: %s", remoteName, url)
+	log.Printf("git push to remote: %s url: %s", remoteName, url)
 
 	w, _ := repo.Worktree()
 
