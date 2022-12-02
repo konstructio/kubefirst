@@ -157,6 +157,21 @@ func CloneGitOpsRepo() {
 	log.Println("downloaded gitops repo from template to directory", config.K1FolderPath, "/gitops")
 }
 
+func ClonePrivateRepo(gitRepoUrl, branch, gitRepoDestinationDir string) {
+	log.Printf("Trying to clone branch(%s):%s ", branch, gitRepoUrl)
+	
+	_, err := git.PlainClone(gitRepoDestinationDir, false, &git.CloneOptions{
+		Auth: &http.BasicAuth{
+			Username: viper.GetString("github.user"),
+			Password: os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")},
+		URL:      gitRepoUrl,
+		SingleBranch:  true,
+	})
+	if err != nil {
+		log.Fatalf("error cloning git repository %s branch", gitRepoUrl, branch)
+	}
+}
+
 func PushGitopsToSoftServe() {
 	cfg := configs.ReadConfig()
 	directory := fmt.Sprintf("%s/gitops", cfg.K1FolderPath)

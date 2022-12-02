@@ -105,6 +105,13 @@ var destroyAwsGithubCmd = &cobra.Command{
 			informUser("Open argocd port-forward", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-prepare", 1)
 
+			informUser("Refreshing local gitops repository", globalFlags.SilentMode)
+			log.Println("removing local gitops directory")
+			os.RemoveAll(config.GitOpsRepoPath)
+
+			log.Println("cloning fresh gitops directory from github owner's private gitops")
+			gitClient.ClonePrivateRepo(fmt.Sprintf("https://github.com/%s/gitops", viper.GetString("github.owner")), "main", config.GitOpsRepoPath)
+
 			informUser("Removing ingress-nginx load balancer", globalFlags.SilentMode)
 
 			log.Println("removing ingress-nginx.yaml from local gitops repo registry")
