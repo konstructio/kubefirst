@@ -144,16 +144,15 @@ func (g GithubSession) IsRepoInUse(org string, name string) (bool, error) {
 	return false, nil
 }
 
-func (g GithubSession) CreatePR(branchName string) error {
+func (g GithubSession) CreatePR(branchName string, gitOpsBranch string) error {
 	title := "update S3 backend to minio / internal k8s dns"
 	head := branchName
 	body := "use internal Kubernetes dns"
-	base := "main"
 	pr := github.NewPullRequest{
 		Title: &title,
 		Head:  &head,
 		Body:  &body,
-		Base:  &base,
+		Base:  &gitOpsBranch,
 	}
 
 	// todo: receive as parameter

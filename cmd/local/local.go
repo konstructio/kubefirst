@@ -381,7 +381,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	wg.Add(1)
 	go func() {
 		gitHubClient := githubWrapper.New()
-		err = gitHubClient.CreatePR(branchName)
+		err = gitHubClient.CreatePR(branchName, gitOpsBranch)
 		if err != nil {
 			log.Error().Err(err).Msg("")
 		}
