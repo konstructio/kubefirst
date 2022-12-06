@@ -45,9 +45,8 @@ type Config struct {
 		Ingress   struct {
 			Enabled     string `yaml:"enabled"`
 			Annotations struct {
-				IngressKubernetesIoRewriteTarget      string `yaml:"ingress.kubernetes.io/rewrite-target"`
-				IngressKubernetesIoBackendProtocol    string `yaml:"ingress.kubernetes.io/backend-protocol"`
-				IngressKubernetesIoActionsSslRedirect string `yaml:"ingress.kubernetes.io/actions.ssl-redirect"`
+				IngressKubernetesIoRewriteTarget   string `yaml:"ingress.kubernetes.io/rewrite-target"`
+				IngressKubernetesIoBackendProtocol string `yaml:"ingress.kubernetes.io/backend-protocol"`
 			} `yaml:"annotations"`
 			Hosts []string    `yaml:"hosts"`
 			TLS   []TLSConfig `yaml:"tls"`
@@ -467,7 +466,6 @@ func GetArgoCDInitialLocalConfig(gitOpsRepo string, botPrivateKey string) Config
 	argoCDConfig.Server.Ingress.Enabled = "true"
 	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoRewriteTarget = "/"
 	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoBackendProtocol = "HTTPS"
-	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoActionsSslRedirect = `{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}`
 	argoCDConfig.Server.Ingress.Hosts = []string{"argocd.localdev.me"}
 
 	argoCDConfig.Server.Ingress.TLS = []TLSConfig{

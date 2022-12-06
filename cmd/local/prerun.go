@@ -3,6 +3,9 @@ package local
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/addon"
@@ -18,8 +21,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"net/http"
-	"time"
 )
 
 func validateLocal(cmd *cobra.Command, args []string) error {
@@ -71,7 +72,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	viper.Set("adminemail", adminEmail)
 
 	viper.Set("argocd.local.service", pkg.ArgoCDLocalURL)
-	viper.Set("vault.local.service", pkg.VaultLocalURL)
+	viper.Set("vault.local.service", pkg.VaultLocalURLTLS)
 	go pkg.RunNgrok(context.TODO())
 
 	// addons

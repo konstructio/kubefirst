@@ -34,9 +34,9 @@ type Config struct {
 	KubectlClientPath       string
 	KubeConfigPath          string
 	KubeConfigFolder        string
-	HelmClientPath      string
-	GitOpsLocalRepoPath string
-	NgrokVersion        string
+	HelmClientPath          string
+	GitOpsLocalRepoPath     string
+	NgrokVersion            string
 	NgrokClientPath         string
 	TerraformClientPath     string
 	K3dPath                 string
@@ -136,7 +136,7 @@ func ReadConfig() *Config {
 	config.GitopsTemplateURL = "https://github.com/kubefirst/gitops-template-gh.git"
 	// Local Configs URL
 	config.LocalArgoWorkflowsURL = "http://argo.localdev.me"
-	config.LocalVaultURL = "http://vault.localdev.me"
+	config.LocalVaultURL = "https://vault.localdev.me"
 	config.LocalArgoURL = "http://argocd.localdev.me"
 	config.LocalAtlantisURL = "http://atlantis.localdev.me"
 	config.LocalChartmuseumURL = "http://localhost:8181"

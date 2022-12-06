@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"io"
-	v1 "k8s.io/api/core/v1"
 	"net/http"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/itchyny/gojq"
 	"github.com/kubefirst/kubefirst/configs"
@@ -386,7 +387,7 @@ func LoopUntilPodIsReady(dryRun bool) {
 	if len(token) == 0 {
 
 		totalAttempts := 50
-		url := pkg.VaultLocalURL + "/v1/sys/health"
+		url := pkg.VaultLocalURLTLS + "/v1/sys/health"
 		for i := 0; i < totalAttempts; i++ {
 			log.Info().Msgf("vault is not ready yet, sleeping and checking again, attempt (%d/%d)", i+1, totalAttempts)
 			time.Sleep(10 * time.Second)
