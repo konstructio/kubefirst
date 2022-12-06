@@ -506,6 +506,29 @@ func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repo
 	return repo, nil
 }
 
+// CloneBranchSetMain clone a branch and returns a pointer to git.Repository
+func CloneBranchSetMain(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
+
+	log.Printf("git cloning by branch, branch: %s", configs.K1Version)
+
+	repo, err := CloneBranch(repoURL, repoLocalPath, branch)
+	if err != nil {
+		return nil, err
+	}
+	if branch != "main" {
+		repo, err = SetToMainBranch(repo)
+		if err != nil {
+			return nil, fmt.Errorf("error setting repository main from GitHub using branch %s", branch)
+		}
+		//remove old branch
+		err = repo.Storer.RemoveReference(plumbing.NewBranchReferenceName(branch))
+		if err != nil {
+			return nil, fmt.Errorf("error removing previous branch: %s", err)
+		}
+	}
+	return repo, nil
+}
+
 // CheckoutBranch checkout a branch
 func CheckoutBranch(repo *git.Repository, branch string) error {
 
@@ -542,6 +565,45 @@ func CloneTag(repoLocalPath string, githubOrg string, repoName string, tag strin
 		return nil, err
 	}
 
+	return repo, nil
+}
+
+//CloneTagSetMain  CloneTag plus fixes branch to be main
+func CloneTagSetMain(repoLocalPath string, githubOrg string, repoName string, tag string) (*git.Repository, error) {
+
+	repo, err := CloneTag(repoLocalPath, githubOrg, repoName, tag)
+	if err != nil {
+		log.Printf("error cloning %s-template repository from GitHub using tag %s", repoName, configs.K1Version)
+		return nil, err
+	}
+	repo, err = SetToMainBranch(repo)
+	if err != nil {
+		log.Printf("error setting main for %s  repository from GitHub using tag %s", repoName, configs.K1Version)
+		return nil, err
+	}
+
+	return repo, nil
+}
+
+// SetToMainBranch point branch or tag to main
+func SetToMainBranch(repo *git.Repository) (*git.Repository, error) {
+	w, _ := repo.Worktree()
+	branchName := plumbing.NewBranchReferenceName("main")
+	headRef, err := repo.Head()
+	if err != nil {
+		return nil, fmt.Errorf("Error Setting reference: %s", err)
+	}
+
+	ref := plumbing.NewHashReference(branchName, headRef.Hash())
+	err = repo.Storer.SetReference(ref)
+	if err != nil {
+		return nil, fmt.Errorf("error Storing reference: %s", err)
+	}
+
+	err = w.Checkout(&git.CheckoutOptions{Branch: ref.Name()})
+	if err != nil {
+		return nil, fmt.Errorf("error checking out main: %s", err)
+	}
 	return repo, nil
 }
 
