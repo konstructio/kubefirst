@@ -376,7 +376,7 @@ func (p *secret) patchSecret(k8sClient *kubernetes.Clientset, payload []PatchJso
 	return nil
 }
 
-// todo: deprecate the other functions
+// todo: refactor to use ingress / local dns
 // this is used for local only (create/destroy)
 func LoopUntilPodIsReady(dryRun bool) {
 	if dryRun {

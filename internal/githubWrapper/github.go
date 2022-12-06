@@ -2,6 +2,7 @@ package githubWrapper
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/rs/zerolog/log"
 	"net/http"
@@ -78,17 +79,22 @@ func (g GithubSession) CreatePrivateRepo(org string, name string, description st
 	return nil
 }
 
-// RemoveRepo - Remove  a repo
-func (g GithubSession) RemoveRepo(owner string, name string) error {
-	if name == "" {
-		log.Fatal().Msg("No name: repos must be given a name")
+// RemoveRepo Removes a repository based on repository owner and name. It returns github.Response that hold http data,
+// as http status code, the caller can make use of the http status code to validate the response.
+func (g GithubSession) RemoveRepo(owner string, name string) (*github.Response, error) {
+	if owner == "" {
+		return nil, errors.New("a repository owner is required")
 	}
-	_, err := g.gitClient.Repositories.Delete(g.context, owner, name)
+	if name == "" {
+		return nil, errors.New("a repository name is required")
+	}
+
+	resp, err := g.gitClient.Repositories.Delete(g.context, owner, name)
 	if err != nil {
-		return fmt.Errorf("error removing private repo: %s - %s", name, err)
+		return resp, fmt.Errorf("error removing private repo: %s - %s", name, err)
 	}
 	log.Printf("Successfully removed repo: %v\n", name)
-	return nil
+	return resp, nil
 }
 
 // RemoveTeam - Remove  a team
@@ -135,6 +141,36 @@ func (g GithubSession) RemoveSSHKey(keyId int64) error {
 	if err != nil {
 		return fmt.Errorf("error remiving SSH Key: %s", err)
 	}
+	return nil
+}
+
+// RemoveSSHKeyByPublicKey deletes a GitHub key that matches the provided public key.
+func (g GithubSession) RemoveSSHKeyByPublicKey(user string, publicKey string) error {
+
+	keys, resp, err := g.gitClient.Users.ListKeys(g.context, user, &github.ListOptions{})
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unable to retrieve ssh keys, http code is: %d", resp.StatusCode)
+	}
+
+	for _, key := range keys {
+
+		// as https://pkg.go.dev/golang.org/x/crypto/ssh@v0.0.0-20220722155217-630584e8d5aa#MarshalAuthorizedKey
+		// documentation describes, the Marshall ssh key function adds extra new line at the end of the key id
+		if key.GetKey()+"\n" == publicKey {
+			resp, err := g.gitClient.Users.DeleteKey(g.context, key.GetID())
+			if err != nil {
+				return err
+			}
+
+			if resp.StatusCode != http.StatusNoContent {
+				return fmt.Errorf("unable to delete ssh-key, http code is: %d", resp.StatusCode)
+			}
+		}
+	}
+
 	return nil
 }
 
