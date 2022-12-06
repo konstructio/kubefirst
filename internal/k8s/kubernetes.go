@@ -385,7 +385,7 @@ func LoopUntilPodIsReady(dryRun bool) {
 	token := viper.GetString("vault.token")
 	if len(token) == 0 {
 
-		totalAttempts := 50
+		totalAttempts := 5
 		url := pkg.VaultLocalURL + "/v1/sys/health"
 		for i := 0; i < totalAttempts; i++ {
 			log.Info().Msgf("vault is not ready yet, sleeping and checking again, attempt (%d/%d)", i+1, totalAttempts)

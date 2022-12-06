@@ -379,7 +379,7 @@ func initAndMigrateActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string)
 	viper.WriteConfig()
 }
 
-func initAndReconfigureActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
+func InitAndReconfigureActionAutoApprove(dryRun bool, tfAction string, tfEntrypoint string) error {
 
 	config := configs.ReadConfig()
 	tfEntrypointSplit := strings.Split(tfEntrypoint, "/")
@@ -391,6 +391,7 @@ func initAndReconfigureActionAutoApprove(dryRun bool, tfAction, tfEntrypoint str
 	log.Printf("Executing Init%s%sTerraform", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, Init%s%sTerraform skipped", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
+		return nil
 	}
 
 	envs := terraformConfig(kubefirstConfigProperty)
@@ -399,21 +400,26 @@ func initAndReconfigureActionAutoApprove(dryRun bool, tfAction, tfEntrypoint str
 	err := os.Chdir(tfEntrypoint)
 	if err != nil {
 		log.Panic("error: could not change to directory " + tfEntrypoint)
+		return err
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init", "-reconfigure")
 	if err != nil {
 		log.Panicf("error: terraform init for %s failed %s", tfEntrypoint, err)
+		return err
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, tfAction, "-auto-approve")
 	if err != nil {
 		log.Panicf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
+		return err
 	}
 	os.RemoveAll(fmt.Sprintf("%s/.terraform/", tfEntrypoint))
 	os.Remove(fmt.Sprintf("%s/.terraform.lock.hcl", tfEntrypoint))
 	viper.Set(kubefirstConfigPath, true)
 	viper.WriteConfig()
+
+	return nil
 }
 
 func InitMigrateApplyAutoApprove(dryRun bool, tfEntrypoint string) {
@@ -429,11 +435,6 @@ func InitApplyAutoApprove(dryRun bool, tfEntrypoint string) {
 func InitDestroyAutoApprove(dryRun bool, tfEntrypoint string) {
 	tfAction := "destroy"
 	initActionAutoApprove(dryRun, tfAction, tfEntrypoint)
-}
-
-func InitReconfigureDestroyAutoApprove(dryRun bool, tfEntrypoint string) {
-	tfAction := "destroy"
-	initAndReconfigureActionAutoApprove(dryRun, tfAction, tfEntrypoint)
 }
 
 // todo need to write something that outputs -json type and can get multiple values

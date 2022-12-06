@@ -138,6 +138,35 @@ func (g GithubSession) RemoveSSHKey(keyId int64) error {
 	return nil
 }
 
+func (g GithubSession) RemoveSSHKeyByPublicKey(user string, publicKey string) error {
+
+	keys, resp, err := g.gitClient.Users.ListKeys(g.context, user, &github.ListOptions{})
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unable to retrieve ssh keys, http code is: %d", resp.StatusCode)
+	}
+
+	for _, key := range keys {
+
+		// as https://pkg.go.dev/golang.org/x/crypto/ssh@v0.0.0-20220722155217-630584e8d5aa#MarshalAuthorizedKey
+		// documentation describes, the Marshall ssh key function adds extra new line at the end of the key id
+		if key.GetKey()+"\n" == publicKey {
+			resp, err := g.gitClient.Users.DeleteKey(g.context, key.GetID())
+			if err != nil {
+				return err
+			}
+
+			if resp.StatusCode != http.StatusNoContent {
+				return fmt.Errorf("unable to delete ssh-key, http code is: %d", resp.StatusCode)
+			}
+		}
+	}
+
+	return nil
+}
+
 // IsRepoInUse - Verify if a repo exists
 func (g GithubSession) IsRepoInUse(org string, name string) (bool, error) {
 	log.Printf("check if a repo is in use already")

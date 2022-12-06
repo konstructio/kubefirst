@@ -1,25 +1,22 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
 	"errors"
 	"fmt"
-	"log"
+	"github.com/kubefirst/kubefirst/internal/githubWrapper"
+	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/internal/terraform"
+	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"os"
 	"time"
-
-	"github.com/kubefirst/kubefirst/pkg"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/k3d"
-	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/services"
-	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -32,15 +29,9 @@ var destroyLocalGithubCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		config := configs.ReadConfig()
 
-		destroyFlags, err := flagset.ProcessDestroyFlags(cmd)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 			return err
 		}
 
@@ -50,7 +41,6 @@ var destroyLocalGithubCmd = &cobra.Command{
 				globalFlags.SilentMode,
 			)
 		}
-		log.Println(destroyFlags, config)
 
 		// todo: wrap business logic into the handler
 		if config.GitHubPersonalAccessToken == "" {
@@ -77,7 +67,7 @@ var destroyLocalGithubCmd = &cobra.Command{
 			if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
 				return err
 			}
-			log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
+			log.Info().Msg("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
 		}
 
 		err = pkg.UpdateTerraformS3BackendForLocalhostAddress()
@@ -100,7 +90,21 @@ var destroyLocalGithubCmd = &cobra.Command{
 		if githubTfApplied {
 			informUser("terraform destroying github resources", globalFlags.SilentMode)
 			tfEntrypoint := config.GitOpsLocalRepoPath + "/terraform/github"
-			terraform.InitReconfigureDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+			forceDestroy := false
+			err := terraform.InitAndReconfigureActionAutoApprove(globalFlags.DryRun, "destroy", tfEntrypoint)
+			if err != nil {
+				forceDestroy = true
+				log.Warn().Msg("unable to destroy via terraform, using destroy force")
+			}
+
+			if forceDestroy {
+				gitHubClient := githubWrapper.New()
+				err = forceLocalDestroy(gitHubClient)
+				if err != nil {
+					return err
+				}
+			}
+
 			informUser("successfully destroyed github resources", globalFlags.SilentMode)
 		}
 
@@ -128,6 +132,37 @@ var destroyLocalGithubCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+func forceLocalDestroy(gitHubClient githubWrapper.GithubSession) error {
+
+	owner := viper.GetString("github.owner")
+	sshKeyId := viper.GetString("botpublickey")
+
+	err := gitHubClient.RemoveRepo(owner, "gitops")
+	if err != nil {
+		return err
+	}
+	err = gitHubClient.RemoveRepo(owner, "metaphor")
+	if err != nil {
+		return err
+	}
+	err = gitHubClient.RemoveRepo(owner, "metaphor-go")
+	if err != nil {
+		return err
+	}
+	err = gitHubClient.RemoveRepo(owner, "metaphor-frontend")
+	if err != nil {
+		return err
+	}
+
+	//err = gitHubClient.RemoveSSHKey(sshKeyId)
+	err = gitHubClient.RemoveSSHKeyByPublicKey(owner, sshKeyId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func init() {
