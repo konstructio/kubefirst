@@ -62,13 +62,6 @@ type Config struct {
 	MetaphorTemplateURL string
 	GitopsTemplateURL   string
 
-	LocalArgoWorkflowsURL string
-	LocalVaultURL         string
-	LocalArgoURL          string
-	LocalAtlantisURL      string
-	LocalChartmuseumURL   string
-	LocalVaultURLTLS      string
-
 	LocalMetaphorDev      string
 	LocalMetaphorGoDev    string
 	LocalMetaphorFrontDev string
@@ -135,15 +128,6 @@ func ReadConfig() *Config {
 
 	config.MetaphorTemplateURL = "https://github.com/kubefirst/metaphor-template.git"
 	config.GitopsTemplateURL = "https://github.com/kubefirst/gitops-template-gh.git"
-
-	// todo: delete it, and use pkg.constants variables for localdev/localhost references
-	// Local Configs URL
-	config.LocalArgoWorkflowsURL = "http://argo.localdev.me"
-	config.LocalVaultURL = "https://vault.localdev.me"
-	config.LocalVaultURLTLS = "https://vault.localdev.me"
-	config.LocalArgoURL = "http://argocd.localdev.me"
-	config.LocalAtlantisURL = "http://atlantis.localdev.me"
-	config.LocalChartmuseumURL = "http://localhost:8181"
 
 	config.LocalMetaphorDev = "http://localhost:3000"
 	config.LocalMetaphorGoDev = "http://localhost:5000"
