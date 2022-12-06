@@ -64,7 +64,7 @@ func PrintSectionVault() []byte {
 
 	var vaultURL string
 	if viper.GetString("cloud") == pkg.CloudK3d {
-		vaultURL = "http://localhost:8200"
+		vaultURL = pkg.VaultLocalURLTLS
 	} else {
 		vaultURL = fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename"))
 	}
@@ -81,7 +81,7 @@ func PrintSectionArgoCD() []byte {
 
 	var argoCdURL string
 	if viper.GetString("cloud") == pkg.CloudK3d {
-		argoCdURL = "http://localhost:8080"
+		argoCdURL = pkg.ArgoCDLocalURLTLS
 	} else {
 		argoCdURL = fmt.Sprintf("https://argocd.%s", viper.GetString("aws.hostedzonename"))
 	}
@@ -100,7 +100,7 @@ func PrintSectionArgoWorkflows() []byte {
 
 	var argoWorkflowsURL string
 	if viper.GetString("cloud") == pkg.CloudK3d {
-		argoWorkflowsURL = "http://localhost:2746"
+		argoWorkflowsURL = pkg.ArgoLocalURLTLS
 	} else {
 		argoWorkflowsURL = fmt.Sprintf("https://argo.%s", viper.GetString("aws.hostedzonename"))
 	}
@@ -124,7 +124,7 @@ func PrintSectionAtlantis() []byte {
 
 	var atlantisUrl string
 	if viper.GetString("cloud") == pkg.CloudK3d {
-		atlantisUrl = "http://localhost:4141"
+		atlantisUrl = pkg.AtlantisLocalURLTLS
 	} else {
 		atlantisUrl = fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename"))
 	}
@@ -141,7 +141,7 @@ func PrintSectionMuseum() []byte {
 
 	var chartmuseumURL string
 	if viper.GetString("cloud") == pkg.CloudK3d {
-		chartmuseumURL = "http://localhost:8181"
+		chartmuseumURL = pkg.ChartmuseumLocalURLTLS
 	} else {
 		chartmuseumURL = fmt.Sprintf("https://chartmuseum.%s", viper.GetString("aws.hostedzonename"))
 	}
