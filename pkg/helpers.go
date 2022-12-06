@@ -131,6 +131,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubRepoOwner := viper.GetString("github.owner")
 		githubOrg := viper.GetString("github.owner")
 		githubUser := viper.GetString("github.user")
+		useTelemetry := viper.GetString("use-telemetry")
 
 		ngrokURL, err := url.Parse(viper.GetString("ngrok.url"))
 		if err != nil {
@@ -269,6 +270,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<METAPHOR_GO_PROD>", config.LocalMetaphorGoProd, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", config.LocalMetaphorFrontProd, -1)
 			newContents = strings.Replace(newContents, "<LOCAL_DNS>", LocalDNS, -1)
+			newContents = strings.Replace(newContents, "<USE_TELEMETRY>", useTelemetry, -1)
 		} else {
 			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
 			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", fmt.Sprintf("https://argo.%s", hostedZoneName), -1)
