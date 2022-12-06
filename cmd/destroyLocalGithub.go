@@ -69,7 +69,7 @@ var destroyLocalGithubCmd = &cobra.Command{
 			err := terraform.InitAndReconfigureActionAutoApprove(globalFlags.DryRun, "destroy", tfEntrypoint)
 			if err != nil {
 				forceDestroy = true
-				log.Warn().Msg("unable to destroy via terraform, using destroy force")
+				log.Warn().Msg("unable to destroy via terraform")
 			} else {
 				log.Info().Msg("running Terraform destroy, done")
 			}
