@@ -3,6 +3,9 @@ package local
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/addon"
@@ -18,8 +21,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"net/http"
-	"time"
 )
 
 func validateLocal(cmd *cobra.Command, args []string) error {
@@ -80,6 +81,9 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	addon.AddAddon("github")
 	addon.AddAddon("k3d")
 	// used for letsencrypt notifications and the gitlab root account
+	if !skipMetaphor {
+		addon.AddAddon("metaphor")
+	}
 
 	viper.Set("github.atlantis.webhook.secret", pkg.Random(20))
 
@@ -155,15 +159,11 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 		repoURL := fmt.Sprintf("https://github.com/%s/%s-template", gitHubOrg, repoName)
 
-		repository, err := gitClient.CloneBranch(repoURL, config.GitOpsLocalRepoPath, gitOpsBranch)
+		_, err := gitClient.CloneBranchSetMain(repoURL, config.GitOpsLocalRepoPath, gitOpsBranch)
 		if err != nil {
 			return err
 		}
 
-		err = gitClient.CheckoutBranch(repository, gitOpsBranch)
-		if err != nil {
-			return err
-		}
 		viper.Set("init.repos.gitops.cloned", true)
 		viper.Set(fmt.Sprintf("git.clone.%s.branch", repoName), gitOpsBranch)
 		if err = viper.WriteConfig(); err != nil {
@@ -171,25 +171,37 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		}
 
 	} else {
-		// use tag
-		gitHubOrg := "kubefirst"
-		repoName := "gitops"
+		//Tag should be used in absence of branch been provided
+		//We should be able to change repo address and names from flags
+		//The branch support is not meant only for developement mode, it is also for troubleshooting of releases, bug fixes.
+		//Please, don't disable its support - even the binary from a release must support branch use.
+		if gitOpsBranch != "" {
+			repoURL := fmt.Sprintf("https://github.com/%s/%s-template", gitOpsOrg, gitOpsRepo)
+			_, err := gitClient.CloneBranchSetMain(repoURL, config.GitOpsLocalRepoPath, gitOpsBranch)
+			if err != nil {
+				return err
+			}
+			viper.Set("init.repos.gitops.cloned", true)
+			viper.Set(fmt.Sprintf("git.clone.%s.branch", gitOpsRepo), gitOpsBranch)
+			if err = viper.WriteConfig(); err != nil {
+				log.Error().Err(err).Msg("")
+			}
+		} else {
+			// use tag
+			gitHubOrg := "kubefirst"
+			repoName := "gitops"
 
-		tag := configs.K1Version
-		repository, err := gitClient.CloneTag(config.GitOpsLocalRepoPath, gitHubOrg, repoName, tag)
-		if err != nil {
-			return err
-		}
+			tag := configs.K1Version
+			_, err := gitClient.CloneTagSetMain(config.GitOpsLocalRepoPath, gitHubOrg, repoName, tag)
+			if err != nil {
+				return err
+			}
 
-		err = gitClient.CheckoutTag(repository, tag)
-		if err != nil {
-			return err
-		}
-
-		viper.Set(fmt.Sprintf("git.clone.%s.tag", repoName), tag)
-		viper.Set("init.repos.gitops.cloned", true)
-		if err = viper.WriteConfig(); err != nil {
-			log.Error().Err(err).Msg("")
+			viper.Set(fmt.Sprintf("git.clone.%s.tag", repoName), tag)
+			viper.Set("init.repos.gitops.cloned", true)
+			if err = viper.WriteConfig(); err != nil {
+				log.Error().Err(err).Msg("")
+			}
 		}
 	}
 
