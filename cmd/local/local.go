@@ -32,8 +32,10 @@ var (
 	dryRun         bool
 	silentMode     bool
 	enableConsole  bool
+	skipMetaphor   bool
 	gitOpsBranch   string
 	gitOpsRepo     string
+	gitOpsOrg      string
 	metaphorBranch string
 	adminEmail     string
 	templateTag    string
@@ -55,7 +57,7 @@ func NewCommand() *cobra.Command {
 	localCmd.Flags().BoolVar(&dryRun, "dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	localCmd.Flags().BoolVar(&silentMode, "silent", false, "enable silentMode mode will make the UI return less content to the screen")
 	localCmd.Flags().BoolVar(&enableConsole, "enable-console", true, "If hand-off screen will be presented on a browser UI")
-
+	localCmd.Flags().BoolVar(&skipMetaphor, "skip-metaphor", false, "If metaphor application suite must be skiped to deploy")
 	// todo: get it from GH token , use it for console
 	localCmd.Flags().StringVar(&adminEmail, "admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
 	localCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "main", "metaphor application branch")
@@ -63,8 +65,9 @@ func NewCommand() *cobra.Command {
 	// todo: UPDATE IT BEFORE MERGING
 	// todo: UPDATE IT BEFORE MERGING
 	// todo: UPDATE IT BEFORE MERGING
-	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "add-ingress-localhost", "version/branch used on git clone")
-	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "")
+	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "", "version/branch used on git clone")
+	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "Prefix of the repo for gitops template, repo name has -template")
+	localCmd.Flags().StringVar(&gitOpsOrg, "gitops-org", "kubefirst", "Helpful when using forks of gitops for testing")
 	localCmd.Flags().StringVar(&templateTag, "template-tag", "",
 		"when running a built version, and ldflag is set for the Kubefirst version, it will use this tag value to clone the templates (gitops and metaphor's)",
 	)
@@ -351,7 +354,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	pkg.InformUser("Deploying metaphor applications", silentMode)
-	err := metaphor.DeployMetaphorGithubLocal(dryRun, githubOwner, metaphorBranch, "")
+	err := metaphor.DeployMetaphorGithubLocal(dryRun, skipMetaphor, githubOwner, metaphorBranch, "")
 	if err != nil {
 		pkg.InformUser("Error deploy metaphor applications", silentMode)
 		log.Error().Err(err).Msg("Error running deployMetaphorCmd")
@@ -387,6 +390,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
+		pkg.InformUser(`waiting "atlantis plan" finish to proceed...`, silentMode)
 		gitHubClient := githubWrapper.New()
 		err = gitHubClient.CreatePR(branchName)
 		if err != nil {
@@ -429,19 +433,23 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/ingressroute.yaml", config.K1FolderPath))
 
 	if err != nil {
-
-		log.Printf("failed to create ingress route to argocd: %s", err)
-
+		log.Error().Err(err).Msgf("failed to create ingress route to argocd: %s", err)
 	}
 
-	_, _, _ = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "delete", "ingress", "argocd-server")
+	_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "delete", "ingress", "argocd-server")
+
+	if err != nil {
+		log.Error().Err(err).Msgf("failed to delete argocd primary ingress route: %s", err)
+	}
 
 	log.Info().Msg("Kubefirst installation finished successfully")
 	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
+	log.Info().Msg("Kubefirst installation almost finished successfully, please wait final setups steps")
+	pkg.InformUser("Kubefirst installation almost finished successfully, please wait final setups steps", silentMode)
 
 	// waiting GitHub/atlantis step
 	wg.Wait()
-
+	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
 	return nil
 
 }
