@@ -123,8 +123,8 @@ var destroyAwsGithubCmd = &cobra.Command{
 			log.Println("syncing argocd registry application")
 			argocd.SyncArgocdApplication(false, "registry", token)
 
-			log.Println("waiting for nginx to deprovision load balancer")
-			time.Sleep(time.Second * 15)
+			log.Println("waiting for nginx to deprovision load balancer and lb security groups")
+			time.Sleep(time.Second * 90)
 
 			log.Println("deleting registry application in argocd")
 			// delete argocd registry
