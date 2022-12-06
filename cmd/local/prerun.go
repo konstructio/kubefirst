@@ -72,7 +72,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	viper.Set("adminemail", adminEmail)
 
 	viper.Set("argocd.local.service", pkg.ArgoCDLocalURL)
-	viper.Set("vault.local.service", pkg.VaultLocalURL)
+	viper.Set("vault.local.service", pkg.VaultLocalURLTLS)
 	go pkg.RunNgrok(context.TODO())
 
 	// addons

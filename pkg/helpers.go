@@ -3,7 +3,6 @@ package pkg
 import (
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -12,6 +11,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 
@@ -252,7 +253,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		if cloud == cloudK3d {
 			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
 			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", config.LocalArgoWorkflowsURL, -1)
-			newContents = strings.Replace(newContents, "<VAULT_URL>", config.LocalVaultURL, -1)
+			newContents = strings.Replace(newContents, "<VAULT_URL>", config.LocalVaultURLTLS, -1)
 			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", config.LocalArgoURL, -1)
 			newContents = strings.Replace(newContents, "<ATLANTIS_URL>", config.LocalAtlantisURL, -1)
 			newContents = strings.Replace(newContents, "<CHARTMUSEUM_URL>", config.LocalChartmuseumURL, -1)

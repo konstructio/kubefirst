@@ -5,8 +5,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"os"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/spf13/viper"
@@ -17,7 +18,7 @@ import (
 func AddK3DSecrets(dryrun bool) error {
 	clientset, err := k8s.GetClientSet(dryrun)
 
-	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "github-runner", "vault", "development", "staging", "production"}
+	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "github-runner", "vault", "development", "staging", "production", "kubefirst", "minio"}
 	for i, s := range newNamespaces {
 		namespace := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s}}
 		_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
