@@ -3,6 +3,9 @@ package local
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/addon"
@@ -18,8 +21,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"net/http"
-	"time"
 )
 
 func validateLocal(cmd *cobra.Command, args []string) error {
@@ -153,15 +154,11 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 		repoURL := fmt.Sprintf("https://github.com/%s/%s-template", gitHubOrg, repoName)
 
-		repository, err := gitClient.CloneBranch(repoURL, config.GitOpsLocalRepoPath, gitOpsBranch)
+		_, err := gitClient.CloneBranchSetMain(repoURL, config.GitOpsLocalRepoPath, gitOpsBranch)
 		if err != nil {
 			return err
 		}
 
-		err = gitClient.CheckoutBranch(repository, gitOpsBranch)
-		if err != nil {
-			return err
-		}
 		viper.Set("init.repos.gitops.cloned", true)
 		viper.Set(fmt.Sprintf("git.clone.%s.branch", repoName), gitOpsBranch)
 		if err = viper.WriteConfig(); err != nil {
@@ -174,12 +171,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		repoName := "gitops"
 
 		tag := configs.K1Version
-		repository, err := gitClient.CloneTag(config.GitOpsLocalRepoPath, gitHubOrg, repoName, tag)
-		if err != nil {
-			return err
-		}
-
-		err = gitClient.CheckoutTag(repository, tag)
+		_, err := gitClient.CloneTagSetMain(config.GitOpsLocalRepoPath, gitHubOrg, repoName, tag)
 		if err != nil {
 			return err
 		}
