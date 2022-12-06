@@ -3,7 +3,7 @@ package githubWrapper
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"os"
 	"strings"
@@ -25,7 +25,7 @@ type GithubSession struct {
 func New() GithubSession {
 	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	if token == "" {
-		log.Fatal("Unauthorized: No token present")
+		log.Fatal().Msg("Unauthorized: No token present")
 	}
 	var gSession GithubSession
 	gSession.context = context.Background()
@@ -62,7 +62,7 @@ func (g GithubSession) CreateWebhookRepo(org, repo, hookName, hookUrl, hookSecre
 // CreatePrivateRepo - Use github API to create a private repo
 func (g GithubSession) CreatePrivateRepo(org string, name string, description string) error {
 	if name == "" {
-		log.Fatal("No name: New repos must be given a name")
+		log.Fatal().Msg("No name: New repos must be given a name")
 	}
 	isPrivate := true
 	autoInit := true
@@ -81,7 +81,7 @@ func (g GithubSession) CreatePrivateRepo(org string, name string, description st
 // RemoveRepo - Remove  a repo
 func (g GithubSession) RemoveRepo(owner string, name string) error {
 	if name == "" {
-		log.Fatal("No name:  repos must be given a name")
+		log.Fatal().Msg("No name: repos must be given a name")
 	}
 	_, err := g.gitClient.Repositories.Delete(g.context, owner, name)
 	if err != nil {
@@ -94,7 +94,7 @@ func (g GithubSession) RemoveRepo(owner string, name string) error {
 // RemoveTeam - Remove  a team
 func (g GithubSession) RemoveTeam(owner string, team string) error {
 	if team == "" {
-		log.Fatal("No name:  repos must be given a name")
+		log.Fatal().Msg("No name: repos must be given a name")
 	}
 	_, err := g.gitClient.Teams.DeleteTeamBySlug(g.context, owner, team)
 	if err != nil {
@@ -107,7 +107,7 @@ func (g GithubSession) RemoveTeam(owner string, team string) error {
 // GetRepo - Returns  a repo
 func (g GithubSession) GetRepo(owner string, name string) (*github.Repository, error) {
 	if name == "" {
-		log.Fatal("No name: repos must be given a name")
+		log.Fatal().Msg("No name: repos must be given a name")
 	}
 	repo, _, err := g.gitClient.Repositories.Get(g.context, owner, name)
 	if err != nil {
@@ -235,7 +235,7 @@ func (g GithubSession) RetrySearchPullRequestComment(
 	for i := 0; i < 30; i++ {
 		ok, err := g.SearchWordInPullRequestComment(gitHubUser, gitOpsRepo, searchFor)
 		if err != nil || !ok {
-			log.Println(logMessage)
+			log.Info().Msg(logMessage)
 			time.Sleep(10 * time.Second)
 			continue
 		}

@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -69,7 +69,7 @@ func ConfigureVault(dryRun bool) {
 	if err != nil {
 		log.Printf("Commad Execution STDOUT: %s", kPortForwardOutb.String())
 		log.Printf("Commad Execution STDERR: %s", kPortForwardErrb.String())
-		log.Panicf("error: failed to port-forward to vault namespce svc/vault %s", err)
+		log.Panic().Msgf("error: failed to port-forward to vault namespce svc/vault %s", err)
 	}
 
 	// Prepare for terraform vault execution
@@ -108,20 +108,20 @@ func ConfigureVault(dryRun bool) {
 	directory := fmt.Sprintf("%s/gitops/terraform/vault", config.K1FolderPath)
 	err = os.Chdir(directory)
 	if err != nil {
-		log.Panicf("error: could not change directory to " + directory)
+		log.Panic().Msgf("error: could not change directory to " + directory)
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 	if err != nil {
-		log.Panicf("error: terraform init failed %s", err)
+		log.Panic().Msgf("error: terraform init failed %s", err)
 	}
 	if !viper.GetBool("create.terraformapplied.vault") {
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
 		if err != nil {
-			log.Panicf("error: terraform apply failed %s", err)
+			log.Panic().Msgf("error: terraform apply failed %s", err)
 		}
-		log.Println("deleting the files found at", fmt.Sprintf("%s/.terraform/", directory))
-		log.Println("deleting the files found at", fmt.Sprintf("%s/.terraform.lock.hcl", directory))
+		log.Info().Msgf("deleting the files found at", fmt.Sprintf("%s/.terraform/", directory))
+		log.Info().Msgf("deleting the files found at", fmt.Sprintf("%s/.terraform.lock.hcl", directory))
 		os.RemoveAll(fmt.Sprintf("%s/.terraform/", directory))
 		os.RemoveAll(fmt.Sprintf("%s/.terraform.lock.hcl", directory))
 		viper.Set("create.terraformapplied.vault", true)
@@ -135,16 +135,16 @@ func addVaultSecret(secretPath string, secretData map[string]interface{}) {
 
 	client, err := vault.NewClient(config)
 	if err != nil {
-		log.Panicf("unable to initialize vault client %s", err)
+		log.Panic().Err(err).Msg("unable to initialize vault client")
 	}
 
 	client.SetToken(viper.GetString("vault.token"))
 
 	_, err = client.Logical().Write(secretPath, secretData)
 	if err != nil {
-		log.Panicf("unable to write secret vault secret %s - error: %s", secretPath, err)
+		log.Panic().Msgf("unable to write secret vault secret %s - error: %s", secretPath, err)
 	} else {
-		log.Println("secret successfully written to path: ", secretPath)
+		log.Info().Msgf("secret successfully written to path: %s", secretPath)
 	}
 }
 
@@ -166,7 +166,7 @@ func GetOidcClientCredentials(dryRun bool) {
 
 	client, err := vault.NewClient(config)
 	if err != nil {
-		log.Panicf("unable to initialize vault client %s", err)
+		log.Panic().Err(err).Msg("unable to initialize vault client")
 	}
 
 	client.SetToken(viper.GetString("vault.token"))
@@ -175,20 +175,15 @@ func GetOidcClientCredentials(dryRun bool) {
 
 		secret, err := client.KVv2("secret").Get(context.TODO(), fmt.Sprintf("oidc/%s", app))
 		if err != nil {
-			log.Panic(
-				"Unable to read the oidc secrets from vault: ",
-				err,
-			)
+			log.Panic().Err(err).Msgf("Unable to read the oidc secrets from vault")
 		}
 
 		clientId, ok := secret.Data["client_id"].(string)
 		clientSecret, ok := secret.Data["client_secret"].(string)
 
 		if !ok {
-			log.Fatalf(
-				"value type assertion failed: %T %#v",
-				secret.Data["client_id"],
-				secret.Data["client_secret"],
+			log.Fatal().Msgf(
+				"value type assertion failed: %T %#v", secret.Data["client_id"], secret.Data["client_secret"],
 			)
 		}
 		viper.Set(fmt.Sprintf("vault.oidc.%s.client_id", app), clientId)
@@ -210,10 +205,10 @@ func WaitVaultToBeRunning(dryRun bool) {
 		for i := 0; i < x; i++ {
 			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/vault")
 			if err != nil {
-				log.Println("Waiting vault to be born")
+				log.Info().Msg("Waiting vault to be born")
 				time.Sleep(10 * time.Second)
 			} else {
-				log.Println("vault namespace found, continuing")
+				log.Info().Msg("vault namespace found, continuing")
 				time.Sleep(25 * time.Second)
 				break
 			}
@@ -224,15 +219,15 @@ func WaitVaultToBeRunning(dryRun bool) {
 		for i := 0; i < x; i++ {
 			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "get", "pods", "-l", "app.kubernetes.io/instance=vault")
 			if err != nil {
-				log.Println("Waiting vault pods to create")
+				log.Info().Msg("Waiting vault pods to create")
 				time.Sleep(10 * time.Second)
 			} else {
-				log.Println("vault pods found, continuing")
+				log.Info().Msg("vault pods found, continuing")
 				time.Sleep(15 * time.Second)
 				break
 			}
 		}
 	} else {
-		log.Println("vault token arleady exists, skipping vault health checks waitVaultToBeRunning")
+		log.Info().Msg("vault token arleady exists, skipping vault health checks waitVaultToBeRunning")
 	}
 }
