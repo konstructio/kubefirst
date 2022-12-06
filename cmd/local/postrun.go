@@ -33,9 +33,7 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 
 	reports.LocalHandoffScreen(dryRun, silentMode)
 
-	log.Info().Msgf("Kubefirst Console available at: http://localhost:9094", silentMode)
-
-	log.Info().Msgf("Kubefirst Console available at: http://localhost:9094", silentMode)
+	log.Info().Msgf("Kubefirst Console available at: %s", pkg.KubefirstConsoleLocalURLTLS)
 
 	// managing termination signal from the terminal
 	sigs := make(chan os.Signal, 1)

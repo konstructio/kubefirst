@@ -281,7 +281,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	// vault in running state
 	executionControl = viper.GetBool("vault.status.running")
 	if !executionControl {
-		pkg.InformUser("Waiting for vault to be ready", silentMode)
+		pkg.InformUser("waiting for Vault to be ready...", silentMode)
 		vault.WaitVaultToBeRunning(dryRun)
 	}
 
