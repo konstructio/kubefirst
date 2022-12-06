@@ -2,6 +2,7 @@ package githubWrapper
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -78,17 +79,22 @@ func (g GithubSession) CreatePrivateRepo(org string, name string, description st
 	return nil
 }
 
-// RemoveRepo - Remove  a repo
-func (g GithubSession) RemoveRepo(owner string, name string) error {
-	if name == "" {
-		log.Fatal("No name:  repos must be given a name")
+// RemoveRepo Removes a repository based on repository owner and name. It returns github.Response that hold http data,
+// as http status code, the caller can make use of the http status code to validate the response.
+func (g GithubSession) RemoveRepo(owner string, name string) (*github.Response, error) {
+	if owner == "" {
+		return nil, errors.New("a repository owner is required")
 	}
-	_, err := g.gitClient.Repositories.Delete(g.context, owner, name)
+	if name == "" {
+		return nil, errors.New("a repository name is required")
+	}
+
+	resp, err := g.gitClient.Repositories.Delete(g.context, owner, name)
 	if err != nil {
-		return fmt.Errorf("error removing private repo: %s - %s", name, err)
+		return resp, fmt.Errorf("error removing private repo: %s - %s", name, err)
 	}
 	log.Printf("Successfully removed repo: %v\n", name)
-	return nil
+	return resp, nil
 }
 
 // RemoveTeam - Remove  a team

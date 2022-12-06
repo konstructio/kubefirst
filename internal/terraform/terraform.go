@@ -399,13 +399,13 @@ func InitAndReconfigureActionAutoApprove(dryRun bool, tfAction string, tfEntrypo
 
 	err := os.Chdir(tfEntrypoint)
 	if err != nil {
-		log.Panic("error: could not change to directory " + tfEntrypoint)
+		log.Println("error: could not change to directory " + tfEntrypoint)
 		return err
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init", "-reconfigure")
 	if err != nil {
-		log.Panicf("error: terraform init for %s failed %s", tfEntrypoint, err)
+		log.Println("error: terraform init for %s failed %s", tfEntrypoint, err)
 		return err
 	}
 

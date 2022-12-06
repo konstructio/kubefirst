@@ -2,9 +2,10 @@ package local
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"sync"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
@@ -190,6 +191,12 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already added secrets to k3d cluster")
 	}
+
+	log.Info().Msg("storing certificates into application secrets namespace")
+	if err := k8s.CreateSecretsFromCertificatesForLocalWrapper(config); err != nil {
+		log.Error().Err(err).Msg("")
+	}
+	log.Info().Msg("storing certificates into application secrets namespace done")
 
 	// create argocd initial repository config
 	executionControl = viper.GetBool("argocd.initial-repository.created")
@@ -418,6 +425,16 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		}
 		progressPrinter.IncrementTracker("step-telemetry", 1)
 	}
+
+	_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/ingressroute.yaml", config.K1FolderPath))
+
+	if err != nil {
+
+		log.Printf("failed to create ingress route to argocd: %s", err)
+
+	}
+
+	_, _, _ = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "delete", "ingress", "argocd-server")
 
 	log.Info().Msg("Kubefirst installation finished successfully")
 	pkg.InformUser("Kubefirst installation finished successfully", silentMode)

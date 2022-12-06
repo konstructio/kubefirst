@@ -1,15 +1,13 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
-	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/terraform"
+	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
@@ -41,51 +39,28 @@ var destroyLocalGithubCmd = &cobra.Command{
 				globalFlags.SilentMode,
 			)
 		}
+		// silent is gold
+		cmd.SilenceUsage = true
 
-		// todo: wrap business logic into the handler
-		if config.GitHubPersonalAccessToken == "" {
-
-			httpClient := http.DefaultClient
-			gitHubService := services.NewGitHubService(httpClient)
-			gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-			gitHubAccessToken, err := gitHubHandler.AuthenticateUser()
-			if err != nil {
-				return err
-			}
-
-			if len(gitHubAccessToken) == 0 {
-				return errors.New("unable to retrieve a GitHub token for the user")
-			}
-
-			err = os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken)
-			if err != nil {
-				return errors.New("unable to set KUBEFIRST_GITHUB_AUTH_TOKEN")
-			}
-
-			// todo: set common way to load env. values (viper->struct->load-env)
-			// todo: use viper file to load it, not load env. value
-			if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
-				return err
-			}
-			log.Info().Msg("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
+		log.Info().Msg("setting GitHub token...")
+		httpClient := http.DefaultClient
+		gitHubService := services.NewGitHubService(httpClient)
+		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
+		_, err = wrappers.AuthenticateGitHubUserWrapper(config, gitHubHandler)
+		if err != nil {
+			return err
 		}
+		log.Info().Msg("GitHub token set!")
 
+		log.Info().Msg("updating Terraform backend for localhost instead of minio...")
 		err = pkg.UpdateTerraformS3BackendForLocalhostAddress()
 		if err != nil {
 			return err
 		}
-
-		// todo add progress bars to this
-
-		//* step 1.1 - open port-forward to state store and vault
-		// todo --skip-git-terraform
-
-		k8s.LoopUntilPodIsReady(globalFlags.DryRun)
-
-		// todo: remove it
-		time.Sleep(20 * time.Second)
+		log.Info().Msg("updating Terraform backend for localhost instead of minio, done")
 
 		//* step 1.3 - terraform destroy github
+		log.Info().Msg("running Terraform destroy...")
 		githubTfApplied := viper.GetBool("terraform.github.apply.complete")
 		if githubTfApplied {
 			informUser("terraform destroying github resources", globalFlags.SilentMode)
@@ -95,74 +70,42 @@ var destroyLocalGithubCmd = &cobra.Command{
 			if err != nil {
 				forceDestroy = true
 				log.Warn().Msg("unable to destroy via terraform, using destroy force")
+			} else {
+				log.Info().Msg("running Terraform destroy, done")
 			}
 
 			if forceDestroy {
+				log.Info().Msg("running force destroy...")
 				gitHubClient := githubWrapper.New()
-				err = forceLocalDestroy(gitHubClient)
+				err = pkg.ForceLocalDestroy(gitHubClient)
 				if err != nil {
 					return err
 				}
+				log.Info().Msg("force destroy, done")
 			}
 
 			informUser("successfully destroyed github resources", globalFlags.SilentMode)
 		}
 
-		//* step 2 - delete k3d cluster
-		// this could be useful for us to chase down in eks and destroy everything
-		// in the cloud / cluster minus eks to iterate from argocd forward
+		// delete k3d cluster
 		// todo --skip-cluster-destroy
+		log.Info().Msg("deleting K3d cluster...")
 		informUser("deleting k3d cluster", globalFlags.SilentMode)
 		err = k3d.DeleteK3dCluster()
 		if err != nil {
 			return err
 		}
+		log.Info().Msg("deleting K3d cluster, done")
 		informUser("k3d cluster deleted", globalFlags.SilentMode)
+
 		informUser("be sure to run `kubefirst clean` before your next cloud provision", globalFlags.SilentMode)
 
-		//* step 3 - clean local .k1 dir
-		// err = cleanCmd.RunE(cmd, args)
-		// if err != nil {
-		// 	log.Println("Error running:", cleanCmd.Name())
-		// 	return err
-		// }
-
-		fmt.Println("End of execution destroy")
+		log.Info().Msg("end of execution destroy")
+		fmt.Println("end of execution destroy")
 		time.Sleep(time.Millisecond * 100)
 
 		return nil
 	},
-}
-
-func forceLocalDestroy(gitHubClient githubWrapper.GithubSession) error {
-
-	owner := viper.GetString("github.owner")
-	sshKeyId := viper.GetString("botpublickey")
-
-	err := gitHubClient.RemoveRepo(owner, "gitops")
-	if err != nil {
-		return err
-	}
-	err = gitHubClient.RemoveRepo(owner, "metaphor")
-	if err != nil {
-		return err
-	}
-	err = gitHubClient.RemoveRepo(owner, "metaphor-go")
-	if err != nil {
-		return err
-	}
-	err = gitHubClient.RemoveRepo(owner, "metaphor-frontend")
-	if err != nil {
-		return err
-	}
-
-	//err = gitHubClient.RemoveSSHKey(sshKeyId)
-	err = gitHubClient.RemoveSSHKeyByPublicKey(owner, sshKeyId)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func init() {

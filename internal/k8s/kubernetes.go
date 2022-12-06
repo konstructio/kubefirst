@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"io"
-	v1 "k8s.io/api/core/v1"
 	"net/http"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/itchyny/gojq"
 	"github.com/kubefirst/kubefirst/configs"
@@ -375,7 +376,7 @@ func (p *secret) patchSecret(k8sClient *kubernetes.Clientset, payload []PatchJso
 	return nil
 }
 
-// todo: deprecate the other functions
+// todo: refactor to use ingress / local dns
 // this is used for local only (create/destroy)
 func LoopUntilPodIsReady(dryRun bool) {
 	if dryRun {
@@ -385,8 +386,8 @@ func LoopUntilPodIsReady(dryRun bool) {
 	token := viper.GetString("vault.token")
 	if len(token) == 0 {
 
-		totalAttempts := 5
-		url := pkg.VaultLocalURL + "/v1/sys/health"
+		totalAttempts := 50
+		url := pkg.VaultLocalURLTLS + "/v1/sys/health"
 		for i := 0; i < totalAttempts; i++ {
 			log.Info().Msgf("vault is not ready yet, sleeping and checking again, attempt (%d/%d)", i+1, totalAttempts)
 			time.Sleep(10 * time.Second)
