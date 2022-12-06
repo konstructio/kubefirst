@@ -144,6 +144,7 @@ func (g GithubSession) RemoveSSHKey(keyId int64) error {
 	return nil
 }
 
+// RemoveSSHKeyByPublicKey deletes a GitHub key that matches the provided public key.
 func (g GithubSession) RemoveSSHKeyByPublicKey(user string, publicKey string) error {
 
 	keys, resp, err := g.gitClient.Users.ListKeys(g.context, user, &github.ListOptions{})
