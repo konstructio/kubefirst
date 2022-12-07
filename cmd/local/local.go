@@ -61,10 +61,6 @@ func NewCommand() *cobra.Command {
 	// todo: get it from GH token , use it for console
 	localCmd.Flags().StringVar(&adminEmail, "admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
 	localCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "main", "metaphor application branch")
-	// todo: UPDATE IT BEFORE MERGING
-	// todo: UPDATE IT BEFORE MERGING
-	// todo: UPDATE IT BEFORE MERGING
-	// todo: UPDATE IT BEFORE MERGING
 	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "", "version/branch used on git clone")
 	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "Prefix of the repo for gitops template, repo name has -template")
 	localCmd.Flags().StringVar(&gitOpsOrg, "gitops-org", "kubefirst", "Helpful when using forks of gitops for testing")
@@ -285,7 +281,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	// vault in running state
 	executionControl = viper.GetBool("vault.status.running")
 	if !executionControl {
-		pkg.InformUser("Waiting for vault to be ready", silentMode)
+		pkg.InformUser("waiting for Vault to be ready...", silentMode)
 		vault.WaitVaultToBeRunning(dryRun)
 	}
 

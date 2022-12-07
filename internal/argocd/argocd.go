@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -69,19 +69,19 @@ func SyncRetry(httpClient pkg.HTTPDoer, attempts int, interval int, applicationN
 
 		httpCode, syncStatus, err := Sync(httpClient, applicationName, token)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 			return false, fmt.Errorf("unable to request ArgoCD Sync, error is: %v", err)
 		}
 
 		// success! ArgoCD is synced!
 		if syncStatus == "Synced" {
-			log.Println("ArgoCD application is synced")
+			log.Info().Msg("ArgoCD application is synced")
 			return true, nil
 		}
 
 		// keep trying
 		if httpCode == http.StatusBadRequest {
-			log.Println("another operation is already in progress")
+			log.Info().Msg("another operation is already in progress")
 		}
 
 		log.Printf(
@@ -100,23 +100,22 @@ func SyncRetry(httpClient pkg.HTTPDoer, attempts int, interval int, applicationN
 func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (httpCodeResponse int, syncStatus string, Error error) {
 
 	url := fmt.Sprintf("%s/api/v1/applications/%s/sync", viper.GetString("argocd.local.service"), applicationName)
-	log.Println(url)
+	log.Info().Msg(url)
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 		return 0, "", err
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", argoCDToken))
 	res, err := httpClient.Do(req)
 	if err != nil {
-		log.Printf("error sending POST request to ArgoCD for syncing application (%s)\n", applicationName)
-		log.Println(err)
+		log.Error().Err(err).Msgf("error sending POST request to ArgoCD for syncing application (%s)", applicationName)
 		return res.StatusCode, "", err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		log.Printf("ArgoCD Sync response http code is: %d", res.StatusCode)
+		log.Error().Err(err).Msgf("ArgoCD Sync response http code is: %d", res.StatusCode)
 		return res.StatusCode, "", nil
 	}
 
@@ -191,7 +190,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 	viper.Set("argocd.admin.apitoken", token)
 	err = viper.WriteConfig()
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 		return "", err
 	}
 
@@ -217,7 +216,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	req, err := http.NewRequest("POST", url, payload)
 	if err != nil {
-		log.Fatal("error getting auth token from argocd ", err)
+		log.Fatal().Err(err).Msgf("error getting auth token from argocd ", err)
 	}
 
 	client := &http.Client{
@@ -270,7 +269,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 			return token.(string)
 		}
 	}
-	log.Panic("Fail to get a token")
+	log.Panic().Msg("Fail to get a token")
 	// This code is unreacheble, as in absence of token we want to fail the install.
 	// I kept is to avoid compiler to complain.
 	return ""
@@ -288,9 +287,9 @@ func SyncArgocdApplication(dryRun bool, applicationName, argocdAuthToken string)
 	var outb bytes.Buffer
 
 	_, _, err := pkg.ExecShellReturnStrings("curl", "-k", "-L", "-X", "POST", url, "-H", fmt.Sprintf("Authorization: Bearer %s", argocdAuthToken))
-	log.Println("the value from the curl command to sync registry in argocd is:", outb.String())
+	log.Info().Msgf("the value from the curl command to sync registry in argocd is: %s", outb.String())
 	if err != nil {
-		log.Panicf("error: curl appSync failed failed %s", err)
+		log.Panic().Err(err).Msg("error: curl appSync failed failed")
 	}
 }
 
@@ -298,7 +297,7 @@ func SyncArgocdApplication(dryRun bool, applicationName, argocdAuthToken string)
 func ApplyRegistry(dryRun bool) error {
 	config := configs.ReadConfig()
 	if viper.GetBool("argocd.registry.applied") {
-		log.Println("skipped ApplyRegistry - ")
+		log.Info().Msg("skipped ApplyRegistry - ")
 		return nil
 	}
 	if !dryRun {
@@ -319,7 +318,7 @@ func ApplyRegistryLocal(dryRun bool) error {
 	config := configs.ReadConfig()
 
 	if viper.GetBool("argocd.registry.applied") || dryRun {
-		log.Println("skipped ApplyRegistryLocal - ")
+		log.Info().Msg("skipped ApplyRegistryLocal - ")
 		return nil
 	}
 
@@ -372,7 +371,7 @@ func GetArgoCDApplication(token string, applicationName string) (argocdModel.V1a
 	url := pkg.ArgoCDLocalBaseURL + "/applications/" + applicationName
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 
 	req.Header.Add("Authorization", "Bearer "+token)
@@ -402,10 +401,10 @@ func GetArgoCDApplication(token string, applicationName string) (argocdModel.V1a
 func IsAppSynched(token string, applicationName string) (bool, error) {
 	app, err := GetArgoCDApplication(token, applicationName)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 		return false, fmt.Errorf("IsAppSynched - Error checking if arcoCD app is synched")
 	}
-	log.Println("App status:", app.Status.Sync.Status)
+	log.Info().Msgf("App status: %s", app.Status.Sync.Status)
 
 	if app.Status.Sync.Status == "Synced" {
 		return true, nil
@@ -424,10 +423,10 @@ func WaitArgoCDToBeReady(dryRun bool) {
 	for i := 0; i < x; i++ {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/argocd")
 		if err != nil {
-			log.Println("Waiting argocd to be born")
+			log.Info().Msg("Waiting argocd to be born")
 			time.Sleep(10 * time.Second)
 		} else {
-			log.Println("argocd namespace found, continuing")
+			log.Info().Msg("argocd namespace found, continuing")
 			time.Sleep(5 * time.Second)
 			break
 		}
@@ -435,10 +434,10 @@ func WaitArgoCDToBeReady(dryRun bool) {
 	for i := 0; i < x; i++ {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
 		if err != nil {
-			log.Println("Waiting for argocd pods to create, checking in 10 seconds")
+			log.Info().Msg("Waiting for argocd pods to create, checking in 10 seconds")
 			time.Sleep(10 * time.Second)
 		} else {
-			log.Println("argocd pods found, waiting for them to be running")
+			log.Info().Msg("argocd pods found, waiting for them to be running")
 			viper.Set("argocd.ready", true)
 			viper.WriteConfig()
 			time.Sleep(15 * time.Second)
