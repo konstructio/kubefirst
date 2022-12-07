@@ -73,6 +73,9 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	viper.Set("argocd.local.service", pkg.ArgoCDLocalURL)
 	viper.Set("vault.local.service", pkg.VaultLocalURLTLS)
+	viper.Set("use-telemetry", useTelemetry)
+
+
 	go pkg.RunNgrok(context.TODO())
 
 	// addons
