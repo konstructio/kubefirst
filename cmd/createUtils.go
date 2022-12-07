@@ -55,7 +55,7 @@ func waitArgoCDToBeReady(dryRun bool) {
 	for i := 0; i < x; i++ {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/argocd")
 		if err != nil {
-			log.Error().Err(err).Msg("Waiting argocd to be born")
+			log.Warn().Err(err).Msg("Waiting argocd to be born")
 			time.Sleep(10 * time.Second)
 		} else {
 			log.Info().Msg("argocd namespace found, continuing")
@@ -66,7 +66,7 @@ func waitArgoCDToBeReady(dryRun bool) {
 	for i := 0; i < x; i++ {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
 		if err != nil {
-			log.Error().Err(err).Msg("Waiting for argocd pods to create, checking in 10 seconds")
+			log.Warn().Err(err).Msg("Waiting for argocd pods to create, checking in 10 seconds")
 			time.Sleep(10 * time.Second)
 		} else {
 			log.Info().Msg("argocd pods found, waiting for them to be running")
@@ -274,7 +274,7 @@ func waitGitlabToBeReady(dryRun bool) {
 	for i := 0; i < x; i++ {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "get", "pods", "-l", "app=webservice")
 		if err != nil {
-			log.Error().Err(err).Msg("waiting gitlab pods to be born")
+			log.Warn().Err(err).Msg("waiting gitlab pods to be born")
 			time.Sleep(10 * time.Second)
 		} else {
 			log.Info().Msg("gitlab pods found, continuing")
