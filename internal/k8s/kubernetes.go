@@ -307,7 +307,7 @@ func WaitForGitlab(dryRun bool, config *configs.Config) {
 	k.Stderr = os.Stderr
 	err := k.Run()
 	if err != nil {
-		log.Panic().Msgf("failed to execute kubectl wait for gitlab pods with label app=webservice: %s \n%s", output.String())
+		log.Panic().Msgf("failed to execute kubectl wait for gitlab pods with label app=webservice: %s", output.String())
 	}
 	log.Info().Msgf("the output is: %s", output.String())
 }

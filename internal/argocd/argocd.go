@@ -216,7 +216,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	req, err := http.NewRequest("POST", url, payload)
 	if err != nil {
-		log.Fatal().Err(err).Msgf("error getting auth token from argocd ", err)
+		log.Fatal().Err(err).Msg("error getting auth token from argocd")
 	}
 
 	client := &http.Client{

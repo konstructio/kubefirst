@@ -155,14 +155,14 @@ func CloneGitOpsRepo() {
 		log.Panic().Err(err).Msg("error cloning gitops-template repository from github")
 	}
 
-	log.Info().Msgf("downloaded gitops repo from template to directory %q", config.K1FolderPath, "/gitops")
+	log.Info().Msgf("downloaded gitops repo from template to directory %s%s", config.K1FolderPath, "/gitops")
 }
 
 func PushGitopsToSoftServe() {
 	cfg := configs.ReadConfig()
 	directory := fmt.Sprintf("%s/gitops", cfg.K1FolderPath)
 
-	log.Info().Msgf("open gitClient repo", directory)
+	log.Info().Msgf("open gitClient repo %s", directory)
 
 	repo, err := git.PlainOpen(directory)
 	if err != nil {
@@ -307,7 +307,7 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 	log.Info().Msgf("opening repository with gitClient: %q", localDirectory)
 	repo, err := git.PlainOpen(localDirectory)
 	if err != nil {
-		log.Panic().Err(err).Msgf("error opening the localDirectory: ", localDirectory)
+		log.Panic().Err(err).Msgf("error opening the localDirectory: %s", localDirectory)
 	}
 
 	w, _ := repo.Worktree()
@@ -402,7 +402,7 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 		},
 	})
 	if err != nil {
-		log.Panic().Err(err).Msgf("error pushing to remote %s")
+		log.Panic().Err(err).Msg("error pushing to remote")
 	}
 	log.Info().Msgf("successfully pushed detokenized gitops content to github/%s", viper.GetString("github.owner"))
 }
@@ -482,7 +482,7 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 		},
 	})
 	if err != nil {
-		log.Panic().Err(err).Msgf("error pushing to remote %s")
+		log.Panic().Err(err).Msg("error pushing to remote")
 	}
 	log.Info().Msgf("successfully pushed detokenized gitops content to github/%s", viper.GetString("github.owner"))
 

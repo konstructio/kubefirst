@@ -49,7 +49,7 @@ func CreateK3dCluster() error {
 		kubeConfig := []byte(out)
 		err = os.WriteFile(config.KubeConfigPath, kubeConfig, 0644)
 		if err != nil {
-			log.Info().Msgf("error updating config:", err)
+			log.Error().Err(err).Msg("error updating config")
 			return errors.New("error updating config")
 		}
 		viper.Set("k3d.created", true)

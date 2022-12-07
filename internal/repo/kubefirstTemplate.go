@@ -90,7 +90,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 	} else {
 		domain := viper.GetString("aws.hostedzonename")
 		log.Info().Msg("creating git remote gitlab")
-		log.Info().Msgf("git remote add gitlab at url ", fmt.Sprintf("https://gitlab.%s/kubefirst/%s.git", domain, repoName))
+		log.Info().Msgf("git remote add gitlab at url %s", fmt.Sprintf("https://gitlab.%s/kubefirst/%s.git", domain, repoName))
 		if err != nil {
 			log.Panic().Msgf("error opening the directory %s: %s", directory, err)
 		}
