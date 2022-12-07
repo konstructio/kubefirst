@@ -115,7 +115,7 @@ func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		log.Error().Err(err).Msgf("ArgoCD Sync response http code is: %d", res.StatusCode)
+		log.Warn().Err(err).Msgf("ArgoCD Sync response http code is: %d", res.StatusCode)
 		return res.StatusCode, "", nil
 	}
 
