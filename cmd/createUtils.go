@@ -91,7 +91,7 @@ func waitVaultToBeRunning(dryRun bool) {
 		for i := 0; i < x; i++ {
 			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/vault")
 			if err != nil {
-				log.Error().Err(err).Msg("Waiting vault to be born")
+				log.Warn().Err(err).Msg("Waiting vault to be born")
 				time.Sleep(10 * time.Second)
 			} else {
 				log.Info().Msg("vault namespace found, continuing")
@@ -105,7 +105,7 @@ func waitVaultToBeRunning(dryRun bool) {
 		for i := 0; i < x; i++ {
 			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "get", "pods", "-l", "app.kubernetes.io/instance=vault")
 			if err != nil {
-				log.Error().Err(err).Msg("Waiting vault pods to create")
+				log.Warn().Err(err).Msg("Waiting vault pods to create")
 				time.Sleep(10 * time.Second)
 			} else {
 				log.Info().Msg("vault pods found, continuing")

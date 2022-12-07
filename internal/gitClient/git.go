@@ -38,7 +38,7 @@ func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, br
 
 	err = CloneTemplateRepoWithFallBack(githubOwner, repoName, directory, branch, tag)
 	if err != nil {
-		log.Error().Err(err).Msg("Error cloning repo with fallback")
+		log.Panic().Err(err).Msg("Error cloning repo with fallback")
 	}
 	if err != nil {
 		log.Printf("error cloning %s repository from github %s", folderName, err)
