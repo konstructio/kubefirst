@@ -56,7 +56,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	}
 
 	if viper.GetString("gitprovider") == "github" && strings.Contains(path, "-gitlab.tf") {
-		log.Info().Msgf("github provider specified, removing gitlab terraform file: %s", path)
+		log.Debug().Msgf("github provider specified, removing gitlab terraform file: %s", path)
 		err = os.Remove(path)
 		if err != nil {
 			log.Panic().Msg(err.Error())

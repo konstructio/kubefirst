@@ -3,8 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -36,7 +36,7 @@ func setArgocdCreds(dryRun bool) {
 
 	argocdPassword := k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
 	if argocdPassword == "" {
-		log.Panicf("Missing argocdPassword")
+		log.Panic().Msg("Missing argocdPassword")
 	}
 
 	viper.Set("argocd.admin.password", argocdPassword)
@@ -47,7 +47,7 @@ func setArgocdCreds(dryRun bool) {
 // deprecated
 func waitArgoCDToBeReady(dryRun bool) {
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, waitArgoCDToBeReady skipped.")
+		log.Info().Msg("[#99] Dry-run mode, waitArgoCDToBeReady skipped.")
 		return
 	}
 	config := configs.ReadConfig()
@@ -55,10 +55,10 @@ func waitArgoCDToBeReady(dryRun bool) {
 	for i := 0; i < x; i++ {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/argocd")
 		if err != nil {
-			log.Println("Waiting argocd to be born")
+			log.Warn().Err(err).Msg("Waiting argocd to be born")
 			time.Sleep(10 * time.Second)
 		} else {
-			log.Println("argocd namespace found, continuing")
+			log.Info().Msg("argocd namespace found, continuing")
 			time.Sleep(5 * time.Second)
 			break
 		}
@@ -66,10 +66,10 @@ func waitArgoCDToBeReady(dryRun bool) {
 	for i := 0; i < x; i++ {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
 		if err != nil {
-			log.Println("Waiting for argocd pods to create, checking in 10 seconds")
+			log.Warn().Err(err).Msg("Waiting for argocd pods to create, checking in 10 seconds")
 			time.Sleep(10 * time.Second)
 		} else {
-			log.Println("argocd pods found, waiting for them to be running")
+			log.Info().Msg("argocd pods found, waiting for them to be running")
 			viper.Set("argocd.ready", true)
 			viper.WriteConfig()
 			time.Sleep(15 * time.Second)
@@ -91,10 +91,10 @@ func waitVaultToBeRunning(dryRun bool) {
 		for i := 0; i < x; i++ {
 			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/vault")
 			if err != nil {
-				log.Println("Waiting vault to be born")
+				log.Warn().Err(err).Msg("Waiting vault to be born")
 				time.Sleep(10 * time.Second)
 			} else {
-				log.Println("vault namespace found, continuing")
+				log.Info().Msg("vault namespace found, continuing")
 				time.Sleep(25 * time.Second)
 				break
 			}
@@ -105,16 +105,16 @@ func waitVaultToBeRunning(dryRun bool) {
 		for i := 0; i < x; i++ {
 			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "get", "pods", "-l", "app.kubernetes.io/instance=vault")
 			if err != nil {
-				log.Println("Waiting vault pods to create")
+				log.Warn().Err(err).Msg("Waiting vault pods to create")
 				time.Sleep(10 * time.Second)
 			} else {
-				log.Println("vault pods found, continuing")
+				log.Info().Msg("vault pods found, continuing")
 				time.Sleep(15 * time.Second)
 				break
 			}
 		}
 	} else {
-		log.Println("vault token arleady exists, skipping vault health checks waitVaultToBeRunning")
+		log.Info().Msg("vault token arleady exists, skipping vault health checks waitVaultToBeRunning")
 	}
 }
 
@@ -130,7 +130,7 @@ func loopUntilPodIsReady(dryRun bool) {
 		totalAttempts := 50
 		url := "http://localhost:8200/v1/sys/health"
 		for i := 0; i < totalAttempts; i++ {
-			log.Printf("vault is not ready yet, sleeping and checking again, attempt (%d/%d)", i+1, totalAttempts)
+			log.Info().Msgf("vault is not ready yet, sleeping and checking again, attempt (%d/%d)", i+1, totalAttempts)
 			time.Sleep(10 * time.Second)
 
 			req, _ := http.NewRequest("GET", url, nil)
@@ -139,13 +139,13 @@ func loopUntilPodIsReady(dryRun bool) {
 
 			res, err := http.DefaultClient.Do(req)
 			if err != nil {
-				log.Println("error with http request Do, vault is not available", err)
+				log.Error().Err(err).Msg("error with http request Do, vault is not available")
 				// todo: temporary code
-				log.Println("trying to open port-forward again...")
+				log.Info().Msg("trying to open port-forward again...")
 				go func() {
 					_, err := k8s.PortForward(false, "vault", "svc/vault", "8200:8200")
 					if err != nil {
-						log.Println("error opening Vault port forward")
+						log.Error().Err(err).Msg("error opening Vault port forward")
 					}
 				}()
 				continue
@@ -154,14 +154,14 @@ func loopUntilPodIsReady(dryRun bool) {
 			defer res.Body.Close()
 			body, err := io.ReadAll(res.Body)
 			if err != nil {
-				log.Println("vault is available but the body is not what is expected ", err)
+				log.Error().Err(err).Msg("vault is available but the body is not what is expected ")
 				continue
 			}
 
 			var responseJson map[string]interface{}
 
 			if err := json.Unmarshal(body, &responseJson); err != nil {
-				log.Printf("vault is available but the body is not what is expected %s", err)
+				log.Error().Err(err).Msg("vault is available but the body is not what is expected")
 				continue
 			}
 
@@ -170,12 +170,12 @@ func loopUntilPodIsReady(dryRun bool) {
 				log.Printf("vault is initialized and is in the expected state")
 				return
 			}
-			log.Panic("vault was never initialized")
+			log.Panic().Msg("vault was never initialized")
 		}
 		viper.Set("vault.status.running", true)
 		viper.WriteConfig()
 	} else {
-		log.Println("vault token already exists, skipping vault health checks loopUntilPodIsReady")
+		log.Info().Msg("vault token already exists, skipping vault health checks loopUntilPodIsReady")
 	}
 }
 
@@ -220,35 +220,35 @@ func initializeVaultAndAutoUnseal(dryRun bool) {
 
 		req, err := http.NewRequest("POST", url, payload)
 		if err != nil {
-			log.Panic(err)
+			log.Panic().Err(err).Msg("")
 		}
 
 		req.Header.Add("Content-Type", "application/json")
 
 		res, err := http.DefaultClient.Do(req)
 		if err != nil {
-			log.Println("error in Do http client request", err)
+			log.Error().Err(err).Msg("error in Do http client request")
 		}
 
 		defer res.Body.Close()
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
-			log.Panic(err)
+			log.Panic().Err(err).Msg("")
 		}
 
-		log.Println(string(body))
+		log.Info().Msg(string(body))
 
 		vaultResponse := VaultUnsealResponse{}
 		err = json.Unmarshal(body, &vaultResponse)
 		if err != nil {
-			log.Panic(err)
+			log.Panic().Err(err).Msg("")
 		}
 
 		viper.Set("vault.token", vaultResponse.RootToken)
 		viper.Set("vault.unseal-keys", vaultResponse)
 		viper.WriteConfig()
 	} else {
-		log.Println("vault token already exists, continuing")
+		log.Info().Msg("vault token already exists, continuing")
 	}
 }
 
@@ -262,10 +262,10 @@ func waitGitlabToBeReady(dryRun bool) {
 	for i := 0; i < x; i++ {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/gitlab")
 		if err != nil {
-			log.Println("Waiting gitlab namespace to be born")
+			log.Error().Err(err).Msg("Waiting gitlab namespace to be born")
 			time.Sleep(10 * time.Second)
 		} else {
-			log.Println("gitlab namespace found, continuing")
+			log.Info().Msg("gitlab namespace found, continuing")
 			time.Sleep(5 * time.Second)
 			break
 		}
@@ -274,10 +274,10 @@ func waitGitlabToBeReady(dryRun bool) {
 	for i := 0; i < x; i++ {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "get", "pods", "-l", "app=webservice")
 		if err != nil {
-			log.Println("Waiting gitlab pods to be born")
+			log.Warn().Err(err).Msg("waiting gitlab pods to be born")
 			time.Sleep(10 * time.Second)
 		} else {
-			log.Println("gitlab pods found, continuing")
+			log.Info().Msg("gitlab pods found, continuing")
 			time.Sleep(15 * time.Second)
 			break
 		}
@@ -292,10 +292,10 @@ func informUser(message string, silentMode bool) {
 	if silentMode {
 		_, err := fmt.Fprintln(os.Stdout, message)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 		return
 	}
-	log.Println(message)
+	log.Info().Msg(message)
 	progressPrinter.LogMessage(fmt.Sprintf("- %s", message))
 }
