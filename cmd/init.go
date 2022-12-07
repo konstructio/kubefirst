@@ -133,6 +133,7 @@ validated and configured.`,
 		log.Println("sending init started metric")
 
 		var telemetryHandler handlers.TelemetryHandler
+		viper.Set("use-telemetry", globalFlags.UseTelemetry)
 		if globalFlags.UseTelemetry {
 
 			// Instantiates a SegmentIO client to use send messages to the segment API.
