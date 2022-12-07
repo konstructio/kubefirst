@@ -214,17 +214,17 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 
 		err = aws.DestroySecurityGroup(viper.GetString("cluster-name"))
 		if err != nil {
-			log.Error().Err(err).Msg("failed to destroy security group")
+			log.Panic().Err(err).Msg("failed to destroy security group")
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
-			log.Error().Err(err).Msg("failed to terraform init base")
+			log.Panic().Err(err).Msg("failed to terraform init base")
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
 		if err != nil {
-			log.Error().Err(err).Msg("failed to terraform destroy base")
+			log.Panic().Err(err).Msg("failed to terraform destroy base")
 		}
 
 		viper.Set("destroy.terraformdestroy.base", true)
