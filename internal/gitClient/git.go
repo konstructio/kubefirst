@@ -504,3 +504,65 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 
 	return nil
 }
+
+// CloneBranchSetMain clone a branch and returns a pointer to git.Repository
+func CloneBranchSetMain(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
+
+	log.Printf("git cloning by branch, branch: %s", configs.K1Version)
+
+	repo, err := CloneBranch(repoURL, repoLocalPath, branch)
+	if err != nil {
+		return nil, err
+	}
+	if branch != "main" {
+		repo, err = SetToMainBranch(repo)
+		if err != nil {
+			return nil, fmt.Errorf("error setting repository main from GitHub using branch %s", branch)
+		}
+		//remove old branch
+		err = repo.Storer.RemoveReference(plumbing.NewBranchReferenceName(branch))
+		if err != nil {
+			return nil, fmt.Errorf("error removing previous branch: %s", err)
+		}
+	}
+	return repo, nil
+}
+
+// CloneBranch clone a branch and returns a pointer to git.Repository
+func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
+
+	log.Printf("git cloning by branch, branch: %s", configs.K1Version)
+
+	repo, err := git.PlainClone(repoLocalPath, false, &git.CloneOptions{
+		URL:           repoURL,
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		SingleBranch:  true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return repo, nil
+}
+
+// SetToMainBranch point branch or tag to main
+func SetToMainBranch(repo *git.Repository) (*git.Repository, error) {
+	w, _ := repo.Worktree()
+	branchName := plumbing.NewBranchReferenceName("main")
+	headRef, err := repo.Head()
+	if err != nil {
+		return nil, fmt.Errorf("Error Setting reference: %s", err)
+	}
+
+	ref := plumbing.NewHashReference(branchName, headRef.Hash())
+	err = repo.Storer.SetReference(ref)
+	if err != nil {
+		return nil, fmt.Errorf("error Storing reference: %s", err)
+	}
+
+	err = w.Checkout(&git.CheckoutOptions{Branch: ref.Name()})
+	if err != nil {
+		return nil, fmt.Errorf("error checking out main: %s", err)
+	}
+	return repo, nil
+}
