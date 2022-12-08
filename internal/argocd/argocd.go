@@ -115,7 +115,7 @@ func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		log.Error().Err(err).Msgf("ArgoCD Sync response http code is: %d", res.StatusCode)
+		log.Warn().Err(err).Msgf("ArgoCD Sync response http code is: %d", res.StatusCode)
 		return res.StatusCode, "", nil
 	}
 
@@ -216,7 +216,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	req, err := http.NewRequest("POST", url, payload)
 	if err != nil {
-		log.Fatal().Err(err).Msgf("error getting auth token from argocd ", err)
+		log.Fatal().Err(err).Msg("error getting auth token from argocd")
 	}
 
 	client := &http.Client{

@@ -133,7 +133,7 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 			envs["TF_VAR_instance_type"] = "t4g.medium"
 		}
 
-		log.Printf("tf env vars: ", envs)
+		log.Print("tf env vars: ", envs)
 
 		err := os.Chdir(directory)
 		if err != nil {
@@ -204,27 +204,27 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		time.Sleep(45 * time.Second)
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
-			log.Printf("failed to terraform init base %v", err)
+			log.Error().Err(err).Msg("failed to terraform init base")
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
 		if err != nil {
-			log.Printf("failed to terraform destroy base %v", err)
+			log.Error().Err(err).Msg("failed to terraform destroy base")
 		}
 
 		err = aws.DestroySecurityGroup(viper.GetString("cluster-name"))
 		if err != nil {
-			log.Panic().Msgf("Failed to destroy security group: %v", err)
+			log.Panic().Err(err).Msg("failed to destroy security group")
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
-			log.Panic().Msgf("failed to terraform init base %v", err)
+			log.Panic().Err(err).Msg("failed to terraform init base")
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
 		if err != nil {
-			log.Panic().Msgf("failed to terraform destroy base %v", err)
+			log.Panic().Err(err).Msg("failed to terraform destroy base")
 		}
 
 		viper.Set("destroy.terraformdestroy.base", true)
@@ -321,7 +321,7 @@ func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
 	}
 
 	envs := terraformConfig(kubefirstConfigProperty)
-	log.Printf("tf env vars: ", envs)
+	log.Print("tf env vars: ", envs)
 
 	err := os.Chdir(tfEntrypoint)
 	if err != nil {
@@ -357,7 +357,7 @@ func initAndMigrateActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string)
 	}
 
 	envs := terraformConfig(kubefirstConfigProperty)
-	log.Printf("tf env vars: ", envs)
+	log.Print("tf env vars: ", envs)
 
 	err := os.Chdir(tfEntrypoint)
 	if err != nil {
@@ -395,7 +395,7 @@ func InitAndReconfigureActionAutoApprove(dryRun bool, tfAction string, tfEntrypo
 	}
 
 	envs := terraformConfig(kubefirstConfigProperty)
-	log.Printf("tf env vars: ", envs)
+	log.Print("tf env vars: ", envs)
 
 	err := os.Chdir(tfEntrypoint)
 	if err != nil {
@@ -452,7 +452,7 @@ func OutputSingleValue(dryRun bool, directory, tfEntrypoint, outputName string) 
 		log.Error().Err(err).Msg("failed to call tfOutputCmd.Run()")
 	}
 
-	log.Printf("tfOutput is: ", tfOutput.String())
+	log.Print("tfOutput is: ", tfOutput.String())
 }
 
 // ApplyUsersTerraform load environment variables into the host based on the git provider, change directory to the

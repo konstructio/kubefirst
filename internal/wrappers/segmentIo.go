@@ -7,6 +7,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/segmentio/analytics-go"
+	"github.com/spf13/viper"
 	"log"
 )
 
@@ -34,6 +35,13 @@ func SendSegmentIoTelemetry(hostedZone string, metricName string) error {
 	if err != nil {
 		return err
 	}
+
+	viper.Set("machineid", telemetryDomain.MachineId)
+	err = viper.WriteConfig()
+	if err != nil {
+		return err
+	}
+
 	telemetryService := services.NewSegmentIoService(segmentIOClient)
 	telemetryHandler := handlers.NewTelemetryHandler(telemetryService)
 
