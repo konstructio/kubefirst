@@ -47,7 +47,7 @@ var postInstallCmd = &cobra.Command{
 				log.Println(err)
 			}
 
-			err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURL)
+			err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
 			if err != nil {
 				log.Println(err)
 			}

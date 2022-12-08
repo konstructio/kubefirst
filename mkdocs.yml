@@ -1,6 +1,7 @@
 site_name: Kubefirst Docs
 theme:
   name: material
+  custom_dir: docs/overrides
   features:
     - navigation.tabs
     - navigation.sections
@@ -197,9 +198,6 @@ nav:
   - Site:
     - Site: 'https://kubefirst.io'
 
-google_analytics:
-  - UA-189360136-1
-  - auto 
 markdown_extensions:
     - attr_list
     - pymdownx.emoji:
@@ -210,6 +208,8 @@ markdown_extensions:
     # - pymdownx.superfences
 extra_css:
   - stylesheets/extra.css
+extra_javascript:
+  - js/gtag.js
 
 repo_url: https://github.com/kubefirst/kubefirst
 edit_uri: edit/main/docs/
