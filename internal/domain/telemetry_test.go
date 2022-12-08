@@ -49,7 +49,6 @@ func TestNewTelemetry(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			//todo: this is failing on CI only
 			name: "empty domain (localhost)",
 			args: args{
 				metricName: "test metric",
