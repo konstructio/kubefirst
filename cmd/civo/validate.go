@@ -116,12 +116,18 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 
 	pkg.InformUser("checking authentication to required providers", silentModeFlag)
 	//* check CIVO_TOKEN environment variable
-	civoToken := os.Getenv("CIVO_TOKEN")
+	civoToken := viper.GetString("civo.token")
+	if os.Getenv("CIVO_TOKEN") != "" {
+		civoToken = os.Getenv("CIVO_TOKEN")
+	}
+
 	if civoToken == "" {
 		fmt.Println("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security to retrieve your token\nand enter it here, then press Enter:")
 		var civoToken string
 		fmt.Scanln(&civoToken)
-		log.Printf(civoToken)
+
+		viper.Set("civo.token", civoToken)
+		viper.WriteConfig()
 		os.Setenv("CIVO_TOKEN", civoToken)
 		log.Printf("CIVO TOKEN %s", os.Getenv("CIVO_TOKEN"))
 	}
