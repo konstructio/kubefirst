@@ -170,7 +170,7 @@ func ClonePrivateRepo(gitRepoUrl, gitRepoDestinationDir string) {
 		SingleBranch:  true,
 	})
 	if err != nil {
-		log.Fatalln("error cloning git repository", gitRepoUrl, err)
+		log.Fatal().Err(err).Msgf("error cloning git repository %s", gitRepoUrl)
 	}
 }
 

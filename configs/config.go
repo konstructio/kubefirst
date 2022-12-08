@@ -36,12 +36,14 @@ type Config struct {
 	KubeConfigFolder        string
 	HelmClientPath          string
 	GitOpsLocalRepoPath     string
-	NgrokVersion            string
-	NgrokClientPath         string
-	TerraformClientPath     string
-	K3dPath                 string
-	MkCertPath              string
-	MkCertPemFilesPath      string
+	GitOpsRepoPath          string
+
+	NgrokVersion        string
+	NgrokClientPath     string
+	TerraformClientPath string
+	K3dPath             string
+	MkCertPath          string
+	MkCertPemFilesPath  string
 
 	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
 	ClusterName    string `env:"CLUSTER_NAME"`
@@ -106,6 +108,7 @@ func ReadConfig() *Config {
 	config.KubeConfigPath = fmt.Sprintf("%s/gitops/terraform/base/kubeconfig", config.K1FolderPath)
 	config.KubeConfigFolder = fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 	config.GitOpsLocalRepoPath = fmt.Sprintf("%s/gitops", config.K1FolderPath)
+	config.GitOpsRepoPath = fmt.Sprintf("%s/gitops", config.K1FolderPath)
 	config.NgrokClientPath = fmt.Sprintf("%s/tools/ngrok", config.K1FolderPath)
 	config.TerraformClientPath = fmt.Sprintf("%s/tools/terraform", config.K1FolderPath)
 	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)

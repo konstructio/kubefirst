@@ -469,7 +469,7 @@ func GetIngressHost(k8sClient *kubernetes.Clientset, namespace string, name stri
 
 	ingress, err := k8sClient.NetworkingV1().Ingresses(namespace).Get(context.TODO(), name, metaV1.GetOptions{})
 	if err != nil {
-		log.Println(fmt.Sprintf("error getting key: %s from ingress: %s", namespace, name), err)
+		log.Error().Err(err).Msgf("error getting key: %s from ingress: %s", namespace, name)
 	}
 
 	if ingress != nil {
