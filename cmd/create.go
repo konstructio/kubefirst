@@ -12,6 +12,8 @@ import (
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
+	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/internal/state"
@@ -175,6 +177,13 @@ cluster provisioning process spinning up the services, and validates the livenes
 		}
 
 		if viper.GetString("cloud") == flagset.CloudAws {
+			//POST-install aws cloud census
+			elbName, sg := aws.GetELBByClusterName(viper.GetString("cluster-name"))
+			viper.Set("aws.vpcid", aws.GetVPCIdByClusterName(viper.GetString("cluster-name")))
+			viper.Set("aws.elb.name", elbName)
+			viper.Set("aws.elb.sg", sg)
+			viper.WriteConfig()
+
 			err = state.UploadKubefirstToStateStore(globalFlags.DryRun)
 			if err != nil {
 				log.Println(err)

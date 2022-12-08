@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
@@ -194,27 +193,6 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		if nodes_graviton {
 			envs["TF_VAR_ami_type"] = "AL2_ARM_64"
 			envs["TF_VAR_instance_type"] = "t4g.medium"
-		}
-
-		err = aws.DestroyLoadBalancer(viper.GetString("cluster-name"))
-		if err != nil {
-			log.Panic().Msgf("Failed to destroy load balancer: %v", err)
-		}
-
-		time.Sleep(45 * time.Second)
-		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
-		if err != nil {
-			log.Error().Err(err).Msg("failed to terraform init base")
-		}
-
-		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
-		if err != nil {
-			log.Error().Err(err).Msg("failed to terraform destroy base")
-		}
-
-		err = aws.DestroySecurityGroup(viper.GetString("cluster-name"))
-		if err != nil {
-			log.Panic().Err(err).Msg("failed to destroy security group")
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")

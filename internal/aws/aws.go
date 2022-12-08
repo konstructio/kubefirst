@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53Types "github.com/aws/aws-sdk-go-v2/service/route53/types"
@@ -993,6 +994,102 @@ func ProfileInjection(envs *map[string]string) {
 	}
 }
 
+func DestroyLoadBalancerByName(elbName string) error {
+	awsConfig, err := NewAws()
+	if err != nil {
+		log.Printf("Failed to load config: %v", err)
+		return err
+	}
+	loadBalancerNameString := string(elbName)
+
+	if len(loadBalancerNameString) > 0 {
+		loadBalancerClient := elasticloadbalancing.NewFromConfig(awsConfig)
+
+		loadBalancerInput := elasticloadbalancing.DeleteLoadBalancerInput{
+			LoadBalancerName: &loadBalancerNameString,
+		}
+
+		log.Printf("trying to delete load balancer %s\n", loadBalancerNameString)
+
+		_, err = loadBalancerClient.DeleteLoadBalancer(context.Background(), &loadBalancerInput)
+
+		if err != nil {
+			return err
+		}
+
+		log.Printf("deleted load balancer %s\n", loadBalancerNameString)
+	}
+
+	return nil
+}
+
+func DestroySecurityGroupById(securityGroupId string) error {
+	// todo: use method approach to avoid new AWS client initializations
+	awsRegion := viper.GetString("aws.region")
+	awsProfile := viper.GetString("aws.profile")
+	awsConfig, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithRegion(awsRegion),
+		config.WithSharedConfigProfile(awsProfile),
+	)
+	if err != nil {
+		log.Println("error: ", err)
+	}
+
+	if len(securityGroupId) > 0 {
+		securityGroupClient := ec2.NewFromConfig(awsConfig)
+
+		securityGroupInput := ec2.DeleteSecurityGroupInput{
+
+			GroupId: aws.String(securityGroupId),
+		}
+
+		log.Printf("trying to delete security group %s\n", securityGroupId)
+
+		_, err = securityGroupClient.DeleteSecurityGroup(context.Background(), &securityGroupInput)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("deleted security group %s\n", securityGroupId)
+	}
+
+	return nil
+}
+
+func DestroySecurityGroupByName(securityGroupName string) error {
+	// todo: use method approach to avoid new AWS client initializations
+	awsRegion := viper.GetString("aws.region")
+	awsProfile := viper.GetString("aws.profile")
+	awsConfig, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithRegion(awsRegion),
+		config.WithSharedConfigProfile(awsProfile),
+	)
+	if err != nil {
+		log.Println("error: ", err)
+	}
+
+	if len(securityGroupName) > 0 {
+		securityGroupClient := ec2.NewFromConfig(awsConfig)
+
+		securityGroupInput := ec2.DeleteSecurityGroupInput{
+
+			GroupName: &securityGroupName,
+		}
+
+		log.Printf("trying to delete security group %s\n", securityGroupName)
+
+		_, err = securityGroupClient.DeleteSecurityGroup(context.Background(), &securityGroupInput)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("deleted security group %s\n", securityGroupName)
+	}
+
+	return nil
+}
 func DestroyLoadBalancer(clusterName string) error {
 	// todo: use method approach to avoid new AWS client initializations
 	awsConfig, err := NewAws()
@@ -1069,4 +1166,91 @@ func DestroySecurityGroup(clusterName string) error {
 	}
 
 	return nil
+}
+
+func GetELBDetails(ingressHost string) (string, string, error) {
+	elb := strings.Split(ingressHost, "-")[0]
+	securityGroup := "k8s-elb-" + elb
+
+	return elb, securityGroup, nil
+
+}
+
+func GetVPCIdByClusterName(clusterName string) string {
+	awsConfig, err := NewAws()
+	if err != nil {
+		log.Printf("Failed to load config: %v", err)
+	}
+
+	ec2Client := ec2.NewFromConfig(awsConfig)
+
+	filterType := "tag:ClusterName"
+	vpcData, err := ec2Client.DescribeVpcs(context.Background(), &ec2.DescribeVpcsInput{
+		Filters: []ec2Types.Filter{
+			{
+				Name:   &filterType,
+				Values: []string{clusterName},
+			},
+		},
+	})
+	if err != nil {
+		log.Printf("%v", err)
+	}
+
+	if len(vpcData.Vpcs) > 0 {
+		log.Printf("there is no VPC for the cluster %q", clusterName)
+	}
+
+	for _, v := range vpcData.Vpcs {
+		vpcId := aws.ToString(v.VpcId)
+		if v.State == "available" {
+			//it is only expected to have 1 vpc per cluster name
+			log.Printf("there is a VPC for the %q cluster, the vpcID is %s", clusterName, vpcId)
+			return vpcId
+		}
+	}
+	return ""
+}
+
+// GetELBByClusterName return the elb name and its security groups
+func GetELBByClusterName(clusterName string) (string, []string) {
+	awsConfig, err := NewAws()
+	if err != nil {
+		log.Printf("Failed to load config: %v", err)
+	}
+
+	loadBalancerClient := elasticloadbalancing.NewFromConfig(awsConfig)
+
+	elbs, err := loadBalancerClient.DescribeLoadBalancers(context.Background(), &elasticloadbalancing.DescribeLoadBalancersInput{})
+	if err != nil {
+		log.Printf("%v", err)
+	}
+	if len(elbs.LoadBalancerDescriptions) > 0 {
+		log.Println("there is no ELB for the cluster ", clusterName)
+	}
+
+	for _, elb := range elbs.LoadBalancerDescriptions {
+		elbName := aws.ToString(elb.LoadBalancerName)
+		tags, err := loadBalancerClient.DescribeTags(context.Background(), &elasticloadbalancing.DescribeTagsInput{
+			LoadBalancerNames: []string{elbName},
+		})
+		if err != nil {
+			log.Printf("%v", err)
+		}
+		for _, tagDesc := range tags.TagDescriptions {
+			for _, tag := range tagDesc.Tags {
+				key := aws.ToString(tag.Key)
+				value := aws.ToString(tag.Value)
+				if value == "owned" && key == fmt.Sprintf("kubernetes.io/cluster/%s", clusterName) {
+					log.Println("Match tag:", key, value)
+					log.Println("Match  ELB Name:", elbName)
+					log.Println("Match ELB SG:", elb.SecurityGroups)
+					//found the right ELB
+					return elbName, elb.SecurityGroups
+				}
+
+			}
+		}
+	}
+	return "", []string{""}
 }

@@ -158,6 +158,22 @@ func CloneGitOpsRepo() {
 	log.Info().Msgf("downloaded gitops repo from template to directory %s%s", config.K1FolderPath, "/gitops")
 }
 
+func ClonePrivateRepo(gitRepoUrl, gitRepoDestinationDir string) {
+	log.Printf("Trying to clone repo %s ", gitRepoUrl)
+
+	_, err := git.PlainClone(gitRepoDestinationDir, false, &git.CloneOptions{
+		Auth: &http.BasicAuth{
+			Username: viper.GetString("github.user"),
+			Password: os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")},
+		ReferenceName: plumbing.NewBranchReferenceName("main"),
+		URL:           gitRepoUrl,
+		SingleBranch:  true,
+	})
+	if err != nil {
+		log.Fatalln("error cloning git repository", gitRepoUrl, err)
+	}
+}
+
 func PushGitopsToSoftServe() {
 	cfg := configs.ReadConfig()
 	directory := fmt.Sprintf("%s/gitops", cfg.K1FolderPath)
@@ -368,7 +384,7 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 	}
 
 	url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, localRepo)
-	log.Printf("git push to  remote: %s url: %s", remoteName, url)
+	log.Printf("git push to remote: %s url: %s", remoteName, url)
 
 	w, _ := repo.Worktree()
 
