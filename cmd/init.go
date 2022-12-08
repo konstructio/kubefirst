@@ -55,7 +55,7 @@ validated and configured.`,
 			return err
 		}
 
-		gitHubAccessToken := config.GitHubPersonalAccessToken
+		gitHubAccessToken := config.GithubToken
 		httpClient := http.DefaultClient
 		gitHubService := services.NewGitHubService(httpClient)
 		gitHubHandler := handlers.NewGitHubHandler(gitHubService)

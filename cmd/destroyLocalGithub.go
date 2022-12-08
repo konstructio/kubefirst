@@ -54,7 +54,7 @@ var destroyLocalGithubCmd = &cobra.Command{
 		log.Println(destroyFlags, config)
 
 		// todo: wrap business logic into the handler
-		if config.GitHubPersonalAccessToken == "" {
+		if config.GithubToken == "" {
 
 			httpClient := http.DefaultClient
 			gitHubService := services.NewGitHubService(httpClient)

@@ -102,7 +102,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		providerValue := viper.GetString("gitprovider")
 
 		config := configs.ReadConfig()
-		gitHubAccessToken := config.GitHubPersonalAccessToken
+		gitHubAccessToken := config.GithubToken
 		if providerValue == pkg.GitHubProviderName && gitHubAccessToken == "" {
 
 			gitHubAccessToken, err = gitHubHandler.AuthenticateUser()

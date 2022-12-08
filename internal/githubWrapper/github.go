@@ -23,7 +23,7 @@ type GithubSession struct {
 
 // New - Create a new client for github wrapper
 func New() GithubSession {
-	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
+	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
 		log.Fatal("Unauthorized: No token present")
 	}
@@ -242,4 +242,16 @@ func (g GithubSession) RetrySearchPullRequestComment(
 		return true, nil
 	}
 	return false, nil
+}
+
+// GetRepo - Always returns a status code for whether a repository exists or not
+func (g GithubSession) CheckRepoExists(owner string, name string) int {
+	_, response, _ := g.gitClient.Repositories.Get(g.context, owner, name)
+	return response.StatusCode
+}
+
+// GetRepo - Always returns a status code for whether a team exists or not
+func (g GithubSession) CheckTeamExists(owner string, name string) int {
+	_, response, _ := g.gitClient.Teams.GetTeamBySlug(g.context, owner, name)
+	return response.StatusCode
 }

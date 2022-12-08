@@ -18,67 +18,27 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func CreateSshKeyPair() {
+func CreateSshKeyPair() (string, string, error) {
 
-	config := configs.ReadConfig()
-	publicKey := viper.GetString("botpublickey")
-
-	// generate GitLab keys
-	if publicKey == "" && viper.GetString("gitprovider") == "gitlab" {
-
-		log.Println("generating new key pair for GitLab")
-		publicKey, privateKey, err := generateGitLabKeys()
-		if err != nil {
-			log.Println(err)
-		}
-
-		viper.Set("botpublickey", publicKey)
-		viper.Set("botprivatekey", privateKey)
-		err = viper.WriteConfig()
-		if err != nil {
-			log.Panicf("error: could not write to viper config")
-		}
-	}
-
-	// generate GitHub keys
-	if publicKey == "" && viper.GetString("gitprovider") == "github" {
-
-		log.Println("generating new key pair for GitHub")
-		publicKey, privateKey, err := generateGitHubKeys()
-		if err != nil {
-			log.Println(err)
-		}
-
-		viper.Set("botpublickey", publicKey)
-		viper.Set("botprivatekey", privateKey)
-		err = viper.WriteConfig()
-		if err != nil {
-			log.Panicf("error: could not write to viper config")
-		}
-
-	}
-	publicKey = viper.GetString("botpublickey")
-	privateKey := viper.GetString("botprivatekey")
-
-	var argocdInitValuesYaml = []byte(fmt.Sprintf(`
-configs:
-  repositories:
-    soft-serve-gitops:
-      url: ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops
-      insecure: 'true'
-      type: gitClient
-      name: soft-serve-gitops
-  credentialTemplates:
-    ssh-creds:
-      url: ssh://soft-serve.soft-serve.svc.cluster.local:22
-      sshPrivateKey: |
-        %s
-`, strings.ReplaceAll(privateKey, "\n", "\n        ")))
-
-	err := os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
+	pubKey, privKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
-		log.Panicf("error: could not write argocd-init-values.yaml %s", err)
+		return "", "", err
 	}
+
+	ecdsaPublicKey, err := ssh.NewPublicKey(pubKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	pemPrivateKey, err := sshmarshal.MarshalPrivateKey(privKey, "kubefirst key")
+	if err != nil {
+		return "", "", err
+	}
+
+	privateKey := string(pem.EncodeToMemory(pemPrivateKey))
+	publicKey := string(ssh.MarshalAuthorizedKey(ecdsaPublicKey))
+
+	return privateKey, publicKey, nil
 }
 
 func PublicKey() (*goGitSsh.PublicKeys, error) {
@@ -88,6 +48,33 @@ func PublicKey() (*goGitSsh.PublicKeys, error) {
 		return nil, err
 	}
 	return publicKey, err
+}
+
+// todo hack - need something more substantial and accommodating
+func WriteGithubArgoCdInitValuesFile(githubGitopsSshUrl, sshPrivateKey string) error {
+
+	config := configs.ReadConfig()
+
+	var argocdInitValuesYaml = []byte(fmt.Sprintf(`
+configs:
+  repositories:
+    gitops:
+      url: %s/gitops.git
+      type: gitClient
+      name: gitops
+  credentialTemplates:
+    ssh-creds:
+      url: %s
+      sshPrivateKey: |
+        %s
+`, githubGitopsSshUrl, githubGitopsSshUrl, strings.ReplaceAll(sshPrivateKey, "\n", "\n        ")))
+
+	err := os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
+	if err != nil {
+		log.Panicf("error: could not write %s/argocd-init-values.yaml %s", config.K1FolderPath, err)
+		return err
+	}
+	return nil
 }
 
 // generateGitLabKeys generate public and private keys to be consumed by GitLab. Private Key is encrypted using RSA key with

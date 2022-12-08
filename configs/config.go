@@ -59,11 +59,16 @@ type Config struct {
 	MetaphorTemplateURL string
 	GitopsTemplateURL   string
 
-	LocalArgoWorkflowsURL string
-	LocalVaultURL         string
-	LocalArgoURL          string
-	LocalAtlantisURL      string
-	LocalChartmuseumURL   string
+	VaultLocalUrl       string
+	VaultIngressUrl     string
+	LocalAtlantisURL    string
+	LocalChartmuseumURL string
+
+	ArgoWorkflowsLocalUrl   string
+	ArgoWorkflowsIngressUrl string
+
+	ArgocdLocalUrl   string
+	ArgocdIngressUrl string
 
 	LocalMetaphorDev      string
 	LocalMetaphorGoDev    string
@@ -77,7 +82,7 @@ type Config struct {
 	LocalMetaphorGoProd    string
 	LocalMetaphorFrontProd string
 
-	GitHubPersonalAccessToken string `env:"KUBEFIRST_GITHUB_AUTH_TOKEN"`
+	GithubToken string `env:"GITHUB_TOKEN"`
 }
 
 // ReadConfig - load default values from kubefirst installer
@@ -128,9 +133,9 @@ func ReadConfig() *Config {
 	config.MetaphorTemplateURL = "https://github.com/kubefirst/metaphor-template.git"
 	config.GitopsTemplateURL = "https://github.com/kubefirst/gitops-template-gh.git"
 	// Local Configs URL
-	config.LocalArgoWorkflowsURL = "http://localhost:2746"
-	config.LocalVaultURL = "http://localhost:8200"
-	config.LocalArgoURL = "http://localhost:8080"
+	config.ArgoWorkflowsLocalUrl = "http://localhost:2746"
+	config.VaultLocalUrl = "http://localhost:8200"
+	config.ArgocdLocalUrl = "http://localhost:8080"
 	config.LocalAtlantisURL = "http://localhost:4141"
 	config.LocalChartmuseumURL = "http://localhost:8181"
 
