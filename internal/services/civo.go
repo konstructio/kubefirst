@@ -1,10 +1,8 @@
 package services
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 
@@ -30,9 +28,8 @@ func NewCivoService(httpClient pkg.HTTPDoer) *CivoService {
 	}
 }
 
-// ListKubernetesClusters lists the kubernetes clusters in the account
-// todo break out kubefirst check
-func (service CivoService) ListKubernetesClusters(civoApiKey string) error {
+// ListKubernetesClusters is used to verify authentication of the provided CIVO_TOKEN value
+func (service CivoService) ListKubernetesClusters(civoApiKey, clusterName string) (int, error) {
 
 	req, err := http.NewRequest(http.MethodGet, "https://api.civo.com/v2/kubernetes/clusters", nil)
 	if err != nil {
@@ -44,31 +41,13 @@ func (service CivoService) ListKubernetesClusters(civoApiKey string) error {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return errors.New("unable to authenticate with the civo")
+		return 0, errors.New("unable to authenticate with the civo")
 	}
 
-	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return errors.New("error reading body")
-	}
+	return res.StatusCode, nil
 
-	var civoClusterList CivoClusterList
-	err = json.Unmarshal(body, &civoClusterList)
-	if err != nil {
-		log.Println(err)
-	}
-	if len(civoClusterList.Items) != 0 {
-		for _, cluster := range civoClusterList.Items {
-			if cluster.Name == "kubefirst" {
-				return errors.New("a cluster with the name `kubefirst` already exists,\nplease provide the --cluster-name flag")
-			}
-		}
-	}
-
-	return nil
 }
