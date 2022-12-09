@@ -138,7 +138,7 @@ func PublicKey() (*goGitSsh.PublicKeys, error) {
 	var publicKey *goGitSsh.PublicKeys
 	publicKey, err := goGitSsh.NewPublicKeys("gitClient", []byte(viper.GetString("botprivatekey")), "")
 	if err != nil {
-		return nil, err
+		log.Panic().Err(err).Msg("error: could not write to viper config")
 	}
 	return publicKey, err
 }

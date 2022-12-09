@@ -45,6 +45,8 @@ type PatchJson struct {
 	Path string `json:"path"`
 }
 
+// GetPodsByNamespace provide a namespace and returns a list v1.PodList containing the Pods data from that specific
+// namespace.
 func GetPodsByNamespace(namespace string) (*v1.PodList, error) {
 	clientset, err := GetClientSet(false)
 	if err != nil {
