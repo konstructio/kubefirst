@@ -27,36 +27,44 @@ var ArgocdSecretClient coreV1Types.SecretInterface
 type Config struct {
 	Configs struct {
 		Repositories struct {
+			SoftServeGitops struct {
+				URL string `yaml:"url,omitempty"`
+			} `yaml:"soft-serve-gitops,omitempty"`
+
+			Insecure string `json:"insecure,omitempty"`
+			Type     string `json:"type,omitempty"`
+			Name     string `json:"name,omitempty"`
+
 			RepoGitops struct {
-				URL  string `yaml:"url"`
-				Type string `yaml:"type"`
-				Name string `yaml:"name"`
-			} `yaml:"github-serve-gitops"`
-		} `yaml:"repositories"`
+				URL  string `yaml:"url,omitempty"`
+				Type string `yaml:"type,omitempty"`
+				Name string `yaml:"name,omitempty"`
+			} `yaml:"github-serve-gitops,omitempty"`
+		} `yaml:"repositories,omitempty"`
 		CredentialTemplates struct {
 			SSHCreds struct {
-				URL           string `yaml:"url"`
-				SSHPrivateKey string `yaml:"sshPrivateKey"`
-			} `yaml:"ssh-creds"`
-		} `yaml:"credentialTemplates"`
-	} `yaml:"configs"`
+				URL           string `yaml:"url,omitempty"`
+				SSHPrivateKey string `yaml:"sshPrivateKey,omitempty"`
+			} `yaml:"ssh-creds,omitempty"`
+		} `yaml:"credentialTemplates,omitempty"`
+	} `yaml:"configs,omitempty"`
 	Server struct {
-		ExtraArgs []string `yaml:"extraArgs"`
+		ExtraArgs []string `yaml:"extraArgs,omitempty"`
 		Ingress   struct {
-			Enabled     string `yaml:"enabled"`
+			Enabled     string `yaml:"enabled,omitempty"`
 			Annotations struct {
-				IngressKubernetesIoRewriteTarget   string `yaml:"ingress.kubernetes.io/rewrite-target"`
-				IngressKubernetesIoBackendProtocol string `yaml:"ingress.kubernetes.io/backend-protocol"`
-			} `yaml:"annotations"`
-			Hosts []string    `yaml:"hosts"`
-			TLS   []TLSConfig `yaml:"tls"`
-		} `yaml:"ingress"`
-	} `yaml:"server"`
+				IngressKubernetesIoRewriteTarget   string `yaml:"ingress.kubernetes.io/rewrite-target,omitempty"`
+				IngressKubernetesIoBackendProtocol string `yaml:"ingress.kubernetes.io/backend-protocol,omitempty"`
+			} `yaml:"annotations,omitempty"`
+			Hosts []string    `yaml:"hosts,omitempty"`
+			TLS   []TLSConfig `yaml:"tls,omitempty"`
+		} `yaml:"ingress,omitempty"`
+	} `yaml:"server,omitempty"`
 }
 
 type TLSConfig struct {
-	Hosts      []string `yaml:"hosts"`
-	SecretName string   `yaml:"secretName"`
+	Hosts      []string `yaml:"hosts,omitempty"`
+	SecretName string   `yaml:"secretName,omitempty"`
 }
 
 // SyncRetry tries to Sync ArgoCD as many times as requested by the attempts' parameter. On successful request, returns

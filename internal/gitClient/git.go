@@ -14,6 +14,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/kubefirst/configs"
+	internalSSH "github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/pkg"
 	cp "github.com/otiai10/copy"
 	"github.com/spf13/viper"
@@ -216,7 +217,7 @@ func PushGitopsToSoftServe() {
 		},
 	})
 
-	auth, _ := pkg.PublicKey()
+	auth, _ := internalSSH.PublicKey()
 
 	auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 

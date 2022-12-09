@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/ssh"
 	"log"
 	"net/http"
 	"os"
@@ -250,7 +251,7 @@ validated and configured.`,
 		}
 		//! tracker 5
 		log.Println("creating an ssh key pair for your new cloud infrastructure")
-		pkg.CreateSshKeyPair()
+		ssh.CreateSshKeyPair()
 		log.Println("ssh key pair creation complete")
 		progressPrinter.IncrementTracker("step-ssh", 1)
 
