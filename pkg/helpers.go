@@ -157,7 +157,6 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		} else {
 			newContents = strings.Replace(newContents, "<AWS_LIFECYCLE_NODES>", "ON_DEMAND", -1)
 		}
-		newContents = strings.Replace(newContents, "<EKS_NODE_GROUP_ARN>", eksNodeGroupArn, -1)
 
 		githubToken := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 
@@ -256,6 +255,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 
 		if kmsKeyId != "" {
 			newContents = strings.Replace(newContents, "<KMS_KEY_ID>", kmsKeyId, -1)
+			newContents = strings.Replace(newContents, "<EKS_NODE_GROUP_ARN>", eksNodeGroupArn, -1)
 		}
 		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", clusterName, -1)
 
