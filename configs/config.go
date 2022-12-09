@@ -33,7 +33,6 @@ type Config struct {
 	K1FolderPath            string
 	KubectlClientPath       string
 	KubeConfigPath          string
-	KubeConfigFolder        string
 	HelmClientPath          string
 	GitOpsRepoPath          string
 	NgrokVersion            string
@@ -56,33 +55,42 @@ type Config struct {
 
 	CertsPath string
 
-	MetaphorTemplateURL string
-	GitopsTemplateURL   string
+	MetaphorTemplateUrl string
+	GitopsTemplateUrl   string
 
-	VaultLocalUrl       string
-	VaultIngressUrl     string
-	LocalAtlantisURL    string
-	LocalChartmuseumURL string
+	//* application ingress urls
+	ArgocdLocalUrl   string
+	ArgocdIngressUrl string
 
 	ArgoWorkflowsLocalUrl   string
 	ArgoWorkflowsIngressUrl string
 
-	ArgocdLocalUrl   string
-	ArgocdIngressUrl string
+	AtlantisLocalUrl   string
+	AtlantisIngressUrl string
 
-	LocalMetaphorDev      string
-	LocalMetaphorGoDev    string
-	LocalMetaphorFrontDev string
+	ChartmuseumLocalUrl   string
+	ChartmuseumIngressUrl string
 
-	LocalMetaphorStaging      string
-	LocalMetaphorGoStaging    string
-	LocalMetaphorFrontStaging string
+	MetaphorDevelopmentLocalUrl string
+	MetaphorStagingLocalUrl     string
+	MetaphorProductionLocalUrl  string
 
-	LocalMetaphorProd      string
-	LocalMetaphorGoProd    string
-	LocalMetaphorFrontProd string
+	MetaphorFrontendDevelopmentLocalUrl string
+	MetaphorFrontendStagingLocalUrl     string
+	MetaphorFrontendProductionLocalUrl  string
 
-	GithubToken string `env:"GITHUB_TOKEN"`
+	MetaphorGoDevelopmentLocalUrl string
+	MetaphorGoStagingLocalUrl     string
+	MetaphorGoProductionLocalUrl  string
+
+	VaultLocalUrl   string
+	VaultIngressUrl string
+
+	TerraformAwsEntrypointPath    string
+	TerraformGithubEntrypointPath string
+	TerraformUsersEntrypointPath  string
+	TerraformVaultEntrypointPath  string
+	GithubToken                   string `env:"GITHUB_TOKEN"`
 }
 
 // ReadConfig - load default values from kubefirst installer
@@ -103,22 +111,28 @@ func ReadConfig() *Config {
 	if err != nil {
 		log.Panic(err)
 	}
-
 	config.KubefirstConfigFileName = ".kubefirst"
 	config.KubefirstConfigFilePath = fmt.Sprintf("%s/%s", homePath, config.KubefirstConfigFileName)
 
+	config.GitOpsRepoPath = fmt.Sprintf("%s/gitops", config.K1FolderPath)
+
+	// todo  need to get cloudProvider but is this file
+	config.TerraformAwsEntrypointPath = fmt.Sprintf("%s/terraform/civo", config.GitOpsRepoPath)
+	config.TerraformGithubEntrypointPath = fmt.Sprintf("%s/terraform/github", config.GitOpsRepoPath)
+	config.TerraformUsersEntrypointPath = fmt.Sprintf("%s/terraform/users", config.GitOpsRepoPath)
+	config.TerraformVaultEntrypointPath = fmt.Sprintf("%s/terraform/vault", config.GitOpsRepoPath)
+	config.KubeConfigPath = fmt.Sprintf("%s/terraform/civo/kubeconfig", config.GitOpsRepoPath)
+
+	//! havent used anything below this
 	config.LocalOs = runtime.GOOS
 	config.LocalArchitecture = runtime.GOARCH
-
 	config.KubectlClientPath = fmt.Sprintf("%s/tools/kubectl", config.K1FolderPath)
-	config.KubeConfigPath = fmt.Sprintf("%s/gitops/terraform/base/kubeconfig", config.K1FolderPath)
-	config.KubeConfigFolder = fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
-	config.GitOpsRepoPath = fmt.Sprintf("%s/gitops", config.K1FolderPath)
 	config.NgrokClientPath = fmt.Sprintf("%s/tools/ngrok", config.K1FolderPath)
 	config.TerraformClientPath = fmt.Sprintf("%s/tools/terraform", config.K1FolderPath)
 	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
 	config.K3dPath = fmt.Sprintf("%s/tools/k3d", config.K1FolderPath)
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
+
 	config.NgrokVersion = "v3"
 	config.TerraformVersion = "1.0.11"
 	config.ArgoCDChartHelmVersion = "4.10.5"
@@ -128,28 +142,29 @@ func ReadConfig() *Config {
 	config.KubectlVersionM1 = "v1.21.14"
 	config.K3dVersion = "v5.4.6"
 
+	//! cleanup below this line?
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
-	config.MetaphorTemplateURL = "https://github.com/kubefirst/metaphor-template.git"
-	config.GitopsTemplateURL = "https://github.com/kubefirst/gitops-template-gh.git"
+	config.MetaphorTemplateUrl = "https://github.com/kubefirst/metaphor-template.git"
+	config.GitopsTemplateUrl = "https://github.com/kubefirst/gitops-template-gh.git"
 	// Local Configs URL
 	config.ArgoWorkflowsLocalUrl = "http://localhost:2746"
 	config.VaultLocalUrl = "http://localhost:8200"
 	config.ArgocdLocalUrl = "http://localhost:8080"
-	config.LocalAtlantisURL = "http://localhost:4141"
-	config.LocalChartmuseumURL = "http://localhost:8181"
+	config.AtlantisLocalUrl = "http://localhost:4141"
+	config.ChartmuseumLocalUrl = "http://localhost:8181"
 
-	config.LocalMetaphorDev = "http://localhost:3000"
-	config.LocalMetaphorGoDev = "http://localhost:5000"
-	config.LocalMetaphorFrontDev = "http://localhost:4000"
+	config.MetaphorDevelopmentLocalUrl = "http://localhost:3000"
+	config.MetaphorGoDevelopmentLocalUrl = "http://localhost:5000"
+	config.MetaphorFrontendDevelopmentLocalUrl = "http://localhost:4000"
 
-	config.LocalMetaphorStaging = "http://localhost:3001"
-	config.LocalMetaphorGoStaging = "http://localhost:5001"
-	config.LocalMetaphorFrontStaging = "http://localhost:4001"
+	config.MetaphorStagingLocalUrl = "http://localhost:3001"
+	config.MetaphorGoStagingLocalUrl = "http://localhost:5001"
+	config.MetaphorFrontendStagingLocalUrl = "http://localhost:4001"
 
-	config.LocalMetaphorProd = "http://localhost:3002"
-	config.LocalMetaphorGoProd = "http://localhost:5002"
-	config.LocalMetaphorFrontProd = "http://localhost:4002"
+	config.MetaphorProductionLocalUrl = "http://localhost:3002"
+	config.MetaphorGoProductionLocalUrl = "http://localhost:5002"
+	config.MetaphorFrontendProductionLocalUrl = "http://localhost:4002"
 
 	// If the AWS_SDK_LOAD_CONFIG environment variable is set to a truthy value the shared config file (~/.aws/config)
 	// will also be loaded in addition to the shared credentials file (~/.aws/credentials).
