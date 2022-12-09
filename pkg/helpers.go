@@ -150,6 +150,13 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_TAG>", "0.36", -1)
 		}
 
+		nodes_spot := viper.GetBool("aws.nodes_spot")
+		if nodes_spot {
+			newContents = strings.Replace(newContents, "<AWS_LIFECYCLE_NODES>", "SPOT", -1)
+		} else {
+			newContents = strings.Replace(newContents, "<AWS_LIFECYCLE_NODES>", "ON_DEMAND", -1)
+		}
+
 		githubToken := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 
 		//todo: get from viper
