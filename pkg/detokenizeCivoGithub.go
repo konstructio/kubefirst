@@ -55,6 +55,7 @@ func DetokenizeDirectoryCivoGithub(path string, fi os.FileInfo, err error) error
 		clusterName := viper.GetString("cluster-name")
 		githubHost := viper.GetString("github.host")
 		githubOwner := viper.GetString("github.owner")
+		githubUser := viper.GetString("github.user")
 		kubefirstStateStoreBucket := viper.GetString("kubefirst.state-store.bucket")
 
 		//! computed
@@ -111,6 +112,7 @@ func DetokenizeDirectoryCivoGithub(path string, fi os.FileInfo, err error) error
 		//! registry
 		newContents = strings.Replace(newContents, "<GITHUB_HOST>", githubHost, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_OWNER>", githubOwner, -1)
+		newContents = strings.Replace(newContents, "<GITHUB_USER>", githubUser, -1)
 		newContents = strings.Replace(newContents, "<GITOPS_REPO_ATLANTIS_WEBHOOK_URL>", atlantisWebhookUrl, -1)
 		newContents = strings.Replace(newContents, "<GITOPS_REPO_GIT_URL>", gitopsGitUrl, -1)
 		newContents = strings.Replace(newContents, "<GITOPS_REPO_NO_HTTPS_URL>", gitopsNoHttpsUrl, -1)

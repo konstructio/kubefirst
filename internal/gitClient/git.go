@@ -508,8 +508,6 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 // CloneBranchSetMain clone a branch and returns a pointer to git.Repository
 func CloneBranchSetMain(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
 
-	log.Printf("git cloning by branch, branch: %s", configs.K1Version)
-
 	repo, err := CloneBranch(repoURL, repoLocalPath, branch)
 	if err != nil {
 		return nil, err
@@ -547,6 +545,7 @@ func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repo
 
 // SetToMainBranch point branch or tag to main
 func SetToMainBranch(repo *git.Repository) (*git.Repository, error) {
+	log.Printf("setting repository branch to main")
 	w, _ := repo.Worktree()
 	branchName := plumbing.NewBranchReferenceName("main")
 	headRef, err := repo.Head()
