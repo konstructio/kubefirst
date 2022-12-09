@@ -23,42 +23,46 @@ var K1Version = DefaultK1Version
 // Config host application configuration
 // todo: some of these values can be moved to the .env
 type Config struct {
-	LocalOs           string
-	LocalArchitecture string
-	InstallerEmail    string
+	InstallerEmail string
 
+	ClusterName             string `env:"CLUSTER_NAME"`
+	GitOpsRepoPath          string
 	KubefirstLogPath        string `env:"KUBEFIRST_LOG_PATH" envDefault:"logs"`
 	KubefirstConfigFileName string
 	KubefirstConfigFilePath string
 	K1FolderPath            string
-	KubectlClientPath       string
+	K1ToolsPath             string
 	KubeConfigPath          string
-	HelmClientPath          string
-	GitOpsRepoPath          string
-	NgrokVersion            string
-	NgrokClientPath         string
-	TerraformClientPath     string
-	K3dPath                 string
+	KubeConfigFolder        string
 
-	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
-	ClusterName    string `env:"CLUSTER_NAME"`
+	LocalOs           string
+	LocalArchitecture string
+
+	CertsPath string
+
+	HelmClientPath string
+	HelmVersion    string
+
+	K3dClientPath string
+	K3dVersion    string
+
+	KubectlVersion    string `env:"KUBECTL_VERSION" envDefault:"v1.20.0"`
+	KubectlVersionM1  string
+	KubectlClientPath string
+
+	NgrokVersion    string
+	NgrokClientPath string
+
+	TerraformClientPath string
+	TerraformVersion    string
+
+	// todo remove cloud specific values from generic config
 	AwsRegion      string `env:"AWS_REGION"`
-
-	K3dVersion       string
-	KubectlVersion   string `env:"KUBECTL_VERSION" envDefault:"v1.20.0"`
-	KubectlVersionM1 string
-	TerraformVersion string
-	HelmVersion      string
+	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
 
 	ArgoCDChartHelmVersion   string
 	ArgoCDInitValuesYamlPath string
 
-	CertsPath string
-
-	MetaphorTemplateUrl string
-	GitopsTemplateUrl   string
-
-	//* application ingress urls
 	ArgocdLocalUrl   string
 	ArgocdIngressUrl string
 
@@ -115,23 +119,19 @@ func ReadConfig() *Config {
 	config.KubefirstConfigFilePath = fmt.Sprintf("%s/%s", homePath, config.KubefirstConfigFileName)
 
 	config.GitOpsRepoPath = fmt.Sprintf("%s/gitops", config.K1FolderPath)
-
-	// todo  need to get cloudProvider but is this file
-	config.TerraformAwsEntrypointPath = fmt.Sprintf("%s/terraform/civo", config.GitOpsRepoPath)
-	config.TerraformGithubEntrypointPath = fmt.Sprintf("%s/terraform/github", config.GitOpsRepoPath)
-	config.TerraformUsersEntrypointPath = fmt.Sprintf("%s/terraform/users", config.GitOpsRepoPath)
-	config.TerraformVaultEntrypointPath = fmt.Sprintf("%s/terraform/vault", config.GitOpsRepoPath)
+	config.K1ToolsPath = fmt.Sprintf("%s/tools", config.K1FolderPath)
+	config.KubeConfigFolder = fmt.Sprintf("%s/terraform/civo", config.GitOpsRepoPath) // civo cant be hardcoded anywhere
 	config.KubeConfigPath = fmt.Sprintf("%s/terraform/civo/kubeconfig", config.GitOpsRepoPath)
 
 	//! havent used anything below this
+	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.LocalOs = runtime.GOOS
 	config.LocalArchitecture = runtime.GOARCH
-	config.KubectlClientPath = fmt.Sprintf("%s/tools/kubectl", config.K1FolderPath)
-	config.NgrokClientPath = fmt.Sprintf("%s/tools/ngrok", config.K1FolderPath)
-	config.TerraformClientPath = fmt.Sprintf("%s/tools/terraform", config.K1FolderPath)
-	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
-	config.K3dPath = fmt.Sprintf("%s/tools/k3d", config.K1FolderPath)
-	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
+	config.HelmClientPath = fmt.Sprintf("%s/helm", config.K1ToolsPath)
+	config.K3dClientPath = fmt.Sprintf("%s/k3d", config.K1ToolsPath)
+	config.KubectlClientPath = fmt.Sprintf("%s/kubectl", config.K1ToolsPath)
+	config.NgrokClientPath = fmt.Sprintf("%s/ngrok", config.K1ToolsPath)
+	config.TerraformClientPath = fmt.Sprintf("%s/terraform", config.K1ToolsPath)
 
 	config.NgrokVersion = "v3"
 	config.TerraformVersion = "1.0.11"
@@ -145,8 +145,6 @@ func ReadConfig() *Config {
 	//! cleanup below this line?
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
-	config.MetaphorTemplateUrl = "https://github.com/kubefirst/metaphor-template.git"
-	config.GitopsTemplateUrl = "https://github.com/kubefirst/gitops-template-gh.git"
 	// Local Configs URL
 	config.ArgoWorkflowsLocalUrl = "http://localhost:2746"
 	config.VaultLocalUrl = "http://localhost:8200"

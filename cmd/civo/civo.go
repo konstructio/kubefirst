@@ -3,6 +3,7 @@ package civo
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -44,9 +45,12 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	printConfirmationScreen()
 	fmt.Println("proceeding with cluster create")
 
+	//! viper config variables
 	civoDnsName := viper.GetString("civo.dns")
 	gitopsTemplateBranch := viper.GetString("template-repo.gitops.branch")
 	gitopsTemplateUrl := viper.GetString("template-repo.gitops.url")
+	cloudProvider := viper.GetString("cloud-provider")
+	gitProvider := viper.GetString("git-provider")
 	silentMode := false // todo fix
 	dryRun := false     // todo fix
 
@@ -83,19 +87,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		//* step 2
 		// adjust content in gitops repository
-		opt := cp.Options{
-			Skip: func(src string) (bool, error) {
-				if strings.HasSuffix(src, ".git") {
-					return true, nil
-				} else if strings.Index(src, "/.terraform") > 0 {
-					return true, nil
-				}
-				//Add more stuff to be ignored here
-				return false, nil
-
-			},
-		}
-
 		// clear out the root of `gitops-template` once we move
 		// all the content we only remove the different root folders
 		os.RemoveAll(config.GitOpsRepoPath + "/components")
@@ -109,7 +100,19 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		os.RemoveAll(config.GitOpsRepoPath + "/atlantis.yaml")
 		os.RemoveAll(config.GitOpsRepoPath + "/logo.png")
 
-		driverContent := fmt.Sprintf("%s/%s-%s", config.GitOpsRepoPath, viper.GetString("cloud-provider"), viper.GetString("git-provider"))
+		driverContent := fmt.Sprintf("%s/%s-%s", config.GitOpsRepoPath, cloudProvider, gitProvider)
+		opt := cp.Options{
+			Skip: func(src string) (bool, error) {
+				if strings.HasSuffix(src, ".git") {
+					return true, nil
+				} else if strings.Index(src, "/.terraform") > 0 {
+					return true, nil
+				}
+				//Add more stuff to be ignored here
+				return false, nil
+
+			},
+		}
 		err := cp.Copy(driverContent, config.GitOpsRepoPath, opt)
 		if err != nil {
 			log.Println("Error populating gitops with local setup:", err)
@@ -164,9 +167,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Println("already completed gitops repo generation - continuing")
 	}
 
-	log.Println("yep - done init and appply")
-	os.Exit(1)
-
 	// todo move this above the cloud, its fast and easy
 	executionControl := viper.GetBool("terraform.github.apply.complete")
 	// create github teams in the org and gitops repo
@@ -174,15 +174,28 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("Creating github resources with terraform", silentMode)
 
 		tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
-		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
+		tfEnvs := map[string]string{}
+		tfEnvs = terraform.CivoTerraformEnvs(tfEnvs)
+		tfEnvs = terraform.GithubTerraformEnvs(tfEnvs)
+		//* debug
+		log.Println("tf env vars: ", tfEnvs)
+		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+		if err != nil {
+			return errors.New(fmt.Sprintf("error creating github with terraform %s : %s", tfEntrypoint, err))
+		}
 
-		pkg.InformUser(fmt.Sprintf("Created gitops Repo in github.com/%s", viper.GetString("github.owner")), silentMode)
+		pkg.InformUser(fmt.Sprintf("Created git repositories in github.com/%s", viper.GetString("github.owner")), silentMode)
 		progressPrinter.IncrementTracker("step-github", 1)
 	} else {
 		log.Println("already created github terraform resources")
 	}
+	// todo  need to get cloudProvider but is this file
+	//! terraform entrypoints
+	// config.GitOpsRepoPath + "/terraform/civo"
+	// config.GitOpsRepoPath + "/terraform/users"
+	// config.GitOpsRepoPath + "/terraform/vault"
 
-	return nil
+	return errors.New("NO ERROR - we made it to the end, next item")
 }
 
 func waitForEnter(r io.Reader) error {

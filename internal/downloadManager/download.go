@@ -34,11 +34,11 @@ func DownloadLocalTools(config *configs.Config) error {
 		config.LocalOs,
 		config.LocalArchitecture,
 	)
-	err = downloadFile(config.K3dPath, k3dDownloadUrl)
+	err = downloadFile(config.K3dClientPath, k3dDownloadUrl)
 	if err != nil {
 		return err
 	}
-	err = os.Chmod(config.K3dPath, 0755)
+	err = os.Chmod(config.K3dClientPath, 0755)
 	if err != nil {
 		return err
 	}
