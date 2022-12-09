@@ -531,7 +531,7 @@ func CloneBranchSetMain(repoURL string, repoLocalPath string, branch string) (*g
 // CloneBranch clone a branch and returns a pointer to git.Repository
 func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
 
-	log.Printf("git cloning by branch, branch: %s", configs.K1Version)
+	log.Printf("git cloning by branch, branch: %s", branch)
 
 	repo, err := git.PlainClone(repoLocalPath, false, &git.CloneOptions{
 		URL:           repoURL,

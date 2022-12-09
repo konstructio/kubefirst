@@ -11,14 +11,17 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
+	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
+	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
+	cp "github.com/otiai10/copy"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -42,7 +45,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	fmt.Println("proceeding with cluster create")
 
 	civoDnsName := viper.GetString("civo.dns")
+	gitopsTemplateBranch := viper.GetString("template-repo.gitops.branch")
+	gitopsTemplateUrl := viper.GetString("template-repo.gitops.url")
 	silentMode := false // todo fix
+	dryRun := false     // todo fix
 
 	//* emit cluster install started
 	if useTelemetryFlag {
@@ -72,9 +78,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		//* step 1
 		pkg.InformUser("generating your new gitops repository", silentMode)
-
-		gitopsRepoDir := fmt.Sprintf("%s/%s", config.K1FolderPath, "gitops")
-		gitClient.CloneRepo(gitopsTemplateUrl, gitopsTemplateBranch, gitopsRepoDir)
+		gitClient.CloneBranchSetMain(gitopsTemplateUrl, config.GitOpsRepoPath, gitopsTemplateBranch)
 		log.Println("gitops repository creation complete")
 
 		//* step 2
@@ -94,19 +98,19 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		// clear out the root of `gitops-template` once we move
 		// all the content we only remove the different root folders
-		os.RemoveAll(gitopsRepoDir + "/components")
-		os.RemoveAll(gitopsRepoDir + "/localhost")
-		os.RemoveAll(gitopsRepoDir + "/registry")
-		os.RemoveAll(gitopsRepoDir + "/validation")
-		os.RemoveAll(gitopsRepoDir + "/terraform")
-		os.RemoveAll(gitopsRepoDir + "/.gitignore")
-		os.RemoveAll(gitopsRepoDir + "/LICENSE")
-		os.RemoveAll(gitopsRepoDir + "/README.md")
-		os.RemoveAll(gitopsRepoDir + "/atlantis.yaml")
-		os.RemoveAll(gitopsRepoDir + "/logo.png")
+		os.RemoveAll(config.GitOpsRepoPath + "/components")
+		os.RemoveAll(config.GitOpsRepoPath + "/localhost")
+		os.RemoveAll(config.GitOpsRepoPath + "/registry")
+		os.RemoveAll(config.GitOpsRepoPath + "/validation")
+		os.RemoveAll(config.GitOpsRepoPath + "/terraform")
+		os.RemoveAll(config.GitOpsRepoPath + "/.gitignore")
+		os.RemoveAll(config.GitOpsRepoPath + "/LICENSE")
+		os.RemoveAll(config.GitOpsRepoPath + "/README.md")
+		os.RemoveAll(config.GitOpsRepoPath + "/atlantis.yaml")
+		os.RemoveAll(config.GitOpsRepoPath + "/logo.png")
 
-		driverContent := fmt.Sprintf("%s/%s-%s", gitopsRepoDir, viper.GetString("cloud-provider"), viper.GetString("git-provider"))
-		err := cp.Copy(driverContent, gitopsRepoDir, opt)
+		driverContent := fmt.Sprintf("%s/%s-%s", config.GitOpsRepoPath, viper.GetString("cloud-provider"), viper.GetString("git-provider"))
+		err := cp.Copy(driverContent, config.GitOpsRepoPath, opt)
 		if err != nil {
 			log.Println("Error populating gitops with local setup:", err)
 			return err
@@ -114,12 +118,12 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		os.RemoveAll(driverContent)
 
 		//* step 3 -- gitClient.CommitAndPush -- warning origin is github
-		pkg.DetokenizeV2(gitopsRepoDir)
+		pkg.DetokenizeCivoGithub(config.GitOpsRepoPath)
 
 		//* step 4 add a new remote of the github user who's token we have
-		repo, err := git.PlainOpen(gitopsRepoDir)
+		repo, err := git.PlainOpen(config.GitOpsRepoPath)
 		if err != nil {
-			log.Print("error opening repo at:", gitopsRepoDir)
+			log.Print("error opening repo at:", config.GitOpsRepoPath)
 		}
 		destinationGitopsRepoURL := viper.GetString("github.repo.gitops.giturl")
 		log.Printf("git remote add github %s", destinationGitopsRepoURL)
