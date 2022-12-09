@@ -227,7 +227,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// todo consider creating a bucket in civo cloud just like aws
-	executionControl = viper.GetBool("kubefirst.checks.bot.complete")
+	executionControl = viper.GetBool("kubefirst.checks.bot-setup.complete")
 	if !executionControl {
 		log.Println("creating an ssh key pair for your new cloud infrastructure")
 		sshPrivateKey, sshPublicKey, err := pkg.CreateSshKeyPair()
@@ -254,7 +254,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst.bot.private-key", sshPrivateKey)
 		viper.Set("kubefirst.bot.public-key", sshPublicKey)
 		viper.Set("kubefirst.bot.user", "kbot")
-		viper.Set("kubefirst.checks.bot.complete", true)
+		viper.Set("kubefirst.checks.bot-setup.complete", true)
 		viper.WriteConfig()
 		// todo, is this a hangover from initial gitlab? do we need this?
 		log.Println("creating argocd-init-values.yaml for initial install")
