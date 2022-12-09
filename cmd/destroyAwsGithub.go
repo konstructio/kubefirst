@@ -139,7 +139,7 @@ var destroyAwsGithubCmd = &cobra.Command{
 			if githubTfApplied {
 				informUser("terraform destroying github resources", globalFlags.SilentMode)
 				tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
-				err := terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+				err := terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint, map[string]string{})
 				if err != nil {
 					return errors.New(fmt.Sprintf("error destroying terraform at entrypoint %s : %s", tfEntrypoint, err))
 				}
