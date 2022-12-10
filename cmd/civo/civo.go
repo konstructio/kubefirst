@@ -17,7 +17,6 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
-	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
@@ -78,7 +77,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	//* git clone and detokenize the gitops repository
-	if !viper.GetBool("template-repo.gitops.cloned") {
+	if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
 
 		//* step 1
 		pkg.InformUser("generating your new gitops repository", silentMode)
@@ -175,23 +174,43 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
 		tfEnvs := map[string]string{}
-		tfEnvs = terraform.CivoTerraformEnvs(tfEnvs)
 		tfEnvs = terraform.GithubTerraformEnvs(tfEnvs)
-		//* debug
+		//* only log on debug
 		log.Println("tf env vars: ", tfEnvs)
 		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
-			return errors.New(fmt.Sprintf("error creating github with terraform %s : %s", tfEntrypoint, err))
+			return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
 		}
 
-		pkg.InformUser(fmt.Sprintf("Created git repositories in github.com/%s", viper.GetString("github.owner")), silentMode)
-		progressPrinter.IncrementTracker("step-github", 1)
+		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", viper.GetString("github.owner")), silentMode)
+		viper.Set("terraform.github.apply.complete", true)
+		viper.WriteConfig()
 	} else {
 		log.Println("already created github terraform resources")
 	}
-	// todo  need to get cloudProvider but is this file
+
+	// create civo cloud resources
+	if !viper.GetBool("terraform.civo.apply.complete") {
+		pkg.InformUser("Creating civo cloud resources with terraform", silentMode)
+
+		tfEntrypoint := config.GitOpsRepoPath + "/terraform/civo"
+		tfEnvs := map[string]string{}
+		tfEnvs = terraform.CivoTerraformEnvs(tfEnvs)
+		//* only log on debug
+		log.Println("tf env vars: ", tfEnvs)
+		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+		if err != nil {
+			return errors.New(fmt.Sprintf("error creating civo resources with terraform %s : %s", tfEntrypoint, err))
+		}
+
+		pkg.InformUser(fmt.Sprintf("Creating civo cloud resources"), silentMode)
+		viper.Set("terraform.github.apply.complete", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("already created github terraform resources")
+	}
+
 	//! terraform entrypoints
-	// config.GitOpsRepoPath + "/terraform/civo"
 	// config.GitOpsRepoPath + "/terraform/users"
 	// config.GitOpsRepoPath + "/terraform/vault"
 

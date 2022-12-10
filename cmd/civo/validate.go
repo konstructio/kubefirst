@@ -117,25 +117,31 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	pkg.InformUser("checking authentication to required providers", silentModeFlag)
-	civoToken := viper.GetString("civo.token")
-	if os.Getenv("CIVO_TOKEN") != "" {
-		civoToken = os.Getenv("CIVO_TOKEN")
-	}
 
-	if civoToken == "" {
-		fmt.Println("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security to retrieve your token\nand enter it here, then press Enter:")
-		civoToken, err := terminal.ReadPassword(0)
-		if err != nil {
-			return errors.New("error reading password input from user")
+	executionControl := viper.GetBool("kubefirst.checks.civo.complete")
+	if !executionControl {
+		civoToken := viper.GetString("civo.token")
+		if os.Getenv("CIVO_TOKEN") != "" {
+			civoToken = os.Getenv("CIVO_TOKEN")
 		}
-		viper.Set("civo.token", string(civoToken))
+
+		if civoToken == "" {
+			fmt.Println("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security to retrieve your token\nand enter it here, then press Enter:")
+			civoToken, err := terminal.ReadPassword(0)
+			if err != nil {
+				return errors.New("error reading password input from user")
+			}
+
+			os.Setenv("CIVO_TOKEN", string(civoToken))
+			log.Printf("CIVO_TOKEN set - continuing")
+		}
+		viper.Set("kubefirst.checks.civo.complete", true)
 		viper.WriteConfig()
-		os.Setenv("CIVO_TOKEN", string(civoToken))
-		log.Printf("CIVO_TOKEN set - continuing")
+	} else {
+		log.Println("already completed civo token check - continuing")
 	}
 
-	//* github checks
-	executionControl := viper.GetBool("kubefirst.checks.github.complete")
+	executionControl = viper.GetBool("kubefirst.checks.github.complete")
 	if !executionControl {
 
 		httpClient := http.DefaultClient
@@ -256,6 +262,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst.bot.user", "kbot")
 		viper.Set("kubefirst.checks.bot-setup.complete", true)
 		viper.WriteConfig()
+		log.Println("kubefirts values and bot-setup complete")
 		// todo, is this a hangover from initial gitlab? do we need this?
 		log.Println("creating argocd-init-values.yaml for initial install")
 		//* ex: `git@github.com:kubefirst` this is allows argocd access to the github organization repositories
