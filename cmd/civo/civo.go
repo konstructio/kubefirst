@@ -203,8 +203,8 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			return errors.New(fmt.Sprintf("error creating civo resources with terraform %s : %s", tfEntrypoint, err))
 		}
 
-		pkg.InformUser(fmt.Sprintf("Creating civo cloud resources"), silentMode)
-		viper.Set("terraform.github.apply.complete", true)
+		pkg.InformUser("Created civo cloud resources", silentMode)
+		viper.Set("terraform.civo.apply.complete", true)
 		viper.WriteConfig()
 	} else {
 		log.Println("already created github terraform resources")

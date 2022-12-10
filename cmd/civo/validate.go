@@ -31,61 +31,57 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	//* get cli flag values for storage in `$HOME/.kubefirst`
 	adminEmailFlag, err := cmd.Flags().GetString("admin-email")
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 
 	cloudProviderFlag, err := cmd.Flags().GetString("cloud-provider")
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 
 	civoDnsFlag, err := cmd.Flags().GetString("dns")
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 
 	civoClusterNameFlag, err := cmd.Flags().GetString("cluster-name")
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
-	log.Println(civoClusterNameFlag)
 
 	githubOwnerFlag, err := cmd.Flags().GetString("github-owner")
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 
 	gitopsTemplateUrlFlag, err := cmd.Flags().GetString("gitops-template-url")
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 
 	gitopsTemplateBranchFlag, err := cmd.Flags().GetString("gitops-template-branch")
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
-	log.Println(gitopsTemplateBranchFlag)
 
 	gitProviderFlag, err := cmd.Flags().GetString("git-provider")
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 	kbotPasswordFlag, err := cmd.Flags().GetString("kbot-password")
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 
 	silentModeFlag, err := cmd.Flags().GetBool("silent-mode")
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
-	log.Println(silentModeFlag)
 
 	useTelemetryFlag, err := cmd.Flags().GetBool("use-telemetry")
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
-	log.Println(useTelemetryFlag)
 
 	//! hack
 	// if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
