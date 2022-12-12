@@ -1,0 +1,21 @@
+name: devrel automation
+
+on:
+    issues:
+        types: [labeled]
+
+jobs:
+    auto-assign:
+        if: ${{ github.event.label.name == 'docs' }}
+        runs-on: ubuntu-latest
+        steps:
+            - name: 'Auto-assign issues to an user'
+              uses: pozil/auto-assign-issue@v1.11.0
+              with:
+                  assignees: fharper
+
+            - name: 'Auto-assign issues to a project'
+              uses: actions/add-to-project@v0.4.0
+              with:
+                project-url: https://github.com/orgs/kubefirst/projects/2
+                github-token: ${{ secrets.KUBEFIRST_DEVREL_TOKEN }}

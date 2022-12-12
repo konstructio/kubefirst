@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"syscall"
 
@@ -36,6 +37,9 @@ var createGithubCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		// todo see if this propagates to the shell that installs argocd
+		awsProfile := viper.GetString("aws.profile")
+		os.Setenv("AWS_PROFILE", awsProfile)
 
 		progressPrinter.SetupProgress(4, globalFlags.SilentMode)
 
