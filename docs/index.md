@@ -4,7 +4,7 @@ The Kubefirst Platform now supports 3 installation types
 
 ## Kubefirst Local (GitHub Only)
 
-This is the fastest way to check otu the kubefirst platform. This installation type will automatically create a local k3d cluster on your laptop, put a gitops repository in your personal GitHub account, and bootstrap the local cluster against that new repository. You will be able to run gitops deployments, build images, publish helm charts, and even run automated infrastructure as code, all without a cloud account or a domain requirement.
+This is the fastest way to check out the kubefirst platform. This installation type will automatically create a local k3d cluster on your laptop, put a gitops repository in your personal GitHub account, and bootstrap the local cluster against that new repository. You will be able to run gitops deployments, build images, publish helm charts, and even run automated infrastructure as code, all without a cloud account or a domain requirement.
 
 ## Kubefirston AWS (GitHub or GitLab)
 
