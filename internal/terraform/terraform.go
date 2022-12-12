@@ -160,18 +160,17 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		log.Println("keyid is:", keyId)
 		viper.Set("vault.kmskeyid", keyId)
 
+		var terraformNodeArnOutput bytes.Buffer
 		k = exec.Command(config.TerraformClientPath, "output", "eks_node_role_arn")
-		k.Stdout = &terraformOutput
+		k.Stdout = &terraformNodeArnOutput
 		k.Stderr = os.Stderr
 		errKey = k.Run()
 		if errKey != nil {
 			log.Panicf("error: terraform output failed %v", errKey)
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
-		nodeGroupArn := strings.TrimSpace(terraformOutput.String())
+		nodeGroupArn := strings.TrimSpace(terraformNodeArnOutput.String())
 		nodeGroupArn = nodeGroupArn[1 : len(nodeGroupArn)-1]
-		log.Println("nodeGroupArn is:", nodeGroupArn)
-		viper.Set("aws.node-group-arn", nodeGroupArn)
 		viper.Set("create.terraformapplied.base", true)
 		viper.WriteConfig()
 		pkg.Detokenize(fmt.Sprintf("%s/gitops", config.K1FolderPath))
