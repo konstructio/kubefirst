@@ -29,6 +29,18 @@ nav:
     - index.md
     - Kubefirst Platform:
       - Overview: 'kubefirst/overview.md'
+      - Local Installation:
+        - Install: 'kubefirst/local/install.md'
+        - After Install: 'kubefirst/local/after-install.md'
+        - GitHub Repositories: 'kubefirst/local/github-repositories.md'
+        - Argo CD: 'kubefirst/local/argocd.md'
+        - GitOps: 'kubefirst/local/gitops.md' 
+        - Terraform & Atlantis: 'kubefirst/local/terraform.md'
+        - Vault: 'kubefirst/local/vault.md'
+        - Metaphor: 'common/metaphor.md'
+        - Credit: 'kubefirst/local/credit.md'
+        - Destroy: 'kubefirst/local/destroy.md'
+        - FAQ: 'kubefirst/github/faq.md'
       - GitHub Installation:
         - Install: 'kubefirst/github/install.md'
         - After Install: 'kubefirst/github/after-install.md'
@@ -69,7 +81,7 @@ nav:
           # - Page: gitlab
           # - Page: vault
         - Vault: 'kubefirst/github/vault.md'
-        - Metaphors: 'common/metaphors.md'
+        - Metaphor: 'common/metaphor.md'
         - Certificates: 'common/certificates.md'
         - Security: 'common/security.md'
           # in 1.9, vault will be our new idp and oidc provider, docs
@@ -136,7 +148,7 @@ nav:
           # - Page: gitlab
           # - Page: vault
         - Vault: 'kubefirst/gitlab/vault.md'
-        - Metaphors: 'common/metaphors.md'
+        - Metaphor: 'common/metaphor.md'
         - Certificates: 'common/certificates.md'
         - Security: 'common/security.md'
           # in 1.9, vault will be our new idp and oidc provider, docs

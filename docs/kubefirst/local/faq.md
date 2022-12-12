@@ -2,11 +2,13 @@
 
 ## I ran into an issue, what should I try?
 
-If an error occurrs during install or uninstall, you can often just run the command again. There's a `~/.kubefirst` file on your localhost that keeps track of your execution state. If rerunning doesn't work, move on to the next step.
+The `kubefirst local` command is demanding on the localhost. It creates a multinode local k3d kubernetes cluster and deploys a lot of content to the cluster. Please consider extending as much local resources to your local docker runtime as you have space for.
+
+If an error occurrs during `kubefirst local` or `kubefirst cluster destroy`, you can often just run the command again. There's a `~/.kubefirst` file on your localhost that keeps track of your execution state. If rerunning doesn't work, move on to the next step.
 
 ## I ran into an issue and rerunning didin't help, what should I try now?
 
-There's a log file that gets printed right after the `kubefirst local` command starts. This log file will often destribe the details of what happened at the point of failure, and can help indicate the right steps for resolution.
+There's a log file that gets printed right after the `kubefirst local` command starts. This log file will often describe the details of what happened at the point of failure, and can help indicate the right steps for resolution.
 
 ## I checked the logs and still can't figure out what to do next - what now?
 

@@ -1,20 +1,23 @@
 # Choose your adventure
 
-To try kubefirst locally with no costs, check out our new `kubefirst local` command here:
-[https://kubefirst.io/blog/kubefirst-v110-release-notes](https://kubefirst.io/blog/kubefirst-v110-release-notes)
+The Kubefirst Platform now supports 3 installation types
 
-The kubefirst platform now supports both the [GitHub](https://www.github.com) and [GitLab](https://www.gitlab.com) Git providers. 
-The Git provider you choose will host the code for you applications, your new gitops repository, and will be fully configured through that gitops repository with some new Terraform that will manage your team and user access to the system.
+## Kubefirst Local (GitHub Only)
 
-If you choose **GitLab**, your Git Provider will be self-hosted, meaning Kubefirst will install **GitLab** into your newly created kubernetes
-cluster. If you choose **GitHub**, the Kubefirst platform will leverage the free **GitHub** system at github.com.
+This is the fastest way to check otu the kubefirst platform. This installation type will automatically create a local k3d cluster on your laptop, put a gitops repository in your personal GitHub account, and bootstrap the local cluster against that new repository. You will be able to run gitops deployments, build images, publish helm charts, and even run automated infrastructure as code, all without a cloud account or a domain requirement.
+
+## Kubefirston AWS (GitHub or GitLab)
+
+Our AWS cloud platform supports both [GitHub](https://www.github.com) and [GitLab](https://www.gitlab.com) as git providers. 
+
+If you choose **GitLab**, your Git Provider will be self-hosted, meaning Kubefirst will install **GitLab** into your newly created kubernetes cluster. If you choose **GitHub**, the Kubefirst platform will leverage the free **GitHub** system at github.com.
 
 <center>
 
-|                                Kubefirst with GitHub                                 |                          Kubefirst with Self Hosted GitLab                           |
-|:------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------:|
-| [![GitHub](./img/kubefirst/icons/github-200x200.png)](./kubefirst/github/install.md) | [![GitLab](./img/kubefirst/icons/gitlab-200x200.png)](./kubefirst/gitlab/install.md) |
- |                    [Team Octocat!](./kubefirst/github/install.md)                    |                    [Team Tanuki!](./kubefirst/gitlab/install.md)                     |
+|                                Kubefirst Local                                       |                                Kubefirst with GitHub                                 |                          Kubefirst with Self Hosted GitLab                           |
+|:------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------:|
+|  [![Kubefirst](./img/kubefirst/icons/k-ray.png)](./kubefirst/local/install.md)   | [![GitHub](./img/kubefirst/icons/github-200x200.png)](./kubefirst/github/install.md) | [![GitLab](./img/kubefirst/icons/gitlab-200x200.png)](./kubefirst/gitlab/install.md) |
+|                     [Team K-Ray!](./kubefirst/local/install.md)                      |                    [Team Octocat!](./kubefirst/github/install.md)                    |                    [Team Tanuki!](./kubefirst/gitlab/install.md)                     |
 
 </center>
 

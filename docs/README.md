@@ -12,21 +12,11 @@ docker run --rm -it -p 8000:8000 -v ${PWD}:/docs squidfunk/mkdocs-material
 
 ### publishing to preprod (temp docs)
 
-```
-# confirm aws config pointed at mgmt account
+merging docs changes to the main branch will automatically kick off a publish to preprod using the [Publish Docs](https://github.com/kubefirst/kubefirst/actions/workflows/publish-docs.yaml) action.
+[https://docs.kubefirst.com/preprod/index.html](https://docs.kubefirst.com/preprod/index.html)
 
-pip3 install mkdocs mkdocs-material
-rm -rf ./dist
-mkdocs build --no-directory-urls -d dist
-aws s3 sync dist s3://docs.kubefirst.com/preprod --delete
-aws cloudfront create-invalidation --distribution-id E1DXWJ8ITAKV61 --paths "/preprod/*"
-# https://docs.kubefirst.com/preprod/index.html
-```
 
 ### promote to prod
-```
-aws s3 sync dist s3://docs.kubefirst.com --delete
-aws s3 sync dist s3://docs.kubefirst.com/preprod --delete # prod deploy blows away preprod
-aws cloudfront create-invalidation --distribution-id E1DXWJ8ITAKV61 --paths "/*"
-# https://docs.kubefirst.com/index.html
-```
+
+after confirming there are no rendering issues in preprod, run the github action [Promote Docs To Prod](https://github.com/kubefirst/kubefirst/actions/workflows/promote-docs-to-prod.yaml) to update the live site.
+[https://docs.kubefirst.com/index.html](https://docs.kubefirst.com/index.html)

@@ -15,11 +15,6 @@ The benefit of defining your desired state in a declarative way in Git is enormo
 - Creating new environments is as straight-forward as duplicating directory structures.
 - Having everything declared in the GitOps repo means everyone can agree to the source of truth for every version of every app.
 
-## See How Rollbacks Work
-<div class="video-wrapper">
-  <iframe width="1280" height="500" src="https://www.youtube.com/embed/iqZA9Eycvgo" frameborder="0" allowfullscreen></iframe>
-</div>
-
 ## Pipelines
 
 ![](../../img/kubefirst/gitops/gitops-cicd.png)
@@ -32,7 +27,7 @@ Once the release is ready, the release chart is published and delivered to produ
 
 ## GitHub Integration with Argo Workflows
 
-![](../../img/kubefirst/gitops/gitlab-workflows-integration.png)
+![](../../img/kubefirst/local/github-argo-workflow.png)
 
 The integration that we've established between GitHub and Argo Workflows will surface your powerful Argo Workflows engine directly in GitHub Actions, so that your developers have all of the workflow execution information available, directly associated with their commit in their application repository.
 

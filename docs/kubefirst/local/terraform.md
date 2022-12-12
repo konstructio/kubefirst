@@ -16,8 +16,4 @@ The apply results will be added to your pull request comments by atlantis.
 If the apply is successful, your code will automatically be merged with master, your merge request will be closed, and the state lock will be removed in atlantis.
 
 ## Managing Terraform State
-Your terraform state is stored in an s3 bucket named `k1-state-store-xxxxxx`.
-
-The s3 bucket implements versioning, so if your terraform state store ever gets corrupted, you can roll it back to a previous state without too much trouble.
-
-Note that terraform at times needs to store secrets in your state store, and therefore access to this s3 bucket should be restricted to only the administrators who need it.
+Your terraform state is stored in a local bucket in minio that simulates s3 in a bucket named `kubefirst-state-store`.

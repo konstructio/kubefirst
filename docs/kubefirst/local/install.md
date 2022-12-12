@@ -2,7 +2,7 @@
 
 **Kubefirst** is the name of our command line tool that installs the Kubefirst platform to your local or cloud environment.
 
-![](../../img/kubefirst/github/kubefirst-cluster-create-github.png)
+![](../../img/kubefirst/local/kubefirst-cluster-create.png)
 
 ### Step 1 - Download (or upgrade) the kubefirst CLI
 

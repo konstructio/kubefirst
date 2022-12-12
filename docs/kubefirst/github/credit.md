@@ -26,10 +26,9 @@ site: [https://external-secrets.io/](https://external-secrets.io/)
 site: [https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions)
 
 ### summerwind/actions-runner
-
 site: [https://hub.docker.com/r/summerwind/actions-runner](https://hub.docker.com/r/summerwind/actions-runner)
 
-### Ingress-NGINX
+### Ingress-Nginx
 site: [https://kubernetes.github.io/ingress-nginx/](https://kubernetes.github.io/ingress-nginx/)
 
 available annotations: [https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/)
@@ -38,12 +37,6 @@ available annotations: [https://kubernetes.github.io/ingress-nginx/user-guide/ng
 site: [https://kubernetes.io/](https://kubernetes.io/)
 
 training: [https://kubernetes.io/training/](https://kubernetes.io/training/)
-
-### Material for MkDocs
-site: [https://squidfunk.github.io/mkdocs-material](https://squidfunk.github.io/mkdocs-material)
-
-### Soft Serve
-code: [https://github.com/charmbracelet/soft-serve](https://github.com/charmbracelet/soft-serve)
 
 ### Terraform
 site: [https://www.terraform.io/](https://www.terraform.io/)

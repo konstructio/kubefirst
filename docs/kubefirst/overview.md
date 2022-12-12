@@ -26,7 +26,7 @@ to run. Removal of this infrastructure is also automated with a single `kubefirs
 Once you run `cluster create` command at the end of the installation will open a new browser tab with the Console UI at
 `http://localhost:9094` to provide you a dashboard to navigate through the different services that were previsioned.
 
-![console ui](../img/kubefirst/console-ui.png)
+![console ui](../img/kubefirst/github/console.png)
 
 ## Destroying
 

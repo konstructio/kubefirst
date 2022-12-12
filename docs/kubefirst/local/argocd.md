@@ -8,15 +8,15 @@ Argo CD is really great at providing a straightforward mechanism for you to mana
 
 ## Managing Apps in ArgoCD
 
-Our Kubernetes apps can be found in our `gitops` repository at path `/registry`.
+The configuration for all of your k3d cluster kubernetes apps can be found in your new `gitops` repository at path `/registry`.
 
-![](../../img/kubefirst/gitops/registry.png)
+![](../../img/kubefirst/local/gitops-registry.png)
 
-Each of these yaml files will include details regarding the application's source, destination, and Helm configuration overrides.
+Each of these yaml files will include details regarding the application's source, destination, and helm configuration overrides.
 
 ## Applying changes in ArgoCD
 
-Once you change the desired state of the app in the `gitops` repository `main` branch, the registered app-of-apps will sync, and any apps that need adjustment will automatically sync with the state that's in git. 
+Once you change the desired state of the app in the `gitops` repository `main` branch, the registered app-of-apps will sync, and any apps in kubernetes that need adjustment will automatically sync with the state that's in git. 
 
 ## Adding applications to ArgoCD
 

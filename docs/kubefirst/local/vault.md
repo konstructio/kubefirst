@@ -1,16 +1,16 @@
 # Vault
 
-[Vault](https://www.vaultproject.io/) is an open source secrets manager and identity provider created by hashicorp. It runs in Kubernetes with a [DynamoDB](https://aws.amazon.com/dynamodb/) backend that's encrypted with KMS with point in time recovery enabled.
+[Vault](https://www.vaultproject.io/) is an open source secrets manager and identity provider created by hashicorp. Usually it runs in Kubernetes with a [DynamoDB](https://aws.amazon.com/dynamodb/) backend that's encrypted with KMS with point in time recovery enabled, but for local it's backed by a local s3-like backend in minio.
 
 ## Authentication Backends
 
-Your infrastructure will be set up with Vault running in the EKS cluster. It will come with multiple Authentication Backends enabled.
+Your cluster will be set up with Vault running in the k3d cluster. The only backend enabled on the local cluster is the one that provides access to secrets from external-secrets-operator.
 
 ### Token authentication
 
-Your first login to Vault will be with the root token that is provided to you at the end of your kubefirst cluster create. This root token has full administrative permission throughout Vault.
+Your first login to Vault will be with the root token that is provided to you at the end of your `kubefirst local` command. This root token has full administrative permission throughout Vault.
 
-To log in with the root token, find the `vault.token` field in your `~/.kubefirst` file and copy the value that starts with `hvs.`. Then navigate to your vault instance in your browser, select `Token` and paste the token in the password field.
+To log in with the root token, navigate to your vault instance in your browser from console, select `Token` and paste the root token in the password field.
 
 ![](../../img/kubefirst/vault/token-login.png)
 

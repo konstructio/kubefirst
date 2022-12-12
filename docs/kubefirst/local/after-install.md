@@ -1,20 +1,17 @@
 # After Install
 
-[//]: # (`todo: need new getting started video for github`)
+[//]: # (`todo: need new getting started video for github local`)
 
 [//]: # (<iframe width="784" height="441" src="https://www.youtube.com/embed/KEUOaNMUqOM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>)
 
-**psssst** *- if you plan to destroy your kubefirst platform and recreate it again we recommend running `kubefirst backupSSL --include-metaphor` to re-use your ssl certs from Let's Encrypt. See the [docs](https://docs.kubefirst.io/common/certificates.html#backup-and-restore-certificates).*
+The `kubefirst local` execution includes important information toward the end, including URLs and passwords to get to your port-forwarded applications. The applications are available while the handoff screen remains active. If you ever need to reconnect to all of your services, you can do so with a kubefirst
 
-The `kubefirst cluster create` execution includes important information toward the end, including URLs and passwords. Please save this information! 
-
-You now have an EKS cluster with the following content installed in it:
+You now have a k3d cluster with the following content installed in it:
 
 | Application                  | Description                                                                |
 |------------------------------|----------------------------------------------------------------------------|
-| Nginx Ingress Controller     | Ingress Controller                                                         |
+| Traefik Ingress Controller   | Native k3d Ingress Controller                                              |
 | Cert Manager                 | Certificate Automation Utility                                             |
-| Certificate Issuers          | Let's Encrypt browser-trusted certificates                                 |
 | Argo CD                      | GitOps Continuous Delivery                                                 |
 | Argo Workflows               | Application Continuous Integration                                         |
 | GitHub Action Runner         | GitHub CI Executor                                                         |
@@ -22,33 +19,27 @@ You now have an EKS cluster with the following content installed in it:
 | Atlantis                     | Terraform Workflow Automation                                              |
 | External Secrets             | Syncs Kubernetes secrets with Vault secrets                                |
 | Chart Museum                 | Helm Chart Registry                                                        |
-| Metaphor JS API              | (development, staging, production) instance of sample application          |
-| Metaphor Go API              | (development, staging, production) instance of sample go application       |
-| Metaphor Frontend            | (development, staging, production) instance of sample frontend application |
+| Metaphor                     | (development, staging, production) instance of sample nodejs backend app   |
+| Metaphor Go                  | (development, staging, production) instance of sample golang backend app   |
+| Metaphor Frontend            | (development, staging, production) instance of sample react frontend app   |
 
 - These apps are all managed by Argo CD and the app configurations are in the `gitops` repo's `registry` folder.
 - The AWS infrastructure is terraform - that's also in your `gitops` repo, but in your `terraform` folder.
 
-![](../../img/kubefirst/getting-started/gitops-assets.png)
-
 ## Step 1: Console UI
 
-Once you run the `cluster create` command at the end of the installation will open a new browser tab with the Console UI at
-`http://localhost:9094` to provide you a dashboard to navigate through the different services that were provisioned.
+![terminal handoff](../..//img/kubefirst/local/console.png)
 
-![console ui](../../img/kubefirst/console-ui.png)
+The `kubefirst local` command will open a new browser tab at completion with the Console UI at
+`http://localhost:9094` to provide you an easy way to navigate through the different services that were provisioned. This connection leverages your port-forwards which the `kubefirst local` command keeps open through the handoff screen shown here:
 
-![terminal handoff](../../img/kubefirst/getting-started/cluster-create-result.png)
+![terminal handoff](../../img/kubefirst/local/handoff-screen.png)
 
-These are **not your personal credentials**. These are administrator credentials that can be used if you ever need to 
-authenticate and administer your tools if your OIDC provider ever becomes unavailable. Please protect these secrets and 
-store them in a safe place.
+If you cancel this command and lose these connection, you can reestablish this connectivity using the command `kubefirst local connect`.
 
-## Step 2: Add Your Team
+## Step 2: Make your first automated Terraform change
 
-Log into GitLab using the root credentials that were provided to you in your terminal.
-
-Once logged in, navigate to the `gitops` project and edit the file `terraform/users/admin.tf`. In this file, you'll see some blocks that represent admin users:
+Go to your new gitops repository in your personal GitHub. Navigate to the `gitops` project and edit the file `terraform/users/admin.tf`. In this file, you'll see some blocks that represent admin users:
 
 ```
 module "admin_one" {
@@ -83,19 +74,19 @@ Any new users you have created through this process will have their temporary in
 
 ## Step 3: Deliver Metaphor to Development, Staging, and Production
 
-Metaphor is our sample application that we use to demonstrate parts of the platform and to test CI changes. It's the other project in the Kubefirst group in GitLab.
+The Metaphor suite is a set of sample applications that we use to demonstrate parts of the platform and to test CI changes.
 
-If you visit its `.gitlab-ci.yml` in the metaphor repo root, you'll see it's sending some workflows to argo. Those workflows are also in the `metaphor` repo in the `.argo` directory.
+If you visit its `/.github/workflows/main.yaml` in one of the metaphor repos, you'll see it's just sending some workflows to argo workflows in your local k3d cluster. Those argo workflows are also in the `metaphor` repos in the `.argo` directory.
 
-The metaphor pipeline will:
+The example delivery pipeline will:
 
-- Publish the metaphor container to your private ECR.
+- Publish the metaphor container to your private github.
 - add the metaphor image to a release candidate helm chart and publish it to chartmuseum
-- set the metaphor with the desired Helm chart version in the GitOps repo for development. Staging
+- set the metaphor with the desired Helm chart version in the GitOps repo for development and staging
 - the release stage of the pipeline will republish the chart, this time without the release candidate notation making it an officially released version and prepare the metaphor application chart for the next release version
 - the officially released chart will be set as the desired Helm chart for production.
 
-To watch this pipeline occur, make any change to the `main` branch of the `metaphor` repo. If you're not feeling creative, we put a file at `.argo/ci-files/trigger.txt` that you can use. Once a file in `main` is changed, navigate to metaphor's CI/CD in GitLab to see the workflows get submitted to Argo workflows.
+To watch this pipeline occur, make any change to the `main` branch of one of the `metaphor` repos. If you're not feeling creative, you can just add a newline to the `README.md`. Once a file in `main` is changed, navigate to metaphor's CI/CD in the github Actions tab to see the workflows get submitted to Argo workflows.
 
 You can visit the metaphor development, staging, and production apps in your browser to see the versions change as you complete resources and ArgoCD syncs the apps. The metaphor URLs can be found in your GitOps and metaphor project `README.md` files.
 
