@@ -27,11 +27,7 @@ Once the release is ready, the release chart is published and delivered to produ
 
 ## GitHub Integration with Argo Workflows
 
-![](../../img/todo.jpeg)
-
-`todo: need new image for github integration`
-
-![](../../img/kubefirst/gitops/gitlab-workflows-integration.png)
+![](../../img/kubefirst/local/github-argo-workflow.png)
 
 The integration that we've established between GitHub and Argo Workflows will surface your powerful Argo Workflows engine directly in GitHub Actions, so that your developers have all of the workflow execution information available, directly associated with their commit in their application repository.
 
@@ -50,24 +46,5 @@ Our implementation includes GitOps patterns for numerous source types including:
 The metaphor example application includes an example of how easy it is to set different configuration overrides for your different environments.
 
 To see what it takes to make the `development` instance of `metaphor` different than the others, visit the `gitops` repo and navigate to `/components/development/metaphor/values.yaml`
-
-```yaml
-metaphor:
-  ingress:
-    enabled: true
-    annotations:
-      kubernetes.io/ingress.class: nginx
-      cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    hosts:
-      - host: metaphor-development.your-company.io
-        paths:
-          - /
-    tls:
-    - secretName: metaphor-tls
-      hosts:
-        - metaphor-development.your-company.io
-  vaultMountPoint: kubefirst
-  vaultSecretPath: development/metaphor
-```
 
 Any Helm value that should deviate from the default chart can be set here so your environment overrides are always concise and clear.
