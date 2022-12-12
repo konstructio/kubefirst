@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,6 +58,18 @@ type PortForwardAServiceRequest struct {
 	ReadyCh chan struct{}
 }
 
+func PortForwardPodWithRetry(clientset *kubernetes.Clientset, req PortForwardAPodRequest) error {
+	for i := 0; i < 10; i++ {
+		err := PortForwardPod(clientset, req)
+		if err == nil {
+			return nil
+		}
+		time.Sleep(20 * time.Second)
+	}
+	return fmt.Errorf("not able to open port-forward")
+
+}
+
 // PortForwardPod receives a PortForwardAPodRequest, and enable port forward for the specified resource. If the provided
 // Pod name matches a running Pod, it will try to port forward for that Pod on the specified port.
 func PortForwardPod(clientset *kubernetes.Clientset, req PortForwardAPodRequest) error {
@@ -75,7 +88,11 @@ func PortForwardPod(clientset *kubernetes.Clientset, req PortForwardAPodRequest)
 			break
 		}
 	}
-
+	if runningPod == nil {
+		return fmt.Errorf("error reading pod details")
+	}
+	log.Println("Namespace for PF", runningPod.Namespace)
+	log.Println("Name for PF", runningPod.Name)
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", runningPod.Namespace, runningPod.Name)
 	hostIP := strings.TrimLeft(req.RestConfig.Host, "htps:/")
 
