@@ -53,7 +53,7 @@ func NewCommand() *cobra.Command {
 		PostRunE: runPostLocal,
 	}
 
-	localCmd.Flags().BoolVar(&useTelemetry, "use-telemetry", true, "installer will not send telemetry about this installation")
+	localCmd.Flags().BoolVar(&useTelemetry, "use-telemetry", true, "installer won't send telemetry data if --use-telemetry=false is set")
 	localCmd.Flags().BoolVar(&dryRun, "dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	localCmd.Flags().BoolVar(&silentMode, "silent", false, "enable silentMode mode will make the UI return less content to the screen")
 	localCmd.Flags().BoolVar(&enableConsole, "enable-console", true, "If hand-off screen will be presented on a browser UI")
