@@ -132,7 +132,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubRepoHost := viper.GetString("github.host")
 		githubRepoOwner := viper.GetString("github.owner")
 		githubOrg := viper.GetString("github.owner")
-		githubUser := viper.GetString("github.user")
+		githubUser := strings.ToLower(viper.GetString("github.user"))
 		useTelemetry := viper.GetString("use-telemetry")
 		machineId := viper.GetString("machineid")
 
