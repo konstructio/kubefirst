@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/ssh"
 	"net/http"
 	"time"
 
@@ -75,7 +76,6 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	viper.Set("vault.local.service", pkg.VaultLocalURLTLS)
 	viper.Set("use-telemetry", useTelemetry)
 
-
 	go pkg.RunNgrok(context.TODO())
 
 	// addons
@@ -145,7 +145,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.IncrementTracker("step-download", 1)
 
 	log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
-	pkg.CreateSshKeyPair()
+	ssh.CreateSshKeyPair()
 	log.Info().Msg("ssh key pair creation complete")
 	progressPrinter.IncrementTracker("step-ssh", 1)
 

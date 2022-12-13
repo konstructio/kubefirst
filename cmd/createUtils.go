@@ -85,37 +85,47 @@ func waitVaultToBeRunning(dryRun bool) {
 		return
 	}
 	token := viper.GetString("vault.token")
-	if len(token) == 0 {
-		config := configs.ReadConfig()
-		x := 50
-		for i := 0; i < x; i++ {
-			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/vault")
-			if err != nil {
-				log.Warn().Err(err).Msg("Waiting vault to be born")
-				time.Sleep(10 * time.Second)
-			} else {
-				log.Info().Msg("vault namespace found, continuing")
-				time.Sleep(25 * time.Second)
-				break
-			}
+	if len(token) > 0 {
+		log.Info().Msg("Vault token exists, skipping Vault health checks")
+		return
+	}
+
+	// waits for Vault Namespace
+	x := 50
+	for i := 0; i < x; i++ {
+		isVaultPodCreated, err := k8s.IsNamespaceCreated("vault")
+		if !isVaultPodCreated {
+			log.Warn().Err(err).Msg("waiting Vault to be born")
+			time.Sleep(10 * time.Second)
+			continue
+		}
+		log.Info().Msg("vault namespace found, continuing")
+		time.Sleep(25 * time.Second)
+		break
+	}
+
+	// waits for Vault Pod
+	x = 50
+	for i := 0; i < x; i++ {
+		clientset, err := k8s.GetClientSet(dryRun)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
+		vaultPodInterface := clientset.CoreV1().Pods("vault")
+		vaultPodName := k8s.GetPodNameByLabel(vaultPodInterface, "app.kubernetes.io/instance=vault")
+
+		if len(vaultPodName) == 0 {
+			log.Warn().Err(err).Msg("waiting Vault Pod to be created...")
+			time.Sleep(10 * time.Second)
+			continue
 		}
 
-		//! failing
-		x = 50
-		for i := 0; i < x; i++ {
-			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "get", "pods", "-l", "app.kubernetes.io/instance=vault")
-			if err != nil {
-				log.Warn().Err(err).Msg("Waiting vault pods to create")
-				time.Sleep(10 * time.Second)
-			} else {
-				log.Info().Msg("vault pods found, continuing")
-				time.Sleep(15 * time.Second)
-				break
-			}
-		}
-	} else {
-		log.Info().Msg("vault token arleady exists, skipping vault health checks waitVaultToBeRunning")
+		log.Warn().Msg("Vault Pod found, continuing...")
+		log.Warn().Msg("waiting Vault Pod to be running...")
+		time.Sleep(10 * time.Second)
+		break
 	}
+
 }
 
 // deprecated

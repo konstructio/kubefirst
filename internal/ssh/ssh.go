@@ -1,4 +1,4 @@
-package pkg
+package ssh
 
 import (
 	"crypto/rand"
@@ -6,16 +6,17 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"github.com/rs/zerolog/log"
-	"os"
-	"strings"
-
 	"github.com/caarlos0/sshmarshal"
 	goGitSsh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
+	"gopkg.in/yaml.v2"
+	"os"
 )
 
 func CreateSshKeyPair() {
@@ -59,40 +60,52 @@ func CreateSshKeyPair() {
 	publicKey = viper.GetString("botpublickey")
 
 	// todo: break it into smaller function
-	if viper.GetString("gitprovider") != CloudK3d {
+	if viper.GetString("gitprovider") != pkg.CloudK3d {
 
 		config := configs.ReadConfig()
 		privateKey := viper.GetString("botprivatekey")
 
-		var argocdInitValuesYaml = []byte(fmt.Sprintf(`
-configs:
- repositories:
-   soft-serve-gitops:
-	 url: ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops
-	 insecure: 'true'
-	 type: gitClient
-	 name: soft-serve-gitops
- credentialTemplates:
-   ssh-creds:
-	 url: ssh://soft-serve.soft-serve.svc.cluster.local:22
-	 sshPrivateKey: |
-	   %s
-`, strings.ReplaceAll(privateKey, "\n", "\n        ")))
+		argoCDConfig := argocd.Config{}
+		argoCDConfig.Configs.Repositories.SoftServeGitops.URL = "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops"
+		argoCDConfig.Configs.Repositories.SoftServeGitops.Insecure = "true"
+		argoCDConfig.Configs.Repositories.SoftServeGitops.Type = "gitClient"
+		argoCDConfig.Configs.Repositories.SoftServeGitops.Name = "soft-serve-gitops"
+		argoCDConfig.Configs.CredentialTemplates.SSHCreds.URL = "ssh://soft-serve.soft-serve.svc.cluster.local:22"
+		argoCDConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = privateKey
 
-		err := os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
+		argoData, err := yaml.Marshal(&argoCDConfig)
+		if err != nil {
+			log.Panic().Err(err).Msg("")
+		}
+
+		err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoData, 0644)
 		if err != nil {
 			log.Panic().Msgf("error: could not write argocd-init-values.yaml %s", err)
 		}
 	}
 }
 
-func PublicKey() (*goGitSsh.PublicKeys, error) {
-	var publicKey *goGitSsh.PublicKeys
-	publicKey, err := goGitSsh.NewPublicKeys("gitClient", []byte(viper.GetString("botprivatekey")), "")
+// generateGitHubKeys generate Public and Private ED25519 keys for GitHub.
+func generateGitHubKeys() (string, string, error) {
+	pubKey, privKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
-	return publicKey, err
+
+	ecdsaPublicKey, err := ssh.NewPublicKey(pubKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	pemPrivateKey, err := sshmarshal.MarshalPrivateKey(privKey, "kubefirst key")
+	if err != nil {
+		return "", "", err
+	}
+
+	privateKey := string(pem.EncodeToMemory(pemPrivateKey))
+	publicKey := string(ssh.MarshalAuthorizedKey(ecdsaPublicKey))
+
+	return publicKey, privateKey, nil
 }
 
 // generateGitLabKeys generate public and private keys to be consumed by GitLab. Private Key is encrypted using RSA key with
@@ -121,41 +134,11 @@ func generateGitLabKeys() (string, string, error) {
 	return publicKey, privateKey, nil
 }
 
-// generateGitHubKeys generate Public and Private ED25519 keys for GitHub.
-func generateGitHubKeys() (string, string, error) {
-	pubKey, privKey, err := ed25519.GenerateKey(rand.Reader)
+func PublicKey() (*goGitSsh.PublicKeys, error) {
+	var publicKey *goGitSsh.PublicKeys
+	publicKey, err := goGitSsh.NewPublicKeys("gitClient", []byte(viper.GetString("botprivatekey")), "")
 	if err != nil {
-		return "", "", err
+		log.Panic().Err(err).Msg("error: could not write to viper config")
 	}
-
-	ecdsaPublicKey, err := ssh.NewPublicKey(pubKey)
-	if err != nil {
-		return "", "", err
-	}
-
-	pemPrivateKey, err := sshmarshal.MarshalPrivateKey(privKey, "kubefirst key")
-	if err != nil {
-		return "", "", err
-	}
-
-	privateKey := string(pem.EncodeToMemory(pemPrivateKey))
-	publicKey := string(ssh.MarshalAuthorizedKey(ecdsaPublicKey))
-
-	return publicKey, privateKey, nil
-}
-
-// todo: function not in use, can we remove it?
-func ModConfigYaml() {
-
-	file, err := os.ReadFile("./config.yaml")
-	if err != nil {
-		log.Error().Err(err).Msg("error reading file")
-	}
-
-	newFile := strings.Replace(string(file), "allow-keyless: false", "allow-keyless: true", -1)
-
-	err = os.WriteFile("./config.yaml", []byte(newFile), 0)
-	if err != nil {
-		log.Panic().Msg("error: could not write to viper config")
-	}
+	return publicKey, err
 }

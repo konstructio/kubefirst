@@ -27,36 +27,42 @@ var ArgocdSecretClient coreV1Types.SecretInterface
 type Config struct {
 	Configs struct {
 		Repositories struct {
+			SoftServeGitops struct {
+				URL      string `yaml:"url,omitempty"`
+				Insecure string `json:"insecure,omitempty"`
+				Type     string `json:"type,omitempty"`
+				Name     string `json:"name,omitempty"`
+			} `yaml:"soft-serve-gitops,omitempty"`
 			RepoGitops struct {
-				URL  string `yaml:"url"`
-				Type string `yaml:"type"`
-				Name string `yaml:"name"`
-			} `yaml:"github-serve-gitops"`
-		} `yaml:"repositories"`
+				URL  string `yaml:"url,omitempty"`
+				Type string `yaml:"type,omitempty"`
+				Name string `yaml:"name,omitempty"`
+			} `yaml:"github-serve-gitops,omitempty"`
+		} `yaml:"repositories,omitempty"`
 		CredentialTemplates struct {
 			SSHCreds struct {
-				URL           string `yaml:"url"`
-				SSHPrivateKey string `yaml:"sshPrivateKey"`
-			} `yaml:"ssh-creds"`
-		} `yaml:"credentialTemplates"`
-	} `yaml:"configs"`
+				URL           string `yaml:"url,omitempty"`
+				SSHPrivateKey string `yaml:"sshPrivateKey,omitempty"`
+			} `yaml:"ssh-creds,omitempty"`
+		} `yaml:"credentialTemplates,omitempty"`
+	} `yaml:"configs,omitempty"`
 	Server struct {
-		ExtraArgs []string `yaml:"extraArgs"`
+		ExtraArgs []string `yaml:"extraArgs,omitempty"`
 		Ingress   struct {
-			Enabled     string `yaml:"enabled"`
+			Enabled     string `yaml:"enabled,omitempty"`
 			Annotations struct {
-				IngressKubernetesIoRewriteTarget   string `yaml:"ingress.kubernetes.io/rewrite-target"`
-				IngressKubernetesIoBackendProtocol string `yaml:"ingress.kubernetes.io/backend-protocol"`
-			} `yaml:"annotations"`
-			Hosts []string    `yaml:"hosts"`
-			TLS   []TLSConfig `yaml:"tls"`
-		} `yaml:"ingress"`
-	} `yaml:"server"`
+				IngressKubernetesIoRewriteTarget   string `yaml:"ingress.kubernetes.io/rewrite-target,omitempty"`
+				IngressKubernetesIoBackendProtocol string `yaml:"ingress.kubernetes.io/backend-protocol,omitempty"`
+			} `yaml:"annotations,omitempty"`
+			Hosts []string    `yaml:"hosts,omitempty"`
+			TLS   []TLSConfig `yaml:"tls,omitempty"`
+		} `yaml:"ingress,omitempty"`
+	} `yaml:"server,omitempty"`
 }
 
 type TLSConfig struct {
-	Hosts      []string `yaml:"hosts"`
-	SecretName string   `yaml:"secretName"`
+	Hosts      []string `yaml:"hosts,omitempty"`
+	SecretName string   `yaml:"secretName,omitempty"`
 }
 
 // SyncRetry tries to Sync ArgoCD as many times as requested by the attempts' parameter. On successful request, returns
@@ -94,6 +100,58 @@ func SyncRetry(httpClient pkg.HTTPDoer, attempts int, interval int, applicationN
 		time.Sleep(time.Duration(interval) * time.Second)
 	}
 	return false, nil
+}
+
+func RefreshApplication(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) {
+
+	url := fmt.Sprintf("%s/api/v1/applications?refresh=true", viper.GetString("argocd.local.service"))
+	log.Debug().Msg(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", argoCDToken))
+	res, err := httpClient.Do(req)
+	if err != nil {
+		log.Error().Err(err).Msgf("error sending GET request to ArgoCD for refreshing application (%s)", applicationName)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		log.Info().Msgf("ArgoCD Sync response http code is: %d", res.StatusCode)
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+	}
+	log.Debug().Msg(string(body))
+}
+
+func ListApplications(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) {
+
+	url := fmt.Sprintf("%s/api/v1/applications", viper.GetString("argocd.local.service"))
+	log.Debug().Msg(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", argoCDToken))
+	res, err := httpClient.Do(req)
+	if err != nil {
+		log.Printf("error sending GET request to ArgoCD for refreshing application (%s)\n", applicationName)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		log.Printf("ArgoCD Sync response http code is: %d", res.StatusCode)
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+	}
+	log.Debug().Msg(string(body))
 }
 
 // Sync request ArgoCD to manual sync an application.
