@@ -100,8 +100,8 @@ const (
 	KubefirstConsolePodPort       = 80
 	KubefirstConsolePodLocalPort  = 9094
 	KubefirstConsoleLocalURLCloud = "http://localhost:9094"
-	KubefirstConsoleLocalURL      = "http://kubefirst-console.localdev.me"
-	KubefirstConsoleLocalURLTLS   = "https://kubefirst-console.localdev.me"
+	KubefirstConsoleLocalURL      = "http://kubefirst.localdev.me"
+	KubefirstConsoleLocalURLTLS   = "https://kubefirst.localdev.me"
 )
 
 // Atlantis
