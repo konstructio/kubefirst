@@ -17,7 +17,7 @@ type GlobalFlags struct {
 
 // DefineGlobalFlags - Define global flags
 func DefineGlobalFlags(currentCommand *cobra.Command) {
-	currentCommand.Flags().Bool("use-telemetry", true, "installer will not send telemetry about this installation")
+	currentCommand.Flags().Bool("use-telemetry", true, "installer won't send telemetry data if --use-telemetry=false is set")
 	currentCommand.Flags().Bool("dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	currentCommand.Flags().Bool("silent", false, "enable silent mode will make the UI return less content to the screen")
 	currentCommand.Flags().StringP("config", "c", "", "File to be imported to bootstrap configs")
