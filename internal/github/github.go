@@ -48,6 +48,7 @@ func ApplyGitHubTerraform(dryRun bool) {
 	}
 	os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 	viper.Set("github.terraformapplied.gitops", true)
+	viper.Set("terraform.github.apply.complete", true)
 	viper.WriteConfig()
 }
 
@@ -87,6 +88,7 @@ func DestroyGitHubTerraform(dryRun bool) {
 	}
 	os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 	viper.Set("github.terraformapplied.gitops", true)
+	viper.Set("terraform.github.apply.complete", true)
 	viper.WriteConfig()
 }
 
