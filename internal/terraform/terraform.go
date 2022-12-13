@@ -171,6 +171,8 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 		nodeGroupArn := strings.TrimSpace(terraformNodeArnOutput.String())
 		nodeGroupArn = nodeGroupArn[1 : len(nodeGroupArn)-1]
+		log.Println("nodeGroupArn is:", nodeGroupArn)
+		viper.Set("aws.node-group-arn", nodeGroupArn)
 		viper.Set("create.terraformapplied.base", true)
 		viper.WriteConfig()
 		pkg.Detokenize(fmt.Sprintf("%s/gitops", config.K1FolderPath))
