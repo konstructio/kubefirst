@@ -12,10 +12,11 @@ docker run --rm -it -p 8000:8000 -v ${PWD}:/docs squidfunk/mkdocs-material
 2. click <http://localhost:8000>
 3. edit your Markdown documentation in your favorite editor and get realtime feedback
 
-## publishing to preprod (temp docs)
+merging docs changes to the main branch will automatically kick off a publish to preprod using the [Publish Docs](https://github.com/kubefirst/kubefirst/actions/workflows/publish-docs.yaml) action.
+[https://docs.kubefirst.com/preprod/index.html](https://docs.kubefirst.com/preprod/index.html)
 
-Once the modifications are merged in the `main` branch, a [GitHub Action](https://github.com/kubefirst/kubefirst/blob/main/.github/workflows/publish-docs.yaml) will build, and publish it automatically on the [documentation prepod site](https://docs.kubefirst.com/preprod/). Please ask [@fharper](https://github.com/fharper) for access.
 
-## promote to prod
+### promote to prod
 
-Once you are happy with your changes in prepod, you need to manually run the [Promote Docs To Prod GitHub Action](https://github.com/kubefirst/kubefirst/actions/workflows/promote-docs-to-prod.yaml).
+after confirming there are no rendering issues in preprod, run the github action [Promote Docs To Prod](https://github.com/kubefirst/kubefirst/actions/workflows/promote-docs-to-prod.yaml) to update the live site.
+[https://docs.kubefirst.com/index.html](https://docs.kubefirst.com/index.html)
