@@ -737,7 +737,11 @@ func GetCertificateAppList() []CertificateAppList {
 		},
 		{
 			Namespace: "kubefirst",
-			AppName:   "kubefirst-console",
+			AppName:   "kubefirst",
+		},
+		{
+			Namespace: "development",
+			AppName:   "metaphor-slim",
 		},
 	}
 
