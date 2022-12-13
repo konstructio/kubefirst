@@ -151,7 +151,7 @@ func OpenPortForwardPodWrapper(podName string, namespace string, podPort int, po
 	clientset, err := GetClientSet(false)
 
 	go func() {
-		err = PortForwardPod(clientset, portForwardRequest)
+		err = PortForwardPodWithRetry(clientset, portForwardRequest)
 		if err != nil {
 			log.Error().Err(err).Msg("")
 		}

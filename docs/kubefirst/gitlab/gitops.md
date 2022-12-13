@@ -15,11 +15,6 @@ The benefits of defining your desired state in a declarative way in git is enorm
 - creating new environments is as straight-forward as duplicating directory structures
 - having everything declared in the gitops repo means everyone can agree to the source of truth for every version of every app
 
-## See How Rollbacks Work
-<div class="video-wrapper">
-  <iframe width="1280" height="500" src="https://www.youtube.com/embed/iqZA9Eycvgo" frameborder="0" allowfullscreen></iframe>
-</div>
-
 ## Pipelines
 
 ![](../../img/kubefirst/gitops/gitops-cicd.png)
