@@ -105,36 +105,36 @@ func SyncRetry(httpClient pkg.HTTPDoer, attempts int, interval int, applicationN
 func RefreshApplication(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) {
 
 	url := fmt.Sprintf("%s/api/v1/applications?refresh=true", viper.GetString("argocd.local.service"))
-	log.Println(url)
+	log.Debug().Msg(url)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", argoCDToken))
 	res, err := httpClient.Do(req)
 	if err != nil {
-		log.Printf("error sending GET request to ArgoCD for refreshing application (%s)\n", applicationName)
+		log.Error().Err(err).Msgf("error sending GET request to ArgoCD for refreshing application (%s)", applicationName)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		log.Printf("ArgoCD Sync response http code is: %d", res.StatusCode)
+		log.Info().Msgf("ArgoCD Sync response http code is: %d", res.StatusCode)
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
-	log.Println(string(body))
+	log.Debug().Msg(string(body))
 }
 
 func ListApplications(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) {
 
 	url := fmt.Sprintf("%s/api/v1/applications", viper.GetString("argocd.local.service"))
-	log.Println(url)
+	log.Debug().Msg(url)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", argoCDToken))
 	res, err := httpClient.Do(req)
@@ -149,9 +149,9 @@ func ListApplications(httpClient pkg.HTTPDoer, applicationName string, argoCDTok
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
-	log.Println(string(body))
+	log.Debug().Msg(string(body))
 }
 
 // Sync request ArgoCD to manual sync an application.
