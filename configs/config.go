@@ -95,6 +95,7 @@ type Config struct {
 	TerraformUsersEntrypointPath  string
 	TerraformVaultEntrypointPath  string
 	GithubToken                   string `env:"GITHUB_TOKEN"`
+	CivoToken                     string `env:"CIVO_TOKEN"`
 }
 
 // ReadConfig - load default values from kubefirst installer

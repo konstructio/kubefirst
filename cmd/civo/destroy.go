@@ -22,13 +22,17 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	config := configs.ReadConfig()
 
 	githubToken := config.GithubToken
+	civoToken := config.CivoToken
 	if len(githubToken) == 0 {
 		return errors.New("ephemeral tokens not supported for cloud installations, please set a GITHUB_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init")
+	}
+	if len(civoToken) == 0 {
+		return errors.New("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set the environment variable")
 	}
 	// todo with these two..
 	silentMode := false
 	dryRun := false
-	if !viper.GetBool("terraform.github.apply.complete") || viper.GetBool("terraform.github.destroy.complete") {
+	if viper.GetBool("terraform.github.apply.complete") || viper.GetBool("terraform.github.destroy.complete") {
 		pkg.InformUser("destroying github resources with terraform", silentMode)
 
 		tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
@@ -45,11 +49,28 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("github resources terraform destroyed", silentMode)
 	}
 
+	if viper.GetBool("terraform.civo.apply.complete") || viper.GetBool("terraform.civo.destroy.complete") {
+		pkg.InformUser("destroying civo resources with terraform", silentMode)
+
+		tfEntrypoint := config.GitOpsRepoPath + "/terraform/civo"
+		tfEnvs := map[string]string{}
+		tfEnvs = terraform.GithubTerraformEnvs(tfEnvs)
+		err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+		if err != nil {
+			log.Printf("error executing terraform destroy %s", tfEntrypoint)
+			return err
+		}
+		viper.Set("terraform.civo.apply.complete", false)
+		viper.Set("terraform.civo.destroy.complete", true)
+		viper.WriteConfig()
+		pkg.InformUser("civo resources terraform destroyed", silentMode)
+	}
+
 	//* successful cleanup of resources means we can clean up
 	//* the ~/.k1/gitops so we can re-excute a `rebuild gitops` which would allow us
 	//* to iterate without re-downloading etc
 
-	if viper.GetBool("terraform.github.apply.complete") {
+	if !viper.GetBool("kubefirst.clean.complete") {
 
 		// delete files and folders
 		err := os.RemoveAll(config.K1FolderPath + "/gitops")
@@ -72,6 +93,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		viper.Set("template-repo.gitops.removed", true)
+		viper.Set("kubefirst.clean.complete", true)
 		viper.WriteConfig()
 	}
 

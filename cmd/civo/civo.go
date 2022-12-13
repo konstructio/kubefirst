@@ -9,26 +9,16 @@ import (
 	"log"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
-	"github.com/kubefirst/kubefirst/internal/githubWrapper"
-	"github.com/kubefirst/kubefirst/internal/helm"
-	"github.com/kubefirst/kubefirst/internal/k3d"
-	"github.com/kubefirst/kubefirst/internal/k8s"
-	"github.com/kubefirst/kubefirst/internal/metaphor"
-	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/terraform"
-	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
 	cp "github.com/otiai10/copy"
@@ -228,314 +218,314 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	// todo deconstruct CreateNamespaces / CreateSecret
 	// todo move secret structs to constants to be leveraged by either local or civo
-	executionControl = viper.GetBool("kubernetes.vault.secret.created")
-	if !executionControl {
-		err := k3d.AddK3DSecrets(dryRun)
-		if err != nil {
-			log.Println("Error AddK3DSecrets")
-			return err
-		}
-	} else {
-		log.Println("already added secrets to k3d cluster")
-	}
+	// executionControl = viper.GetBool("kubernetes.vault.secret.created")
+	// if !executionControl {
+	// 	err := k3d.AddK3DSecrets(dryRun)
+	// 	if err != nil {
+	// 		log.Println("Error AddK3DSecrets")
+	// 		return err
+	// 	}
+	// } else {
+	// 	log.Println("already added secrets to k3d cluster")
+	// }
 
-	// create argocd initial repository config
-	executionControl = viper.GetBool("argocd.initial-repository.created")
-	if !executionControl {
-		pkg.InformUser("create initial argocd repository", silentMode)
-		//Enterprise users need to be able to set the hostname for git.
-		gitopsRepo := fmt.Sprintf("git@%s:%s/gitops.git", viper.GetString("github.host"), viper.GetString("github.owner"))
-		err := argocd.CreateInitialArgoCDRepository(gitopsRepo)
-		if err != nil {
-			log.Println("Error CreateInitialArgoCDRepository")
-			return err
-		}
-	} else {
-		log.Println("already created initial argocd repository")
-	}
+	// // create argocd initial repository config
+	// executionControl = viper.GetBool("argocd.initial-repository.created")
+	// if !executionControl {
+	// 	pkg.InformUser("create initial argocd repository", silentMode)
+	// 	//Enterprise users need to be able to set the hostname for git.
+	// 	gitopsRepo := fmt.Sprintf("git@%s:%s/gitops.git", viper.GetString("github.host"), viper.GetString("github.owner"))
+	// 	err := argocd.CreateInitialArgoCDRepository(gitopsRepo)
+	// 	if err != nil {
+	// 		log.Println("Error CreateInitialArgoCDRepository")
+	// 		return err
+	// 	}
+	// } else {
+	// 	log.Println("already created initial argocd repository")
+	// }
 
-	// helm add argo repository && update
-	helmRepo := helm.HelmRepo{
-		RepoName:     pkg.HelmRepoName,
-		RepoURL:      pkg.HelmRepoURL,
-		ChartName:    pkg.HelmRepoChartName,
-		Namespace:    pkg.HelmRepoNamespace,
-		ChartVersion: pkg.HelmRepoChartVersion,
-	}
+	// // helm add argo repository && update
+	// helmRepo := helm.HelmRepo{
+	// 	RepoName:     pkg.HelmRepoName,
+	// 	RepoURL:      pkg.HelmRepoURL,
+	// 	ChartName:    pkg.HelmRepoChartName,
+	// 	Namespace:    pkg.HelmRepoNamespace,
+	// 	ChartVersion: pkg.HelmRepoChartVersion,
+	// }
 
-	executionControl = viper.GetBool("argocd.helm.repo.updated")
-	if !executionControl {
-		pkg.InformUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), silentMode)
-		helm.AddRepoAndUpdateRepo(dryRun, helmRepo)
-	}
+	// executionControl = viper.GetBool("argocd.helm.repo.updated")
+	// if !executionControl {
+	// 	pkg.InformUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), silentMode)
+	// 	helm.AddRepoAndUpdateRepo(dryRun, helmRepo)
+	// }
 
-	// helm install argocd
-	executionControl = viper.GetBool("argocd.helm.install.complete")
-	if !executionControl {
-		pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
-		helm.Install(dryRun, helmRepo)
-	}
-	progressPrinter.IncrementTracker("step-apps", 1)
+	// // helm install argocd
+	// executionControl = viper.GetBool("argocd.helm.install.complete")
+	// if !executionControl {
+	// 	pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
+	// 	helm.Install(dryRun, helmRepo)
+	// }
+	// progressPrinter.IncrementTracker("step-apps", 1)
 
-	// argocd pods are running
-	executionControl = viper.GetBool("argocd.ready")
-	if !executionControl {
-		argocd.WaitArgoCDToBeReady(dryRun)
-		pkg.InformUser("ArgoCD is running, continuing", silentMode)
-	} else {
-		log.Println("already waited for argocd to be ready")
-	}
+	// // argocd pods are running
+	// executionControl = viper.GetBool("argocd.ready")
+	// if !executionControl {
+	// 	argocd.WaitArgoCDToBeReady(dryRun)
+	// 	pkg.InformUser("ArgoCD is running, continuing", silentMode)
+	// } else {
+	// 	log.Println("already waited for argocd to be ready")
+	// }
 
-	// ArgoCD port-forward
-	argoCDStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(argoCDStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		pkg.ArgoCDPodName,
-		pkg.ArgoCDNamespace,
-		pkg.ArgoCDPodPort,
-		pkg.ArgoCDPodLocalPort,
-		argoCDStopChannel,
-	)
-	pkg.InformUser(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")), silentMode)
+	// // ArgoCD port-forward
+	// argoCDStopChannel := make(chan struct{}, 1)
+	// defer func() {
+	// 	close(argoCDStopChannel)
+	// }()
+	// k8s.OpenPortForwardPodWrapper(
+	// 	pkg.ArgoCDPodName,
+	// 	pkg.ArgoCDNamespace,
+	// 	pkg.ArgoCDPodPort,
+	// 	pkg.ArgoCDPodLocalPort,
+	// 	argoCDStopChannel,
+	// )
+	// pkg.InformUser(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")), silentMode)
 
-	// argocd pods are ready, get and set credentials
-	executionControl = viper.GetBool("argocd.credentials.set")
-	if !executionControl {
-		pkg.InformUser("Setting argocd username and password credentials", silentMode)
-		k8s.SetArgocdCreds(dryRun)
-		pkg.InformUser("argocd username and password credentials set successfully", silentMode)
+	// // argocd pods are ready, get and set credentials
+	// executionControl = viper.GetBool("argocd.credentials.set")
+	// if !executionControl {
+	// 	pkg.InformUser("Setting argocd username and password credentials", silentMode)
+	// 	k8s.SetArgocdCreds(dryRun)
+	// 	pkg.InformUser("argocd username and password credentials set successfully", silentMode)
 
-		pkg.InformUser("Getting an argocd auth token", silentMode)
-		_ = argocd.GetArgocdAuthToken(dryRun)
-		pkg.InformUser("argocd admin auth token set", silentMode)
+	// 	pkg.InformUser("Getting an argocd auth token", silentMode)
+	// 	_ = argocd.GetArgocdAuthToken(dryRun)
+	// 	pkg.InformUser("argocd admin auth token set", silentMode)
 
-		viper.Set("argocd.credentials.set", true)
-		viper.WriteConfig()
-	}
+	// 	viper.Set("argocd.credentials.set", true)
+	// 	viper.WriteConfig()
+	// }
 
-	// argocd sync registry and start sync waves
-	executionControl = viper.GetBool("argocd.registry.applied")
-	if !executionControl {
-		pkg.InformUser("applying the registry application to argocd", silentMode)
-		err := argocd.ApplyRegistryLocal(dryRun)
-		if err != nil {
-			log.Println("Error applying registry application to argocd")
-			return err
-		}
-	}
+	// // argocd sync registry and start sync waves
+	// executionControl = viper.GetBool("argocd.registry.applied")
+	// if !executionControl {
+	// 	pkg.InformUser("applying the registry application to argocd", silentMode)
+	// 	err := argocd.ApplyRegistryLocal(dryRun)
+	// 	if err != nil {
+	// 		log.Println("Error applying registry application to argocd")
+	// 		return err
+	// 	}
+	// }
 
-	progressPrinter.IncrementTracker("step-apps", 1)
+	// progressPrinter.IncrementTracker("step-apps", 1)
 
-	// vault in running state
-	executionControl = viper.GetBool("vault.status.running")
-	if !executionControl {
-		pkg.InformUser("Waiting for vault to be ready", silentMode)
-		vault.WaitVaultToBeRunning(dryRun)
-	}
+	// // vault in running state
+	// executionControl = viper.GetBool("vault.status.running")
+	// if !executionControl {
+	// 	pkg.InformUser("Waiting for vault to be ready", silentMode)
+	// 	vault.WaitVaultToBeRunning(dryRun)
+	// }
 
-	// Vault port-forward
-	vaultStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(vaultStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		pkg.VaultPodName,
-		pkg.VaultNamespace,
-		pkg.VaultPodPort,
-		pkg.VaultPodLocalPort,
-		vaultStopChannel,
-	)
+	// // Vault port-forward
+	// vaultStopChannel := make(chan struct{}, 1)
+	// defer func() {
+	// 	close(vaultStopChannel)
+	// }()
+	// k8s.OpenPortForwardPodWrapper(
+	// 	pkg.VaultPodName,
+	// 	pkg.VaultNamespace,
+	// 	pkg.VaultPodPort,
+	// 	pkg.VaultPodLocalPort,
+	// 	vaultStopChannel,
+	// )
 
-	k8s.LoopUntilPodIsReady(dryRun)
+	// k8s.LoopUntilPodIsReady(dryRun)
 
-	minioStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(minioStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		pkg.MinioPodName,
-		pkg.MinioNamespace,
-		pkg.MinioPodPort,
-		pkg.MinioPodLocalPort,
-		minioStopChannel,
-	)
+	// minioStopChannel := make(chan struct{}, 1)
+	// defer func() {
+	// 	close(minioStopChannel)
+	// }()
+	// k8s.OpenPortForwardPodWrapper(
+	// 	pkg.MinioPodName,
+	// 	pkg.MinioNamespace,
+	// 	pkg.MinioPodPort,
+	// 	pkg.MinioPodLocalPort,
+	// 	minioStopChannel,
+	// )
 
-	// todo: can I remove it?
-	time.Sleep(20 * time.Second)
+	// // todo: can I remove it?
+	// time.Sleep(20 * time.Second)
 
-	// configure vault with terraform
-	executionControl = viper.GetBool("terraform.vault.apply.complete")
-	if !executionControl {
-		// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
-		//* set known vault token
-		viper.Set("vault.token", "k1_local_vault_token")
-		viper.WriteConfig()
+	// // configure vault with terraform
+	// executionControl = viper.GetBool("terraform.vault.apply.complete")
+	// if !executionControl {
+	// 	// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
+	// 	//* set known vault token
+	// 	viper.Set("vault.token", "k1_local_vault_token")
+	// 	viper.WriteConfig()
 
-		//* run vault terraform
-		pkg.InformUser("configuring vault with terraform", silentMode)
-		tfEntrypoint := config.GitOpsRepoPath + "/terraform/vault"
-		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
+	// 	//* run vault terraform
+	// 	pkg.InformUser("configuring vault with terraform", silentMode)
+	// 	tfEntrypoint := config.GitOpsRepoPath + "/terraform/vault"
+	// 	terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
 
-		pkg.InformUser("vault terraform executed successfully", silentMode)
+	// 	pkg.InformUser("vault terraform executed successfully", silentMode)
 
-		//* create vault configurerd secret
-		// todo remove this code
-		log.Println("creating vault configured secret")
-		k8s.CreateVaultConfiguredSecret(dryRun, config)
-		pkg.InformUser("Vault secret created", silentMode)
-	} else {
-		log.Println("already executed vault terraform")
-	}
+	// 	//* create vault configurerd secret
+	// 	// todo remove this code
+	// 	log.Println("creating vault configured secret")
+	// 	k8s.CreateVaultConfiguredSecret(dryRun, config)
+	// 	pkg.InformUser("Vault secret created", silentMode)
+	// } else {
+	// 	log.Println("already executed vault terraform")
+	// }
 
-	// create users
-	executionControl = viper.GetBool("terraform.users.apply.complete")
-	if !executionControl {
-		pkg.InformUser("applying users terraform", silentMode)
+	// // create users
+	// executionControl = viper.GetBool("terraform.users.apply.complete")
+	// if !executionControl {
+	// 	pkg.InformUser("applying users terraform", silentMode)
 
-		tfEntrypoint := config.GitOpsRepoPath + "/terraform/users"
-		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
+	// 	tfEntrypoint := config.GitOpsRepoPath + "/terraform/users"
+	// 	terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
 
-		pkg.InformUser("executed users terraform successfully", silentMode)
-		// progressPrinter.IncrementTracker("step-users", 1)
-	} else {
-		log.Println("already created users with terraform")
-	}
+	// 	pkg.InformUser("executed users terraform successfully", silentMode)
+	// 	// progressPrinter.IncrementTracker("step-users", 1)
+	// } else {
+	// 	log.Println("already created users with terraform")
+	// }
 
-	pkg.InformUser("Welcome to local kubefirst experience", silentMode)
-	pkg.InformUser("To use your cluster port-forward - argocd", silentMode)
-	pkg.InformUser("If not automatically injected, your kubeconfig is at:", silentMode)
-	pkg.InformUser("k3d kubeconfig get "+viper.GetString("cluster-name"), silentMode)
-	pkg.InformUser("Expose Argo-CD", silentMode)
-	pkg.InformUser("kubectl -n argocd port-forward svc/argocd-server 8080:80", silentMode)
-	pkg.InformUser("Argo User: "+viper.GetString("argocd.admin.username"), silentMode)
-	pkg.InformUser("Argo Password: "+viper.GetString("argocd.admin.password"), silentMode)
+	// pkg.InformUser("Welcome to local kubefirst experience", silentMode)
+	// pkg.InformUser("To use your cluster port-forward - argocd", silentMode)
+	// pkg.InformUser("If not automatically injected, your kubeconfig is at:", silentMode)
+	// pkg.InformUser("k3d kubeconfig get "+viper.GetString("cluster-name"), silentMode)
+	// pkg.InformUser("Expose Argo-CD", silentMode)
+	// pkg.InformUser("kubectl -n argocd port-forward svc/argocd-server 8080:80", silentMode)
+	// pkg.InformUser("Argo User: "+viper.GetString("argocd.admin.username"), silentMode)
+	// pkg.InformUser("Argo Password: "+viper.GetString("argocd.admin.password"), silentMode)
 
-	progressPrinter.IncrementTracker("step-apps", 1)
-	progressPrinter.IncrementTracker("step-base", 1)
-	progressPrinter.IncrementTracker("step-apps", 1)
+	// progressPrinter.IncrementTracker("step-apps", 1)
+	// progressPrinter.IncrementTracker("step-base", 1)
+	// progressPrinter.IncrementTracker("step-apps", 1)
 
-	if !viper.GetBool("chartmuseum.host.resolved") {
-		// Chartmuseum port-forward
-		chartmuseumStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(chartmuseumStopChannel)
-		}()
-		k8s.OpenPortForwardPodWrapper(
-			pkg.ChartmuseumPodName,
-			pkg.ChartmuseumNamespace,
-			pkg.ChartmuseumPodPort,
-			pkg.ChartmuseumPodLocalPort,
-			chartmuseumStopChannel,
-		)
+	// if !viper.GetBool("chartmuseum.host.resolved") {
+	// 	// Chartmuseum port-forward
+	// 	chartmuseumStopChannel := make(chan struct{}, 1)
+	// 	defer func() {
+	// 		close(chartmuseumStopChannel)
+	// 	}()
+	// 	k8s.OpenPortForwardPodWrapper(
+	// 		pkg.ChartmuseumPodName,
+	// 		pkg.ChartmuseumNamespace,
+	// 		pkg.ChartmuseumPodPort,
+	// 		pkg.ChartmuseumPodLocalPort,
+	// 		chartmuseumStopChannel,
+	// 	)
 
-		pkg.AwaitHostNTimes("http://localhost:8181/health", 5, 5)
-		viper.Set("chartmuseum.host.resolved", true)
-		viper.WriteConfig()
-	} else {
-		log.Println("already resolved host for chartmuseum, continuing")
-	}
+	// 	pkg.AwaitHostNTimes("http://localhost:8181/health", 5, 5)
+	// 	viper.Set("chartmuseum.host.resolved", true)
+	// 	viper.WriteConfig()
+	// } else {
+	// 	log.Println("already resolved host for chartmuseum, continuing")
+	// }
 
-	pkg.InformUser("Deploying metaphor applications", silentMode)
-	err := metaphor.DeployMetaphorGithubLocal(dryRun, githubOwner, metaphorBranch, "")
-	if err != nil {
-		pkg.InformUser("Error deploy metaphor applications", silentMode)
-		log.Println("Error running deployMetaphorCmd")
-		log.Println(err)
-	}
+	// pkg.InformUser("Deploying metaphor applications", silentMode)
+	// err := metaphor.DeployMetaphorGithubLocal(dryRun, githubOwner, metaphorBranch, "")
+	// if err != nil {
+	// 	pkg.InformUser("Error deploy metaphor applications", silentMode)
+	// 	log.Println("Error running deployMetaphorCmd")
+	// 	log.Println(err)
+	// }
 
-	// update terraform s3 backend to internal k8s dns (s3/minio bucket)
-	err = pkg.UpdateTerraformS3BackendForK8sAddress()
-	if err != nil {
-		return err
-	}
+	// // update terraform s3 backend to internal k8s dns (s3/minio bucket)
+	// err = pkg.UpdateTerraformS3BackendForK8sAddress()
+	// if err != nil {
+	// 	return err
+	// }
 
-	// create a new branch and push changes
-	branchName := "update-s3-backend"
-	branchNameRef := plumbing.ReferenceName("refs/heads/" + branchName)
+	// // create a new branch and push changes
+	// branchName := "update-s3-backend"
+	// branchNameRef := plumbing.ReferenceName("refs/heads/" + branchName)
 
-	// force update cloned gitops-template terraform files to use Minio backend
-	err = gitClient.UpdateLocalTerraformFilesAndPush(
-		githubHost,
-		githubOwner,
-		localRepo,
-		remoteName,
-		branchNameRef,
-	)
-	if err != nil {
-		log.Println(err)
-	}
+	// // force update cloned gitops-template terraform files to use Minio backend
+	// err = gitClient.UpdateLocalTerraformFilesAndPush(
+	// 	githubHost,
+	// 	githubOwner,
+	// 	localRepo,
+	// 	remoteName,
+	// 	branchNameRef,
+	// )
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 
-	log.Println("sleeping after git commit with Minio backend update for Terraform")
-	time.Sleep(3 * time.Second)
+	// log.Println("sleeping after git commit with Minio backend update for Terraform")
+	// time.Sleep(3 * time.Second)
 
-	// create a PR, atlantis will identify it's a Terraform change/file update and trigger atlantis plan
-	// it's a goroutine since it can run in background
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		// Atlantis port-forward
-		atlantisStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(atlantisStopChannel)
-		}()
-		k8s.OpenPortForwardPodWrapper(
-			pkg.AtlantisPodName,
-			pkg.AtlantisNamespace,
-			pkg.AtlantisPodPort,
-			pkg.AtlantisPodLocalPort,
-			atlantisStopChannel,
-		)
+	// // create a PR, atlantis will identify it's a Terraform change/file update and trigger atlantis plan
+	// // it's a goroutine since it can run in background
+	// var wg sync.WaitGroup
+	// wg.Add(1)
+	// go func() {
+	// 	// Atlantis port-forward
+	// 	atlantisStopChannel := make(chan struct{}, 1)
+	// 	defer func() {
+	// 		close(atlantisStopChannel)
+	// 	}()
+	// 	k8s.OpenPortForwardPodWrapper(
+	// 		pkg.AtlantisPodName,
+	// 		pkg.AtlantisNamespace,
+	// 		pkg.AtlantisPodPort,
+	// 		pkg.AtlantisPodLocalPort,
+	// 		atlantisStopChannel,
+	// 	)
 
-		gitHubClient := githubWrapper.New()
-		err = gitHubClient.CreatePR(branchName)
-		if err != nil {
-			fmt.Println(err)
-		}
-		log.Println(`waiting "atlantis plan" to start...`)
-		time.Sleep(5 * time.Second)
+	// 	gitHubClient := githubWrapper.New()
+	// 	err = gitHubClient.CreatePR(branchName)
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// 	log.Println(`waiting "atlantis plan" to start...`)
+	// 	time.Sleep(5 * time.Second)
 
-		ok, err := gitHubClient.RetrySearchPullRequestComment(
-			githubOwner,
-			gitOpsRepo,
-			"To **apply** all unapplied plans from this pull request, comment",
-			`waiting "atlantis plan" finish to proceed...`,
-		)
-		if err != nil {
-			log.Println(err)
-		}
+	// 	ok, err := gitHubClient.RetrySearchPullRequestComment(
+	// 		githubOwner,
+	// 		gitOpsRepo,
+	// 		"To **apply** all unapplied plans from this pull request, comment",
+	// 		`waiting "atlantis plan" finish to proceed...`,
+	// 	)
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 	}
 
-		if !ok {
-			log.Println(`unable to run "atlantis plan"`)
-			wg.Done()
-			return
-		}
+	// 	if !ok {
+	// 		log.Println(`unable to run "atlantis plan"`)
+	// 		wg.Done()
+	// 		return
+	// 	}
 
-		err = gitHubClient.CommentPR(1, "atlantis apply")
-		if err != nil {
-		}
-		wg.Done()
-	}()
+	// 	err = gitHubClient.CommentPR(1, "atlantis apply")
+	// 	if err != nil {
+	// 	}
+	// 	wg.Done()
+	// }()
 
-	log.Println("sending mgmt cluster install completed metric")
+	// log.Println("sending mgmt cluster install completed metric")
 
-	if useTelemetry {
-		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted); err != nil {
-			log.Println(err)
-		}
-		progressPrinter.IncrementTracker("step-telemetry", 1)
-	}
+	// if useTelemetry {
+	// 	if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted); err != nil {
+	// 		log.Println(err)
+	// 	}
+	// 	progressPrinter.IncrementTracker("step-telemetry", 1)
+	// }
 
-	log.Println("Kubefirst installation finished successfully")
-	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
+	// log.Println("Kubefirst installation finished successfully")
+	// pkg.InformUser("Kubefirst installation finished successfully", silentMode)
 
-	// waiting GitHub/atlantis step
-	wg.Wait()
+	// // waiting GitHub/atlantis step
+	// wg.Wait()
 
-	//! terraform entrypoints
-	// config.GitOpsRepoPath + "/terraform/users"
-	// config.GitOpsRepoPath + "/terraform/vault"
+	// //! terraform entrypoints
+	// // config.GitOpsRepoPath + "/terraform/users"
+	// // config.GitOpsRepoPath + "/terraform/vault"
 
 	return errors.New("NO ERROR - we made it to the end, next item")
 }
