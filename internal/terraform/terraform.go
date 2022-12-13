@@ -166,7 +166,7 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		k.Stderr = os.Stderr
 		errKey = k.Run()
 		if errKey != nil {
-			log.Panicf("error: terraform output failed %v", errKey)
+			log.Panic().Err(err).Msg("error: terraform output failed")
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 		nodeGroupArn := strings.TrimSpace(terraformNodeArnOutput.String())
