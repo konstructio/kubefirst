@@ -4,15 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
-	"os"
-	"strings"
-
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"os"
+	"strings"
 )
 
 // cleanCmd removes all kubefirst resources created with the init command
@@ -48,6 +47,17 @@ re-create Kubefirst base files. To destroy cloud resources you need to specify a
 			return err
 		}
 
+		// remove logs folder if flag is enabled
+		var logFolderLocation string
+		if rmLogsFolder {
+			logFolderLocation = viper.GetString("logs-location")
+
+			err := os.RemoveAll(logFolderLocation)
+			if err != nil {
+				return fmt.Errorf("unable to delete %q file, error is: ", err)
+			}
+		}
+
 		// delete files and folders
 		err = os.RemoveAll(config.K1FolderPath)
 		if err != nil {
@@ -57,16 +67,6 @@ re-create Kubefirst base files. To destroy cloud resources you need to specify a
 		err = os.Remove(config.KubefirstConfigFilePath)
 		if err != nil {
 			return fmt.Errorf("unable to delete %q file, error is: ", err)
-		}
-
-		// remove logs folder if flag is enabled
-		var logFolderLocation string
-		if rmLogsFolder {
-			logFolderLocation = viper.GetString("log.folder.location")
-			err := os.RemoveAll(logFolderLocation)
-			if err != nil {
-				return fmt.Errorf("unable to delete %q file, error is: ", err)
-			}
 		}
 
 		// re-create folder
