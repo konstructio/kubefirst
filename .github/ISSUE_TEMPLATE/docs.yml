@@ -1,0 +1,42 @@
+name: Documentations
+description: Any suggestions related to the documentation, whether it's an issue, missing information, unclear steps or new page that should be created
+title: "[Docs]: "
+labels: ["docs"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out a documentation issue! If you need help, please ask your question in our [Slack community](http://kubefirst.io/slack).
+  - type: dropdown
+    id: type
+    attributes:
+      label: What type of suggestions?
+      multiple: false
+      options:
+        - Missing Information
+        - Wrong Information
+        - Unclear Documentation
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: What page is concerned?
+      description: If needed, URL to the page with missing or unclear information
+      placeholder: https://docs.kubefirst.io/
+  - type: textarea
+    id: issue
+    attributes:
+      label: What is the issue?
+      description: Give us as many details as possible about the issue with the documentation
+      placeholder: Tell us what can be improved!
+    validations:
+      required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/kubefirst/kubefirst/blob/main/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
