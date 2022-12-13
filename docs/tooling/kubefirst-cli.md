@@ -64,7 +64,7 @@ Flags:
 --template-tag string       Fallback tag used on Git clone.
 Details: If "gitops-branch" is provided, branch("gitops-branch") has precedence and the installer will attempt to clone the branch("gitops-branch") first,
 if it fails, then it will attempt to clone the tag provided at "template-tag" flag (default "1.8.6").
---use-telemetry             Installer will not send telemetry about this installation (default true).
+--use-telemetry             Installer won't send telemetry data if --use-telemetry=false is set (default true).
 ```
 
 ### cluster create
@@ -128,7 +128,7 @@ kubefirst restoreSSL [flags]
 Flags:
 --dry-run         Set to dry-run mode, no changes done on cloud provider selected.
 -h, --help        Help for restoreSSL.
---use-telemetry   Installer will not send telemetry about this installation (default true).
+--use-telemetry   Installer won't send telemetry data if --use-telemetry=false is set (default true).
 ```
 
 ### state
