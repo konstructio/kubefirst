@@ -13,7 +13,9 @@ import (
 	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/flagset"
+	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
@@ -85,23 +87,7 @@ var destroyAwsGithubCmd = &cobra.Command{
 		}
 		progressPrinter.AddTracker("step-prepare", "Open Ports", 3)
 
-		informUser("Open argocd port-forward", globalFlags.SilentMode)
-		progressPrinter.IncrementTracker("step-prepare", 1)
-
 		progressPrinter.AddTracker("step-destroy", "Destroy Cloud", 4)
-		progressPrinter.IncrementTracker("step-destroy", 1)
-
-		if !destroyFlags.SkipGithubTerraform {
-			githubTfApplied := viper.GetBool("terraform.github.apply.complete")
-			if githubTfApplied {
-				informUser("terraform destroying github resources", globalFlags.SilentMode)
-				tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
-				terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
-				informUser("successfully destroyed github resources", globalFlags.SilentMode)
-			}
-			log.Println("github terraform destruction complete")
-		}
-
 		progressPrinter.IncrementTracker("step-destroy", 1)
 
 		//This should wrapped into a function, maybe to move to: k8s.DeleteRegistryApplication
@@ -116,13 +102,48 @@ var destroyAwsGithubCmd = &cobra.Command{
 			informUser("Open argocd port-forward", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-prepare", 1)
 
+			informUser("Refreshing local gitops repository", globalFlags.SilentMode)
+			log.Println("removing local gitops directory")
+			os.RemoveAll(config.GitOpsRepoPath)
+
+			log.Println("cloning fresh gitops directory from github owner's private gitops")
+			gitClient.ClonePrivateRepo(fmt.Sprintf("https://github.com/%s/gitops", viper.GetString("github.owner")), config.GitOpsRepoPath)
+
+			informUser("Removing ingress-nginx load balancer", globalFlags.SilentMode)
+
+			log.Println("removing ingress-nginx.yaml from local gitops repo registry")
+			os.Remove(fmt.Sprintf("%s/registry/ingress-nginx.yaml", config.GitOpsRepoPath))
+
+			gitClient.PushLocalRepoUpdates("github.com", viper.GetString("github.owner"), "gitops", "origin")
+			token, err := argocd.GetArgoCDToken("admin", viper.GetString("argocd.admin.password"))
+			if err != nil {
+				log.Fatal("could not collect argocd token", err)
+			}
+
+			log.Println("syncing argocd registry application")
+			argocd.SyncArgocdApplication(false, "registry", token)
+
+			log.Println("waiting for nginx to deprovision load balancer and lb security groups")
+			time.Sleep(time.Second * 90)
+
 			log.Println("deleting registry application in argocd")
 			// delete argocd registry
 			informUser("Destroying Registry Application", globalFlags.SilentMode)
 			k8s.DeleteRegistryApplication(destroyFlags.SkipDeleteRegistryApplication)
 			log.Println("registry application deleted")
 		}
+		progressPrinter.IncrementTracker("step-destroy", 1)
 
+		if !destroyFlags.SkipGithubTerraform {
+			githubTfApplied := viper.GetBool("terraform.github.apply.complete")
+			if githubTfApplied {
+				informUser("terraform destroying github resources", globalFlags.SilentMode)
+				tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+				terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
+				informUser("successfully destroyed github resources", globalFlags.SilentMode)
+			}
+			log.Println("github terraform destruction complete")
+		}
 		progressPrinter.IncrementTracker("step-destroy", 1)
 
 		log.Println("terraform destroy base")

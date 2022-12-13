@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
@@ -154,13 +153,25 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		k.Stderr = os.Stderr
 		errKey := k.Run()
 		if errKey != nil {
-			log.Panicf("error: terraform apply failed %v", errKey)
+			log.Panicf("error: terraform output failed %v", errKey)
 		}
-		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 		keyIdNoSpace := strings.TrimSpace(terraformOutput.String())
 		keyId := keyIdNoSpace[1 : len(keyIdNoSpace)-1]
 		log.Println("keyid is:", keyId)
 		viper.Set("vault.kmskeyid", keyId)
+
+		k = exec.Command(config.TerraformClientPath, "output", "eks_node_role_arn")
+		k.Stdout = &terraformOutput
+		k.Stderr = os.Stderr
+		errKey = k.Run()
+		if errKey != nil {
+			log.Panicf("error: terraform output failed %v", errKey)
+		}
+		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
+		nodeGroupArn := strings.TrimSpace(terraformOutput.String())
+		nodeGroupArn = nodeGroupArn[1 : len(nodeGroupArn)-1]
+		log.Println("nodeGroupArn is:", nodeGroupArn)
+		viper.Set("aws.node-group-arn", nodeGroupArn)
 		viper.Set("create.terraformapplied.base", true)
 		viper.WriteConfig()
 		pkg.Detokenize(fmt.Sprintf("%s/gitops", config.K1FolderPath))
@@ -194,27 +205,6 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		if nodes_graviton {
 			envs["TF_VAR_ami_type"] = "AL2_ARM_64"
 			envs["TF_VAR_instance_type"] = "t4g.medium"
-		}
-
-		err = aws.DestroyLoadBalancer(viper.GetString("cluster-name"))
-		if err != nil {
-			log.Panicf("Failed to destroy load balancer: %v", err)
-		}
-
-		time.Sleep(45 * time.Second)
-		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
-		if err != nil {
-			log.Printf("failed to terraform init base %v", err)
-		}
-
-		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
-		if err != nil {
-			log.Printf("failed to terraform destroy base %v", err)
-		}
-
-		err = aws.DestroySecurityGroup(viper.GetString("cluster-name"))
-		if err != nil {
-			log.Panicf("Failed to destroy security group: %v", err)
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
