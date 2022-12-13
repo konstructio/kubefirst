@@ -67,9 +67,9 @@ func CreateSshKeyPair() {
 
 		argoCDConfig := argocd.Config{}
 		argoCDConfig.Configs.Repositories.SoftServeGitops.URL = "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops"
-		argoCDConfig.Configs.Repositories.Insecure = "true"
-		argoCDConfig.Configs.Repositories.Type = "gitClient"
-		argoCDConfig.Configs.Repositories.Name = "soft-serve-gitops"
+		argoCDConfig.Configs.Repositories.SoftServeGitops.Insecure = "true"
+		argoCDConfig.Configs.Repositories.SoftServeGitops.Type = "gitClient"
+		argoCDConfig.Configs.Repositories.SoftServeGitops.Name = "soft-serve-gitops"
 		argoCDConfig.Configs.CredentialTemplates.SSHCreds.URL = "ssh://soft-serve.soft-serve.svc.cluster.local:22"
 		argoCDConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = privateKey
 

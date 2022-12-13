@@ -28,13 +28,11 @@ type Config struct {
 	Configs struct {
 		Repositories struct {
 			SoftServeGitops struct {
-				URL string `yaml:"url,omitempty"`
+				URL      string `yaml:"url,omitempty"`
+				Insecure string `json:"insecure,omitempty"`
+				Type     string `json:"type,omitempty"`
+				Name     string `json:"name,omitempty"`
 			} `yaml:"soft-serve-gitops,omitempty"`
-
-			Insecure string `json:"insecure,omitempty"`
-			Type     string `json:"type,omitempty"`
-			Name     string `json:"name,omitempty"`
-
 			RepoGitops struct {
 				URL  string `yaml:"url,omitempty"`
 				Type string `yaml:"type,omitempty"`
