@@ -83,11 +83,16 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 	gitHubTokenReport := reports.GitHubAuthToken(gitHubDeviceFlow.UserCode, gitHubDeviceFlow.VerificationUri)
 	fmt.Println(reports.StyleMessage(gitHubTokenReport))
 
-	// todo add a 10 second countdown to warn browser open
-	time.Sleep(5 * time.Second)
-	exec.Command("open", "https://github.com/login/device").Start()
+	fmt.Println(reports.StyleMessage("Please press <enter> to open the GitHub page:"))
+	// this blocks the progress until the user hits enter to open the browser
+	if _, err = fmt.Scanln(); err != nil {
+		return "", err
+	}
 
-	// todo: improve the logic for the counter
+	if err = exec.Command("open", "https://github.com/login/device").Start(); err != nil {
+		return "", err
+	}
+
 	var gitHubAccessToken string
 	var attempts = 18       // 18 * 5 = 90 seconds
 	var secondsControl = 95 // 95 to start with 95-5=90
