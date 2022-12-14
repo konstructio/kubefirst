@@ -75,8 +75,10 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	viper.Set("argocd.local.service", pkg.ArgoCDLocalURL)
 	viper.Set("vault.local.service", pkg.VaultLocalURLTLS)
 	viper.Set("use-telemetry", useTelemetry)
-
-	go pkg.RunNgrok(context.TODO())
+	err = viper.WriteConfig()
+	if err != nil {
+		return err
+	}
 
 	// addons
 	addon.AddAddon("github")
@@ -84,13 +86,6 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	// used for letsencrypt notifications and the gitlab root account
 	if !skipMetaphor {
 		addon.AddAddon("metaphor")
-	}
-
-	viper.Set("github.atlantis.webhook.secret", pkg.Random(20))
-
-	err = viper.WriteConfig()
-	if err != nil {
-		return err
 	}
 
 	httpClient := http.DefaultClient
@@ -107,6 +102,9 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	go pkg.RunNgrok(context.TODO())
+
+	viper.Set("github.atlantis.webhook.secret", pkg.Random(20))
 	viper.Set("github.user", githubUser)
 	viper.Set("github.owner", githubUser)
 	err = viper.WriteConfig()
