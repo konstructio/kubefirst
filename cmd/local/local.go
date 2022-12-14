@@ -122,6 +122,8 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 		pkg.InformUser(fmt.Sprintf("Created gitops Repo in github.com/%s", viper.GetString("github.owner")), silentMode)
 		progressPrinter.IncrementTracker("step-github", 1)
+		viper.Set("terraform.github.apply.complete", true)
+		viper.WriteConfig()
 	} else {
 		log.Println("already created github terraform resources")
 	}

@@ -4,6 +4,7 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"log"
@@ -121,10 +122,23 @@ var destroyAwsGithubCmd = &cobra.Command{
 			}
 
 			log.Println("syncing argocd registry application")
-			argocd.SyncArgocdApplication(false, "registry", token)
+			customTransport := http.DefaultTransport.(*http.Transport).Clone()
+			customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+			argocdHttpClient := http.Client{Transport: customTransport}
+			log.Println("refreshing the registry application")
+			argocd.RefreshApplication(&argocdHttpClient, "registry", token)
+			log.Println("listing the applications after refresh, sleeping 15 seconds")
+			argocd.ListApplications(&argocdHttpClient, "registry", token)
+
+			time.Sleep(time.Second * 15)
+			argocd.ListApplications(&argocdHttpClient, "registry", token)
+			log.Println("listing the applications after 15 second sleep, syncing registry and sleeping 185 seconds")
+			argocd.Sync(&argocdHttpClient, "registry", token)
 
 			log.Println("waiting for nginx to deprovision load balancer and lb security groups")
-			time.Sleep(time.Second * 90)
+			time.Sleep(time.Second * 185) // full 3 minutes poll + 5
+			argocd.ListApplications(&argocdHttpClient, "registry", token)
+			log.Println("listing the applications after 180 + 5 second sleep")
 
 			log.Println("deleting registry application in argocd")
 			// delete argocd registry

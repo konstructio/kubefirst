@@ -128,6 +128,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		bucketGitlabBackup := viper.GetString("bucket.gitlab-backup.name")
 		bucketChartmuseum := viper.GetString("bucket.chartmuseum.name")
 		region := viper.GetString("aws.region")
+		eksNodeGroupArn := viper.GetString("aws.node-group-arn")
 		adminEmail := viper.GetString("adminemail")
 		awsAccountId := viper.GetString("aws.accountid")
 		kmsKeyId := viper.GetString("vault.kmskeyid")
@@ -148,6 +149,13 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		} else {
 			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_REGISTRY>", "quay.io/vouch/vouch-proxy", -1)
 			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_TAG>", "0.36", -1)
+		}
+
+		nodes_spot := viper.GetBool("aws.nodes_spot")
+		if nodes_spot {
+			newContents = strings.Replace(newContents, "<AWS_LIFECYCLE_NODES>", "SPOT", -1)
+		} else {
+			newContents = strings.Replace(newContents, "<AWS_LIFECYCLE_NODES>", "ON_DEMAND", -1)
 		}
 
 		githubToken := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
@@ -247,6 +255,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 
 		if kmsKeyId != "" {
 			newContents = strings.Replace(newContents, "<KMS_KEY_ID>", kmsKeyId, -1)
+			newContents = strings.Replace(newContents, "<EKS_NODE_GROUP_ROLE_ARN>", eksNodeGroupArn, -1)
 		}
 		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", clusterName, -1)
 
