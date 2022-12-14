@@ -79,6 +79,7 @@ func NewCommand() *cobra.Command {
 
 	// wire up new commands
 	localCmd.AddCommand(NewCommandConnect())
+	localCmd.AddCommand(NewDestroyCommand())
 
 	return localCmd
 }
