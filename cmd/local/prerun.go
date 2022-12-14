@@ -3,9 +3,10 @@ package local
 import (
 	"context"
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/ssh"
 	"net/http"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/ssh"
 
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
@@ -159,8 +160,12 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		repoName := "gitops"
 
 		repoURL := fmt.Sprintf("https://github.com/%s/%s-template", gitHubOrg, repoName)
-
-		_, err := gitClient.CloneBranchSetMain(repoURL, config.GitOpsLocalRepoPath, gitOpsBranch)
+		branch := gitOpsBranch
+		if gitOpsBranch == "" {
+			//to fix, noldflags to default to main as default branch
+			branch = "main"
+		}
+		_, err := gitClient.CloneBranchSetMain(repoURL, config.GitOpsLocalRepoPath, branch)
 		if err != nil {
 			return err
 		}
