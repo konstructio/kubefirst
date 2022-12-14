@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/pkg"
 	"log"
 	"time"
 
@@ -20,13 +19,7 @@ var destroyCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		//Destroy is implemented based on the flavor selected.
-		if viper.GetString("cloud") == pkg.CloudK3d {
-			err := destroyLocalGithubCmd.RunE(cmd, args)
-			if err != nil {
-				log.Println("Error destroying local+github:", err)
-				return err
-			}
-		} else if viper.GetString("cloud") == flagset.CloudAws {
+		if viper.GetString("cloud") == flagset.CloudAws {
 			if viper.GetString("gitprovider") == gitClient.Github {
 				err := destroyAwsGithubCmd.RunE(cmd, args)
 				if err != nil {
