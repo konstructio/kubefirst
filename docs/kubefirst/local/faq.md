@@ -2,9 +2,10 @@
 
 ## I ran into an issue, what should I try?
 
-The `kubefirst local` command is demanding on the localhost. It creates a multinode local k3d kubernetes cluster and deploys a lot of content to the cluster. Please consider extending as much local resources to your local docker runtime as you have space for.
+The `kubefirst local` command is demanding on the localhost. It creates a multi-node local k3d kubernetes cluster and deploys a lot of content to the cluster. Please consider extending as much local resources to your local docker runtime as you have space for.
 
-If an error occurrs during `kubefirst local` or `kubefirst cluster destroy`, you can often just run the command again. There's a `~/.kubefirst` file on your localhost that keeps track of your execution state. If rerunning doesn't work, move on to the next step.
+If an error occurs during `kubefirst local` or `kubefirst local destroy`, you can often just run the command again. 
+There's a `~/.kubefirst` file on your localhost that keeps track of your execution state. If rerunning doesn't work, move on to the next step.
 
 ## I ran into an issue and rerunning didin't help, what should I try now?
 
