@@ -28,10 +28,10 @@ You now have a k3d cluster with the following content installed in it:
 
 ## Step 1: Console UI
 
-![terminal handoff](../..//img/kubefirst/local/console.png)
+![terminal handoff](../../img/kubefirst/local/console.png)
 
 The `kubefirst local` command will open a new browser tab at completion with the Console UI at
-`http://localhost:9094` to provide you an easy way to navigate through the different services that were provisioned. This connection leverages your port-forwards which the `kubefirst local` command keeps open through the handoff screen shown here:
+`https://kubefirst-console.localdev.me` to provide you an easy way to navigate through the different services that were provisioned.
 
 ![terminal handoff](../../img/kubefirst/local/handoff-screen.png)
 
