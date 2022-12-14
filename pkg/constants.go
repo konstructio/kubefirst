@@ -143,3 +143,6 @@ const (
 	MetaphorDevelopmentServiceLocalPort = 3000
 	MetaphorDevelopmentLocalURL         = "http://localhost:3000"
 )
+
+// Metaphor Frontend slim
+const MetaphorFrontendSlim = "https://metaphor-slim.localdev.me"
