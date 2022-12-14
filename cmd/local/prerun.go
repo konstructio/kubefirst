@@ -246,3 +246,35 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	return nil
 }
+
+// validateDestroy validates primordial inputs before destroy command can be called.
+func validateDestroy(cmd *cobra.Command, args []string) error {
+
+	if silentMode {
+		pkg.InformUser(
+			"Silent mode enabled, most of the UI prints wont be showed. Please check the logs for more details.\n",
+			silentMode,
+		)
+	}
+
+	config := configs.ReadConfig()
+
+	log.Info().Msg("setting GitHub token...")
+	httpClient := http.DefaultClient
+	gitHubService := services.NewGitHubService(httpClient)
+	gitHubHandler := handlers.NewGitHubHandler(gitHubService)
+	_, err := wrappers.AuthenticateGitHubUserWrapper(config, gitHubHandler)
+	if err != nil {
+		return err
+	}
+	log.Info().Msg("GitHub token set!")
+
+	log.Info().Msg("updating Terraform backend for localhost instead of minio...")
+	err = pkg.UpdateTerraformS3BackendForLocalhostAddress()
+	if err != nil {
+		return err
+	}
+	log.Info().Msg("updating Terraform backend for localhost instead of minio, done")
+
+	return nil
+}
