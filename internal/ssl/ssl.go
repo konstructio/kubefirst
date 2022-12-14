@@ -241,3 +241,64 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 	viper.WriteConfig()
 	return nil
 }
+
+func InstallCALocal(config *configs.Config) {
+	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, "-install")
+	if err != nil {
+		log.Printf("failed to uninstall CA of mkCert: %s", err)
+	}
+}
+
+// todo: make destroy call it
+func UninstallCALocal(config *configs.Config) {
+	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, "-uninstall")
+	if err != nil {
+		log.Printf("failed to uninstall CA of mkCert: %s", err)
+	}
+}
+
+// CreateCertificatesForLocalWrapper groups a certification creation call into a wrapper. The provided application
+// list is used to create SSL certificates for each of the provided application.
+func CreateCertificatesForLocalWrapper(config *configs.Config) error {
+
+	// create folder
+	// todo: check permission
+	err := os.Mkdir(config.MkCertPemFilesPath, 0755)
+	if err != nil && os.IsNotExist(err) {
+		return err
+	}
+
+	for _, cert := range pkg.GetCertificateAppList() {
+		if err := createCertificateForLocal(config, cert); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// createCertificateForLocal issue certificates for a specific application. MkCert is the tool who is going to create
+// the certificates, store them in files, and store the certificates in the host trusted store.
+func createCertificateForLocal(config *configs.Config, app pkg.CertificateAppList) error {
+
+	fullAppAddress := app.AppName + "." + pkg.LocalDNS                    // example: app-name.localdev.me
+	certFileName := config.MkCertPemFilesPath + app.AppName + "-cert.pem" // example: app-name-cert.pem
+	keyFileName := config.MkCertPemFilesPath + app.AppName + "-key.pem"   // example: app-name-key.pem
+
+	log.Printf("generating certificate %s.localdev.me on %s", app.AppName, config.MkCertPath)
+
+	_, _, err := pkg.ExecShellReturnStrings(
+		config.MkCertPath,
+		"-cert-file",
+		certFileName,
+		"-key-file",
+		keyFileName,
+		pkg.LocalDNS,
+		fullAppAddress,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to generate %s SSL certificate using MkCert: %v", app.AppName, err)
+	}
+
+	return nil
+}

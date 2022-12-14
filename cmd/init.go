@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/ssh"
 	"log"
 	"net/http"
 	"os"
@@ -133,6 +134,7 @@ validated and configured.`,
 		log.Println("sending init started metric")
 
 		var telemetryHandler handlers.TelemetryHandler
+		viper.Set("use-telemetry", globalFlags.UseTelemetry)
 		if globalFlags.UseTelemetry {
 
 			// Instantiates a SegmentIO client to use send messages to the segment API.
@@ -249,7 +251,7 @@ validated and configured.`,
 		}
 		//! tracker 5
 		log.Println("creating an ssh key pair for your new cloud infrastructure")
-		pkg.CreateSshKeyPair()
+		ssh.CreateSshKeyPair()
 		log.Println("ssh key pair creation complete")
 		progressPrinter.IncrementTracker("step-ssh", 1)
 

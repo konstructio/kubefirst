@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	internalSSH "github.com/kubefirst/kubefirst/internal/ssh"
 	"log"
 	"net/http"
 	"net/url"
@@ -578,7 +579,7 @@ func PushGitRepo(dryRun bool, config *configs.Config, gitOrigin, repoName string
 		os.Remove(repoDir + "/terraform/users/.terraform.lock.hcl")
 		os.Remove(repoDir + "/terraform/gitlab/.terraform.lock.hcl")
 		CommitToRepo(repo, repoName)
-		auth, _ := pkg.PublicKey()
+		auth, _ := internalSSH.PublicKey()
 
 		auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 

@@ -6,9 +6,9 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"io"
 	"io/fs"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -27,23 +27,67 @@ func DownloadLocalTools(config *configs.Config) error {
 		return err
 	}
 
-	// https://github.com/k3d-io/k3d/releases/download/v5.4.6/k3d-linux-amd64
-	k3dDownloadUrl := fmt.Sprintf(
-		"https://github.com/k3d-io/k3d/releases/download/%s/k3d-%s-%s",
-		config.K3dVersion,
-		config.LocalOs,
-		config.LocalArchitecture,
-	)
-	err = downloadFile(config.K3dPath, k3dDownloadUrl)
-	if err != nil {
-		return err
-	}
-	err = os.Chmod(config.K3dPath, 0755)
-	if err != nil {
-		return err
-	}
+	var wg sync.WaitGroup
+	errorChannel := make(chan error)
+	wgDone := make(chan bool)
+	wg.Add(2)
 
-	return nil
+	go func() {
+		// https://github.com/k3d-io/k3d/releases/download/v5.4.6/k3d-linux-amd64
+		k3dDownloadUrl := fmt.Sprintf(
+			"https://github.com/k3d-io/k3d/releases/download/%s/k3d-%s-%s",
+			config.K3dVersion,
+			config.LocalOs,
+			config.LocalArchitecture,
+		)
+		err = downloadFile(config.K3dPath, k3dDownloadUrl)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		err = os.Chmod(config.K3dPath, 0755)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		// https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-darwin-amd64
+		mkCertDownloadUrl := fmt.Sprintf(
+			"https://github.com/FiloSottile/mkcert/releases/download/%s/mkcert-%s-%s-%s",
+			config.MkCertVersion,
+			config.MkCertVersion,
+			config.LocalOs,
+			config.LocalArchitecture,
+		)
+		err = downloadFile(config.MkCertPath, mkCertDownloadUrl)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		err = os.Chmod(config.MkCertPath, 0755)
+		if err != nil {
+			errorChannel <- err
+			return
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		wg.Wait()
+		close(wgDone)
+	}()
+
+	select {
+	case <-wgDone:
+		log.Info().Msg("download finished")
+		return nil
+	case err = <-errorChannel:
+		close(errorChannel)
+		return err
+	}
 }
 
 // DownloadTools prepare download folder, and download the required installation tools for download. The downloads
@@ -51,7 +95,7 @@ func DownloadLocalTools(config *configs.Config) error {
 // the errorChannel will receive the error message, and process it back to the function caller.
 func DownloadTools(config *configs.Config) error {
 
-	log.Println("starting downloads...")
+	log.Info().Msg("starting downloads...")
 	toolsDirPath := fmt.Sprintf("%s/tools", config.K1FolderPath)
 
 	// create folder if it doesn't exist
@@ -79,7 +123,7 @@ func DownloadTools(config *configs.Config) error {
 			config.LocalOs,
 			config.LocalArchitecture,
 		)
-		log.Printf("Downloading kubectl from: %s", kubectlDownloadUrl)
+		log.Info().Msgf("Downloading kubectl from: %s", kubectlDownloadUrl)
 		err = downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
 		if err != nil {
 			errorChannel <- err
@@ -92,16 +136,16 @@ func DownloadTools(config *configs.Config) error {
 			return
 		}
 
-		log.Println("going to print the kubeconfig env in runtime", os.Getenv("KUBECONFIG"))
+		log.Info().Msgf("going to print the kubeconfig env in runtime: %s", os.Getenv("KUBECONFIG"))
 
 		kubectlStdOut, kubectlStdErr, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "version", "--client", "--short")
-		log.Printf("-> kubectl version:\n\t%s\n\t%s\n", kubectlStdOut, kubectlStdErr)
+		log.Info().Msgf("-> kubectl version:\n\t%s\n\t%s\n", kubectlStdOut, kubectlStdErr)
 		if err != nil {
 			errorChannel <- fmt.Errorf("failed to call kubectlVersionCmd.Run(): %v", err)
 			return
 		}
 		wg.Done()
-		log.Println("Kubectl download finished")
+		log.Info().Msg("Kubectl download finished")
 	}()
 
 	go func() {
@@ -116,7 +160,7 @@ func DownloadTools(config *configs.Config) error {
 			config.LocalOs,
 			config.LocalArchitecture,
 		)
-		log.Printf("Downloading terraform from %s", terraformDownloadUrl)
+		log.Info().Msgf("Downloading terraform from %s", terraformDownloadUrl)
 		terraformDownloadZipPath := fmt.Sprintf("%s/tools/terraform.zip", config.K1FolderPath)
 		err = downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
 		if err != nil {
@@ -144,7 +188,7 @@ func DownloadTools(config *configs.Config) error {
 			return
 		}
 		wg.Done()
-		log.Println("Terraform download finished")
+		log.Info().Msg("Terraform download finished")
 	}()
 
 	go func() {
@@ -155,7 +199,7 @@ func DownloadTools(config *configs.Config) error {
 			config.LocalOs,
 			config.LocalArchitecture,
 		)
-		log.Printf("Downloading terraform from %s", helmDownloadUrl)
+		log.Info().Msgf("Downloading terraform from %s", helmDownloadUrl)
 		helmDownloadTarGzPath := fmt.Sprintf("%s/tools/helm.tar.gz", config.K1FolderPath)
 
 		err = downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
@@ -194,11 +238,11 @@ func DownloadTools(config *configs.Config) error {
 			return
 		}
 
-		log.Printf("-> Helm version:\n\t%s\n\t%s\n", helmStdOut, helmStdErr)
+		log.Info().Msgf("-> Helm version: %s\n\t%s", helmStdOut, helmStdErr)
 
 		wg.Done()
 
-		log.Println("Helm download finished")
+		log.Info().Msg("Helm download finished")
 
 	}()
 
@@ -209,7 +253,7 @@ func DownloadTools(config *configs.Config) error {
 
 	select {
 	case <-wgDone:
-		log.Println("downloads finished")
+		log.Info().Msg("downloads finished")
 		return nil
 	case err = <-errorChannel:
 		close(errorChannel)
@@ -250,7 +294,7 @@ func downloadFile(localFilename string, url string) error {
 func extractFileFromTarGz(gzipStream io.Reader, tarAddress string, targetFilePath string) {
 	uncompressedStream, err := gzip.NewReader(gzipStream)
 	if err != nil {
-		log.Panicf("extractTarGz: NewReader failed")
+		log.Panic().Msg("extractTarGz: NewReader failed")
 	}
 
 	tarReader := tar.NewReader(uncompressedStream)
@@ -261,23 +305,23 @@ func extractFileFromTarGz(gzipStream io.Reader, tarAddress string, targetFilePat
 			break
 		}
 		if err != nil {
-			log.Panicf("extractTarGz: Next() failed: %s", err.Error())
+			log.Panic().Msgf("extractTarGz: Next() failed: %s", err.Error())
 		}
-		log.Println(header.Name)
+		log.Info().Msg(header.Name)
 		if header.Name == tarAddress {
 			switch header.Typeflag {
 			case tar.TypeReg:
 				outFile, err := os.Create(targetFilePath)
 				if err != nil {
-					log.Panicf("extractTarGz: Create() failed: %s", err.Error())
+					log.Panic().Msgf("extractTarGz: Create() failed: %s", err.Error())
 				}
 				if _, err := io.Copy(outFile, tarReader); err != nil {
-					log.Panicf("extractTarGz: Copy() failed: %s", err.Error())
+					log.Panic().Msgf("extractTarGz: Copy() failed: %s", err.Error())
 				}
 				outFile.Close()
 
 			default:
-				log.Printf(
+				log.Info().Msgf(
 					"extractTarGz: uknown type: %s in %s\n",
 					string(header.Typeflag),
 					header.Name)
@@ -297,13 +341,13 @@ func unzip(zipFilepath string, unzipDirectory string) error {
 
 	for _, f := range archive.File {
 		filePath := filepath.Join(dst, f.Name)
-		log.Println("unzipping file ", filePath)
+		log.Info().Msgf("unzipping file %s", filePath)
 
 		if !strings.HasPrefix(filePath, filepath.Clean(dst)+string(os.PathSeparator)) {
 			return errors.New("invalid file path")
 		}
 		if f.FileInfo().IsDir() {
-			log.Println("creating directory...")
+			log.Info().Msg("creating directory...")
 			err = os.MkdirAll(filePath, os.ModePerm)
 			if err != nil {
 				return err

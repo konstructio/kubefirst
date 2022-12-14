@@ -1,33 +1,43 @@
 package local
 
 import (
+	"context"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/ssh"
+	"net/http"
+	"time"
+
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/addon"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
+	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/repo"
 	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"net/http"
-	"time"
 )
 
 func validateLocal(cmd *cobra.Command, args []string) error {
 
+	// set log level
+	log.Info().Msgf("setting log level to: %s", logLevel)
+	zerologLevel := pkg.GetLogLevelByString(logLevel)
+	zerolog.SetGlobalLevel(zerologLevel)
+
 	config := configs.ReadConfig()
 
-	log.Println("sending init started metric")
+	log.Info().Msg("sending init started metric")
 
 	if useTelemetry {
 		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 	}
 
@@ -50,21 +60,8 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		)
 	}
 
-	// if non-development/built/released version, set template tag version to clone tagged templates, in that way
-	// the current built version, uses the same template version.
-	// example: kubefirst version 1.10.3, has template repositories (gitops and metaphor's) tags set as 1.10.3
-	// when Kubefirst download the templates, it will download the tag version that matches Kubefirst version
-	if configs.K1Version != configs.DefaultK1Version {
-		log.Println("loading tag values for built version")
-		log.Printf("Kubefirst version %q, tags %q", configs.K1Version, config.K3dVersion)
-		// in order to make the fallback tags work, set gitops branch as empty
-		gitOpsBranch = ""
-		templateTag = configs.K1Version
-		viper.Set("template.tag", templateTag)
-	}
-
 	// set default values to kubefirst file
-	viper.Set("gitops.repo", gitOpsRepo)
+	viper.Set("gitops.repo", pkg.KubefirstGitOpsRepository)
 	viper.Set("gitops.owner", "kubefirst")
 	viper.Set("gitprovider", pkg.GitHubProviderName)
 	viper.Set("metaphor.branch", metaphorBranch)
@@ -76,12 +73,18 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	viper.Set("adminemail", adminEmail)
 
 	viper.Set("argocd.local.service", pkg.ArgoCDLocalURL)
-	viper.Set("vault.local.service", pkg.VaultLocalURL)
+	viper.Set("vault.local.service", pkg.VaultLocalURLTLS)
+	viper.Set("use-telemetry", useTelemetry)
+
+	go pkg.RunNgrok(context.TODO())
 
 	// addons
 	addon.AddAddon("github")
 	addon.AddAddon("k3d")
 	// used for letsencrypt notifications and the gitlab root account
+	if !skipMetaphor {
+		addon.AddAddon("metaphor")
+	}
 
 	viper.Set("github.atlantis.webhook.secret", pkg.Random(20))
 
@@ -118,20 +121,21 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		)
 	}
 
-	progressPrinter.SetupProgress(6, silentMode)
+	progressPrinter.SetupProgress(4, silentMode)
 
 	progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 	progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
 	progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
 	progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
 
-	log.Println("installing kubefirst dependencies")
+	log.Info().Msg("installing kubefirst dependencies")
+
 	progressPrinter.IncrementTracker("step-download", 1)
 	err = downloadManager.DownloadTools(config)
 	if err != nil {
 		return err
 	}
-	log.Println("dependency installation complete")
+	log.Info().Msg("dependency installation complete")
 	progressPrinter.IncrementTracker("step-download", 1)
 	err = downloadManager.DownloadLocalTools(config)
 	if err != nil {
@@ -140,29 +144,95 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.IncrementTracker("step-download", 1)
 
-	log.Println("creating an ssh key pair for your new cloud infrastructure")
-	pkg.CreateSshKeyPair()
-	log.Println("ssh key pair creation complete")
+	log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
+	ssh.CreateSshKeyPair()
+	log.Info().Msg("ssh key pair creation complete")
 	progressPrinter.IncrementTracker("step-ssh", 1)
 
-	repo.PrepareKubefirstTemplateRepo(
-		dryRun,
-		config,
-		viper.GetString("github.owner"),
-		viper.GetString("gitops.repo"),
-		viper.GetString("gitops.branch"),
-		viper.GetString("template.tag"),
-	)
-	log.Println("clone and detokenization of gitops-template repository complete")
+	//
+	// clone gitops template
+	//
+	// todo: add wrapper
+	if configs.K1Version == configs.DefaultK1Version {
+
+		gitHubOrg := "kubefirst"
+		repoName := "gitops"
+
+		repoURL := fmt.Sprintf("https://github.com/%s/%s-template", gitHubOrg, repoName)
+
+		_, err := gitClient.CloneBranchSetMain(repoURL, config.GitOpsLocalRepoPath, gitOpsBranch)
+		if err != nil {
+			return err
+		}
+
+		viper.Set("init.repos.gitops.cloned", true)
+		viper.Set(fmt.Sprintf("git.clone.%s.branch", repoName), gitOpsBranch)
+		if err = viper.WriteConfig(); err != nil {
+			log.Error().Err(err).Msg("")
+		}
+
+	} else {
+		//Tag should be used in absence of branch been provided
+		//We should be able to change repo address and names from flags
+		//The branch support is not meant only for developement mode, it is also for troubleshooting of releases, bug fixes.
+		//Please, don't disable its support - even the binary from a release must support branch use.
+		if gitOpsBranch != "" {
+			repoURL := fmt.Sprintf("https://github.com/%s/%s-template", gitOpsOrg, gitOpsRepo)
+			_, err := gitClient.CloneBranchSetMain(repoURL, config.GitOpsLocalRepoPath, gitOpsBranch)
+			if err != nil {
+				return err
+			}
+			viper.Set("init.repos.gitops.cloned", true)
+			viper.Set(fmt.Sprintf("git.clone.%s.branch", gitOpsRepo), gitOpsBranch)
+			if err = viper.WriteConfig(); err != nil {
+				log.Error().Err(err).Msg("")
+			}
+		} else {
+			// use tag
+			gitHubOrg := "kubefirst"
+			repoName := "gitops"
+
+			tag := configs.K1Version
+			_, err := gitClient.CloneTagSetMain(config.GitOpsLocalRepoPath, gitHubOrg, repoName, tag)
+			if err != nil {
+				return err
+			}
+
+			viper.Set(fmt.Sprintf("git.clone.%s.tag", repoName), tag)
+			viper.Set("init.repos.gitops.cloned", true)
+			if err = viper.WriteConfig(); err != nil {
+				log.Error().Err(err).Msg("")
+			}
+		}
+	}
+
+	if !viper.GetBool("github.gitops.hydrated") {
+		err = repo.UpdateForLocalMode(config.GitOpsLocalRepoPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	pkg.Detokenize(config.GitOpsLocalRepoPath)
+	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", pkg.KubefirstGitOpsRepository), true)
+	if err = viper.WriteConfig(); err != nil {
+		log.Error().Err(err).Msg("")
+	}
+
+	err = gitClient.CreateGitHubRemote(config.GitOpsLocalRepoPath, githubUser, pkg.KubefirstGitOpsRepository)
+	if err != nil {
+		return err
+	}
+
 	progressPrinter.IncrementTracker("step-gitops", 1)
 
-	log.Println("sending init completed metric")
+	log.Info().Msg("sending init completed metric")
 
-	pkg.InformUser("init is done!\n", silentMode)
+	pkg.InformUser("initialization step is done!", silentMode)
 
 	if useTelemetry {
 		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 	}
 

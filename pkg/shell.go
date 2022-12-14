@@ -3,8 +3,7 @@ package pkg
 import (
 	"bufio"
 	"bytes"
-	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"os"
 	"os/exec"
 	"strings"
@@ -14,16 +13,16 @@ import (
 func ExecShellReturnStrings(command string, args ...string) (string, string, error) {
 	var outb, errb bytes.Buffer
 	k := exec.Command(command, args...)
-	//  log.Println("Command:", k.String()) //Do not remove this line used for some debugging, will be wrapped by debug log some day.
+	//  log.Info()().Msg()("Command:", k.String()) //Do not remove this line used for some debugging, will be wrapped by debug log some day.
 	k.Stdout = &outb
 	k.Stderr = &errb
 	err := k.Run()
 	if err != nil {
-		log.Printf("Error executing command: %v\n", err)
+		log.Error().Err(err).Msgf("error executing command")
 	}
-	log.Printf("Command Execution: %s\n", command)
-	log.Printf("OUT: %s\n", outb.String())
-	log.Printf("ERR: %s\n", errb.String())
+	log.Info().Msgf("Command Execution: %s", command)
+	log.Debug().Msgf("OUT: %s", outb.String())
+	log.Debug().Msgf("ERR: %s", errb.String())
 	return outb.String(), errb.String(), err
 }
 
@@ -32,21 +31,21 @@ func ExecShellReturnStrings(command string, args ...string) (string, string, err
 //   - Map of Vars loaded
 func ExecShellWithVars(osvars map[string]string, command string, args ...string) error {
 
-	log.Printf("INFO: Running %s", command)
+	log.Debug().Msgf("Debug: Running %s", command)
 	for k, v := range osvars {
 		os.Setenv(k, v)
 		suppressedValue := strings.Repeat("*", len(v))
-		log.Printf(" export %s = %s", k, suppressedValue)
+		log.Info().Msgf(" export %s = %s", k, suppressedValue)
 	}
 	cmd := exec.Command(command, args...)
 	cmdReaderOut, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Println(fmt.Sprintf("error: %s failed creating out pipe for: %v", command, err))
+		log.Error().Err(err).Msgf("failed creating out pipe for: %v", command)
 		return err
 	}
 	cmdReaderErr, err := cmd.StderrPipe()
 	if err != nil {
-		log.Println(fmt.Sprintf("error: %s failed creating out pipe for:  %v", command, err))
+		log.Error().Err(err).Msgf("failed creating out pipe for: %v", command)
 		return err
 	}
 
@@ -61,20 +60,20 @@ func ExecShellWithVars(osvars map[string]string, command string, args ...string)
 	doneErr := make(chan bool)
 	go func() {
 		for msg := range stdOut {
-			log.Println("OUT: ", msg)
+			log.Debug().Msgf("OUT: %s", msg)
 		}
 		doneOut <- true
 	}()
 	go func() {
 		for msg := range stdErr {
-			log.Println("ERR: ", msg)
+			log.Debug().Msgf("ERR: %s", msg)
 		}
 		doneErr <- true
 	}()
 
 	err = cmd.Run()
 	if err != nil {
-		log.Println(fmt.Sprintf("error: %s failed %v", command, err))
+		log.Error().Err(err).Msgf("command %q failed", command)
 		return err
 	} else {
 		close(stdOut)
@@ -90,7 +89,7 @@ func ExecShellWithVars(osvars map[string]string, command string, args ...string)
 func reader(scanner *bufio.Scanner, out chan string) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println("Error processing logs from command. Error:\n", r)
+			log.Error().Msgf("Error processing logs from command. Error: %s", r)
 		}
 	}()
 	for scanner.Scan() {

@@ -2,7 +2,7 @@ package k3d
 
 import (
 	"errors"
-	"log"
+	"github.com/rs/zerolog/log"
 	"time"
 
 	"github.com/kubefirst/kubefirst/configs"
@@ -12,13 +12,14 @@ import (
 
 // DeleteK3dCluster delete a k3d cluster
 func DeleteK3dCluster() error {
-	log.Println("Delete K3d cluster ", viper.GetString("cluster-name"))
+	log.Info().Msgf("Delete K3d cluster %s", viper.GetString("cluster-name"))
 	config := configs.ReadConfig()
 	_, _, err := pkg.ExecShellReturnStrings(config.K3dPath, "cluster", "delete", viper.GetString("cluster-name"))
 	if err != nil {
-		log.Println("error deleting k3d cluster")
+		log.Info().Msg("error deleting k3d cluster")
 		return errors.New("error deleting k3d cluster")
 	}
+	// todo: remove it?
 	time.Sleep(20 * time.Second)
 
 	return nil

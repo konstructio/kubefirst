@@ -23,7 +23,7 @@ var destroyCmd = &cobra.Command{
 		if viper.GetString("cloud") == pkg.CloudK3d {
 			err := destroyLocalGithubCmd.RunE(cmd, args)
 			if err != nil {
-				log.Println("Erroring destroying local+github:", err)
+				log.Println("Error destroying local+github:", err)
 				return err
 			}
 		} else if viper.GetString("cloud") == flagset.CloudAws {
@@ -44,11 +44,12 @@ var destroyCmd = &cobra.Command{
 				return fmt.Errorf("not supported git-provider")
 			}
 
+			log.Println("terraform base destruction complete")
+
 		} else {
 			return fmt.Errorf("not supported mode")
 		}
 
-		log.Println("terraform base destruction complete")
 		time.Sleep(time.Millisecond * 100)
 
 		return nil

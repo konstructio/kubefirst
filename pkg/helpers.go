@@ -3,7 +3,6 @@ package pkg
 import (
 	"errors"
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -12,6 +11,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 
@@ -36,7 +37,7 @@ func Detokenize(path string) {
 
 	err := filepath.Walk(path, DetokenizeDirectory)
 	if err != nil {
-		log.Panic(err)
+		log.Panic().Msg(err.Error())
 	}
 }
 
@@ -55,18 +56,18 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	}
 
 	if viper.GetString("gitprovider") == "github" && strings.Contains(path, "-gitlab.tf") {
-		log.Println("github provider specified, removing gitlab terraform file:", path)
+		log.Debug().Msgf("github provider specified, removing gitlab terraform file: %s", path)
 		err = os.Remove(path)
 		if err != nil {
-			log.Panic(err)
+			log.Panic().Msg(err.Error())
 		}
 		return nil
 	}
 	if viper.GetString("gitprovider") == "gitlab" && strings.Contains(path, "-github.tf") {
-		log.Println("gitlab is enabled, removing github terraform file:", path)
+		log.Info().Msgf("gitlab is enabled, removing github terraform file: %s", path)
 		err = os.Remove(path)
 		if err != nil {
-			log.Panic(err)
+			log.Panic().Msg(err.Error())
 		}
 		return nil
 	}
@@ -74,13 +75,13 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 	matched, err := filepath.Match("*", fi.Name())
 
 	if err != nil {
-		log.Panic(err)
+		log.Panic().Msg(err.Error())
 	}
 
 	if matched {
 		read, err := os.ReadFile(path)
 		if err != nil {
-			log.Panic(err)
+			log.Panic().Msg(err.Error())
 		}
 
 		var registryAddon RegistryAddon
@@ -88,25 +89,19 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		removeFile := false
 
 		err = yaml2.Unmarshal(read, &registryAddon)
-		if err != nil {
-			log.Println("trying read the file in yaml format: ", path, err)
-		} else {
+		if err == nil {
 			enableCheck = true
 		}
 
 		//reading the addons list
 		addons := viper.GetStringSlice("addons")
-		log.Println("it is a yaml file, processing:", path)
 
 		if enableCheck {
 			if !slices.Contains(addons, registryAddon.Metadata.Annotations.AddonsKubefirstIoName) {
-				log.Println("check if we need remove due unmatch annotation with k1 addons list: ", registryAddon.Metadata.Annotations)
 				r := RegistryAddon{}
 				if registryAddon.Metadata.Annotations != r.Metadata.Annotations {
 					removeFile = true
-					log.Println("yes, this file will be removed")
-				} else {
-					log.Println("no, this file will not be removed")
+					log.Info().Msg("yes, this file will be removed")
 				}
 			}
 		}
@@ -135,20 +130,15 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		clusterName := viper.GetString("cluster-name")
 		argocdOidcClientId := viper.GetString("vault.oidc.argocd.client_id")
 		githubRepoHost := viper.GetString("github.host")
-		githubRepoOwner := viper.GetString("github.owner")
+		githubRepoOwner := strings.ToLower(viper.GetString("github.owner"))
 		githubOrg := viper.GetString("github.owner")
-		githubUser := viper.GetString("github.user")
+		githubUser := strings.ToLower(viper.GetString("github.user"))
+		useTelemetry := viper.GetString("use-telemetry")
+		machineId := viper.GetString("machineid")
 
-		//due to vouch proxy keep arm image in other repo than amd image we need a logic to solve this
-		//issue: https://github.com/vouch/vouch-proxy/issues/406
-		//issue on k1: https://github.com/kubefirst/kubefirst/issues/724
-		nodes_graviton := viper.GetBool("aws.nodes_graviton")
-		if nodes_graviton {
-			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_REGISTRY>", "voucher/vouch-proxy", -1)
-			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_TAG>", "latest-arm", -1)
-		} else {
-			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_REGISTRY>", "quay.io/vouch/vouch-proxy", -1)
-			newContents = strings.Replace(newContents, "<VOUCH_DOCKER_TAG>", "0.36", -1)
+		ngrokURL, err := url.Parse(viper.GetString("ngrok.url"))
+		if err != nil {
+			log.Error().Err(err).Msg("")
 		}
 
 		nodes_spot := viper.GetBool("aws.nodes_spot")
@@ -167,6 +157,8 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<GITHUB_USER>", githubUser, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_TOKEN>", githubToken, -1)
 		newContents = strings.Replace(newContents, "<KUBEFIRST_VERSION>", configs.K1Version, -1)
+		newContents = strings.Replace(newContents, "<NGROK_URL>", ngrokURL.String(), -1)
+		newContents = strings.Replace(newContents, "<NGROK_HOST>", ngrokURL.Host, -1)
 
 		var repoPathHTTPS string
 		var repoPathSSH string
@@ -250,6 +242,8 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<GITHUB_OWNER>", githubRepoOwner, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_USER>", githubUser, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_TOKEN>", githubToken, -1)
+		newContents = strings.Replace(newContents, "<USE_TELEMETRY>", useTelemetry, -1)
+		newContents = strings.Replace(newContents, "<MACHINE_ID>", machineId, -1)
 
 		newContents = strings.Replace(newContents, "<REPO_GITOPS>", "gitops", -1)
 
@@ -271,12 +265,13 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 
 		if cloud == cloudK3d {
 			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
-			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", config.LocalArgoWorkflowsURL, -1)
-			newContents = strings.Replace(newContents, "<VAULT_URL>", config.LocalVaultURL, -1)
-			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", config.LocalArgoURL, -1)
-			newContents = strings.Replace(newContents, "<ATLANTIS_URL>", config.LocalAtlantisURL, -1)
-			newContents = strings.Replace(newContents, "<CHARTMUSEUM_URL>", config.LocalChartmuseumURL, -1)
+			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", ArgoLocalURLTLS, -1)
+			newContents = strings.Replace(newContents, "<VAULT_URL>", VaultLocalURLTLS, -1)
+			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", ArgoCDLocalURLTLS, -1)
+			newContents = strings.Replace(newContents, "<ATLANTIS_URL>", AtlantisLocalURLTLS, -1)
+			newContents = strings.Replace(newContents, "<CHARTMUSEUM_URL>", ChartmuseumLocalURLTLS, -1)
 
+			// todo: use pkg.constants for metaphor's URLs
 			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", config.LocalMetaphorDev, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_GO_DEV>", config.LocalMetaphorGoDev, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEV>", config.LocalMetaphorFrontDev, -1)
@@ -288,6 +283,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<METAPHOR_PROD>", config.LocalMetaphorProd, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_GO_PROD>", config.LocalMetaphorGoProd, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", config.LocalMetaphorFrontProd, -1)
+			newContents = strings.Replace(newContents, "<LOCAL_DNS>", LocalDNS, -1)
 		} else {
 			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
 			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", fmt.Sprintf("https://argo.%s", hostedZoneName), -1)
@@ -312,12 +308,12 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		if removeFile {
 			err = os.Remove(path)
 			if err != nil {
-				log.Panic(err)
+				log.Panic().Msg(err.Error())
 			}
 		} else {
 			err = os.WriteFile(path, []byte(newContents), 0)
 			if err != nil {
-				log.Panic(err)
+				log.Panic().Msg(err.Error())
 			}
 		}
 
@@ -349,7 +345,7 @@ func SetupViper(config *configs.Config) error {
 		return fmt.Errorf("unable to read config file, error is: %s", err)
 	}
 
-	log.Println("Using config file:", viper.ConfigFileUsed())
+	log.Info().Msgf("Using config file: %s", viper.ConfigFileUsed())
 
 	return nil
 }
@@ -500,7 +496,8 @@ func AwaitHostNTimes(url string, times int, gracePeriod time.Duration) {
 // file, newContent is the new content you want to replace.
 //
 // Example:
-//   err := replaceFileContent(vaultMainFile, "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000")
+//
+//	err := replaceFileContent(vaultMainFile, "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000")
 func replaceFileContent(filPath string, oldContent string, newContent string) error {
 
 	file, err := os.ReadFile(filPath)
@@ -528,7 +525,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", config.K1FolderPath)
 	if err := replaceFileContent(
 		vaultMainFile,
-		"http://127.0.0.1:9000",
+		MinioURL,
 		"http://minio.minio.svc.cluster.local:9000",
 	); err != nil {
 		return err
@@ -539,7 +536,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
 		if err := replaceFileContent(
 			fullPathKubefirstGitHubFile,
-			"http://127.0.0.1:9000",
+			MinioURL,
 			"http://minio.minio.svc.cluster.local:9000",
 		); err != nil {
 			return err
@@ -549,7 +546,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 		fullPathRemoteBackendFile := fmt.Sprintf("%s/gitops/terraform/github/remote-backend.tf", config.K1FolderPath)
 		if err := replaceFileContent(
 			fullPathRemoteBackendFile,
-			"http://127.0.0.1:9000",
+			MinioURL,
 			"http://minio.minio.svc.cluster.local:9000",
 		); err != nil {
 			return err
@@ -570,7 +567,7 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 	if err := replaceFileContent(
 		vaultMainFile,
 		"http://minio.minio.svc.cluster.local:9000",
-		"http://127.0.0.1:9000",
+		MinioURL,
 	); err != nil {
 		return err
 	}
@@ -581,7 +578,7 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 		if err := replaceFileContent(
 			fullPathKubefirstGitHubFile,
 			"http://minio.minio.svc.cluster.local:9000",
-			"http://127.0.0.1:9000",
+			MinioURL,
 		); err != nil {
 			return err
 		}
@@ -591,9 +588,9 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 		if err := replaceFileContent(
 			fullPathRemoteBackendFile,
 			"http://minio.minio.svc.cluster.local:9000",
-			"http://127.0.0.1:9000",
+			MinioURL,
 		); err != nil {
-			return err
+			log.Error().Err(err).Msg("")
 		}
 	}
 
@@ -607,11 +604,11 @@ func InformUser(message string, silentMode bool) {
 	if silentMode {
 		_, err := fmt.Fprintln(os.Stdout, message)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 		return
 	}
-	log.Println(message)
+	log.Info().Msg(message)
 	progressPrinter.LogMessage(fmt.Sprintf("- %s", message))
 }
 
@@ -655,11 +652,11 @@ func IsConsoleUIAvailable(url string) error {
 		}
 
 		if resp.StatusCode == http.StatusOK {
-			log.Println("console UI is up and running")
+			log.Info().Msg("console UI is up and running")
 			return nil
 		}
 
-		log.Println("waiting UI console to be ready")
+		log.Info().Msg("waiting UI console to be ready")
 		time.Sleep(5 * time.Second)
 	}
 
@@ -672,4 +669,65 @@ func OpenLogFile(path string) (*os.File, error) {
 		return nil, err
 	}
 	return logFile, nil
+}
+
+// GetFileContent receives a file path, and return its content.
+func GetFileContent(filePath string) ([]byte, error) {
+
+	// check if file exists
+	if _, err := os.Stat(filePath); err != nil && os.IsNotExist(err) {
+		return nil, err
+	}
+
+	byteData, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return byteData, nil
+}
+
+type CertificateAppList struct {
+	Namespace string
+	AppName   string
+}
+
+func GetCertificateAppList() []CertificateAppList {
+
+	certificateAppList := []CertificateAppList{
+		{
+			Namespace: "argo",
+			AppName:   "argo",
+		},
+		{
+			Namespace: "argocd",
+			AppName:   "argocd",
+		},
+		{
+			Namespace: "atlantis",
+			AppName:   "atlantis",
+		},
+		{
+			Namespace: "chartmuseum",
+			AppName:   "chartmuseum",
+		},
+		{
+			Namespace: "vault",
+			AppName:   "vault",
+		},
+		{
+			Namespace: "minio",
+			AppName:   "minio",
+		},
+		{
+			Namespace: "minio",
+			AppName:   "minio-console",
+		},
+		{
+			Namespace: "kubefirst",
+			AppName:   "kubefirst-console",
+		},
+	}
+
+	return certificateAppList
 }

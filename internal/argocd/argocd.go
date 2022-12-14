@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -23,23 +23,46 @@ import (
 
 var ArgocdSecretClient coreV1Types.SecretInterface
 
-// ConfigRepo - Sample config struct
-type ConfigRepo struct {
+// Config ArgoCD configuration
+type Config struct {
 	Configs struct {
 		Repositories struct {
+			SoftServeGitops struct {
+				URL      string `yaml:"url,omitempty"`
+				Insecure string `json:"insecure,omitempty"`
+				Type     string `json:"type,omitempty"`
+				Name     string `json:"name,omitempty"`
+			} `yaml:"soft-serve-gitops,omitempty"`
 			RepoGitops struct {
-				URL  string `yaml:"url"`
-				Type string `yaml:"type"`
-				Name string `yaml:"name"`
-			} `yaml:"github-serve-gitops"`
-		} `yaml:"repositories"`
+				URL  string `yaml:"url,omitempty"`
+				Type string `yaml:"type,omitempty"`
+				Name string `yaml:"name,omitempty"`
+			} `yaml:"github-serve-gitops,omitempty"`
+		} `yaml:"repositories,omitempty"`
 		CredentialTemplates struct {
 			SSHCreds struct {
-				URL           string `yaml:"url"`
-				SSHPrivateKey string `yaml:"sshPrivateKey"`
-			} `yaml:"ssh-creds"`
-		} `yaml:"credentialTemplates"`
-	} `yaml:"configs"`
+				URL           string `yaml:"url,omitempty"`
+				SSHPrivateKey string `yaml:"sshPrivateKey,omitempty"`
+			} `yaml:"ssh-creds,omitempty"`
+		} `yaml:"credentialTemplates,omitempty"`
+	} `yaml:"configs,omitempty"`
+	Server struct {
+		ExtraArgs []string `yaml:"extraArgs,omitempty"`
+		Ingress   struct {
+			Enabled     string `yaml:"enabled,omitempty"`
+			Annotations struct {
+				IngressKubernetesIoRewriteTarget   string `yaml:"ingress.kubernetes.io/rewrite-target,omitempty"`
+				IngressKubernetesIoBackendProtocol string `yaml:"ingress.kubernetes.io/backend-protocol,omitempty"`
+			} `yaml:"annotations,omitempty"`
+			Hosts []string    `yaml:"hosts,omitempty"`
+			TLS   []TLSConfig `yaml:"tls,omitempty"`
+		} `yaml:"ingress,omitempty"`
+	} `yaml:"server,omitempty"`
+}
+
+type TLSConfig struct {
+	Hosts      []string `yaml:"hosts,omitempty"`
+	SecretName string   `yaml:"secretName,omitempty"`
 }
 
 // SyncRetry tries to Sync ArgoCD as many times as requested by the attempts' parameter. On successful request, returns
@@ -52,19 +75,19 @@ func SyncRetry(httpClient pkg.HTTPDoer, attempts int, interval int, applicationN
 
 		httpCode, syncStatus, err := Sync(httpClient, applicationName, token)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 			return false, fmt.Errorf("unable to request ArgoCD Sync, error is: %v", err)
 		}
 
 		// success! ArgoCD is synced!
 		if syncStatus == "Synced" {
-			log.Println("ArgoCD application is synced")
+			log.Info().Msg("ArgoCD application is synced")
 			return true, nil
 		}
 
 		// keep trying
 		if httpCode == http.StatusBadRequest {
-			log.Println("another operation is already in progress")
+			log.Info().Msg("another operation is already in progress")
 		}
 
 		log.Printf(
@@ -82,36 +105,36 @@ func SyncRetry(httpClient pkg.HTTPDoer, attempts int, interval int, applicationN
 func RefreshApplication(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) {
 
 	url := fmt.Sprintf("%s/api/v1/applications?refresh=true", viper.GetString("argocd.local.service"))
-	log.Println(url)
+	log.Debug().Msg(url)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", argoCDToken))
 	res, err := httpClient.Do(req)
 	if err != nil {
-		log.Printf("error sending GET request to ArgoCD for refreshing application (%s)\n", applicationName)
+		log.Error().Err(err).Msgf("error sending GET request to ArgoCD for refreshing application (%s)", applicationName)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		log.Printf("ArgoCD Sync response http code is: %d", res.StatusCode)
+		log.Info().Msgf("ArgoCD Sync response http code is: %d", res.StatusCode)
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
-	log.Println(string(body))
+	log.Debug().Msg(string(body))
 }
 
 func ListApplications(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) {
 
 	url := fmt.Sprintf("%s/api/v1/applications", viper.GetString("argocd.local.service"))
-	log.Println(url)
+	log.Debug().Msg(url)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", argoCDToken))
 	res, err := httpClient.Do(req)
@@ -126,32 +149,31 @@ func ListApplications(httpClient pkg.HTTPDoer, applicationName string, argoCDTok
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
-	log.Println(string(body))
+	log.Debug().Msg(string(body))
 }
 
 // Sync request ArgoCD to manual sync an application.
 func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (httpCodeResponse int, syncStatus string, Error error) {
 
 	url := fmt.Sprintf("%s/api/v1/applications/%s/sync", viper.GetString("argocd.local.service"), applicationName)
-	log.Println(url)
+	log.Info().Msg(url)
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 		return 0, "", err
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", argoCDToken))
 	res, err := httpClient.Do(req)
 	if err != nil {
-		log.Printf("error sending POST request to ArgoCD for syncing application (%s)\n", applicationName)
-		log.Println(err)
+		log.Error().Err(err).Msgf("error sending POST request to ArgoCD for syncing application (%s)", applicationName)
 		return res.StatusCode, "", err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		log.Printf("ArgoCD Sync response http code is: %d", res.StatusCode)
+		log.Warn().Err(err).Msgf("ArgoCD Sync response http code is: %d", res.StatusCode)
 		return res.StatusCode, "", nil
 	}
 
@@ -226,7 +248,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 	viper.Set("argocd.admin.apitoken", token)
 	err = viper.WriteConfig()
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 		return "", err
 	}
 
@@ -252,7 +274,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	req, err := http.NewRequest("POST", url, payload)
 	if err != nil {
-		log.Fatal("error getting auth token from argocd ", err)
+		log.Fatal().Err(err).Msg("error getting auth token from argocd")
 	}
 
 	client := &http.Client{
@@ -305,7 +327,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 			return token.(string)
 		}
 	}
-	log.Panic("Fail to get a token")
+	log.Panic().Msg("Fail to get a token")
 	// This code is unreacheble, as in absence of token we want to fail the install.
 	// I kept is to avoid compiler to complain.
 	return ""
@@ -323,9 +345,9 @@ func SyncArgocdApplication(dryRun bool, applicationName, argocdAuthToken string)
 	var outb bytes.Buffer
 
 	_, _, err := pkg.ExecShellReturnStrings("curl", "-k", "-L", "-X", "POST", url, "-H", fmt.Sprintf("Authorization: Bearer %s", argocdAuthToken))
-	log.Println("the value from the curl command to sync registry in argocd is:", outb.String())
+	log.Info().Msgf("the value from the curl command to sync registry in argocd is: %s", outb.String())
 	if err != nil {
-		log.Panicf("error: curl appSync failed failed %s", err)
+		log.Panic().Err(err).Msg("error: curl appSync failed failed")
 	}
 }
 
@@ -333,7 +355,7 @@ func SyncArgocdApplication(dryRun bool, applicationName, argocdAuthToken string)
 func ApplyRegistry(dryRun bool) error {
 	config := configs.ReadConfig()
 	if viper.GetBool("argocd.registry.applied") {
-		log.Println("skipped ApplyRegistry - ")
+		log.Info().Msg("skipped ApplyRegistry - ")
 		return nil
 	}
 	if !dryRun {
@@ -353,50 +375,43 @@ func ApplyRegistry(dryRun bool) error {
 func ApplyRegistryLocal(dryRun bool) error {
 	config := configs.ReadConfig()
 
-	if viper.GetBool("argocd.registry.applied") {
-		log.Println("skipped ApplyRegistryLocal - ")
+	if viper.GetBool("argocd.registry.applied") || dryRun {
+		log.Info().Msg("skipped ApplyRegistryLocal - ")
 		return nil
 	}
 
-	if !dryRun {
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/registry.yaml", config.K1FolderPath))
-		if err != nil {
-			log.Printf("failed to execute localhost kubectl apply of registry-base: %s", err)
-			return err
-		}
-		time.Sleep(45 * time.Second)
-		viper.Set("argocd.registry.applied", true)
-		viper.WriteConfig()
+	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/registry.yaml", config.K1FolderPath))
+	if err != nil {
+		log.Printf("failed to execute localhost kubectl apply of registry-base: %s", err)
+		return err
 	}
+	time.Sleep(45 * time.Second)
+	viper.Set("argocd.registry.applied", true)
+	viper.WriteConfig()
+
 	return nil
 }
 
-// CreateInitialArgoCDRepository - Fill and create argocd-init-values.yaml for Github installs
-func CreateInitialArgoCDRepository(githubURL string) error {
-	config := configs.ReadConfig()
-
-	privateKey := viper.GetString("botprivatekey")
-
-	argoConfig := ConfigRepo{}
-	argoConfig.Configs.Repositories.RepoGitops.URL = githubURL
-	argoConfig.Configs.Repositories.RepoGitops.Type = "git"
-	argoConfig.Configs.Repositories.RepoGitops.Name = "github-gitops"
-	argoConfig.Configs.CredentialTemplates.SSHCreds.URL = githubURL
-	argoConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = privateKey
+// CreateInitialArgoCDRepository - Fill and create `argocd-init-values.yaml` for GitHub installs.
+// The `argocd-init-values.yaml` is applied during helm install.
+func CreateInitialArgoCDRepository(config *configs.Config, argoConfig Config) error {
 
 	argoCdRepoYaml, err := yaml2.Marshal(&argoConfig)
 	if err != nil {
-		log.Printf("error: marshaling yaml for argo config %s", err)
-		return err
+		return fmt.Errorf("error: marshaling yaml for argo config %s", err)
 	}
 
 	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoCdRepoYaml, 0644)
 	if err != nil {
-		log.Printf("error: could not write argocd-init-values.yaml %s", err)
-		return err
+		return fmt.Errorf("error: could not write argocd-init-values.yaml %s", err)
 	}
 	viper.Set("argocd.initial-repository.created", true)
-	viper.WriteConfig()
+
+	err = viper.WriteConfig()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -414,7 +429,7 @@ func GetArgoCDApplication(token string, applicationName string) (argocdModel.V1a
 	url := pkg.ArgoCDLocalBaseURL + "/applications/" + applicationName
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 
 	req.Header.Add("Authorization", "Bearer "+token)
@@ -444,10 +459,10 @@ func GetArgoCDApplication(token string, applicationName string) (argocdModel.V1a
 func IsAppSynched(token string, applicationName string) (bool, error) {
 	app, err := GetArgoCDApplication(token, applicationName)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 		return false, fmt.Errorf("IsAppSynched - Error checking if arcoCD app is synched")
 	}
-	log.Println("App status:", app.Status.Sync.Status)
+	log.Info().Msgf("App status: %s", app.Status.Sync.Status)
 
 	if app.Status.Sync.Status == "Synced" {
 		return true, nil
@@ -466,10 +481,10 @@ func WaitArgoCDToBeReady(dryRun bool) {
 	for i := 0; i < x; i++ {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/argocd")
 		if err != nil {
-			log.Println("Waiting argocd to be born")
+			log.Info().Msg("Waiting argocd to be born")
 			time.Sleep(10 * time.Second)
 		} else {
-			log.Println("argocd namespace found, continuing")
+			log.Info().Msg("argocd namespace found, continuing")
 			time.Sleep(5 * time.Second)
 			break
 		}
@@ -477,14 +492,58 @@ func WaitArgoCDToBeReady(dryRun bool) {
 	for i := 0; i < x; i++ {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
 		if err != nil {
-			log.Println("Waiting for argocd pods to create, checking in 10 seconds")
+			log.Info().Msg("Waiting for argocd pods to create, checking in 10 seconds")
 			time.Sleep(10 * time.Second)
 		} else {
-			log.Println("argocd pods found, waiting for them to be running")
+			log.Info().Msg("argocd pods found, waiting for them to be running")
 			viper.Set("argocd.ready", true)
 			viper.WriteConfig()
 			time.Sleep(15 * time.Second)
 			break
 		}
 	}
+}
+
+// GetArgoCDInitialLocalConfig build a Config struct for local installation
+func GetArgoCDInitialLocalConfig(gitOpsRepo string, botPrivateKey string) Config {
+
+	argoCDConfig := Config{}
+
+	// Repo config
+	argoCDConfig.Configs.Repositories.RepoGitops.URL = gitOpsRepo
+	argoCDConfig.Configs.Repositories.RepoGitops.Type = "git"
+	argoCDConfig.Configs.Repositories.RepoGitops.Name = "github-gitops"
+
+	// Credentials
+	argoCDConfig.Configs.CredentialTemplates.SSHCreds.URL = gitOpsRepo
+	argoCDConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = botPrivateKey
+
+	// Ingress
+	argoCDConfig.Server.ExtraArgs = []string{"--insecure"}
+	argoCDConfig.Server.Ingress.Enabled = "true"
+	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoRewriteTarget = "/"
+	argoCDConfig.Server.Ingress.Annotations.IngressKubernetesIoBackendProtocol = "HTTPS"
+	argoCDConfig.Server.Ingress.Hosts = []string{"argocd.localdev.me"}
+
+	argoCDConfig.Server.Ingress.TLS = []TLSConfig{
+		{
+			Hosts:      []string{"argocd.localdev.me"},
+			SecretName: "argocd-tls",
+		},
+	}
+
+	return argoCDConfig
+}
+
+// GetArgoCDInitialCloudConfig build a Config struct for Cloud installation
+func GetArgoCDInitialCloudConfig(gitOpsRepo string, botPrivateKey string) Config {
+
+	argoCDConfig := Config{}
+	argoCDConfig.Configs.Repositories.RepoGitops.URL = gitOpsRepo
+	argoCDConfig.Configs.Repositories.RepoGitops.Type = "git"
+	argoCDConfig.Configs.Repositories.RepoGitops.Name = "github-gitops"
+	argoCDConfig.Configs.CredentialTemplates.SSHCreds.URL = gitOpsRepo
+	argoCDConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = botPrivateKey
+
+	return argoCDConfig
 }

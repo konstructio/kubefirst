@@ -42,12 +42,12 @@ var postInstallCmd = &cobra.Command{
 				log.Println(err)
 			}
 
-			err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURL)
+			err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
 			if err != nil {
 				log.Println(err)
 			}
 
-			err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURL)
+			err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
 			if err != nil {
 				log.Println(err)
 			}
