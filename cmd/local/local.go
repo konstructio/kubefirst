@@ -61,7 +61,7 @@ func NewCommand() *cobra.Command {
 	// todo: get it from GH token , use it for console
 	localCmd.Flags().StringVar(&adminEmail, "admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
 	localCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "main", "metaphor application branch")
-	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "", "version/branch used on git clone")
+	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "main", "version/branch used on git clone")
 	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "Prefix of the repo for gitops template, repo name has -template")
 	localCmd.Flags().StringVar(&gitOpsOrg, "gitops-org", "kubefirst", "Helpful when using forks of gitops for testing")
 	localCmd.Flags().StringVar(&templateTag, "template-tag", "",
