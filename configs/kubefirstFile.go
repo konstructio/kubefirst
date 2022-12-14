@@ -2,7 +2,7 @@ package configs
 
 import (
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"os"
 )
 
@@ -11,10 +11,10 @@ func CheckKubefirstConfigFile(config *Config) error {
 	kubefirstFile := fmt.Sprintf("%s", config.KubefirstConfigFilePath)
 	if _, err := os.Stat(kubefirstFile); err != nil {
 		errorMsg := fmt.Sprintf("unable to load %q file, error is: %s", config.KubefirstConfigFilePath, err)
-		log.Println(errorMsg)
+		log.Error().Msg(errorMsg)
 		return fmt.Errorf(errorMsg)
 	}
 
-	log.Printf("%q file is set", config.KubefirstConfigFilePath)
+	log.Info().Msgf("%q file is set", config.KubefirstConfigFilePath)
 	return nil
 }

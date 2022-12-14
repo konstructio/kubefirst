@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"os"
 	"os/exec"
 	"strings"
@@ -76,7 +76,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botpublickey")
 		return envs
 	case "gitlab":
-		fmt.Println("gitlab")
+		log.Info().Msg("gitlab")
 		return envs
 	case "github":
 		envs["GITHUB_TOKEN"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
@@ -108,7 +108,7 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 	config := configs.ReadConfig()
 	applyBase := viper.GetBool("create.terraformapplied.base")
 	if applyBase != true {
-		log.Println("Executing ApplyBaseTerraform")
+		log.Info().Msg("Executing ApplyBaseTerraform")
 		if dryRun {
 			log.Printf("[#99] Dry-run mode, applyBaseTerraform skipped.")
 			return
@@ -132,19 +132,19 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 			envs["TF_VAR_instance_type"] = "t4g.medium"
 		}
 
-		log.Println("tf env vars: ", envs)
+		log.Print("tf env vars: ", envs)
 
 		err := os.Chdir(directory)
 		if err != nil {
-			log.Panicf("error, directory does not exist - did you `kubefirst init`?: %s \nerror: %v", directory, err)
+			log.Panic().Msgf("error, directory does not exist - did you `kubefirst init`?: %s error: %v", directory, err)
 		}
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
-			log.Panic(fmt.Sprintf("error: terraform init failed %v", err))
+			log.Panic().Err(err).Msg("error: terraform init failed")
 		}
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
 		if err != nil {
-			log.Panic(fmt.Sprintf("error: terraform apply failed %v", err))
+			log.Panic().Err(err).Msg("error: terraform init failed")
 		}
 
 		var terraformOutput bytes.Buffer
@@ -153,11 +153,11 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		k.Stderr = os.Stderr
 		errKey := k.Run()
 		if errKey != nil {
-			log.Panicf("error: terraform output failed %v", errKey)
+			log.Panic().Err(err).Msg("error: terraform apply failed")
 		}
 		keyIdNoSpace := strings.TrimSpace(terraformOutput.String())
 		keyId := keyIdNoSpace[1 : len(keyIdNoSpace)-1]
-		log.Println("keyid is:", keyId)
+		log.Info().Msgf("keyid is: %s", keyId)
 		viper.Set("vault.kmskeyid", keyId)
 
 		var terraformNodeArnOutput bytes.Buffer
@@ -166,18 +166,18 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		k.Stderr = os.Stderr
 		errKey = k.Run()
 		if errKey != nil {
-			log.Panicf("error: terraform output failed %v", errKey)
+			log.Panic().Err(err).Msg("error: terraform output failed")
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 		nodeGroupArn := strings.TrimSpace(terraformNodeArnOutput.String())
 		nodeGroupArn = nodeGroupArn[1 : len(nodeGroupArn)-1]
-		log.Println("nodeGroupArn is:", nodeGroupArn)
+		log.Info().Msgf("nodeGroupArn is: %s", nodeGroupArn)
 		viper.Set("aws.node-group-arn", nodeGroupArn)
 		viper.Set("create.terraformapplied.base", true)
 		viper.WriteConfig()
 		pkg.Detokenize(fmt.Sprintf("%s/gitops", config.K1FolderPath))
 	} else {
-		log.Println("Skipping: ApplyBaseTerraform")
+		log.Info().Msg("Skipping: ApplyBaseTerraform")
 	}
 }
 
@@ -187,7 +187,7 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 		err := os.Chdir(directory)
 		if err != nil {
-			log.Panicf("error: could not change directory to " + directory)
+			log.Panic().Msgf("error: could not change directory to " + directory)
 		}
 
 		envs := map[string]string{}
@@ -210,19 +210,19 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
-			log.Panicf("failed to terraform init base %v", err)
+			log.Panic().Err(err).Msg("failed to terraform init base")
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
 		if err != nil {
-			log.Panicf("failed to terraform destroy base %v", err)
+			log.Panic().Err(err).Msg("failed to terraform destroy base")
 		}
 
 		viper.Set("destroy.terraformdestroy.base", true)
 		viper.WriteConfig()
-		log.Println("terraform base destruction complete")
+		log.Info().Msg("terraform base destruction complete")
 	} else {
-		log.Println("skip:  destroyBaseTerraform")
+		log.Info().Msg("skip: destroyBaseTerraform")
 	}
 }
 
@@ -231,7 +231,7 @@ func ApplyECRTerraform(dryRun bool, directory string) {
 	config := configs.ReadConfig()
 
 	if !viper.GetBool("create.terraformapplied.ecr") {
-		log.Println("Executing applyECRTerraform")
+		log.Info().Msg("Executing applyECRTerraform")
 		if dryRun {
 			log.Printf("[#99] Dry-run mode, applyECRTerraform skipped.")
 			return
@@ -249,22 +249,22 @@ func ApplyECRTerraform(dryRun bool, directory string) {
 		directory = fmt.Sprintf("%s/gitops/terraform/ecr", config.K1FolderPath)
 		err := os.Chdir(directory)
 		if err != nil {
-			log.Panic("error: could not change directory to " + directory)
+			log.Panic().Msgf("error: could not change directory to " + directory)
 		}
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
-			log.Panicf("error: terraform init for ecr failed %s", err)
+			log.Panic().Msgf("error: terraform init for ecr failed %s", err)
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
 		if err != nil {
-			log.Panicf("error: terraform apply for ecr failed %s", err)
+			log.Panic().Msgf("error: terraform apply for ecr failed %s", err)
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 		viper.Set("create.terraformapplied.ecr", true)
 		viper.WriteConfig()
 	} else {
-		log.Println("Skipping: applyECRTerraform")
+		log.Info().Msg("Skipping: applyECRTerraform")
 	}
 }
 
@@ -274,7 +274,7 @@ func DestroyECRTerraform(skipECRTerraform bool) {
 		directory := fmt.Sprintf("%s/gitops/terraform/ecr", config.K1FolderPath)
 		err := os.Chdir(directory)
 		if err != nil {
-			log.Panicf("error: could not change directory to " + directory)
+			log.Panic().Msgf("error: could not change directory to " + directory)
 		}
 
 		envs := map[string]string{}
@@ -293,7 +293,7 @@ func DestroyECRTerraform(skipECRTerraform bool) {
 		viper.Set("destroy.terraformdestroy.ecr", true)
 		viper.WriteConfig()
 	} else {
-		log.Println("skip:  destroyBaseTerraform")
+		log.Info().Msg("skip:  destroyBaseTerraform")
 	}
 }
 
@@ -312,20 +312,20 @@ func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
 	}
 
 	envs := terraformConfig(kubefirstConfigProperty)
-	log.Println("tf env vars: ", envs)
+	log.Print("tf env vars: ", envs)
 
 	err := os.Chdir(tfEntrypoint)
 	if err != nil {
-		log.Panic("error: could not change to directory " + tfEntrypoint)
+		log.Panic().Msgf("error: could not change to directory " + tfEntrypoint)
 	}
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 	if err != nil {
-		log.Panicf("error: terraform init for %s failed %s", tfEntrypoint, err)
+		log.Panic().Msgf("error: terraform init for %s failed %s", tfEntrypoint, err)
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, tfAction, "-auto-approve")
 	if err != nil {
-		log.Panicf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
+		log.Panic().Msgf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
 	}
 	os.RemoveAll(fmt.Sprintf("%s/.terraform/", tfEntrypoint))
 	os.Remove(fmt.Sprintf("%s/.terraform.lock.hcl", tfEntrypoint))
@@ -348,21 +348,21 @@ func initAndMigrateActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string)
 	}
 
 	envs := terraformConfig(kubefirstConfigProperty)
-	log.Println("tf env vars: ", envs)
+	log.Print("tf env vars: ", envs)
 
 	err := os.Chdir(tfEntrypoint)
 	if err != nil {
-		log.Panic("error: could not change to directory " + tfEntrypoint)
+		log.Panic().Msgf("error: could not change to directory " + tfEntrypoint)
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init", "-migrate-state", "-force-copy")
 	if err != nil {
-		log.Panicf("error: terraform init for %s failed %s", tfEntrypoint, err)
+		log.Panic().Msgf("error: terraform init for %s failed %s", tfEntrypoint, err)
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, tfAction, "-auto-approve")
 	if err != nil {
-		log.Panicf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
+		log.Panic().Msgf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
 	}
 	os.RemoveAll(fmt.Sprintf("%s/.terraform/", tfEntrypoint))
 	os.Remove(fmt.Sprintf("%s/.terraform.lock.hcl", tfEntrypoint))
@@ -370,7 +370,7 @@ func initAndMigrateActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string)
 	viper.WriteConfig()
 }
 
-func initAndReconfigureActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
+func InitAndReconfigureActionAutoApprove(dryRun bool, tfAction string, tfEntrypoint string) error {
 
 	config := configs.ReadConfig()
 	tfEntrypointSplit := strings.Split(tfEntrypoint, "/")
@@ -382,29 +382,35 @@ func initAndReconfigureActionAutoApprove(dryRun bool, tfAction, tfEntrypoint str
 	log.Printf("Executing Init%s%sTerraform", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, Init%s%sTerraform skipped", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
+		return nil
 	}
 
 	envs := terraformConfig(kubefirstConfigProperty)
-	log.Println("tf env vars: ", envs)
+	log.Print("tf env vars: ", envs)
 
 	err := os.Chdir(tfEntrypoint)
 	if err != nil {
-		log.Panic("error: could not change to directory " + tfEntrypoint)
+		log.Error().Err(err).Msgf("error: could not change to directory " + tfEntrypoint)
+		return err
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init", "-reconfigure")
 	if err != nil {
-		log.Panicf("error: terraform init for %s failed %s", tfEntrypoint, err)
+		log.Error().Err(err).Msgf("error: terraform init for %s failed %s", tfEntrypoint, err)
+		return err
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, tfAction, "-auto-approve")
 	if err != nil {
-		log.Panicf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
+		log.Error().Err(err).Msgf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
+		return err
 	}
 	os.RemoveAll(fmt.Sprintf("%s/.terraform/", tfEntrypoint))
 	os.Remove(fmt.Sprintf("%s/.terraform.lock.hcl", tfEntrypoint))
 	viper.Set(kubefirstConfigPath, true)
 	viper.WriteConfig()
+
+	return nil
 }
 
 func InitMigrateApplyAutoApprove(dryRun bool, tfEntrypoint string) {
@@ -422,11 +428,6 @@ func InitDestroyAutoApprove(dryRun bool, tfEntrypoint string) {
 	initActionAutoApprove(dryRun, tfAction, tfEntrypoint)
 }
 
-func InitReconfigureDestroyAutoApprove(dryRun bool, tfEntrypoint string) {
-	tfAction := "destroy"
-	initAndReconfigureActionAutoApprove(dryRun, tfAction, tfEntrypoint)
-}
-
 // todo need to write something that outputs -json type and can get multiple values
 func OutputSingleValue(dryRun bool, directory, tfEntrypoint, outputName string) {
 
@@ -439,10 +440,10 @@ func OutputSingleValue(dryRun bool, directory, tfEntrypoint, outputName string) 
 	tfOutputCmd.Stderr = os.Stderr
 	err := tfOutputCmd.Run()
 	if err != nil {
-		fmt.Println("failed to call tfOutputCmd.Run(): ", err)
+		log.Error().Err(err).Msg("failed to call tfOutputCmd.Run()")
 	}
 
-	log.Println("tfOutput is: ", tfOutput.String())
+	log.Print("tfOutput is: ", tfOutput.String())
 }
 
 // ApplyUsersTerraform load environment variables into the host based on the git provider, change directory to the
@@ -453,7 +454,7 @@ func ApplyUsersTerraform(dryRun bool, directory string, gitProvider string) erro
 	config := configs.ReadConfig()
 
 	if viper.GetBool("create.terraformapplied.users") || dryRun {
-		log.Println("skipping: ApplyUsersTerraform")
+		log.Info().Msg("skipping: ApplyUsersTerraform")
 		return nil
 	}
 
@@ -461,7 +462,7 @@ func ApplyUsersTerraform(dryRun bool, directory string, gitProvider string) erro
 		return errors.New("git provider not provided, skipping terraform apply")
 	}
 
-	log.Println("Executing ApplyUsersTerraform")
+	log.Info().Msg("Executing ApplyUsersTerraform")
 
 	//* AWS_SDK_LOAD_CONFIG=1
 	//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file

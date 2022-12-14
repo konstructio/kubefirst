@@ -103,13 +103,16 @@ var createGithubCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-base", 1)
 
 		gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
-		argocd.CreateInitialArgoCDRepository(gitopsRepo)
 
-		// clientset, err := k8s.GetClientSet(globalFlags.DryRun)
-		// if err != nil {
-		// 	log.Printf("Failed to get clientset for k8s : %s", err)
-		// 	return err
-		// }
+		botPrivateKey := viper.GetString("botprivatekey")
+
+		argoCDConfig := argocd.GetArgoCDInitialCloudConfig(gitopsRepo, botPrivateKey)
+
+		err = argocd.CreateInitialArgoCDRepository(config, argoCDConfig)
+		if err != nil {
+			return err
+		}
+
 		err = helm.InstallArgocd(globalFlags.DryRun)
 		if err != nil {
 			log.Println("Error installing argocd")

@@ -2,6 +2,7 @@ package softserve
 
 import (
 	"fmt"
+	internalSSH "github.com/kubefirst/kubefirst/internal/ssh"
 	"log"
 	"os"
 	"strings"
@@ -103,7 +104,7 @@ func configureSoftServe() error {
 
 	log.Println("gitClient clone", url, directory)
 
-	auth, err := pkg.PublicKey()
+	auth, err := internalSSH.PublicKey()
 	if err != nil {
 		return err
 	}

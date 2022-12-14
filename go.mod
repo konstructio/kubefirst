@@ -21,14 +21,15 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
+	github.com/go-logr/zerologr v1.2.2
 	github.com/google/go-github/v45 v45.0.0
 	github.com/google/uuid v1.1.2
-	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/vault/api v1.8.0
 	github.com/itchyny/gojq v0.12.8
 	github.com/jedib0t/go-pretty/v6 v6.3.1
 	github.com/ngrok/ngrok-go v0.0.0-20221014185124-b264c7d06bbf
 	github.com/otiai10/copy v1.7.0
+	github.com/rs/zerolog v1.28.0
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.11.0
@@ -85,7 +86,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/logr v1.2.3
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect

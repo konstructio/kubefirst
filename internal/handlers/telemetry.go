@@ -20,7 +20,13 @@ func NewTelemetryHandler(service services.SegmentIoService) TelemetryHandler {
 // SendCountMetric validate and handles the metric request to the metric service.
 func (handler TelemetryHandler) SendCountMetric(telemetry domain.Telemetry) error {
 
-	err := handler.service.EnqueueCountMetric(
+	// the library handles it, and will call Identify once per command
+	err := handler.service.EnqueueIdentify(telemetry.Domain)
+	if err != nil {
+		return err
+	}
+
+	err = handler.service.EnqueueCountMetric(
 		telemetry.MetricName,
 		telemetry.Domain,
 		telemetry.CLIVersion,
