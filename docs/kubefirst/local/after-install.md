@@ -31,7 +31,7 @@ You now have a k3d cluster with the following content installed in it:
 ![terminal handoff](../../img/kubefirst/local/console.png)
 
 The `kubefirst local` command will open a new browser tab at completion with the Console UI at
-`https://kubefirst-console.localdev.me` to provide you an easy way to navigate through the different services that were provisioned.
+`https://kubefirst.localdev.me` to provide you an easy way to navigate through the different services that were provisioned.
 
 ![terminal handoff](../../img/kubefirst/local/handoff-screen.png)
 
