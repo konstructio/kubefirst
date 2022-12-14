@@ -64,18 +64,6 @@ type Config struct {
 	MetaphorTemplateURL string
 	GitopsTemplateURL   string
 
-	LocalMetaphorDev      string
-	LocalMetaphorGoDev    string
-	LocalMetaphorFrontDev string
-
-	LocalMetaphorStaging      string
-	LocalMetaphorGoStaging    string
-	LocalMetaphorFrontStaging string
-
-	LocalMetaphorProd      string
-	LocalMetaphorGoProd    string
-	LocalMetaphorFrontProd string
-
 	GitHubPersonalAccessToken string `env:"KUBEFIRST_GITHUB_AUTH_TOKEN"`
 }
 
@@ -131,18 +119,6 @@ func ReadConfig() *Config {
 
 	config.MetaphorTemplateURL = "https://github.com/kubefirst/metaphor-template.git"
 	config.GitopsTemplateURL = "https://github.com/kubefirst/gitops-template-gh.git"
-
-	config.LocalMetaphorDev = "http://localhost:3000"
-	config.LocalMetaphorGoDev = "http://localhost:5000"
-	config.LocalMetaphorFrontDev = "http://localhost:4000"
-
-	config.LocalMetaphorStaging = "http://localhost:3001"
-	config.LocalMetaphorGoStaging = "http://localhost:5001"
-	config.LocalMetaphorFrontStaging = "http://localhost:4001"
-
-	config.LocalMetaphorProd = "http://localhost:3002"
-	config.LocalMetaphorGoProd = "http://localhost:5002"
-	config.LocalMetaphorFrontProd = "http://localhost:4002"
 
 	// If the AWS_SDK_LOAD_CONFIG environment variable is set to a truthy value the shared config file (~/.aws/config)
 	// will also be loaded in addition to the shared credentials file (~/.aws/credentials).
