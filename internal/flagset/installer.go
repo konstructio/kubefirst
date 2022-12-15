@@ -226,7 +226,7 @@ func validateInstallationFlags() error {
 		return errors.New(message)
 	}
 
-	if len(viper.GetString("botpassword")) < 8 || (viper.GetString("gitprovider") == "gitlab") {
+	if len(viper.GetString("botpassword")) < 8 && (viper.GetString("gitprovider") == "gitlab") {
 		msg := "BotPassword (to GitLab flavor) is too short (minimum is 8 characters)"
 		return errors.New(msg)
 	}
