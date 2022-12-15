@@ -2,9 +2,9 @@
 
 ## I ran into an issue, what should I try?
 
-The `kubefirst local` command is demanding on the localhost. It creates a multinode local k3d kubernetes cluster and deploys a lot of content to the cluster. Please consider extending as much local resources to your local docker runtime as you have space for.
+The `kubefirst local` command is demanding on the localhost. It creates a multi-node local k3d Kubernetes cluster and deploys a lot of content to the cluster. Please consider extending as much local resources to your local Docker runtime as you have space for.
 
-If an error occurrs during `kubefirst local` or `kubefirst cluster destroy`, you can often just run the command again. There's a `~/.kubefirst` file on your localhost that keeps track of your execution state. If rerunning doesn't work, move on to the next step.
+If an error occurs during `kubefirst local` or `kubefirst local destroy`, you can often just run the command again. There's a `~/.kubefirst` file on your localhost that keeps track of your execution state. If rerunning doesn't work, move on to the next step.
 
 ## I ran into an issue and rerunning didin't help, what should I try now?
 
@@ -12,12 +12,11 @@ There's a log file that gets printed right after the `kubefirst local` command s
 
 ## I checked the logs and still can't figure out what to do next - what now?
 
-Open an issue against the kubefirst/kubefirst repo on github. We'll gladly work through it with you.
-[https://github.com/kubefirst/kubefirst/issues](https://github.com/kubefirst/kubefirst/issues)
+[Open an issue](https://github.com/kubefirst/kubefirst/issues) against the kubefirst/kubefirst repo on github. We'll gladly work through it with you.
 
 ## I hate keeping up on GitHub issues - can I just talk to you on Slack?
 
-We'd love that! Join the `kubefirst-community` Slack workspace by following [this link].(https://join.slack.com/t/kubefirst-community/shared_invite/zt-r0r9cfts-OVnH0ooELDLm9n9p2aU7fw)
+We'd love that! Join the `kubefirst-community` Slack workspace by following [this link](http://kubefirst.io/slack)
 
 ## How do I tear down kubefirst local when I'm done checking it out?
 
@@ -27,11 +26,12 @@ See [./destroy.md](./destroy.md)
 
 To delete the local k3d cluster run
 
-```
+```shell
 k3d cluster delete kubefirst
 ```
 
 To delete your github assets that we created, log into your personal github and remove the following:
+
 - gitops repo
 - metaphor repo
 - metaphor-go repo
