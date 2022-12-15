@@ -1,6 +1,6 @@
 # Contributing to Kubefirst
 
-Firstly, we want to thank you for investing your precious time to contribute to Kubefirst!
+Firstly, we want to thank you for investing your valuable time to contribute to Kubefirst!
 
 _⚠️ Please note that this file is a work-in-progress, so more details will be added in the future._
 
