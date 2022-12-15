@@ -120,7 +120,8 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		)
 	}
 
-	progressPrinter.SetupProgress(4, silentMode)
+	//progress bars are global, it is not needed to initialized on every stage.
+	progressPrinter.SetupProgress(8, silentMode)
 
 	progressPrinter.AddTracker("step-0", "Process Parameters", 1)
 	progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
