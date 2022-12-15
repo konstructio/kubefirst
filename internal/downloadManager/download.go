@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"io"
 	"io/fs"
 	"net/http"
@@ -14,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -234,11 +235,13 @@ func DownloadTools(config *configs.Config) error {
 			"--short",
 		)
 		if err != nil {
+			log.Info().Msg(helmStdErr)
 			errorChannel <- fmt.Errorf("error executing helm version command: %v", err)
 			return
 		}
+		os.Remove(helmDownloadTarGzPath)
 
-		log.Info().Msgf("-> Helm version: %s\n\t%s", helmStdOut, helmStdErr)
+		log.Info().Msgf("Helm version: %s", helmStdOut)
 
 		wg.Done()
 
