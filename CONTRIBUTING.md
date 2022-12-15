@@ -26,4 +26,4 @@ Since Go is a compiled programming language, every time you use the `run` comman
 
 ## Help
 
-If you need help in your Kubefirst journey as a contributor, please join our [Slack Community](http://kubefirst.io/slack). We have the `#kubefirst-oss` channel where you can ask any questions or get help with anything contribution-related. For support as an user, please ask in the `#helping-hands` channel, or directly to @fharper (Fred in Slack), our Developer Advocate.
+If you need help in your Kubefirst journey as a contributor, please join our [Slack Community](http://kubefirst.io/slack). We have the `#kubefirst-oss` channel where you can ask any questions or get help with anything contribution-related. For support as a user, please ask in the `#helping-hands` channel, or directly to @fharper (Fred in Slack), our Developer Advocate.
