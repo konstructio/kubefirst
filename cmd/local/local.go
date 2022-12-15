@@ -93,16 +93,16 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 	progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
 	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 4)
-
-	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), silentMode)
-
+	progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 2)
 	if useTelemetry {
-		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 2)
 		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallStarted); err != nil {
 			log.Error().Err(err).Msg("")
 		}
-		progressPrinter.IncrementTracker("step-telemetry", 1)
+		pkg.InformUser("Telemetry info sent", silentMode)
+	} else {
+		pkg.InformUser("Telemetry skipped by user request", silentMode)
 	}
+	progressPrinter.IncrementTracker("step-telemetry", 1)
 
 	// todo need to add go channel to control when ngrok should close
 	// and use context to handle closing the open goroutine/connection
@@ -330,7 +330,6 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	// TODO: K3D =>  NEED TO REMOVE local-backend.tf and rename remote-backend.md
 
-	pkg.InformUser("Welcome to local kubefirst experience", silentMode)
 	pkg.InformUser("To use your cluster port-forward - argocd", silentMode)
 	pkg.InformUser("If not automatically injected, your kubeconfig is at:", silentMode)
 	pkg.InformUser("k3d kubeconfig get "+viper.GetString("cluster-name"), silentMode)
@@ -420,15 +419,6 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		wg.Done()
 	}()
 
-	log.Info().Msg("sending mgmt cluster install completed metric")
-
-	if useTelemetry {
-		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted); err != nil {
-			log.Error().Err(err).Msg("")
-		}
-		progressPrinter.IncrementTracker("step-telemetry", 1)
-	}
-
 	_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/ingressroute.yaml", config.K1FolderPath))
 
 	if err != nil {
@@ -448,6 +438,18 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	// waiting GitHub/atlantis step
 	wg.Wait()
+
+	log.Info().Msg("sending mgmt cluster install completed metric")
+	if useTelemetry {
+		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted); err != nil {
+			log.Error().Err(err).Msg("")
+		}
+		pkg.InformUser("Telemetry info sent", silentMode)
+	} else {
+		pkg.InformUser("Telemetry skipped by user request", silentMode)
+	}
+	progressPrinter.IncrementTracker("step-telemetry", 1)
+
 	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
 	return nil
 
