@@ -12,6 +12,7 @@ const (
 	KubefirstGitOpsRepository    = "gitops"
 	KubefirstGitOpsRepositoryURL = "https://github.com/kubefirst/gitops-template"
 	LocalDNS                     = "localdev.me"
+	TLSSupportIsDisabled         = "TLS support is disabled, TLS certificates won't be created and provisioned services won't have a valid TLS certificate"
 )
 
 // SegmentIO constants
@@ -50,6 +51,7 @@ const (
 	ArgoNamespace    = "argo"
 	ArgoPodPort      = 2746
 	ArgoPodLocalPort = 2746
+	ArgoLocalURL     = "http://argo.localdev.me"
 	ArgoLocalURLTLS  = "https://argo.localdev.me"
 )
 

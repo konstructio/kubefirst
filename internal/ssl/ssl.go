@@ -242,11 +242,37 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 	return nil
 }
 
-func InstallCALocal(config *configs.Config) {
-	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, "-install")
-	if err != nil {
-		log.Printf("failed to uninstall CA of mkCert: %s", err)
+// InstallMKCertLocal install mkCert state store in the host machine
+func InstallMKCertLocal(config *configs.Config, disableTLS bool) error {
+
+	if disableTLS {
+		log.Println(pkg.TLSSupportIsDisabled)
+		return nil
 	}
+
+	log.Println("installing CA from MkCert")
+
+	_, output, err := pkg.ExecShellReturnStrings(config.MkCertPath, "-install")
+	if err != nil {
+		return fmt.Errorf("failed to install certificates using mkCert, you won't have valid certificates "+
+			"for the provisioned services. error: %v, output: %v", err, output)
+	}
+
+	log.Println(output)
+
+	if strings.Contains(output, "The local CA is already installed in the system trust store!") {
+		log.Println("mkCert already installed")
+		return nil
+	}
+
+	if strings.Contains(output, "The local CA is now installed in the system trust store!") {
+		log.Println("mkCert was successfully installed")
+		return nil
+	}
+
+	return fmt.Errorf("failed to install certificates using mkCert, that means you won't have valid "+
+		"certificates for the provisioned services. error: %v, output: %v", err, output,
+	)
 }
 
 // todo: make destroy call it
@@ -259,7 +285,14 @@ func UninstallCALocal(config *configs.Config) {
 
 // CreateCertificatesForLocalWrapper groups a certification creation call into a wrapper. The provided application
 // list is used to create SSL certificates for each of the provided application.
-func CreateCertificatesForLocalWrapper(config *configs.Config) error {
+func CreateCertificatesForLocalWrapper(config *configs.Config, disableTLS bool) error {
+
+	if disableTLS {
+		log.Println(pkg.TLSSupportIsDisabled)
+		return nil
+	}
+
+	log.Println("creating local certificates")
 
 	// create folder
 	// todo: check permission
@@ -273,6 +306,8 @@ func CreateCertificatesForLocalWrapper(config *configs.Config) error {
 			return err
 		}
 	}
+
+	log.Println("creating local certificates")
 
 	return nil
 }

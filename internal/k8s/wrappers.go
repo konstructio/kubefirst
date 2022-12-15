@@ -224,7 +224,14 @@ func OpenPortForwardServiceWrapper(serviceName string, namespace string, service
 	return
 }
 
-func CreateSecretsFromCertificatesForLocalWrapper(config *configs.Config) error {
+func CreateSecretsFromCertificatesForLocalWrapper(config *configs.Config, disableTLS bool) error {
+
+	if disableTLS {
+		log.Warn().Msg(pkg.TLSSupportIsDisabled)
+		return nil
+	}
+
+	log.Info().Msg("storing certificates into application secrets namespace")
 
 	for _, app := range pkg.GetCertificateAppList() {
 
@@ -256,6 +263,8 @@ func CreateSecretsFromCertificatesForLocalWrapper(config *configs.Config) error 
 
 		log.Info().Msgf("creating TLS k8s secret for %s done", app.AppName)
 	}
+
+	log.Info().Msg("storing certificates into application secrets namespace done")
 
 	return nil
 }

@@ -3,7 +3,10 @@ package local
 import (
 	"context"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/kubefirst/kubefirst/internal/ssl"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/kubefirst/kubefirst/internal/ssh"
@@ -61,6 +64,35 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		)
 	}
 
+	err = downloadManager.DownloadLocalTools(config)
+	if err != nil {
+		return err
+	}
+	//
+	// create local certs using MkCert tool
+	//
+
+	//err = progressPrinter.Stop()
+	//if err != nil {
+	//	return err
+	//}
+
+	if disableTLS == false {
+		var disableTLSPrompt strings.Builder
+		disableTLSPrompt.WriteString("Kubefirst uses Ingress, local DNS and TLS for local services as Vault, Argo and ArgoCD.\n")
+		disableTLSPrompt.WriteString("Kubefirst uses mkCert to create and store the certificates in the user trusted store.\n")
+		disableTLSPrompt.WriteString("The trusted store is responsible to provide a set of certificates to your browser (except Firefox at the moment).\n\n")
+		disableTLSPrompt.WriteString("To install the certificates, we need to ask you for the root password to allow mkCert to store the certificates in your trusted store.\n\n")
+		disableTLSPrompt.WriteString("If you don't agree. Please use the --disable-tls flags, and you won't be asked for the root password, but won't have TLS for the provisioned services.\n\n")
+		disableTLSPrompt.WriteString("<press enter> to continue\n")
+		fmt.Println(reports.StyleMessage(disableTLSPrompt.String()))
+		fmt.Scanln()
+	}
+
+	if err = ssl.InstallMKCertLocal(config, disableTLS); err != nil {
+		log.Error().Err(err).Msg("")
+	}
+
 	// set default values to kubefirst file
 	viper.Set("gitops.repo", pkg.KubefirstGitOpsRepository)
 	viper.Set("gitops.owner", "kubefirst")
@@ -74,7 +106,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	viper.Set("adminemail", adminEmail)
 
 	viper.Set("argocd.local.service", pkg.ArgoCDLocalURL)
-	viper.Set("vault.local.service", pkg.VaultLocalURLTLS)
+	viper.Set("vault.local.service", pkg.VaultLocalURL)
 	viper.Set("use-telemetry", useTelemetry)
 	err = viper.WriteConfig()
 	if err != nil {
@@ -134,14 +166,8 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	progressPrinter.IncrementTracker("step-download", 1)
 	log.Info().Msg("dependency installation complete")
-	progressPrinter.IncrementTracker("step-download", 1)
-	err = downloadManager.DownloadLocalTools(config)
-	if err != nil {
-		return err
-	}
-
-	progressPrinter.IncrementTracker("step-download", 1)
 
 	log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
 	ssh.CreateSshKeyPair()
@@ -151,7 +177,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	//
 	// clone gitops template
 	//
-	// todo: add wrapper
+	// todo: refactor, add wrapper, add unit tests, document the logic
 	if configs.K1Version == configs.DefaultK1Version {
 
 		gitHubOrg := "kubefirst"

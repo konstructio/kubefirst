@@ -277,11 +277,11 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 
 		if cloud == cloudK3d {
 			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
-			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", ArgoLocalURLTLS, -1)
-			newContents = strings.Replace(newContents, "<VAULT_URL>", VaultLocalURLTLS, -1)
-			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", ArgoCDLocalURLTLS, -1)
-			newContents = strings.Replace(newContents, "<ATLANTIS_URL>", AtlantisLocalURLTLS, -1)
-			newContents = strings.Replace(newContents, "<CHARTMUSEUM_URL>", ChartmuseumLocalURLTLS, -1)
+			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", ArgoLocalURL, -1)
+			newContents = strings.Replace(newContents, "<VAULT_URL>", VaultLocalURL, -1)
+			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", ArgoCDLocalURL, -1)
+			newContents = strings.Replace(newContents, "<ATLANTIS_URL>", AtlantisLocalURL, -1)
+			newContents = strings.Replace(newContents, "<CHARTMUSEUM_URL>", ChartmuseumLocalURL, -1)
 
 			// todo: use pkg.constants for metaphor's URLs
 			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", config.LocalMetaphorDev, -1)
