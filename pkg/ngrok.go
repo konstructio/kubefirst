@@ -3,9 +3,11 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"io"
 	"net"
+	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/ngrok/ngrok-go"
 	"github.com/ngrok/ngrok-go/config"
@@ -19,6 +21,15 @@ func RunNgrok(ctx context.Context) {
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}
+
+	retry(3, time.Second, "create ngrok tunnel", func() error {
+		tunnel, err = ngrok.StartTunnel(ctx, config.HTTPEndpoint(), ngrok.WithAuthtokenFromEnv())
+		if err != nil {
+			log.Debug().Err(err).Msg("")
+			return err
+		}
+		return nil
+	})
 
 	fmt.Println("tunnel created: ", tunnel.URL())
 	viper.Set("github.atlantis.webhook.url", tunnel.URL()+"/events")
