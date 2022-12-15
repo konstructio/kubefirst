@@ -13,7 +13,7 @@ kubefirst local destroy
 If the above command fails to complete due to unforeseen circumstances, you can then manually delete the git repositories named:
 
 - gitops
-- metaphor (only exists if you complete Kubefirst local provisioning)
+- metaphor-frontend (only exists if you complete Kubefirst local provisioning)
 
 You can then manually delete the k3d cluster with the command `k3d cluster delete kubefirst` or `~/.k1/tools/k3d cluster delete kubefirst` if you don't have k3d installed.
 
