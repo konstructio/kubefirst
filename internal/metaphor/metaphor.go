@@ -2,11 +2,10 @@ package metaphor
 
 import (
 	"fmt"
-	"log"
 	"os"
-
+	
 	"github.com/kubefirst/kubefirst/pkg"
-
+	
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
@@ -14,6 +13,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/repo"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/spf13/viper"
+	"github.com/rs/zerolog/log"
 )
 
 // DeployMetaphorGitlab - Deploy metaphor applications on gitlab install
@@ -53,7 +53,7 @@ func DeployMetaphorGitlab(globalFlags flagset.GlobalFlags) error {
 
 	// Frontend template
 	if !viper.GetBool("gitlab.metaphor-frontend-pushed") {
-		log.Println("Pushing metaphor-frontend repo to origin gitlab")
+		log.Info().Msgf("Pushing metaphor-frontend repo to origin gitlab")
 		gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "metaphor-frontend")
 		viper.Set("gitlab.metaphor-frontend-pushed", true)
 		viper.WriteConfig()
@@ -70,7 +70,7 @@ func DeployMetaphorGithub(globalFlags flagset.GlobalFlags) error {
 	githubOwner := viper.GetString("github.owner")
 	githubHost := viper.GetString("github.host")
 	if viper.GetBool("github.metaphor-pushed") {
-		log.Println("github.metaphor-pushed already executed, skipped")
+		log.Info().Msgf("github.metaphor-pushed already executed skipped")
 		return nil
 	}
 	config := configs.ReadConfig()
