@@ -72,11 +72,6 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	// create local certs using MkCert tool
 	//
 
-	//err = progressPrinter.Stop()
-	//if err != nil {
-	//	return err
-	//}
-
 	if disableTLS == false {
 		var disableTLSPrompt strings.Builder
 		disableTLSPrompt.WriteString("Kubefirst uses Ingress, local DNS and TLS for local services as Vault, Argo and ArgoCD.\n")
