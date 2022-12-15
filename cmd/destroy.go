@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
@@ -20,6 +21,9 @@ var destroyCmd = &cobra.Command{
 
 		//Destroy is implemented based on the flavor selected.
 		if viper.GetString("cloud") == flagset.CloudAws {
+			//just in case, we need downstream
+			awsProfile := viper.GetString("aws.profile")
+			os.Setenv("AWS_PROFILE", awsProfile)
 			if viper.GetString("gitprovider") == gitClient.Github {
 				err := destroyAwsGithubCmd.RunE(cmd, args)
 				if err != nil {
