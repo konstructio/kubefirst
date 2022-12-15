@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/rs/zerolog/log"
 )
 
 //ActionTracker Struct used to manage tracker object
@@ -48,7 +49,7 @@ func GetInstance() *progressPrinter {
 // Used for general initialization of tracker object and overall counter
 func SetupProgress(numTrackers int, silentMode bool) {
 	flag.Parse()
-	fmt.Printf("Init actions: %d expected tasks ...\n\n", numTrackers)
+	log.Debug().Msg(fmt.Sprintf("Init actions: %d expected tasks ...\n\n", numTrackers))
 	// if silent mode, dont show progress bar render
 	if silentMode {
 		return

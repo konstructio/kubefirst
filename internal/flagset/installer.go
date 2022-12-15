@@ -2,8 +2,9 @@ package flagset
 
 import (
 	"errors"
-	"github.com/kubefirst/kubefirst/pkg"
 	"log"
+
+	"github.com/kubefirst/kubefirst/pkg"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/addon"
@@ -224,5 +225,11 @@ func validateInstallationFlags() error {
 		log.Println(message)
 		return errors.New(message)
 	}
+
+	if len(viper.GetString("botpassword")) < 8 && (viper.GetString("gitprovider") == "gitlab") {
+		msg := "BotPassword (to GitLab flavor) is too short (minimum is 8 characters)"
+		return errors.New(msg)
+	}
+
 	return nil
 }

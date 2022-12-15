@@ -3,9 +3,10 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"net/http"
 	"os"
+
+	"github.com/kubefirst/kubefirst/internal/wrappers"
 
 	"log"
 	"time"
@@ -57,6 +58,9 @@ cluster provisioning process spinning up the services, and validates the livenes
 			if err != nil {
 				return fmt.Errorf("not support mode of install via this command, only cloud install supported")
 			}
+		} else {
+			awsProfile := viper.GetString("aws.profile")
+			os.Setenv("AWS_PROFILE", awsProfile)
 		}
 
 		// todo remove this dependency from create.go

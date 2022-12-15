@@ -111,7 +111,6 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		gitlabConfigured := viper.GetBool("gitlab.keyuploaded")
 
 		newContents := string(read)
-		config := configs.ReadConfig()
 
 		cloudK3d := "k3d"
 		cloud := viper.GetString("cloud")
@@ -284,17 +283,15 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<CHARTMUSEUM_URL>", ChartmuseumLocalURL, -1)
 
 			// todo: use pkg.constants for metaphor's URLs
-			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", config.LocalMetaphorDev, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_GO_DEV>", config.LocalMetaphorGoDev, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEV>", config.LocalMetaphorFrontDev, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", fmt.Sprintf("https://metaphor-frontend-development.%s/api", LocalDNS), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEV>", fmt.Sprintf("https://metaphor-frontend-development.%s", LocalDNS), -1)
 
-			newContents = strings.Replace(newContents, "<METAPHOR_STAGING>", config.LocalMetaphorStaging, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_GO_STAGING>", config.LocalMetaphorGoStaging, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING>", config.LocalMetaphorFrontStaging, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_STAGING>", fmt.Sprintf("https://metaphor-frontend-staging.%s/api", LocalDNS), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING>", fmt.Sprintf("https://metaphor-frontend-staging.%s", LocalDNS), -1)
 
-			newContents = strings.Replace(newContents, "<METAPHOR_PROD>", config.LocalMetaphorProd, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_GO_PROD>", config.LocalMetaphorGoProd, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", config.LocalMetaphorFrontProd, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_PROD>", fmt.Sprintf("https://metaphor-frontend-production.%s/api", LocalDNS), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", fmt.Sprintf("https://metaphor-frontend-production.%s", LocalDNS), -1)
+
 			newContents = strings.Replace(newContents, "<LOCAL_DNS>", LocalDNS, -1)
 		} else {
 			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
@@ -737,7 +734,19 @@ func GetCertificateAppList() []CertificateAppList {
 		},
 		{
 			Namespace: "kubefirst",
-			AppName:   "kubefirst-console",
+			AppName:   "kubefirst",
+		},
+		{
+			Namespace: "development",
+			AppName:   "metaphor-frontend-development",
+		},
+		{
+			Namespace: "staging",
+			AppName:   "metaphor-frontend-staging",
+		},
+		{
+			Namespace: "production",
+			AppName:   "metaphor-frontend-production",
 		},
 	}
 

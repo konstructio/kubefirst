@@ -86,7 +86,8 @@ func getItemsToBackup(apiGroup string, apiVersion string, resourceType string, n
 // GetBackupCertificates create a backup of Certificates on AWS S3 in yaml files
 func GetBackupCertificates(includeMetaphorApps bool) (string, error) {
 	log.Println("GetBackupCertificates called")
-
+	awsProfile := viper.GetString("aws.profile")
+	os.Setenv("AWS_PROFILE", awsProfile)
 	bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
 	aws.CreateBucket(false, bucketName)
 
