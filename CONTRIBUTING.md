@@ -8,7 +8,7 @@ Note we have a [code of conduct](CODE_OF_CONDUCT.md) which needs to be followed 
 
 ## Ways to Contribute
 
-At Kubefirst, we believe that every contribution are valuable, not just the code one, which means we welcome
+At Kubefirst, we believe that every contribution is valuable, not just the code one, which means we welcome
 
 - [bug reports](https://github.com/kubefirst/kubefirst/issues/new);
 - [feature requests](https://github.com/kubefirst/kubefirst/issues/new?assignees=&labels=feature-request&template=feature_request.md&title=);
