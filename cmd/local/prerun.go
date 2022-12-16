@@ -161,12 +161,12 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("installing kubefirst dependencies")
 
-	progressPrinter.IncrementTracker("step-download", 2)
+	progressPrinter.IncrementTracker("step-download", 1)
 	err = downloadManager.DownloadTools(config)
 	if err != nil {
 		return err
 	}
-	progressPrinter.IncrementTracker("step-download", 2)
+	progressPrinter.IncrementTracker("step-download", 1)
 	log.Info().Msg("dependency installation complete")
 
 	log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
