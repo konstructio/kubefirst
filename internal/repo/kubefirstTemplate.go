@@ -2,10 +2,11 @@ package repo
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
@@ -115,16 +116,9 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 	w, _ := repo.Worktree()
 
 	log.Info().Msgf("committing detokenized %s content", repoName)
-	status, err := w.Status()
+	err = gitClient.GitAddWithFilter(viper.GetString("cloud"), repoName, w)
 	if err != nil {
 		log.Error().Err(err).Msg("error getting worktree status")
-	}
-
-	for file, _ := range status {
-		_, err = w.Add(file)
-		if err != nil {
-			log.Error().Err(err).Msg("error getting worktree status")
-		}
 	}
 	w.Commit(fmt.Sprintf("[ci skip] committing detokenized %s content", repoName), &git.CommitOptions{
 		Author: &object.Signature{
