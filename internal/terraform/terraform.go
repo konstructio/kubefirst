@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
@@ -25,6 +26,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		envs["AWS_SDK_LOAD_CONFIG"] = "1"
 		aws.ProfileInjection(&envs)
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
+		envs["AWS_REGION"] = viper.GetString("aws.region")
 	}
 
 	switch terraformEntryPoint {
