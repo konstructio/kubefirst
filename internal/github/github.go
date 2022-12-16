@@ -24,6 +24,7 @@ func ApplyGitHubTerraform(dryRun bool) {
 	//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 	envs := map[string]string{}
 	envs["AWS_SDK_LOAD_CONFIG"] = "1"
+	envs["AWS_REGION"] = viper.GetString("aws.region")
 	aws.ProfileInjection(&envs)
 	// Prepare for terraform gitlab execution
 	envs["GITHUB_TOKEN"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
@@ -65,6 +66,7 @@ func DestroyGitHubTerraform(dryRun bool) {
 	//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 	envs := map[string]string{}
 	envs["AWS_SDK_LOAD_CONFIG"] = "1"
+	envs["AWS_REGION"] = viper.GetString("aws.region")
 	aws.ProfileInjection(&envs)
 	// Prepare for terraform gitlab execution
 	envs["GITHUB_TOKEN"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
