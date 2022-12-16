@@ -44,4 +44,5 @@ func GitAddWithFilter(cloudType string, reponame string, w *git.Worktree) error 
 			}
 		}
 	}
+	return nil
 }
