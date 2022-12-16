@@ -244,6 +244,7 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 }
 
 // InstallMKCertLocal install mkCert state store in the host machine
+// todo: update logs
 func InstallMKCertLocal(config *configs.Config, disableTLS bool) error {
 
 	if disableTLS {
