@@ -40,7 +40,6 @@ var (
 	adminEmail     string
 	templateTag    string
 	logLevel       string
-	disableTLS     bool
 )
 
 func NewCommand() *cobra.Command {
@@ -73,12 +72,6 @@ func NewCommand() *cobra.Command {
 		"log-level",
 		"debug",
 		"available log levels are: trace, debug, info, warning, error, fatal, panic",
-	)
-	localCmd.Flags().BoolVar(
-		&disableTLS,
-		"disable-tls",
-		false,
-		"will skip TLS certificates creation, provisioned services wont have valid TLS certificates",
 	)
 
 	// on error, doesnt show helper/usage
@@ -175,7 +168,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.IncrementTracker("step-base", 1)
 	progressPrinter.IncrementTracker("step-github", 1)
 
-	if err := ssl.CreateCertificatesForLocalWrapper(config, disableTLS); err != nil {
+	if err := ssl.CreateCertificatesForLocalWrapper(config); err != nil {
 		log.Error().Err(err).Msg("")
 	}
 
@@ -192,7 +185,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already added secrets to k3d cluster")
 	}
 
-	if err := k8s.CreateSecretsFromCertificatesForLocalWrapper(config, disableTLS); err != nil {
+	if err := k8s.CreateSecretsFromCertificatesForLocalWrapper(config); err != nil {
 		log.Error().Err(err).Msg("")
 	}
 

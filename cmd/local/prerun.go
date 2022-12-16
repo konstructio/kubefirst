@@ -3,10 +3,7 @@ package local
 import (
 	"context"
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/reports"
-	"github.com/kubefirst/kubefirst/internal/ssl"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/kubefirst/kubefirst/internal/ssh"
@@ -69,28 +66,30 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// todo: holding this code until next release (1.12),
+	// if this code is still here after 1.12, please feel free to delete
+	////
+	//// create local certs using MkCert tool
+	////
+	//if disableTLS == false {
+	//	var disableTLSPrompt strings.Builder
+	//	disableTLSPrompt.WriteString("Kubefirst uses Ingress, local DNS and TLS for local services like Vault, Argo " +
+	//		"and Argo CD. We use mkcert to create and store the certificates in your trusted store. " +
+	//		"The store is responsible for providing a set of certificates to your browser " +
+	//		"(Firefox not supported at the moment) we need root access to do that.\n\n",
+	//	)
+	//	disableTLSPrompt.WriteString("If you don’t want to proceed, please run the command again using the\n" +
+	//		"--disable-tls flag. We won’t ask for the root password the services\nwill still work correctly, " +
+	//		"but won’t use a secure connection.\n\n",
+	//	)
+	//	disableTLSPrompt.WriteString("<press enter> to continue\n")
+	//	fmt.Println(reports.StyleMessage(disableTLSPrompt.String()))
+	//	fmt.Scanln()
+	//}
 	//
-	// create local certs using MkCert tool
-	//
-	if disableTLS == false {
-		var disableTLSPrompt strings.Builder
-		disableTLSPrompt.WriteString("Kubefirst uses Ingress, local DNS and TLS for local services like Vault, Argo " +
-			"and Argo CD. We use mkcert to create and store the certificates in your trusted store. " +
-			"The store is responsible for providing a set of certificates to your browser " +
-			"(Firefox not supported at the moment) we need root access to do that.\n\n",
-		)
-		disableTLSPrompt.WriteString("If you don’t want to proceed, please run the command again using the\n" +
-			"--disable-tls flag. We won’t ask for the root password the services\nwill still work correctly, " +
-			"but won’t use a secure connection.\n\n",
-		)
-		disableTLSPrompt.WriteString("<press enter> to continue\n")
-		fmt.Println(reports.StyleMessage(disableTLSPrompt.String()))
-		fmt.Scanln()
-	}
-
-	if err = ssl.InstallMKCertLocal(config, disableTLS); err != nil {
-		log.Error().Err(err).Msg("")
-	}
+	//if err = ssl.InstallMKCertLocal(config, disableTLS); err != nil {
+	//	log.Error().Err(err).Msg("")
+	//}
 
 	// set default values to kubefirst file
 	viper.Set("gitops.repo", pkg.KubefirstGitOpsRepository)
@@ -104,8 +103,8 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	viper.Set("cluster-name", pkg.LocalClusterName)
 	viper.Set("adminemail", adminEmail)
 
-	viper.Set("argocd.local.service", pkg.ArgoCDLocalURL)
-	viper.Set("vault.local.service", pkg.VaultLocalURL)
+	viper.Set("argocd.local.service", pkg.ArgoCDLocalURLTLS)
+	viper.Set("vault.local.service", pkg.VaultLocalURLTLS)
 	viper.Set("use-telemetry", useTelemetry)
 	err = viper.WriteConfig()
 	if err != nil {

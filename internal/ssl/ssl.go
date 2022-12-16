@@ -245,6 +245,8 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 
 // InstallMKCertLocal install mkCert state store in the host machine
 // todo: update logs
+// todo: holding this code until next release (1.12),
+// if this code is still here after 1.12, please feel free to delete
 func InstallMKCertLocal(config *configs.Config, disableTLS bool) error {
 
 	if disableTLS {
@@ -287,12 +289,7 @@ func UninstallCALocal(config *configs.Config) {
 
 // CreateCertificatesForLocalWrapper groups a certification creation call into a wrapper. The provided application
 // list is used to create SSL certificates for each of the provided application.
-func CreateCertificatesForLocalWrapper(config *configs.Config, disableTLS bool) error {
-
-	if disableTLS {
-		log.Println(pkg.TLSSupportIsDisabled)
-		return nil
-	}
+func CreateCertificatesForLocalWrapper(config *configs.Config) error {
 
 	log.Println("creating local certificates")
 
