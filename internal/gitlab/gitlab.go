@@ -110,7 +110,7 @@ func PushGitOpsToGitLab(dryRun bool) {
 		URLs: []string{upstream},
 	})
 	if err != nil {
-		log.Error().Msgf("Error creating remote repo:", err)
+		log.Info().Msgf("Error creating remote repo:", err)
 	}
 	w, _ := repo.Worktree()
 
