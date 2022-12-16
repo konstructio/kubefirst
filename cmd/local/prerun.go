@@ -104,7 +104,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	viper.Set("adminemail", adminEmail)
 
 	viper.Set("argocd.local.service", pkg.ArgoCDLocalURLTLS)
-	viper.Set("vault.local.service", pkg.VaultLocalURLTLS)
+	viper.Set("vault.local.service", pkg.VaultLocalURL)
 	viper.Set("use-telemetry", useTelemetry)
 	err = viper.WriteConfig()
 	if err != nil {
