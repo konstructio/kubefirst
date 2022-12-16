@@ -26,14 +26,19 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}
-	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURL)
+
+	kubefirstConsoleURL := pkg.KubefirstConsoleLocalURLTLS
+	if disableTLS == true {
+		kubefirstConsoleURL = pkg.KubefirstConsoleLocalURL
+	}
+	err = pkg.OpenBrowser(kubefirstConsoleURL)
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}
 
 	reports.LocalHandoffScreen(dryRun, silentMode)
 
-	log.Info().Msgf("Kubefirst Console available at: %s", pkg.KubefirstConsoleLocalURLTLS)
+	log.Info().Msgf("Kubefirst Console available at: %s", kubefirstConsoleURL)
 
 	// managing termination signal from the terminal
 	sigs := make(chan os.Signal, 1)

@@ -74,11 +74,15 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	if disableTLS == false {
 		var disableTLSPrompt strings.Builder
-		disableTLSPrompt.WriteString("Kubefirst uses Ingress, local DNS and TLS for local services as Vault, Argo and ArgoCD.\n")
-		disableTLSPrompt.WriteString("Kubefirst uses mkCert to create and store the certificates in the user trusted store.\n")
-		disableTLSPrompt.WriteString("The trusted store is responsible to provide a set of certificates to your browser (except Firefox at the moment).\n\n")
-		disableTLSPrompt.WriteString("To install the certificates, we need to ask you for the root password to allow mkCert to store the certificates in your trusted store.\n\n")
-		disableTLSPrompt.WriteString("If you don't agree. Please use the --disable-tls flags, and you won't be asked for the root password, but won't have TLS for the provisioned services.\n\n")
+		disableTLSPrompt.WriteString("Kubefirst uses Ingress, local DNS and TLS for local services like Vault, Argo " +
+			"and Argo CD. We use mkcert to create and store the certificates in your trusted store. " +
+			"The store is responsible for providing a set of certificates to your browser " +
+			"(Firefox not supported at the moment) we need root access to do that.\n\n",
+		)
+		disableTLSPrompt.WriteString("If you don’t want to proceed, please run the command again using the\n" +
+			"--disable-tls flag. We won’t ask for the root password the services\nwill still work correctly, " +
+			"but won’t use a secure connection.\n\n",
+		)
 		disableTLSPrompt.WriteString("<press enter> to continue\n")
 		fmt.Println(reports.StyleMessage(disableTLSPrompt.String()))
 		fmt.Scanln()
@@ -151,18 +155,18 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(8, silentMode)
 
 	progressPrinter.AddTracker("step-0", "Process Parameters", 1)
-	progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
+	progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 2)
 	progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
 	progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
 
 	log.Info().Msg("installing kubefirst dependencies")
 
-	progressPrinter.IncrementTracker("step-download", 1)
+	progressPrinter.IncrementTracker("step-download", 2)
 	err = downloadManager.DownloadTools(config)
 	if err != nil {
 		return err
 	}
-	progressPrinter.IncrementTracker("step-download", 1)
+	progressPrinter.IncrementTracker("step-download", 2)
 	log.Info().Msg("dependency installation complete")
 
 	log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
