@@ -73,13 +73,13 @@ func GitlabGeneratePersonalAccessToken(gitlabPodName string) {
 
 	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "exec", gitlabPodName, "--", "gitlab-rails", "runner", fmt.Sprintf("token = User.find_by_username('root').personal_access_tokens.create(scopes: [:write_registry, :write_repository, :api], name: 'Automation token'); token.set_token('%s'); token.save!", gitlabToken))
 	if err != nil {
-		log.Panic().Msgf("error running exec against %s to generate gitlab personal access token for root user %s", gitlabPodName)
+		log.Panic().Msgf("error running exec against %s to generate gitlab personal access token for root user", gitlabPodName)
 	}
 
 	viper.Set("gitlab.token", gitlabToken)
 	viper.WriteConfig()
 
-	log.Info().Msgf("gitlab personal access token generated", gitlabToken)
+	log.Info().Msgf("gitlab personal access token generated %s", gitlabToken)
 }
 
 // PushGitOpsToGitLab - Push GitOps to Gitlab repository
@@ -103,14 +103,14 @@ func PushGitOpsToGitLab(dryRun bool) {
 	}
 
 	upstream := fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", domain)
-	log.Info().Msgf("git remote add gitlab at url", upstream)
+	log.Info().Msgf("git remote add gitlab at url %s", upstream)
 
 	_, err = repo.CreateRemote(&config.RemoteConfig{
 		Name: "gitlab",
 		URLs: []string{upstream},
 	})
 	if err != nil {
-		log.Info().Msgf("Error creating remote repo:", err)
+		log.Info().Msgf("Error creating remote repo: %s", err)
 	}
 	w, _ := repo.Worktree()
 
