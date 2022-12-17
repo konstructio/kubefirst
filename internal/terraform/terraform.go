@@ -134,7 +134,8 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 			envs["TF_VAR_instance_type"] = "t4g.medium"
 		}
 
-		log.Print("tf env vars: ", envs)
+		//commenting to avoid log creds
+		//log.Print("tf env vars: ", envs)
 
 		err := os.Chdir(directory)
 		if err != nil {
@@ -314,7 +315,8 @@ func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
 	}
 
 	envs := terraformConfig(kubefirstConfigProperty)
-	log.Print("tf env vars: ", envs)
+	//commenting to avoid log creds
+	//log.Print("tf env vars: ", envs)
 
 	err := os.Chdir(tfEntrypoint)
 	if err != nil {
@@ -350,7 +352,8 @@ func initAndMigrateActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string)
 	}
 
 	envs := terraformConfig(kubefirstConfigProperty)
-	log.Print("tf env vars: ", envs)
+	//commenting to avoid log creds
+	//log.Print("tf env vars: ", envs)
 
 	err := os.Chdir(tfEntrypoint)
 	if err != nil {
@@ -388,7 +391,8 @@ func InitAndReconfigureActionAutoApprove(dryRun bool, tfAction string, tfEntrypo
 	}
 
 	envs := terraformConfig(kubefirstConfigProperty)
-	log.Print("tf env vars: ", envs)
+	//commenting to avoid log creds
+	//log.Print("tf env vars: ", envs)
 
 	err := os.Chdir(tfEntrypoint)
 	if err != nil {

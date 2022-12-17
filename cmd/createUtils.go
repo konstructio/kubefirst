@@ -3,12 +3,13 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"io"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
@@ -246,7 +247,8 @@ func initializeVaultAndAutoUnseal(dryRun bool) {
 			log.Panic().Err(err).Msg("")
 		}
 
-		log.Info().Msg(string(body))
+		//commenting to prevent print credentials
+		//log.Info().Msg(string(body))
 
 		vaultResponse := VaultUnsealResponse{}
 		err = json.Unmarshal(body, &vaultResponse)
