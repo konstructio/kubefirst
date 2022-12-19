@@ -2,10 +2,11 @@ package gitClient
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -107,17 +108,9 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 		log.Info().Msg("Error populating git")
 		return err
 	}
-	status, err := w.Status()
+	err = GitAddWithFilter(viper.GetString("cloud"), repo, w)
 	if err != nil {
 		log.Error().Err(err).Msg("error getting worktree status")
-	}
-
-	for file, s := range status {
-		log.Printf("the file is %s the status is %v", file, s.Worktree)
-		_, err = w.Add(file)
-		if err != nil {
-			log.Error().Err(err).Msg("error getting worktree status")
-		}
 	}
 	w.Commit("Populate Repo", &git.CommitOptions{
 		Author: &object.Signature{
@@ -197,17 +190,9 @@ func PushGitopsToSoftServe() {
 	w, _ := repo.Worktree()
 
 	log.Info().Msg("Committing new changes...")
-	status, err := w.Status()
+	err = GitAddWithFilter(viper.GetString("cloud"), "gitops", w)
 	if err != nil {
 		log.Error().Err(err).Msg("error getting worktree status")
-	}
-
-	for file, s := range status {
-		log.Printf("the file is %s the status is %v", file, s.Worktree)
-		_, err = w.Add(file)
-		if err != nil {
-			log.Error().Err(err).Msg("error getting worktree status")
-		}
 	}
 	w.Commit("setting new remote upstream to soft-serve", &git.CommitOptions{
 		Author: &object.Signature{
@@ -331,17 +316,11 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 
 	log.Info().Msg("Committing new changes... PushLocalRepoToEmptyRemote")
 
-	status, err := w.Status()
+	err = GitAddWithFilter(viper.GetString("cloud"), localRepo, w)
 	if err != nil {
 		log.Error().Err(err).Msg("error getting worktree status")
 	}
 
-	for file, _ := range status {
-		_, err = w.Add(file)
-		if err != nil {
-			log.Error().Err(err).Msg("error getting worktree status")
-		}
-	}
 	w.Commit("setting new remote upstream to github", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
@@ -390,17 +369,9 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 	w, _ := repo.Worktree()
 
 	log.Info().Msg("Committing new changes... PushLocalRepoUpdates")
-	status, err := w.Status()
+	err = GitAddWithFilter(viper.GetString("cloud"), localRepo, w)
 	if err != nil {
 		log.Error().Err(err).Msg("error getting worktree status")
-	}
-
-	for file, s := range status {
-		log.Printf("the file is %s the status is %v", file, s.Worktree)
-		_, err = w.Add(file)
-		if err != nil {
-			log.Error().Err(err).Msg("error getting worktree status")
-		}
 	}
 	w.Commit("commiting staged changes to remote", &git.CommitOptions{
 		Author: &object.Signature{
