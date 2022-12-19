@@ -26,6 +26,7 @@ type Config struct {
 	LocalOs           string
 	LocalArchitecture string
 	InstallerEmail    string
+	HomePath          string
 
 	KubefirstLogPath        string `env:"KUBEFIRST_LOG_PATH" envDefault:"logs"`
 	KubefirstConfigFileName string
@@ -81,6 +82,7 @@ func ReadConfig() *Config {
 		log.Panic(err)
 	}
 
+	config.HomePath = homePath
 	config.K1FolderPath = fmt.Sprintf("%s/.k1", homePath)
 	if err != nil {
 		log.Panic(err)

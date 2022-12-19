@@ -31,16 +31,17 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 
 	switch terraformEntryPoint {
 	case "base":
+		log.Info().Msg("Collecting Base Vars")
 		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 
-		nodes_spot := viper.GetBool("aws.nodes_spot")
-		if nodes_spot {
+		nodesSpot := viper.GetBool("aws.nodes_spot")
+		if nodesSpot {
 			envs["TF_VAR_lifecycle_nodes"] = "SPOT"
 		}
 		return envs
 	case "vault":
-
+		log.Info().Msg("Collecting Vault Vars")
 		if viper.GetString("cloud") == pkg.CloudK3d {
 			envs["TF_VAR_email_address"] = viper.GetString("adminemail")
 			envs["TF_VAR_github_token"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
@@ -81,6 +82,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		log.Info().Msg("gitlab")
 		return envs
 	case "github":
+		log.Info().Msg("Collecting github Vars")
 		envs["GITHUB_TOKEN"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 		envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
@@ -97,6 +99,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 
 		return envs
 	case "users":
+		log.Info().Msg("Collecting users Vars")
 		envs["VAULT_TOKEN"] = viper.GetString("vault.token")
 		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
 		envs["GITHUB_TOKEN"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
@@ -123,13 +126,13 @@ func ApplyBaseTerraform(dryRun bool, directory string) {
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 
-		nodes_spot := viper.GetBool("aws.nodes_spot")
-		if nodes_spot {
+		nodesSpot := viper.GetBool("aws.nodes_spot")
+		if nodesSpot {
 			envs["TF_VAR_lifecycle_nodes"] = "SPOT"
 		}
 
-		nodes_graviton := viper.GetBool("aws.nodes_graviton")
-		if nodes_graviton {
+		nodesGraviton := viper.GetBool("aws.nodes_graviton")
+		if nodesGraviton {
 			envs["TF_VAR_ami_type"] = "AL2_ARM_64"
 			envs["TF_VAR_instance_type"] = "t4g.medium"
 		}
@@ -201,8 +204,8 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 
-		nodes_spot := viper.GetBool("aws.nodes_spot")
-		if nodes_spot {
+		nodesSpot := viper.GetBool("aws.nodes_spot")
+		if nodesSpot {
 			envs["TF_VAR_capacity_type"] = "SPOT"
 		}
 		nodes_graviton := viper.GetBool("aws.nodes_graviton")

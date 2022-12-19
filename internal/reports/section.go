@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 
 	"github.com/spf13/viper"
@@ -41,12 +42,18 @@ func PrintSectionRepoGitlab() []byte {
 
 func PrintSectionOverview(kubefirstConsoleURL string) []byte {
 	var handOffData bytes.Buffer
+	config := configs.ReadConfig()
 	handOffData.WriteString(strings.Repeat("-", 70))
 	handOffData.WriteString(fmt.Sprintf("\nCluster %q is up and running!:", viper.GetString("cluster-name")))
 	handOffData.WriteString("\nThis information is available at $HOME/.kubefirst ")
 	handOffData.WriteString("\n\nAccess the kubefirst-console from your browser at:\n" + kubefirstConsoleURL + "\n")
 	handOffData.WriteString("\nPress ESC to leave this screen and return to your shell.")
 
+	handOffData.WriteString("\n\nNotes:")
+	handOffData.WriteString("\nKubefirst generated certificates using 'mkcert' for your convenience")
+	handOffData.WriteString(fmt.Sprintf("\n If you have root access you could run: %s -install", config.MkCertPath))
+	handOffData.WriteString("\nThis will update yours OS truststore allowing our certs to be trusted by your browser and more smooth expirience")
+	handOffData.WriteString("\nLearn more at: https://github.com/FiloSottile/mkcert#changing-the-location-of-the-ca-files")
 	return handOffData.Bytes()
 }
 
