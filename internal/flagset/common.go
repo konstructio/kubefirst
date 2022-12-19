@@ -1,10 +1,11 @@
 package flagset
 
 import (
-	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -60,20 +61,20 @@ func DefineSource(cmd *cobra.Command, flag string) int {
 	//4th default Variable value
 	configReference := viper.Get(GetConfig(flag))
 	if configReference != nil {
-		log.Printf("Flag(%s) set from Config File", flag)
+		log.Debug().Msgf("Flag(%s) set from Config File", flag)
 		return CONFIG
 	}
 
 	flagReference := cmd.Flags().Lookup(flag)
 	if flagReference != nil && flagReference.Changed {
-		log.Printf("Flag(%s) set from CLI flag", flag)
+		log.Debug().Msgf("Flag(%s) set from CLI flag", flag)
 		return FLAG
 	}
 
 	envVarName := GetFlagVarName(flag)
 	_, envExist := os.LookupEnv(envVarName)
 	if envExist {
-		log.Printf("Enviroment Variable(%s) set - using this value for Flag(%s)\n", envVarName, flag)
+		log.Debug().Msgf("Enviroment Variable(%s) set - using this value for Flag(%s)\n", envVarName, flag)
 		return ENV
 	}
 

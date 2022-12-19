@@ -2,7 +2,8 @@ package flagset
 
 import (
 	"errors"
-	"log"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/spf13/cobra"
 )
@@ -34,28 +35,28 @@ func ProcessDestroyFlags(cmd *cobra.Command) (DestroyFlags, error) {
 
 	skipGitlabTerraform, err := ReadConfigBool(cmd, "skip-gitlab-terraform")
 	if err != nil {
-		log.Printf("Error Processing - skip-gitlab-terraform, error: %v", err)
+		log.Warn().Msgf("Error Processing - skip-gitlab-terraform, error: %v", err)
 		return flags, err
 	}
 	flags.SkipGitlabTerraform = skipGitlabTerraform
 
 	skipGithubTerraform, err := ReadConfigBool(cmd, "skip-github-terraform")
 	if err != nil {
-		log.Printf("Error Processing - skip-github-terraform, error: %v", err)
+		log.Warn().Msgf("Error Processing - skip-github-terraform, error: %v", err)
 		return flags, err
 	}
 	flags.SkipGithubTerraform = skipGithubTerraform
 
 	skipDeleteRegistryApplication, err := ReadConfigBool(cmd, "skip-delete-register")
 	if err != nil {
-		log.Printf("Error Processing - skip-delete-register flag, error: %v", err)
+		log.Warn().Msgf("Error Processing - skip-delete-register flag, error: %v", err)
 		return flags, err
 	}
 	flags.SkipDeleteRegistryApplication = skipDeleteRegistryApplication
 
 	skipBaseTerraform, err := ReadConfigBool(cmd, "skip-base-terraform")
 	if err != nil {
-		log.Printf("Error Processing - skip-base-terraform flag, error: %v", err)
+		log.Warn().Msgf("Error Processing - skip-base-terraform flag, error: %v", err)
 		return flags, err
 	}
 

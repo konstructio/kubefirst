@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strconv"
 	"testing"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/spf13/cobra"
 )
@@ -132,10 +133,10 @@ func NewRootCmdBool() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			flagValue, err := ReadConfigBool(cmd, "sample")
 			if err != nil {
-				log.Println("err:", err)
+				log.Warn().Msgf("err: %s", err)
 				fmt.Fprint(cmd.OutOrStdout(), err.Error())
 			}
-			log.Println("flagValue:", flagValue)
+			log.Info().Msgf("flagValue: %t", flagValue)
 			fmt.Fprint(cmd.OutOrStdout(), strconv.FormatBool(flagValue))
 			return nil
 		},

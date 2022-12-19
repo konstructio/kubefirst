@@ -1,9 +1,8 @@
 package flagset
 
 import (
-	"log"
-
 	"github.com/kubefirst/kubefirst/internal/addon"
+	"github.com/rs/zerolog/log"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -24,17 +23,17 @@ func DefineGithubCmdFlags(currentCommand *cobra.Command) {
 
 	err := viper.BindPFlag("github.host", currentCommand.Flags().Lookup("github-host"))
 	if err != nil {
-		log.Println("Error Binding flag: github.host")
+		log.Warn().Msg("Error Binding flag: github.host")
 	}
 
 	err = viper.BindPFlag("github.owner", currentCommand.Flags().Lookup("github-owner"))
 	if err != nil {
-		log.Println("Error Binding flag: github.owner")
+		log.Warn().Msg("Error Binding flag: github.owner")
 	}
 
 	err = viper.BindPFlag("github.user", currentCommand.Flags().Lookup("github-user"))
 	if err != nil {
-		log.Println("Error Binding flag: github.user")
+		log.Warn().Msg("Error Binding flag: github.user")
 	}
 }
 
@@ -44,7 +43,7 @@ func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 	flags := GithubAddCmdFlags{}
 	user, err := ReadConfigString(cmd, "github-user")
 	if err != nil {
-		log.Println("Error Processing - github-user flag")
+		log.Warn().Msg("Error Processing - github-user flag")
 		return flags, err
 	}
 	if user == "" {
@@ -53,7 +52,7 @@ func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 
 	owner, err := ReadConfigString(cmd, "github-owner")
 	if err != nil {
-		log.Println("Error Processing - github-owner flag")
+		log.Warn().Msg("Error Processing - github-owner flag")
 		return flags, err
 	}
 	if owner == "" {
@@ -62,7 +61,7 @@ func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 
 	host, err := ReadConfigString(cmd, "github-host")
 	if err != nil {
-		log.Println("Error Processing - github-host flag")
+		log.Warn().Msg("Error Processing - github-host flag")
 		return flags, err
 	}
 
@@ -79,7 +78,7 @@ func ProcessGithubAddCmdFlags(cmd *cobra.Command) (GithubAddCmdFlags, error) {
 	if err != nil {
 		log.Print(err)
 	}
-	log.Println(gitProvider)
+	log.Info().Msg(gitProvider)
 
 	if gitProvider == "github" {
 		addon.AddAddon("github")

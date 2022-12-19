@@ -6,10 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os/exec"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/services"
@@ -74,7 +75,7 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 	var gitHubDeviceFlow GitHubDeviceFlow
 	err = json.Unmarshal(body, &gitHubDeviceFlow)
 	if err != nil {
-		log.Println(err)
+		log.Warn().Msgf("%s", err)
 	}
 
 	// todo: check http code
@@ -99,7 +100,7 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 	for i := 0; i < attempts; i++ {
 		gitHubAccessToken, err = handler.service.CheckUserCodeConfirmation(gitHubDeviceFlow.DeviceCode)
 		if err != nil {
-			log.Println(err)
+			log.Warn().Msgf("%s", err)
 		}
 
 		if len(gitHubAccessToken) > 0 {
@@ -121,7 +122,7 @@ func (handler GitHubHandler) GetGitHubUser(gitHubAccessToken string) (string, er
 
 	req, err := http.NewRequest(http.MethodGet, "https://api.github.com/user", nil)
 	if err != nil {
-		log.Println("error setting request")
+		log.Warn().Msg("error setting request")
 	}
 
 	req.Header.Add("Content-Type", pkg.JSONContentType)
@@ -157,7 +158,7 @@ func (handler GitHubHandler) GetGitHubUser(gitHubAccessToken string) (string, er
 		return "", errors.New("unable to retrieve username via GitHub API")
 	}
 
-	log.Println("GitHub user: ", githubUser.Login)
+	log.Info().Msgf("GitHub user: %s", githubUser.Login)
 	return githubUser.Login, nil
 
 }

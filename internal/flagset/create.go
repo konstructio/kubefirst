@@ -1,7 +1,7 @@
 package flagset
 
 import (
-	"log"
+	"github.com/rs/zerolog/log"
 
 	"github.com/spf13/cobra"
 )
@@ -21,7 +21,7 @@ func ProcessCreateFlags(cmd *cobra.Command) (CreateFlags, error) {
 	flags := CreateFlags{}
 	enableConsole, err := ReadConfigBool(cmd, "enable-console")
 	if err != nil {
-		log.Printf("Error Processing - enable-console flag, error: %v", err)
+		log.Warn().Msgf("Error Processing - enable-console flag, error: %v", err)
 		return flags, err
 	}
 	flags.EnableConsole = enableConsole
