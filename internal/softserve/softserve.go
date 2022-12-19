@@ -2,11 +2,13 @@ package softserve
 
 import (
 	"fmt"
-	internalSSH "github.com/kubefirst/kubefirst/internal/ssh"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/gitClient"
+	internalSSH "github.com/kubefirst/kubefirst/internal/ssh"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -139,18 +141,7 @@ func configureSoftServe() error {
 	}
 
 	log.Println("Committing new changes...")
-	status, err := w.Status()
-	if err != nil {
-		log.Println("error getting worktree status", err)
-	}
-
-	for file, s := range status {
-		log.Printf("the file is %s the status is %v", file, s.Worktree)
-		_, err = w.Add(file)
-		if err != nil {
-			log.Println("error getting worktree status", err)
-		}
-	}
+	_ = gitClient.GitAddWithFilter(viper.GetString("cloud"), "gitops", w)
 	_, err = w.Commit("updating soft-serve server config", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",

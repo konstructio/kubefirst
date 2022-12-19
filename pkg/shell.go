@@ -3,10 +3,11 @@ package pkg
 import (
 	"bufio"
 	"bytes"
-	"github.com/rs/zerolog/log"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 )
 
 // ExecShellReturnStrings Exec shell actions returning a string for use by the caller.

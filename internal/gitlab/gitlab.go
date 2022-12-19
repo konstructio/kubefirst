@@ -8,14 +8,15 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	internalSSH "github.com/kubefirst/kubefirst/internal/ssh"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/gitClient"
+	internalSSH "github.com/kubefirst/kubefirst/internal/ssh"
 
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/aws"
@@ -32,6 +33,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -64,20 +66,20 @@ func GenerateKey() (string, string, error) {
 func GitlabGeneratePersonalAccessToken(gitlabPodName string) {
 	config := configs.ReadConfig()
 
-	log.Println("generating gitlab personal access token on pod: ", gitlabPodName)
+	log.Info().Msgf("generating gitlab personal access token on pod: %s", gitlabPodName)
 
 	id := uuid.New()
 	gitlabToken := id.String()[:20]
 
 	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "gitlab", "exec", gitlabPodName, "--", "gitlab-rails", "runner", fmt.Sprintf("token = User.find_by_username('root').personal_access_tokens.create(scopes: [:write_registry, :write_repository, :api], name: 'Automation token'); token.set_token('%s'); token.save!", gitlabToken))
 	if err != nil {
-		log.Panicf("error running exec against %s to generate gitlab personal access token for root user", gitlabPodName)
+		log.Panic().Msgf("error running exec against %s to generate gitlab personal access token for root user", gitlabPodName)
 	}
 
 	viper.Set("gitlab.token", gitlabToken)
 	viper.WriteConfig()
 
-	log.Println("gitlab personal access token generated", gitlabToken)
+	log.Info().Msgf("gitlab personal access token generated %s", gitlabToken)
 }
 
 // PushGitOpsToGitLab - Push GitOps to Gitlab repository
@@ -97,18 +99,18 @@ func PushGitOpsToGitLab(dryRun bool) {
 
 	repo, err := git.PlainOpen(directory)
 	if err != nil {
-		log.Panicf("error opening the directory %s:  %s", directory, err)
+		log.Panic().Msgf("error opening the directory %s:  %s", directory, err)
 	}
 
 	upstream := fmt.Sprintf("https://gitlab.%s/kubefirst/gitops.git", domain)
-	log.Println("git remote add gitlab at url", upstream)
+	log.Info().Msgf("git remote add gitlab at url %s", upstream)
 
 	_, err = repo.CreateRemote(&config.RemoteConfig{
 		Name: "gitlab",
 		URLs: []string{upstream},
 	})
 	if err != nil {
-		log.Println("Error creating remote repo:", err)
+		log.Info().Msgf("Error creating remote repo: %s", err)
 	}
 	w, _ := repo.Worktree()
 
@@ -116,19 +118,9 @@ func PushGitOpsToGitLab(dryRun bool) {
 	os.RemoveAll(directory + "/terraform/gitlab/.terraform")
 	os.RemoveAll(directory + "/terraform/vault/.terraform")
 
-	log.Println("Committing new changes...")
-	status, err := w.Status()
-	if err != nil {
-		log.Println("error getting worktree status", err)
-	}
+	log.Info().Msgf("Committing new changes...")
+	_ = gitClient.GitAddWithFilter(viper.GetString("cloud"), "gitops", w)
 
-	for file, s := range status {
-		log.Printf("the file is %s the status is %v", file, s.Worktree)
-		_, err = w.Add(file)
-		if err != nil {
-			log.Println("error getting worktree status", err)
-		}
-	}
 	_, err = w.Commit("setting new remote upstream to gitlab", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
@@ -137,10 +129,10 @@ func PushGitOpsToGitLab(dryRun bool) {
 		},
 	})
 	if err != nil {
-		log.Panicf("error committing changes %s", err)
+		log.Panic().Msgf("error committing changes %s", err)
 	}
 
-	log.Println("setting auth...")
+	log.Info().Msg("setting auth...")
 	// auth, _ := publicKey()
 	// auth.HostKeyCallback = ssh2.InsecureIgnoreHostKey()
 
@@ -154,7 +146,7 @@ func PushGitOpsToGitLab(dryRun bool) {
 		Auth:       auth,
 	})
 	if err != nil {
-		log.Panicf("error pushing to remote %s", err)
+		log.Panic().Msgf("error pushing to remote %s", err)
 	}
 
 }
@@ -162,7 +154,7 @@ func PushGitOpsToGitLab(dryRun bool) {
 // AwaitHost - Await for a Host to be avialable, it wait for 200 cycles.
 // Prefer to use `AwaitHostNTimes` as it provide more control
 func AwaitHost(appName string, dryRun bool) {
-	log.Println("AwaitHost called")
+	log.Info().Msg("AwaitHost called")
 	AwaitHostNTimes(appName, dryRun, 200)
 }
 
@@ -171,7 +163,7 @@ func AwaitHost(appName string, dryRun bool) {
 // - To return true if host is ready, or false if dont.
 // - Supports to pass numbr of cycles to test
 func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
-	log.Println("AwaitHostNTimes called")
+	log.Info().Msg("AwaitHostNTimes called")
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, AwaitHost skipped.")
 		return true
@@ -204,22 +196,22 @@ func ProduceGitlabTokens(dryRun bool) {
 	//TODO: Should this step be skipped if already executed?
 	clientset, err := k8s.GetClientSet(dryRun)
 	if err != nil {
-		log.Panic(err.Error())
+		log.Panic().Msg(err.Error())
 	}
-	log.Println("discovering gitlab toolbox pod")
+	log.Info().Msg("discovering gitlab toolbox pod")
 	time.Sleep(30 * time.Second)
 	// todo: move it to config
 	argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
 	argocdPassword := k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
 	if argocdPassword == "" {
-		log.Panicf("Missing argocdPassword")
+		log.Panic().Msg("Missing argocdPassword")
 	}
 
 	viper.Set("argocd.admin.password", argocdPassword)
 	viper.WriteConfig()
 
-	log.Println("discovering gitlab toolbox pod")
+	log.Info().Msg("discovering gitlab toolbox pod")
 
 	gitlabPodClient := clientset.CoreV1().Pods("gitlab")
 	gitlabPodName := k8s.GetPodNameByLabel(gitlabPodClient, "app=toolbox")
@@ -232,12 +224,12 @@ func ProduceGitlabTokens(dryRun bool) {
 	for _, secret := range secrets.Items {
 		if strings.Contains(secret.Name, "initial-root-password") {
 			gitlabRootPasswordSecretName = secret.Name
-			log.Println("gitlab initial root password secret name: ", gitlabRootPasswordSecretName)
+			log.Info().Msgf("gitlab initial root password secret name: %s", gitlabRootPasswordSecretName)
 		}
 	}
 	gitlabRootPassword := k8s.GetSecretValue(k8s.GitlabSecretClient, gitlabRootPasswordSecretName, "password")
 	if gitlabRootPassword == "" {
-		log.Panicf("Missing gitlabRootPassword")
+		log.Panic().Msg("Missing gitlabRootPassword")
 	}
 	viper.Set("gitlab.podname", gitlabPodName)
 	viper.Set("gitlab.root.password", gitlabRootPassword)
@@ -247,7 +239,7 @@ func ProduceGitlabTokens(dryRun bool) {
 
 	if gitlabToken == "" {
 
-		log.Println("generating gitlab personal access token")
+		log.Info().Msg("generating gitlab personal access token")
 		GitlabGeneratePersonalAccessToken(gitlabPodName)
 
 	}
@@ -256,10 +248,10 @@ func ProduceGitlabTokens(dryRun bool) {
 
 	if gitlabRunnerToken == "" {
 
-		log.Println("getting gitlab runner token")
+		log.Info().Msg("getting gitlab runner token")
 		gitlabRunnerRegistrationToken := k8s.GetSecretValue(k8s.GitlabSecretClient, "gitlab-gitlab-runner-secret", "runner-registration-token")
 		if gitlabRunnerRegistrationToken == "" {
-			log.Panicf("Missing gitlabRunnerRegistrationToken")
+			log.Panic().Msg("Missing gitlabRunnerRegistrationToken")
 		}
 		viper.Set("gitlab.runnertoken", gitlabRunnerRegistrationToken)
 		viper.WriteConfig()
@@ -272,7 +264,7 @@ func ApplyGitlabTerraform(dryRun bool, directory string) {
 	config := configs.ReadConfig()
 
 	if !viper.GetBool("create.terraformapplied.gitlab") {
-		log.Println("Executing applyGitlabTerraform")
+		log.Info().Msg("Executing applyGitlabTerraform")
 		if dryRun {
 			log.Printf("[#99] Dry-run mode, applyGitlabTerraform skipped.")
 			return
@@ -291,22 +283,22 @@ func ApplyGitlabTerraform(dryRun bool, directory string) {
 		directory = fmt.Sprintf("%s/gitops/terraform/gitlab", config.K1FolderPath)
 		err := os.Chdir(directory)
 		if err != nil {
-			log.Panic("error: could not change directory to " + directory)
+			log.Panic().Msg("error: could not change directory to " + directory)
 		}
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
-			log.Panicf("error: terraform init for gitlab failed %s", err)
+			log.Panic().Msgf("error: terraform init for gitlab failed %s", err)
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
 		if err != nil {
-			log.Panicf("error: terraform apply for gitlab failed %s", err)
+			log.Panic().Msgf("error: terraform apply for gitlab failed %s", err)
 		}
 		os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 		viper.Set("create.terraformapplied.gitlab", true)
 		viper.WriteConfig()
 	} else {
-		log.Println("Skipping: applyGitlabTerraform")
+		log.Info().Msg("Skipping: applyGitlabTerraform")
 	}
 }
 
@@ -314,8 +306,8 @@ func GitlabKeyUpload(dryRun bool) {
 
 	// upload ssh public key
 	if !viper.GetBool("gitlab.keyuploaded") {
-		log.Println("Executing GitlabKeyUpload")
-		log.Println("uploading ssh public key for gitlab user")
+		log.Info().Msg("Executing GitlabKeyUpload")
+		log.Info().Msg("uploading ssh public key for gitlab user")
 		if dryRun {
 			log.Printf("[#99] Dry-run mode, GitlabKeyUpload skipped.")
 			return
@@ -323,7 +315,7 @@ func GitlabKeyUpload(dryRun bool) {
 
 		os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
 
-		log.Println("uploading ssh public key to gitlab")
+		log.Info().Msg("uploading ssh public key to gitlab")
 		gitlabToken := viper.GetString("gitlab.token")
 		data := url.Values{
 			"title": {"kubefirst"},
@@ -336,17 +328,17 @@ func GitlabKeyUpload(dryRun bool) {
 
 		resp, err := http.PostForm(gitlabUrlBase+"/api/v4/user/keys?private_token="+gitlabToken, data)
 		if err != nil {
-			log.Fatal(err)
+			log.Panic().Msgf("%s", err)
 		}
 		var res map[string]interface{}
 		json.NewDecoder(resp.Body).Decode(&res)
-		log.Println(res)
-		log.Println("ssh public key uploaded to gitlab")
+		log.Info().Msgf("%s", res)
+		log.Info().Msg("ssh public key uploaded to gitlab")
 		viper.Set("gitlab.keyuploaded", true)
 		viper.WriteConfig()
 	} else {
-		log.Println("Skipping: GitlabKeyUpload")
-		log.Println("ssh public key already uploaded to gitlab")
+		log.Info().Msg("Skipping: GitlabKeyUpload")
+		log.Info().Msg("ssh public key already uploaded to gitlab")
 	}
 }
 
@@ -368,7 +360,7 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 	directory := fmt.Sprintf("%s/gitops/terraform/gitlab", config.K1FolderPath)
 	err := os.Chdir(directory)
 	if err != nil {
-		log.Panicf("error: could not change directory to " + directory)
+		log.Panic().Msgf("error: could not change directory to %s ", directory)
 	}
 
 	envs["GITLAB_BASE_URL"] = fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename"))
@@ -376,18 +368,18 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 	if !skipGitlabTerraform && viper.GetString("gitprovider") == "gitlab" {
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
-			log.Panicf("failed to terraform init gitlab %s", err)
+			log.Panic().Msgf("failed to terraform init gitlab %s", err)
 		}
 
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
 		if err != nil {
-			log.Panicf("failed to terraform destroy gitlab %s", err)
+			log.Panic().Msgf("failed to terraform destroy gitlab %s", err)
 		}
 
 		viper.Set("destroy.terraformdestroy.gitlab", true)
 		viper.WriteConfig()
 	} else {
-		log.Println("skip:  DestroyGitlabTerraform")
+		log.Info().Msg("skip:  DestroyGitlabTerraform")
 	}
 }
 
@@ -414,7 +406,7 @@ func ChangeRegistryToGitLab(dryRun bool) {
 
 		clientset, err := k8s.GetClientSet(dryRun)
 		if err != nil {
-			log.Panicf("error getting kubeconfig for clientset")
+			log.Panic().Msg("error getting kubeconfig for clientset")
 		}
 		argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
@@ -440,7 +432,7 @@ func ChangeRegistryToGitLab(dryRun bool) {
 		_ = argocd.ArgocdSecretClient.Delete(context.TODO(), "creds-gitlab", metaV1.DeleteOptions{})
 		_, err = argocd.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
 		if err != nil {
-			log.Panicf("error creating argocd repository credentials template %s", err)
+			log.Panic().Msgf("error creating argocd repository credentials template %s", err)
 		}
 
 		argocdRepoSecret := &v1.Secret{
@@ -464,7 +456,7 @@ func ChangeRegistryToGitLab(dryRun bool) {
 		_ = argocd.ArgocdSecretClient.Delete(context.TODO(), "repo-gitlab", metaV1.DeleteOptions{})
 		_, err = argocd.ArgocdSecretClient.Create(context.TODO(), argocdRepoSecret, metaV1.CreateOptions{})
 		if err != nil {
-			log.Panicf("error creating argocd repository connection secret %s", err)
+			log.Panic().Msgf("error creating argocd repository connection secret %s", err)
 		}
 
 		// curl -X 'DELETE' \
@@ -473,7 +465,7 @@ func ChangeRegistryToGitLab(dryRun bool) {
 
 		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/gitlab/argocd-adopts-gitlab.yaml", config.K1FolderPath))
 		if err != nil {
-			log.Panicf("failed to call execute kubectl apply of argocd patch to adopt gitlab: %s", err)
+			log.Panic().Msgf("failed to call execute kubectl apply of argocd patch to adopt gitlab: %s", err)
 		}
 		viper.Set("gitlab.changeregistry.gitlab", true)
 		viper.WriteConfig()
@@ -498,7 +490,7 @@ func HydrateGitlabMetaphorRepo(dryRun bool) {
 			URL: url,
 		})
 		if err != nil {
-			log.Panicf("error cloning metaphor-template repo")
+			log.Panic().Msg("error cloning metaphor-template repo")
 		}
 		viper.Set("create.gitlabmetaphor.cloned", true)
 
@@ -508,7 +500,7 @@ func HydrateGitlabMetaphorRepo(dryRun bool) {
 
 		// todo make global
 		gitlabURL := fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename"))
-		log.Println("gitClient remote add origin", gitlabURL)
+		log.Info().Msgf("gitClient remote add origin %s", gitlabURL)
 		_, err = metaphorTemplateRepo.CreateRemote(&config.RemoteConfig{
 			Name: "gitlab",
 			URLs: []string{fmt.Sprintf("%s/kubefirst/metaphor.gitClient", gitlabURL)},
@@ -516,19 +508,8 @@ func HydrateGitlabMetaphorRepo(dryRun bool) {
 
 		w, _ := metaphorTemplateRepo.Worktree()
 
-		log.Println("Committing detokenized metaphor content")
-		status, err := w.Status()
-		if err != nil {
-			log.Println("error getting worktree status", err)
-		}
-
-		for file, s := range status {
-			log.Printf("the file is %s the status is %v", file, s.Worktree)
-			_, err = w.Add(file)
-			if err != nil {
-				log.Println("error getting worktree status", err)
-			}
-		}
+		log.Info().Msg("Committing detokenized metaphor content")
+		_ = gitClient.GitAddWithFilter(viper.GetString("cloud"), "metaphor", w)
 		w.Commit("setting new remote upstream to gitlab", &git.CommitOptions{
 			Author: &object.Signature{
 				Name:  "kubefirst-bot",
@@ -545,13 +526,13 @@ func HydrateGitlabMetaphorRepo(dryRun bool) {
 			},
 		})
 		if err != nil {
-			log.Panicf("error pushing detokenized metaphor repository to remote at" + gitlabURL)
+			log.Panic().Msgf("error pushing detokenized metaphor repository to remote at %s" + gitlabURL)
 		}
 
 		viper.Set("create.gitlabmetaphor.pushed", true)
 		viper.WriteConfig()
 	} else {
-		log.Println("Skipping: hydrateGitlabMetaphorRepo")
+		log.Info().Msg("Skipping: hydrateGitlabMetaphorRepo")
 	}
 
 }
@@ -565,7 +546,7 @@ func PushGitRepo(dryRun bool, config *configs.Config, gitOrigin, repoName string
 	repoDir := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
 	repo, err := git.PlainOpen(repoDir)
 	if err != nil {
-		log.Panicf("error opening repo %s: %s", repoName, err)
+		log.Panic().Msgf("error opening repo %s: %s", repoName, err)
 	}
 
 	// todo - fix opts := &git.PushOptions{uniqe, stuff} .Push(opts) ?
@@ -588,13 +569,13 @@ func PushGitRepo(dryRun bool, config *configs.Config, gitOrigin, repoName string
 			Auth:       auth,
 		})
 		if err != nil {
-			log.Panicf("error pushing detokenized %s repository to remote at %s", repoName, gitOrigin)
+			log.Panic().Msgf("error pushing detokenized %s repository to remote at %s", repoName, gitOrigin)
 		}
 		log.Printf("successfully pushed %s to soft-serve", repoName)
 		//TODO: Remove me
 		cmd := exec.Command("cp", "-r", repoDir, repoDir+"-"+gitOrigin)
 		err := cmd.Run()
-		log.Println(err)
+		log.Info().Msgf("%s", err)
 	}
 
 	if gitOrigin == "gitlab" {
@@ -628,11 +609,11 @@ spec:
         factor: 2`
 		file, err := os.Create(fmt.Sprintf("%s/gitops/registry/argocd.yaml", config.K1FolderPath))
 		if err != nil {
-			log.Println(err)
+			log.Info().Msgf("%s", err)
 		}
 		_, err = file.WriteString(registryFileContent)
 		if err != nil {
-			log.Println(err)
+			log.Info().Msgf("%s", err)
 		}
 		file.Close()
 
@@ -655,13 +636,13 @@ spec:
 			Auth:       auth,
 		})
 		if err != nil {
-			log.Println(err)
-			log.Panicf("error pushing detokenized %s repository to remote at %s", repoName, gitOrigin)
+			log.Info().Msgf("%s", err)
+			log.Panic().Msgf("error pushing detokenized %s repository to remote at %s", repoName, gitOrigin)
 		}
 		log.Printf("successfully pushed %s to gitlab", repoName)
 		//cmd := exec.Command("cp", "-r", repoDir, repoDir+"-"+gitOrigin)
 		//err = cmd.Run()
-		//log.Println(err)
+		//log.Info().Msg(err)
 	}
 
 	viper.Set(fmt.Sprintf("create.repos.%s.%s.pushed", gitOrigin, repoName), true)
@@ -672,20 +653,9 @@ spec:
 func CommitToRepo(repo *git.Repository, repoName string) {
 	w, _ := repo.Worktree()
 
-	log.Println(fmt.Sprintf("committing detokenized %s kms key id", repoName))
+	log.Info().Msg(fmt.Sprintf("committing detokenized %s kms key id", repoName))
 
-	status, err := w.Status()
-	if err != nil {
-		log.Println("error getting worktree status", err)
-	}
-
-	for file, s := range status {
-		log.Printf("the file is %s the status is %v", file, s.Worktree)
-		_, err = w.Add(file)
-		if err != nil {
-			log.Println("error getting worktree status", err)
-		}
-	}
+	_ = gitClient.GitAddWithFilter(viper.GetString("cloud"), repoName, w)
 
 	w.Commit(fmt.Sprintf("committing detokenized %s kms key id", repoName), &git.CommitOptions{
 		Author: &object.Signature{
