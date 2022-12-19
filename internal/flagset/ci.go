@@ -1,7 +1,7 @@
 package flagset
 
 import (
-	"log"
+	"github.com/rs/zerolog/log"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -43,7 +43,7 @@ func ProcessCIFlags(cmd *cobra.Command) (CIFlags, error) {
 
 	branchCI, err := ReadConfigString(cmd, "ci-branch")
 	if err != nil {
-		log.Printf("Error Processing - ci-branch flag, error: %v", err)
+		log.Warn().Msgf("Error Processing - ci-branch flag, error: %v", err)
 		return flags, err
 	}
 	flags.BranchCI = branchCI
@@ -51,7 +51,7 @@ func ProcessCIFlags(cmd *cobra.Command) (CIFlags, error) {
 
 	branchGitopsCI, err := ReadConfigString(cmd, "ci-gitops-branch")
 	if err != nil {
-		log.Printf("Error Processing - ci-gitops-branch flag, error: %v", err)
+		log.Warn().Msgf("Error Processing - ci-gitops-branch flag, error: %v", err)
 		return flags, err
 	}
 	flags.BranchGitopsCI = branchGitopsCI
@@ -59,7 +59,7 @@ func ProcessCIFlags(cmd *cobra.Command) (CIFlags, error) {
 
 	branchMetaphorCI, err := ReadConfigString(cmd, "ci-metaphor-branch")
 	if err != nil {
-		log.Printf("Error Processing - ci-metaphor-branch flag, error: %v", err)
+		log.Warn().Msgf("Error Processing - ci-metaphor-branch flag, error: %v", err)
 		return flags, err
 	}
 	flags.BranchMetaphorCI = branchMetaphorCI
@@ -67,7 +67,7 @@ func ProcessCIFlags(cmd *cobra.Command) (CIFlags, error) {
 
 	branchKubefirstCI, err := ReadConfigString(cmd, "ci-kubefirst-branch")
 	if err != nil {
-		log.Printf("Error Processing - ci-kubefirst-branch flag, error: %v", err)
+		log.Warn().Msgf("Error Processing - ci-kubefirst-branch flag, error: %v", err)
 		return flags, err
 	}
 	flags.BranchKubefirstCI = branchKubefirstCI
@@ -75,7 +75,7 @@ func ProcessCIFlags(cmd *cobra.Command) (CIFlags, error) {
 
 	destroyBucket, err := ReadConfigBool(cmd, "destroy-bucket")
 	if err != nil {
-		log.Printf("Error Processing - destroy-bucket flag, error: %v", err)
+		log.Warn().Msgf("Error Processing - destroy-bucket flag, error: %v", err)
 		return flags, err
 	}
 	flags.DestroyBucket = destroyBucket
@@ -83,7 +83,7 @@ func ProcessCIFlags(cmd *cobra.Command) (CIFlags, error) {
 
 	ciClusterName, err := ReadConfigString(cmd, "ci-cluster-name")
 	if err != nil {
-		log.Printf("Error Processing - ci-cluster-name flag, error: %v", err)
+		log.Warn().Msgf("Error Processing - ci-cluster-name flag, error: %v", err)
 		return flags, err
 	}
 	flags.CIClusterName = ciClusterName
@@ -91,7 +91,7 @@ func ProcessCIFlags(cmd *cobra.Command) (CIFlags, error) {
 
 	ciS3Suffix, err := ReadConfigString(cmd, "ci-s3-suffix")
 	if err != nil {
-		log.Printf("Error Processing - ci-s3-suffix flag, error: %v", err)
+		log.Warn().Msgf("Error Processing - ci-s3-suffix flag, error: %v", err)
 		return flags, err
 	}
 	flags.CIS3Suffix = ciS3Suffix
@@ -99,7 +99,7 @@ func ProcessCIFlags(cmd *cobra.Command) (CIFlags, error) {
 
 	ciHostedZoneName, err := ReadConfigString(cmd, "ci-hosted-zone-name")
 	if err != nil {
-		log.Printf("Error Processing - ci-hosted-zone-name flag, error: %v", err)
+		log.Warn().Msgf("Error Processing - ci-hosted-zone-name flag, error: %v", err)
 		return flags, err
 	}
 	flags.CIHostedZoneName = ciHostedZoneName
@@ -115,7 +115,7 @@ func ProcessCIFlags(cmd *cobra.Command) (CIFlags, error) {
 
 	ciGithubUser, err := ReadConfigString(cmd, "ci-github-user")
 	if err != nil {
-		log.Printf("Error Processing - ci-github-user flag, error: %v", err)
+		log.Warn().Msgf("Error Processing - ci-github-user flag, error: %v", err)
 		return flags, err
 	}
 	flags.CIGithubUser = ciGithubUser
@@ -123,7 +123,7 @@ func ProcessCIFlags(cmd *cobra.Command) (CIFlags, error) {
 
 	ciGithubOwner, err := ReadConfigString(cmd, "ci-github-owner")
 	if err != nil {
-		log.Printf("Error Processing - ci-github-owner flag, error: %v", err)
+		log.Warn().Msgf("Error Processing - ci-github-owner flag, error: %v", err)
 		return flags, err
 	}
 	flags.CIGithubOwner = ciGithubOwner
