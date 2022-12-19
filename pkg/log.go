@@ -1,15 +1,17 @@
 package pkg
 
 import (
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"os"
 	"strconv"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 // ZerologSetup setup Zerolog and return the configured Zerolog instance
 func ZerologSetup(logFile *os.File) zerolog.Logger {
 	// short file path/name
+	// it seems longer name doesn't work as expected.
 	zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
 		short := file
 		for i := len(file) - 1; i > 0; i-- {

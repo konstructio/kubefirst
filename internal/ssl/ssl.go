@@ -3,10 +3,11 @@ package ssl
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/ghodss/yaml"
 	"github.com/kubefirst/kubefirst/configs"
@@ -40,17 +41,17 @@ func getItemsToBackup(apiGroup string, apiVersion string, resourceType string, n
 
 	//creating folder to store certificates backup, and continue if exists.
 	if err := os.Mkdir(fmt.Sprintf("%s", config.CertsPath), os.ModePerm); err != nil {
-		log.Printf("error: could not create directory %q - it must exist to continue. error is: %s", config.CertsPath, err)
+		log.Warn().Msgf("error: could not create directory %q - it must exist to continue. error is: %s", config.CertsPath, err)
 	}
 
 	var files []string
 	var items []unstructured.Unstructured
 	for _, namespace := range namespaces {
 		if len(jqQuery) > 0 {
-			log.Println("getting resources and filtering using jq")
+			log.Info().Msg("getting resources and filtering using jq")
 			items, err = k8s.GetResourcesByJq(k8sClient, context.TODO(), apiGroup, apiVersion, resourceType, namespace, jqQuery)
 		} else {
-			log.Println("getting resources")
+			log.Info().Msg("getting resources")
 			items, err = k8s.GetResourcesDynamically(k8sClient, context.TODO(), apiGroup, apiVersion, resourceType, namespace)
 		}
 
@@ -85,7 +86,7 @@ func getItemsToBackup(apiGroup string, apiVersion string, resourceType string, n
 
 // GetBackupCertificates create a backup of Certificates on AWS S3 in yaml files
 func GetBackupCertificates(includeMetaphorApps bool) (string, error) {
-	log.Println("GetBackupCertificates called")
+	log.Info().Msg("GetBackupCertificates called")
 	awsProfile := viper.GetString("aws.profile")
 	os.Setenv("AWS_PROFILE", awsProfile)
 	bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
@@ -95,26 +96,26 @@ func GetBackupCertificates(includeMetaphorApps bool) (string, error) {
 	namespaces := getNamespacesToBackupSSL()
 
 	if includeMetaphorApps {
-		log.Println("Including Certificates from Metaphor Apps")
+		log.Info().Msg("Including Certificates from Metaphor Apps")
 		namespaces = append(namespaces, getNSToBackupSSLMetaphorApps()...)
 	}
 
-	log.Println("getting certificates")
+	log.Info().Msg("getting certificates")
 	certificates, err := getItemsToBackup("cert-manager.io", "v1", "certificates", namespaces, "")
 	if err != nil {
 		return "", fmt.Errorf("erro: %s", err)
 	}
 	for _, cert := range certificates {
 		fullPath := strings.Replace(cert, config.CertsPath, "/certs", 1)
-		log.Println(fullPath)
+		log.Info().Msg(fullPath)
 		err = aws.UploadFile(bucketName, fullPath, cert)
 		if err != nil {
-			log.Println("there is an issue to uploaded your certificate to the S3 bucket")
-			log.Panic(err)
+			log.Info().Msg("there is an issue to uploaded your certificate to the S3 bucket")
+			log.Panic().Msgf("%s", err)
 		}
 	}
 
-	log.Println("getting secrets")
+	log.Info().Msg("getting secrets")
 	query := ".metadata.annotations[\"cert-manager.io/issuer-kind\"] == \"ClusterIssuer\""
 	secrets, err := getItemsToBackup("", "v1", "secrets", namespaces, query)
 	if err != nil {
@@ -122,21 +123,21 @@ func GetBackupCertificates(includeMetaphorApps bool) (string, error) {
 	}
 	for _, secret := range secrets {
 		fullPath := strings.Replace(secret, config.CertsPath, "/secrets", 1)
-		log.Println(fullPath)
+		log.Info().Msg(fullPath)
 		if err = aws.UploadFile(bucketName, fullPath, secret); err != nil {
 			return "", err
 		}
 	}
 
 	emptyNS := []string{""}
-	log.Println("getting clusterissuers")
+	log.Info().Msg("getting clusterissuers")
 	clusterIssuers, err := getItemsToBackup("cert-manager.io", "v1", "clusterissuers", emptyNS, "")
 	if err != nil {
 		return "", fmt.Errorf("erro: %s", err)
 	}
 	for _, clusterIssuer := range clusterIssuers {
 		fullPath := strings.Replace(clusterIssuer, config.CertsPath, "/clusterissuers", 1)
-		log.Println(fullPath)
+		log.Info().Msg(fullPath)
 		if err = aws.UploadFile(bucketName, fullPath, clusterIssuer); err != nil {
 			return "", err
 		}
@@ -150,52 +151,52 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 	config := configs.ReadConfig()
 
 	if viper.GetBool("create.state.ssl.restored") {
-		log.Printf("Step already executed before, RestoreSSL skipped.")
+		log.Info().Msg("Step already executed before, RestoreSSL skipped.")
 		return nil
 	}
 
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, RestoreSSL skipped.")
+		log.Info().Msg("[#99] Dry-run mode, RestoreSSL skipped.")
 		return nil
 	}
 	namespaces := getNamespacesToBackupSSL()
 	if includeMetaphorApps {
-		log.Println("Including Certificates from Metaphor Apps")
+		log.Info().Msg("Including Certificates from Metaphor Apps")
 		namespaces = append(namespaces, getNSToBackupSSLMetaphorApps()...)
 	}
 	for _, ns := range namespaces {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "create", "ns", ns)
 		if err != nil {
-			log.Printf("failed to create ns: %s, assuming that exists...", err)
+			log.Info().Msgf("failed to create ns: %s, assuming that exists...", err)
 		}
 	}
 	bucketName := fmt.Sprintf("k1-%s", viper.GetString("aws.hostedzonename"))
 	err := aws.DownloadBucket(bucketName, config.CertsPath)
 	if err != nil {
-		log.Println("Error RestoreSSL:", err)
+		log.Info().Msgf("Error RestoreSSL: %s", err)
 	}
 	//! We need apply secrets firstly than other resources, accordingly with cert-manager docs
 	//pathsRestored := []string{"secrets", "certs", "clusterissuers"}
 	//! At this moment, we dont have the crds certs/clusterissuers installed on cluster
 	pathsRestored := []string{"secrets"}
 	for _, path := range pathsRestored {
-		log.Print(path)
+		log.Info().Msg(path)
 		//clean yaml
 		//TODO filter yaml extension
 		files, err := os.ReadDir(fmt.Sprintf("%s/%s", filepath.Join(config.CertsPath, path), "/"))
 		if err != nil {
-			log.Println("Error RestoreSSL:", err)
+			log.Warn().Msgf("Error RestoreSSL: %s", err)
 			return fmt.Errorf("erro: %s", err)
 		}
 
 		for _, f := range files {
-			log.Println(f.Name())
+			log.Info().Msg(f.Name())
 			pathyaml := fmt.Sprintf("%s/%s", filepath.Join(config.CertsPath, path), f.Name())
 
 			yfile, err := os.ReadFile(pathyaml)
 
 			if err != nil {
-				log.Println("Error RestoreSSL:", err)
+				log.Info().Msgf("Error RestoreSSL: %s", err)
 				return fmt.Errorf("erro: %s", err)
 			}
 
@@ -204,7 +205,7 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 			err = yaml2.Unmarshal(yfile, &data)
 
 			if err != nil {
-				log.Println("Error RestoreSSL:", err)
+				log.Info().Msgf("Error RestoreSSL: %s", err)
 				return fmt.Errorf("erro: %s", err)
 			}
 
@@ -218,24 +219,24 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 			dataCleaned, err := yaml2.Marshal(&data)
 
 			if err != nil {
-				log.Println("Error RestoreSSL:", err)
+				log.Warn().Msgf("Error RestoreSSL: %s", err)
 				return fmt.Errorf("erro: %s", err)
 			}
 
 			err = os.WriteFile(fmt.Sprintf("%s%s", pathyaml, ".clean"), dataCleaned, 0644)
 
 			if err != nil {
-				log.Println("Error RestoreSSL:", err)
+				log.Warn().Msgf("Error RestoreSSL: %s", err)
 				return fmt.Errorf("erro: %s", err)
 			}
 
-			log.Println("yaml cleaned written")
+			log.Info().Msg("yaml cleaned written")
 		}
 
-		log.Printf("applying the folder: %s", path)
+		log.Info().Msgf("applying the folder: %s", path)
 		_, _, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "apply", "-f", filepath.Join(config.CertsPath, path))
 		if err != nil {
-			log.Printf("failed to apply %s: %s, assuming that exists...", path, err)
+			log.Warn().Msgf("failed to apply %s: %s, assuming that exists...", path, err)
 		}
 	}
 	viper.Set("create.state.ssl.restored", true)
@@ -246,7 +247,7 @@ func RestoreSSL(dryRun bool, includeMetaphorApps bool) error {
 func InstallCALocal(config *configs.Config) {
 	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, "-install")
 	if err != nil {
-		log.Printf("failed to uninstall CA of mkCert: %s", err)
+		log.Warn().Msgf("failed to uninstall CA of mkCert: %s", err)
 	}
 }
 
@@ -254,7 +255,7 @@ func InstallCALocal(config *configs.Config) {
 func UninstallCALocal(config *configs.Config) {
 	_, _, err := pkg.ExecShellReturnStrings(config.MkCertPath, "-uninstall")
 	if err != nil {
-		log.Printf("failed to uninstall CA of mkCert: %s", err)
+		log.Warn().Msgf("failed to uninstall CA of mkCert: %s", err)
 	}
 }
 
@@ -286,7 +287,7 @@ func createCertificateForLocal(config *configs.Config, app pkg.CertificateAppLis
 	certFileName := config.MkCertPemFilesPath + app.AppName + "-cert.pem" // example: app-name-cert.pem
 	keyFileName := config.MkCertPemFilesPath + app.AppName + "-key.pem"   // example: app-name-key.pem
 
-	log.Printf("generating certificate %s.localdev.me on %s", app.AppName, config.MkCertPath)
+	log.Info().Msgf("generating certificate %s.localdev.me on %s", app.AppName, config.MkCertPath)
 
 	_, _, err := pkg.ExecShellReturnStrings(
 		config.MkCertPath,
