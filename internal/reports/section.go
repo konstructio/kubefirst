@@ -50,10 +50,14 @@ func PrintSectionOverview(kubefirstConsoleURL string) []byte {
 	handOffData.WriteString("\nPress ESC to leave this screen and return to your shell.")
 
 	handOffData.WriteString("\n\nNotes:")
-	handOffData.WriteString("\n  Kubefirst generated certificates using 'mkcert' for your convenience")
-	handOffData.WriteString(fmt.Sprintf("\n  If you have root access you could run: %s -install", config.MkCertPath))
-	handOffData.WriteString("\n  This will update yours OS truststore allowing our certs to be trusted by your browser and more smooth expirience")
-	handOffData.WriteString("\n  Learn more at: https://github.com/FiloSottile/mkcert#changing-the-location-of-the-ca-files")
+	handOffData.WriteString("\n  Kubefirst generated certificates to ensure secure connections to")
+	handOffData.WriteString("\n  your local deployment. Even if your browser warn you about the ")
+	handOffData.WriteString("\n  origin, you can use Kubefirst without any issue. ")
+	handOffData.WriteString("\n  If you want, you can update your OS trust store by running ")
+	handOffData.WriteString("\n  this command and pass your root password:  ")
+	handOffData.WriteString(fmt.Sprintf("\n    %s -install", config.MkCertPath))
+	handOffData.WriteString("\n  Details:")
+	handOffData.WriteString("\n  https://github.com/FiloSottile/mkcert#changing-the-location-of-the-ca-files")
 	return handOffData.Bytes()
 }
 
