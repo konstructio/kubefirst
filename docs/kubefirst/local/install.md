@@ -35,7 +35,7 @@ The `kubefirst local` command will request that you authorize the Kubefirst CLI 
 
 #### Why the Kubefirst cli needs this access
 
-The [gitops repo](https://github.com/kubefirst/gitops-template) that we create for you will power your local Kubefirst platform. The [metaphor](https://github.com/kubefirst/metaphor-template), [metaphor-go](https://github.com/kubefirst/metaphor-go-template), and `metaphor-frontend` repos are your microservices examples, which demonstrate how to publish and gitops-deliver applications to your new development, staging, and production namespaces in your new local cluster.
+The [gitops repo](https://github.com/kubefirst/gitops-template) that we create for you will power your local Kubefirst platform. The [metaphor](https://github.com/kubefirst/metaphor-template), [metaphor-go](https://github.com/kubefirst/metaphor-go-template), and [metaphor-frontend](https://github.com/kubefirst/metaphor-frontend-template) repos are your microservices examples, which demonstrate how to publish and gitops-deliver applications to your new development, staging, and production namespaces in your new local cluster.
 
 ## After installation
 
