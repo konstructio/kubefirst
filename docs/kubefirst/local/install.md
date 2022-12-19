@@ -2,6 +2,8 @@
 
 **Kubefirst** is the name of our command line tool that installs the Kubefirst platform to your local or cloud environment.
 
+To use the local version of Kubefirst, you will need to have [Docker installed](https://docs.docker.com/get-docker/) and [enable the Kubernetes feature](https://docs.docker.com/desktop/kubernetes/).
+
 ![](../../img/kubefirst/local/kubefirst-cluster-create.png)
 
 ### Step 1 - Download (or upgrade) the kubefirst CLI
