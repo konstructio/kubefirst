@@ -436,8 +436,6 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		log.Error().Err(err).Msgf("failed to delete argocd primary ingress route: %s", err)
 	}
 
-	log.Info().Msg("Kubefirst installation finished successfully")
-	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
 	log.Info().Msg("Kubefirst installation almost finished successfully, please wait final setups steps")
 	pkg.InformUser("Kubefirst installation almost finished successfully, please wait final setups steps", silentMode)
 

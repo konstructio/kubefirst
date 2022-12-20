@@ -72,9 +72,9 @@ var k1ReadyCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			log.Info().Msgf("App % is synched: %t", app, isAppSynched)
+			log.Info().Msgf("App %s is synched: %t", app, isAppSynched)
 			if !isAppSynched {
-				log.Warn().Msgf("App %s is is not ready, synch status: %s ", app, isAppSynched)
+				log.Warn().Msgf("App %s is is not ready, synch status: %t ", app, isAppSynched)
 				return fmt.Errorf("app %s is is not ready, synch status: %v", app, isAppSynched)
 			}
 		}

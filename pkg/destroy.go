@@ -20,18 +20,6 @@ func ForceLocalDestroy(gitHubClient githubWrapper.GithubSession) error {
 	if err != nil && resp.StatusCode != http.StatusNotFound {
 		return err
 	}
-	//TODO: Remove this block after metaphor slim migration
-	resp, err = gitHubClient.RemoveRepo(owner, "metaphor")
-	if err != nil && resp.StatusCode != http.StatusNotFound {
-		return err
-	}
-
-	//TODO: Remove this block after metaphor slim migration
-	resp, err = gitHubClient.RemoveRepo(owner, "metaphor-go")
-	if err != nil && resp.StatusCode != http.StatusNotFound {
-		return err
-	}
-	//TODO: confirm this is the metpahor-slim for local
 	resp, err = gitHubClient.RemoveRepo(owner, "metaphor-frontend")
 	if err != nil && resp.StatusCode != http.StatusNotFound {
 		return err

@@ -201,7 +201,8 @@ var destroyAwsGithubCmd = &cobra.Command{
 		fmt.Println("End of execution destroy")
 		time.Sleep(time.Millisecond * 100)
 
-		log.Println(destroyFlags, config)
+		// Please, don't do this, this leaks credentials.
+		// log.Println(destroyFlags, config)
 		return nil
 	},
 }
