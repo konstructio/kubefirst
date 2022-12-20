@@ -208,8 +208,8 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		if nodesSpot {
 			envs["TF_VAR_capacity_type"] = "SPOT"
 		}
-		nodes_graviton := viper.GetBool("aws.nodes_graviton")
-		if nodes_graviton {
+		nodesGraviton := viper.GetBool("aws.nodes_graviton")
+		if nodesGraviton {
 			envs["TF_VAR_ami_type"] = "AL2_ARM_64"
 			envs["TF_VAR_instance_type"] = "t4g.medium"
 		}
