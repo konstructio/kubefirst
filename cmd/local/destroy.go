@@ -2,6 +2,8 @@ package local
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/k3d"
@@ -10,7 +12,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"time"
 )
 
 func NewDestroyCommand() *cobra.Command {

@@ -8,8 +8,9 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 
-	"log"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
@@ -54,7 +55,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		}
 
 		if viper.GetString("cloud") != flagset.CloudAws {
-			log.Println("Not cloud mode attempt to create using cloud cli")
+			log.Info().Msg("Not cloud mode attempt to create using cloud cli")
 			if err != nil {
 				return fmt.Errorf("not support mode of install via this command, only cloud install supported")
 			}
@@ -68,7 +69,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 
 		if globalFlags.UseTelemetry {
 			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallStarted); err != nil {
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			}
 		}
 
@@ -97,7 +98,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 			if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
 				return err
 			}
-			log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
+			log.Info().Msg("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
 		}
 
 		// get GitHub data to set user and owner based on the provided token
@@ -115,7 +116,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 
 		if !viper.GetBool("kubefirst.done") {
 			if viper.GetString("gitprovider") == "github" {
-				log.Println("Installing Github version of Kubefirst")
+				log.Info().Msg("Installing Github version of Kubefirst")
 				viper.Set("git.mode", "github")
 				// if not local it is AWS for now
 				err := createGithubCmd.RunE(cmd, args)
@@ -124,7 +125,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 				}
 
 			} else {
-				log.Println("Installing GitLab version of Kubefirst")
+				log.Info().Msg("Installing GitLab version of Kubefirst")
 				viper.Set("git.mode", "gitlab")
 				// if not local it is AWS for now
 				err := createGitlabCmd.RunE(cmd, args)
@@ -136,7 +137,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 			viper.Set("kubefirst.done", true)
 			viper.WriteConfig()
 		} else {
-			log.Println("already executed create command, continuing for readiness checks")
+			log.Info().Msg("already executed create command, continuing for readiness checks")
 		}
 
 		// Relates to issue: https://github.com/kubefirst/kubefirst/issues/386
@@ -165,7 +166,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		for i := 1; i < 10; i++ {
 			err = k1ReadyCmd.RunE(cmd, args)
 			if err != nil {
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			} else {
 				break
 			}
@@ -175,7 +176,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		err = deployMetaphorCmd.RunE(cmd, args)
 		if err != nil {
 			informUser("Error deploy metaphor applications", globalFlags.SilentMode)
-			log.Println("Error running deployMetaphorCmd")
+			log.Warn().Msg("Error running deployMetaphorCmd")
 			return err
 		}
 
@@ -189,26 +190,26 @@ cluster provisioning process spinning up the services, and validates the livenes
 
 			err = state.UploadKubefirstToStateStore(globalFlags.DryRun)
 			if err != nil {
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			}
 		}
 
-		log.Println("sending mgmt cluster install completed metric")
+		log.Debug().Msg("sending mgmt cluster install completed metric")
 
 		if globalFlags.UseTelemetry {
 			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallCompleted); err != nil {
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			}
 		}
 
-		log.Println("Kubefirst installation finished successfully")
+		log.Debug().Msg("Kubefirst installation finished successfully")
 		informUser("Kubefirst installation finished successfully", globalFlags.SilentMode)
 
 		// todo: temporary code to enable console for localhost
 		err = postInstallCmd.RunE(cmd, args)
 		if err != nil {
 			informUser("Error starting apps from post-install", globalFlags.SilentMode)
-			log.Println("Error running postInstallCmd")
+			log.Warn().Msgf("Error running postInstallCmd: %s", err)
 			return err
 		}
 
