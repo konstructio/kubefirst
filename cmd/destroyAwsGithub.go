@@ -17,11 +17,13 @@ import (
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
+	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/internal/terraform"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -149,14 +151,32 @@ var destroyAwsGithubCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-destroy", 1)
 
 		if !destroyFlags.SkipGithubTerraform {
+			gitHubClient := githubWrapper.New()
 			githubTfApplied := viper.GetBool("terraform.github.apply.complete")
 			if githubTfApplied {
 				informUser("terraform destroying github resources", globalFlags.SilentMode)
 				tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
-				terraform.InitDestroyAutoApprove(globalFlags.DryRun, tfEntrypoint)
-				informUser("successfully destroyed github resources", globalFlags.SilentMode)
+				forceDestroy := false
+				err := terraform.InitAndReconfigureActionAutoApprove(globalFlags.DryRun, "destroy", tfEntrypoint)
+				if err != nil {
+					forceDestroy = true
+					informUser("unable to destroy via terraform", globalFlags.SilentMode)
+				} else {
+					informUser("successfully destroyed github resources", globalFlags.SilentMode)
+				}
+				if forceDestroy {
+					informUser("running force destroy...", globalFlags.SilentMode)
+					err = pkg.ForceGithubDestroyCloud(gitHubClient)
+					if err != nil {
+						return err
+					}
+					informUser("force destroy, done", globalFlags.SilentMode)
+				}
+				//Best-effort basis, if terraform does its task, I believe it removes already.
+				_ = pkg.GithubRemoveSSHKeys(gitHubClient)
 			}
 			log.Println("github terraform destruction complete")
+
 		}
 		progressPrinter.IncrementTracker("step-destroy", 1)
 
@@ -181,7 +201,8 @@ var destroyAwsGithubCmd = &cobra.Command{
 		fmt.Println("End of execution destroy")
 		time.Sleep(time.Millisecond * 100)
 
-		log.Println(destroyFlags, config)
+		// Please, don't do this, this leaks credentials.
+		// log.Println(destroyFlags, config)
 		return nil
 	},
 }

@@ -2,8 +2,9 @@ package github
 
 import (
 	"fmt"
-	"log"
 	"os"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
@@ -15,9 +16,9 @@ func ApplyGitHubTerraform(dryRun bool) {
 
 	config := configs.ReadConfig()
 
-	log.Println("Executing ApplyGithubTerraform")
+	log.Info().Msg("Executing ApplyGithubTerraform")
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, ApplyGithubTerraform skipped.")
+		log.Info().Msg("[#99] Dry-run mode, ApplyGithubTerraform skipped.")
 		return
 	}
 	//* AWS_SDK_LOAD_CONFIG=1
@@ -36,16 +37,16 @@ func ApplyGitHubTerraform(dryRun bool) {
 
 	err := os.Chdir(directory)
 	if err != nil {
-		log.Panic("error: could not change directory to " + directory)
+		log.Panic().Msgf("error: could not change directory to %s", directory)
 	}
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 	if err != nil {
-		log.Panicf("error: terraform init for github failed %s", err)
+		log.Panic().Msgf("error: terraform init for github failed %s", err)
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "apply", "-auto-approve")
 	if err != nil {
-		log.Panicf("error: terraform apply for github failed %s", err)
+		log.Panic().Msgf("error: terraform apply for github failed %s", err)
 	}
 	os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 	viper.Set("github.terraformapplied.gitops", true)
@@ -57,9 +58,9 @@ func DestroyGitHubTerraform(dryRun bool) {
 
 	config := configs.ReadConfig()
 
-	log.Println("Executing DestroyGitHubTerraform")
+	log.Info().Msg("Executing DestroyGitHubTerraform")
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, DestroyGitHubTerraform skipped.")
+		log.Info().Msg("[#99] Dry-run mode, DestroyGitHubTerraform skipped.")
 		return
 	}
 	//* AWS_SDK_LOAD_CONFIG=1
@@ -77,16 +78,16 @@ func DestroyGitHubTerraform(dryRun bool) {
 	directory := fmt.Sprintf("%s/gitops/terraform/github", config.K1FolderPath)
 	err := os.Chdir(directory)
 	if err != nil {
-		log.Panic("error: could not change directory to " + directory)
+		log.Panic().Msgf("error: could not change directory to %s", directory)
 	}
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 	if err != nil {
-		log.Panicf("error: terraform init for github failed %s", err)
+		log.Panic().Msgf("error: terraform init for github failed %s", err)
 	}
 
 	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
 	if err != nil {
-		log.Panicf("error: terraform destroy for github failed %s", err)
+		log.Panic().Msgf("error: terraform destroy for github failed %s", err)
 	}
 	os.RemoveAll(fmt.Sprintf("%s/.terraform", directory))
 	viper.Set("github.terraformapplied.gitops", true)
