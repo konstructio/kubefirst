@@ -171,10 +171,15 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	//
 	// create local certs using MkCert tool
 	//
-	log.Info().Msg("installing CA from MkCert")
-	ssl.InstallCALocal(config)
-	log.Info().Msg("installing CA from MkCert done")
 
+	//TODO: Verify Approach on PR
+	// We will not install CAROOT from mkcert into users machine as it requires sudo access.
+	// ssl.InstallCALocal(config)
+	log.Info().Msg("we will use mkcert for creating certificates with a common root cert")
+	log.Info().Msg("the certificates are by default at:  $HOME/.local/share/mkcert/")
+	log.Info().Msgf("if you have sudo access you can run: %s -install", config.MkCertPath)
+	log.Info().Msg("that will update your trust store with mkcert rootCA, allowing your browser to trust this installation certs")
+	log.Info().Msg("learn more at: https://github.com/FiloSottile/mkcert#changing-the-location-of-the-ca-files")
 	log.Info().Msg("creating local certificates")
 	if err := ssl.CreateCertificatesForLocalWrapper(config); err != nil {
 		log.Error().Err(err).Msg("")

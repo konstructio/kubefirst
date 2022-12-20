@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 
 	"github.com/spf13/viper"
@@ -41,12 +42,22 @@ func PrintSectionRepoGitlab() []byte {
 
 func PrintSectionOverview(kubefirstConsoleURL string) []byte {
 	var handOffData bytes.Buffer
+	config := configs.ReadConfig()
 	handOffData.WriteString(strings.Repeat("-", 70))
 	handOffData.WriteString(fmt.Sprintf("\nCluster %q is up and running!:", viper.GetString("cluster-name")))
 	handOffData.WriteString("\nThis information is available at $HOME/.kubefirst ")
 	handOffData.WriteString("\n\nAccess the kubefirst-console from your browser at:\n" + kubefirstConsoleURL + "\n")
 	handOffData.WriteString("\nPress ESC to leave this screen and return to your shell.")
 
+	handOffData.WriteString("\n\nNotes:")
+	handOffData.WriteString("\n  Kubefirst generated certificates to ensure secure connections to")
+	handOffData.WriteString("\n  your local deployment. Even if your browser warn you about the ")
+	handOffData.WriteString("\n  origin, you can use Kubefirst without any issue. ")
+	handOffData.WriteString("\n  If you want, you can update your OS trust store by running ")
+	handOffData.WriteString("\n  this command and pass your root password:  ")
+	handOffData.WriteString(fmt.Sprintf("\n    %s -install", config.MkCertPath))
+	handOffData.WriteString("\n  Details:")
+	handOffData.WriteString("\n  https://github.com/FiloSottile/mkcert#changing-the-location-of-the-ca-files")
 	return handOffData.Bytes()
 }
 
