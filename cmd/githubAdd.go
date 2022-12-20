@@ -31,7 +31,7 @@ var githubAddCmd = &cobra.Command{
 		}
 
 		log.Debug().Msgf("Org used: %s", viper.GetString("github.owner"))
-		log.Debug().Msgf("dry-run: %s", globalFlags.DryRun)
+		log.Debug().Msgf("dry-run: %t", globalFlags.DryRun)
 
 		if !viper.GetBool("github.terraformapplied.gitops") {
 
