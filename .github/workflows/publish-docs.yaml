@@ -5,6 +5,7 @@ on:
       - main
     paths:
       - docs/**
+  workflow_dispatch:
 env:
   RELEASE_DOCS_BRANCH_REF: 'refs/heads/main'
 
