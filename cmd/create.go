@@ -38,7 +38,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 			//The goal of this code is to track create time, if it works or not.
 			//In the future we can add telemetry signal from these action, to track, success or fail.
 			duration := time.Since(start)
-			log.Printf("[000] Create duration is %s", duration)
+			log.Info().Msgf("[000] Create duration is %s", duration)
 
 		}()
 
@@ -153,13 +153,13 @@ cluster provisioning process spinning up the services, and validates the livenes
 		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
 		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
 		if err != nil {
-			log.Printf("Failed to get clientset for k8s : %s", err)
+			log.Warn().Msgf("Failed to get clientset for k8s : %s", err)
 			return err
 		}
 		argocdPodClient := clientset.CoreV1().Pods("argocd")
 		err = k8s.RemoveSelfSignedCertArgoCD(argocdPodClient)
 		if err != nil {
-			log.Printf("Error removing self-signed certificate from ArgoCD: %s", err)
+			log.Warn().Msgf("Error removing self-signed certificate from ArgoCD: %s", err)
 		}
 
 		informUser("Checking if cluster is ready for use by metaphor apps", globalFlags.SilentMode)
