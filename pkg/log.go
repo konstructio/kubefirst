@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"os"
-	"strconv"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -12,22 +11,23 @@ import (
 func ZerologSetup(logFile *os.File) zerolog.Logger {
 	// short file path/name
 	// it seems longer name doesn't work as expected.
-	zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
-		short := file
-		for i := len(file) - 1; i > 0; i-- {
-			if file[i] == '/' {
-				short = file[i+1:]
-				break
+	/*
+		zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
+			short := file
+			for i := len(file) - 1; i > 0; i-- {
+				if file[i] == '/' {
+					short = file[i+1:]
+					break
+				}
 			}
+			file = short
+			return file + ":" + strconv.Itoa(line)
 		}
-		file = short
-		return file + ":" + strconv.Itoa(line)
-	}
-
+	*/
 	// default log level
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-	return log.Output(zerolog.ConsoleWriter{Out: logFile, NoColor: false}).With().Caller().Logger()
+	return log.Output(zerolog.ConsoleWriter{Out: logFile, NoColor: false, TimeFormat: "2006-01-02T15:04"}).With().Timestamp().Caller().Logger()
 	//return log.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: false}).With().Caller().Logger()
 }
 
