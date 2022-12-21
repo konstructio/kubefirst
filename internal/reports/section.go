@@ -21,7 +21,14 @@ func PrintSectionRepoGithub() []byte {
 	handOffData.WriteString(fmt.Sprintf("\n owner: %s", viper.GetString("github.owner")))
 	handOffData.WriteString("\n Repos: ")
 	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/gitops", viper.GetString("github.host"), viper.GetString("github.owner"))))
-	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor", viper.GetString("github.host"), viper.GetString("github.owner"))))
+	if viper.GetString("cloud") == pkg.CloudK3d {
+		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor-frontend", viper.GetString("github.host"), viper.GetString("github.owner"))))
+	} else {
+		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor", viper.GetString("github.host"), viper.GetString("github.owner"))))
+		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor-go", viper.GetString("github.host"), viper.GetString("github.owner"))))
+		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor-frontend", viper.GetString("github.host"), viper.GetString("github.owner"))))
+
+	}
 
 	return handOffData.Bytes()
 }
@@ -35,13 +42,10 @@ func PrintSectionRepoGitlab() []byte {
 	handOffData.WriteString(fmt.Sprintf("\n password: %s", viper.GetString("gitlab.root.password")))
 	handOffData.WriteString("\n Repos: ")
 	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/gitops", viper.GetString("aws.hostedzonename"))))
-	if viper.GetString("cloud") == pkg.CloudK3d {
-		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor-frontend", viper.GetString("aws.hostedzonename"))))
-	} else {
-		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor", viper.GetString("aws.hostedzonename"))))
-		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor-go", viper.GetString("aws.hostedzonename"))))
-		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor-frontend", viper.GetString("aws.hostedzonename"))))
-	}
+
+	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor-go", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor-frontend", viper.GetString("aws.hostedzonename"))))
 
 	return handOffData.Bytes()
 }
