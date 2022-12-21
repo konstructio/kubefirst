@@ -5,6 +5,7 @@ const (
 	SoftServerURI                = "ssh://127.0.0.1:8022/config"
 	GitHubOAuthClientId          = "2ced340927e0a6c49a45"
 	CloudK3d                     = "k3d"
+	CloudAws                     = "aws"
 	GitHubProviderName           = "github"
 	GitHubHost                   = "github.com"
 	LocalClusterName             = "kubefirst"

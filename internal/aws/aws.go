@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -12,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 
@@ -93,7 +94,7 @@ func BucketRand(dryRun bool) {
 	// todo: use method approach to avoid new AWS client initializations
 	awsConfig, err := NewAws()
 	if err != nil {
-		log.Println(err)
+		log.Warn().Msgf("%s", err)
 	}
 
 	s3Client := s3.NewFromConfig(awsConfig)
@@ -110,10 +111,10 @@ func BucketRand(dryRun bool) {
 		if !bucketExists {
 			bucketName := fmt.Sprintf("k1-%s-%s", bucket, randomName)
 
-			log.Println("creating", bucket, "bucket", bucketName)
+			log.Info().Msgf("creating %s bucket %s", bucket, bucketName)
 
 			regionName := viper.GetString("aws.region")
-			log.Println("region is ", regionName)
+			log.Info().Msgf("region is %s", regionName)
 			if !dryRun {
 				if regionName == "us-east-1" {
 					_, err = s3Client.CreateBucket(
@@ -132,7 +133,7 @@ func BucketRand(dryRun bool) {
 						})
 				}
 				if err != nil {
-					log.Println("failed to create bucket "+bucketName, err.Error())
+					log.Warn().Msgf("failed to create bucket %s - %s", bucketName, err.Error())
 					os.Exit(1)
 				}
 
@@ -145,19 +146,19 @@ func BucketRand(dryRun bool) {
 
 				_, err := s3Client.PutBucketVersioning(context.Background(), versionConfigInput)
 				if err != nil {
-					log.Panicf("Error putting S3 versioning: %s", err)
+					log.Panic().Msgf("error putting S3 versioning: %s", err)
 				}
 				PutTagKubefirstOnBuckets(bucketName, viper.GetString("cluster-name"))
 			} else {
-				log.Printf("[#99] Dry-run mode, bucket creation skipped:  %s", bucketName)
+				log.Info().Msgf("[#99] Dry-run mode, bucket creation skipped:  %s", bucketName)
 			}
 			viper.Set(fmt.Sprintf("bucket.%s.created", bucket), true)
 			viper.Set(fmt.Sprintf("bucket.%s.name", bucket), bucketName)
 			if err = viper.WriteConfig(); err != nil {
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			}
 		}
-		log.Printf("bucket %s exists", viper.GetString(fmt.Sprintf("bucket.%s.name", bucket)))
+		log.Info().Msgf("bucket %s exists", viper.GetString(fmt.Sprintf("bucket.%s.name", bucket)))
 	}
 }
 
@@ -167,7 +168,7 @@ func GetAccountInfo() {
 	// todo: use method approach to avoid new AWS client initializations
 	awsConfig, err := NewAws()
 	if err != nil {
-		log.Panicf("failed to load configuration, error: %s", err)
+		log.Panic().Msgf("failed to load configuration, error: %s", err)
 	}
 
 	stsClient := sts.NewFromConfig(awsConfig)
@@ -176,27 +177,27 @@ func GetAccountInfo() {
 		&sts.GetCallerIdentityInput{},
 	)
 	if err != nil {
-		log.Panicf("error: could not get caller identity %s", err)
+		log.Panic().Msgf("error: could not get caller identity %s", err)
 	}
 
 	viper.Set("aws.accountid", *iamCaller.Account)
 	viper.Set("aws.userarn", *iamCaller.Arn)
 	if err = viper.WriteConfig(); err != nil {
-		log.Println(err)
+		log.Warn().Msgf("%s", err)
 	}
 }
 
 // TestHostedZoneLiveness check Route53 for liveness entry, and check if it's responding/live
 func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) bool {
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, TestHostedZoneLiveness skipped.")
+		log.Info().Msg("[#99] Dry-run mode, TestHostedZoneLiveness skipped.")
 		return true
 	}
 
 	// todo: use method approach to avoid new AWS client initializations
 	awsConfig, err := NewAws()
 	if err != nil {
-		log.Println("failed to load configuration, error:", err)
+		log.Warn().Msgf("failed to load configuration, error: %s", err)
 	}
 
 	// https://aws.github.io/aws-sdk-go-v2/docs/making-requests/#overriding-configuration
@@ -206,9 +207,9 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) bo
 	route53RecordName := fmt.Sprintf("kubefirst-liveness.%s", hostedZoneName)
 	route53RecordValue := "domain record propagated"
 
-	log.Println("checking to see if record", route53RecordName, "exists")
-	log.Println("hostedZoneId", hostedZoneId)
-	log.Println("route53RecordName", route53RecordName)
+	log.Info().Msgf("checking to see if record %s exists", route53RecordName)
+	log.Info().Msgf("hostedZoneId %s", hostedZoneId)
+	log.Info().Msgf("route53RecordName %s", route53RecordName)
 	record, err := route53Client.ChangeResourceRecordSets(
 		context.Background(),
 		&route53.ChangeResourceRecordSetsInput{
@@ -235,36 +236,36 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) bo
 			HostedZoneId: aws.String(hostedZoneId),
 		})
 	if err != nil {
-		log.Println(err)
+		log.Warn().Msgf("%s", err)
 		return false
 	}
-	log.Println("record creation status is ", record.ChangeInfo.Status)
+	log.Info().Msgf("record creation status is %s", record.ChangeInfo.Status)
 	count := 0
 	// todo need to exit after n number of minutes and tell them to check ns records
 	// todo this logic sucks
 	for count <= 100 {
 		count++
 
-		log.Println(route53RecordName)
+		log.Info().Msgf("%s", route53RecordName)
 		ips, err := net.LookupTXT(route53RecordName)
 		if err != nil {
 			ips, err = backupResolver.LookupTXT(context.Background(), route53RecordName)
 		}
 
-		log.Println(ips)
+		log.Info().Msgf("%s", ips)
 
 		if err != nil {
-			log.Println(fmt.Sprintf("Could not get record name %s - waiting 10 seconds and trying again: \nerror: %s", route53RecordName, err))
+			log.Warn().Msgf("Could not get record name %s - waiting 10 seconds and trying again: \nerror: %s", route53RecordName, err)
 			time.Sleep(10 * time.Second)
 		} else {
 			for _, ip := range ips {
 				// todo check ip against route53RecordValue in some capacity so we can pivot the value for testing
-				log.Println(fmt.Sprintf("%s. in TXT record value: %s\n", route53RecordName, ip))
+				log.Info().Msgf("%s. in TXT record value: %s\n", route53RecordName, ip)
 				count = 101
 			}
 		}
 		if count == 100 {
-			log.Panicf("unable to resolve hosted zone dns record. please check your domain registrar")
+			log.Panic().Msg("unable to resolve hosted zone dns record. please check your domain registrar")
 		}
 	}
 	return true
@@ -273,12 +274,12 @@ func TestHostedZoneLiveness(dryRun bool, hostedZoneName, hostedZoneId string) bo
 // GetDNSInfo try to reach the provided hosted zone
 func GetDNSInfo(hostedZoneName string) string {
 
-	log.Println("GetDNSInfo (working...)")
+	log.Info().Msg("GetDNSInfo (working...)")
 
 	// todo: use method approach to avoid new AWS client initializations
 	awsConfig, err := NewAws()
 	if err != nil {
-		log.Println("failed to load configuration, error:", err)
+		log.Warn().Msgf("failed to load configuration, error: %s", err)
 	}
 	// https://aws.github.io/aws-sdk-go-v2/docs/making-requests/#overriding-configuration
 	route53Client := route53.NewFromConfig(awsConfig)
@@ -289,7 +290,7 @@ func GetDNSInfo(hostedZoneName string) string {
 		},
 	)
 	if err != nil {
-		log.Println("oh no error on call", err)
+		log.Info().Msgf("oh no error on call %s", err)
 	}
 
 	var hostedZoneId string
@@ -300,16 +301,16 @@ func GetDNSInfo(hostedZoneName string) string {
 
 			hostedZoneId = strings.Split(*zone.Id, "/")[2]
 
-			log.Printf(`found entry for user submitted domain %s, using hosted zone id %s`, hostedZoneName, hostedZoneId)
+			log.Info().Msgf(`found entry for user submitted domain %s, using hosted zone id %s`, hostedZoneName, hostedZoneId)
 
 			viper.Set("aws.hostedzonename", hostedZoneName)
 			viper.Set("aws.hostedzoneid", hostedZoneId)
 			if err = viper.WriteConfig(); err != nil {
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			}
 		}
 	}
-	log.Println("GetDNSInfo (done)")
+	log.Info().Msg("GetDNSInfo (done)")
 	return hostedZoneId
 
 }
@@ -336,18 +337,18 @@ func ListBucketsInUse() []string {
 // DestroyBucketsInUse receives a list of user active buckets, and try to destroy them
 func DestroyBucketsInUse(dryRun bool, executeConfirmation bool) error {
 	if dryRun {
-		log.Println("Skip: DestroyBucketsInUse - Dry-run mode")
+		log.Info().Msg("Skip: DestroyBucketsInUse - Dry-run mode")
 		return nil
 	}
 	if !executeConfirmation {
-		log.Println("Skip: DestroyBucketsInUse - Not provided confirmation")
+		log.Info().Msg("Skip: DestroyBucketsInUse - Not provided confirmation")
 		return nil
 	}
 
-	log.Println("Confirmed: DestroyBucketsInUse")
+	log.Info().Msg("Confirmed: DestroyBucketsInUse")
 
 	for _, bucket := range ListBucketsInUse() {
-		log.Printf("Deleting versions, objects and bucket: %s:", bucket)
+		log.Info().Msgf("Deleting versions, objects and bucket: %s:", bucket)
 		err := DestroyBucketObjectsAndVersions(bucket, viper.GetString("aws.region"))
 		if err != nil {
 			return errors.New("error deleting bucket/objects/version, the resources may have already been removed, please re-run without flag --destroy-buckets and check on console")
@@ -397,25 +398,25 @@ func AssumeRole(roleArn string) error {
 // CreateBucket creates a bucket specified in the bucketName field, and use aws.region set on .kubefirst config file
 func CreateBucket(dryRun bool, bucketName string) {
 
-	log.Println("createBucketCalled")
+	log.Info().Msg("createBucketCalled")
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, bucket creation skipped:  %s", bucketName)
+		log.Info().Msgf("[#99] Dry-run mode, bucket creation skipped:  %s", bucketName)
 		return
 	}
 
 	// todo: use method approach to avoid new AWS client initializations
 	awsClient, err := NewAws()
 	if err != nil {
-		log.Printf("failed to attempt bucket creation, error: %v ", err)
+		log.Warn().Msgf("failed to attempt bucket creation, error: %v ", err)
 		os.Exit(1)
 	}
 
 	s3Client := s3.NewFromConfig(awsClient)
 
-	log.Println("creating bucket: ", bucketName)
+	log.Info().Msgf("creating bucket: %s", bucketName)
 
 	regionName := viper.GetString("aws.region")
-	log.Println("region is ", regionName)
+	log.Info().Msgf("region is %s", regionName)
 
 	if regionName == "us-east-1" {
 		_, err = s3Client.CreateBucket(
@@ -446,13 +447,13 @@ func CreateBucket(dryRun bool, bucketName string) {
 		//	log.Println("failed to create bucket "+bucketName, err.Error())
 		//	os.Exit(1)
 		//}
-		log.Println(err)
+		log.Warn().Msgf("%s", err)
 	}
 
 	viper.Set(fmt.Sprintf("bucket.%s.created", bucketName), true)
 	viper.Set(fmt.Sprintf("bucket.%s.name", bucketName), bucketName)
 	if err = viper.WriteConfig(); err != nil {
-		log.Println(err)
+		log.Warn().Msgf("%s", err)
 	}
 }
 
@@ -462,7 +463,7 @@ func UploadFile(bucketName string, remoteFilename string, localFilename string) 
 	// todo: use method approach to avoid new AWS client initializations
 	awsConfig, err := NewAws()
 	if err != nil {
-		log.Println(err)
+		log.Warn().Msgf("%s", err)
 	}
 
 	s3Client := manager.NewUploader(s3.NewFromConfig(awsConfig))
@@ -484,7 +485,7 @@ func UploadFile(bucketName string, remoteFilename string, localFilename string) 
 	if err != nil {
 		return fmt.Errorf("failed to upload file, %v", err)
 	}
-	log.Printf("file succesfully uploaded to, %s\n", result.Location)
+	log.Info().Msgf("file succesfully uploaded to, %s", result.Location)
 	return nil
 }
 
@@ -493,14 +494,14 @@ func DownloadBucket(bucket string, destFolder string) error {
 	// todo: use method approach to avoid new AWS client initializations
 	awsConfig, err := NewAws()
 	if err != nil {
-		log.Println(err)
+		log.Warn().Msgf("%s", err)
 	}
 
 	s3Client := s3.NewFromConfig(awsConfig)
 
 	downloader := manager.NewDownloader(s3.NewFromConfig(awsConfig))
 
-	log.Println("Listing the objects in the bucket:")
+	log.Info().Msg("Listing the objects in the bucket:")
 	listObjsResponse, err := s3Client.ListObjectsV2(context.Background(),
 		&s3.ListObjectsV2Input{
 			Bucket: aws.String(bucket),
@@ -508,16 +509,16 @@ func DownloadBucket(bucket string, destFolder string) error {
 		})
 
 	if err != nil {
-		log.Println("Error DownloadBucket:", err)
+		log.Warn().Msgf("Error DownloadBucket: %s", err)
 		return errors.New("couldn't list bucket contents")
 	}
 
 	for _, object := range listObjsResponse.Contents {
-		log.Printf("%s (%d bytes, class %v) \n", *object.Key, object.Size, object.StorageClass)
+		log.Info().Msgf("%s (%d bytes, class %v) ", *object.Key, object.Size, object.StorageClass)
 
 		f, err := pkg.CreateFullPath(filepath.Join(destFolder, *object.Key))
 		if err != nil {
-			log.Println("Error DownloadBucket:", err)
+			log.Warn().Msgf("Error DownloadBucket: %s", err)
 			return fmt.Errorf("failed to create file %q, %v", *object.Key, err)
 		}
 
@@ -529,12 +530,12 @@ func DownloadBucket(bucket string, destFolder string) error {
 				Key:    aws.String(*object.Key),
 			})
 		if err != nil {
-			log.Println("Error DownloadBucket:", err)
+			log.Warn().Msgf("Error DownloadBucket: %s", err)
 			return fmt.Errorf("failed to download file, %v", err)
 		}
 		// close file immediately
 		if err = f.Close(); err != nil {
-			log.Println("Error DownloadBucket:", err)
+			log.Warn().Msgf("Error DownloadBucket: %s", err)
 			return err
 		}
 	}
@@ -543,11 +544,11 @@ func DownloadBucket(bucket string, destFolder string) error {
 
 func PutTagKubefirstOnBuckets(bucketName string, clusterName string) {
 
-	log.Printf("tagging bucket... %s:%s", bucketName, clusterName)
+	log.Info().Msgf("tagging bucket... %s:%s", bucketName, clusterName)
 
 	awsConfig, err := NewAws()
 	if err != nil {
-		log.Println(err)
+		log.Warn().Msgf("%s", err)
 	}
 	s3Client := s3.NewFromConfig(awsConfig)
 
@@ -576,10 +577,10 @@ func PutTagKubefirstOnBuckets(bucketName string, clusterName string) {
 		//	log.Println(err.Error())
 		//}
 		//return
-		log.Println(err)
+		log.Warn().Msgf("%s", err)
 		return
 	}
-	log.Printf("Bucket: %s tagged successfully", bucketName)
+	log.Info().Msgf("Bucket: %s tagged successfully", bucketName)
 }
 
 func DestroyBucketObjectsAndVersions(bucket, region string) error {
@@ -587,21 +588,21 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 	// todo: use method approach to avoid new AWS client initializations
 	awsConfig, err := NewAws()
 	if err != nil {
-		log.Printf("Failed to load config: %v", err)
+		log.Warn().Msgf("Failed to load config: %v", err)
 		return err
 	}
 
 	client := s3.NewFromConfig(awsConfig)
 
 	deleteObject := func(bucket, key, versionId *string) {
-		log.Printf("Object: %s/%s\n", *key, aws.ToString(versionId))
+		log.Info().Msgf("Object: %s/%s", *key, aws.ToString(versionId))
 		_, err := client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
 			Bucket:    bucket,
 			Key:       key,
 			VersionId: versionId,
 		})
 		if err != nil {
-			log.Printf("Failed to delete object: %v", err)
+			log.Warn().Msgf("Failed to delete object: %v", err)
 		}
 	}
 
@@ -611,9 +612,9 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 		if err != nil {
 			bucketNotFound := strings.Contains(err.Error(), "StatusCode: 404")
 			if bucketNotFound {
-				log.Printf("%s has already been removed, proceeding with clean...", bucket)
+				log.Warn().Msgf("%s has already been removed, proceeding with clean...", bucket)
 			} else {
-				log.Printf("Failed to list objects: %v", err)
+				log.Warn().Msgf("Failed to list objects: %v", err)
 				return err
 			}
 		}
@@ -637,9 +638,9 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 		if err != nil {
 			bucketNotFound := strings.Contains(err.Error(), "StatusCode: 404")
 			if bucketNotFound {
-				log.Printf("%s has already been removed, proceeding with clean...", bucket)
+				log.Warn().Msgf("%s has already been removed, proceeding with clean...", bucket)
 			} else {
-				log.Printf("Failed to list version objects: %v", err)
+				log.Warn().Msgf("Failed to list version objects: %v", err)
 				return err
 			}
 		}
@@ -664,7 +665,7 @@ func DestroyBucketObjectsAndVersions(bucket, region string) error {
 
 	_, err = client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: &bucket})
 	if err != nil {
-		log.Printf("Failed to delete bucket: %v", err)
+		log.Warn().Msgf("Failed to delete bucket: %v", err)
 	}
 	return nil
 }
@@ -696,7 +697,7 @@ func DownloadS3File(bucketName string, filename string) error {
 		return err
 	}
 
-	log.Printf("Downloaded file: %s, file size(bytes): %v", file.Name(), numBytes)
+	log.Info().Msgf("Downloaded file: %s, file size(bytes): %v", file.Name(), numBytes)
 
 	return nil
 }
@@ -742,7 +743,7 @@ func Route53ListTXTRecords(hostedZoneId string) ([]TXTRecord, error) {
 
 	route53Client := route53.NewFromConfig(awsConfig)
 
-	log.Printf("hosted zone found! Hosted Zone id: %s\n", hostedZoneId)
+	log.Info().Msgf("hosted zone found! Hosted Zone id: %s", hostedZoneId)
 
 	recordSets, err := route53Client.ListResourceRecordSets(context.Background(), &route53.ListResourceRecordSetsInput{
 		HostedZoneId: &hostedZoneId,
@@ -754,7 +755,7 @@ func Route53ListTXTRecords(hostedZoneId string) ([]TXTRecord, error) {
 	var txtRecords []TXTRecord
 
 	for _, recordSet := range recordSets.ResourceRecordSets {
-		log.Println("Record Name: ", *recordSet.Name)
+		log.Info().Msgf("Record Name: %s", *recordSet.Name)
 
 		if recordSet.Type == route53Types.RRTypeTxt {
 			for _, resourceRecord := range recordSet.ResourceRecords {
@@ -849,11 +850,11 @@ func Route53DeleteTXTRecords(
 	for _, record := range txtRecords {
 
 		if keepLivenessRecord && record.Name == livenessRecordName {
-			log.Printf("%s record not deleted\n", record.Name)
+			log.Info().Msgf("%s record not deleted\n", record.Name)
 			continue
 		}
 
-		log.Println("deleting TXT record...", record.Name)
+		log.Info().Msgf("deleting TXT record... %s", record.Name)
 
 		//this deletes a TXT record
 		if record.SetIdentifier != nil && record.Weight != nil {
@@ -907,7 +908,7 @@ func Route53DeleteTXTRecords(
 				return err
 			}
 		}
-		log.Printf("Route53 TXT record deleted: %q\n", record.Name)
+		log.Info().Msgf("Route53 TXT record deleted: %q", record.Name)
 	}
 
 	return nil
@@ -951,7 +952,7 @@ func Route53DeleteARecords(hostedZoneId string, aRecords []ARecord) error {
 			return err
 		}
 
-		log.Printf("Route53 A record deleted: %q\n", record.Name)
+		log.Info().Msgf("Route53 A record deleted: %q", record.Name)
 	}
 
 	return nil
@@ -973,14 +974,14 @@ func Route53DeleteHostedZone(hostedZoneId string, hostedZoneName string) error {
 		Id: &hostedZoneId,
 	}
 
-	log.Printf("trying to delete hosted zone id %q, hosted zone name %q\n", hostedZoneId, hostedZoneName)
+	log.Info().Msgf("trying to delete hosted zone id %q, hosted zone name %q", hostedZoneId, hostedZoneName)
 
 	_, err = route53Client.DeleteHostedZone(context.Background(), &hostedZoneInput)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("deleted hosted zone id %q, hosted zone name %q\n", hostedZoneId, hostedZoneName)
+	log.Info().Msgf("deleted hosted zone id %q, hosted zone name %q", hostedZoneId, hostedZoneName)
 
 	return nil
 }
@@ -990,14 +991,14 @@ func ProfileInjection(envs *map[string]string) {
 	if currentRole == "" {
 		(*envs)["AWS_PROFILE"] = viper.GetString("aws.profile")
 	} else {
-		log.Print("Skipping AWS Profile loading due Assume Role...")
+		log.Info().Msg("Skipping AWS Profile loading due Assume Role...")
 	}
 }
 
 func DestroyLoadBalancerByName(elbName string) error {
 	awsConfig, err := NewAws()
 	if err != nil {
-		log.Printf("Failed to load config: %v", err)
+		log.Warn().Msgf("Failed to load config: %v", err)
 		return err
 	}
 	loadBalancerNameString := string(elbName)
@@ -1009,7 +1010,7 @@ func DestroyLoadBalancerByName(elbName string) error {
 			LoadBalancerName: &loadBalancerNameString,
 		}
 
-		log.Printf("trying to delete load balancer %s\n", loadBalancerNameString)
+		log.Info().Msgf("trying to delete load balancer %s", loadBalancerNameString)
 
 		_, err = loadBalancerClient.DeleteLoadBalancer(context.Background(), &loadBalancerInput)
 
@@ -1017,7 +1018,7 @@ func DestroyLoadBalancerByName(elbName string) error {
 			return err
 		}
 
-		log.Printf("deleted load balancer %s\n", loadBalancerNameString)
+		log.Info().Msgf("deleted load balancer %s", loadBalancerNameString)
 	}
 
 	return nil
@@ -1033,7 +1034,7 @@ func DestroySecurityGroupById(securityGroupId string) error {
 		config.WithSharedConfigProfile(awsProfile),
 	)
 	if err != nil {
-		log.Println("error: ", err)
+		log.Warn().Msgf("error: %s", err)
 	}
 
 	if len(securityGroupId) > 0 {
@@ -1044,14 +1045,14 @@ func DestroySecurityGroupById(securityGroupId string) error {
 			GroupId: aws.String(securityGroupId),
 		}
 
-		log.Printf("trying to delete security group %s\n", securityGroupId)
+		log.Info().Msgf("trying to delete security group %s", securityGroupId)
 
 		_, err = securityGroupClient.DeleteSecurityGroup(context.Background(), &securityGroupInput)
 		if err != nil {
 			return err
 		}
 
-		log.Printf("deleted security group %s\n", securityGroupId)
+		log.Info().Msgf("deleted security group %s", securityGroupId)
 	}
 
 	return nil
@@ -1067,7 +1068,7 @@ func DestroySecurityGroupByName(securityGroupName string) error {
 		config.WithSharedConfigProfile(awsProfile),
 	)
 	if err != nil {
-		log.Println("error: ", err)
+		log.Warn().Msgf("error: %s ", err)
 	}
 
 	if len(securityGroupName) > 0 {
@@ -1078,14 +1079,14 @@ func DestroySecurityGroupByName(securityGroupName string) error {
 			GroupName: &securityGroupName,
 		}
 
-		log.Printf("trying to delete security group %s\n", securityGroupName)
+		log.Info().Msgf("trying to delete security group %s", securityGroupName)
 
 		_, err = securityGroupClient.DeleteSecurityGroup(context.Background(), &securityGroupInput)
 		if err != nil {
 			return err
 		}
 
-		log.Printf("deleted security group %s\n", securityGroupName)
+		log.Info().Msgf("deleted security group %s", securityGroupName)
 	}
 
 	return nil
@@ -1094,7 +1095,7 @@ func DestroyLoadBalancer(clusterName string) error {
 	// todo: use method approach to avoid new AWS client initializations
 	awsConfig, err := NewAws()
 	if err != nil {
-		log.Printf("Failed to load config: %v", err)
+		log.Warn().Msgf("Failed to load config: %v", err)
 		return err
 	}
 
@@ -1104,7 +1105,7 @@ func DestroyLoadBalancer(clusterName string) error {
 
 	loadBalancerName, err := exec.Command("bash", "-c", searchLoadBalancerCmd).Output()
 	if err != nil {
-		log.Panicf("error: could not read load balancer name: %s", err)
+		log.Panic().Msgf("error: could not read load balancer name: %s", err)
 	}
 
 	loadBalancerNameString := string(loadBalancerName)
@@ -1116,7 +1117,7 @@ func DestroyLoadBalancer(clusterName string) error {
 			LoadBalancerName: &loadBalancerNameString,
 		}
 
-		log.Printf("trying to delete load balancer %s\n", loadBalancerNameString)
+		log.Info().Msgf("trying to delete load balancer %s", loadBalancerNameString)
 
 		_, err = loadBalancerClient.DeleteLoadBalancer(context.Background(), &loadBalancerInput)
 
@@ -1124,7 +1125,7 @@ func DestroyLoadBalancer(clusterName string) error {
 			return err
 		}
 
-		log.Printf("deleted load balancer %s\n", loadBalancerNameString)
+		log.Info().Msgf("deleted load balancer %s", loadBalancerNameString)
 	}
 
 	return nil
@@ -1134,7 +1135,7 @@ func DestroySecurityGroup(clusterName string) error {
 	// todo: use method approach to avoid new AWS client initializations
 	awsConfig, err := NewAws()
 	if err != nil {
-		log.Printf("Failed to load config: %v", err)
+		log.Warn().Msgf("Failed to load config: %v", err)
 		return err
 	}
 
@@ -1143,7 +1144,7 @@ func DestroySecurityGroup(clusterName string) error {
 
 	securityGroupId, err := exec.Command("bash", "-c", searchSecurityGroupCmd).Output()
 	if err != nil {
-		log.Panicf("error: could not read security group id: %s", err)
+		log.Panic().Msgf("error: could not read security group id: %s", err)
 	}
 
 	securityGroupIdString := string(securityGroupId)
@@ -1155,14 +1156,14 @@ func DestroySecurityGroup(clusterName string) error {
 			GroupId: &securityGroupIdString,
 		}
 
-		log.Printf("trying to delete security group %s\n", securityGroupIdString)
+		log.Info().Msgf("trying to delete security group %s", securityGroupIdString)
 
 		_, err = securityGroupClient.DeleteSecurityGroup(context.Background(), &securityGroupInput)
 		if err != nil {
 			return err
 		}
 
-		log.Printf("deleted security group %s\n", securityGroupIdString)
+		log.Info().Msgf("deleted security group %s", securityGroupIdString)
 	}
 
 	return nil
@@ -1179,7 +1180,7 @@ func GetELBDetails(ingressHost string) (string, string, error) {
 func GetVPCIdByClusterName(clusterName string) string {
 	awsConfig, err := NewAws()
 	if err != nil {
-		log.Printf("Failed to load config: %v", err)
+		log.Warn().Msgf("Failed to load config: %v", err)
 	}
 
 	ec2Client := ec2.NewFromConfig(awsConfig)
@@ -1194,18 +1195,18 @@ func GetVPCIdByClusterName(clusterName string) string {
 		},
 	})
 	if err != nil {
-		log.Printf("%v", err)
+		log.Warn().Msgf("%v", err)
 	}
 
 	if len(vpcData.Vpcs) > 0 {
-		log.Printf("there is no VPC for the cluster %q", clusterName)
+		log.Info().Msgf("there is no VPC for the cluster %q", clusterName)
 	}
 
 	for _, v := range vpcData.Vpcs {
 		vpcId := aws.ToString(v.VpcId)
 		if v.State == "available" {
 			//it is only expected to have 1 vpc per cluster name
-			log.Printf("there is a VPC for the %q cluster, the vpcID is %s", clusterName, vpcId)
+			log.Info().Msgf("there is a VPC for the %q cluster, the vpcID is %s", clusterName, vpcId)
 			return vpcId
 		}
 	}
@@ -1216,17 +1217,17 @@ func GetVPCIdByClusterName(clusterName string) string {
 func GetELBByClusterName(clusterName string) (string, []string) {
 	awsConfig, err := NewAws()
 	if err != nil {
-		log.Printf("Failed to load config: %v", err)
+		log.Warn().Msgf("Failed to load config: %v", err)
 	}
 
 	loadBalancerClient := elasticloadbalancing.NewFromConfig(awsConfig)
 
 	elbs, err := loadBalancerClient.DescribeLoadBalancers(context.Background(), &elasticloadbalancing.DescribeLoadBalancersInput{})
 	if err != nil {
-		log.Printf("%v", err)
+		log.Warn().Msgf("%v", err)
 	}
 	if len(elbs.LoadBalancerDescriptions) > 0 {
-		log.Println("there is no ELB for the cluster ", clusterName)
+		log.Info().Msgf("there is no ELB for the cluster %s", clusterName)
 	}
 
 	for _, elb := range elbs.LoadBalancerDescriptions {
@@ -1235,16 +1236,16 @@ func GetELBByClusterName(clusterName string) (string, []string) {
 			LoadBalancerNames: []string{elbName},
 		})
 		if err != nil {
-			log.Printf("%v", err)
+			log.Warn().Msgf("%v", err)
 		}
 		for _, tagDesc := range tags.TagDescriptions {
 			for _, tag := range tagDesc.Tags {
 				key := aws.ToString(tag.Key)
 				value := aws.ToString(tag.Value)
 				if value == "owned" && key == fmt.Sprintf("kubernetes.io/cluster/%s", clusterName) {
-					log.Println("Match tag:", key, value)
-					log.Println("Match  ELB Name:", elbName)
-					log.Println("Match ELB SG:", elb.SecurityGroups)
+					log.Info().Msgf("Match tag: %s - %s ", key, value)
+					log.Info().Msgf("Match  ELB Name: %s", elbName)
+					log.Info().Msgf("Match ELB SG: %s", elb.SecurityGroups)
 					//found the right ELB
 					return elbName, elb.SecurityGroups
 				}

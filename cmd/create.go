@@ -54,7 +54,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 			)
 		}
 
-		if viper.GetString("cloud") != flagset.CloudAws {
+		if viper.GetString("cloud") != pkg.CloudAws {
 			log.Info().Msg("Not cloud mode attempt to create using cloud cli")
 			if err != nil {
 				return fmt.Errorf("not support mode of install via this command, only cloud install supported")
@@ -180,7 +180,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 			return err
 		}
 
-		if viper.GetString("cloud") == flagset.CloudAws {
+		if viper.GetString("cloud") == pkg.CloudAws {
 			//POST-install aws cloud census
 			elbName, sg := aws.GetELBByClusterName(viper.GetString("cluster-name"))
 			viper.Set("aws.vpcid", aws.GetVPCIdByClusterName(viper.GetString("cluster-name")))

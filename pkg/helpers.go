@@ -112,7 +112,6 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 
 		newContents := string(read)
 
-		cloudK3d := "k3d"
 		cloud := viper.GetString("cloud")
 		botPublicKey := viper.GetString("botpublickey")
 		hostedZoneId := viper.GetString("aws.hostedzoneid")
@@ -274,7 +273,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", awsAccountId, -1)
 		}
 
-		if cloud == cloudK3d {
+		if cloud == CloudK3d {
 			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
 			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", ArgoLocalURLTLS, -1)
 			newContents = strings.Replace(newContents, "<VAULT_URL>", VaultLocalURLTLS, -1)

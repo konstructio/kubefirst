@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5"
-	"github.com/kubefirst/kubefirst/internal/flagset"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
@@ -15,7 +15,7 @@ func AppendFile(cloudType string, reponame string, filename string) bool {
 	//result := true
 	//TODO: make this to be loaced by Arrays of exclusion rules
 	//TODO: Make this a bit more fancier
-	if cloudType == flagset.CloudAws {
+	if cloudType == pkg.CloudAws {
 		if strings.Contains(reponame, "gitops") {
 			if filename == "terraform/base/kubeconfig" {
 				log.Debug().Msgf("file not included on commit: '%s'", filename)
