@@ -22,7 +22,7 @@ import (
 )
 
 func getNamespacesToBackupSSL() (ns []string) {
-	return []string{"argo", "argocd", "atlantis", "chartmuseum", "gitlab", "vault"}
+	return []string{"argo", "argocd", "atlantis", "chartmuseum", "gitlab", "vault", "kubefirst"}
 }
 
 func getNSToBackupSSLMetaphorApps() (ns []string) {
