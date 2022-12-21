@@ -11,6 +11,7 @@ import (
 func ZerologSetup(logFile *os.File) zerolog.Logger {
 	// short file path/name
 	// it seems longer name doesn't work as expected.
+	// Before reverting this code, check PR: #970
 	/*
 		zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
 			short := file
