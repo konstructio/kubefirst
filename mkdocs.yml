@@ -1,7 +1,6 @@
 site_name: Kubefirst Docs
 theme:
   name: material
-  custom_dir: docs/overrides
   features:
     - navigation.tabs
     - navigation.sections
@@ -100,8 +99,6 @@ nav:
           # add any new tools 
         - Destroy: 'kubefirst/github/destroy.md'
           # add details about kubefirst state command, typo on link
-        - FAQ: 'kubefirst/github/faq.md'
-          # is this fine? get feedback from devrel
       - GitLab Installation:
         - Install: 'kubefirst/gitlab/install.md'
         - After Install: 'kubefirst/gitlab/after-install.md'
@@ -217,8 +214,11 @@ markdown_extensions:
     # - pymdownx.superfences
 extra_css:
   - stylesheets/extra.css
-extra_javascript:
-  - js/gtag.js
+extra:
+  analytics:
+    provider: google
+    property: G-QWZQ3YYLL2
+
 
 repo_url: https://github.com/kubefirst/kubefirst
 edit_uri: edit/main/docs/
