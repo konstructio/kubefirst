@@ -40,7 +40,7 @@ nav:
         - Metaphor: 'common/metaphor.md'
         - Credit: 'kubefirst/local/credit.md'
         - Destroy: 'kubefirst/local/destroy.md'
-        - FAQ: 'kubefirst/github/faq.md'
+        - FAQ: 'kubefirst/local/faq.md'
       - GitHub Installation:
         - Install: 'kubefirst/github/install.md'
         - After Install: 'kubefirst/github/after-install.md'
