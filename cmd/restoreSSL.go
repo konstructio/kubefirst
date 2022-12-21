@@ -29,7 +29,7 @@ var restoreSSLCmd = &cobra.Command{
 			log.Warn().Msgf("Error restoreSSL: %s", err)
 			return err
 		}
-		log.Info().Msgf("RestoreSSL includeMetaphorApps: %s", includeMetaphorApps)
+		log.Info().Msgf("RestoreSSL includeMetaphorApps: %t", includeMetaphorApps)
 
 		err = ssl.RestoreSSL(globalFlags.DryRun, includeMetaphorApps)
 		if err != nil {

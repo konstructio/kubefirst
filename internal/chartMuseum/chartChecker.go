@@ -23,7 +23,7 @@ func IsChartMuseumReady() (bool, error) {
 		return false, err
 	}
 
-	log.Info().Msgf("ChartMuseum check returns: %s", response.StatusCode)
+	log.Info().Msgf("ChartMuseum check returns: %d", response.StatusCode)
 	//Add some check to see if the yaml is "valid"
 	//Usual payload, it:
 	/*
