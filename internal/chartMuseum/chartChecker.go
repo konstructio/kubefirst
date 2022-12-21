@@ -2,8 +2,9 @@ package chartMuseum
 
 import (
 	"fmt"
-	"log"
 	"net/http"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/internal/httpCommon"
 	"github.com/spf13/viper"
@@ -18,11 +19,11 @@ func IsChartMuseumReady() (bool, error) {
 	response, err := httpCommon.CustomHttpClient(false).Get(url)
 	//not ready, should result on exit 1
 	if err != nil {
-		log.Printf("error: ChartMuseum is not ready: %s", err)
+		log.Warn().Msgf("error: ChartMuseum is not ready: %s", err)
 		return false, err
 	}
 
-	log.Println("ChartMuseum check returns:", response.StatusCode)
+	log.Info().Msgf("ChartMuseum check returns: %d", response.StatusCode)
 	//Add some check to see if the yaml is "valid"
 	//Usual payload, it:
 	/*
