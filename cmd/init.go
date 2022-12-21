@@ -3,12 +3,13 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/ssh"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/ssh"
 
 	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/segmentio/analytics-go"
@@ -101,7 +102,7 @@ validated and configured.`,
 			)
 		}
 
-		if viper.GetString("cloud") != flagset.CloudAws {
+		if viper.GetString("cloud") != pkg.CloudAws {
 			log.Println("Not cloud mode attempt to create using cloud cli")
 			if err != nil {
 				return fmt.Errorf("not support mode of install via this command, only cloud install supported")
@@ -117,7 +118,7 @@ validated and configured.`,
 			}
 			log.Printf("assuming new AWS credentials based on role %q", awsFlags.AssumeRole)
 		}
-		if installerFlags.Cloud == flagset.CloudAws {
+		if installerFlags.Cloud == pkg.CloudAws {
 			progressPrinter.AddTracker("step-account", pkg.GetAccountInfo, 1)
 			progressPrinter.AddTracker("step-dns", pkg.GetDNSInfo, 1)
 			progressPrinter.AddTracker("step-live", pkg.TestHostedZoneLiveness, 1)
@@ -212,7 +213,7 @@ validated and configured.`,
 		//Fix incomplete bar, please don't remove it.
 		progressPrinter.IncrementTracker("step-download", 1)
 
-		if installerFlags.Cloud == flagset.CloudAws {
+		if installerFlags.Cloud == pkg.CloudAws {
 			//! tracker 1
 			log.Println("getting aws account information")
 			aws.GetAccountInfo()

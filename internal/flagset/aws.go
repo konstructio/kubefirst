@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
 
 	"github.com/spf13/cobra"
@@ -121,7 +122,7 @@ func validateAwsFlags() error {
 	//Validation:
 	//If you are changind this rules, please ensure to update:
 	// internal/flagset/init_test.go
-	if viper.GetString("cloud") != CloudAws {
+	if viper.GetString("cloud") != pkg.CloudAws {
 		// To skip later validations
 		// TODO: Create test scenarios for init
 		log.Warn().Msgf("Skipping AWS Validation: %s", viper.GetString("cloud"))

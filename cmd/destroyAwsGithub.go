@@ -7,11 +7,12 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"syscall"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
@@ -39,13 +40,13 @@ var destroyAwsGithubCmd = &cobra.Command{
 
 		destroyFlags, err := flagset.ProcessDestroyFlags(cmd)
 		if err != nil {
-			log.Println(err)
+			log.Warn().Msgf("%s", err)
 			return err
 		}
 
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
-			log.Println(err)
+			log.Warn().Msgf("%s", err)
 			return err
 		}
 
@@ -78,7 +79,7 @@ var destroyAwsGithubCmd = &cobra.Command{
 			if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
 				return err
 			}
-			log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
+			log.Info().Msg("KUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
 		}
 
 		progressPrinter.SetupProgress(2, globalFlags.SilentMode)
@@ -98,7 +99,7 @@ var destroyAwsGithubCmd = &cobra.Command{
 			kPortForwardArgocd, _ := k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 			defer func() {
 				if kPortForwardArgocd != nil {
-					log.Println("Closed argocd port forward")
+					log.Info().Msg("Closed argocd port forward")
 					_ = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 				}
 			}()
@@ -106,47 +107,47 @@ var destroyAwsGithubCmd = &cobra.Command{
 			progressPrinter.IncrementTracker("step-prepare", 1)
 
 			informUser("Refreshing local gitops repository", globalFlags.SilentMode)
-			log.Println("removing local gitops directory")
+			log.Info().Msg("removing local gitops directory")
 			os.RemoveAll(config.GitOpsRepoPath)
 
-			log.Println("cloning fresh gitops directory from github owner's private gitops")
+			log.Info().Msg("cloning fresh gitops directory from github owner's private gitops")
 			gitClient.ClonePrivateRepo(fmt.Sprintf("https://github.com/%s/gitops", viper.GetString("github.owner")), config.GitOpsRepoPath)
 
 			informUser("Removing ingress-nginx load balancer", globalFlags.SilentMode)
 
-			log.Println("removing ingress-nginx.yaml from local gitops repo registry")
+			log.Info().Msg("removing ingress-nginx.yaml from local gitops repo registry")
 			os.Remove(fmt.Sprintf("%s/registry/ingress-nginx.yaml", config.GitOpsRepoPath))
 
 			gitClient.PushLocalRepoUpdates("github.com", viper.GetString("github.owner"), "gitops", "origin")
 			token, err := argocd.GetArgoCDToken("admin", viper.GetString("argocd.admin.password"))
 			if err != nil {
-				log.Fatal("could not collect argocd token", err)
+				log.Fatal().Msgf("could not collect argocd token %s", err)
 			}
 
-			log.Println("syncing argocd registry application")
+			log.Info().Msg("syncing argocd registry application")
 			customTransport := http.DefaultTransport.(*http.Transport).Clone()
 			customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 			argocdHttpClient := http.Client{Transport: customTransport}
-			log.Println("refreshing the registry application")
+			log.Info().Msg("refreshing the registry application")
 			argocd.RefreshApplication(&argocdHttpClient, "registry", token)
-			log.Println("listing the applications after refresh, sleeping 15 seconds")
+			log.Info().Msg("listing the applications after refresh, sleeping 15 seconds")
 			argocd.ListApplications(&argocdHttpClient, "registry", token)
 
 			time.Sleep(time.Second * 15)
 			argocd.ListApplications(&argocdHttpClient, "registry", token)
-			log.Println("listing the applications after 15 second sleep, syncing registry and sleeping 185 seconds")
+			log.Info().Msg("listing the applications after 15 second sleep, syncing registry and sleeping 185 seconds")
 			argocd.Sync(&argocdHttpClient, "registry", token)
 
-			log.Println("waiting for nginx to deprovision load balancer and lb security groups")
+			log.Info().Msg("waiting for nginx to deprovision load balancer and lb security groups")
 			time.Sleep(time.Second * 185) // full 3 minutes poll + 5
 			argocd.ListApplications(&argocdHttpClient, "registry", token)
-			log.Println("listing the applications after 180 + 5 second sleep")
+			log.Info().Msg("listing the applications after 180 + 5 second sleep")
 
-			log.Println("deleting registry application in argocd")
+			log.Info().Msg("deleting registry application in argocd")
 			// delete argocd registry
 			informUser("Destroying Registry Application", globalFlags.SilentMode)
 			k8s.DeleteRegistryApplication(destroyFlags.SkipDeleteRegistryApplication)
-			log.Println("registry application deleted")
+			log.Info().Msg("registry application deleted")
 		}
 		progressPrinter.IncrementTracker("step-destroy", 1)
 
@@ -175,12 +176,12 @@ var destroyAwsGithubCmd = &cobra.Command{
 				//Best-effort basis, if terraform does its task, I believe it removes already.
 				_ = pkg.GithubRemoveSSHKeys(gitHubClient)
 			}
-			log.Println("github terraform destruction complete")
+			log.Info().Msg("github terraform destruction complete")
 
 		}
 		progressPrinter.IncrementTracker("step-destroy", 1)
 
-		log.Println("terraform destroy base")
+		log.Info().Msg("terraform destroy base")
 		informUser("Destroying Cluster", globalFlags.SilentMode)
 		terraform.DestroyBaseTerraform(destroyFlags.SkipBaseTerraform)
 		progressPrinter.IncrementTracker("step-destroy", 1)
@@ -192,7 +193,7 @@ var destroyAwsGithubCmd = &cobra.Command{
 			err := awsHandler.HostedZoneDelete()
 			if err != nil {
 				// if error, just log it
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			}
 		}
 

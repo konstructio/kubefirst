@@ -13,8 +13,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const CloudAws = "aws"
-
 // DefineInstallerGenericFlags - define installer  flags for CLI
 type InstallerGenericFlags struct {
 	ClusterName      string
@@ -159,7 +157,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 		addon.AddAddon(s)
 	}
 	//TODO: add unit test for this, after Thiago PR is merged on new append checks
-	if flags.Cloud == CloudAws {
+	if flags.Cloud == pkg.CloudAws {
 		//Adds mandatory addon for non-local install
 		addon.AddAddon("cloud")
 	}
@@ -222,7 +220,7 @@ func validateInstallationFlags() error {
 	// 	return errors.New(message)
 	// }
 	if len(viper.GetString("cloud")) < 1 {
-		message := "missing flag --cloud, supported values: " + CloudAws + ", " + pkg.CloudK3d
+		message := "missing flag --cloud, supported values: " + pkg.CloudAws + ", " + pkg.CloudK3d
 		log.Warn().Msgf("%s", message)
 		return errors.New(message)
 	}

@@ -21,7 +21,14 @@ func PrintSectionRepoGithub() []byte {
 	handOffData.WriteString(fmt.Sprintf("\n owner: %s", viper.GetString("github.owner")))
 	handOffData.WriteString("\n Repos: ")
 	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/gitops", viper.GetString("github.host"), viper.GetString("github.owner"))))
-	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor", viper.GetString("github.host"), viper.GetString("github.owner"))))
+	if viper.GetString("cloud") == pkg.CloudK3d {
+		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor-frontend", viper.GetString("github.host"), viper.GetString("github.owner"))))
+	} else {
+		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor", viper.GetString("github.host"), viper.GetString("github.owner"))))
+		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor-go", viper.GetString("github.host"), viper.GetString("github.owner"))))
+		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor-frontend", viper.GetString("github.host"), viper.GetString("github.owner"))))
+
+	}
 
 	return handOffData.Bytes()
 }
@@ -35,7 +42,10 @@ func PrintSectionRepoGitlab() []byte {
 	handOffData.WriteString(fmt.Sprintf("\n password: %s", viper.GetString("gitlab.root.password")))
 	handOffData.WriteString("\n Repos: ")
 	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/gitops", viper.GetString("aws.hostedzonename"))))
+
 	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor-go", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor-frontend", viper.GetString("aws.hostedzonename"))))
 
 	return handOffData.Bytes()
 }
@@ -49,15 +59,17 @@ func PrintSectionOverview(kubefirstConsoleURL string) []byte {
 	handOffData.WriteString("\n\nAccess the kubefirst-console from your browser at:\n" + kubefirstConsoleURL + "\n")
 	handOffData.WriteString("\nPress ESC to leave this screen and return to your shell.")
 
-	handOffData.WriteString("\n\nNotes:")
-	handOffData.WriteString("\n  Kubefirst generated certificates to ensure secure connections to")
-	handOffData.WriteString("\n  your local deployment. Even if your browser warn you about the ")
-	handOffData.WriteString("\n  origin, you can use Kubefirst without any issue. ")
-	handOffData.WriteString("\n  If you want, you can update your OS trust store by running ")
-	handOffData.WriteString("\n  this command and pass your root password:  ")
-	handOffData.WriteString(fmt.Sprintf("\n    %s -install", config.MkCertPath))
-	handOffData.WriteString("\n  Details:")
-	handOffData.WriteString("\n  https://github.com/FiloSottile/mkcert#changing-the-location-of-the-ca-files")
+	if viper.GetString("cloud") == pkg.CloudK3d {
+		handOffData.WriteString("\n\nNotes:")
+		handOffData.WriteString("\n  Kubefirst generated certificates to ensure secure connections to")
+		handOffData.WriteString("\n  your local deployment. Even if your browser warn you about the ")
+		handOffData.WriteString("\n  origin, you can use Kubefirst without any issue. ")
+		handOffData.WriteString("\n  If you want, you can update your OS trust store by running ")
+		handOffData.WriteString("\n  this command and pass your root password:  ")
+		handOffData.WriteString(fmt.Sprintf("\n    %s -install", config.MkCertPath))
+		handOffData.WriteString("\n  Details:")
+		handOffData.WriteString("\n  https://github.com/FiloSottile/mkcert#changing-the-location-of-the-ca-files")
+	}
 	return handOffData.Bytes()
 }
 

@@ -33,7 +33,7 @@ var k1ReadyCmd = &cobra.Command{
 		defer func() {
 			//The goal of this code is to track execution time
 			duration := time.Since(start)
-			log.Printf("[000] K1-Ready duration is %s", duration)
+			log.Info().Msgf("[000] K1-Ready duration is %s", duration)
 
 		}()
 		config := configs.ReadConfig()
@@ -55,7 +55,7 @@ var k1ReadyCmd = &cobra.Command{
 
 		}
 		if globalFlags.DryRun {
-			log.Printf("[#99] Dry-run mode, k1ReadyCmd skipped.")
+			log.Info().Msg("[#99] Dry-run mode, k1ReadyCmd skipped.")
 			return nil
 		}
 		log.Info().Msg("argo forwarded called")

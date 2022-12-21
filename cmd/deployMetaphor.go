@@ -5,8 +5,9 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"log"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/metaphor"
@@ -20,17 +21,17 @@ var deployMetaphorCmd = &cobra.Command{
 	Short: "Add metaphor applications to the cluster",
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Println("deployMetaphor called")
+		log.Info().Msg("deployMetaphor called")
 		start := time.Now()
 		defer func() {
 			//The goal of this code is to track execution time
 			duration := time.Since(start)
-			log.Printf("[000] deploy-metaphor duration is %s", duration)
+			log.Info().Msgf("[000] deploy-metaphor duration is %s", duration)
 
 		}()
 
 		if viper.GetBool("option.metaphor.skip") {
-			log.Println("[99] Deployment of metpahor microservices skiped")
+			log.Info().Msg("[99] Deployment of metpahor microservices skiped")
 			return nil
 		}
 
