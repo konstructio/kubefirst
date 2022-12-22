@@ -15,15 +15,27 @@ func AppendFile(cloudType string, reponame string, filename string) bool {
 	//result := true
 	//TODO: make this to be loaced by Arrays of exclusion rules
 	//TODO: Make this a bit more fancier
+	// Once we have some critical mass of rules, this will be improved
 	if cloudType == pkg.CloudAws {
 		if strings.Contains(reponame, "gitops") {
 			if filename == "terraform/base/kubeconfig" {
-				log.Debug().Msgf("file not included on commit: '%s'", filename)
+				//https://github.com/kubefirst/kubefirst/issues/926
+				log.Debug().Msgf("file not included on commit[#926]: '%s'", filename)
 				return false
 			}
 		}
 
 	}
+	if cloudType == pkg.CloudK3d {
+		if strings.Contains(reponame, "gitops") {
+			if strings.HasPrefix(filename, "argo-workflows") {
+				//https://github.com/kubefirst/kubefirst/issues/959
+				log.Debug().Msgf("file not included on commit[#959]: '%s'", filename)
+				return false
+			}
+		}
+	}
+
 	return true
 }
 
