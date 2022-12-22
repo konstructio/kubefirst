@@ -11,6 +11,8 @@ builds:
       - linux
       - darwin
 #      - windows
+    flags:
+      - -trimpath
     ldflags:
       - -X github.com/kubefirst/kubefirst/configs.K1Version={{.Version}}
       

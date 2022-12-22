@@ -70,7 +70,7 @@ func NewCommand() *cobra.Command {
 	localCmd.Flags().StringVar(
 		&logLevel,
 		"log-level",
-		"debug",
+		"info",
 		"available log levels are: trace, debug, info, warning, error, fatal, panic",
 	)
 
