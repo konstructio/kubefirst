@@ -113,14 +113,9 @@ func DownloadTools(config *configs.Config) error {
 	wg.Add(3)
 
 	go func() {
-		kVersion := config.KubectlVersion
-		if config.LocalOs == "darwin" && config.LocalArchitecture == "arm64" {
-			kVersion = config.KubectlVersionM1
-		}
-
 		kubectlDownloadUrl := fmt.Sprintf(
 			"https://dl.k8s.io/release/%s/bin/%s/%s/kubectl",
-			kVersion,
+			config.KubectlVersion,
 			config.LocalOs,
 			config.LocalArchitecture,
 		)

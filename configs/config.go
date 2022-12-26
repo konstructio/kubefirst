@@ -52,8 +52,7 @@ type Config struct {
 
 	K3dVersion       string
 	MkCertVersion    string
-	KubectlVersion   string `env:"KUBECTL_VERSION" envDefault:"v1.20.0"`
-	KubectlVersionM1 string
+	KubectlVersion   string `env:"KUBECTL_VERSION" envDefault:"v1.22.0"`
 	TerraformVersion string
 	HelmVersion      string
 
@@ -110,7 +109,6 @@ func ReadConfig() *Config {
 	config.ArgoCDInitValuesYamlPath = fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath)
 	// todo adopt latest helmVersion := "v3.9.0"
 	config.HelmVersion = "v3.6.1"
-	config.KubectlVersionM1 = "v1.21.14"
 	config.K3dVersion = "v5.4.6"
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
