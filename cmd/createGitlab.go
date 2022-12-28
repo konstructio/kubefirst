@@ -34,7 +34,7 @@ var createGitlabCmd = &cobra.Command{
 
 		config := configs.ReadConfig()
 
-		fmt.Println("createGitlab called")
+		//fmt.Println("createGitlab called")
 		skipVault, err := cmd.Flags().GetBool("skip-vault")
 		if err != nil {
 			log.Panic().Msgf("%s", err)

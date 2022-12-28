@@ -5,10 +5,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
 	stdLog "log"
 	"os"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/cmd"
 	"github.com/kubefirst/kubefirst/configs"
@@ -30,7 +31,10 @@ func main() {
 	_ = os.Mkdir(logsFolder, 0700)
 
 	logfile := fmt.Sprintf("%s/log_%d.log", logsFolder, epoch)
-	fmt.Printf("Logging at: %s \n", logfile)
+	//fmt.Printf("Logging at: %s \n", logfile)
+	fmt.Printf("\n -------")
+	fmt.Printf("\n Follow your logs with: \n   tail -f  %s \n", logfile)
+	fmt.Printf("\n -------")
 	file, err := pkg.OpenLogFile(logfile)
 	if err != nil {
 		stdLog.Panicf("unable to store log location, error is: %s", err)

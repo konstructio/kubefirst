@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -214,6 +215,14 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 			envs["TF_VAR_instance_type"] = "t4g.medium"
 		}
 
+		// Please, let's keep this as insurance mechanism to prevent:
+		// https://github.com/kubefirst/kubefirst/issues/1015
+		// 50% of the time, this should be no-op as ELB should be already be removed, but sometimes ELB are still there.
+		err = aws.DestroyLoadBalancerByName(viper.GetString("aws.elb.name"))
+		if err != nil {
+			log.Info().Msgf("Failed to destroy load balancer: %v", err)
+		}
+		time.Sleep(10 * time.Second)
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
 			log.Panic().Err(err).Msg("failed to terraform init base")
@@ -222,6 +231,17 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "destroy", "-auto-approve")
 		if err != nil {
 			log.Panic().Err(err).Msg("failed to terraform destroy base")
+		}
+
+		//destroy all found sg
+		// Please, let's keep this as insurance mechanism to prevent:
+		// https://github.com/kubefirst/kubefirst/issues/1015
+		for _, sg := range viper.GetStringSlice("aws.elb.sg") {
+			log.Info().Msgf("Removing Security Group: %s", sg)
+			err = aws.DestroySecurityGroupById(sg)
+			if err != nil {
+				log.Info().Msgf("Failed to destroy security group: %v", err)
+			}
 		}
 
 		viper.Set("destroy.terraformdestroy.base", true)

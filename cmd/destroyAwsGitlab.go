@@ -26,7 +26,7 @@ var destroyAwsGitlabCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Long:  `TDB`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("destroy-aws-gitlab called")
+		log.Debug().Msg("destroy-aws-gitlab called")
 
 		destroyFlags, err := flagset.ProcessDestroyFlags(cmd)
 		if err != nil {

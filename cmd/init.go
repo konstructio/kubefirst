@@ -294,7 +294,7 @@ validated and configured.`,
 func init() {
 	rootCmd.AddCommand(initCmd)
 	currentCommand := initCmd
-	log.Info().Msg("kubefirst started")
+	//log.Info().Msg("kubefirst started")
 	//log.SetPrefix("LOG: ")
 	//log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
 
