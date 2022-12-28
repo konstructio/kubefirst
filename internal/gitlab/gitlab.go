@@ -332,7 +332,9 @@ func GitlabKeyUpload(dryRun bool) {
 		}
 		var res map[string]interface{}
 		json.NewDecoder(resp.Body).Decode(&res)
-		log.Info().Msgf("%s", res)
+
+		//Please don't send this to logs to avoid leak creds
+		//log.Debug().Msgf("%s", res)
 		log.Info().Msg("ssh public key uploaded to gitlab")
 		viper.Set("gitlab.keyuploaded", true)
 		viper.WriteConfig()

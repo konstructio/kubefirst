@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -222,7 +223,23 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		if err != nil {
 			log.Info().Msgf("Failed to destroy load balancer: %v", err)
 		}
-		time.Sleep(10 * time.Second)
+		//To allow destruction of SG to not holde destroy of base
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			time.Sleep(60 * time.Second)
+			//destroy all found sg
+			// Please, let's keep this as insurance mechanism to prevent:
+			// https://github.com/kubefirst/kubefirst/issues/1015
+			for _, sg := range viper.GetStringSlice("aws.elb.sg") {
+				log.Info().Msgf("Removing Security Group: %s", sg)
+				err := aws.DestroySecurityGroupById(sg)
+				if err != nil {
+					log.Info().Msgf("Failed to destroy security group: %v", err)
+				}
+			}
+			wg.Done()
+		}()
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
 			log.Panic().Err(err).Msg("failed to terraform init base")
@@ -232,18 +249,7 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		if err != nil {
 			log.Panic().Err(err).Msg("failed to terraform destroy base")
 		}
-
-		//destroy all found sg
-		// Please, let's keep this as insurance mechanism to prevent:
-		// https://github.com/kubefirst/kubefirst/issues/1015
-		for _, sg := range viper.GetStringSlice("aws.elb.sg") {
-			log.Info().Msgf("Removing Security Group: %s", sg)
-			err = aws.DestroySecurityGroupById(sg)
-			if err != nil {
-				log.Info().Msgf("Failed to destroy security group: %v", err)
-			}
-		}
-
+		wg.Wait()
 		viper.Set("destroy.terraformdestroy.base", true)
 		viper.WriteConfig()
 		log.Info().Msg("terraform base destruction complete")
