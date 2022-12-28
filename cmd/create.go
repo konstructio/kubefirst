@@ -121,6 +121,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 				// if not local it is AWS for now
 				err := createGithubCmd.RunE(cmd, args)
 				if err != nil {
+					extractAwsElbInfoUpdateTrustStore(globalFlags.DryRun)
 					return err
 				}
 
@@ -130,6 +131,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 				// if not local it is AWS for now
 				err := createGitlabCmd.RunE(cmd, args)
 				if err != nil {
+					extractAwsElbInfoUpdateTrustStore(globalFlags.DryRun)
 					return err
 				}
 
@@ -154,6 +156,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
 		if err != nil {
 			log.Warn().Msgf("Failed to get clientset for k8s : %s", err)
+			extractAwsElbInfoUpdateTrustStore(globalFlags.DryRun)
 			return err
 		}
 		argocdPodClient := clientset.CoreV1().Pods("argocd")
@@ -177,22 +180,11 @@ cluster provisioning process spinning up the services, and validates the livenes
 		if err != nil {
 			informUser("Error deploy metaphor applications", globalFlags.SilentMode)
 			log.Warn().Msg("Error running deployMetaphorCmd")
+			extractAwsElbInfoUpdateTrustStore(globalFlags.DryRun)
 			return err
 		}
 
-		if viper.GetString("cloud") == pkg.CloudAws {
-			//POST-install aws cloud census
-			elbName, sg := aws.GetELBByClusterName(viper.GetString("cluster-name"))
-			viper.Set("aws.vpcid", aws.GetVPCIdByClusterName(viper.GetString("cluster-name")))
-			viper.Set("aws.elb.name", elbName)
-			viper.Set("aws.elb.sg", sg)
-			viper.WriteConfig()
-
-			err = state.UploadKubefirstToStateStore(globalFlags.DryRun)
-			if err != nil {
-				log.Warn().Msgf("%s", err)
-			}
-		}
+		extractAwsElbInfoUpdateTrustStore(globalFlags.DryRun)
 
 		log.Debug().Msg("sending mgmt cluster install completed metric")
 
@@ -227,4 +219,21 @@ func init() {
 	flagset.DefineGlobalFlags(currentCommand)
 	flagset.DefineCreateFlags(currentCommand)
 
+}
+
+func extractAwsElbInfoUpdateTrustStore(dryrun bool) {
+
+	if viper.GetString("cloud") == pkg.CloudAws {
+		//POST-install aws cloud census
+		elbName, sg := aws.GetELBByClusterName(viper.GetString("cluster-name"))
+		viper.Set("aws.vpcid", aws.GetVPCIdByClusterName(viper.GetString("cluster-name")))
+		viper.Set("aws.elb.name", elbName)
+		viper.Set("aws.elb.sg", sg)
+		viper.WriteConfig()
+
+		err := state.UploadKubefirstToStateStore(dryrun)
+		if err != nil {
+			log.Warn().Msgf("%s", err)
+		}
+	}
 }

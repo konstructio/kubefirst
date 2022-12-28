@@ -35,7 +35,7 @@ var destroyAwsGithubCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Long:  `TBD`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("destroy-aws-github called")
+		log.Debug().Msg("destroy-aws-github called")
 		config := configs.ReadConfig()
 
 		destroyFlags, err := flagset.ProcessDestroyFlags(cmd)
