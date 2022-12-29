@@ -454,9 +454,10 @@ func IsValidURL(rawURL string) error {
 // ValidateK1Folder receives a folder path, and expect the Kubefirst configuration folder is empty. It follows this
 // validation list:
 //   - If folder doesn't exist, try to create it
-//   - If folder exists, check if there are files
+//   - If folder exists, check if there are files (argocd values file or gitops repo detokenized)
 //   - If folder exists, and has files, inform the user that clean command should be called before a new init
 func ValidateK1Folder(folderPath string) error {
+	hasLeftOvers := false
 
 	if _, err := os.Stat(folderPath); errors.Is(err, os.ErrNotExist) {
 		if err = os.Mkdir(folderPath, os.ModePerm); err != nil {
@@ -466,12 +467,19 @@ func ValidateK1Folder(folderPath string) error {
 		return nil
 	}
 
-	files, err := os.ReadDir(folderPath)
-	if err != nil {
-		return err
+	_, err := os.Stat(fmt.Sprintf("%s/argocd-init-values.yaml", folderPath))
+	if err == nil {
+		log.Debug().Msg("found argocd-init-values.yaml file")
+		hasLeftOvers = true
 	}
 
-	if len(files) != 0 {
+	_, err = os.Stat(fmt.Sprintf("%s/gitops", folderPath))
+	if err == nil {
+		log.Debug().Msg("found git-ops path")
+		hasLeftOvers = true
+	}
+
+	if hasLeftOvers {
 		return fmt.Errorf("folder: %s has files that can be left overs from a previous installation, "+
 			"please use kubefirst clean command to be ready for a new installation", folderPath)
 	}
