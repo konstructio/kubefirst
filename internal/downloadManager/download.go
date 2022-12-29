@@ -22,8 +22,9 @@ import (
 
 // DownloadLocalTools - Download extra tools needed for local installations scenarios
 func DownloadLocalTools(config *configs.Config) error {
-	toolsDirPath := fmt.Sprintf("%s/tools", config.K1FolderPath)
-	err := createDirIfDontExist(toolsDirPath)
+	log.Info().Msg("starting checking tool downloads")
+
+	err := createDirIfDontExist(config.K1ToolsPath)
 	if err != nil {
 		return err
 	}
@@ -34,46 +35,65 @@ func DownloadLocalTools(config *configs.Config) error {
 	wg.Add(2)
 
 	go func() {
-		// https://github.com/k3d-io/k3d/releases/download/v5.4.6/k3d-linux-amd64
-		k3dDownloadUrl := fmt.Sprintf(
-			"https://github.com/k3d-io/k3d/releases/download/%s/k3d-%s-%s",
-			config.K3dVersion,
-			config.LocalOs,
-			config.LocalArchitecture,
-		)
-		err = downloadFile(config.K3dPath, k3dDownloadUrl)
-		if err != nil {
-			errorChannel <- err
+		_, err := os.Stat(config.K3dPath)
+		if err == nil {
+			log.Info().Msg("k3d already exists skiping download")
+			wg.Done()
 			return
+		} else {
+			log.Info().Msg("k3d binnary not found - starting download")
+
+			k3dDownloadUrl := fmt.Sprintf(
+				"https://github.com/k3d-io/k3d/releases/download/%s/k3d-%s-%s",
+				config.K3dVersion,
+				config.LocalOs,
+				config.LocalArchitecture,
+			)
+			err = downloadFile(config.K3dPath, k3dDownloadUrl)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+			err = os.Chmod(config.K3dPath, 0755)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+			wg.Done()
+			log.Info().Msg("K3D download finished")
+
 		}
-		err = os.Chmod(config.K3dPath, 0755)
-		if err != nil {
-			errorChannel <- err
-			return
-		}
-		wg.Done()
 	}()
 
 	go func() {
-		// https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-darwin-amd64
-		mkCertDownloadUrl := fmt.Sprintf(
-			"https://github.com/FiloSottile/mkcert/releases/download/%s/mkcert-%s-%s-%s",
-			config.MkCertVersion,
-			config.MkCertVersion,
-			config.LocalOs,
-			config.LocalArchitecture,
-		)
-		err = downloadFile(config.MkCertPath, mkCertDownloadUrl)
-		if err != nil {
-			errorChannel <- err
+		_, err := os.Stat(config.MkCertPath)
+		if err == nil {
+			log.Info().Msg("MkCert already exists skiping download")
+			wg.Done()
 			return
+		} else {
+			log.Info().Msg("MkCert binnary not found - starting download")
+
+			mkCertDownloadUrl := fmt.Sprintf(
+				"https://github.com/FiloSottile/mkcert/releases/download/%s/mkcert-%s-%s-%s",
+				config.MkCertVersion,
+				config.MkCertVersion,
+				config.LocalOs,
+				config.LocalArchitecture,
+			)
+			err = downloadFile(config.MkCertPath, mkCertDownloadUrl)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+			err = os.Chmod(config.MkCertPath, 0755)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+			wg.Done()
+			log.Info().Msg("MkCert download finished")
 		}
-		err = os.Chmod(config.MkCertPath, 0755)
-		if err != nil {
-			errorChannel <- err
-			return
-		}
-		wg.Done()
 	}()
 
 	go func() {
@@ -83,7 +103,7 @@ func DownloadLocalTools(config *configs.Config) error {
 
 	select {
 	case <-wgDone:
-		log.Info().Msg("download finished")
+		log.Info().Msg("finished tools download check")
 		return nil
 	case err = <-errorChannel:
 		close(errorChannel)
@@ -96,11 +116,10 @@ func DownloadLocalTools(config *configs.Config) error {
 // the errorChannel will receive the error message, and process it back to the function caller.
 func DownloadTools(config *configs.Config) error {
 
-	log.Info().Msg("starting downloads...")
-	toolsDirPath := fmt.Sprintf("%s/tools", config.K1FolderPath)
+	log.Info().Msg("starting checking tool downloads")
 
 	// create folder if it doesn't exist
-	err := createDirIfDontExist(toolsDirPath)
+	err := createDirIfDontExist(config.K1ToolsPath)
 	if err != nil {
 		return err
 	}
@@ -113,135 +132,156 @@ func DownloadTools(config *configs.Config) error {
 	wg.Add(3)
 
 	go func() {
-		kubectlDownloadUrl := fmt.Sprintf(
-			"https://dl.k8s.io/release/%s/bin/%s/%s/kubectl",
-			config.KubectlVersion,
-			config.LocalOs,
-			config.LocalArchitecture,
-		)
-		log.Info().Msgf("Downloading kubectl from: %s", kubectlDownloadUrl)
-		err = downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
-		if err != nil {
-			errorChannel <- err
+		_, err := os.Stat(config.KubectlClientPath)
+		if err == nil {
+			log.Info().Msg("kubectl already exists skiping download")
+			wg.Done()
 			return
-		}
+		} else {
+			log.Info().Msg("kubectl binnary not found - starting download")
 
-		err = os.Chmod(config.KubectlClientPath, 0755)
-		if err != nil {
-			errorChannel <- err
-			return
-		}
+			kubectlDownloadUrl := fmt.Sprintf(
+				"https://dl.k8s.io/release/%s/bin/%s/%s/kubectl",
+				config.KubectlVersion,
+				config.LocalOs,
+				config.LocalArchitecture,
+			)
+			log.Info().Msgf("Downloading kubectl from: %s", kubectlDownloadUrl)
+			err = downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
 
-		log.Info().Msgf("going to print the kubeconfig env in runtime: %s", os.Getenv("KUBECONFIG"))
+			err = os.Chmod(config.KubectlClientPath, 0755)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
 
-		kubectlStdOut, kubectlStdErr, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "version", "--client", "--short")
-		log.Info().Msgf("-> kubectl version:\n\t%s\n\t%s\n", kubectlStdOut, kubectlStdErr)
-		if err != nil {
-			errorChannel <- fmt.Errorf("failed to call kubectlVersionCmd.Run(): %v", err)
-			return
+			log.Info().Msgf("going to print the kubeconfig env in runtime: %s", os.Getenv("KUBECONFIG"))
+
+			kubectlStdOut, kubectlStdErr, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "version", "--client", "--short")
+			log.Info().Msgf("-> kubectl version:\n\t%s\n\t%s\n", kubectlStdOut, kubectlStdErr)
+			if err != nil {
+				errorChannel <- fmt.Errorf("failed to call kubectlVersionCmd.Run(): %v", err)
+				return
+			}
+			wg.Done()
+			log.Info().Msg("Kubectl download finished")
 		}
-		wg.Done()
-		log.Info().Msg("Kubectl download finished")
 	}()
 
 	go func() {
-
-		// todo: adopt latest helmVersion := "v3.9.0"
-		terraformVersion := config.TerraformVersion
-
-		terraformDownloadUrl := fmt.Sprintf(
-			"https://releases.hashicorp.com/terraform/%s/terraform_%s_%s_%s.zip",
-			terraformVersion,
-			terraformVersion,
-			config.LocalOs,
-			config.LocalArchitecture,
-		)
-		log.Info().Msgf("Downloading terraform from %s", terraformDownloadUrl)
-		terraformDownloadZipPath := fmt.Sprintf("%s/tools/terraform.zip", config.K1FolderPath)
-		err = downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
-		if err != nil {
-			errorChannel <- fmt.Errorf("error reading terraform file, %v", err)
+		_, err := os.Stat(config.TerraformClientPath)
+		if err == nil {
+			log.Info().Msg("Terraform already exists skiping download")
+			wg.Done()
 			return
-		}
+		} else {
+			log.Info().Msg("Terraform binnary not found - starting download")
 
-		unzipDirectory := fmt.Sprintf("%s/tools", config.K1FolderPath)
-		unzip(terraformDownloadZipPath, unzipDirectory)
+			terraformVersion := config.TerraformVersion
 
-		err = os.Chmod(unzipDirectory, 0777)
-		if err != nil {
-			errorChannel <- err
-			return
-		}
+			terraformDownloadUrl := fmt.Sprintf(
+				"https://releases.hashicorp.com/terraform/%s/terraform_%s_%s_%s.zip",
+				terraformVersion,
+				terraformVersion,
+				config.LocalOs,
+				config.LocalArchitecture,
+			)
+			log.Info().Msgf("Downloading terraform from %s", terraformDownloadUrl)
+			terraformDownloadZipPath := fmt.Sprintf("%s/terraform.zip", config.K1ToolsPath)
+			err = downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
+			if err != nil {
+				errorChannel <- fmt.Errorf("error reading terraform file, %v", err)
+				return
+			}
 
-		err = os.Chmod(fmt.Sprintf("%s/terraform", unzipDirectory), 0755)
-		if err != nil {
-			errorChannel <- err
-			return
+			unzip(terraformDownloadZipPath, config.K1ToolsPath)
+
+			err = os.Chmod(config.K1ToolsPath, 0777)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+
+			err = os.Chmod(fmt.Sprintf("%s/terraform", config.K1ToolsPath), 0755)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+			err = os.RemoveAll(fmt.Sprintf("%s/terraform.zip", config.K1ToolsPath))
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+			wg.Done()
+			log.Info().Msg("Terraform download finished")
 		}
-		err = os.RemoveAll(fmt.Sprintf("%s/terraform.zip", toolsDirPath))
-		if err != nil {
-			errorChannel <- err
-			return
-		}
-		wg.Done()
-		log.Info().Msg("Terraform download finished")
 	}()
 
 	go func() {
-		helmVersion := config.HelmVersion
-		helmDownloadUrl := fmt.Sprintf(
-			"https://get.helm.sh/helm-%s-%s-%s.tar.gz",
-			helmVersion,
-			config.LocalOs,
-			config.LocalArchitecture,
-		)
-		log.Info().Msgf("Downloading terraform from %s", helmDownloadUrl)
-		helmDownloadTarGzPath := fmt.Sprintf("%s/tools/helm.tar.gz", config.K1FolderPath)
-
-		err = downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
-		if err != nil {
-			errorChannel <- err
+		_, err := os.Stat(config.HelmClientPath)
+		if err == nil {
+			log.Info().Msg("Helm already exists skiping download")
+			wg.Done()
 			return
+		} else {
+			log.Info().Msg("helm binnary not found - starting download")
+
+			helmVersion := config.HelmVersion
+			helmDownloadUrl := fmt.Sprintf(
+				"https://get.helm.sh/helm-%s-%s-%s.tar.gz",
+				helmVersion,
+				config.LocalOs,
+				config.LocalArchitecture,
+			)
+			log.Info().Msgf("Downloading terraform from %s", helmDownloadUrl)
+			helmDownloadTarGzPath := fmt.Sprintf("%s/helm.tar.gz", config.K1ToolsPath)
+
+			err = downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+
+			helmTarDownload, err := os.Open(helmDownloadTarGzPath)
+			if err != nil {
+				errorChannel <- fmt.Errorf("could not read helm download content")
+				return
+			}
+
+			extractFileFromTarGz(
+				helmTarDownload,
+				fmt.Sprintf("%s-%s/helm", config.LocalOs, config.LocalArchitecture),
+				config.HelmClientPath,
+			)
+			err = os.Chmod(config.HelmClientPath, 0755)
+			if err != nil {
+				errorChannel <- err
+				return
+			}
+
+			helmStdOut, helmStdErr, err := pkg.ExecShellReturnStrings(
+				config.HelmClientPath,
+				"version",
+				"--client",
+				"--short",
+			)
+			if err != nil {
+				log.Info().Msg(helmStdErr)
+				errorChannel <- fmt.Errorf("error executing helm version command: %v", err)
+				return
+			}
+			os.Remove(helmDownloadTarGzPath)
+
+			log.Info().Msgf("Helm version: %s", helmStdOut)
+
+			wg.Done()
+
+			log.Info().Msg("Helm download finished")
 		}
-
-		helmTarDownload, err := os.Open(helmDownloadTarGzPath)
-		if err != nil {
-			errorChannel <- fmt.Errorf("could not read helm download content")
-			return
-		}
-
-		extractFileFromTarGz(
-			helmTarDownload,
-			fmt.Sprintf("%s-%s/helm", config.LocalOs, config.LocalArchitecture),
-			config.HelmClientPath,
-		)
-		err = os.Chmod(config.HelmClientPath, 0755)
-		if err != nil {
-			errorChannel <- err
-			return
-		}
-
-		// currently argocd init values is generated by kubefirst ssh
-		// todo helm install argocd --create-namespace --wait --values ~/.kubefirst/argocd-init-values.yaml argo/argo-cd
-		helmStdOut, helmStdErr, err := pkg.ExecShellReturnStrings(
-			config.HelmClientPath,
-			"version",
-			"--client",
-			"--short",
-		)
-		if err != nil {
-			log.Info().Msg(helmStdErr)
-			errorChannel <- fmt.Errorf("error executing helm version command: %v", err)
-			return
-		}
-		os.Remove(helmDownloadTarGzPath)
-
-		log.Info().Msgf("Helm version: %s", helmStdOut)
-
-		wg.Done()
-
-		log.Info().Msg("Helm download finished")
-
 	}()
 
 	go func() {
@@ -251,7 +291,7 @@ func DownloadTools(config *configs.Config) error {
 
 	select {
 	case <-wgDone:
-		log.Info().Msg("downloads finished")
+		log.Info().Msg("finished tools download check")
 		return nil
 	case err = <-errorChannel:
 		close(errorChannel)
