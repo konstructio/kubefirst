@@ -32,6 +32,7 @@ type Config struct {
 	KubefirstConfigFileName string
 	KubefirstConfigFilePath string
 	K1FolderPath            string
+	K1ToolsPath             string
 	KubectlClientPath       string
 	KubeConfigPath          string
 	KubeConfigFolder        string
@@ -86,22 +87,22 @@ func ReadConfig() *Config {
 	if err != nil {
 		log.Panic(err)
 	}
-
+	config.K1ToolsPath = fmt.Sprintf("%s/tools", config.K1FolderPath)
 	config.KubefirstConfigFileName = ".kubefirst"
 	config.KubefirstConfigFilePath = fmt.Sprintf("%s/%s", homePath, config.KubefirstConfigFileName)
 
 	config.LocalOs = runtime.GOOS
 	config.LocalArchitecture = runtime.GOARCH
 
-	config.KubectlClientPath = fmt.Sprintf("%s/tools/kubectl", config.K1FolderPath)
+	config.KubectlClientPath = fmt.Sprintf("%s/kubectl", config.K1ToolsPath)
 	config.KubeConfigPath = fmt.Sprintf("%s/gitops/terraform/base/kubeconfig", config.K1FolderPath)
 	config.KubeConfigFolder = fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 	config.GitOpsLocalRepoPath = fmt.Sprintf("%s/gitops", config.K1FolderPath)
 	config.GitOpsRepoPath = fmt.Sprintf("%s/gitops", config.K1FolderPath)
-	config.NgrokClientPath = fmt.Sprintf("%s/tools/ngrok", config.K1FolderPath)
-	config.TerraformClientPath = fmt.Sprintf("%s/tools/terraform", config.K1FolderPath)
-	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
-	config.K3dPath = fmt.Sprintf("%s/tools/k3d", config.K1FolderPath)
+	config.NgrokClientPath = fmt.Sprintf("%s/ngrok", config.K1ToolsPath)
+	config.TerraformClientPath = fmt.Sprintf("%s/terraform", config.K1ToolsPath)
+	config.HelmClientPath = fmt.Sprintf("%s/helm", config.K1ToolsPath)
+	config.K3dPath = fmt.Sprintf("%s/k3d", config.K1ToolsPath)
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.NgrokVersion = "v3"
 	config.TerraformVersion = "1.0.11"
@@ -113,8 +114,8 @@ func ReadConfig() *Config {
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
 	// certificates
-	config.MkCertPath = fmt.Sprintf("%s/tools/mkcert", config.K1FolderPath)
-	config.MkCertPemFilesPath = fmt.Sprintf("%s/tools/certs/", config.K1FolderPath)
+	config.MkCertPath = fmt.Sprintf("%s/mkcert", config.K1ToolsPath)
+	config.MkCertPemFilesPath = fmt.Sprintf("%s/certs/", config.K1ToolsPath)
 	config.MkCertVersion = "v1.4.4"
 
 	config.MetaphorTemplateURL = "https://github.com/kubefirst/metaphor-template.git"
