@@ -26,7 +26,8 @@ kubefirst clean [flags]
 Flags:
 --destroy-buckets   destroy buckets created by init cmd
 --destroy-confirm   confirm destroy operation (to be used during automation process)
--h, --help              help for clean
+-h, --help          help for clean
+--include-tools     delete all tools downloaded
 --rm-logs           remove logs folder
 ```
 
