@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os"
-	"strings"
 )
 
 // cleanCmd removes all kubefirst resources created with the init command
@@ -58,20 +59,31 @@ re-create Kubefirst base files. To destroy cloud resources you need to specify a
 			}
 		}
 
-		// delete files and folders
-		err = os.RemoveAll(config.K1FolderPath)
+		includeTools, err := cmd.Flags().GetBool("include-tools")
 		if err != nil {
-			return fmt.Errorf("unable to delete %q folder, error is: %s", config.K1FolderPath, err)
+			return err
+		}
+
+		if includeTools {
+			err = os.RemoveAll(config.K1FolderPath)
+			if err != nil {
+				return fmt.Errorf("unable to delete %q folder, error is: %s", config.K1FolderPath, err)
+			}
+		} else {
+			// delete gitops path and argo init values - caching tools to avoid re-download
+			err = os.RemoveAll(config.GitOpsRepoPath)
+			if err != nil {
+				return fmt.Errorf("unable to delete %q folder, error is: %s", config.GitOpsRepoPath, err)
+			}
+			err = os.Remove(config.ArgoCDInitValuesYamlPath)
+			if err != nil {
+				return fmt.Errorf("unable to delete %q file, error is: ", err)
+			}
 		}
 
 		err = os.Remove(config.KubefirstConfigFilePath)
 		if err != nil {
 			return fmt.Errorf("unable to delete %q file, error is: ", err)
-		}
-
-		// re-create folder
-		if err := os.Mkdir(fmt.Sprintf("%s", config.K1FolderPath), os.ModePerm); err != nil {
-			return fmt.Errorf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1FolderPath, err)
 		}
 
 		// re-create .kubefirst file
@@ -117,4 +129,5 @@ func init() {
 	cleanCmd.Flags().Bool("rm-logs", false, "remove logs folder")
 	cleanCmd.Flags().Bool("destroy-buckets", false, "destroy buckets created by init cmd")
 	cleanCmd.Flags().Bool("destroy-confirm", false, "when detroy-buckets flag is provided, we must provide this flag as well to confirm the destroy operation")
+	cleanCmd.Flags().Bool("include-tools", false, "delete all tools downloaded")
 }
