@@ -69,6 +69,10 @@ re-create Kubefirst base files. To destroy cloud resources you need to specify a
 			if err != nil {
 				return fmt.Errorf("unable to delete %q folder, error is: %s", config.K1FolderPath, err)
 			}
+
+			if err := os.Mkdir(fmt.Sprintf("%s", config.K1FolderPath), os.ModePerm); err != nil {
+				return fmt.Errorf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1FolderPath, err)
+			}
 		} else {
 			// delete gitops path and argo init values - caching tools to avoid re-download
 			err = os.RemoveAll(config.GitOpsRepoPath)
