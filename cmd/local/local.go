@@ -60,7 +60,7 @@ func NewCommand() *cobra.Command {
 	localCmd.Flags().BoolVar(&skipMetaphor, "skip-metaphor", false, "If metaphor application suite must be skiped to deploy")
 	// todo: get it from GH token , use it for console
 	localCmd.Flags().StringVar(&adminEmail, "admin-email", "", "the email address for the administrator as well as for lets-encrypt certificate emails")
-	localCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "main", "metaphor application branch")
+	localCmd.Flags().StringVar(&metaphorBranch, "metaphor-branch", "", "metaphor application branch")
 	localCmd.Flags().StringVar(&gitOpsBranch, "gitops-branch", "", "version/branch used on git clone")
 	localCmd.Flags().StringVar(&gitOpsRepo, "gitops-repo", "gitops", "Prefix of the repo for gitops template, repo name has -template")
 	localCmd.Flags().StringVar(&gitOpsOrg, "gitops-org", "kubefirst", "Helpful when using forks of gitops for testing")
@@ -357,7 +357,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	pkg.InformUser("Deploying metaphor applications", silentMode)
-	err := metaphor.DeployMetaphorGithubLocal(dryRun, skipMetaphor, githubOwner, metaphorBranch, "")
+	err := metaphor.DeployMetaphorGithubLocal(dryRun, skipMetaphor, githubOwner, metaphorBranch, configs.K1Version)
 	if err != nil {
 		pkg.InformUser("Error deploy metaphor applications", silentMode)
 		log.Error().Err(err).Msg("Error running deployMetaphorCmd")
