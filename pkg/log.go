@@ -28,7 +28,7 @@ func ZerologSetup(logFile *os.File) zerolog.Logger {
 	// default log level
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-	return log.Output(zerolog.ConsoleWriter{Out: logFile, NoColor: false, TimeFormat: "2006-01-02T15:04"}).With().Timestamp().Caller().Logger()
+	return log.Output(zerolog.ConsoleWriter{Out: logFile, NoColor: true, TimeFormat: "2006-01-02T15:04"}).With().Timestamp().Caller().Logger()
 	//return log.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: false}).With().Caller().Logger()
 }
 
