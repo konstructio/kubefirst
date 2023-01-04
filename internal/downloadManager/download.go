@@ -175,7 +175,7 @@ func VerifyCacheTerraform(config *configs.Config) bool {
 	var tfVersion TerraformVersion
 	err := json.Unmarshal(data, &tfVersion)
 	if err != nil {
-		log.Error().Msgf("Error unmarshal", err)
+		log.Error().Err(err).Msgf("Error unmarshal", err)
 	}
 
 	if tfVersion.TerraformVersion == config.TerraformVersion {
@@ -207,7 +207,7 @@ func VerifyCacheKubectl(config *configs.Config) bool {
 	var k KubectlVersion
 	err := json.Unmarshal(data, &k)
 	if err != nil {
-		log.Error().Msgf("Error unmarshal", err)
+		log.Error().Err(err).Msgf("Error unmarshal", err)
 	}
 
 	if k.ClientVersion.GitVersion == config.KubectlVersion {
