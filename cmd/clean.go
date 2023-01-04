@@ -59,12 +59,12 @@ re-create Kubefirst base files. To destroy cloud resources you need to specify a
 			}
 		}
 
-		keepTools, err := cmd.Flags().GetBool("keep-tools")
+		preserveTools, err := cmd.Flags().GetBool("preserve-tools")
 		if err != nil {
 			return err
 		}
 
-		if keepTools {
+		if preserveTools {
 			// delete gitops path and argo init values - caching tools to avoid re-download
 			err = os.RemoveAll(config.GitOpsRepoPath)
 			if err != nil {
@@ -133,5 +133,5 @@ func init() {
 	cleanCmd.Flags().Bool("rm-logs", false, "remove logs folder")
 	cleanCmd.Flags().Bool("destroy-buckets", false, "destroy buckets created by init cmd")
 	cleanCmd.Flags().Bool("destroy-confirm", false, "when detroy-buckets flag is provided, we must provide this flag as well to confirm the destroy operation")
-	cleanCmd.Flags().Bool("keep-tools", false, "keep all tools downloaded (avoid re-downloading)")
+	cleanCmd.Flags().Bool("preserve-tools", false, "preserve all tools downloaded (avoid re-downloading)")
 }

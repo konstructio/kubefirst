@@ -27,7 +27,7 @@ Flags:
 --destroy-buckets   destroy buckets created by init cmd
 --destroy-confirm   confirm destroy operation (to be used during automation process)
 -h, --help          help for clean
---keep-tools        keep all tools downloaded (avoid re-downloading)
+--preserve-tools    preserve all tools downloaded (avoid re-downloading)
 --rm-logs           remove logs folder
 ```
 
