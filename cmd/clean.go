@@ -59,21 +59,12 @@ re-create Kubefirst base files. To destroy cloud resources you need to specify a
 			}
 		}
 
-		includeTools, err := cmd.Flags().GetBool("include-tools")
+		keepTools, err := cmd.Flags().GetBool("keep-tools")
 		if err != nil {
 			return err
 		}
 
-		if includeTools {
-			err = os.RemoveAll(config.K1FolderPath)
-			if err != nil {
-				return fmt.Errorf("unable to delete %q folder, error is: %s", config.K1FolderPath, err)
-			}
-
-			if err := os.Mkdir(fmt.Sprintf("%s", config.K1FolderPath), os.ModePerm); err != nil {
-				return fmt.Errorf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1FolderPath, err)
-			}
-		} else {
+		if keepTools {
 			// delete gitops path and argo init values - caching tools to avoid re-download
 			err = os.RemoveAll(config.GitOpsRepoPath)
 			if err != nil {
@@ -82,6 +73,15 @@ re-create Kubefirst base files. To destroy cloud resources you need to specify a
 			err = os.Remove(config.ArgoCDInitValuesYamlPath)
 			if err != nil {
 				return fmt.Errorf("unable to delete %q file, error is: ", err)
+			}
+		} else {
+			err = os.RemoveAll(config.K1FolderPath)
+			if err != nil {
+				return fmt.Errorf("unable to delete %q folder, error is: %s", config.K1FolderPath, err)
+			}
+
+			if err := os.Mkdir(fmt.Sprintf("%s", config.K1FolderPath), os.ModePerm); err != nil {
+				return fmt.Errorf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1FolderPath, err)
 			}
 		}
 
@@ -133,5 +133,5 @@ func init() {
 	cleanCmd.Flags().Bool("rm-logs", false, "remove logs folder")
 	cleanCmd.Flags().Bool("destroy-buckets", false, "destroy buckets created by init cmd")
 	cleanCmd.Flags().Bool("destroy-confirm", false, "when detroy-buckets flag is provided, we must provide this flag as well to confirm the destroy operation")
-	cleanCmd.Flags().Bool("include-tools", false, "delete all tools downloaded")
+	cleanCmd.Flags().Bool("keep-tools", false, "keep all tools downloaded (avoid re-downloading)")
 }
