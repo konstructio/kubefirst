@@ -133,11 +133,10 @@ validated and configured.`,
 
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
 
-		log.Info().Msg("sending init started metric")
-
 		var telemetryHandler handlers.TelemetryHandler
 		viper.Set("use-telemetry", globalFlags.UseTelemetry)
 		if globalFlags.UseTelemetry {
+			log.Info().Msg("sending init started metric")
 
 			// Instantiates a SegmentIO client to use send messages to the segment API.
 			segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
