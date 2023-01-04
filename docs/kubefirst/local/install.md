@@ -2,7 +2,7 @@
 
 **Kubefirst** is the name of our command line tool that installs the Kubefirst platform to your local or cloud environment.
 
-To use the local version of Kubefirst, you will need to have [Docker installed](https://docs.docker.com/get-docker/) and [enable the Kubernetes feature](https://docs.docker.com/desktop/kubernetes/). You will also need a GitHub account: GitLab for local, and local git repositories are not supported yet.
+To use the local version of Kubefirst, you will need to have [Docker installed](https://docs.docker.com/get-docker/). You will also need a GitHub account: GitLab for local, and local git repositories are not supported yet.
 
 ![Kubefirst local installation diagram](../../img/kubefirst/local/kubefirst-cluster-create.png)
 
