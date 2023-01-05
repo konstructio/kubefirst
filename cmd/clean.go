@@ -65,6 +65,7 @@ re-create Kubefirst base files. To destroy cloud resources you need to specify a
 		}
 
 		if preserveTools {
+			log.Info().Msg("Cleaning with --preserve-tools enabled")
 			// delete gitops path and argo init values - caching tools to avoid re-download
 			err = os.RemoveAll(config.GitOpsRepoPath)
 			if err != nil {
@@ -74,6 +75,22 @@ re-create Kubefirst base files. To destroy cloud resources you need to specify a
 			if err != nil {
 				return fmt.Errorf("unable to delete %q file, error is: ", err)
 			}
+
+			log.Debug().Msgf("Removing SSL folder")
+			err = os.RemoveAll(fmt.Sprintf("%s/ssl", config.K1FolderPath))
+			if err != nil {
+				log.Debug().Msgf("unable to delete %q file, error is: ", err)
+			}
+
+			var metaphorFolders = []string{"metaphor", "metaphor-frontend", "metaphor-go"}
+			for _, f := range metaphorFolders {
+				log.Debug().Msgf("Removing metaphors folders: %s", f)
+				err = os.RemoveAll(fmt.Sprintf("%s/%s", config.K1FolderPath, f))
+				if err != nil {
+					log.Debug().Msgf("unable to delete %q file, error is: ", err)
+				}
+			}
+
 		} else {
 			err = os.RemoveAll(config.K1FolderPath)
 			if err != nil {
