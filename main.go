@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/reports"
 	stdLog "log"
 	"os"
 	"time"
@@ -31,10 +32,10 @@ func main() {
 	_ = os.Mkdir(logsFolder, 0700)
 
 	logfile := fmt.Sprintf("%s/log_%d.log", logsFolder, epoch)
-	//fmt.Printf("Logging at: %s \n", logfile)
-	fmt.Printf("\n-----------\n")
-	fmt.Printf("Follow your logs with: \n   tail -f  %s \n", logfile)
-	fmt.Printf("\n-----------\n")
+
+	msg := fmt.Sprintf("Follow your logs with: tail -f %s", logfile)
+	fmt.Println(reports.StyleMessage(msg))
+
 	file, err := pkg.OpenLogFile(logfile)
 	if err != nil {
 		stdLog.Panicf("unable to store log location, error is: %s", err)
