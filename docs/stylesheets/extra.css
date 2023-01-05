@@ -1,5 +1,5 @@
 :root > * {
-  --md-primary-fg-color:        #8851C8;
+  --md-primary-fg-color:        #3C356C;
   --md-primary-fg-color--light: #DF6D5D;
   --md-primary-fg-color--dark:  #81E2B4;
 }
@@ -14,4 +14,8 @@
 
 [dir=ltr] .md-typeset ol, [dir=ltr] .md-typeset ul {
   padding-left: 1.25em;
+}
+
+.md-typeset a {
+  color: #8851C8 !important;
 }
