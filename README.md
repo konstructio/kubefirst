@@ -174,13 +174,6 @@ Kubefirst provides extra tooling for handling the provisioning work.
 
 ![kubefirst provisioning diagram](/images/provisioning.png)
 
-
-## Experimental Mode (we discourage it)
-
-If you want to run the main branch (`go run . init ...`, for example), you need to inform the version you are trying to use. To achieve this, you need to pass the `ldflags` in your command: `go run -ldflags="-X github.com/kubefirst/kubefirst/configs.K1Version=1.9.3" . version`. 
-
-We use external repositories during the provisioning process, and the version/tag in these repositories matches with the version of kubefirst cli; due to this approach, you need to perform the steps described above to run the code from the source.
-
 ## Feed K-Ray
 
 Did you know our superhero mascot K-Ray gets its frictionless superpowers from a healthy diet of GitHub stars? K-Ray gets soooo hungry too - you wouldn't believe it. Feed K-Ray a GitHub star ⭐ above to bookmark our project and keep K-Ray happy!!
