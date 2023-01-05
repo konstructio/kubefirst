@@ -8,20 +8,18 @@ The `kubefirst local` execution includes important information toward the end, i
 
 You now have a k3d cluster with the following content installed in it:
 
-| Application                  | Description                                                                |
-|------------------------------|----------------------------------------------------------------------------|
-| Traefik Ingress Controller   | Native k3d Ingress Controller                                              |
-| Cert Manager                 | Certificate Automation Utility                                             |
-| Argo CD                      | GitOps Continuous Delivery                                                 |
-| Argo Workflows               | Application Continuous Integration                                         |
-| GitHub Action Runner         | GitHub CI Executor                                                         |
-| Vault                        | Secrets Management                                                         |
-| Atlantis                     | Terraform Workflow Automation                                              |
-| External Secrets             | Syncs Kubernetes secrets with Vault secrets                                |
-| Chart Museum                 | Helm Chart Registry                                                        |
-| Metaphor                     | (development, staging, production) instance of sample nodejs backend app   |
-| Metaphor Go                  | (development, staging, production) instance of sample golang backend app   |
-| Metaphor Frontend            | (development, staging, production) instance of sample react frontend app   |
+| Application                  | Description                                                                            |
+|------------------------------|----------------------------------------------------------------------------------------|
+| Traefik Ingress Controller   | Native k3d Ingress Controller                                                          |
+| Cert Manager                 | Certificate Automation Utility                                                         |
+| Argo CD                      | GitOps Continuous Delivery                                                             |
+| Argo Workflows               | Application Continuous Integration                                                     |
+| GitHub Action Runner         | GitHub CI Executor                                                                     |
+| Vault                        | Secrets Management                                                                     |
+| Atlantis                     | Terraform Workflow Automation                                                          |
+| External Secrets             | Syncs Kubernetes secrets with Vault secrets                                            |
+| Chart Museum                 | Helm Chart Registry                                                                    |
+| Metaphor Frontend            | (development, staging, production) instance of sample Nextjs and React app             |
 
 - These apps are all managed by Argo CD and the app configurations are in the `gitops` repo's `registry` folder.
 - The AWS infrastructure is terraform - that's also in your `gitops` repo, but in your `terraform` folder.
