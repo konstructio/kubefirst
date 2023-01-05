@@ -150,5 +150,5 @@ func init() {
 	cleanCmd.Flags().Bool("rm-logs", false, "remove logs folder")
 	cleanCmd.Flags().Bool("destroy-buckets", false, "destroy buckets created by init cmd")
 	cleanCmd.Flags().Bool("destroy-confirm", false, "when detroy-buckets flag is provided, we must provide this flag as well to confirm the destroy operation")
-	cleanCmd.Flags().Bool("preserve-tools", false, "preserve all tools downloaded (avoid re-downloading)")
+	cleanCmd.Flags().Bool("preserve-tools", false, "preserve all downloaded tools (avoid re-downloading)")
 }
