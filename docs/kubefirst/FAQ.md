@@ -16,7 +16,7 @@ Please find that information in the destroying your Kubefirst platform documenta
 
 ## Kubefirst Local is taking a long time to install, what should I do?
 
-Kubefirst has a known bug downloading Terraform providers. This is a known issue and we are working on a fix. In the meantime, you can work around this by running the destroy command and trying it again.
+Kubefirst has a known bug downloading Terraform providers. This is a [known issue](https://github.com/kubefirst/kubefirst/issues/1055) and we are working on a fix. In the meantime, you can work around this by running the destroy command and trying it again.
 
 ## I'm getting an error about the `kubefirst` command not being found
 
