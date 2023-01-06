@@ -17,7 +17,7 @@ import (
 func AddK3DSecrets(dryrun bool) error {
 	clientset, err := k8s.GetClientSet(dryrun)
 
-	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "github-runner", "vault", "development", "staging", "production"}
+	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "external-dns", "github-runner", "vault", "development", "staging", "production"}
 	for i, s := range newNamespaces {
 		namespace := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s}}
 		_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
@@ -27,6 +27,23 @@ func AddK3DSecrets(dryrun bool) error {
 		}
 		log.Println(i, s)
 		log.Println("Namespace Created:", s)
+	}
+
+	//! todo need to make these more generic or duplicate per cloud/git-provider
+	if os.Getenv("CIVO_TOKEN") != "" {
+
+		dataCivoCreds := map[string][]byte{
+			"civo-token": []byte(os.Getenv("CIVO_TOKEN")),
+		}
+		civoSecret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "civo-creds", Namespace: "external-dns"},
+			Data:       dataCivoCreds,
+		}
+		_, err = clientset.CoreV1().Secrets("external-dns").Create(context.TODO(), civoSecret, metav1.CreateOptions{})
+		if err != nil {
+			log.Println("Error:", err)
+			return errors.New("error creating kubernetes secret: external-dns/civo-creds")
+		}
 	}
 
 	dataArgo := map[string][]byte{

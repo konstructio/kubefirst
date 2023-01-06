@@ -112,18 +112,46 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 	return envs
 }
 
-func CivoTerraformEnvs(envs map[string]string) map[string]string {
+func GetCivoTerraformEnvs(envs map[string]string) map[string]string {
 
 	envs["CIVO_TOKEN"] = os.Getenv("CIVO_TOKEN")
 
 	return envs
 }
 
-func GithubTerraformEnvs(envs map[string]string) map[string]string {
+func GetGithubTerraformEnvs(envs map[string]string) map[string]string {
 
 	envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
 	envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
+	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kubefirst.bot.public-key")
+
+	return envs
+}
+
+func GetUsersTerraformEnvs(envs map[string]string) map[string]string {
+
+	// envs["VAULT_TOKEN"] = viper.GetString("vault.token")
+	envs["VAULT_TOKEN"] = "k1_local_vault_token"
+	envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
+	envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+	envs["GITHUB_OWNER"] = viper.GetString("github.owner")
+
+	return envs
+}
+
+func GetVaultTerraformEnvs(envs map[string]string) map[string]string {
+
+	envs["TF_VAR_email_address"] = viper.GetString("admin-email")
+	envs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
+	envs["TF_VAR_vault_addr"] = viper.GetString("vault.local.service")
+	// envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
+	envs["TF_VAR_vault_token"] = "k1_local_vault_token"
+	envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
+	envs["VAULT_TOKEN"] = "k1_local_vault_token"
+	envs["TF_VAR_civo_token"] = os.Getenv("CIVO_TOKEN")
+	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
+	envs["TF_VAR_atlantis_repo_webhook_url"] = viper.GetString("github.atlantis.webhook.url")
 	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kubefirst.bot.public-key")
 
 	return envs

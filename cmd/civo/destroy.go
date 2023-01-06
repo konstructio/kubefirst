@@ -37,7 +37,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
 		tfEnvs := map[string]string{}
-		tfEnvs = terraform.GithubTerraformEnvs(tfEnvs)
+		tfEnvs = terraform.GetGithubTerraformEnvs(tfEnvs)
 		err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -54,7 +54,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := config.GitOpsRepoPath + "/terraform/civo"
 		tfEnvs := map[string]string{}
-		tfEnvs = terraform.GithubTerraformEnvs(tfEnvs)
+		tfEnvs = terraform.GetGithubTerraformEnvs(tfEnvs)
 		err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)

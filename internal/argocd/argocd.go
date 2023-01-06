@@ -375,7 +375,7 @@ func ApplyRegistryLocal(dryRun bool) error {
 func CreateInitialArgoCDRepository(githubURL string) error {
 	config := configs.ReadConfig()
 
-	privateKey := viper.GetString("botprivatekey")
+	privateKey := viper.GetString("kubefirst.bot.private-key")
 
 	argoConfig := ConfigRepo{}
 	argoConfig.Configs.Repositories.RepoGitops.URL = githubURL
