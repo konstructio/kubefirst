@@ -24,8 +24,6 @@ You can then manually delete the k3d cluster with the command `k3d cluster delet
 To delete your github assets that we created, log into your personal github and remove the following:
 
 - gitops repo
-- metaphor repo
-- metaphor-go repo
 - metaphor-frontend repo
 
 
