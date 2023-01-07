@@ -5,11 +5,11 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"syscall"
 	"time"
 
-	"github.com/kubefirst/kubefirst/configs"
+	"github.com/rs/zerolog/log"
+
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/handlers"
@@ -26,18 +26,17 @@ var destroyAwsGitlabCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Long:  `TDB`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("destroy-aws-gitlab called")
-		config := configs.ReadConfig()
+		log.Debug().Msg("destroy-aws-gitlab called")
 
 		destroyFlags, err := flagset.ProcessDestroyFlags(cmd)
 		if err != nil {
-			log.Println(err)
+			log.Warn().Msgf("%s", err)
 			return err
 		}
 
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
 		if err != nil {
-			log.Println(err)
+			log.Warn().Msgf("%s", err)
 			return err
 		}
 
@@ -47,7 +46,8 @@ var destroyAwsGitlabCmd = &cobra.Command{
 				globalFlags.SilentMode,
 			)
 		}
-		log.Println(destroyFlags, config)
+		//Don't log this, this leaks credentials
+		//log.Println(destroyFlags, config)
 
 		progressPrinter.SetupProgress(2, globalFlags.SilentMode)
 
@@ -63,7 +63,7 @@ var destroyAwsGitlabCmd = &cobra.Command{
 		informUser("Open argocd port-forward", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-prepare", 1)
 
-		log.Println("destroying gitlab terraform")
+		log.Info().Msg("destroying gitlab terraform")
 
 		progressPrinter.IncrementTracker("step-destroy", 1)
 		informUser("Destroying Gitlab", globalFlags.SilentMode)
@@ -73,19 +73,19 @@ var destroyAwsGitlabCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-prepare", 1)
 		progressPrinter.IncrementTracker("step-destroy", 1)
 
-		log.Println("gitlab terraform destruction complete")
+		log.Info().Msg("gitlab terraform destruction complete")
 
 		//This should wrapped into a function, maybe to move to: k8s.DeleteRegistryApplication
 		if !destroyFlags.SkipDeleteRegistryApplication {
 			kPortForwardArgocd, _ := k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 			defer func() {
 				if kPortForwardArgocd != nil {
-					log.Println("Closed argocd port forward")
+					log.Info().Msg("Closed argocd port forward")
 					_ = kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 				}
 			}()
 			informUser("Open argocd port-forward", globalFlags.SilentMode)
-			log.Println("deleting registry application in argocd")
+			log.Info().Msg("deleting registry application in argocd")
 			// delete argocd registry
 			informUser("Destroying Registry Application", globalFlags.SilentMode)
 			k8s.DeleteRegistryApplication(destroyFlags.SkipDeleteRegistryApplication)
@@ -93,9 +93,9 @@ var destroyAwsGitlabCmd = &cobra.Command{
 
 		progressPrinter.IncrementTracker("step-prepare", 1)
 		progressPrinter.IncrementTracker("step-destroy", 1)
-		log.Println("registry application deleted")
+		log.Info().Msg("registry application deleted")
 
-		log.Println("terraform destroy base")
+		log.Info().Msg("terraform destroy base")
 		informUser("Destroying Cluster", globalFlags.SilentMode)
 		terraform.DestroyBaseTerraform(destroyFlags.SkipBaseTerraform)
 		progressPrinter.IncrementTracker("step-destroy", 1)
@@ -107,13 +107,13 @@ var destroyAwsGitlabCmd = &cobra.Command{
 			err := awsHandler.HostedZoneDelete()
 			if err != nil {
 				// if error, just log it
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			}
 		}
 
 		informUser("All Destroyed", globalFlags.SilentMode)
 
-		log.Println("terraform base destruction complete")
+		log.Info().Msg("terraform base destruction complete")
 		fmt.Println("End of execution destroy")
 		time.Sleep(time.Millisecond * 100)
 		return nil

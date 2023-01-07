@@ -33,5 +33,5 @@ where are using on provisioning phase with the flag`,
 
 func init() {
 	rootCmd.AddCommand(backupSslCmd)
-	backupSslCmd.Flags().Bool("include-metaphor", false, "Include Metaphor Apps in process")
+	backupSslCmd.Flags().Bool("include-metaphor", true, "Include Metaphor Apps in process")
 }

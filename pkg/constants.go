@@ -1,14 +1,18 @@
 package pkg
 
 const (
-	JSONContentType          = "application/json"
-	SoftServerURI            = "ssh://127.0.0.1:8022/config"
-	GitHubOAuthClientId      = "2ced340927e0a6c49a45"
-	CloudK3d                 = "k3d"
-	GitHubProviderName       = "github"
-	GitHubHost               = "github.com"
-	LocalClusterName         = "kubefirst"
-	MinimumAvailableDiskSize = 10 // 10 GB
+	JSONContentType              = "application/json"
+	SoftServerURI                = "ssh://127.0.0.1:8022/config"
+	GitHubOAuthClientId          = "2ced340927e0a6c49a45"
+	CloudK3d                     = "k3d"
+	CloudAws                     = "aws"
+	GitHubProviderName           = "github"
+	GitHubHost                   = "github.com"
+	LocalClusterName             = "kubefirst"
+	MinimumAvailableDiskSize     = 10 // 10 GB
+	KubefirstGitOpsRepository    = "gitops"
+	KubefirstGitOpsRepositoryURL = "https://github.com/kubefirst/gitops-template"
+	LocalDNS                     = "localdev.me"
 )
 
 // SegmentIO constants
@@ -37,7 +41,8 @@ const (
 	VaultNamespace    = "vault"
 	VaultPodPort      = 8200
 	VaultPodLocalPort = 8200
-	VaultLocalURL     = "http://localhost:8200"
+	VaultLocalURL     = "http://vault.localdev.me"
+	VaultLocalURLTLS  = "https://vault.localdev.me"
 )
 
 // Argo
@@ -46,7 +51,7 @@ const (
 	ArgoNamespace    = "argo"
 	ArgoPodPort      = 2746
 	ArgoPodLocalPort = 2746
-	ArgoLocalURL     = "http://localhost:2746"
+	ArgoLocalURLTLS  = "https://argo.localdev.me"
 )
 
 // ArgoCD
@@ -55,7 +60,8 @@ const (
 	ArgoCDNamespace    = "argocd"
 	ArgoCDPodPort      = 8080
 	ArgoCDPodLocalPort = 8080
-	ArgoCDLocalURL     = "http://localhost:8080"
+	ArgoCDLocalURL     = "http://argocd.localdev.me"
+	ArgoCDLocalURLTLS  = "https://argocd.localdev.me"
 	ArgoCDLocalBaseURL = "https://localhost:8080/api/v1"
 )
 
@@ -74,7 +80,8 @@ const (
 	MinioNamespace    = "minio"
 	MinioPodPort      = 9000
 	MinioPodLocalPort = 9000
-	MinioURL          = "http://localhost:9000"
+	MinioURL          = "http://minio.localdev.me"
+	MinioURLTLS       = "https://minio.localdev.me"
 )
 
 // Minio Console
@@ -83,26 +90,32 @@ const (
 	MinioConsoleNamespace    = "minio"
 	MinioConsolePodPort      = 9001
 	MinioConsolePodLocalPort = 9001
-	MinioConsoleURL          = "http://localhost:9001"
+	MinioConsoleURLTLS       = "https://minio-console.localdev.me"
 )
 
 // Kubefirst Console
 const (
-	KubefirstConsolePodName      = "kubefirst-console"
-	KubefirstConsoleNamespace    = "kubefirst"
-	KubefirstConsolePodPort      = 80
-	KubefirstConsolePodLocalPort = 9094
-	KubefirstConsoleLocalURL     = "http://localhost:9094"
+	KubefirstConsolePodName       = "kubefirst-console"
+	KubefirstConsoleNamespace     = "kubefirst"
+	KubefirstConsolePodPort       = 80
+	KubefirstConsolePodLocalPort  = 9094
+	KubefirstConsoleLocalURLCloud = "http://localhost:9094"
+	KubefirstConsoleLocalURL      = "http://kubefirst.localdev.me"
+	KubefirstConsoleLocalURLTLS   = "https://kubefirst.localdev.me"
 )
 
 // Atlantis
 const (
-	AtlantisPodName      = "atlantis-0"
-	AtlantisNamespace    = "atlantis"
-	AtlantisPodPort      = 4141
-	AtlantisPodLocalPort = 4141
-	AtlantisLocalURL     = "http://localhost:4141"
-	AtlantisLocalUrl     = "localhost:4141" // todo:
+	AtlantisPodPort           = 4141
+	AtlantisLocalUrl          = "localhost:4141" // todo:
+	AtlantisPodName           = "atlantis-0"
+	AtlantisNamespace         = "atlantis"
+	AtlantisPodLocalPort      = 4141
+	AtlantisLocalURLTEST      = "atlantis.localdev.me"
+	AtlantisLocalURL          = "http://atlantis.localdev.me"
+	AtlantisLocalURLTLS       = "https://atlantis.localdev.me"
+	LocalAtlantisURLTEMPORARY = "localhost:4141" // todo:
+	//LocalAtlantisURL = "atlantis.localdev.me" // todo:
 )
 
 // MetaphorFrontendDevelopment
@@ -131,3 +144,5 @@ const (
 	MetaphorDevelopmentServiceLocalPort = 3000
 	MetaphorDevelopmentLocalURL         = "http://localhost:3000"
 )
+
+const MetaphorFrontendSlimTLS = "https://metaphor-frontend-development.localdev.me"

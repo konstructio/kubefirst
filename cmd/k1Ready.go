@@ -6,10 +6,11 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
@@ -32,7 +33,7 @@ var k1ReadyCmd = &cobra.Command{
 		defer func() {
 			//The goal of this code is to track execution time
 			duration := time.Since(start)
-			log.Printf("[000] K1-Ready duration is %s", duration)
+			log.Info().Msgf("[000] K1-Ready duration is %s", duration)
 
 		}()
 		config := configs.ReadConfig()
@@ -44,20 +45,20 @@ var k1ReadyCmd = &cobra.Command{
 		portForwardArgocd, err := k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
 		defer func() {
 			if portForwardArgocd != nil {
-				log.Println("Closed argoCD port forward")
+				log.Info().Msg("Closed argoCD port forward")
 				_ = portForwardArgocd.Process.Signal(syscall.SIGTERM)
 			}
 		}()
 		if err != nil {
 			//Port-forwarding may be already in play, if fails next commands will detect and fail as expected.
-			log.Println("Error forwarding ports")
+			log.Warn().Msg("Error forwarding ports")
 
 		}
 		if globalFlags.DryRun {
-			log.Printf("[#99] Dry-run mode, k1ReadyCmd skipped.")
+			log.Info().Msg("[#99] Dry-run mode, k1ReadyCmd skipped.")
 			return nil
 		}
-		log.Println("argo forwarded called")
+		log.Info().Msg("argo forwarded called")
 		argoCDUsername := viper.GetString("argocd.admin.username")
 		argoCDPassword := viper.GetString("argocd.admin.password")
 		token, err := argocd.GetArgoCDToken(argoCDUsername, argoCDPassword)
@@ -71,9 +72,9 @@ var k1ReadyCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			log.Println("App", app, "is synched:", isAppSynched)
+			log.Info().Msgf("App %s is synched: %t", app, isAppSynched)
 			if !isAppSynched {
-				log.Println("App", app, "is is not ready, synch status:", isAppSynched)
+				log.Warn().Msgf("App %s is is not ready, synch status: %t ", app, isAppSynched)
 				return fmt.Errorf("app %s is is not ready, synch status: %v", app, isAppSynched)
 			}
 		}
@@ -81,28 +82,28 @@ var k1ReadyCmd = &cobra.Command{
 		//Check cluster: To collect extra info from the cluster
 		//To confirm if cluster is in ready state or some node is not there yet.
 		stateOfNodesOut, stateOfNodesErr, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "kube-system", "get", "ds", "kube-proxy")
-		log.Printf("Result:\n\t%s\n\t%s\n", stateOfNodesOut, stateOfNodesErr)
+		log.Info().Msgf("Result:\n\t%s\n\t%s\n", stateOfNodesOut, stateOfNodesErr)
 		if err != nil {
-			log.Printf("error: failed to get state of cluster %s", err)
+			log.Warn().Msgf("error: failed to get state of cluster %s", err)
 		}
 		stateOfNodesOut, stateOfNodesErr, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "kube-system", "get", "ds", "aws-node")
-		log.Printf("Result:\n\t%s\n\t%s\n", stateOfNodesOut, stateOfNodesErr)
+		log.Info().Msgf("Result:\n\t%s\n\t%s\n", stateOfNodesOut, stateOfNodesErr)
 		if err != nil {
-			log.Printf("error: failed to get state of cluster %s", err)
+			log.Warn().Msgf("error: failed to get state of cluster %s", err)
 		}
 		stateOfNodesOut, stateOfNodesErr, err = pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "nodes")
-		log.Printf("Result:\n\t%s\n\t%s\n", stateOfNodesOut, stateOfNodesErr)
+		log.Info().Msgf("Result:\n\t%s\n\t%s\n", stateOfNodesOut, stateOfNodesErr)
 		if err != nil {
-			log.Printf("error: failed to get state of cluster %s", err)
+			log.Warn().Msgf("error: failed to get state of cluster %s", err)
 		}
 
 		//Check chartMuseum repository
 		// issue: 386
 		for i := 0; i < 30; i++ {
 			isCMReady, err := chartMuseum.IsChartMuseumReady()
-			log.Printf("Checking status of chartMuseum: %v", isCMReady)
+			log.Info().Msgf("Checking status of chartMuseum: %v", isCMReady)
 			if err == nil && isCMReady {
-				log.Printf("chartMuseum is Ready - 30 secs grace period")
+				log.Warn().Msgf("chartMuseum is Ready - 30 secs grace period")
 				time.Sleep(30 * time.Second)
 				return nil
 			}

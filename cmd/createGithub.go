@@ -6,11 +6,12 @@ package cmd
 import (
 	"crypto/tls"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"syscall"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
@@ -62,7 +63,7 @@ var createGithubCmd = &cobra.Command{
 		informUser("Creating gitops/metaphor repos", globalFlags.SilentMode)
 		err = githubAddCmd.RunE(cmd, args)
 		if err != nil {
-			log.Println("Error running:", githubAddCmd.Name())
+			log.Warn().Msgf("Error running: %s", githubAddCmd.Name())
 			return err
 		}
 
@@ -77,7 +78,7 @@ var createGithubCmd = &cobra.Command{
 		if !viper.GetBool("github.gitops.hydrated") {
 			gitClient.PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName)
 		} else {
-			log.Println("already hydrated the github gitops repository")
+			log.Info().Msg("already hydrated the github gitops repository")
 		}
 
 		progressPrinter.IncrementTracker("step-github", 1)
@@ -103,16 +104,20 @@ var createGithubCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-base", 1)
 
 		gitopsRepo := fmt.Sprintf("git@github.com:%s/gitops.git", viper.GetString("github.owner"))
-		argocd.CreateInitialArgoCDRepository(gitopsRepo)
 
-		// clientset, err := k8s.GetClientSet(globalFlags.DryRun)
-		// if err != nil {
-		// 	log.Printf("Failed to get clientset for k8s : %s", err)
-		// 	return err
-		// }
+		botPrivateKey := viper.GetString("botprivatekey")
+
+		argoCDConfig := argocd.GetArgoCDInitialCloudConfig(gitopsRepo, botPrivateKey)
+
+		err = argocd.CreateInitialArgoCDRepository(config, argoCDConfig)
+		if err != nil {
+			log.Warn().Msgf("%s", err)
+			return err
+		}
+
 		err = helm.InstallArgocd(globalFlags.DryRun)
 		if err != nil {
-			log.Println("Error installing argocd")
+			log.Warn().Msg("Error installing argocd")
 			return err
 		}
 
@@ -151,7 +156,7 @@ var createGithubCmd = &cobra.Command{
 			}
 
 			if !argoCDIsReady {
-				log.Println("unable to sync ArgoCD application, continuing...")
+				log.Info().Msg("unable to sync ArgoCD application, continuing...")
 			}
 		}
 		informUser("Setup ArgoCD", globalFlags.SilentMode)
@@ -170,14 +175,15 @@ var createGithubCmd = &cobra.Command{
 
 		if !viper.GetBool("vault.configuredsecret") { //skipVault
 			informUser("waiting for vault unseal", globalFlags.SilentMode)
-			log.Println("configuring vault")
+			log.Info().Msg("configuring vault")
 			vault.ConfigureVault(globalFlags.DryRun)
 			informUser("Vault configured", globalFlags.SilentMode)
 
 			vault.GetOidcClientCredentials(globalFlags.DryRun)
-			log.Println("vault oidc clients created")
+			log.Info().Msg("vault oidc clients created")
 
-			log.Println("creating vault configured secret")
+			log.Info().Msg("creating vault configured secret")
+
 			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
 			informUser("Vault secret created", globalFlags.SilentMode)
 		}
@@ -201,18 +207,10 @@ var createGithubCmd = &cobra.Command{
 		gitProvider := viper.GetString("git.mode")
 		err = terraform.ApplyUsersTerraform(globalFlags.DryRun, directory, gitProvider)
 		if err != nil {
+			log.Warn().Msgf("%s", err)
 			return err
 		}
 		progressPrinter.IncrementTracker("step-base", 1)
-		//TODO: Do we need this?
-		//From changes on create --> We need to fix once OIDC is ready
-		if false {
-			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
-			log.Println("configuring vault backend")
-			vault.ConfigureVault(globalFlags.DryRun)
-			informUser("Vault backend configured", globalFlags.SilentMode)
-			progressPrinter.IncrementTracker("step-vault-be", 1)
-		}
 		progressPrinter.IncrementTracker("step-apps", 1)
 		return nil
 	},

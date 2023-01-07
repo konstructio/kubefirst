@@ -5,8 +5,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"log"
 	"os"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/spf13/viper"
@@ -22,11 +23,11 @@ func AddK3DSecrets(dryrun bool) error {
 		namespace := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s}}
 		_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
 		if err != nil {
-			log.Println("Error:", s)
+			log.Error().Err(err).Msg("")
 			return errors.New("error creating namespace")
 		}
-		log.Println(i, s)
-		log.Println("Namespace Created:", s)
+		log.Info().Msgf("%d, %s", i, s)
+		log.Info().Msgf("Namespace Created: %s", s)
 	}
 
 	//! todo need to make these more generic or duplicate per cloud/git-provider
@@ -56,7 +57,7 @@ func AddK3DSecrets(dryrun bool) error {
 	}
 	_, err = clientset.CoreV1().Secrets("argo").Create(context.TODO(), argoSecret, metav1.CreateOptions{})
 	if err != nil {
-		log.Println("Error:", err)
+		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: argo/minio-creds")
 	}
 	viper.Set("kubernetes.argo-minio.secret.created", true)
@@ -76,7 +77,7 @@ func AddK3DSecrets(dryrun bool) error {
 	}
 	_, err = clientset.CoreV1().Secrets("argo").Create(context.TODO(), argoCiSecrets, metav1.CreateOptions{})
 	if err != nil {
-		log.Println("Error:", err)
+		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: argo/ci-secrets")
 	}
 	viper.Set("kubernetes.argo-ci.secret.created", true)
@@ -92,7 +93,7 @@ func AddK3DSecrets(dryrun bool) error {
 	}
 	_, err = clientset.CoreV1().Secrets("argo").Create(context.TODO(), argoDockerSecrets, metav1.CreateOptions{})
 	if err != nil {
-		log.Println("Error:", err)
+		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: argo/docker-config")
 	}
 
@@ -103,7 +104,7 @@ func AddK3DSecrets(dryrun bool) error {
 	}
 	_, err = clientset.CoreV1().Secrets("development").Create(context.TODO(), developmentDockerSecrets, metav1.CreateOptions{})
 	if err != nil {
-		log.Println("Error:", err)
+		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: development/docker-config")
 	}
 
@@ -114,7 +115,7 @@ func AddK3DSecrets(dryrun bool) error {
 	}
 	_, err = clientset.CoreV1().Secrets("staging").Create(context.TODO(), stagingDockerSecrets, metav1.CreateOptions{})
 	if err != nil {
-		log.Println("Error:", err)
+		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: staging/docker-config")
 	}
 
@@ -125,7 +126,7 @@ func AddK3DSecrets(dryrun bool) error {
 	}
 	_, err = clientset.CoreV1().Secrets("production").Create(context.TODO(), productionDockerSecrets, metav1.CreateOptions{})
 	if err != nil {
-		log.Println("Error:", err)
+		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: production/docker-config")
 	}
 	viper.Set("kubernetes.argo-docker.secret.created", true)
@@ -148,7 +149,7 @@ func AddK3DSecrets(dryrun bool) error {
 	}
 	_, err = clientset.CoreV1().Secrets("argocd").Create(context.TODO(), argoCdSecret, metav1.CreateOptions{})
 	if err != nil {
-		log.Println("Error:", err)
+		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: argo/minio-creds")
 	}
 	viper.Set("kubernetes.argo-minio.secret.created", true)
@@ -181,7 +182,7 @@ func AddK3DSecrets(dryrun bool) error {
 	}
 	_, err = clientset.CoreV1().Secrets("atlantis").Create(context.TODO(), atlantisSecret, metav1.CreateOptions{})
 	if err != nil {
-		log.Println("Error:", err)
+		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: atlantis/atlantis-secrets")
 	}
 	viper.Set("kubernetes.atlantis.secret.created", true)
@@ -199,7 +200,7 @@ func AddK3DSecrets(dryrun bool) error {
 	}
 	_, err = clientset.CoreV1().Secrets("chartmuseum").Create(context.TODO(), chartmuseumSecret, metav1.CreateOptions{})
 	if err != nil {
-		log.Println("Error:", err)
+		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: chartmuseum/chartmuseum")
 	}
 	viper.Set("kubernetes.chartmuseum.secret.created", true)
@@ -214,7 +215,7 @@ func AddK3DSecrets(dryrun bool) error {
 	}
 	_, err = clientset.CoreV1().Secrets("github-runner").Create(context.TODO(), ghRunnerSecret, metav1.CreateOptions{})
 	if err != nil {
-		log.Println("Error:", err)
+		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: github-runner/controller-manager")
 	}
 	viper.Set("kubernetes.github-runner.secret.created", true)
@@ -229,7 +230,7 @@ func AddK3DSecrets(dryrun bool) error {
 	}
 	_, err = clientset.CoreV1().Secrets("vault").Create(context.TODO(), vaultSecret, metav1.CreateOptions{})
 	if err != nil {
-		log.Println("Error:", err)
+		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: github-runner/controller-manager")
 	}
 	viper.Set("kubernetes.vault.secret.created", true)

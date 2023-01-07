@@ -159,3 +159,75 @@ func TestValidateK1Folder(t *testing.T) {
 		})
 	}
 }
+
+func TestGetFileContent(t *testing.T) {
+
+	file, err := os.CreateTemp("", "testing.txt")
+	if err != nil {
+		t.Error(err)
+	}
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			t.Error(err)
+		}
+	}(file.Name())
+
+	fileWithContent, err := os.CreateTemp("", "testing-with-content")
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = fileWithContent.Write([]byte("some-content"))
+	if err != nil {
+		t.Error(err)
+	}
+	err = fileWithContent.Close()
+	if err != nil {
+		t.Error(err)
+	}
+
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			t.Error(err)
+		}
+	}(fileWithContent.Name())
+
+	tests := []struct {
+		name     string
+		filePath string
+		want     []byte
+		wantErr  bool
+	}{
+		{
+			name:     "file doesn't exist",
+			filePath: "non-existent-file.ext",
+			want:     nil,
+			wantErr:  true,
+		},
+		{
+			name:     "file with no content, returns no content",
+			filePath: file.Name(),
+			want:     []byte(""),
+			wantErr:  false,
+		},
+		{
+			name:     "file with content, returns its content",
+			filePath: fileWithContent.Name(),
+			want:     []byte("some-content"),
+			wantErr:  false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetFileContent(tt.filePath)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetFileContent() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetFileContent() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

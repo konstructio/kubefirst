@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"log"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/internal/k8s"
 
@@ -39,21 +40,21 @@ var postInstallCmd = &cobra.Command{
 		if createFlags.EnableConsole {
 			err := k8s.OpenPortForwardForCloudConConsole()
 			if err != nil {
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			}
 
-			err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURL)
+			err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
 			if err != nil {
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			}
 
-			err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURL)
+			err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
 			if err != nil {
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			}
 
 		} else {
-			log.Println("Skipping the presentation of console and api for the handoff screen")
+			log.Info().Msg("Skipping the presentation of console and api for the handoff screen")
 		}
 
 		reports.HandoffScreen(globalFlags.DryRun, globalFlags.SilentMode)

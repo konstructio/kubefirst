@@ -6,10 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os/exec"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/services"
@@ -78,7 +79,7 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 	var gitHubDeviceFlow GitHubDeviceFlow
 	err = json.Unmarshal(body, &gitHubDeviceFlow)
 	if err != nil {
-		log.Println(err)
+		log.Warn().Msgf("%s", err)
 	}
 
 	// todo: check http code
@@ -87,18 +88,23 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 	gitHubTokenReport := reports.GitHubAuthToken(gitHubDeviceFlow.UserCode, gitHubDeviceFlow.VerificationUri)
 	fmt.Println(reports.StyleMessage(gitHubTokenReport))
 
-	// todo add a 10 second countdown to warn browser open
-	time.Sleep(5 * time.Second)
-	exec.Command("open", "https://github.com/login/device").Start()
+	fmt.Println(reports.StyleMessage("Please press <enter> to open the GitHub page:"))
+	// this blocks the progress until the user hits enter to open the browser
+	if _, err = fmt.Scanln(); err != nil {
+		return "", err
+	}
 
-	// todo: improve the logic for the counter
+	if err = exec.Command("open", "https://github.com/login/device").Start(); err != nil {
+		return "", err
+	}
+
 	var gitHubAccessToken string
 	var attempts = 18       // 18 * 5 = 90 seconds
 	var secondsControl = 95 // 95 to start with 95-5=90
 	for i := 0; i < attempts; i++ {
 		gitHubAccessToken, err = handler.service.CheckUserCodeConfirmation(gitHubDeviceFlow.DeviceCode)
 		if err != nil {
-			log.Println(err)
+			log.Warn().Msgf("%s", err)
 		}
 
 		if len(gitHubAccessToken) > 0 {
@@ -120,7 +126,7 @@ func (handler GitHubHandler) GetGitHubUser(gitHubAccessToken string) (string, er
 
 	req, err := http.NewRequest(http.MethodGet, "https://api.github.com/user", nil)
 	if err != nil {
-		log.Println("error setting request")
+		log.Warn().Msg("error setting request")
 	}
 
 	req.Header.Add("Content-Type", pkg.JSONContentType)
@@ -156,7 +162,7 @@ func (handler GitHubHandler) GetGitHubUser(gitHubAccessToken string) (string, er
 		return "", errors.New("unable to retrieve username via GitHub API")
 	}
 
-	log.Println("GitHub user: ", githubUser.Login)
+	log.Info().Msgf("GitHub user: %s", githubUser.Login)
 	return githubUser.Login, nil
 
 }

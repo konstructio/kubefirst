@@ -2,8 +2,10 @@ package flagset
 
 import (
 	"errors"
-	"log"
 	"os"
+
+	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/rs/zerolog/log"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -37,56 +39,56 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 	// set profile
 	profile, err := ReadConfigString(cmd, "profile")
 	if err != nil {
-		log.Println("unable to get profile values")
+		log.Info().Msg("unable to get profile values")
 		return flags, err
 	}
 	viper.Set("aws.profile", profile)
 	// propagate it to local environment
 	err = os.Setenv("AWS_PROFILE", profile)
 	if err != nil {
-		log.Printf("unable to set environment variable AWS_PROFILE, error is: %v\n", err)
+		log.Info().Msgf("unable to set environment variable AWS_PROFILE, error is: %v\n", err)
 		return flags, err
 	}
-	log.Println("profile:", profile)
+	log.Info().Msgf("profile: %s", profile)
 	flags.Profile = profile
 
 	// set region
 	region, err := ReadConfigString(cmd, "region")
 	if err != nil {
-		log.Println("unable to get region values from viper")
+		log.Info().Msg("unable to get region values from viper")
 		return flags, err
 	}
 	viper.Set("aws.region", region)
 	// propagate it to local environment
 	err = os.Setenv("AWS_REGION", region)
 	if err != nil {
-		log.Printf("unable to set environment variable AWS_REGION, error is: %v\n", err)
+		log.Info().Msgf("unable to set environment variable AWS_REGION, error is: %v\n", err)
 		return flags, err
 	}
-	log.Println("region:", region)
+	log.Info().Msgf("region: %s", region)
 	flags.Region = region
 
 	nodesSpot, err := ReadConfigBool(cmd, "aws-nodes-spot")
 	if err != nil {
-		log.Println(err)
+		log.Warn().Msgf("%s", err)
 		return flags, err
 	}
 	viper.Set("aws.nodes_spot", nodesSpot)
-	log.Println("aws.nodes_spot: ", nodesSpot)
+	log.Info().Msgf("aws.nodes_spot: %t ", nodesSpot)
 	flags.UseSpotInstance = nodesSpot
 
 	enableGraviton, err := ReadConfigBool(cmd, "aws-nodes-graviton")
 	if err != nil {
-		log.Println(err)
+		log.Warn().Msgf("%s", err)
 		return flags, err
 	}
 	viper.Set("aws.nodes_graviton", enableGraviton)
-	log.Println("aws.nodes_graviton: ", enableGraviton)
+	log.Info().Msgf("aws.nodes_graviton: %t", enableGraviton)
 	flags.UseNodesGraviton = enableGraviton
 
 	bucketRand, err := ReadConfigString(cmd, "s3-suffix")
 	if err != nil {
-		log.Println(err)
+		log.Warn().Msgf("%s", err)
 		return flags, err
 	}
 	viper.Set("bucket.rand", bucketRand)
@@ -94,7 +96,7 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 
 	arnRole, err := ReadConfigString(cmd, "aws-assume-role")
 	if err != nil {
-		log.Println("unable to use the provided AWS IAM role for AssumeRole feature")
+		log.Info().Msg("unable to use the provided AWS IAM role for AssumeRole feature")
 		return flags, err
 	}
 	viper.Set("aws.arn", arnRole)
@@ -109,7 +111,7 @@ func ProcessAwsFlags(cmd *cobra.Command) (AwsFlags, error) {
 
 	err = validateAwsFlags()
 	if err != nil {
-		log.Println("Error validateAwsFlags:", err)
+		log.Warn().Msgf("Error validateAwsFlags: %s", err)
 		return AwsFlags{}, err
 	}
 
@@ -120,35 +122,35 @@ func validateAwsFlags() error {
 	//Validation:
 	//If you are changind this rules, please ensure to update:
 	// internal/flagset/init_test.go
-	if viper.GetString("cloud") != CloudAws {
+	if viper.GetString("cloud") != pkg.CloudAws {
 		// To skip later validations
 		// TODO: Create test scenarios for init
-		log.Println("Skipping AWS Validation:", viper.GetString("cloud"))
+		log.Warn().Msgf("Skipping AWS Validation: %s", viper.GetString("cloud"))
 		return nil
 	}
 	if len(viper.GetString("aws.hostedzonename")) < 1 {
-		log.Println("Missing flag --hosted-zone-name for aws installation")
+		log.Warn().Msg("Missing flag --hosted-zone-name for aws installation")
 		return errors.New("missing flag --hosted-zone-name for an aws installation")
 	}
 	if len(viper.GetString("aws.region")) < 1 {
-		log.Println("Missing flag --region for aws installation")
+		log.Warn().Msg("Missing flag --region for aws installation")
 		return errors.New("missing flag --region for an aws installation")
 	}
 	if viper.GetString("aws.arn") == "" && viper.GetString("aws.profile") == "" {
-		log.Println("aws.arn is empty", viper.GetString("aws.arn"))
-		log.Println("aws.profile is empty", viper.GetString("aws.profile"))
+		log.Warn().Msgf("aws.arn is empty - %s", viper.GetString("aws.arn"))
+		log.Warn().Msgf("aws.profile is empty - %s", viper.GetString("aws.profile"))
 		return errors.New("must provide profile or aws-assume-role argument for aws installations of kubefirst")
 	}
 
 	if viper.GetString("aws.arn") != "" && viper.GetString("aws.profile") != "" {
-		log.Println("aws.arn is ", viper.GetString("aws.arn"))
-		log.Println("aws.profile is: ", viper.GetString("aws.profile"))
-		log.Println("must provide only one of these arguments: profile or aws-assume-role")
+		log.Warn().Msgf("aws.arn is %s", viper.GetString("aws.arn"))
+		log.Warn().Msgf("aws.profile is: %s", viper.GetString("aws.profile"))
+		log.Warn().Msg("must provide only one of these arguments: profile or aws-assume-role")
 		return errors.New("must provide only one of these arguments: profile or aws-assume-role")
 	}
 
 	if viper.GetString("gitprovider") == "gitlab" && viper.GetBool("aws.nodes_graviton") {
-		log.Println("GitLab only support x86 compute nodes")
+		log.Warn().Msg("GitLab only support x86 compute nodes")
 		return errors.New("GitLab only support x86 compute nodes")
 	}
 

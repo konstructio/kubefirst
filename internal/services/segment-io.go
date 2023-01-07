@@ -33,3 +33,18 @@ func (service SegmentIoService) EnqueueCountMetric(metricName string, domain str
 
 	return nil
 }
+
+// EnqueueIdentify implements SegmentIO Identify https://segment.com/docs/connections/sources/catalog/libraries/server/go/
+func (service SegmentIoService) EnqueueIdentify(domain string) error {
+
+	// Enqueues a Identify event that will be sent asynchronously.
+	err := service.SegmentIOClient.Enqueue(analytics.Identify{
+		UserId: domain,
+		Type:   "identify",
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

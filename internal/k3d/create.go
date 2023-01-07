@@ -2,9 +2,10 @@ package k3d
 
 import (
 	"errors"
-	"log"
 	"os"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -13,7 +14,7 @@ import (
 
 // CreateK3dCluster create an k3d cluster
 func CreateK3dCluster() error {
-	log.Println("Create K3d cluster for local install")
+	log.Info().Msg("creating K3d cluster...")
 	config := configs.ReadConfig()
 	// I tried Terraform templates using: https://registry.terraform.io/providers/pvotal-tech/k3d/latest/docs/resources/cluster
 	// it didn't worked as expected.
@@ -26,9 +27,11 @@ func CreateK3dCluster() error {
 			"--agents-memory", "1024m",
 			"--registry-create", "k3d-"+viper.GetString("cluster-name")+"-registry:63630",
 			"--k3s-arg", `--kubelet-arg=eviction-hard=imagefs.available<1%,nodefs.available<1%@agent:*`,
-			"--k3s-arg", `--kubelet-arg=eviction-minimum-reclaim=imagefs.available=1%,nodefs.available=1%@agent:*`)
+			"--k3s-arg", `--kubelet-arg=eviction-minimum-reclaim=imagefs.available=1%,nodefs.available=1%@agent:*`,
+			"--port", "80:80@loadbalancer",
+			"--port", "443:443@loadbalancer")
 		if err != nil {
-			log.Println("error creating k3d cluster")
+			log.Info().Msg("error creating k3d cluster")
 			return errors.New("error creating k3d cluster")
 		}
 
@@ -42,18 +45,18 @@ func CreateK3dCluster() error {
 		if err != nil {
 			return err
 		}
-		log.Println(config.KubeConfigPath)
+		log.Info().Msg(config.KubeConfigPath)
 
 		kubeConfig := []byte(out)
 		err = os.WriteFile(config.KubeConfigPath, kubeConfig, 0644)
 		if err != nil {
-			log.Println("error updating config:", err)
+			log.Error().Err(err).Msg("error updating config")
 			return errors.New("error updating config")
 		}
 		viper.Set("k3d.created", true)
 		viper.WriteConfig()
 	} else {
-		log.Println("K3d Cluster already created")
+		log.Info().Msg("K3d Cluster already created")
 	}
 	return nil
 }

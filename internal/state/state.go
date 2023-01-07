@@ -2,7 +2,8 @@ package state
 
 import (
 	"fmt"
-	"log"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
@@ -12,7 +13,7 @@ import (
 // UploadKubefirstToStateStore - Send kubefirst file to state store
 func UploadKubefirstToStateStore(dryRun bool) error {
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, UploadKubefirstToStateStore skipped.")
+		log.Info().Msg("[#99] Dry-run mode, UploadKubefirstToStateStore skipped.")
 		return nil
 	}
 	config := configs.ReadConfig()
@@ -22,7 +23,7 @@ func UploadKubefirstToStateStore(dryRun bool) error {
 	if err != nil {
 		return fmt.Errorf("unable to upload Kubefirst cofiguration file to the S3 bucket, error is: %v", err)
 	}
-	log.Printf("Kubefirst configuration file was upload to AWS S3 at %q bucket name", stateStoreBucket)
+	log.Info().Msgf("Kubefirst configuration file was upload to AWS S3 at %q bucket name", stateStoreBucket)
 
 	return nil
 }

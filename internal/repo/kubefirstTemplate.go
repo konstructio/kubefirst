@@ -2,10 +2,11 @@ package repo
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
@@ -20,26 +21,26 @@ import (
 // PrepareKubefirstTemplateRepo - Prepare template repo to be used by installer
 func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg, repoName string, branch string, tag string) {
 
-	log.Println("---debug---")
-	log.Println(githubOrg)
-	log.Println(repoName)
-	log.Println(branch)
-	log.Println(tag)
-	log.Println("---debug---")
+	log.Info().
+		Str("GitHub Organization", githubOrg).
+		Str("Repository", repoName).
+		Str("Branch", branch).
+		Str("Tag", tag).
+		Msg("")
 
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, PrepareKubefirstTemplateRepo skipped.")
+		log.Info().Msg("[#99] Dry-run mode, PrepareKubefirstTemplateRepo skipped.")
 		return
 	}
 	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
 	err := gitClient.CloneTemplateRepoWithFallBack(githubOrg, repoName, directory, branch, tag)
 	if err != nil {
-		log.Panicf("Error cloning repo with fallback: %s", err)
+		log.Panic().Msgf("Error cloning repo with fallback: %s", err)
 	}
 	viper.Set(fmt.Sprintf("init.repos.%s.cloned", repoName), true)
 	viper.WriteConfig()
 
-	log.Printf("cloned %s-template repository to directory %s/%s", repoName, config.K1FolderPath, repoName)
+	log.Info().Msgf("cloned %s-template repository to directory %s/%s", repoName, config.K1FolderPath, repoName)
 	if viper.GetString("cloud") == pkg.CloudK3d && !viper.GetBool("github.gitops.hydrated") {
 		UpdateForLocalMode(directory)
 	}
@@ -58,19 +59,19 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 
 			},
 		}
-		err := cp.Copy(config.GitOpsRepoPath+"/argo-workflows/.argo", directory+"/.argo", opt)
+		err = cp.Copy(config.GitOpsLocalRepoPath+"/argo-workflows/.argo", directory+"/.argo", opt)
 		if err != nil {
-			log.Println("Error populating argo-workflows .argo/ with local setup:", err)
+			log.Error().Err(err).Msgf("Error populating argo-workflows .argo/ with local setup: %s", err)
 		}
-		err = cp.Copy(config.GitOpsRepoPath+"/argo-workflows/.github", directory+"/.github", opt)
+		err = cp.Copy(config.GitOpsLocalRepoPath+"/argo-workflows/.github", directory+"/.github", opt)
 		if err != nil {
-			log.Println("Error populating argo-workflows with .github/ with local setup:", err)
+			log.Error().Err(err).Msgf("Error populating argo-workflows with .github/ with local setup: %s", err)
 		}
 	}
 
-	log.Printf("detokenizing %s/%s", config.K1FolderPath, repoName)
+	log.Info().Msgf("detokenizing %s/%s", config.K1FolderPath, repoName)
 	pkg.Detokenize(directory)
-	log.Printf("detokenization of %s/%s complete", config.K1FolderPath, repoName)
+	log.Info().Msgf("detokenization of %s/%s complete", config.K1FolderPath, repoName)
 
 	viper.Set(fmt.Sprintf("init.repos.%s.detokenized", repoName), true)
 	viper.WriteConfig()
@@ -82,17 +83,17 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 		githubOwner := viper.GetString("github.owner")
 
 		url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, repoName)
-		log.Printf("git remote add github %s", url)
+		log.Info().Msgf("git remote add github %s", url)
 		_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
 			Name: "github",
 			URLs: []string{url},
 		})
 	} else {
 		domain := viper.GetString("aws.hostedzonename")
-		log.Printf("creating git remote gitlab")
-		log.Println("git remote add gitlab at url ", fmt.Sprintf("https://gitlab.%s/kubefirst/%s.git", domain, repoName))
+		log.Info().Msg("creating git remote gitlab")
+		log.Info().Msgf("git remote add gitlab at url %s", fmt.Sprintf("https://gitlab.%s/kubefirst/%s.git", domain, repoName))
 		if err != nil {
-			log.Panicf("error opening the directory %s:  %s", directory, err)
+			log.Panic().Msgf("error opening the directory %s: %s", directory, err)
 		}
 
 		_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
@@ -100,7 +101,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 			URLs: []string{fmt.Sprintf("https://gitlab.%s/kubefirst/%s.git", domain, repoName)},
 		})
 		if repoName == "gitops" {
-			log.Println("creating git remote ssh://127.0.0.1:8022/gitops")
+			log.Info().Msg("creating git remote ssh://127.0.0.1:8022/gitops")
 			_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
 				Name: "soft",
 				URLs: []string{"ssh://127.0.0.1:8022/gitops"},
@@ -109,22 +110,15 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 	}
 
 	if err != nil {
-		log.Panicf("Error creating remote %s for repo: %s - %s", viper.GetString("git.mode"), repoName, err)
+		log.Panic().Msgf("Error creating remote %s for repo: %s - %s", viper.GetString("git.mode"), repoName, err)
 	}
 
 	w, _ := repo.Worktree()
 
-	log.Printf("committing detokenized %s content", repoName)
-	status, err := w.Status()
+	log.Info().Msgf("committing detokenized %s content", repoName)
+	err = gitClient.GitAddWithFilter(viper.GetString("cloud"), repoName, w)
 	if err != nil {
-		log.Println("error getting worktree status", err)
-	}
-
-	for file, _ := range status {
-		_, err = w.Add(file)
-		if err != nil {
-			log.Println("error getting worktree status", err)
-		}
+		log.Error().Err(err).Msg("error getting worktree status")
 	}
 	w.Commit(fmt.Sprintf("[ci skip] committing detokenized %s content", repoName), &git.CommitOptions{
 		Author: &object.Signature{
@@ -138,7 +132,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 
 // UpdateForLocalMode - Tweak for local install on templates
 func UpdateForLocalMode(directory string) error {
-	log.Println("Working Directory:", directory)
+	log.Info().Msgf("Working Directory: %s", directory)
 	//Tweak folder
 	os.RemoveAll(directory + "/components")
 	os.RemoveAll(directory + "/registry")
@@ -158,7 +152,7 @@ func UpdateForLocalMode(directory string) error {
 	}
 	err := cp.Copy(directory+"/localhost", directory, opt)
 	if err != nil {
-		log.Println("Error populating gitops with local setup:", err)
+		log.Error().Err(err).Msg("Error populating gitops with local setup")
 		return err
 	}
 	os.RemoveAll(directory + "/localhost")

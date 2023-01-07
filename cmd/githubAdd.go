@@ -4,7 +4,7 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"log"
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/github"
@@ -26,12 +26,12 @@ var githubAddCmd = &cobra.Command{
 		}
 
 		if globalFlags.DryRun {
-			log.Printf("[#99] Dry-run mode, githubAddCmd skipped.")
+			log.Info().Msg("[#99] Dry-run mode, githubAddCmd skipped.")
 			return nil
 		}
 
-		log.Println("Org used:", viper.GetString("github.owner"))
-		log.Println("dry-run:", globalFlags.DryRun)
+		log.Debug().Msgf("Org used: %s", viper.GetString("github.owner"))
+		log.Debug().Msgf("dry-run: %t", globalFlags.DryRun)
 
 		if !viper.GetBool("github.terraformapplied.gitops") {
 
@@ -44,7 +44,7 @@ var githubAddCmd = &cobra.Command{
 			progressPrinter.IncrementTracker("step-github", 1)
 		}
 
-		log.Printf("GitHub terraform Executed and uploaded ssh key to user with Success")
+		log.Info().Msg("GitHub terraform Executed and uploaded ssh key to user with Success")
 		return nil
 	},
 }

@@ -2,17 +2,20 @@ package gitClient
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/kubefirst/configs"
+	internalSSH "github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/pkg"
 	cp "github.com/otiai10/copy"
 	"github.com/spf13/viper"
@@ -32,12 +35,12 @@ func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, br
 	directory := fmt.Sprintf("%s/%s", config.K1FolderPath, folderName)
 	err := os.RemoveAll(directory)
 	if err != nil {
-		log.Println("Error removing dir(expected if dir not present):", err)
+		log.Error().Err(err).Msg("Error removing dir(expected if dir not present):")
 	}
 
 	err = CloneTemplateRepoWithFallBack(githubOwner, repoName, directory, branch, tag)
 	if err != nil {
-		log.Panicf("Error cloning repo with fallback: %s", err)
+		log.Panic().Err(err).Msg("Error cloning repo with fallback")
 	}
 	if err != nil {
 		log.Printf("error cloning %s repository from github %s", folderName, err)
@@ -69,25 +72,25 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 	config := configs.ReadConfig()
 	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	if token == "" {
-		log.Println("Unauthorized: No token present")
+		log.Info().Msg("Unauthorized: No token present")
 		return fmt.Errorf("missing github token")
 	}
 	directory := fmt.Sprintf("%s/push-%s", config.K1FolderPath, repo)
 	err := os.RemoveAll(directory)
 	if err != nil {
-		log.Println("Error removing dir(expected if dir not present):", err)
+		log.Error().Err(err).Msg("Error removing dir(expected if dir not present)")
 	}
 	url := fmt.Sprintf("https://%s@%s/%s/%s.git", token, gitHost, owner, repo)
 	gitRepo, err := git.PlainClone(directory, false, &git.CloneOptions{
 		URL: url,
 	})
 	if err != nil {
-		log.Println("Error clonning git:", err)
+		log.Error().Err(err).Msg("Error clonning git")
 		return err
 	}
 
 	w, _ := gitRepo.Worktree()
-	log.Println("Committing new changes...")
+	log.Info().Msg("Committing new changes...")
 
 	opt := cp.Options{
 		Skip: func(src string) (bool, error) {
@@ -102,20 +105,12 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 	}
 	err = cp.Copy(sourceFolder, directory, opt)
 	if err != nil {
-		log.Println("Error populating git")
+		log.Info().Msg("Error populating git")
 		return err
 	}
-	status, err := w.Status()
+	err = GitAddWithFilter(viper.GetString("cloud"), repo, w)
 	if err != nil {
-		log.Println("error getting worktree status", err)
-	}
-
-	for file, s := range status {
-		log.Printf("the file is %s the status is %v", file, s.Worktree)
-		_, err = w.Add(file)
-		if err != nil {
-			log.Println("error getting worktree status", err)
-		}
+		log.Error().Err(err).Msg("error getting worktree status")
 	}
 	w.Commit("Populate Repo", &git.CommitOptions{
 		Author: &object.Signature{
@@ -129,7 +124,7 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 		RemoteName: "origin",
 	})
 	if err != nil {
-		log.Println("error pushing to remote", err)
+		log.Error().Err(err).Msg("error pushing to remote")
 		return err
 	}
 	return nil
@@ -143,7 +138,7 @@ func CloneGitOpsRepo() {
 
 	versionGitOps := viper.GetString("gitops.branch")
 
-	log.Println("git clone -b ", versionGitOps, url, directory)
+	log.Info().Msgf("git clone -b %s %s %s", versionGitOps, url, directory)
 
 	_, err := git.PlainClone(directory, false, &git.CloneOptions{
 		URL:           url,
@@ -151,10 +146,10 @@ func CloneGitOpsRepo() {
 		SingleBranch:  true,
 	})
 	if err != nil {
-		log.Panicf("error cloning gitops-template repository from github, error is:  %s", err)
+		log.Panic().Err(err).Msg("error cloning gitops-template repository from github")
 	}
 
-	log.Println("downloaded gitops repo from template to directory", config.K1FolderPath, "/gitops")
+	log.Info().Msgf("downloaded gitops repo from template to directory %s%s", config.K1FolderPath, "/gitops")
 }
 
 func ClonePrivateRepo(gitRepoUrl, gitRepoDestinationDir string) {
@@ -169,7 +164,7 @@ func ClonePrivateRepo(gitRepoUrl, gitRepoDestinationDir string) {
 		SingleBranch:  true,
 	})
 	if err != nil {
-		log.Fatalln("error cloning git repository", gitRepoUrl, err)
+		log.Fatal().Err(err).Msgf("error cloning git repository %s", gitRepoUrl)
 	}
 }
 
@@ -177,35 +172,27 @@ func PushGitopsToSoftServe() {
 	cfg := configs.ReadConfig()
 	directory := fmt.Sprintf("%s/gitops", cfg.K1FolderPath)
 
-	log.Println("open gitClient repo", directory)
+	log.Info().Msgf("open gitClient repo %s", directory)
 
 	repo, err := git.PlainOpen(directory)
 	if err != nil {
-		log.Panic("error opening the directory ", directory, err)
+		log.Panic().Err(err).Msgf("error opening the directory %q", directory)
 	}
 
-	log.Println("gitClient remote add origin ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops")
+	log.Info().Msg("gitClient remote add origin ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops")
 	_, err = repo.CreateRemote(&config.RemoteConfig{
 		Name: "soft",
 		URLs: []string{"ssh://127.0.0.1:8022/gitops"},
 	})
 	if err != nil {
-		log.Panicf("Error creating remote repo: %s", err)
+		log.Panic().Err(err).Msgf("Error creating remote repo")
 	}
 	w, _ := repo.Worktree()
 
-	log.Println("Committing new changes...")
-	status, err := w.Status()
+	log.Info().Msg("Committing new changes...")
+	err = GitAddWithFilter(viper.GetString("cloud"), "gitops", w)
 	if err != nil {
-		log.Println("error getting worktree status", err)
-	}
-
-	for file, s := range status {
-		log.Printf("the file is %s the status is %v", file, s.Worktree)
-		_, err = w.Add(file)
-		if err != nil {
-			log.Println("error getting worktree status", err)
-		}
+		log.Error().Err(err).Msg("error getting worktree status")
 	}
 	w.Commit("setting new remote upstream to soft-serve", &git.CommitOptions{
 		Author: &object.Signature{
@@ -215,7 +202,7 @@ func PushGitopsToSoftServe() {
 		},
 	})
 
-	auth, _ := pkg.PublicKey()
+	auth, _ := internalSSH.PublicKey()
 
 	auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 
@@ -224,7 +211,7 @@ func PushGitopsToSoftServe() {
 		Auth:       auth,
 	})
 	if err != nil {
-		log.Panic("error pushing to remote", err)
+		log.Error().Err(err).Msg("error pushing to remote")
 	}
 
 }
@@ -289,19 +276,19 @@ func CloneTemplateRepoWithFallBack(githubOrg string, repoName string, directory 
 		branchName := plumbing.NewBranchReferenceName("main")
 		headRef, err := repo.Head()
 		if err != nil {
-			log.Panicf("Error Setting reference: %s, %s", repoName, err)
+			log.Panic().Err(err).Msgf("Error Setting reference: %s", repoName)
 		}
 		ref := plumbing.NewHashReference(branchName, headRef.Hash())
 		err = repo.Storer.SetReference(ref)
 		if err != nil {
-			log.Panicf("error Storing reference: %s, %s", repoName, err)
+			log.Panic().Err(err).Msgf("error Storing reference: %s", repoName)
 		}
 		err = w.Checkout(&git.CheckoutOptions{Branch: ref.Name()})
 		//remove old branch
 		err = repo.Storer.RemoveReference(plumbing.NewBranchReferenceName(branch))
 		if err != nil {
 			if source == "branch" {
-				log.Panicf("error removing old branch: %s, %s", repoName, err)
+				log.Panic().Err(err).Msgf("error removing old branch: %s", repoName)
 			} else {
 				//this code will probably fail from a tag sourced clone
 				//post-1.9.0 tag some tests will be done to ensure the final logic.
@@ -319,28 +306,21 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 
 	localDirectory := fmt.Sprintf("%s/%s", cfg.K1FolderPath, localRepo)
 
-	log.Println("opening repository with gitClient: ", localDirectory)
+	log.Info().Msgf("opening repository with gitClient: %q", localDirectory)
 	repo, err := git.PlainOpen(localDirectory)
 	if err != nil {
-		log.Panic("error opening the localDirectory: ", localDirectory, err)
+		log.Panic().Err(err).Msgf("error opening the localDirectory: %s", localDirectory)
 	}
 
 	w, _ := repo.Worktree()
 
-	log.Println("Committing new changes... PushLocalRepoToEmptyRemote")
+	log.Info().Msg("Committing new changes... PushLocalRepoToEmptyRemote")
 
-	status, err := w.Status()
+	err = GitAddWithFilter(viper.GetString("cloud"), localRepo, w)
 	if err != nil {
-		log.Println("error getting worktree status", err)
+		log.Error().Err(err).Msg("error getting worktree status")
 	}
 
-	for file, s := range status {
-		log.Printf("the file is %s the status is %v", file, s.Worktree)
-		_, err = w.Add(file)
-		if err != nil {
-			log.Println("error getting worktree status", err)
-		}
-	}
 	w.Commit("setting new remote upstream to github", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
@@ -351,7 +331,7 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 
 	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	if len(token) == 0 {
-		log.Println("no GITHUB KUBEFIRST_GITHUB_AUTH_TOKEN provided, unable to use GitHub API")
+		log.Info().Msg("no GITHUB KUBEFIRST_GITHUB_AUTH_TOKEN provided, unable to use GitHub API")
 	}
 
 	err = repo.Push(&git.PushOptions{
@@ -362,9 +342,9 @@ func PushLocalRepoToEmptyRemote(githubHost, githubOwner, localRepo, remoteName s
 		},
 	})
 	if err != nil {
-		log.Panicf("error pushing to remote %s: %s", remoteName, err)
+		log.Panic().Err(err).Msgf("error pushing to remote %s", remoteName)
 	}
-	log.Println("successfully pushed detokenized gitops content to github/", viper.GetString("github.owner"))
+	log.Info().Msgf("successfully pushed detokenized gitops content to github/%s", viper.GetString("github.owner"))
 	viper.Set("github.gitops.hydrated", true)
 	viper.WriteConfig()
 }
@@ -377,10 +357,10 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform", cfg.K1FolderPath))
 	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform.lock.hcl", cfg.K1FolderPath))
 
-	log.Println("opening repository with gitClient: ", localDirectory)
+	log.Info().Msgf("opening repository with gitClient: %s", localDirectory)
 	repo, err := git.PlainOpen(localDirectory)
 	if err != nil {
-		log.Panic("error opening the localDirectory: ", localDirectory, err)
+		log.Panic().Err(err).Msgf("error opening the localDirectory: %s", localDirectory)
 	}
 
 	url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, localRepo)
@@ -388,18 +368,10 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 
 	w, _ := repo.Worktree()
 
-	log.Println("Committing new changes... PushLocalRepoUpdates")
-	status, err := w.Status()
+	log.Info().Msg("Committing new changes... PushLocalRepoUpdates")
+	err = GitAddWithFilter(viper.GetString("cloud"), localRepo, w)
 	if err != nil {
-		log.Println("error getting worktree status", err)
-	}
-
-	for file, s := range status {
-		log.Printf("the file is %s the status is %v", file, s.Worktree)
-		_, err = w.Add(file)
-		if err != nil {
-			log.Println("error getting worktree status", err)
-		}
+		log.Error().Err(err).Msg("error getting worktree status")
 	}
 	w.Commit("commiting staged changes to remote", &git.CommitOptions{
 		Author: &object.Signature{
@@ -418,9 +390,9 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 		},
 	})
 	if err != nil {
-		log.Panicf("error pushing to remote %s: %s", remoteName, err)
+		log.Panic().Err(err).Msg("error pushing to remote")
 	}
-	log.Println("successfully pushed detokenized gitops content to github/", viper.GetString("github.owner"))
+	log.Info().Msgf("successfully pushed detokenized gitops content to github/%s", viper.GetString("github.owner"))
 }
 
 // todo: refactor
@@ -436,10 +408,10 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate", cfg.K1FolderPath))
 	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate.backup", cfg.K1FolderPath))
 
-	log.Println("opening repository with gitClient: ", localDirectory)
+	log.Info().Msgf("opening repository with gitClient: %s", localDirectory)
 	repo, err := git.PlainOpen(localDirectory)
 	if err != nil {
-		log.Panic("error opening the localDirectory: ", localDirectory, err)
+		log.Panic().Err(err).Msgf("error opening the localDirectory: %s", localDirectory)
 	}
 
 	url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, localRepo)
@@ -455,27 +427,27 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 		Create: true,
 	})
 	if err != nil {
-		fmt.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 
-	log.Println("Committing new changes... PushLocalRepoUpdates")
+	log.Info().Msg("Committing new changes... PushLocalRepoUpdates")
 
 	if viper.GetString("gitprovider") == "github" {
 		gitHubRemoteBackendFiled := "terraform/users/kubefirst-github.tf"
 		_, err = w.Add(gitHubRemoteBackendFiled)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 		remoteBackendFile := "terraform/github/remote-backend.tf"
 		_, err = w.Add(remoteBackendFile)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 	}
 	vaultMainFile := "terraform/vault/main.tf"
 	_, err = w.Add(vaultMainFile)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 
 	_, err = w.Commit("update s3 terraform backend to minio", &git.CommitOptions{
@@ -486,7 +458,7 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 		},
 	})
 	if err != nil {
-		fmt.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 
 	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
@@ -498,9 +470,170 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 		},
 	})
 	if err != nil {
-		log.Panicf("error pushing to remote %s: %s", remoteName, err)
+		log.Panic().Err(err).Msg("error pushing to remote")
 	}
-	log.Println("successfully pushed detokenized gitops content to github/", viper.GetString("github.owner"))
+	log.Info().Msgf("successfully pushed detokenized gitops content to github/%s", viper.GetString("github.owner"))
+
+	return nil
+}
+
+// CloneBranch clone a branch and returns a pointer to git.Repository
+func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
+
+	log.Printf("git cloning by branch, branch: %s", branch)
+
+	repo, err := git.PlainClone(repoLocalPath, false, &git.CloneOptions{
+		URL:           repoURL,
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		SingleBranch:  true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return repo, nil
+}
+
+// CloneBranchSetMain clone a branch and returns a pointer to git.Repository
+func CloneBranchSetMain(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
+
+	log.Printf("git cloning by branch, branch: %s", branch)
+
+	repo, err := CloneBranch(repoURL, repoLocalPath, branch)
+	if err != nil {
+		return nil, err
+	}
+	if branch != "main" {
+		repo, err = SetToMainBranch(repo)
+		if err != nil {
+			return nil, fmt.Errorf("error setting repository main from GitHub using branch %s", branch)
+		}
+		//remove old branch
+		err = repo.Storer.RemoveReference(plumbing.NewBranchReferenceName(branch))
+		if err != nil {
+			return nil, fmt.Errorf("error removing previous branch: %s", err)
+		}
+	}
+	return repo, nil
+}
+
+// CheckoutBranch checkout a branch
+func CheckoutBranch(repo *git.Repository, branch string) error {
+
+	tree, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	err = tree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName(branch),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CloneTag clone a repository using a tag value, and returns a pointer to *git.Repository
+func CloneTag(repoLocalPath string, githubOrg string, repoName string, tag string) (*git.Repository, error) {
+
+	// todo: repoURL como param
+	repoURL := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)
+
+	log.Printf("git cloning by tag, tag: %s", configs.K1Version)
+
+	repo, err := git.PlainClone(repoLocalPath, false, &git.CloneOptions{
+		URL:           repoURL,
+		ReferenceName: plumbing.NewTagReferenceName(tag),
+		SingleBranch:  true,
+	})
+	if err != nil {
+		log.Printf("error cloning %s-template repository from GitHub using tag %s", repoName, configs.K1Version)
+		return nil, err
+	}
+
+	return repo, nil
+}
+
+// CloneTagSetMain  CloneTag plus fixes branch to be main
+func CloneTagSetMain(repoLocalPath string, githubOrg string, repoName string, tag string) (*git.Repository, error) {
+
+	repo, err := CloneTag(repoLocalPath, githubOrg, repoName, tag)
+	if err != nil {
+		log.Printf("error cloning %s-template repository from GitHub using tag %s", repoName, configs.K1Version)
+		return nil, err
+	}
+	repo, err = SetToMainBranch(repo)
+	if err != nil {
+		log.Printf("error setting main for %s  repository from GitHub using tag %s", repoName, configs.K1Version)
+		return nil, err
+	}
+
+	return repo, nil
+}
+
+// SetToMainBranch point branch or tag to main
+func SetToMainBranch(repo *git.Repository) (*git.Repository, error) {
+	w, _ := repo.Worktree()
+	branchName := plumbing.NewBranchReferenceName("main")
+	headRef, err := repo.Head()
+	if err != nil {
+		return nil, fmt.Errorf("Error Setting reference: %s", err)
+	}
+
+	ref := plumbing.NewHashReference(branchName, headRef.Hash())
+	err = repo.Storer.SetReference(ref)
+	if err != nil {
+		return nil, fmt.Errorf("error Storing reference: %s", err)
+	}
+
+	err = w.Checkout(&git.CheckoutOptions{Branch: ref.Name()})
+	if err != nil {
+		return nil, fmt.Errorf("error checking out main: %s", err)
+	}
+	return repo, nil
+}
+
+// CheckoutTag repository checkout based on a tag
+func CheckoutTag(repo *git.Repository, tag string) error {
+
+	tree, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	err = tree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.ReferenceName("refs/tags/" + tag),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CreateGitHubRemote create a remote repository entry
+func CreateGitHubRemote(gitOpsLocalRepoPath string, gitHubUser string, repoName string) error {
+
+	log.Info().Msg("creating git remote (github)...")
+
+	repo, err := git.PlainOpen(gitOpsLocalRepoPath)
+	if err != nil {
+		return err
+	}
+
+	repoURL := fmt.Sprintf("https://github.com/%s/%s", gitHubUser, repoName)
+
+	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
+		Name: "github",
+		URLs: []string{repoURL},
+	})
+	if err != nil {
+		return err
+	}
+
+	log.Info().Msg("creating git remote (github) done")
 
 	return nil
 }

@@ -3,11 +3,14 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
+
+	"github.com/kubefirst/kubefirst/internal/ssh"
 
 	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/segmentio/analytics-go"
@@ -76,7 +79,7 @@ validated and configured.`,
 			if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
 				return err
 			}
-			log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
+			log.Info().Msg("KUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
 		}
 
 		// get GitHub data to set user and owner based on the provided token
@@ -100,23 +103,23 @@ validated and configured.`,
 			)
 		}
 
-		if viper.GetString("cloud") != flagset.CloudAws {
-			log.Println("Not cloud mode attempt to create using cloud cli")
+		if viper.GetString("cloud") != pkg.CloudAws {
+			log.Info().Msg("Not cloud mode attempt to create using cloud cli")
 			if err != nil {
 				return fmt.Errorf("not support mode of install via this command, only cloud install supported")
 			}
 		}
 
 		if len(awsFlags.AssumeRole) > 0 {
-			log.Println("calling assume role")
+			log.Info().Msg("calling assume role")
 			err := aws.AssumeRole(awsFlags.AssumeRole)
 			if err != nil {
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 				return err
 			}
-			log.Printf("assuming new AWS credentials based on role %q", awsFlags.AssumeRole)
+			log.Info().Msgf("assuming new AWS credentials based on role %q", awsFlags.AssumeRole)
 		}
-		if installerFlags.Cloud == flagset.CloudAws {
+		if installerFlags.Cloud == pkg.CloudAws {
 			progressPrinter.AddTracker("step-account", pkg.GetAccountInfo, 1)
 			progressPrinter.AddTracker("step-dns", pkg.GetDNSInfo, 1)
 			progressPrinter.AddTracker("step-live", pkg.TestHostedZoneLiveness, 1)
@@ -130,9 +133,10 @@ validated and configured.`,
 
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
 
-		log.Println("sending init started metric")
+		log.Info().Msg("sending init started metric")
 
 		var telemetryHandler handlers.TelemetryHandler
+		viper.Set("use-telemetry", globalFlags.UseTelemetry)
 		if globalFlags.UseTelemetry {
 
 			// Instantiates a SegmentIO client to use send messages to the segment API.
@@ -143,7 +147,7 @@ validated and configured.`,
 			defer func(segmentIOClient analytics.Client) {
 				err := segmentIOClient.Close()
 				if err != nil {
-					log.Println(err)
+					log.Warn().Msgf("%s", err)
 				}
 			}(segmentIOClient)
 
@@ -154,14 +158,14 @@ validated and configured.`,
 				configs.K1Version,
 			)
 			if err != nil {
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			}
 			telemetryService := services.NewSegmentIoService(segmentIOClient)
 			telemetryHandler = handlers.NewTelemetryHandler(telemetryService)
 
 			err = telemetryHandler.SendCountMetric(telemetryDomain)
 			if err != nil {
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			}
 		}
 
@@ -173,14 +177,14 @@ validated and configured.`,
 		if strings.HasSuffix(awsFlags.HostedZoneName, ".") {
 			awsFlags.HostedZoneName = awsFlags.HostedZoneName[:len(awsFlags.HostedZoneName)-1]
 		}
-		log.Println("hostedZoneName:", awsFlags.HostedZoneName)
+		log.Info().Msgf("hostedZoneName: %s", awsFlags.HostedZoneName)
 
 		viper.Set("argocd.local.service", "http://localhost:8080")
 		viper.Set("gitlab.local.service", "http://localhost:8888")
 		viper.Set("vault.local.service", "http://localhost:8200")
 		// used for letsencrypt notifications and the gitlab root account
 
-		log.Println("s3-suffix:", installerFlags.ClusterName)
+		log.Info().Msgf("s3-suffix: %s", installerFlags.ClusterName)
 
 		atlantisWebhookSecret := pkg.Random(20)
 		viper.Set("github.atlantis.webhook.secret", atlantisWebhookSecret)
@@ -192,13 +196,13 @@ validated and configured.`,
 		viper.WriteConfig()
 
 		//! tracker 0
-		log.Println("installing kubefirst dependencies")
+		log.Info().Msg("installing kubefirst dependencies")
 		progressPrinter.IncrementTracker("step-download", 1)
 		err = downloadManager.DownloadTools(config)
 		if err != nil {
 			return err
 		}
-		log.Println("dependency installation complete")
+		log.Info().Msg("dependency installation complete")
 		progressPrinter.IncrementTracker("step-download", 1)
 		if installerFlags.Cloud == pkg.CloudK3d {
 			err = downloadManager.DownloadLocalTools(config)
@@ -210,11 +214,11 @@ validated and configured.`,
 		//Fix incomplete bar, please don't remove it.
 		progressPrinter.IncrementTracker("step-download", 1)
 
-		if installerFlags.Cloud == flagset.CloudAws {
+		if installerFlags.Cloud == pkg.CloudAws {
 			//! tracker 1
-			log.Println("getting aws account information")
+			log.Info().Msg("getting aws account information")
 			aws.GetAccountInfo()
-			log.Printf("aws account id: %s\naws user arn: %s", viper.GetString("aws.accountid"), viper.GetString("aws.userarn"))
+			log.Info().Msgf("aws account id: %s\naws user arn: %s", viper.GetString("aws.accountid"), viper.GetString("aws.userarn"))
 			progressPrinter.IncrementTracker("step-account", 1)
 
 			//! tracker 2
@@ -222,7 +226,7 @@ validated and configured.`,
 			// So we don't have to keep looking it up from the domain name to use it
 			hostedZoneId := aws.GetDNSInfo(awsFlags.HostedZoneName)
 			// viper values set in above function
-			log.Println("hostedZoneId:", hostedZoneId)
+			log.Info().Msgf("hostedZoneId: %s", hostedZoneId)
 			progressPrinter.IncrementTracker("step-dns", 1)
 
 			//! tracker 3
@@ -231,10 +235,10 @@ validated and configured.`,
 			if !skipHostedZoneCheck {
 				hostedZoneLiveness := aws.TestHostedZoneLiveness(globalFlags.DryRun, awsFlags.HostedZoneName, hostedZoneId)
 				if !hostedZoneLiveness {
-					log.Panic("Fail to check the Liveness of HostedZone, we need a valid public HostedZone on the same AWS account that Kubefirst will be installed.")
+					log.Panic().Msg("Fail to check the Liveness of HostedZone, we need a valid public HostedZone on the same AWS account that Kubefirst will be installed.")
 				}
 			} else {
-				log.Println("skipping hosted zone check")
+				log.Info().Msg("skipping hosted zone check")
 			}
 			progressPrinter.IncrementTracker("step-live", 1)
 
@@ -242,23 +246,23 @@ validated and configured.`,
 			//* should we consider going down to a single bucket
 			//* for state and artifacts on open source?
 			//* hitting a bucket limit on an install might deter someone
-			log.Println("creating buckets for state and artifacts")
+			log.Info().Msg("creating buckets for state and artifacts")
 			aws.BucketRand(globalFlags.DryRun)
 			progressPrinter.IncrementTracker("step-buckets", 1)
-			log.Println("BucketRand() complete")
+			log.Info().Msg("BucketRand() complete")
 		}
 		//! tracker 5
-		log.Println("creating an ssh key pair for your new cloud infrastructure")
-		pkg.CreateSshKeyPair()
-		log.Println("ssh key pair creation complete")
+		log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
+		ssh.CreateSshKeyPair()
+		log.Info().Msg("ssh key pair creation complete")
 		progressPrinter.IncrementTracker("step-ssh", 1)
 
 		//! tracker 6
 		repo.PrepareKubefirstTemplateRepo(globalFlags.DryRun, config, viper.GetString("gitops.owner"), viper.GetString("gitops.repo"), viper.GetString("gitops.branch"), viper.GetString("template.tag"))
-		log.Println("clone and detokenization of gitops-template repository complete")
+		log.Info().Msg("clone and detokenization of gitops-template repository complete")
 		progressPrinter.IncrementTracker("step-gitops", 1)
 
-		log.Println("sending init completed metric")
+		log.Info().Msg("sending init completed metric")
 
 		if globalFlags.UseTelemetry {
 			telemetryInitCompleted, err := domain.NewTelemetry(
@@ -267,11 +271,11 @@ validated and configured.`,
 				configs.K1Version,
 			)
 			if err != nil {
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			}
 			err = telemetryHandler.SendCountMetric(telemetryInitCompleted)
 			if err != nil {
-				log.Println(err)
+				log.Warn().Msgf("%s", err)
 			}
 		}
 
@@ -290,9 +294,9 @@ validated and configured.`,
 func init() {
 	rootCmd.AddCommand(initCmd)
 	currentCommand := initCmd
-	log.Println("kubefirst started")
-	log.SetPrefix("LOG: ")
-	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
+	//log.Info().Msg("kubefirst started")
+	//log.SetPrefix("LOG: ")
+	//log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
 
 	// Do we need this?
 	initCmd.Flags().Bool("clean", false, "delete any local kubefirst content ~/.kubefirst, ~/.k1")

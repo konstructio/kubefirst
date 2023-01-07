@@ -1,8 +1,9 @@
 package addon
 
 import (
-	"log"
 	"os"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/viper"
@@ -12,11 +13,11 @@ import (
 func AddAddon(s string) {
 	addons := viper.GetStringSlice("addons")
 	if !slices.Contains(addons, s) {
-		log.Printf("Adding addon on kubefirst file: %s", s)
+		log.Info().Msgf("Adding addon on kubefirst file: %s", s)
 		addons = append(addons, s)
 		viper.Set("addons", addons)
 	} else {
-		log.Printf("Addon already on kubefirst file, nothing to do: %s", s)
+		log.Info().Msgf("Addon already on kubefirst file, nothing to do: %s", s)
 	}
 }
 

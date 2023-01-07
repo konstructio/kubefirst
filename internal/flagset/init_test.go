@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -33,9 +34,9 @@ func FakeInitCmd() *cobra.Command {
 			config.KubefirstConfigFilePath = "./logs/.k1_test"
 			_ = os.Remove(config.KubefirstConfigFilePath)
 			pkg.SetupViper(config)
-			log.Println(viper.AllSettings())
+			log.Info().Msgf("%s", viper.AllSettings())
 			_, _, _, _, err := InitFlags(cmd)
-			log.Println(viper.AllSettings())
+			log.Info().Msgf("%s", viper.AllSettings())
 			if err != nil {
 				fmt.Fprint(cmd.OutOrStdout(), err.Error())
 			}

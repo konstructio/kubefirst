@@ -3,6 +3,10 @@ package aws_test
 import (
 	"context"
 	"errors"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
@@ -14,10 +18,7 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/pkg"
-	"log"
-	"os"
-	"strings"
-	"testing"
+	"github.com/rs/zerolog/log"
 )
 
 // TestAreS3BucketsLiveIntegration checks if bucket exists
@@ -54,7 +55,7 @@ func TestAreS3BucketsLiveIntegration(t *testing.T) {
 
 		var s3NotFound *s3Types.NotFound
 		if errors.As(err, &s3NotFound) {
-			log.Printf("bucket %s don't exist", bucketName)
+			log.Warn().Msgf("bucket %s don't exist", bucketName)
 			t.Error(err)
 		}
 		if err != nil {
@@ -273,7 +274,7 @@ func TestIsEKSDestroyedIntegration(t *testing.T) {
 	})
 	var rne *eksTypes.ResourceNotFoundException
 	if errors.As(err, &rne) {
-		log.Println("there is no EKS active for this cluster, and this is expected")
+		log.Info().Msg("there is no EKS active for this cluster, and this is expected")
 		return
 	}
 	if err != nil {

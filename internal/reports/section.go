@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 
 	"github.com/spf13/viper"
@@ -20,7 +21,14 @@ func PrintSectionRepoGithub() []byte {
 	handOffData.WriteString(fmt.Sprintf("\n owner: %s", viper.GetString("github.owner")))
 	handOffData.WriteString("\n Repos: ")
 	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/gitops", viper.GetString("github.host"), viper.GetString("github.owner"))))
-	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor", viper.GetString("github.host"), viper.GetString("github.owner"))))
+	if viper.GetString("cloud") == pkg.CloudK3d {
+		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor-frontend", viper.GetString("github.host"), viper.GetString("github.owner"))))
+	} else {
+		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor", viper.GetString("github.host"), viper.GetString("github.owner"))))
+		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor-go", viper.GetString("github.host"), viper.GetString("github.owner"))))
+		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor-frontend", viper.GetString("github.host"), viper.GetString("github.owner"))))
+
+	}
 
 	return handOffData.Bytes()
 }
@@ -34,19 +42,34 @@ func PrintSectionRepoGitlab() []byte {
 	handOffData.WriteString(fmt.Sprintf("\n password: %s", viper.GetString("gitlab.root.password")))
 	handOffData.WriteString("\n Repos: ")
 	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/gitops", viper.GetString("aws.hostedzonename"))))
+
 	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor-go", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor-frontend", viper.GetString("aws.hostedzonename"))))
 
 	return handOffData.Bytes()
 }
 
-func PrintSectionOverview() []byte {
+func PrintSectionOverview(kubefirstConsoleURL string) []byte {
 	var handOffData bytes.Buffer
+	config := configs.ReadConfig()
 	handOffData.WriteString(strings.Repeat("-", 70))
 	handOffData.WriteString(fmt.Sprintf("\nCluster %q is up and running!:", viper.GetString("cluster-name")))
 	handOffData.WriteString("\nThis information is available at $HOME/.kubefirst ")
-	handOffData.WriteString("\n\nAccess the kubefirst-console from your browser at:\n http://localhost:9094\n")
+	handOffData.WriteString("\n\nAccess the kubefirst-console from your browser at:\n" + kubefirstConsoleURL + "\n")
 	handOffData.WriteString("\nPress ESC to leave this screen and return to your shell.")
 
+	if viper.GetString("cloud") == pkg.CloudK3d {
+		handOffData.WriteString("\n\nNotes:")
+		handOffData.WriteString("\n  Kubefirst generated certificates to ensure secure connections to")
+		handOffData.WriteString("\n  your local deployment. Even if your browser warn you about the ")
+		handOffData.WriteString("\n  origin, you can use Kubefirst without any issue. ")
+		handOffData.WriteString("\n  If you want, you can update your OS trust store by running ")
+		handOffData.WriteString("\n  this command and pass your root password:  ")
+		handOffData.WriteString(fmt.Sprintf("\n    %s -install", config.MkCertPath))
+		handOffData.WriteString("\n  Details:")
+		handOffData.WriteString("\n  https://github.com/FiloSottile/mkcert#changing-the-location-of-the-ca-files")
+	}
 	return handOffData.Bytes()
 }
 
@@ -64,7 +87,7 @@ func PrintSectionVault() []byte {
 
 	var vaultURL string
 	if viper.GetString("cloud") == pkg.CloudK3d {
-		vaultURL = "http://localhost:8200"
+		vaultURL = pkg.VaultLocalURLTLS
 	} else {
 		vaultURL = fmt.Sprintf("https://vault.%s", viper.GetString("aws.hostedzonename"))
 	}
@@ -81,7 +104,7 @@ func PrintSectionArgoCD() []byte {
 
 	var argoCdURL string
 	if viper.GetString("cloud") == pkg.CloudK3d {
-		argoCdURL = "http://localhost:8080"
+		argoCdURL = pkg.ArgoCDLocalURLTLS
 	} else {
 		argoCdURL = fmt.Sprintf("https://argocd.%s", viper.GetString("aws.hostedzonename"))
 	}
@@ -100,7 +123,7 @@ func PrintSectionArgoWorkflows() []byte {
 
 	var argoWorkflowsURL string
 	if viper.GetString("cloud") == pkg.CloudK3d {
-		argoWorkflowsURL = "http://localhost:2746"
+		argoWorkflowsURL = pkg.ArgoLocalURLTLS
 	} else {
 		argoWorkflowsURL = fmt.Sprintf("https://argo.%s", viper.GetString("aws.hostedzonename"))
 	}
@@ -124,7 +147,7 @@ func PrintSectionAtlantis() []byte {
 
 	var atlantisUrl string
 	if viper.GetString("cloud") == pkg.CloudK3d {
-		atlantisUrl = "http://localhost:4141"
+		atlantisUrl = pkg.AtlantisLocalURLTLS
 	} else {
 		atlantisUrl = fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename"))
 	}
@@ -141,7 +164,7 @@ func PrintSectionMuseum() []byte {
 
 	var chartmuseumURL string
 	if viper.GetString("cloud") == pkg.CloudK3d {
-		chartmuseumURL = "http://localhost:8181"
+		chartmuseumURL = pkg.ChartmuseumLocalURLTLS
 	} else {
 		chartmuseumURL = fmt.Sprintf("https://chartmuseum.%s", viper.GetString("aws.hostedzonename"))
 	}
@@ -187,31 +210,26 @@ func PrintSectionMetaphorGo() []byte {
 }
 
 func PrintSectionMetaphorFrontend() []byte {
-	var handOffData bytes.Buffer
-	if viper.GetString("cloud") == pkg.CloudK3d {
-		handOffData.WriteString("\n--- Metaphor ")
-		handOffData.WriteString(strings.Repeat("-", 57))
-		handOffData.WriteString("\n To access the metaphor applications you'll need to \n`kubectl port-forward` to the kubernetes service")
-		handOffData.WriteString("\n\n kubectl -n development port-forward svc/metaphor-frontend-development 3000:443")
-		handOffData.WriteString("\n http://localhost:4000\n")
-		handOffData.WriteString("\n kubectl -n staging port-forward svc/metaphor-frontend-staging 3001:443")
-		handOffData.WriteString("\n http://localhost:4001\n")
-		handOffData.WriteString("\n kubectl -n production port-forward svc/metaphor-frontend-production 3002:443")
-		handOffData.WriteString("\n http://localhost:4002\n")
-		handOffData.WriteString(strings.Repeat("-", 70))
 
-		return handOffData.Bytes()
-	} else {
-		var handOffData bytes.Buffer
-		handOffData.WriteString("\n--- Metaphor Frontend")
-		handOffData.WriteString(strings.Repeat("-", 57))
-		handOffData.WriteString(fmt.Sprintf("\n Development: %s", fmt.Sprintf("https://metaphor-frontend-development.%s", viper.GetString("aws.hostedzonename"))))
-		handOffData.WriteString(fmt.Sprintf("\n Staging: %s", fmt.Sprintf("https://metaphor-frontend-staging.%s", viper.GetString("aws.hostedzonename"))))
-		handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", fmt.Sprintf("https://metaphor-frontend-production.%s", viper.GetString("aws.hostedzonename"))))
+	var handOffData bytes.Buffer
+
+	if viper.GetString("cloud") == pkg.CloudK3d {
+		handOffData.WriteString("\n\n--- Metaphor Slim ")
+		handOffData.WriteString(strings.Repeat("-", 53))
+		handOffData.WriteString(fmt.Sprintf("\n\n URL: %s\n\n", pkg.MetaphorFrontendSlimTLS))
 		handOffData.WriteString(strings.Repeat("-", 70))
 
 		return handOffData.Bytes()
 	}
+
+	handOffData.WriteString("\n--- Metaphor Frontend")
+	handOffData.WriteString(strings.Repeat("-", 57))
+	handOffData.WriteString(fmt.Sprintf("\n Development: %s", fmt.Sprintf("https://metaphor-frontend-development.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", fmt.Sprintf("https://metaphor-frontend-staging.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", fmt.Sprintf("https://metaphor-frontend-production.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(strings.Repeat("-", 70))
+
+	return handOffData.Bytes()
 }
 
 // HandoffScreen - prints the handoff screen
@@ -228,7 +246,7 @@ func HandoffScreen(dryRun bool, silentMode bool) {
 	}
 
 	var handOffData bytes.Buffer
-	handOffData.Write(PrintSectionOverview())
+	handOffData.Write(PrintSectionOverview(pkg.KubefirstConsoleLocalURLCloud))
 	handOffData.Write(PrintSectionAws())
 	if viper.GetString("gitprovider") == "github" {
 		handOffData.Write(PrintSectionRepoGithub())
@@ -248,7 +266,7 @@ func HandoffScreen(dryRun bool, silentMode bool) {
 
 }
 
-// HandoffScreen - prints the handoff screen
+// LocalHandoffScreen prints the handoff screen
 func LocalHandoffScreen(dryRun bool, silentMode bool) {
 	// prepare data for the handoff report
 	if dryRun {
@@ -262,7 +280,7 @@ func LocalHandoffScreen(dryRun bool, silentMode bool) {
 	}
 
 	var handOffData bytes.Buffer
-	handOffData.Write(PrintSectionOverview())
+	handOffData.Write(PrintSectionOverview(pkg.KubefirstConsoleLocalURLTLS))
 	handOffData.Write(PrintSectionRepoGithub())
 	handOffData.Write(PrintSectionVault())
 	handOffData.Write(PrintSectionArgoCD())

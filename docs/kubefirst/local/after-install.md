@@ -4,34 +4,32 @@
 
 [//]: # (<iframe width="784" height="441" src="https://www.youtube.com/embed/KEUOaNMUqOM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>)
 
-The `kubefirst local` execution includes important information toward the end, including URLs and passwords to get to your port-forwarded applications. The applications are available while the handoff screen remains active. If you ever need to reconnect to all of your services, you can do so with a kubefirst
+The `kubefirst local` execution includes important information toward the end, including URLs and passwords to get to your port-forwarded applications. The applications are available while the handoff screen remains active. If you ever need to reconnect to all of your services, you can do so with a `kubefirst local connect` command.
 
 You now have a k3d cluster with the following content installed in it:
 
-| Application                  | Description                                                                |
-|------------------------------|----------------------------------------------------------------------------|
-| Traefik Ingress Controller   | Native k3d Ingress Controller                                              |
-| Cert Manager                 | Certificate Automation Utility                                             |
-| Argo CD                      | GitOps Continuous Delivery                                                 |
-| Argo Workflows               | Application Continuous Integration                                         |
-| GitHub Action Runner         | GitHub CI Executor                                                         |
-| Vault                        | Secrets Management                                                         |
-| Atlantis                     | Terraform Workflow Automation                                              |
-| External Secrets             | Syncs Kubernetes secrets with Vault secrets                                |
-| Chart Museum                 | Helm Chart Registry                                                        |
-| Metaphor                     | (development, staging, production) instance of sample nodejs backend app   |
-| Metaphor Go                  | (development, staging, production) instance of sample golang backend app   |
-| Metaphor Frontend            | (development, staging, production) instance of sample react frontend app   |
+| Application                  | Description                                                                            |
+|------------------------------|----------------------------------------------------------------------------------------|
+| Traefik Ingress Controller   | Native k3d Ingress Controller                                                          |
+| Cert Manager                 | Certificate Automation Utility                                                         |
+| Argo CD                      | GitOps Continuous Delivery                                                             |
+| Argo Workflows               | Application Continuous Integration                                                     |
+| GitHub Action Runner         | GitHub CI Executor                                                                     |
+| Vault                        | Secrets Management                                                                     |
+| Atlantis                     | Terraform Workflow Automation                                                          |
+| External Secrets             | Syncs Kubernetes secrets with Vault secrets                                            |
+| Chart Museum                 | Helm Chart Registry                                                                    |
+| Metaphor Frontend            | (development, staging, production) instance of sample Nextjs and React app             |
 
 - These apps are all managed by Argo CD and the app configurations are in the `gitops` repo's `registry` folder.
 - The AWS infrastructure is terraform - that's also in your `gitops` repo, but in your `terraform` folder.
 
 ## Step 1: Console UI
 
-![terminal handoff](../..//img/kubefirst/local/console.png)
+![terminal handoff](../../img/kubefirst/local/console.png)
 
 The `kubefirst local` command will open a new browser tab at completion with the Console UI at
-`http://localhost:9094` to provide you an easy way to navigate through the different services that were provisioned. This connection leverages your port-forwards which the `kubefirst local` command keeps open through the handoff screen shown here:
+`https://kubefirst.localdev.me` to provide you an easy way to navigate through the different services that were provisioned.
 
 ![terminal handoff](../../img/kubefirst/local/handoff-screen.png)
 

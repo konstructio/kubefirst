@@ -23,7 +23,10 @@ var K1Version = DefaultK1Version
 // Config host application configuration
 // todo: some of these values can be moved to the .env
 type Config struct {
-	InstallerEmail string
+	InstallerEmail    string
+	LocalOs           string
+	LocalArchitecture string
+	HomePath          string
 
 	ClusterName             string `env:"CLUSTER_NAME"`
 	GitOpsRepoPath          string
@@ -34,9 +37,11 @@ type Config struct {
 	K1ToolsPath             string
 	KubeConfigPath          string
 	KubeConfigFolder        string
+	GitOpsLocalRepoPath     string
 
-	LocalOs           string
-	LocalArchitecture string
+	K3dPath            string
+	MkCertPath         string
+	MkCertPemFilesPath string
 
 	CertsPath string
 
@@ -59,6 +64,7 @@ type Config struct {
 	// todo remove cloud specific values from generic config
 	AwsRegion      string `env:"AWS_REGION"`
 	HostedZoneName string `env:"HOSTED_ZONE_NAME"`
+	MkCertVersion  string
 
 	ArgoCDChartHelmVersion   string
 	ArgoCDInitValuesYamlPath string
@@ -112,6 +118,7 @@ func ReadConfig() *Config {
 		log.Panic(err)
 	}
 
+	config.HomePath = homePath
 	config.K1FolderPath = fmt.Sprintf("%s/.k1", homePath)
 	if err != nil {
 		log.Panic(err)
@@ -134,6 +141,16 @@ func ReadConfig() *Config {
 	config.NgrokClientPath = fmt.Sprintf("%s/ngrok", config.K1ToolsPath)
 	config.TerraformClientPath = fmt.Sprintf("%s/terraform", config.K1ToolsPath)
 
+	config.KubectlClientPath = fmt.Sprintf("%s/tools/kubectl", config.K1FolderPath)
+	config.KubeConfigPath = fmt.Sprintf("%s/gitops/terraform/base/kubeconfig", config.K1FolderPath)
+	config.KubeConfigFolder = fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
+	config.GitOpsLocalRepoPath = fmt.Sprintf("%s/gitops", config.K1FolderPath)
+	config.GitOpsRepoPath = fmt.Sprintf("%s/gitops", config.K1FolderPath)
+	config.NgrokClientPath = fmt.Sprintf("%s/tools/ngrok", config.K1FolderPath)
+	config.TerraformClientPath = fmt.Sprintf("%s/tools/terraform", config.K1FolderPath)
+	config.HelmClientPath = fmt.Sprintf("%s/tools/helm", config.K1FolderPath)
+	config.K3dPath = fmt.Sprintf("%s/tools/k3d", config.K1FolderPath)
+	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.NgrokVersion = "v3"
 	config.TerraformVersion = "1.0.11"
 	config.ArgoCDChartHelmVersion = "4.10.5"
@@ -164,6 +181,12 @@ func ReadConfig() *Config {
 	config.MetaphorProductionLocalUrl = "http://localhost:3002"
 	config.MetaphorGoProductionLocalUrl = "http://localhost:5002"
 	config.MetaphorFrontendProductionLocalUrl = "http://localhost:4002"
+	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
+
+	// certificates
+	config.MkCertPath = fmt.Sprintf("%s/tools/mkcert", config.K1FolderPath)
+	config.MkCertPemFilesPath = fmt.Sprintf("%s/tools/certs/", config.K1FolderPath)
+	config.MkCertVersion = "v1.4.4"
 
 	// If the AWS_SDK_LOAD_CONFIG environment variable is set to a truthy value the shared config file (~/.aws/config)
 	// will also be loaded in addition to the shared credentials file (~/.aws/credentials).
