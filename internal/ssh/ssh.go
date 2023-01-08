@@ -41,6 +41,15 @@ func CreateSshKeyPair() (string, string, error) {
 	return privateKey, publicKey, nil
 }
 
+func PublicKeyV2() (*goGitSsh.PublicKeys, error) {
+	var publicKey *goGitSsh.PublicKeys
+	publicKey, err := goGitSsh.NewPublicKeys("gitClient", []byte(viper.GetString("kubefirst.bot.private-key")), "")
+	if err != nil {
+		return nil, err
+	}
+	return publicKey, err
+}
+
 func PublicKey() (*goGitSsh.PublicKeys, error) {
 	var publicKey *goGitSsh.PublicKeys
 	publicKey, err := goGitSsh.NewPublicKeys("gitClient", []byte(viper.GetString("botprivatekey")), "")
