@@ -71,7 +71,6 @@ func DetokenizeDirectoryCivoGithub(path string, fi os.FileInfo, err error) error
 		// kubefirstIngressURL := fmt.Sprintf("kubefirst.%s", civoDns)
 		atlantisIngressNoHttpsURL := fmt.Sprintf("atlantis.%s", civoDns)
 		atlantisIngressURL := fmt.Sprintf("https://atlantis.%s", civoDns)
-		gitlabIngressURL := fmt.Sprintf("https://gitlab.%s", civoDns)
 
 		// todo consolidate
 		metaphorDevelopmentIngressNoHttpsURL := fmt.Sprintf("metaphor-development.%s", civoDns)
