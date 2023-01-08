@@ -6,17 +6,16 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/caarlos0/sshmarshal"
 	goGitSsh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/argocd"
-	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
-	"gopkg.in/yaml.v2"
-	"os"
 )
 
 func CreateSshKeyPair() (string, string, error) {
@@ -51,8 +50,8 @@ func PublicKey() (*goGitSsh.PublicKeys, error) {
 	return publicKey, err
 }
 
-// todo hack - need something more substantial and accommodating
-func WriteGithubArgoCdInitValuesFile(githubGitopsSshUrl, sshPrivateKey string) error {
+// todo hack - need something more substantial and accommodating and not in ssh..
+func WriteGithubArgoCdInitValuesFile(githubGitopsSshURL, sshPrivateKey string) error {
 
 	config := configs.ReadConfig()
 
@@ -68,37 +67,14 @@ configs:
       url: %s
       sshPrivateKey: |
         %s
-`, githubGitopsSshUrl, githubGitopsSshUrl, strings.ReplaceAll(sshPrivateKey, "\n", "\n        ")))
+`, githubGitopsSshURL, githubGitopsSshURL, strings.ReplaceAll(sshPrivateKey, "\n", "\n        ")))
 
 	err := os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
 	if err != nil {
-		log.Panicf("error: could not write %s/argocd-init-values.yaml %s", config.K1FolderPath, err)
+		log.Info().Msgf("error: could not write %s/argocd-init-values.yaml %s", config.K1FolderPath, err)
 		return err
 	}
 	return nil
-}
-
-		config := configs.ReadConfig()
-		privateKey := viper.GetString("botprivatekey")
-
-		argoCDConfig := argocd.Config{}
-		argoCDConfig.Configs.Repositories.SoftServeGitops.URL = "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops"
-		argoCDConfig.Configs.Repositories.SoftServeGitops.Insecure = "true"
-		argoCDConfig.Configs.Repositories.SoftServeGitops.Type = "gitClient"
-		argoCDConfig.Configs.Repositories.SoftServeGitops.Name = "soft-serve-gitops"
-		argoCDConfig.Configs.CredentialTemplates.SSHCreds.URL = "ssh://soft-serve.soft-serve.svc.cluster.local:22"
-		argoCDConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = privateKey
-
-		argoData, err := yaml.Marshal(&argoCDConfig)
-		if err != nil {
-			log.Panic().Err(err).Msg("")
-		}
-
-		err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoData, 0644)
-		if err != nil {
-			log.Panic().Msgf("error: could not write argocd-init-values.yaml %s", err)
-		}
-	}
 }
 
 // generateGitHubKeys generate Public and Private ED25519 keys for GitHub.
@@ -148,13 +124,4 @@ func generateGitLabKeys() (string, string, error) {
 	))
 
 	return publicKey, privateKey, nil
-}
-
-func PublicKey() (*goGitSsh.PublicKeys, error) {
-	var publicKey *goGitSsh.PublicKeys
-	publicKey, err := goGitSsh.NewPublicKeys("gitClient", []byte(viper.GetString("botprivatekey")), "")
-	if err != nil {
-		log.Panic().Err(err).Msg("error: could not write to viper config")
-	}
-	return publicKey, err
 }

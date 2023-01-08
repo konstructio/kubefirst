@@ -324,9 +324,9 @@ func GitlabKeyUpload(dryRun bool) {
 
 		time.Sleep(10 * time.Second) // todo, build in a retry
 
-		gitlabUrlBase := viper.GetString("gitlab.local.service")
+		gitlabURLBase := viper.GetString("gitlab.local.service")
 
-		resp, err := http.PostForm(gitlabUrlBase+"/api/v4/user/keys?private_token="+gitlabToken, data)
+		resp, err := http.PostForm(gitlabURLBase+"/api/v4/user/keys?private_token="+gitlabToken, data)
 		if err != nil {
 			log.Panic().Msgf("%s", err)
 		}

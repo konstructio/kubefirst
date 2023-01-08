@@ -40,7 +40,6 @@ func CreateK3dCluster() error {
 		///gitops/terraform/base/
 		_ = os.MkdirAll(config.KubeConfigFolder, 0777)
 
-		log.Println(config.K3dClientPath, "kubeconfig", "get", viper.GetString("cluster-name"), ">", config.KubeConfigPath)
 		out, _, err := pkg.ExecShellReturnStrings(config.K3dClientPath, "kubeconfig", "get", viper.GetString("cluster-name"))
 		if err != nil {
 			return err

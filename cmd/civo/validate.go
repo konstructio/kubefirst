@@ -13,6 +13,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/services"
+	"github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
@@ -54,7 +55,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	gitopsTemplateUrlFlag, err := cmd.Flags().GetString("gitops-template-url")
+	gitopsTemplateURLFlag, err := cmd.Flags().GetString("gitops-template-url")
 	if err != nil {
 		return err
 	}
@@ -90,11 +91,11 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 
 	// todo validate flags
 	viper.Set("admin-email", adminEmailFlag)
-	viper.Set("argocd.local.service", config.ArgocdLocalUrl)
+	viper.Set("argocd.local.service", config.ArgocdLocalURL)
 	viper.Set("cloud-provider", cloudProviderFlag)
 	viper.Set("git-provider", gitProviderFlag)
 	viper.Set("template-repo.gitops.branch", gitopsTemplateBranchFlag)
-	viper.Set("template-repo.gitops.url", gitopsTemplateUrlFlag)
+	viper.Set("template-repo.gitops.url", gitopsTemplateURLFlag)
 	// todo accommodate metaphor branch and repo override more intelligently
 	viper.Set("template-repo.metaphor.url", fmt.Sprintf("https://github.com/%s/metaphor.git", "kubefirst"))
 	viper.Set("template-repo.metaphor.branch", "main")
@@ -108,8 +109,8 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("github.repo.metaphor.url", fmt.Sprintf("https://github.com/%s/metaphor.git", githubOwnerFlag))
 	viper.Set("github.repo.metaphor-frontend.url", fmt.Sprintf("https://github.com/%s/metaphor-frontend.git", githubOwnerFlag))
 	viper.Set("github.repo.metaphor-go.url", fmt.Sprintf("https://github.com/%s/metaphor-go.git", githubOwnerFlag))
-	githubOwnerRootGitUrl := fmt.Sprintf("git@github.com:%s", githubOwnerFlag)
-	viper.Set("github.repo.gitops.giturl", fmt.Sprintf("%s/gitops.git", githubOwnerRootGitUrl))
+	githubOwnerRootGitURL := fmt.Sprintf("git@github.com:%s", githubOwnerFlag)
+	viper.Set("github.repo.gitops.giturl", fmt.Sprintf("%s/gitops.git", githubOwnerRootGitURL))
 	viper.WriteConfig()
 
 	pkg.InformUser("checking authentication to required providers", silentModeFlag)
@@ -232,7 +233,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("kubefirst.checks.bot-setup.complete")
 	if !executionControl {
 		log.Println("creating an ssh key pair for your new cloud infrastructure")
-		sshPrivateKey, sshPublicKey, err := pkg.CreateSshKeyPair()
+		sshPrivateKey, sshPublicKey, err := ssh.CreateSshKeyPair()
 		if err != nil {
 			return err
 		}
@@ -247,7 +248,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst.bucket.random-name", randomName)
 		viper.Set("kubefirst.telemetry", useTelemetryFlag)
 		viper.Set("cluster-name", civoClusterNameFlag)
-		viper.Set("vault.local.service", config.VaultLocalUrl)
+		viper.Set("vault.local.service", config.VaultLocalURL)
 		viper.Set("civo.dns", civoDnsFlag)
 		viper.Set("civo.region", civoRegionFlag)
 		viper.Set("kubefirst.checks.civo.complete", true)
@@ -262,7 +263,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		// todo, is this a hangover from initial gitlab? do we need this?
 		log.Println("creating argocd-init-values.yaml for initial install")
 		//* ex: `git@github.com:kubefirst` this is allows argocd access to the github organization repositories
-		err = pkg.WriteGithubArgoCdInitValuesFile(githubOwnerRootGitUrl, sshPrivateKey)
+		err = ssh.WriteGithubArgoCdInitValuesFile(githubOwnerRootGitURL, sshPrivateKey)
 		if err != nil {
 			return err
 		}

@@ -152,19 +152,19 @@ func CloneGitOpsRepo() {
 	log.Info().Msgf("downloaded gitops repo from template to directory %s%s", config.K1FolderPath, "/gitops")
 }
 
-func ClonePrivateRepo(gitRepoUrl, gitRepoDestinationDir string) {
-	log.Printf("Trying to clone repo %s ", gitRepoUrl)
+func ClonePrivateRepo(gitRepoURL, gitRepoDestinationDir string) {
+	log.Printf("Trying to clone repo %s ", gitRepoURL)
 
 	_, err := git.PlainClone(gitRepoDestinationDir, false, &git.CloneOptions{
 		Auth: &http.BasicAuth{
 			Username: viper.GetString("github.user"),
 			Password: os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")},
 		ReferenceName: plumbing.NewBranchReferenceName("main"),
-		URL:           gitRepoUrl,
+		URL:           gitRepoURL,
 		SingleBranch:  true,
 	})
 	if err != nil {
-		log.Fatal().Err(err).Msgf("error cloning git repository %s", gitRepoUrl)
+		log.Fatal().Err(err).Msgf("error cloning git repository %s", gitRepoURL)
 	}
 }
 
@@ -636,65 +636,4 @@ func CreateGitHubRemote(gitOpsLocalRepoPath string, gitHubUser string, repoName 
 	log.Info().Msg("creating git remote (github) done")
 
 	return nil
-}
-
-// CloneBranchSetMain clone a branch and returns a pointer to git.Repository
-func CloneBranchSetMain(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
-
-	repo, err := CloneBranch(repoURL, repoLocalPath, branch)
-	if err != nil {
-		return nil, err
-	}
-	if branch != "main" {
-		repo, err = SetToMainBranch(repo)
-		if err != nil {
-			return nil, fmt.Errorf("error setting repository main from GitHub using branch %s", branch)
-		}
-		//remove old branch
-		err = repo.Storer.RemoveReference(plumbing.NewBranchReferenceName(branch))
-		if err != nil {
-			return nil, fmt.Errorf("error removing previous branch: %s", err)
-		}
-	}
-	return repo, nil
-}
-
-// CloneBranch clone a branch and returns a pointer to git.Repository
-func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
-
-	log.Printf("git cloning by branch, branch: %s", branch)
-
-	repo, err := git.PlainClone(repoLocalPath, false, &git.CloneOptions{
-		URL:           repoURL,
-		ReferenceName: plumbing.NewBranchReferenceName(branch),
-		SingleBranch:  true,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return repo, nil
-}
-
-// SetToMainBranch point branch or tag to main
-func SetToMainBranch(repo *git.Repository) (*git.Repository, error) {
-	log.Printf("setting repository branch to main")
-	w, _ := repo.Worktree()
-	branchName := plumbing.NewBranchReferenceName("main")
-	headRef, err := repo.Head()
-	if err != nil {
-		return nil, fmt.Errorf("Error Setting reference: %s", err)
-	}
-
-	ref := plumbing.NewHashReference(branchName, headRef.Hash())
-	err = repo.Storer.SetReference(ref)
-	if err != nil {
-		return nil, fmt.Errorf("error Storing reference: %s", err)
-	}
-
-	err = w.Checkout(&git.CheckoutOptions{Branch: ref.Name()})
-	if err != nil {
-		return nil, fmt.Errorf("error checking out main: %s", err)
-	}
-	return repo, nil
 }

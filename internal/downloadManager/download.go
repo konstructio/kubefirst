@@ -35,13 +35,13 @@ func DownloadLocalTools(config *configs.Config) error {
 
 	go func() {
 		// https://github.com/k3d-io/k3d/releases/download/v5.4.6/k3d-linux-amd64
-		k3dDownloadUrl := fmt.Sprintf(
+		k3dDownloadURL := fmt.Sprintf(
 			"https://github.com/k3d-io/k3d/releases/download/%s/k3d-%s-%s",
 			config.K3dVersion,
 			config.LocalOs,
 			config.LocalArchitecture,
 		)
-		err = downloadFile(config.K3dPath, k3dDownloadUrl)
+		err = downloadFile(config.K3dPath, k3dDownloadURL)
 		if err != nil {
 			errorChannel <- err
 			return
@@ -56,14 +56,14 @@ func DownloadLocalTools(config *configs.Config) error {
 
 	go func() {
 		// https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-darwin-amd64
-		mkCertDownloadUrl := fmt.Sprintf(
+		mkCertDownloadURL := fmt.Sprintf(
 			"https://github.com/FiloSottile/mkcert/releases/download/%s/mkcert-%s-%s-%s",
 			config.MkCertVersion,
 			config.MkCertVersion,
 			config.LocalOs,
 			config.LocalArchitecture,
 		)
-		err = downloadFile(config.MkCertPath, mkCertDownloadUrl)
+		err = downloadFile(config.MkCertPath, mkCertDownloadURL)
 		if err != nil {
 			errorChannel <- err
 			return
@@ -118,14 +118,14 @@ func DownloadTools(config *configs.Config) error {
 			kVersion = config.KubectlVersionM1
 		}
 
-		kubectlDownloadUrl := fmt.Sprintf(
+		kubectlDownloadURL := fmt.Sprintf(
 			"https://dl.k8s.io/release/%s/bin/%s/%s/kubectl",
 			kVersion,
 			config.LocalOs,
 			config.LocalArchitecture,
 		)
-		log.Info().Msgf("Downloading kubectl from: %s", kubectlDownloadUrl)
-		err = downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
+		log.Info().Msgf("Downloading kubectl from: %s", kubectlDownloadURL)
+		err = downloadFile(config.KubectlClientPath, kubectlDownloadURL)
 		if err != nil {
 			errorChannel <- err
 			return
@@ -154,16 +154,16 @@ func DownloadTools(config *configs.Config) error {
 		// todo: adopt latest helmVersion := "v3.9.0"
 		terraformVersion := config.TerraformVersion
 
-		terraformDownloadUrl := fmt.Sprintf(
+		terraformDownloadURL := fmt.Sprintf(
 			"https://releases.hashicorp.com/terraform/%s/terraform_%s_%s_%s.zip",
 			terraformVersion,
 			terraformVersion,
 			config.LocalOs,
 			config.LocalArchitecture,
 		)
-		log.Info().Msgf("Downloading terraform from %s", terraformDownloadUrl)
+		log.Info().Msgf("Downloading terraform from %s", terraformDownloadURL)
 		terraformDownloadZipPath := fmt.Sprintf("%s/tools/terraform.zip", config.K1FolderPath)
-		err = downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
+		err = downloadFile(terraformDownloadZipPath, terraformDownloadURL)
 		if err != nil {
 			errorChannel <- fmt.Errorf("error reading terraform file, %v", err)
 			return
@@ -194,16 +194,16 @@ func DownloadTools(config *configs.Config) error {
 
 	go func() {
 		helmVersion := config.HelmVersion
-		helmDownloadUrl := fmt.Sprintf(
+		helmDownloadURL := fmt.Sprintf(
 			"https://get.helm.sh/helm-%s-%s-%s.tar.gz",
 			helmVersion,
 			config.LocalOs,
 			config.LocalArchitecture,
 		)
-		log.Info().Msgf("Downloading terraform from %s", helmDownloadUrl)
+		log.Info().Msgf("Downloading terraform from %s", helmDownloadURL)
 		helmDownloadTarGzPath := fmt.Sprintf("%s/tools/helm.tar.gz", config.K1FolderPath)
 
-		err = downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
+		err = downloadFile(helmDownloadTarGzPath, helmDownloadURL)
 		if err != nil {
 			errorChannel <- err
 			return

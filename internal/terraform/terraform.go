@@ -19,7 +19,6 @@ import (
 )
 
 func terraformConfig(terraformEntryPoint string) map[string]string {
-	config := configs.ReadConfig()
 	envs := map[string]string{}
 
 	if viper.GetString("cloud") == "aws" {
@@ -409,7 +408,7 @@ func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string, tfEnvs ma
 
 	err := os.Chdir(tfEntrypoint)
 	if err != nil {
-		log.Println("error: could not change to directory " + tfEntrypoint)
+		log.Info().Msg("error: could not change to directory " + tfEntrypoint)
 		return err
 	}
 	err = pkg.ExecShellWithVars(tfEnvs, config.TerraformClientPath, "init")

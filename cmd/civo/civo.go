@@ -56,7 +56,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	//! viper config variables
 	civoDnsName := viper.GetString("civo.dns")
 	gitopsTemplateBranch := viper.GetString("template-repo.gitops.branch")
-	gitopsTemplateUrl := viper.GetString("template-repo.gitops.url")
+	gitopsTemplateURL := viper.GetString("template-repo.gitops.url")
 	cloudProvider := viper.GetString("cloud-provider")
 	gitProvider := viper.GetString("git-provider")
 	silentMode := false // todo fix
@@ -90,7 +90,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		//* step 1
 		pkg.InformUser("generating your new gitops repository", silentMode)
-		gitClient.CloneBranchSetMain(gitopsTemplateUrl, config.GitOpsRepoPath, gitopsTemplateBranch)
+		gitClient.CloneBranchSetMain(gitopsTemplateURL, config.GitOpsRepoPath, gitopsTemplateBranch)
 		log.Println("gitops repository creation complete")
 
 		//* step 2
@@ -239,7 +239,8 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("create initial argocd repository", silentMode)
 		//Enterprise users need to be able to set the hostname for git.
 		gitopsRepo := viper.GetString("github.repo.gitops.giturl")
-		err := argocd.CreateInitialArgoCDRepository(gitopsRepo)
+		argoCDConfig := argocd.GetArgoCDInitialCloudConfig(gitopsRepo, viper.GetString("kubefirst.bot.private-key"))
+		err := argocd.CreateInitialArgoCDRepository(config, argoCDConfig)
 		if err != nil {
 			log.Println("Error CreateInitialArgoCDRepository")
 			return err
@@ -441,7 +442,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 	pkg.InformUser("Deploying metaphor applications", silentMode)
 	metaphorBranch := viper.GetString("template-repo.metaphor.branch")
-	err := metaphor.DeployMetaphorGithubLocal(dryRun, githubOwner, metaphorBranch, "")
+	err := metaphor.DeployMetaphorGithubLocal(dryRun, false, githubOwner, metaphorBranch, "")
 	if err != nil {
 		pkg.InformUser("Error deploy metaphor applications", silentMode)
 		log.Println("Error running deployMetaphorCmd")

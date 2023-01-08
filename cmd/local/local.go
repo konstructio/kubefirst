@@ -349,7 +349,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	if !viper.GetBool("chartmuseum.host.resolved") {
 
-		pkg.AwaitHostNTimes(pkg.ChartmuseumLocalURL+"/health", 5, 5)
+		pkg.AwaitHostNTimes(config.ChartmuseumLocalURL+"/health", 5, 5)
 		viper.Set("chartmuseum.host.resolved", true)
 		viper.WriteConfig()
 	} else {

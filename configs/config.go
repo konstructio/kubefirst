@@ -69,32 +69,32 @@ type Config struct {
 	ArgoCDChartHelmVersion   string
 	ArgoCDInitValuesYamlPath string
 
-	ArgocdLocalUrl   string
-	ArgocdIngressUrl string
+	ArgocdLocalURL   string
+	ArgocdIngressURL string
 
-	ArgoWorkflowsLocalUrl   string
-	ArgoWorkflowsIngressUrl string
+	ArgoWorkflowsLocalURL   string
+	ArgoWorkflowsIngressURL string
 
-	AtlantisLocalUrl   string
-	AtlantisIngressUrl string
+	AtlantisLocalURL   string
+	AtlantisIngressURL string
 
-	ChartmuseumLocalUrl   string
-	ChartmuseumIngressUrl string
+	ChartmuseumLocalURL   string
+	ChartmuseumIngressURL string
 
-	MetaphorDevelopmentLocalUrl string
-	MetaphorStagingLocalUrl     string
-	MetaphorProductionLocalUrl  string
+	MetaphorDevelopmentLocalURL string
+	MetaphorStagingLocalURL     string
+	MetaphorProductionLocalURL  string
 
-	MetaphorFrontendDevelopmentLocalUrl string
-	MetaphorFrontendStagingLocalUrl     string
-	MetaphorFrontendProductionLocalUrl  string
+	MetaphorFrontendDevelopmentLocalURL string
+	MetaphorFrontendStagingLocalURL     string
+	MetaphorFrontendProductionLocalURL  string
 
-	MetaphorGoDevelopmentLocalUrl string
-	MetaphorGoStagingLocalUrl     string
-	MetaphorGoProductionLocalUrl  string
+	MetaphorGoDevelopmentLocalURL string
+	MetaphorGoStagingLocalURL     string
+	MetaphorGoProductionLocalURL  string
 
-	VaultLocalUrl   string
-	VaultIngressUrl string
+	VaultLocalURL   string
+	VaultIngressURL string
 
 	TerraformAwsEntrypointPath    string
 	TerraformGithubEntrypointPath string
@@ -164,23 +164,23 @@ func ReadConfig() *Config {
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
 	// Local Configs URL
-	config.ArgoWorkflowsLocalUrl = "http://localhost:2746"
-	config.VaultLocalUrl = "http://localhost:8200"
-	config.ArgocdLocalUrl = "http://localhost:8080"
-	config.AtlantisLocalUrl = "http://localhost:4141"
-	config.ChartmuseumLocalUrl = "http://localhost:8181"
+	config.ArgoWorkflowsLocalURL = "http://localhost:2746"
+	config.VaultLocalURL = "http://localhost:8200"
+	config.ArgocdLocalURL = "http://localhost:8080"
+	config.AtlantisLocalURL = "http://localhost:4141"
+	config.ChartmuseumLocalURL = "http://localhost:8181"
 
-	config.MetaphorDevelopmentLocalUrl = "http://localhost:3000"
-	config.MetaphorGoDevelopmentLocalUrl = "http://localhost:5000"
-	config.MetaphorFrontendDevelopmentLocalUrl = "http://localhost:4000"
+	config.MetaphorDevelopmentLocalURL = "http://localhost:3000"
+	config.MetaphorGoDevelopmentLocalURL = "http://localhost:5000"
+	config.MetaphorFrontendDevelopmentLocalURL = "http://localhost:4000"
 
-	config.MetaphorStagingLocalUrl = "http://localhost:3001"
-	config.MetaphorGoStagingLocalUrl = "http://localhost:5001"
-	config.MetaphorFrontendStagingLocalUrl = "http://localhost:4001"
+	config.MetaphorStagingLocalURL = "http://localhost:3001"
+	config.MetaphorGoStagingLocalURL = "http://localhost:5001"
+	config.MetaphorFrontendStagingLocalURL = "http://localhost:4001"
 
-	config.MetaphorProductionLocalUrl = "http://localhost:3002"
-	config.MetaphorGoProductionLocalUrl = "http://localhost:5002"
-	config.MetaphorFrontendProductionLocalUrl = "http://localhost:4002"
+	config.MetaphorProductionLocalURL = "http://localhost:3002"
+	config.MetaphorGoProductionLocalURL = "http://localhost:5002"
+	config.MetaphorFrontendProductionLocalURL = "http://localhost:4002"
 	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
 
 	// certificates

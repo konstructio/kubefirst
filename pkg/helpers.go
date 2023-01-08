@@ -174,6 +174,8 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		var repoPathSSH string
 		var repoPathPrefered string
 
+		config := configs.ReadConfig()
+
 		if viper.GetString("gitprovider") == "github" {
 			repoPathHTTPS = "https://" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
 			repoPathSSH = "git@" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
@@ -278,23 +280,23 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			//!
 			//! todo this definitely breaks something below
 			//!
-			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", config.ArgoWorkflowsLocalUrl, -1)
-			newContents = strings.Replace(newContents, "<VAULT_URL>", config.VaultLocalUrl, -1)
-			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", config.ArgocdLocalUrl, -1)
-			newContents = strings.Replace(newContents, "<ATLANTIS_URL>", config.AtlantisLocalUrl, -1)
-			newContents = strings.Replace(newContents, "<CHARTMUSEUM_URL>", config.ChartmuseumLocalUrl, -1)
+			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", config.ArgoWorkflowsLocalURL, -1)
+			newContents = strings.Replace(newContents, "<VAULT_URL>", config.VaultLocalURL, -1)
+			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", config.ArgocdLocalURL, -1)
+			newContents = strings.Replace(newContents, "<ATLANTIS_URL>", config.AtlantisLocalURL, -1)
+			newContents = strings.Replace(newContents, "<CHARTMUSEUM_URL>", config.ChartmuseumLocalURL, -1)
 
-			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", config.MetaphorDevelopmentLocalUrl, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_GO_DEV>", config.MetaphorGoDevelopmentLocalUrl, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEV>", config.MetaphorFrontendDevelopmentLocalUrl, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", config.MetaphorDevelopmentLocalURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_DEV>", config.MetaphorGoDevelopmentLocalURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEV>", config.MetaphorFrontendDevelopmentLocalURL, -1)
 
-			newContents = strings.Replace(newContents, "<METAPHOR_STAGING>", config.MetaphorStagingLocalUrl, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_GO_STAGING>", config.MetaphorGoStagingLocalUrl, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING>", config.MetaphorFrontendStagingLocalUrl, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_STAGING>", config.MetaphorStagingLocalURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_STAGING>", config.MetaphorGoStagingLocalURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING>", config.MetaphorFrontendStagingLocalURL, -1)
 
-			newContents = strings.Replace(newContents, "<METAPHOR_PROD>", config.MetaphorProductionLocalUrl, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_GO_PROD>", config.MetaphorGoProductionLocalUrl, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", config.MetaphorFrontendProductionLocalUrl, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_PROD>", config.MetaphorProductionLocalURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_PROD>", config.MetaphorGoProductionLocalURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", config.MetaphorFrontendProductionLocalURL, -1)
 			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", ArgoLocalURLTLS, -1)
 			newContents = strings.Replace(newContents, "<VAULT_URL>", VaultLocalURLTLS, -1)
 			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", ArgoCDLocalURLTLS, -1)

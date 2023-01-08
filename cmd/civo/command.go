@@ -9,7 +9,7 @@ var (
 	cloudProviderFlag        string
 	civoClusterNameFlag      string
 	githubOwner              string
-	gitopsTemplateUrlFlag    string
+	gitopsTemplateURLFlag    string
 	gitopsTemplateBranchFlag string
 	gitProviderFlag          string
 	civoDnsFlag              string
@@ -39,7 +39,7 @@ func NewCommand() *cobra.Command {
 	civoCmd.Flags().StringVar(&githubOwner, "github-owner", "your-dns-io", "the GitHub owner of the new gitops and metaphor repositories")
 	// civoCmd.MarkFlagRequired("github-owner")
 	civoCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "civo-domain-refactor", "the branch to clone for the gitops-template repository")
-	civoCmd.Flags().StringVar(&gitopsTemplateUrlFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
+	civoCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
 	civoCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", "the git provider to use. (i.e. gitlab|github)")
 
 	civoCmd.Flags().BoolVar(&silentModeFlag, "silent-mode", false, "suppress output to the terminal")

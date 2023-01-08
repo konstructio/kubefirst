@@ -171,7 +171,7 @@ func (handler GitHubHandler) CheckGithubOrganizationPermissions(githubToken, git
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.github.com/orgs/%s/memberships/%s", githubOwner, githubUsername), nil)
 	if err != nil {
-		log.Println("error setting github owner permissions request")
+		log.Info().Msg("error setting github owner permissions request")
 	}
 
 	req.Header.Add("Content-Type", pkg.JSONContentType)
@@ -203,7 +203,7 @@ func (handler GitHubHandler) CheckGithubOrganizationPermissions(githubToken, git
 		return err
 	}
 
-	log.Println("the github owner role is: ", gitHubOrganizationRole.Role)
+	log.Info().Msgf("the github owner role is: ", gitHubOrganizationRole.Role)
 
 	if gitHubOrganizationRole.Role != "admin" {
 		errMsg := fmt.Sprintf("Authenticated user (via GITHUB_TOKEN) doesn't have adequate permissions.\n Make sure they are an `Owner` in %s.\n Current role: %s", githubOwner, gitHubOrganizationRole.Role)

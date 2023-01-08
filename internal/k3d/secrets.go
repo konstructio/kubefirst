@@ -42,7 +42,7 @@ func AddK3DSecrets(dryrun bool) error {
 		}
 		_, err = clientset.CoreV1().Secrets("external-dns").Create(context.TODO(), civoSecret, metav1.CreateOptions{})
 		if err != nil {
-			log.Println("Error:", err)
+			log.Info().Msgf("Error:", err)
 			return errors.New("error creating kubernetes secret: external-dns/civo-creds")
 		}
 	}
