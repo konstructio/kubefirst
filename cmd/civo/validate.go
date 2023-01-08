@@ -247,7 +247,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst.state-store.bucket", kubefirstStateStoreBucketName)
 		viper.Set("kubefirst.bucket.random-name", randomName)
 		viper.Set("kubefirst.telemetry", useTelemetryFlag)
-		viper.Set("cluster-name", civoClusterNameFlag)
+		viper.Set("kubefirst.cluster-name", civoClusterNameFlag)
 		viper.Set("vault.local.service", config.VaultLocalURL)
 		viper.Set("civo.dns", civoDnsFlag)
 		viper.Set("civo.region", civoRegionFlag)

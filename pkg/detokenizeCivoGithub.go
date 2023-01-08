@@ -131,11 +131,6 @@ func DetokenizeDirectoryCivoGithub(path string, fi os.FileInfo, err error) error
 		newContents = strings.Replace(newContents, "<VAULT_INGRESS_URL>", vaultIngressURL, -1)
 		newContents = strings.Replace(newContents, "<VOUCH_INGRESS_URL>", vouchIngressURL, -1)
 
-		if viper.GetString("terraform.aws.outputs.kms-key.id") != "" {
-			awsVaultKmsKeyId := viper.GetString("terraform.aws.outputs.kms-key.id")
-			newContents = strings.Replace(newContents, "<AWS_VAULT_KMS_KEY_ID>", awsVaultKmsKeyId, -1)
-		}
-
 		// todo consolidate this?
 		newContents = strings.Replace(newContents, "<METAPHOR_DEVELOPMENT_INGRESS_NO_HTTPS_URL>", metaphorDevelopmentIngressNoHttpsURL, -1)
 		newContents = strings.Replace(newContents, "<METAPHOR_STAGING_INGRESS_NO_HTTPS_URL>", metaphorStagingIngressNoHttpsURL, -1)
@@ -156,15 +151,9 @@ func DetokenizeDirectoryCivoGithub(path string, fi os.FileInfo, err error) error
 		newContents = strings.Replace(newContents, "<ARGOCD_INGRESS_URL>", argocdIngressURL, -1)
 		newContents = strings.Replace(newContents, "<ARGOCD_INGRESS_NO_HTTP_URL>", argocdIngressNoHttpsURL, -1)
 
-		// didnt see
-		newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_INGRESS_URL>", argoWorkflowsIngressURL, -1)
+		// didn't see the below tokens
 		newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_INGRESS_NO_HTTPS_URL>", argoWorkflowsIngressNoHttpsURL, -1)
-		newContents = strings.Replace(newContents, "<VAULT_INGRESS_URL>", vaultIngressURL, -1)
-		newContents = strings.Replace(newContents, "<VOUCH_INGRESS_URL>", vouchIngressURL, -1)
-		newContents = strings.Replace(newContents, "<GITOPS_REPO_ATLANTIS_WEBHOOK_URL>", atlantisWebhookURL, -1)
 		newContents = strings.Replace(newContents, "<ATLANTIS_INGRESS_NO_HTTPS_URL>", atlantisIngressNoHttpsURL, -1)
-		newContents = strings.Replace(newContents, "<ATLANTIS_INGRESS_URL>", atlantisIngressURL, -1)
-		newContents = strings.Replace(newContents, "<GITLAB_INGRESS_URL>", gitlabIngressURL, -1)
 		newContents = strings.Replace(newContents, "<KUBEFIRST_STATE_STORE_BUCKET>", kubefirstStateStoreBucket, -1)
 
 		err = os.WriteFile(path, []byte(newContents), 0)

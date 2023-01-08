@@ -19,7 +19,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	// nextKubefirstDestroyCommand := "`kubefirst aws destroy"
 	// nextKubefirstDestroyCommand = fmt.Sprintf("%s \n  --skip-tf-aws", nextKubefirstDestroyCommand)
 
-	config := configs.ReadConfig()
+	config := configs.GetCivoConfig()
 
 	githubToken := config.GithubToken
 	civoToken := config.CivoToken
@@ -69,10 +69,12 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	//* successful cleanup of resources means we can clean up
 	//* the ~/.k1/gitops so we can re-excute a `rebuild gitops` which would allow us
 	//* to iterate without re-downloading etc
-
+	//* instead of deleting the kubefirst file we can re-use the valuable information about
+	//* things like github, domains, etc.
+	//* we should reset the config to
 	if !viper.GetBool("kubefirst.clean.complete") {
 
-		// delete files and folders
+		// delete the gitops repository
 		err := os.RemoveAll(config.K1FolderPath + "/gitops")
 		if err != nil {
 			return fmt.Errorf("unable to delete %q folder, error is: %s", config.K1FolderPath+"/gitops", err)
