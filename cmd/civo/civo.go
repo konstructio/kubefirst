@@ -250,7 +250,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	// todo deconstruct CreateNamespaces / CreateSecret
 	// todo move secret structs to constants to be leveraged by either local or civo
-	executionControl = viper.GetBool("kubernetes.vault.secret.created")
+	executionControl = viper.GetBool("kubernetes.secrets.created")
 	if !executionControl {
 		err := k3d.AddK3DSecrets(dryRun)
 		if err != nil {
