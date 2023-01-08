@@ -203,7 +203,7 @@ func (handler GitHubHandler) CheckGithubOrganizationPermissions(githubToken, git
 		return err
 	}
 
-	log.Info().Msgf("the github owner role is: ", gitHubOrganizationRole.Role)
+	log.Info().Msgf("the github owner role is: %s", gitHubOrganizationRole.Role)
 
 	if gitHubOrganizationRole.Role != "admin" {
 		errMsg := fmt.Sprintf("Authenticated user (via GITHUB_TOKEN) doesn't have adequate permissions.\n Make sure they are an `Owner` in %s.\n Current role: %s", githubOwner, gitHubOrganizationRole.Role)

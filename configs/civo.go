@@ -17,6 +17,10 @@ type CivoConfig struct {
 	GithubToken      string `env:"GITHUB_TOKEN"`
 	KubefirstLogPath string `env:"KUBEFIRST_LOG_PATH" envDefault:"logs"`
 
+	// platform tool configurations
+	ArgodLocalURL string
+	VaultLocalURL string
+
 	// kubefirst cli config
 	GitOpsRepoPath          string
 	HomePath                string
@@ -44,6 +48,11 @@ func GetCivoConfig() *CivoConfig {
 		log.Panic(err)
 	}
 
+	// platform tool values
+	config.ArgodLocalURL = "http://localhost:8080"
+	config.VaultLocalURL = "http://localhost:8200"
+
+	// kubefirst cli config values
 	config.K1FolderPath = fmt.Sprintf("%s/.k1", homePath)
 	config.K1ToolsPath = fmt.Sprintf("%s/tools", config.K1FolderPath)
 	config.KubeConfigPath = fmt.Sprintf("%s/kubeconfig", config.K1FolderPath)

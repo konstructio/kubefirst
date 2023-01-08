@@ -18,6 +18,7 @@ import (
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
@@ -28,7 +29,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/metaphor"
 	"github.com/kubefirst/kubefirst/internal/reports"
-	internalSSH "github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
@@ -36,7 +36,6 @@ import (
 	cp "github.com/otiai10/copy"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.org/x/crypto/ssh"
 )
 
 func runCivo(cmd *cobra.Command, args []string) error {
@@ -87,29 +86,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	} else {
 		log.Println("already completed download of dependencies to `$HOME/.k1/tools` - continuing")
-	}
-
-	// todo need to verify only creating gitops and metaphor-frontend
-	executionControl := viper.GetBool("terraform.github.apply.complete")
-	// create github teams in the org and gitops repo
-	if !executionControl {
-		pkg.InformUser("Creating github resources with terraform", silentMode)
-
-		tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
-		tfEnvs := map[string]string{}
-		tfEnvs = terraform.GetGithubTerraformEnvs(tfEnvs)
-		//* only log on debug
-		log.Println("tf env vars: ", tfEnvs)
-		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
-		if err != nil {
-			return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
-		}
-
-		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", viper.GetString("github.owner")), silentMode)
-		viper.Set("terraform.github.apply.complete", true)
-		viper.WriteConfig()
-	} else {
-		log.Println("already created github terraform resources")
 	}
 
 	//* git clone and detokenize the gitops repository
@@ -196,28 +172,59 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			},
 		})
 
-		//* step 7 push the detokenized gitops repo content
-		auth, _ := internalSSH.PublicKeyV2()
-
-		auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
-
-		err = repo.Push(&git.PushOptions{
-			RemoteName: viper.GetString("git-provider"),
-			Auth:       auth,
-		})
-		if err != nil {
-			zlog.Panic().Msgf("error pushing detokenized %s repository to remote at %s", "gitops", viper.GetString("git-provider"))
-		}
-		log.Printf("successfully pushed gitops to github.com/%s/gitops", viper.GetString("github.owner"))
 		// todo emit init telemetry end
 
-		//todo step 8 delete the local gitops repo and re-clone it, that way we can stop worrying about which origin we're going to push to
-
 		viper.Set("template-repo.gitops.cloned", true)
+		viper.Set("template-repo.gitops.detokenized", true)
 		viper.WriteConfig()
 	} else {
 		log.Println("already completed gitops repo generation - continuing")
 	}
+
+	// todo need to verify only creating gitops and metaphor-frontend
+	executionControl := viper.GetBool("terraform.github.apply.complete")
+	// create github teams in the org and gitops repo
+	if !executionControl {
+		pkg.InformUser("Creating github resources with terraform", silentMode)
+
+		tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+		tfEnvs := map[string]string{}
+		tfEnvs = terraform.GetGithubTerraformEnvs(tfEnvs)
+		//* only log on debug
+		log.Println("tf env vars: ", tfEnvs)
+		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+		if err != nil {
+			return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
+		}
+
+		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", viper.GetString("github.owner")), silentMode)
+		viper.Set("terraform.github.apply.complete", true)
+		viper.WriteConfig()
+	} else {
+		log.Println("already created github terraform resources")
+	}
+
+	//* step 7 push the detokenized gitops repo content
+	repo, err := git.PlainOpen(config.GitOpsRepoPath)
+	if err != nil {
+		log.Print("error opening repo at:", config.GitOpsRepoPath)
+	}
+
+	publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kubefirst.bot.private-key")), "")
+	if err != nil {
+		zlog.Info().Msgf("generate publickeys failed: %s\n", err.Error())
+	}
+
+	err = repo.Push(&git.PushOptions{
+		RemoteName: viper.GetString("git-provider"),
+		Auth:       publicKeys,
+	})
+	if err != nil {
+		zlog.Panic().Msgf("error pushing detokenized %s repository to remote at %s", "gitops", viper.GetString("git-provider"))
+	}
+
+	log.Printf("successfully pushed gitops to github.com/%s/gitops", viper.GetString("github.owner"))
+	//todo delete the local gitops repo and re-clone it, that way we can stop worrying about which origin we're going to push to
 
 	// create civo cloud resources
 	if !viper.GetBool("terraform.civo.apply.complete") {
@@ -463,7 +470,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 	pkg.InformUser("Deploying metaphor applications", silentMode)
 	metaphorBranch := viper.GetString("template-repo.metaphor.branch")
-	err := metaphor.DeployMetaphorGithubLocal(dryRun, false, githubOwner, metaphorBranch, "")
+	err = metaphor.DeployMetaphorGithubLocal(dryRun, false, githubOwner, metaphorBranch, "")
 	if err != nil {
 		pkg.InformUser("Error deploy metaphor applications", silentMode)
 		log.Println("Error running deployMetaphorCmd")

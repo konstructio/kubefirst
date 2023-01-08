@@ -27,7 +27,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 
 	// todo emit init telemetry begin
 
-	config := configs.ReadConfig()
+	config := configs.GetCivoConfig()
 
 	//* get cli flag values for storage in `$HOME/.kubefirst`
 	adminEmailFlag, err := cmd.Flags().GetString("admin-email")
@@ -91,7 +91,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 
 	// todo validate flags
 	viper.Set("admin-email", adminEmailFlag)
-	viper.Set("argocd.local.service", config.ArgocdLocalURL)
+	viper.Set("argocd.local.service", config.ArgodLocalURL)
 	viper.Set("cloud-provider", cloudProviderFlag)
 	viper.Set("git-provider", gitProviderFlag)
 	viper.Set("template-repo.gitops.branch", gitopsTemplateBranchFlag)
@@ -232,6 +232,11 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	// todo consider creating a bucket in civo cloud just like aws
 	executionControl = viper.GetBool("kubefirst.checks.bot-setup.complete")
 	if !executionControl {
+
+		// todo only create if it doesn't exist
+		if err := os.Mkdir(fmt.Sprintf("%s", config.K1FolderPath), os.ModePerm); err != nil {
+			return fmt.Errorf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1FolderPath, err)
+		}
 		log.Println("creating an ssh key pair for your new cloud infrastructure")
 		sshPrivateKey, sshPublicKey, err := ssh.CreateSshKeyPair()
 		if err != nil {
@@ -259,7 +264,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst.bot.user", "kbot")
 		viper.Set("kubefirst.checks.bot-setup.complete", true)
 		viper.WriteConfig()
-		log.Println("kubefirts values and bot-setup complete")
+		log.Println("kubefirst values and bot-setup complete")
 		// todo, is this a hangover from initial gitlab? do we need this?
 		log.Println("creating argocd-init-values.yaml for initial install")
 		//* ex: `git@github.com:kubefirst` this is allows argocd access to the github organization repositories
