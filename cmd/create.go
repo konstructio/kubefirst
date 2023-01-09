@@ -67,6 +67,12 @@ cluster provisioning process spinning up the services, and validates the livenes
 		// todo remove this dependency from create.go
 		hostedZoneName := viper.GetString("aws.hostedzonename")
 
+		if !globalFlags.UseTelemetry {
+			informUser("Telemetry Disabled", globalFlags.SilentMode)
+		} else {
+			pkg.InformUser("Sending installation telemetry", globalFlags.SilentMode)
+		}
+
 		if globalFlags.UseTelemetry {
 			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallStarted); err != nil {
 				log.Warn().Msgf("%s", err)
