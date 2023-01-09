@@ -90,6 +90,7 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 	}
 
 	if err = pkg.OpenBrowser("https://github.com/login/device"); err != nil {
+		log.Error().Msgf("error opening browser: %s", err)
 		return "", err
 	}
 
