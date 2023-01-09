@@ -46,7 +46,7 @@ func NewGitHubHandler(gitHubService *services.GitHubService) *GitHubHandler {
 // grant permission to return a valid access token.
 func (handler GitHubHandler) AuthenticateUser() (string, error) {
 
-	gitHubDeviceFlowCodeURL := pkg.GitHubLoginDeviceURL + "/code"
+	gitHubDeviceFlowCodeURL := "https://github.com/login/device/code"
 	// todo: update scope list, we have more than we need at the moment
 	requestBody, err := json.Marshal(map[string]string{
 		"client_id": pkg.GitHubOAuthClientId,
@@ -89,7 +89,7 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 		return "", err
 	}
 
-	if err = pkg.OpenBrowser(pkg.GitHubLoginDeviceURL); err != nil {
+	if err = pkg.OpenBrowser("https://github.com/login/device"); err != nil {
 		return "", err
 	}
 

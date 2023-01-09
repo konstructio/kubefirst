@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -620,20 +621,25 @@ func InformUser(message string, silentMode bool) {
 	progressPrinter.LogMessage(fmt.Sprintf("- %s", message))
 }
 
+// OpenBrowser opens the browser with the given URL
 func OpenBrowser(url string) error {
 	var err error
 
 	switch runtime.GOOS {
 	case "linux":
-		_, _, err = ExecShellReturnStrings("xdg-open", url)
+		if err = exec.Command("xdg-open", url).Start(); err != nil {
+			return err
+		}
 	case "windows":
-		_, _, err = ExecShellReturnStrings("rundll32", "url.dll,FileProtocolHandler", url)
+		if err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start(); err != nil {
+			return err
+		}
 	case "darwin":
-		_, _, err = ExecShellReturnStrings("open", url)
+		if err = exec.Command("open", url).Start(); err != nil {
+			return err
+		}
 	default:
-		err = fmt.Errorf("unsupported platform")
-	}
-	if err != nil {
+		err = fmt.Errorf("unable to load the browser, unsupported platform")
 		return err
 	}
 

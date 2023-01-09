@@ -13,7 +13,6 @@ const (
 	KubefirstGitOpsRepository    = "gitops"
 	KubefirstGitOpsRepositoryURL = "https://github.com/kubefirst/gitops-template"
 	LocalDNS                     = "localdev.me"
-	GitHubLoginDeviceURL         = "https://github.com/login/device"
 )
 
 // SegmentIO constants
