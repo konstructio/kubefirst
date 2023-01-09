@@ -135,14 +135,15 @@ validated and configured.`,
 		log.Info().Msg("sending init started metric")
 
 		var telemetryHandler handlers.TelemetryHandler
-		viper.Set("use-telemetry", globalFlags.UseTelemetry)
+		viper.Set("disable-telemetry", globalFlags.DisableTelemetry)
 
-		if !globalFlags.UseTelemetry {
+		if globalFlags.DisableTelemetry == true {
 			informUser("Telemetry Disabled", globalFlags.SilentMode)
 		} else {
 			pkg.InformUser("Sending installation telemetry", globalFlags.SilentMode)
 		}
-		if globalFlags.UseTelemetry {
+
+		if globalFlags.DisableTelemetry == false {
 
 			// Instantiates a SegmentIO client to use send messages to the segment API.
 			segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
@@ -269,7 +270,7 @@ validated and configured.`,
 
 		log.Info().Msg("sending init completed metric")
 
-		if globalFlags.UseTelemetry {
+		if globalFlags.DisableTelemetry == false {
 			telemetryInitCompleted, err := domain.NewTelemetry(
 				pkg.MetricInitCompleted,
 				awsFlags.HostedZoneName,

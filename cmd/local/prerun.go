@@ -36,7 +36,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("sending init started metric")
 
-	if useTelemetry {
+	if disableTelemetry == false {
 		pkg.InformUser("Sending installation telemetry", silentMode)
 		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted); err != nil {
 			log.Error().Err(err).Msg("")
@@ -76,7 +76,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	viper.Set("argocd.local.service", pkg.ArgoCDLocalURL)
 	viper.Set("vault.local.service", pkg.VaultLocalURLTLS)
-	viper.Set("use-telemetry", useTelemetry)
+	viper.Set("disable-telemetry", disableTelemetry)
 	err = viper.WriteConfig()
 	if err != nil {
 		return err
@@ -231,11 +231,10 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.IncrementTracker("step-gitops", 1)
 
-	log.Info().Msg("sending init completed metric")
-
 	pkg.InformUser("initialization step is done!", silentMode)
 
-	if useTelemetry {
+	if disableTelemetry == false {
+		log.Info().Msg("sending init completed metric")
 		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted); err != nil {
 			log.Error().Err(err).Msg("")
 		}

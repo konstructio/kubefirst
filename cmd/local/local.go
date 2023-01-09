@@ -28,18 +28,18 @@ import (
 )
 
 var (
-	useTelemetry   bool
-	dryRun         bool
-	silentMode     bool
-	enableConsole  bool
-	skipMetaphor   bool
-	gitOpsBranch   string
-	gitOpsRepo     string
-	gitOpsOrg      string
-	metaphorBranch string
-	adminEmail     string
-	templateTag    string
-	logLevel       string
+	disableTelemetry bool
+	dryRun           bool
+	silentMode       bool
+	enableConsole    bool
+	skipMetaphor     bool
+	gitOpsBranch     string
+	gitOpsRepo       string
+	gitOpsOrg        string
+	metaphorBranch   string
+	adminEmail       string
+	templateTag      string
+	logLevel         string
 )
 
 func NewCommand() *cobra.Command {
@@ -53,7 +53,7 @@ func NewCommand() *cobra.Command {
 		PostRunE: runPostLocal,
 	}
 
-	localCmd.Flags().BoolVar(&useTelemetry, "use-telemetry", true, "installer won't send telemetry data if --use-telemetry=false is set")
+	localCmd.Flags().BoolVar(&disableTelemetry, "disable-telemetry", false, "installer won't send telemetry data if --disable-telemetry is set")
 	localCmd.Flags().BoolVar(&dryRun, "dry-run", false, "set to dry-run mode, no changes done on cloud provider selected")
 	localCmd.Flags().BoolVar(&silentMode, "silent", false, "enable silentMode mode will make the UI return less content to the screen")
 	localCmd.Flags().BoolVar(&enableConsole, "enable-console", true, "If hand-off screen will be presented on a browser UI")
@@ -93,7 +93,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 	progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
 	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 4)
-	if useTelemetry {
+	if disableTelemetry == false {
 		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallStarted); err != nil {
 			log.Error().Err(err).Msg("")
 		}
@@ -441,7 +441,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	wg.Wait()
 
 	log.Info().Msg("sending mgmt cluster install completed metric")
-	if useTelemetry {
+	if disableTelemetry == false {
 		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted); err != nil {
 			log.Error().Err(err).Msg("")
 		}

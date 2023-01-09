@@ -29,7 +29,7 @@ func DefineDestroyFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().Bool("hosted-zone-keep-base", false, "keeps base DNS records (NS, SOA and liveness TXT), and delete all other DNS records. Use it in combination with --hosted-zone-delete")
 }
 
-// ProcessDestroyFlags - process global flags shared between commands like silent, dry-run and use-telemetry
+// ProcessDestroyFlags - process global flags shared between commands like silent, dry-run and disable-telemetry
 func ProcessDestroyFlags(cmd *cobra.Command) (DestroyFlags, error) {
 	flags := DestroyFlags{}
 

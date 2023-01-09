@@ -37,7 +37,7 @@ func DefineCIFlags(currentCommand *cobra.Command) {
 	currentCommand.Flags().String("ci-kubefirst-branch", "", "version/branch used on git clone for kubefirst setup instruction")
 }
 
-// ProcessCIFlags - process global flags shared between commands like silent, dry-run and use-telemetry
+// ProcessCIFlags - process global flags shared between commands like silent, dry-run and disable-telemetry
 func ProcessCIFlags(cmd *cobra.Command) (CIFlags, error) {
 	flags := CIFlags{}
 

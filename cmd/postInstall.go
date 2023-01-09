@@ -30,7 +30,7 @@ var postInstallCmd = &cobra.Command{
 		//if err != nil {
 		//	return err
 		//}
-		globalFlags := flagset.GlobalFlags{DryRun: false, SilentMode: false, UseTelemetry: true}
+		globalFlags := flagset.GlobalFlags{DryRun: false, SilentMode: false, DisableTelemetry: true}
 
 		createFlags, err := flagset.ProcessCreateFlags(cmd)
 		if err != nil {
