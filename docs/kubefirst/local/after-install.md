@@ -4,7 +4,9 @@
 
 [//]: # (<iframe width="784" height="441" src="https://www.youtube.com/embed/KEUOaNMUqOM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>)
 
-The `kubefirst local` execution includes important information toward the end, including URLs and passwords to get to your port-forwarded applications. The applications are available while the handoff screen remains active. If you ever need to reconnect to all of your services, you can do so with a `kubefirst local connect` command.
+The `kubefirst local` execution includes important information toward the end, including URLs and passwords to get to your applications.
+
+If you close the handoff screen (pressing `ESC`), you can acess the Kubefirst Console to see all aplications and their local endpoints. Just click on this link: [Console](https://kubefirst.localdev.me/) or open in your browser: `https://kubefirst.localdev.me`
 
 You now have a k3d cluster with the following content installed in it:
 
@@ -22,7 +24,6 @@ You now have a k3d cluster with the following content installed in it:
 | Metaphor Frontend            | (development, staging, production) instance of sample Nextjs and React app             |
 
 - These apps are all managed by Argo CD and the app configurations are in the `gitops` repo's `registry` folder.
-- The AWS infrastructure is terraform - that's also in your `gitops` repo, but in your `terraform` folder.
 
 ## Step 1: Console UI
 

@@ -16,6 +16,9 @@ site: [https://cert-manager.io/docs/](https://cert-manager.io/docs/)
 ### chartmuseum
 site: [https://chartmuseum.com/docs/](https://chartmuseum.com/docs/)
 
+### docker
+site: [https://docker.com](https://docker.com)
+
 ### external-secrets-operator
 site: [https://external-secrets.io/](https://external-secrets.io/)
 
@@ -26,6 +29,9 @@ site: [https://docs.gitlab.com/runner/](https://docs.gitlab.com/runner/)
 site: [https://kubernetes.io/](https://kubernetes.io/)
 
 training: [https://kubernetes.io/training/](https://kubernetes.io/training/)
+
+### k3d
+site: [https://k3d.io](https://k3d.io)
 
 ### minio
 site: [https://min.io/product/kubernetes](https://min.io/product/kubernetes)

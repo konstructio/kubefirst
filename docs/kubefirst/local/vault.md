@@ -1,6 +1,6 @@
 # Vault
 
-[Vault](https://www.vaultproject.io/) is an open source secrets manager and identity provider created by hashicorp. Usually it runs in Kubernetes with a [DynamoDB](https://aws.amazon.com/dynamodb/) backend that's encrypted with KMS with point in time recovery enabled, but for local it's backed by a local s3-like backend in minio.
+[Vault](https://www.vaultproject.io/) is an open source secrets manager and identity provider created by hashicorp. Usually it runs in Kubernetes with a [AWS DynamoDB](https://aws.amazon.com/dynamodb/) backend that's encrypted with [AWS KMS](https://aws.amazon.com/kms/) with point in time recovery enabled, but for local it's backed by a local s3-like backend in [Minio](https://min.io/).
 
 ## Authentication Backends
 
