@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os/exec"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -47,7 +46,7 @@ func NewGitHubHandler(gitHubService *services.GitHubService) *GitHubHandler {
 // grant permission to return a valid access token.
 func (handler GitHubHandler) AuthenticateUser() (string, error) {
 
-	gitHubDeviceFlowCodeURL := "https://github.com/login/device/code"
+	gitHubDeviceFlowCodeURL := pkg.GitHubLoginDeviceURL + "/code"
 	// todo: update scope list, we have more than we need at the moment
 	requestBody, err := json.Marshal(map[string]string{
 		"client_id": pkg.GitHubOAuthClientId,
@@ -90,7 +89,7 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 		return "", err
 	}
 
-	if err = exec.Command("open", "https://github.com/login/device").Start(); err != nil {
+	if err = pkg.OpenBrowser(pkg.GitHubLoginDeviceURL); err != nil {
 		return "", err
 	}
 
