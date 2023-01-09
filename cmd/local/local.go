@@ -190,7 +190,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	executionControl = viper.GetBool("kubernetes.vault.secret.created")
 	if !executionControl {
-		err := k3d.AddK3DSecrets(dryRun)
+		err := k3d.AddK3DSecrets(dryRun, config.KubeConfigPath)
 		if err != nil {
 			log.Error().Err(err).Msg("Error AddK3DSecrets")
 			return err
@@ -217,7 +217,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 			viper.GetString("botprivatekey"),
 		)
 
-		err := argocd.CreateInitialArgoCDRepository(config, argoCDConfig)
+		err := argocd.CreateInitialArgoCDRepository(argoCDConfig, config.KubeConfigPath)
 		if err != nil {
 			log.Error().Err(err).Msg("Error CreateInitialArgoCDRepository")
 			return err
@@ -262,7 +262,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.credentials.set")
 	if !executionControl {
 		pkg.InformUser("Setting argocd username and password credentials", silentMode)
-		k8s.SetArgocdCreds(dryRun)
+		k8s.SetArgocdCreds(dryRun, config.KubeConfigPath)
 		pkg.InformUser("argocd username and password credentials set successfully", silentMode)
 
 		pkg.InformUser("Getting an argocd auth token", silentMode)
@@ -290,10 +290,10 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("vault.status.running")
 	if !executionControl {
 		pkg.InformUser("waiting for Vault to be ready...", silentMode)
-		vault.WaitVaultToBeRunning(dryRun)
+		vault.WaitVaultToBeRunning(dryRun, config.KubeConfigPath)
 	}
 
-	k8s.LoopUntilPodIsReady(dryRun)
+	k8s.LoopUntilPodIsReady(dryRun, config.KubeConfigPath, config.KubectlClientPath)
 
 	// configure vault with terraform
 	executionControl = viper.GetBool("terraform.vault.apply.complete")
@@ -313,7 +313,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		//* create vault configurerd secret
 		// todo remove this code
 		log.Info().Msg("creating vault configured secret")
-		k8s.CreateVaultConfiguredSecret(dryRun, config)
+		k8s.CreateVaultConfiguredSecret(dryRun, config.KubeConfigPath, config.KubectlClientPath)
 		pkg.InformUser("Vault secret created", silentMode)
 	} else {
 		log.Info().Msg("already executed vault terraform")

@@ -29,7 +29,8 @@ func setArgocdCreds(dryRun bool) {
 		viper.WriteConfig()
 		return
 	}
-	clientset, err := k8s.GetClientSet(dryRun)
+	config := configs.ReadConfig()
+	clientset, err := k8s.GetClientSet(dryRun, config.KubeConfigPath)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -80,7 +81,7 @@ func waitArgoCDToBeReady(dryRun bool) {
 }
 
 // deprecated
-func waitVaultToBeRunning(dryRun bool) {
+func waitVaultToBeRunning(dryRun bool, kubeconfigPath string) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, waitVaultToBeRunning skipped.")
 		return
@@ -108,7 +109,7 @@ func waitVaultToBeRunning(dryRun bool) {
 	// waits for Vault Pod
 	x = 50
 	for i := 0; i < x; i++ {
-		clientset, err := k8s.GetClientSet(dryRun)
+		clientset, err := k8s.GetClientSet(dryRun, kubeconfigPath)
 		if err != nil {
 			log.Error().Err(err).Msg("")
 		}

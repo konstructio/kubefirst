@@ -6,8 +6,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 
+	"github.com/caarlos0/env/v6"
 	"github.com/cip8/autoname"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
@@ -89,20 +91,36 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	// 	return err
 	// }
 
+	if err := env.Parse(&config); err != nil {
+		log.Println("something went wrong loading the environment variables")
+		log.Panic(err)
+	}
+
+	homePath, err := os.UserHomeDir()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// todo waiting for johns response
+	k1DirectoryPath := fmt.Sprintf("%s/.k1", homePath)
+	// todo allow for full override of these references via cli flag
+	defaultTemplateRepoGithubOwner := "kubefirst"
+
 	// todo validate flags
 	viper.Set("admin-email", adminEmailFlag)
-	viper.Set("argocd.local.service", config.ArgodLocalURL)
+	viper.Set("argocd.local.service", "http://localhost:8080")
+	viper.Set("vault.local.service", "http://localhost:8200")
 	viper.Set("cloud-provider", cloudProviderFlag)
 	viper.Set("git-provider", gitProviderFlag)
-	viper.Set("template-repo.gitops.branch", gitopsTemplateBranchFlag)
-	viper.Set("template-repo.gitops.url", gitopsTemplateURLFlag)
-	// todo accommodate metaphor branch and repo override more intelligently
-	viper.Set("template-repo.metaphor.url", fmt.Sprintf("https://github.com/%s/metaphor.git", "kubefirst"))
-	viper.Set("template-repo.metaphor.branch", "main")
-	viper.Set("template-repo.metaphor-frontend.url", fmt.Sprintf("https://github.com/%s/metaphor-frontend.git", "kubefirst"))
-	viper.Set("template-repo.metaphor-frontend.branch", "main")
-	viper.Set("template-repo.metaphor-go.url", fmt.Sprintf("https://github.com/%s/metaphor-go.git", "kubefirst"))
-	viper.Set("template-repo.metaphor-go.branch", "main")
+	viper.Set("kubefirst.k1-directory-path", k1DirectoryPath)
+	viper.Set("kubefirst.k1-tools-path", fmt.Sprintf("%s/tools", k1DirectoryPath))
+	viper.Set("kubefirst.k1-gitops-repo-path", fmt.Sprintf("%s/gitops", k1DirectoryPath))
+	viper.Set("kubefirst.kubeconfig-path", fmt.Sprintf("%s/kubeconfig", k1DirectoryPath))
+	viper.Set("kubefirst.kubectl-client-path", fmt.Sprintf("%s/tools/kubectl", k1DirectoryPath))
+	viper.Set("kubefirst.kubectl-client-version", "v1.23.15") // todo make configs like this more discoverable in struct?
+	viper.Set("kubefirst.kubefirst-config-path", fmt.Sprintf("%s/%s", homePath, ".kubefirst"))
+	viper.Set("localhost.os", runtime.GOOS)
+	viper.Set("localhost.architecture", runtime.GOARCH)
 	viper.Set("github.atlantis.webhook.secret", pkg.Random(20))
 	viper.Set("github.atlantis.webhook.url", fmt.Sprintf("https://atlantis.%s/events", civoDnsFlag))
 	viper.Set("github.repo.gitops.url", fmt.Sprintf("https://github.com/%s/gitops.git", githubOwnerFlag))
@@ -111,6 +129,15 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("github.repo.metaphor-go.url", fmt.Sprintf("https://github.com/%s/metaphor-go.git", githubOwnerFlag))
 	githubOwnerRootGitURL := fmt.Sprintf("git@github.com:%s", githubOwnerFlag)
 	viper.Set("github.repo.gitops.giturl", fmt.Sprintf("%s/gitops.git", githubOwnerRootGitURL))
+	viper.Set("template-repo.gitops.branch", gitopsTemplateBranchFlag)
+	viper.Set("template-repo.gitops.url", gitopsTemplateURLFlag)
+	// todo accommodate metaphor branch and repo override more intelligently
+	viper.Set("template-repo.metaphor.url", fmt.Sprintf("https://github.com/%s/metaphor.git", defaultTemplateRepoGithubOwner))
+	viper.Set("template-repo.metaphor.branch", "main")
+	viper.Set("template-repo.metaphor-frontend.url", fmt.Sprintf("https://github.com/%s/metaphor-frontend.git", defaultTemplateRepoGithubOwner))
+	viper.Set("template-repo.metaphor-frontend.branch", "main")
+	viper.Set("template-repo.metaphor-go.url", fmt.Sprintf("https://github.com/%s/metaphor-go.git", defaultTemplateRepoGithubOwner))
+	viper.Set("template-repo.metaphor-go.branch", "main")
 	viper.WriteConfig()
 
 	pkg.InformUser("checking authentication to required providers", silentModeFlag)

@@ -24,6 +24,7 @@ import (
 
 var ArgocdSecretClient coreV1Types.SecretInterface
 
+// todo call this ArgocdConfig or something not so generic
 // Config ArgoCD configuration
 type Config struct {
 	Configs struct {
@@ -395,14 +396,14 @@ func ApplyRegistryLocal(dryRun bool) error {
 
 // CreateInitialArgoCDRepository - Fill and create `argocd-init-values.yaml` for GitHub installs.
 // The `argocd-init-values.yaml` is applied during helm install.
-func CreateInitialArgoCDRepository(config *configs.Config, argoConfig Config) error {
+func CreateInitialArgoCDRepository(argoConfig Config, k1DirectoryPath string) error {
 
 	argoCdRepoYaml, err := yaml2.Marshal(&argoConfig)
 	if err != nil {
 		return fmt.Errorf("error: marshaling yaml for argo config %s", err)
 	}
 
-	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoCdRepoYaml, 0644)
+	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", k1DirectoryPath), argoCdRepoYaml, 0644)
 	if err != nil {
 		return fmt.Errorf("error: could not write argocd-init-values.yaml %s", err)
 	}

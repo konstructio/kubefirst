@@ -52,7 +52,7 @@ func DetokenizeDirectoryCivoGithub(path string, fi os.FileInfo, err error) error
 		civoDns := viper.GetString("civo.dns")
 		atlantisWebhookURL := viper.GetString("github.atlantis.webhook.url")
 		adminEmail := viper.GetString("admin-email")
-		clusterName := viper.GetString("cluster-name")
+		clusterName := viper.GetString("kubefirst.cluster-name")
 		githubHost := viper.GetString("github.host")
 		githubOwner := viper.GetString("github.owner")
 		githubUser := viper.GetString("github.user")

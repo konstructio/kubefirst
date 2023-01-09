@@ -15,8 +15,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func AddK3DSecrets(dryrun bool) error {
-	clientset, err := k8s.GetClientSet(dryrun)
+func AddK3DSecrets(dryRun bool, kubeconfigPath string) error {
+	clientset, err := k8s.GetClientSet(dryRun, kubeconfigPath)
+	if err != nil {
+		log.Info().Msg("error getting kubernetes clientset")
+	}
 
 	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "external-dns", "github-runner", "vault", "development", "staging", "production"}
 	for i, s := range newNamespaces {

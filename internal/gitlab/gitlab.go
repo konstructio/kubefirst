@@ -188,13 +188,13 @@ func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
 }
 
 // ProduceGitlabTokens - Produce Gitlab token from argoCD secret
-func ProduceGitlabTokens(dryRun bool) {
+func ProduceGitlabTokens(dryRun bool, kubeconfigPath string) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, ProduceGitlabTokens skipped.")
 		return
 	}
 	//TODO: Should this step be skipped if already executed?
-	clientset, err := k8s.GetClientSet(dryRun)
+	clientset, err := k8s.GetClientSet(dryRun, kubeconfigPath)
 	if err != nil {
 		log.Panic().Msg(err.Error())
 	}
@@ -406,7 +406,7 @@ func ChangeRegistryToGitLab(dryRun bool) {
 
 		creds := ArgocdGitCreds{PersonalAccessToken: pat, URL: url, FullURL: fullurl}
 
-		clientset, err := k8s.GetClientSet(dryRun)
+		clientset, err := k8s.GetClientSet(dryRun, config.KubeConfigPath)
 		if err != nil {
 			log.Panic().Msg("error getting kubeconfig for clientset")
 		}

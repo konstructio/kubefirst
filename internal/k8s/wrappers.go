@@ -1,8 +1,9 @@
 package k8s
 
 import (
-	"github.com/rs/zerolog/log"
 	"sync"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -148,7 +149,7 @@ func OpenPortForwardPodWrapper(podName string, namespace string, podPort int, po
 		ReadyCh:   readyCh,
 	}
 
-	clientset, err := GetClientSet(false)
+	clientset, err := GetClientSet(false, kubeconfig)
 
 	go func() {
 		err = PortForwardPodWithRetry(clientset, portForwardRequest)
@@ -201,10 +202,11 @@ func OpenPortForwardServiceWrapper(serviceName string, namespace string, service
 		ReadyCh:     readyCh,
 	}
 
-	clientset, err := GetClientSet(false)
+	clientset, err := GetClientSet(false, kubeconfig)
 
 	go func() {
-		err = PortForwardService(clientset, portForwardRequest)
+		// todo, i think we can use the RestConfig and remove the "kubectlClientPath"
+		err = PortForwardService(clientset, kubeconfig, "kubectlClientPath", portForwardRequest)
 		if err != nil {
 			log.Error().Err(err).Msg("")
 		}
@@ -249,7 +251,7 @@ func CreateSecretsFromCertificatesForLocalWrapper(config *configs.Config) error 
 		data["tls.key"] = keyContent
 
 		// save content into secret
-		err = CreateSecret(app.Namespace, app.AppName+"-tls", data)
+		err = CreateSecret("kubeconfig", app.Namespace, app.AppName+"-tls", data) // todo argument 1 needs to be real
 		if err != nil {
 			log.Error().Err(err).Msg("")
 		}

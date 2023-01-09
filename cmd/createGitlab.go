@@ -82,7 +82,7 @@ var createGitlabCmd = &cobra.Command{
 			log.Warn().Msg("error creating gitlab-vault-oidc initial secret")
 		}
 
-		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
+		clientset, err := k8s.GetClientSet(globalFlags.DryRun, config.KubeConfigPath)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -217,7 +217,7 @@ var createGitlabCmd = &cobra.Command{
 			// TODO: Confirm if we need to waitgit lab to be ready
 			// OR something, too fast the secret will not be there.
 			informUser("Gitlab setup tokens", globalFlags.SilentMode)
-			gitlab.ProduceGitlabTokens(globalFlags.DryRun)
+			gitlab.ProduceGitlabTokens(globalFlags.DryRun, config.KubeConfigPath)
 			progressPrinter.IncrementTracker("step-gitlab", 1)
 			informUser("Gitlab terraform", globalFlags.SilentMode)
 			gitlab.ApplyGitlabTerraform(globalFlags.DryRun, directory)

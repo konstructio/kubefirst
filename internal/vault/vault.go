@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"os"
 	"os/exec"
 	"syscall"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	vault "github.com/hashicorp/vault/api"
 	"github.com/kubefirst/kubefirst/configs"
@@ -193,7 +194,7 @@ func GetOidcClientCredentials(dryRun bool) {
 
 }
 
-func WaitVaultToBeRunning(dryRun bool) {
+func WaitVaultToBeRunning(dryRun bool, kubeconfigPath string) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, waitVaultToBeRunning skipped.")
 		return
@@ -203,7 +204,7 @@ func WaitVaultToBeRunning(dryRun bool) {
 		config := configs.ReadConfig()
 		x := 50
 		for i := 0; i < x; i++ {
-			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/vault")
+			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", kubeconfigPath, "get", "namespace/vault")
 			if err != nil {
 				log.Info().Msg("Waiting vault to be born")
 				time.Sleep(10 * time.Second)
@@ -217,7 +218,7 @@ func WaitVaultToBeRunning(dryRun bool) {
 		//! failing
 		x = 50
 		for i := 0; i < x; i++ {
-			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "get", "pods", "-l", "app.kubernetes.io/instance=vault")
+			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "get", "pods", "-l", "app.kubernetes.io/instance=vault")
 			if err != nil {
 				log.Info().Msg("Waiting vault pods to create")
 				time.Sleep(10 * time.Second)

@@ -8,6 +8,8 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+// todo can we take the final struct
+
 type CivoConfig struct {
 
 	// environment variables
