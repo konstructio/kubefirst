@@ -129,7 +129,6 @@ validated and configured.`,
 		progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
 		progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
 		progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
-		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 1)
 
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
 
@@ -137,6 +136,12 @@ validated and configured.`,
 
 		var telemetryHandler handlers.TelemetryHandler
 		viper.Set("use-telemetry", globalFlags.UseTelemetry)
+
+		if !globalFlags.UseTelemetry {
+			informUser("Telemetry Disabled", globalFlags.SilentMode)
+		} else {
+			pkg.InformUser("Sending installation telemetry", globalFlags.SilentMode)
+		}
 		if globalFlags.UseTelemetry {
 
 			// Instantiates a SegmentIO client to use send messages to the segment API.
@@ -281,8 +286,6 @@ validated and configured.`,
 
 		viper.WriteConfig()
 
-		//! tracker 8
-		progressPrinter.IncrementTracker("step-telemetry", 1)
 		time.Sleep(time.Millisecond * 100)
 
 		informUser("init is done!\n", globalFlags.SilentMode)

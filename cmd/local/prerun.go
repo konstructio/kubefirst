@@ -37,6 +37,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("sending init started metric")
 
 	if useTelemetry {
+		pkg.InformUser("Sending installation telemetry", silentMode)
 		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted); err != nil {
 			log.Error().Err(err).Msg("")
 		}
