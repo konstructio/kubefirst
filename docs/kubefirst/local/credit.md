@@ -30,10 +30,6 @@ site: [https://docker.com](https://docker.com)
 
 site: [https://external-secrets.io/](https://external-secrets.io/)
 
-## GitLab Runner
-
-site: [https://docs.gitlab.com/runner/](https://docs.gitlab.com/runner/)
-
 ## Kubernetes
 
 site: [https://kubernetes.io/](https://kubernetes.io/)
