@@ -4,6 +4,7 @@ package configs
 
 import (
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -23,18 +24,19 @@ import (
 
 // FLAGS VARIABLE
 // example loading values from flags:
-// go run . command-name --admin-email user@example.com
+// go run . command-name --log-level debug
 
 // ENVIRONMENT VARIABLE
 // example loading environment variables:
-// export KUBEFIRST_CLOUD=k3d
+// export KUBEFIRST_LOG_LEVEL=debug
 // command line commands loads the values from the environment variable and override the command flag.
 
 // YAML
-// example of a YAML Kubefirst file:
-// admin-email: user@example.com
-// cloud: k3d
-// command line commands loads the value from the kubefirst.yaml and override the command flags.
+// example of a YAML kubefirst-config.yaml file:
+// metaphor-branch: main
+// log-level: debug
+//
+// command line commands loads the value from the kubefirst-config.yaml and override the command flags.
 
 const (
 	// The name of our config file, without the file extension because viper supports many different config file languages.
@@ -59,13 +61,16 @@ func InitializeViperConfig(cmd *cobra.Command) error {
 	// Attempt to read the config file, gracefully ignoring errors
 	// caused by a config file not being found. Return an error
 	// if we cannot parse the config file.
-	//if err := v.ReadInConfig(); err != nil {
-	// It's okay if there isn't a config file
-	//if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-	//	return err
-	//}
-	//return err
-	//}
+	if err := v.ReadInConfig(); err != nil {
+		// fail if can't parse
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			log.Info().Msgf("not using custom config file")
+			return err
+		}
+
+		// It's okay if there isn't a config file
+		log.Info().Msgf("not using custom config file")
+	}
 
 	// When we bind flags to environment variables expect that the
 	// environment variables are prefixed, e.g. a flag like --number
