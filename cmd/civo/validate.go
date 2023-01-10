@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/caarlos0/env/v6"
 	"github.com/cip8/autoname"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
@@ -90,12 +89,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	// if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
 	// 	return err
 	// }
-
-	if err := env.Parse(&config); err != nil {
-		log.Println("something went wrong loading the environment variables")
-		log.Panic(err)
-	}
-
+	viper.AutomaticEnv()
 	homePath, err := os.UserHomeDir()
 	if err != nil {
 		log.Panic(err)
