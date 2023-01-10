@@ -93,7 +93,7 @@ var createGitlabCmd = &cobra.Command{
 		informUser("Created Softserve", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-softserve", 1)
 		informUser("Waiting Softserve", globalFlags.SilentMode)
-		k8s.WaitForNamespaceandPods(globalFlags.DryRun, config, "soft-serve", "app=soft-serve")
+		k8s.WaitForNamespaceandPods(globalFlags.DryRun, config.KubeConfigPath, config.KubectlClientPath, "soft-serve", "app=soft-serve")
 		progressPrinter.IncrementTracker("step-softserve", 1)
 		// todo this should be replaced with something more intelligent
 		log.Info().Msg("Waiting for soft-serve installation to complete...")
@@ -102,7 +102,7 @@ var createGitlabCmd = &cobra.Command{
 		var kPortForwardSoftServe *exec.Cmd
 		for i := 0; i < totalAttempts; i++ {
 
-			kPortForwardSoftServe, err = k8s.PortForward(globalFlags.DryRun, "soft-serve", "svc/soft-serve", "8022:22")
+			kPortForwardSoftServe, err = k8s.PortForward(globalFlags.DryRun, config.KubeConfigPath, config.KubectlClientPath, "svc/soft-serve", "soft-serve", "8022:22")
 			defer func() {
 				_ = kPortForwardSoftServe.Process.Signal(syscall.SIGTERM)
 			}()
@@ -142,7 +142,7 @@ var createGitlabCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-argo", 1)
 
 		if !globalFlags.DryRun {
-			kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
+			kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "svc/argocd-server", config.KubeConfigPath, config.KubectlClientPath, "argocd", "8080:80")
 			defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 			if err != nil {
 				log.Warn().Msg("Error creating port-forward")
@@ -178,19 +178,19 @@ var createGitlabCmd = &cobra.Command{
 		//!
 		progressPrinter.AddTracker("step-gitlab", "Setup Gitlab", 6)
 		informUser("Waiting vault to be ready", globalFlags.SilentMode)
-		waitVaultToBeRunning(globalFlags.DryRun)
+		waitVaultToBeRunning(globalFlags.DryRun, config.KubeConfigPath)
 		progressPrinter.IncrementTracker("step-gitlab", 1)
 
 		var kPortForwardVault *exec.Cmd
 		if !globalFlags.DryRun {
-			kPortForwardVault, err = k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
+			kPortForwardVault, err = k8s.PortForward(globalFlags.DryRun, "svc/vault", config.KubeConfigPath, config.KubectlClientPath, "vault", "8200:8200")
 			if err != nil {
 				log.Warn().Msg("Error creating port-forward")
 				return err
 			}
 		}
 
-		loopUntilPodIsReady(globalFlags.DryRun)
+		loopUntilPodIsReady(globalFlags.DryRun, config.KubeConfigPath, config.KubectlClientPath)
 		initializeVaultAndAutoUnseal(globalFlags.DryRun)
 		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")), globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-gitlab", 1)
@@ -204,7 +204,7 @@ var createGitlabCmd = &cobra.Command{
 
 		var kPortForwardGitlab *exec.Cmd
 		if !globalFlags.DryRun {
-			kPortForwardGitlab, err = k8s.PortForward(globalFlags.DryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
+			kPortForwardGitlab, err = k8s.PortForward(globalFlags.DryRun, "svc/gitlab-webservice-default", config.KubeConfigPath, config.KubectlClientPath, "gitlab", "8888:8080")
 			if err != nil {
 				log.Warn().Msg("Error creating port-forward")
 				return err
@@ -242,7 +242,7 @@ var createGitlabCmd = &cobra.Command{
 			pkg.Detokenize(repoDir)
 
 			log.Info().Msg("creating vault configured secret")
-			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
+			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config.KubeConfigPath, config.KubectlClientPath)
 			informUser("Vault secret created", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-vault", 1)
 		}
@@ -305,7 +305,7 @@ var createGitlabCmd = &cobra.Command{
 			informUser("Port forwarding to new argocd-server pod", globalFlags.SilentMode)
 			if !globalFlags.DryRun {
 				time.Sleep(time.Second * 20)
-				kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
+				kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "svc/argocd-server", config.KubeConfigPath, config.KubeConfigPath, "argocd", "8080:80")
 				defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 				if err != nil {
 					log.Warn().Msg("Error creating port-forward")
@@ -391,11 +391,11 @@ var createGitlabCmd = &cobra.Command{
 			}
 			if !viper.GetBool("create.terraformapplied.users") {
 				for i := 0; i < totalAttempts; i++ {
-					kPortForwardVault, err = k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
+					kPortForwardVault, err = k8s.PortForward(globalFlags.DryRun, config.KubeConfigPath, config.KubectlClientPath, "svc/vault", "vault", "8200:8200")
 					defer func() {
 						_ = kPortForwardVault.Process.Signal(syscall.SIGTERM)
 					}()
-					kPortForwardGitlab, err = k8s.PortForward(globalFlags.DryRun, "gitlab", "svc/gitlab-webservice-default", "8888:8080")
+					kPortForwardGitlab, err = k8s.PortForward(globalFlags.DryRun, config.KubeConfigPath, config.KubectlClientPath, "svc/gitlab-webservice-default", "gitlab", "8888:8080")
 					defer func() {
 						_ = kPortForwardGitlab.Process.Signal(syscall.SIGTERM)
 					}()

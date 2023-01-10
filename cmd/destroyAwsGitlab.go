@@ -10,6 +10,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/handlers"
@@ -28,6 +29,7 @@ var destroyAwsGitlabCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debug().Msg("destroy-aws-gitlab called")
 
+		config := configs.ReadConfig()
 		destroyFlags, err := flagset.ProcessDestroyFlags(cmd)
 		if err != nil {
 			log.Warn().Msgf("%s", err)
@@ -77,7 +79,7 @@ var destroyAwsGitlabCmd = &cobra.Command{
 
 		//This should wrapped into a function, maybe to move to: k8s.DeleteRegistryApplication
 		if !destroyFlags.SkipDeleteRegistryApplication {
-			kPortForwardArgocd, _ := k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
+			kPortForwardArgocd, _ := k8s.PortForward(globalFlags.DryRun, "svc/argocd-server", config.KubeConfigPath, config.KubectlClientPath, "argocd", "8080:80")
 			defer func() {
 				if kPortForwardArgocd != nil {
 					log.Info().Msg("Closed argocd port forward")
