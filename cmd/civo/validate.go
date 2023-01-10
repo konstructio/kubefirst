@@ -102,6 +102,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 
 	// todo validate flags
 	viper.Set("admin-email", adminEmailFlag)
+	viper.Set("argocd.helm.chart-version", "4.10.5")
 	viper.Set("argocd.local.service", "http://localhost:8080")
 	viper.Set("vault.local.service", "http://localhost:8200")
 	viper.Set("cloud-provider", cloudProviderFlag)
@@ -109,10 +110,14 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("kubefirst.k1-directory-path", k1DirectoryPath)
 	viper.Set("kubefirst.k1-tools-path", fmt.Sprintf("%s/tools", k1DirectoryPath))
 	viper.Set("kubefirst.k1-gitops-repo-path", fmt.Sprintf("%s/gitops", k1DirectoryPath))
+	viper.Set("kubefirst.helm-client-path", fmt.Sprintf("%s/tools/helm", k1DirectoryPath))
+	viper.Set("kubefirst.helm-client-version", "v3.6.1")
 	viper.Set("kubefirst.kubeconfig-path", fmt.Sprintf("%s/kubeconfig", k1DirectoryPath))
 	viper.Set("kubefirst.kubectl-client-path", fmt.Sprintf("%s/tools/kubectl", k1DirectoryPath))
 	viper.Set("kubefirst.kubectl-client-version", "v1.23.15") // todo make configs like this more discoverable in struct?
 	viper.Set("kubefirst.kubefirst-config-path", fmt.Sprintf("%s/%s", homePath, ".kubefirst"))
+	viper.Set("kubefirst.terraform-client-path", fmt.Sprintf("%s/tools/terraform", k1DirectoryPath))
+	viper.Set("kubefirst.terraform-client-version", "1.0.11")
 	viper.Set("localhost.os", runtime.GOOS)
 	viper.Set("localhost.architecture", runtime.GOARCH)
 	viper.Set("github.atlantis.webhook.secret", pkg.Random(20))
@@ -132,6 +137,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("template-repo.metaphor-frontend.branch", "main")
 	viper.Set("template-repo.metaphor-go.url", fmt.Sprintf("https://github.com/%s/metaphor-go.git", defaultTemplateRepoGithubOwner))
 	viper.Set("template-repo.metaphor-go.branch", "main")
+
 	viper.WriteConfig()
 
 	pkg.InformUser("checking authentication to required providers", silentModeFlag)
@@ -254,10 +260,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("kubefirst.checks.bot-setup.complete")
 	if !executionControl {
 
-		// todo only create if it doesn't exist
-		if err := os.Mkdir(fmt.Sprintf("%s", config.K1FolderPath), os.ModePerm); err != nil {
-			return fmt.Errorf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1FolderPath, err)
-		}
 		log.Println("creating an ssh key pair for your new cloud infrastructure")
 		sshPrivateKey, sshPublicKey, err := ssh.CreateSshKeyPair()
 		if err != nil {

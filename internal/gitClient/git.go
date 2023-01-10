@@ -28,6 +28,21 @@ const Github = "github"
 // Gitlab - git-provider github
 const Gitlab = "gitlab"
 
+// AddRemote - clone repo using AddRemote that uses fallback rule to try to capture version
+func AddRemote(gitopsRepoPath, remoteName, newGitRemoteURL string, repo *git.Repository) error {
+
+	log.Info().Msgf("git remote add %s %s", remoteName, newGitRemoteURL)
+	_, err := repo.CreateRemote(&gitConfig.RemoteConfig{
+		Name: remoteName,
+		URLs: []string{newGitRemoteURL},
+	})
+	if err != nil {
+		log.Info().Msgf("Error creating remote %s at: %s - %s", remoteName, newGitRemoteURL)
+		return err
+	}
+	return nil
+}
+
 // CloneRepoAndDetokenizeTemplate - clone repo using CloneRepoAndDetokenizeTemplate that uses fallback rule to try to capture version
 func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, branch string, tag string) (string, error) {
 	config := configs.ReadConfig()
@@ -166,6 +181,30 @@ func ClonePrivateRepo(gitRepoURL, gitRepoDestinationDir string) {
 	if err != nil {
 		log.Fatal().Err(err).Msgf("error cloning git repository %s", gitRepoURL)
 	}
+}
+
+func Commit(repo *git.Repository, commitMsg string) {
+	w, _ := repo.Worktree()
+
+	log.Printf(commitMsg)
+	status, err := w.Status()
+	if err != nil {
+		log.Info().Msgf("error getting worktree status", err)
+	}
+
+	for file, _ := range status {
+		_, err = w.Add(file)
+		if err != nil {
+			log.Info().Msgf("error getting worktree status", err)
+		}
+	}
+	w.Commit(fmt.Sprintf(commitMsg), &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "kubefirst-bot",
+			Email: "kubefirst-bot@kubefirst.com",
+			When:  time.Now(),
+		},
+	})
 }
 
 func PushGitopsToSoftServe() {

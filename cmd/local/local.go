@@ -238,7 +238,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.helm.repo.updated")
 	if !executionControl {
 		pkg.InformUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), silentMode)
-		helm.AddRepoAndUpdateRepo(dryRun, helmRepo)
+		helm.AddRepoAndUpdateRepo(dryRun, config.HelmClientPath, helmRepo, config.KubeConfigPath)
 	}
 
 	// helm install argocd
@@ -252,7 +252,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	// argocd pods are running
 	executionControl = viper.GetBool("argocd.ready")
 	if !executionControl {
-		argocd.WaitArgoCDToBeReady(dryRun)
+		argocd.WaitArgoCDToBeReady(dryRun, config.KubeConfigPath, config.KubectlClientPath)
 		pkg.InformUser("ArgoCD is running, continuing", silentMode)
 	} else {
 		log.Info().Msg("already waited for argocd to be ready")

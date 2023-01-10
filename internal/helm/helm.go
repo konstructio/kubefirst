@@ -2,6 +2,7 @@ package helm
 
 import (
 	"fmt"
+
 	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
@@ -74,16 +75,15 @@ type HelmRepo struct {
 	ChartVersion string
 }
 
-func AddRepoAndUpdateRepo(dryRun bool, helmRepo HelmRepo) error {
+// todo use the golang helm client
+func AddRepoAndUpdateRepo(dryRun bool, helmClientPath string, helmRepo HelmRepo, kubeconfigPath string) error {
 	if dryRun {
 		log.Info().Msg("[#99] Dry-run mode, helm.AddRepoAndUpdateRepo skipped.")
 		return nil
 	}
 
-	config := configs.ReadConfig()
-
 	log.Info().Msgf("executing `helm repo add %s %s` ", helmRepo.RepoName, helmRepo.RepoURL)
-	_, _, err := pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "repo", "add", helmRepo.RepoName, helmRepo.RepoURL)
+	_, _, err := pkg.ExecShellReturnStrings(helmClientPath, "--kubeconfig", kubeconfigPath, "repo", "add", helmRepo.RepoName, helmRepo.RepoURL)
 	if err != nil {
 		log.Error().Err(err).Msgf("error adding helm repo %s", helmRepo.RepoName)
 		return err
@@ -92,7 +92,7 @@ func AddRepoAndUpdateRepo(dryRun bool, helmRepo HelmRepo) error {
 	viper.WriteConfig()
 
 	log.Info().Msg("executing `helm repo update`")
-	_, _, err = pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "repo", "update")
+	_, _, err = pkg.ExecShellReturnStrings(helmClientPath, "--kubeconfig", kubeconfigPath, "repo", "update")
 	if err != nil {
 		log.Error().Err(err).Msgf("error updating helm repo %s", helmRepo.RepoName)
 		return err

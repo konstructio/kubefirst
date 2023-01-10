@@ -473,7 +473,7 @@ func IsAppSynched(token string, applicationName string) (bool, error) {
 }
 
 // todo: document it, deprecate the other waitArgoCDToBeReady
-func WaitArgoCDToBeReady(dryRun bool) {
+func WaitArgoCDToBeReady(dryRun bool, kubeconfigPath, kubectlClientVersion string) {
 	if dryRun {
 		log.Info().Msg("[#99] Dry-run mode, waitArgoCDToBeReady skipped.")
 		return
