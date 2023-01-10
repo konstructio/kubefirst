@@ -137,6 +137,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("template-repo.metaphor-frontend.branch", "main")
 	viper.Set("template-repo.metaphor-go.url", fmt.Sprintf("https://github.com/%s/metaphor-go.git", defaultTemplateRepoGithubOwner))
 	viper.Set("template-repo.metaphor-go.branch", "main")
+	viper.Set("vault.token", "k1_local_vault_token")
 
 	viper.WriteConfig()
 

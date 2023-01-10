@@ -228,7 +228,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created github terraform resources")
 	}
 
-	//! cleaner to here
 	// kubernetes.BootstrapSecrets
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	// todo deconstruct CreateNamespaces / CreateSecret
@@ -284,6 +283,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// argocd pods are running
+	// todo improve this check
 	executionControl = viper.GetBool("argocd.ready")
 	if !executionControl {
 		argocd.WaitArgoCDToBeReady(dryRun, kubeconfigPath, kubectlClientPath)
@@ -291,10 +291,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already waited for argocd to be ready")
 	}
-	//!
-	//!HERE
-	//!
-	//!
+
 	// ArgoCD port-forward
 	argoCDStopChannel := make(chan struct{}, 1)
 	defer func() {
@@ -382,9 +379,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("terraform.vault.apply.complete")
 	if !executionControl {
 		// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
-		//* set known vault token
-		viper.Set("vault.token", "k1_local_vault_token")
-		viper.WriteConfig()
 
 		//* run vault terraform
 		pkg.InformUser("configuring vault with terraform", silentMode)
@@ -396,7 +390,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		pkg.InformUser("vault terraform executed successfully", silentMode)
 
-		//* create vault configurerd secret
+		//* create vault configured secret
 		// todo remove this code
 		log.Info().Msg("creating vault configured secret")
 		k8s.CreateVaultConfiguredSecret(dryRun, kubeconfigPath, kubectlClientPath)
@@ -420,15 +414,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already created users with terraform")
 	}
-
-	pkg.InformUser("Welcome to civo kubefirst experience", silentMode)
-	pkg.InformUser("To use your cluster port-forward - argocd", silentMode)
-	pkg.InformUser("If not automatically injected, your kubeconfig is at:", silentMode)
-	pkg.InformUser("k3d kubeconfig get "+viper.GetString("kubefirst.cluster-name"), silentMode)
-	pkg.InformUser("Expose Argo-CD", silentMode)
-	pkg.InformUser("kubectl -n argocd port-forward svc/argocd-server 8080:80", silentMode)
-	pkg.InformUser("Argo User: "+viper.GetString("argocd.admin.username"), silentMode)
-	pkg.InformUser("Argo Password: "+viper.GetString("argocd.admin.password"), silentMode)
 
 	// progressPrinter.IncrementTracker("step-apps", 1)
 	// progressPrinter.IncrementTracker("step-base", 1)
@@ -541,6 +526,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		err = gitHubClient.CommentPR(1, "atlantis apply")
 		if err != nil {
+			log.Info().Err(err).Msg("error commenting on atlantis pull request")
 		}
 		wg.Done()
 	}()
@@ -556,6 +542,15 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("Kubefirst installation finished successfully")
 	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
+
+	pkg.InformUser("Welcome to civo kubefirst experience", silentMode)
+	pkg.InformUser("To use your cluster port-forward - argocd", silentMode)
+	pkg.InformUser("If not automatically injected, your kubeconfig is at:", silentMode)
+	pkg.InformUser("k3d kubeconfig get "+viper.GetString("kubefirst.cluster-name"), silentMode)
+	pkg.InformUser("Expose Argo-CD", silentMode)
+	pkg.InformUser("kubectl -n argocd port-forward svc/argocd-server 8080:80", silentMode)
+	pkg.InformUser("Argo User: "+viper.GetString("argocd.admin.username"), silentMode)
+	pkg.InformUser("Argo Password: "+viper.GetString("argocd.admin.password"), silentMode)
 
 	wg.Wait()
 
