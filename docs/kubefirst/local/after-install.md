@@ -6,7 +6,7 @@
 
 The `kubefirst local` execution includes important information toward the end, including URLs and passwords to get to your applications.
 
-If you close the handoff screen (pressing `ESC`), you can acess the Kubefirst Console to see all aplications and their local endpoints. Just click on this link: [Console](https://kubefirst.localdev.me/) or open in your browser: `https://kubefirst.localdev.me`
+If you close the handoff screen (by pressing ESC), you can still access the Kubefirst Console to see all applications, and their local endpoints by opening the Console app.
 
 You now have a k3d cluster with the following content installed in it:
 
