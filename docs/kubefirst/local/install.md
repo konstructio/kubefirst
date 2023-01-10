@@ -37,13 +37,13 @@ The `kubefirst local` command will request that you authorize the Kubefirst CLI 
 
 The [gitops repo](https://github.com/kubefirst/gitops-template) that we create for you will power your local Kubefirst platform. The [metaphor-frontend](https://github.com/kubefirst/metaphor-frontend-template) repo is your microservice example, which demonstrate how to publish and gitops-deliver applications to your new development, staging, and production namespaces in your new local cluster.
 
-#### Atlantis and Ngrok integration
+#### Atlantis and ngrok integration
 
-During cluster provisioning, Terraform communicates with host machine to create the desired resources. When Atlantis is installed via Kubefirst, it will use Ngrok to expose the Atlantis server to the internet via webhook.
+During cluster provisioning, Terraform communicates with the host machine to create the desired resources. When Atlantis is installed via Kubefirst, it will use ngrok to expose the Atlantis server to the internet via webhook.
 
-Webhook is the way GitHub listen to events and forward the request to a service, for example when a new commit is pushed to a repository Atlantis will receive a event call and run a plan.
+Webhooks are the way GitHub listen to events, and forward the request to a service. As an example, when a new commit is pushed to a repository, Atlantis will receive an event call, and run a plan.
 
-Ngrok is a tool that allows us to expose a local server to the internet via a tunnel, Kubefirst opens the tunnel during the installation, and Atlantis receives events via the tunnel. When the installation finish, it will hang at the handoff screen, the tunnel will be closed when the handoff screen is closed and Kubefirst installation process dies.
+ngrok is a tool that allows us to expose a local server to the internet via a tunnel, Kubefirst opens the tunnel during the installation, and Atlantis receive the events via the tunnel. When the installation finish, it hangs at the handoff screen. The tunnel will be closed once the handoff screen is closed, and the Kubefirst installation process dies.
 
 ## After installation
 
