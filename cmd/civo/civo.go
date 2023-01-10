@@ -118,36 +118,27 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
-	if !viper.GetBool("template-repo.gitops.cloned") {
+	if !viper.GetBool("template-repo.gitops.ready-to-push") {
 
-		//* step 1 clone the gitops-template repository
 		pkg.InformUser("generating your new gitops repository", silentMode)
 		gitClient.CloneBranchSetMain(gitopsTemplateURL, gitopsRepoPath, gitopsTemplateBranch)
 		log.Info().Msg("gitops repository clone complete")
 
-		//* step 2 get the correct driver content
 		pkg.AdjustGitopsTemplateContent(cloudProvider, gitopsRepoPath, gitProvider)
 
-		//* step 3 detokenize the new gitops content
 		pkg.DetokenizeCivoGithub(gitopsRepoPath)
 
-		//* step 4 add a new remote to the repo
 		gitopsRepo, err := git.PlainOpen(gitopsRepoPath)
 		if err != nil {
 			log.Print("error opening repo at:", gitopsRepoPath)
 		}
 		gitClient.AddRemote(gitopsRepoPath, gitProvider, destinationGitopsRepoURL, gitopsRepo)
-		// todo need to exit
-		return errors.New("STOP: cd to ~/.k1/gitops and git remote -v, make sure github remote is there otherwise you need to return the repo from gitopsRepo = gitClient.Add")
 
-		//* step 5 commit newly detokenized content
 		gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
-		return errors.New("STOP: cd to ~/.k1/gitops and git log")
 
 		// todo emit init telemetry end
 
-		viper.Set("template-repo.gitops.cloned", true)
-		viper.Set("template-repo.gitops.detokenized", true)
+		viper.Set("template-repo.gitops.ready-to-push", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
@@ -274,7 +265,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), silentMode)
 		helm.AddRepoAndUpdateRepo(dryRun, helmClientPath, helmRepo, kubeconfigPath)
 	}
-
+	//! error starts here
 	// helm install argocd
 	executionControl = viper.GetBool("argocd.helm.install.complete")
 	if !executionControl {

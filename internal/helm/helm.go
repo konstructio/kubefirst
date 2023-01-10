@@ -115,6 +115,7 @@ func Install(dryRun bool, helmRepo HelmRepo) error {
 	_, _, err := pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "upgrade", "--install", helmRepo.ChartName, "--namespace", helmRepo.Namespace, "--create-namespace", "--version", helmRepo.ChartVersion, "--wait", "--set", "fullnameOverride=argocd", "--set", "nameOverride=argocd", "--values", config.ArgoCDInitValuesYamlPath, fmt.Sprintf("%s/%s", helmRepo.RepoName, helmRepo.ChartName))
 	if err != nil {
 		log.Error().Err(err).Msgf("error: could not helm install %s - %s", helmRepo.ChartName, err)
+		return err
 	}
 	viper.Set("argocd.helm.install.complete", true)
 	viper.WriteConfig()
