@@ -240,7 +240,17 @@ validated and configured.`,
 			if !skipHostedZoneCheck {
 				hostedZoneLiveness := aws.TestHostedZoneLiveness(globalFlags.DryRun, awsFlags.HostedZoneName, hostedZoneId)
 				if !hostedZoneLiveness {
-					log.Panic().Msg("Fail to check the Liveness of HostedZone, we need a valid public HostedZone on the same AWS account that Kubefirst will be installed.")
+					msg := "failed to check the liveness of the HostedZone. A valid public HostedZone on the same AWS " +
+						"account as the one where Kubefirst will be installed is required for this operation to " +
+						"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct AWS account and " +
+						"region.\n - Verify that you have the necessary permissions to access the hosted zone.\n - Check " +
+						"that the hosted zone is correctly configured and is a public hosted zone\n - Check if the " +
+						"hosted zone exists and has the correct name and domain.\n - If you don't have a HostedZone," +
+						"please follow these instructions to create one: " +
+						"https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zones-working-with.html \n\n" +
+						"if you are still facing issues please reach out to support team for further assistance"
+					log.Error().Msg(msg)
+					return errors.New(msg)
 				}
 			} else {
 				log.Info().Msg("skipping hosted zone check")
