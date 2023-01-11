@@ -296,7 +296,8 @@ validated and configured.`,
 
 		viper.WriteConfig()
 
-		time.Sleep(time.Millisecond * 100)
+		// workaround to wait for segmentIo process the message
+		time.Sleep(time.Millisecond * 1000)
 
 		informUser("init is done!\n", globalFlags.SilentMode)
 
