@@ -245,7 +245,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.helm.install.complete")
 	if !executionControl {
 		pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
-		helm.Install(dryRun, helmRepo)
+		helm.Install(config.ArgoCDInitValuesYamlPath, dryRun, config.HelmClientPath, helmRepo, config.KubeConfigPath)
 	}
 	progressPrinter.IncrementTracker("step-apps", 1)
 
@@ -277,7 +277,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.registry.applied")
 	if !executionControl {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
-		err := argocd.ApplyRegistryLocal(dryRun)
+		err := argocd.ApplyRegistryLocal(dryRun, config.KubeConfigPath, config.KubectlClientPath, config.K1FolderPath)
 		if err != nil {
 			log.Error().Err(err).Msg("Error applying registry application to argocd")
 			return err
@@ -290,7 +290,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("vault.status.running")
 	if !executionControl {
 		pkg.InformUser("waiting for Vault to be ready...", silentMode)
-		vault.WaitVaultToBeRunning(dryRun, config.KubeConfigPath)
+		vault.WaitVaultToBeRunning(dryRun, config.KubeConfigPath, config.KubectlClientPath)
 	}
 
 	k8s.LoopUntilPodIsReady(dryRun, config.KubeConfigPath, config.KubectlClientPath)
@@ -364,7 +364,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	// update terraform s3 backend to internal k8s dns (s3/minio bucket)
-	err = pkg.UpdateTerraformS3BackendForK8sAddress()
+	err = pkg.UpdateTerraformS3BackendForK8sAddress(config.K1FolderPath)
 	if err != nil {
 		return err
 	}
@@ -377,6 +377,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	err = gitClient.UpdateLocalTerraformFilesAndPush(
 		githubHost,
 		githubOwner,
+		config.K1FolderPath,
 		localRepo,
 		remoteName,
 		branchNameRef,

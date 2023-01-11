@@ -15,7 +15,6 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
-	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
@@ -23,7 +22,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
-	"github.com/kubefirst/kubefirst/internal/metaphor"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
@@ -46,7 +44,7 @@ type KubefirstToolConfig struct {
 
 func runCivo(cmd *cobra.Command, args []string) error {
 
-	config := configs.GetCivoConfig()
+	// config := configs.GetCivoConfig()
 	log.Info().Msg("runCivo command is starting ")
 	// var userInput string
 	// printConfirmationScreen()
@@ -67,23 +65,28 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	civoDnsName := viper.GetString("civo.dns")
 	gitopsTemplateBranch := viper.GetString("template-repo.gitops.branch")
 	gitopsTemplateURL := viper.GetString("template-repo.gitops.url")
+	metaphorTemplateBranch := viper.GetString("template-repo.metaphor-frontend.branch")
+	metaphorTemplateURL := viper.GetString("template-repo.metaphor-frontend.url")
+	k1MetaphorDir := viper.GetString("kubefirst.k1-metaphor-dir")
 	cloudProvider := viper.GetString("cloud-provider")
 	destinationGitopsRepoURL := viper.GetString("github.repo.gitops.giturl")
+	destinationMetaphorRepoURL := viper.GetString("github.repo.metaphor.giturl")
 	gitProvider := viper.GetString("git-provider")
 	kubefirstBotSSHPrivateKey := viper.GetString("kubefirst.bot.private-key")
-	gitopsRepoPath := viper.GetString("kubefirst.k1-gitops-repo-path")
+	k1GitopsDir := viper.GetString("kubefirst.k1-gitops-dir")
 	kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
 	helmClientPath := viper.GetString("kubefirst.helm-client-path")
 	helmClientVersion := viper.GetString("kubefirst.helm-client-version")
-	k1DirectoryPath := viper.GetString("kubefirst.k1-directory-path")
+	k1Dir := viper.GetString("kubefirst.k1-directory-path")
 	kubectlClientPath := viper.GetString("kubefirst.kubectl-client-path")
 	kubectlClientVersion := viper.GetString("kubefirst.kubectl-client-version")
 	localOs := viper.GetString("localhost.os")
 	localArchitecture := viper.GetString("localhost.architecture")
 	terraformClientVersion := viper.GetString("kubefirst.terraform-client-version")
-	k1ToolsDirPath := viper.GetString("kubefirst.k1-tools-path")
+	k1ToolsDir := viper.GetString("kubefirst.k1-tools-path")
 	silentMode := false // todo fix
 	dryRun := false     // todo fix
+	argoCDInitValuesYamlPath := fmt.Sprintf("%s/argocd-init-values.yaml", k1Dir)
 
 	//* emit cluster install started
 	if useTelemetryFlag {
@@ -103,7 +106,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			localOs,
 			localArchitecture,
 			terraformClientVersion,
-			k1ToolsDirPath)
+			k1ToolsDir)
 		if err != nil {
 			return err
 		}
@@ -121,18 +124,18 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("template-repo.gitops.ready-to-push") {
 
 		pkg.InformUser("generating your new gitops repository", silentMode)
-		gitClient.CloneBranchSetMain(gitopsTemplateURL, gitopsRepoPath, gitopsTemplateBranch)
+		gitClient.CloneBranchSetMain(gitopsTemplateURL, k1GitopsDir, gitopsTemplateBranch)
 		log.Info().Msg("gitops repository clone complete")
 
-		pkg.AdjustGitopsTemplateContent(cloudProvider, gitopsRepoPath, gitProvider)
+		pkg.AdjustGitopsTemplateContent(cloudProvider, k1GitopsDir, gitProvider)
 
-		pkg.DetokenizeCivoGithub(gitopsRepoPath)
+		pkg.DetokenizeCivoGithubGitops(k1GitopsDir)
 
-		gitopsRepo, err := git.PlainOpen(gitopsRepoPath)
+		gitopsRepo, err := git.PlainOpen(k1GitopsDir)
 		if err != nil {
-			log.Print("error opening repo at:", gitopsRepoPath)
+			log.Print("error opening repo at:", k1GitopsDir)
 		}
-		gitClient.AddRemote(gitopsRepoPath, gitProvider, destinationGitopsRepoURL, gitopsRepo)
+		gitClient.AddRemote(k1GitopsDir, gitProvider, destinationGitopsRepoURL, gitopsRepo)
 
 		gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
 
@@ -150,7 +153,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		pkg.InformUser("Creating github resources with terraform", silentMode)
 
-		tfEntrypoint := gitopsRepoPath + "/terraform/github"
+		tfEntrypoint := k1GitopsDir + "/terraform/github"
 		tfEnvs := map[string]string{}
 		tfEnvs = terraform.GetGithubTerraformEnvs(tfEnvs)
 		//! debug log
@@ -170,9 +173,9 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	//* push detokenized gitops-template repository content to new remote
 	executionControl = viper.GetBool("github.gitops.repo.pushed")
 	if !executionControl {
-		gitopsRepo, err := git.PlainOpen(gitopsRepoPath)
+		gitopsRepo, err := git.PlainOpen(k1GitopsDir)
 		if err != nil {
-			log.Print("error opening repo at:", gitopsRepoPath)
+			log.Print("error opening repo at:", k1GitopsDir)
 		}
 
 		publicKeys, err := ssh.NewPublicKeys("git", []byte(kubefirstBotSSHPrivateKey), "")
@@ -202,7 +205,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("terraform.civo.apply.complete") {
 		pkg.InformUser("Creating civo cloud resources with terraform", silentMode)
 
-		tfEntrypoint := gitopsRepoPath + "/terraform/civo"
+		tfEntrypoint := k1GitopsDir + "/terraform/civo"
 		tfEnvs := map[string]string{}
 		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
 		//! debug only log on debug
@@ -234,15 +237,14 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already added secrets to k3d cluster")
 	}
 
-	// create argocd initial repository config
+	//* create argocd initial repository config
 	// todo gitops this or bootstrap the | keep looking
 	executionControl = viper.GetBool("argocd.initial-repository.created")
 	if !executionControl {
 		pkg.InformUser("create initial argocd repository", silentMode)
 		//Enterprise users need to be able to set the hostname for git.
-		gitopsRepo := viper.GetString("github.repo.gitops.giturl")
-		argoCDConfig := argocd.GetArgoCDInitialCloudConfig(gitopsRepo, viper.GetString("kubefirst.bot.private-key"))
-		err := argocd.CreateInitialArgoCDRepository(argoCDConfig, k1DirectoryPath)
+		argoCDConfig := argocd.GetArgoCDInitialCloudConfig(destinationGitopsRepoURL, kubefirstBotSSHPrivateKey)
+		err := argocd.CreateInitialArgoCDRepository(argoCDConfig, k1Dir)
 		if err != nil {
 			log.Info().Msg("Error CreateInitialArgoCDRepository")
 			return err
@@ -251,7 +253,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created initial argocd repository")
 	}
 
-	// helm add argo repository && update
+	//* helm add argo repository && update
 	helmRepo := helm.HelmRepo{
 		RepoName:     "argo",
 		RepoURL:      "https://argoproj.github.io/argo-helm",
@@ -265,16 +267,19 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), silentMode)
 		helm.AddRepoAndUpdateRepo(dryRun, helmClientPath, helmRepo, kubeconfigPath)
 	}
-	//! error starts here
-	// helm install argocd
+	//* helm install argocd
 	executionControl = viper.GetBool("argocd.helm.install.complete")
 	if !executionControl {
 		pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
-		helm.Install(dryRun, helmRepo)
+		// todo adopt golang helm client for helm install
+		err := helm.Install(argoCDInitValuesYamlPath, dryRun, helmClientPath, helmRepo, kubeconfigPath)
+		if err != nil {
+			return err
+		}
 	}
 
-	// argocd pods are running
-	// todo improve this check
+	//* argocd pods are running
+	// todo improve this check, also return an error so we can have an exit on failure
 	executionControl = viper.GetBool("argocd.ready")
 	if !executionControl {
 		argocd.WaitArgoCDToBeReady(dryRun, kubeconfigPath, kubectlClientPath)
@@ -283,14 +288,14 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already waited for argocd to be ready")
 	}
 
-	// ArgoCD port-forward
+	//* ArgoCD port-forward
 	argoCDStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(argoCDStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
 		kubeconfigPath,
-		"argocd-server",
+		"argo-cd-server", // todo fix this, it should `argocd
 		"argocd",
 		8080,
 		8080,
@@ -317,7 +322,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.registry.applied")
 	if !executionControl {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
-		err := argocd.ApplyRegistryLocal(dryRun)
+		err := argocd.ApplyRegistryLocal(dryRun, kubeconfigPath, kubectlClientPath, k1Dir)
 		if err != nil {
 			log.Info().Msg("Error applying registry application to argocd")
 			return err
@@ -328,7 +333,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("vault.status.running")
 	if !executionControl {
 		pkg.InformUser("Waiting for vault to be ready", silentMode)
-		vault.WaitVaultToBeRunning(dryRun, config.KubeConfigPath)
+		vault.WaitVaultToBeRunning(dryRun, kubeconfigPath, kubectlClientPath)
 	}
 
 	// Vault port-forward
@@ -363,9 +368,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// todo: can I remove it?
 	time.Sleep(20 * time.Second)
 
-	//! need to look hard starting here down
-	//! todo
-
 	// configure vault with terraform
 	executionControl = viper.GetBool("terraform.vault.apply.complete")
 	if !executionControl {
@@ -376,7 +378,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 		tfEnvs = terraform.GetVaultTerraformEnvs(tfEnvs)
-		tfEntrypoint := gitopsRepoPath + "/terraform/vault"
+		tfEntrypoint := k1GitopsDir + "/terraform/vault"
 		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 
 		pkg.InformUser("vault terraform executed successfully", silentMode)
@@ -386,6 +388,8 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("creating vault configured secret")
 		k8s.CreateVaultConfiguredSecret(dryRun, kubeconfigPath, kubectlClientPath)
 		pkg.InformUser("Vault secret created", silentMode)
+		viper.Set("terraform.vault.apply.complete", true)
+		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already executed vault terraform")
 	}
@@ -397,11 +401,13 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 		tfEnvs = terraform.GetUsersTerraformEnvs(tfEnvs)
-		tfEntrypoint := gitopsRepoPath + "/terraform/users"
+		tfEntrypoint := k1GitopsDir + "/terraform/users"
 		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 
 		pkg.InformUser("executed users terraform successfully", silentMode)
 		// progressPrinter.IncrementTracker("step-users", 1)
+		viper.Set("terraform.users.apply.complete", true)
+		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already created users with terraform")
 	}
@@ -409,40 +415,88 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// progressPrinter.IncrementTracker("step-apps", 1)
 	// progressPrinter.IncrementTracker("step-base", 1)
 	// progressPrinter.IncrementTracker("step-apps", 1)
+	// Chartmuseum port-forward
+	chartmuseumStopChannel := make(chan struct{}, 1)
+	defer func() {
+		close(chartmuseumStopChannel)
+	}()
+	k8s.OpenPortForwardPodWrapper(
+		kubeconfigPath,
+		"chartmuseum",
+		"chartmuseum",
+		8080,
+		8081,
+		chartmuseumStopChannel,
+	)
 
 	if !viper.GetBool("chartmuseum.host.resolved") {
-		// Chartmuseum port-forward
-		chartmuseumStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(chartmuseumStopChannel)
-		}()
-		k8s.OpenPortForwardPodWrapper(
-			kubeconfigPath,
-			"chartmuseum",
-			"chartmuseum",
-			8080,
-			8081,
-			chartmuseumStopChannel,
-		)
-
 		pkg.AwaitHostNTimes("http://localhost:8181/health", 5, 5)
 		viper.Set("chartmuseum.host.resolved", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already resolved host for chartmuseum, continuing")
 	}
+	//! here
+	//* git clone and detokenize the gitops repository
+	// todo improve this logic for removing `kubefirst clean`
+	if !viper.GetBool("template-repo.metaphor-frontend.pushed") {
 
-	pkg.InformUser("Deploying metaphor applications", silentMode)
-	metaphorBranch := viper.GetString("template-repo.metaphor.branch")
-	err := metaphor.DeployMetaphorGithubLocal(dryRun, false, githubOwner, metaphorBranch, "")
-	if err != nil {
-		pkg.InformUser("Error deploy metaphor applications", silentMode)
-		log.Info().Msg("Error running deployMetaphorCmd")
-		log.Info().Msg(err.Error())
+		pkg.InformUser("generating your new metaphor repository", silentMode)
+		metaphorRepo, err := gitClient.CloneBranchSetMain(metaphorTemplateURL, k1MetaphorDir, metaphorTemplateBranch)
+		if err != nil {
+			log.Info().Msg(err.Error())
+			return err
+		}
+		log.Info().Msg("metaphor repository clone complete")
+
+		pkg.DetokenizeCivoGithubMetaphor(k1MetaphorDir)
+
+		gitClient.AddRemote(k1MetaphorDir, gitProvider, destinationMetaphorRepoURL, metaphorRepo)
+
+		gitClient.Commit(metaphorRepo, "committing initial detokenized gitops-template repo content")
+
+		publicKeys, err := ssh.NewPublicKeys("git", []byte(kubefirstBotSSHPrivateKey), "")
+		if err != nil {
+			log.Info().Msgf("generate publickeys failed: %s\n", err.Error())
+		}
+
+		err = metaphorRepo.Push(&git.PushOptions{
+			RemoteName: gitProvider,
+			Auth:       publicKeys,
+		})
+		if err != nil {
+			log.Panic().Msgf("error pushing detokenized metaphor repository to remote %s", destinationMetaphorRepoURL)
+		}
+
+		log.Printf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwner)
+		// todo delete the local gitops repo and re-clone it
+		// todo that way we can stop worrying about which origin we're going to push to
+		pkg.InformUser(fmt.Sprintf("pushed metaphor-frontend content to in github.com/%s", githubOwner), silentMode)
+
+		// todo emit init telemetry end
+
+		viper.Set("template-repo.metaphor-frontend.pushed", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
+	//! STOPPING HERE push to remote
+	//! STOPPING HERE push to remote
+	//! STOPPING HERE push to remote
+	//! STOPPING HERE push to remote
+	//! STOPPING HERE push to remote
+	// pkg.InformUser("Deploying metaphor applications", silentMode)
+	// metaphorBranch := viper.GetString("template-repo.metaphor.branch")
+	// err := metaphor.DeployMetaphorGithubLocal(dryRun, false, githubOwner, metaphorBranch, "")
+	// if err != nil {
+	// 	pkg.InformUser("Error deploy metaphor applications", silentMode)
+	// 	log.Info().Msg("Error running deployMetaphorCmd")
+	// 	log.Info().Msg(err.Error())
+	// }
+
 	// update terraform s3 backend to internal k8s dns (s3/minio bucket)
-	err = pkg.UpdateTerraformS3BackendForK8sAddress()
+	err := pkg.UpdateTerraformS3BackendForK8sAddress(k1Dir)
 	if err != nil {
 		return err
 	}
@@ -461,6 +515,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	err = gitClient.UpdateLocalTerraformFilesAndPush(
 		githubHost,
 		githubOwner,
+		k1Dir,
 		localRepo,
 		remoteName,
 		branchNameRef,

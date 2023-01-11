@@ -374,15 +374,14 @@ func ApplyRegistry(dryRun bool) error {
 }
 
 // ApplyRegistryLocal - Apply Registry Local application
-func ApplyRegistryLocal(dryRun bool) error {
-	config := configs.ReadConfig()
+func ApplyRegistryLocal(dryRun bool, kubeconfigPath, kubectlClientPath, k1Dir string) error {
 
 	if viper.GetBool("argocd.registry.applied") || dryRun {
 		log.Info().Msg("skipped ApplyRegistryLocal - ")
 		return nil
 	}
 
-	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/registry.yaml", config.K1FolderPath))
+	_, _, err := pkg.ExecShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/registry.yaml", k1Dir))
 	if err != nil {
 		log.Warn().Msgf("failed to execute localhost kubectl apply of registry-base: %s", err)
 		return err
@@ -396,14 +395,14 @@ func ApplyRegistryLocal(dryRun bool) error {
 
 // CreateInitialArgoCDRepository - Fill and create `argocd-init-values.yaml` for GitHub installs.
 // The `argocd-init-values.yaml` is applied during helm install.
-func CreateInitialArgoCDRepository(argoConfig Config, k1DirectoryPath string) error {
+func CreateInitialArgoCDRepository(argoConfig Config, k1Dir string) error {
 
 	argoCdRepoYaml, err := yaml2.Marshal(&argoConfig)
 	if err != nil {
 		return fmt.Errorf("error: marshaling yaml for argo config %s", err)
 	}
 
-	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", k1DirectoryPath), argoCdRepoYaml, 0644)
+	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", k1Dir), argoCdRepoYaml, 0644)
 	if err != nil {
 		return fmt.Errorf("error: could not write argocd-init-values.yaml %s", err)
 	}
@@ -478,10 +477,9 @@ func WaitArgoCDToBeReady(dryRun bool, kubeconfigPath, kubectlClientVersion strin
 		log.Info().Msg("[#99] Dry-run mode, waitArgoCDToBeReady skipped.")
 		return
 	}
-	config := configs.ReadConfig()
 	x := 50
 	for i := 0; i < x; i++ {
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/argocd")
+		_, _, err := pkg.ExecShellReturnStrings(kubectlClientVersion, "--kubeconfig", kubeconfigPath, "get", "namespace/argocd")
 		if err != nil {
 			log.Info().Msg("Waiting argocd to be born")
 			time.Sleep(10 * time.Second)
@@ -492,7 +490,7 @@ func WaitArgoCDToBeReady(dryRun bool, kubeconfigPath, kubectlClientVersion strin
 		}
 	}
 	for i := 0; i < x; i++ {
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
+		_, _, err := pkg.ExecShellReturnStrings(kubectlClientVersion, "--kubeconfig", kubeconfigPath, "-n", "argocd", "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
 		if err != nil {
 			log.Info().Msg("Waiting for argocd pods to create, checking in 10 seconds")
 			time.Sleep(10 * time.Second)

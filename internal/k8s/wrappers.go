@@ -127,7 +127,7 @@ func OpenPortForwardPodWrapper(kubeconfigPath, podName, namespace string, podPor
 
 	kubeconfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
-		log.Error().Err(err).Msg("")
+		log.Error().Err(err).Msg(err.Error())
 	}
 
 	// readyCh communicate when the port forward is ready to get traffic
@@ -155,7 +155,7 @@ func OpenPortForwardPodWrapper(kubeconfigPath, podName, namespace string, podPor
 	go func() {
 		err = PortForwardPodWithRetry(clientset, portForwardRequest)
 		if err != nil {
-			log.Error().Err(err).Msg("")
+			log.Error().Err(err).Msg(err.Error())
 		}
 	}()
 
@@ -171,7 +171,6 @@ func OpenPortForwardPodWrapper(kubeconfigPath, podName, namespace string, podPor
 
 	log.Info().Msgf("Pod %q at namespace %q has port-forward accepting local connections at port %d\n", podName, namespace, podLocalPort)
 
-	return
 }
 
 func OpenPortForwardServiceWrapper(kubeconfigPath, kubeconfigClientPath, namespace, serviceName string, servicePort int, serviceLocalPort int, stopChannel chan struct{}) {

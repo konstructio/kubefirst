@@ -10,17 +10,17 @@ import (
 	"github.com/spf13/viper"
 )
 
-// DetokenizeCivoGithub - Translate tokens by values on a given path
-func DetokenizeCivoGithub(path string) {
+// DetokenizeCivoGithubGitops - Translate tokens by values on a given path
+func DetokenizeCivoGithubGitops(path string) {
 
-	err := filepath.Walk(path, DetokenizeDirectoryCivoGithub)
+	err := filepath.Walk(path, DetokenizeDirectoryCivoGithubGitops)
 	if err != nil {
 		log.Panic(err)
 	}
 }
 
 // DetokenizeDirectory - Translate tokens by values on a directory level.
-func DetokenizeDirectoryCivoGithub(path string, fi os.FileInfo, err error) error {
+func DetokenizeDirectoryCivoGithubGitops(path string, fi os.FileInfo, err error) error {
 	if err != nil {
 		return err
 	}
@@ -43,8 +43,6 @@ func DetokenizeDirectoryCivoGithub(path string, fi os.FileInfo, err error) error
 		if err != nil {
 			log.Panic(err)
 		}
-
-		// config := configs.ReadConfig()
 
 		newContents := string(read)
 
@@ -154,6 +152,65 @@ func DetokenizeDirectoryCivoGithub(path string, fi os.FileInfo, err error) error
 		newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_INGRESS_NO_HTTPS_URL>", argoWorkflowsIngressNoHttpsURL, -1)
 		newContents = strings.Replace(newContents, "<ATLANTIS_INGRESS_NO_HTTPS_URL>", atlantisIngressNoHttpsURL, -1)
 		newContents = strings.Replace(newContents, "<KUBEFIRST_STATE_STORE_BUCKET>", kubefirstStateStoreBucket, -1)
+
+		err = os.WriteFile(path, []byte(newContents), 0)
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+
+	return nil
+}
+
+// DetokenizeCivoGithubMetaphor - Translate tokens by values on a given path
+func DetokenizeCivoGithubMetaphor(path string) {
+
+	err := filepath.Walk(path, DetokenizeDirectoryCivoGithubMetaphor)
+	if err != nil {
+		log.Panic(err)
+	}
+}
+
+// DetokenizeDirectoryCivoGithubMetaphor - Translate tokens by values on a directory level.
+func DetokenizeDirectoryCivoGithubMetaphor(path string, fi os.FileInfo, err error) error {
+	if err != nil {
+		return err
+	}
+
+	if fi.IsDir() {
+		return nil
+	}
+
+	if strings.Contains(path, ".gitClient") || strings.Contains(path, ".terraform") || strings.Contains(path, ".git/") {
+		return nil
+	}
+
+	matched, err := filepath.Match("*", fi.Name())
+
+	if err != nil {
+		log.Panic(err)
+	}
+	if matched {
+		read, err := os.ReadFile(path)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		newContents := string(read)
+
+		civoDns := viper.GetString("civo.dns")
+		civoRegion := viper.GetString("civo.region")
+		clusterName := viper.GetString("kubefirst.cluster-name")
+
+		newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEVELOPMENT_INGRESS_URL>", fmt.Sprintf("https://metaphor-frontend-development.%s", civoDns), -1)
+		newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING_INGRESS_URL>", fmt.Sprintf("https://metaphor-frontend-staging.%s", civoDns), -1)
+		newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PRODUCTION_INGRESS_URL>", fmt.Sprintf("https://metaphor-frontend-production.%s", civoDns), -1)
+		newContents = strings.Replace(newContents, "<CHECKOUT_CWFT_TEMPLATE>", "git-checkout-with-gitops-ssh", -1)
+		newContents = strings.Replace(newContents, "<COMMIT_CWFT_TEMPLATE>", "git-commit-ssh", -1)
+		newContents = strings.Replace(newContents, "<CONTAINER_REGISTRY>", fmt.Sprintf("ghcr.io/%s/metaphor-frontend", viper.GetString("github.owner")), -1) // todo need to fix metaphor repo names
+		newContents = strings.Replace(newContents, "<DOMAIN_NAME>", civoDns, -1)
+		newContents = strings.Replace(newContents, "<REGION>", civoRegion, -1)
+		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", clusterName, -1)
 
 		err = os.WriteFile(path, []byte(newContents), 0)
 		if err != nil {

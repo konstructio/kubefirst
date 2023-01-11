@@ -435,22 +435,19 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 }
 
 // todo: refactor
-func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remoteName string, branchDestiny plumbing.ReferenceName) error {
+func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, k1Dir, localRepo, remoteName string, branchDestiny plumbing.ReferenceName) error {
 
-	cfg := configs.ReadConfig()
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform.lock.hcl", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform.lock.hcl", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate.backup", k1Dir))
 
-	localDirectory := fmt.Sprintf("%s/%s", cfg.K1FolderPath, localRepo)
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform.lock.hcl", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform.lock.hcl", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate.backup", cfg.K1FolderPath))
-
-	log.Info().Msgf("opening repository with gitClient: %s", localDirectory)
-	repo, err := git.PlainOpen(localDirectory)
+	log.Info().Msgf("opening repository with gitClient: %s", fmt.Sprintf("%s/gitops", k1Dir))
+	repo, err := git.PlainOpen(fmt.Sprintf("%s/gitops", k1Dir))
 	if err != nil {
-		log.Panic().Err(err).Msgf("error opening the localDirectory: %s", localDirectory)
+		log.Panic().Err(err).Msgf("error opening the localDirectory: %s", fmt.Sprintf("%s/gitops", k1Dir))
 	}
 
 	url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, localRepo)
@@ -500,7 +497,7 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 		log.Error().Err(err).Msg("")
 	}
 
-	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
+	token := os.Getenv("GITHUB_TOKEN")
 	err = repo.Push(&git.PushOptions{
 		RemoteName: remoteName,
 		Auth: &http.BasicAuth{

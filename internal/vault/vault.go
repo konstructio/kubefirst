@@ -194,17 +194,16 @@ func GetOidcClientCredentials(dryRun bool) {
 
 }
 
-func WaitVaultToBeRunning(dryRun bool, kubeconfigPath string) {
+func WaitVaultToBeRunning(dryRun bool, kubeconfigPath, kubectlClientPath string) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, waitVaultToBeRunning skipped.")
 		return
 	}
 	token := viper.GetString("vault.token")
 	if len(token) == 0 {
-		config := configs.ReadConfig()
 		x := 50
 		for i := 0; i < x; i++ {
-			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", kubeconfigPath, "get", "namespace/vault")
+			_, _, err := pkg.ExecShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "get", "namespace/vault")
 			if err != nil {
 				log.Info().Msg("Waiting vault to be born")
 				time.Sleep(10 * time.Second)
@@ -218,7 +217,7 @@ func WaitVaultToBeRunning(dryRun bool, kubeconfigPath string) {
 		//! failing
 		x = 50
 		for i := 0; i < x; i++ {
-			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "get", "pods", "-l", "app.kubernetes.io/instance=vault")
+			_, _, err := pkg.ExecShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "get", "pods", "-l", "app.kubernetes.io/instance=vault")
 			if err != nil {
 				log.Info().Msg("Waiting vault pods to create")
 				time.Sleep(10 * time.Second)

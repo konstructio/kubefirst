@@ -550,12 +550,10 @@ func replaceFileContent(filPath string, oldContent string, newContent string) er
 // UpdateTerraformS3BackendForK8sAddress during the installation process, Terraform must reach port-forwarded resources
 // to be able to communicate with the services. When Kubefirst finish the installation, and Terraform needs to
 // communicate with the services, it must use the internal Kubernetes addresses.
-func UpdateTerraformS3BackendForK8sAddress() error {
-
-	config := configs.ReadConfig()
+func UpdateTerraformS3BackendForK8sAddress(k1Dir string) error {
 
 	// todo: create a function for file content replacement
-	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", config.K1FolderPath)
+	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", k1Dir)
 	if err := replaceFileContent(
 		vaultMainFile,
 		MinioURL,
@@ -566,7 +564,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 
 	// update GitHub Terraform content
 	if viper.GetString("gitprovider") == "github" {
-		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
+		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", k1Dir)
 		if err := replaceFileContent(
 			fullPathKubefirstGitHubFile,
 			MinioURL,
@@ -576,7 +574,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 		}
 
 		// change remote-backend.tf
-		fullPathRemoteBackendFile := fmt.Sprintf("%s/gitops/terraform/github/remote-backend.tf", config.K1FolderPath)
+		fullPathRemoteBackendFile := fmt.Sprintf("%s/gitops/terraform/github/remote-backend.tf", k1Dir)
 		if err := replaceFileContent(
 			fullPathRemoteBackendFile,
 			MinioURL,
