@@ -28,6 +28,9 @@ bucket followed by `k1 + your-domain-name`.
 # Backup your SSL certificates at S3 bucket name "k1-your-domain-name":
 kubefirst backupSSL
 
+# Delete the current installation:
+kubefirst cluster destroy
+
 # Clean Previous Installation:
 kubefirst clean
 
@@ -39,3 +42,4 @@ kubefirst init + <args>
 # No manual changes are necessary for certificate backup restore.
 `kubefirst cluster create`
 ```
+NOTE: Assuming you already have a cluster running and the certificates have been successfully issued.
