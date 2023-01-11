@@ -1,16 +1,32 @@
 # Vault
 
-[Vault](https://www.vaultproject.io/) is an open source secrets manager and identity provider created by HashiCorp. Usually it runs in Kubernetes with an[AWS DynamoDB](https://aws.amazon.com/dynamodb/) backend that's encrypted with [AWS KMS](https://aws.amazon.com/kms/) with point in time recovery enabled, but for local it's backed by a local S3-like backend in [MinIO](https://min.io/)..
+[Vault](https://www.vaultproject.io/) is an open source secrets manager and identity provider created by hashicorp. 
 
-## Authentication Backends
+##  Vault for AWS install 
+
+If you run `kubefirst cluster create --cloud aws`  kubefirst will install vault and provision a [DynamoDB](https://aws.amazon.com/dynamodb/) backend that's encrypted with [AWS KMS](https://aws.amazon.com/kms/) with point in time recovery enabled. 
+
+Your infrastructure will be set up with Vault running in the EKS cluster. It will come with multiple Authentication Backends enabled.
+
+
+##  Vault for local install 
+ 
+For local it's backed by a local S3-like backend in [MinIO](https://min.io/) and it is a vault in development mode. It is meant to help to board developers to the vault integrations experience without the overhead of a full install setup to save resources.  
+
+```yaml
+          dev:
+            enabled: true
+            devRootToken: "k1_local_vault_token"
+```
+Reference: [vault deployment](https://github.com/kubefirst/gitops-template/blob/main/localhost/components/vault/application.yaml)
 
 Your cluster will be set up with Vault running in the k3d cluster. The only backend enabled on the local cluster is the one that provides access to secrets from external-secrets-operator.
 
 ### Token authentication
 
-Your first login to Vault will be with the root token that is provided to you at the end of your `kubefirst local` command. This root token has full administrative permission throughout Vault.
+Your first login to Vault will be with the root token that is provided to you at the end of your kubefirst cluster creation(`kubefirst cluster create` or `kubefirst local`). This root token has full administrative permission throughout Vault.
 
-To log in with the root token, navigate to your vault instance in your browser from console, select `Token` and paste the root token in the password field.
+This token is presented on the final installer screen of the CLI or at the `vault.token` field in your `~/.kubefirst` file. You can copy the value it. Then navigate to your vault instance in your browser, select `Token` and paste the token in the password field.
 
 ![](../../img/kubefirst/vault/token-login.png)
 
@@ -18,6 +34,7 @@ While logged in with the root token, navigate to the secret:
 `Secrets -> Users -> kbot`
 
 This secret is the userpass/oidc password for the kubefirst bot user `kbot`. Copy this value to your clipboard, log out of vault and let's try using the userpass authentication backend in the next section.
+
 
 ### Username authentication (human users)
 
@@ -177,3 +194,32 @@ Now that you have native Kubernetes secrets available, you can use them however 
 [using secrets as files on pods](https://kubernetes.io/docs/concepts/configuration/secret/), or 
 [storing your dockerhub login](https://kubernetes.io/docs/concepts/configuration/secret/#docker-config-secrets).
 
+
+## Tips
+
+### How can I change my users password?
+
+Simple, if you are the owner of the user. 
+
+- Log with the user on vault: `https://vault.$yourdomain.com/ui/vault/auth?with=userpass`
+- Go to "Access" tab
+- Select "Auth Methods" (left side)
+- Select "userpass" (right side)
+- Select your-user (right side)
+- Click Edit user (right side)
+- Fill new password (right side)
+- Click "Save" (right side)
+
+![](../img/kubefirst/vault/kubefirst-1-11-vault-update-password.gif)
+
+### Who can change users password?
+
+- Yourself logged with your user/password
+- Somone with the vault root token
+
+References:  [Vault Policies Cloud/AWS](https://github.com/kubefirst/gitops-template/blob/main/terraform/vault/policies.tf) and [Vault Policies Local](https://github.com/kubefirst/gitops-template/blob/main/localhost/terraform/vault/policies.tf)
+
+### Can someone with the root token update my password?
+
+yes, just follow the steps at **"How can I change my users password?"** select a user, and edit the user. 
+The root token gives full access to update vault secrets. 
