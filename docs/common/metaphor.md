@@ -1,13 +1,13 @@
 # Metaphor
 
-A **Metaphor** is a suite of demo microservice applications to demonstrate how an application can be integrated into the 
+**Metaphor** is a suite of demo microservice applications to demonstrate how an application can be integrated into the 
 Kubefirst platform following best practices. The demo applications consists of a **Metaphor frontend**, 
 **Metaphor Go API**, and **Metaphor NodeJS API**.
 
 
 
 
-The following table shows what will be installed based with your installation selection: 
+The following table shows what will be installed based with your selection: 
 
 |Application|AWS + Github|AWS + Gitlab|Local + Github|
 |:--|:--|:--|:--|
@@ -19,14 +19,14 @@ The following table shows what will be installed based with your installation se
 
 ## Best Practices
 
-The **Metaphor** applications provide a demonstration space for application best practices in a tangible way that's 
+The **Metaphors** applications provide a demonstration space for application best practices in a tangible way that's 
 easy to apply to other projects. When engineers discover good patterns to use in other 
 projects, they can add that new idea in the most straightforward way possible to the Metaphor applications as well. By doing so 
 our engineering team can fully engage with the best application approaches.
 
 ## CI/CD 
 
-The **Metaphor** applications come with complete CI/CD processes including automated builds, container Helm chart creation, container 
+The **Metaphors** applications come with complete CI/CD processes including automated builds, container Helm chart creation, container 
 and Helm chart publishing, linting, tests, GitOps deployments to `development`, `staging`, and `production` namespaces, 
 release management, version management, and hotfixes. It serves as an excellent proving ground for changes to the CI/CD layer.
 
@@ -78,9 +78,16 @@ spec:
 
 ## Some Cool Automated Things to Note:
 
-- The value specified in `spec.rules.host` will automatically create a route53 CNAME that is bound to the Ingress elastic load balancer.
+For an AWS Cloud selection(`kubefirst create --cloud aws`):
+
+- the value specified in `spec.rules.host` will automatically create a route53 CNAME that is bound to the Ingress elastic load balancer.
 - The `cert-manager.io/cluster-issuer` annotation will prompt `cert-manager` to automatically create a certificate for your application and will store that cert in the `secretName` specified.
 - NGINX will automatically route traffic to the **Metaphors** applications service based on the path-based/host-based routing specified in `spec.rules`.
+
+For a local selection(`kubefirst local`):
+
+- A local dns route will be produced with SSL certificates generated for you
+- This certificates can be added to your machine truststore to allow a more smooth experience
 
 ## Environment Configs and Secrets
 
@@ -114,18 +121,18 @@ build
 .gitlab-ci.yaml
 ```
 
-- **Concept 1:** If you are at github you will have a trigger defined at `.github/workflows/` or in a gitlab installation defined at `.gitlab-ci.yaml`. The idea is that these are used for simply triggering an **argo workflows**.
+- **Concept 1:** If you are using github(local or cloud), it will be trigger based at `.github/workflows/`; Or if you are using gitlab, installation, it will be trigger based at `.gitlab-ci.yaml`. The idea is that these are used for simply triggering an **argo workflows**.
 
-- **Concept 2:** By using **argo workflows** to drive your CI jobs you can re-use some of the **CWFT** we provide and also create your own **CWFTs** to help build your toolset, the ideia here is to have more generic automations that are not bound to a given git provider tool. 
+- **Concept 2:** By using **argo workflows** to drive your CI jobs you can re-use some of the **CWFT** we provide and also create your own [**CWFTs**](../../tooling/argo/cwft-overview/) to help build your toolset, the ideia here is to have more generic automations that are not bound to a given git provider tool. 
 
-- **Concept 3:** Use our **CWFTs** as the basis to build your library of automations by adding new ones that fit your application needs. 
+- **Concept 3:** Use our [**CWFTs**](../../tooling/argo/cwft-overview/) as the basis to build your library of automations by adding new ones that fit your application needs. 
 
 - **Concept 4:** Application is build from a Dockerfile that is defined on the `build` folder. 
 
 
 ## Metaphors and Helm 
 
-We provide a sample application that is packed on helm, you don't need to use helm, we just show if you use it, how to handle charts update with it. 
+We provide a sample application that is packed with helm, you don't need to use helm. if you want to use it, we show how to handle charts update flow based on helm charts and gitops. 
 
 The files you be interested are: 
 
@@ -133,18 +140,19 @@ The files you be interested are:
 chart/Metaphor
 ```
 
-There is a CWFT meant to bump a chart version and update chart museum. This automation is to guide how to leverage the tooling already embeded on kubefirst to serve applications internally. 
+There is a [CWFT meant to bump a chart](../../tooling/argo/cwft-helm/#helm-increment-chart-patch) version and update chart museum. This automation is to guide how to leverage the tooling already embeded on kubefirst to serve applications internally. 
 
 
 
 ## Wrapping up 
 
-As you described metaphor gives you a demo of most of the tooling added to your cluster once the installation is finished. It is added in a way that self-unfold once the cluster is ready. 
+Here is described how metaphor gives you a demo of most of the tooling added to your cluster once the installation is finished. It is added in a way that self-unfold once the cluster is ready. 
 
 Want to learn more, check:
+
 - Gitops
-- CWFTs
-- Vault
+- [CWFTs](../../tooling/argo/cwft-overview/)
+- [Vault](../../common/vault/)
 
 
 ## Tips
