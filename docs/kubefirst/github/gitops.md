@@ -27,9 +27,9 @@ Once the release is ready, the release chart is published and delivered to produ
 
 ## GitHub Integration with Argo Workflows
 
-![](../../img/todo.jpeg)
+![](../../img/kubefirst/github/github-argo-workflow.png)
 
-`todo: need new image for github integration`
+
 
 ![](../../img/kubefirst/gitops/gitlab-workflows-integration.png)
 
