@@ -4,6 +4,19 @@ A **Metaphor** is a suite of demo microservice applications to demonstrate how a
 Kubefirst platform following best practices. The demo applications consists of a **Metaphor frontend**, 
 **Metaphor Go API**, and **Metaphor NodeJS API**.
 
+
+
+
+The following table shows what will be installed based with your installation selection: 
+
+|Application|AWS + Github|AWS + Gitlab|Local + Github|
+|:--|:--|:--|:--|
+|Metaphor|X|X| |
+|Metaphor Go|X|X| |
+|Metaphor Frontend|X|X|X|
+
+
+
 ## Best Practices
 
 The **Metaphor** applications provide a demonstration space for application best practices in a tangible way that's 
@@ -11,7 +24,7 @@ easy to apply to other projects. When engineers discover good patterns to use in
 projects, they can add that new idea in the most straightforward way possible to the Metaphor applications as well. By doing so 
 our engineering team can fully engage with the best application approaches.
 
-## CI/CD
+## CI/CD 
 
 The **Metaphor** applications come with complete CI/CD processes including automated builds, container Helm chart creation, container 
 and Helm chart publishing, linting, tests, GitOps deployments to `development`, `staging`, and `production` namespaces, 
@@ -88,3 +101,99 @@ The **Metaphors** applications leverages hashicorp **Vault** for secrets managem
 and metaphor runs in `preprod` and `production`, so it serves as an example for secrets management. To read more see our 
 [//]: # (todo: fix link)
 [Vault documentation](../kubefirst/gitlab/vault.md).
+
+## How its CI/CD is defined
+
+These are the key files/folders to be replciated in case, you want to use **Metaphor** to your aplication:
+
+```bash 
+.argo
+.github
+chart/Metaphor
+build
+.gitlab-ci.yaml
+```
+
+- **Concept 1:** If you are at github you will have a trigger defined at `.github/workflows/` or in a gitlab installation defined at `.gitlab-ci.yaml`. The idea is that these are used for simply triggering an **argo workflows**.
+
+- **Concept 2:** By using **argo workflows** to drive your CI jobs you can re-use some of the **CWFT** we provide and also create your own **CWFTs** to help build your toolset, the ideia here is to have more generic automations that are not bound to a given git provider tool. 
+
+- **Concept 3:** Use our **CWFTs** as the basis to build your library of automations by adding new ones that fit your application needs. 
+
+- **Concept 4:** Application is build from a Dockerfile that is defined on the `build` folder. 
+
+
+## Metaphors and Helm 
+
+We provide a sample application that is packed on helm, you don't need to use helm, we just show if you use it, how to handle charts update with it. 
+
+The files you be interested are: 
+
+```bash 
+chart/Metaphor
+```
+
+There is a CWFT meant to bump a chart version and update chart museum. This automation is to guide how to leverage the tooling already embeded on kubefirst to serve applications internally. 
+
+
+
+## Wrapping up 
+
+As you described metaphor gives you a demo of most of the tooling added to your cluster once the installation is finished. It is added in a way that self-unfold once the cluster is ready. 
+
+Want to learn more, check:
+- Gitops
+- CWFTs
+- Vault
+
+
+## Tips
+
+### Metaphor and Local - Special Attention
+
+If you want to use it as base of your application, and bring a new application to a local installation. Be aware, as we use user accounts for local, you need to add a github runner deployment for that new application repo. 
+
+Reference: [runnerdeployment.yaml](https://github.com/kubefirst/gitops-template/blob/main/localhost/components/github-runner/runnerdeployment.yaml)
+
+At your gitops repo go to `components/github-runner/runnerdeployment.yaml` and clone this file, then update the property `spec.template.spec.repository` to point to `your-user/your-repo`. This will deploy a new set of runners to observe that repo for you, allowing CI triggers to be executed. 
+
+```yaml 
+...
+spec:
+  replicas: 1
+  template:
+    spec:  
+      repository: <your-user>/<your-repo>
+...
+```
+
+
+
+### Can I remove Metaphor on my install? 
+
+yes, how to do it:  
+
+- If you are using `kubefirst create cluster` just pass the flag `--skip-metaphor-services` that will prevent the metaphors applications to be installed at your cluster and repos will not be created. 
+
+- If you are using `kubefirst local` just pass the flag `--skip-metaphor` that will prevent the metaphors applications to be installed at your cluster and repos will not be created. 
+
+### Can I add gates to prevent metaphor to move between development to production?
+
+yes, the idea of our current approach of self-unfold to all enviroments it is to allow you to test the tires of of your clusterwith minimal need of clicks on the ui, but yes you can create and add a logic on the deployment artifacts to hold until a giving situation is satisfied. 
+
+You want to be aware of this artifacts at your gitops repo, where the `metaphor` and your applications probably will be added to be deployed on this giving enviroments. 
+- components/development
+- components/staging
+- components/production
+
+### Where metaphor comes from? What repos will be created on my account/org?
+
+If you are using a cloud(`kubefirst cluster create`) selection you have 3 demo applications:
+
+- [metaphor-frontend](https://github.com/kubefirst/metaphor-frontend-template)
+- [metaphor](https://github.com/kubefirst/metaphor-template)
+- [metaphor-go](https://github.com/kubefirst/metaphor-go-template)
+
+If you are using a local(`kubefirst local`) selection you have 1 demo application:
+
+- [metaphor-frontend](https://github.com/kubefirst/metaphor-frontend-template)
