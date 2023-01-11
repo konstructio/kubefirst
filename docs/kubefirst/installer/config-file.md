@@ -38,16 +38,3 @@ config:
 ```bash 
 kubefirst init  -c ./values.yaml
 ```
-
-## Sample of Local installation
-
-`./kubefirst-config.yaml`: 
-```yaml 
-config:
-  log-level: debug
-```
-
-```bash 
-kubefirst local
-```
-If you create a file as described below and run the the command `kubefirst local`, the CLI will read and load all the values and overwrite the default ones. 
