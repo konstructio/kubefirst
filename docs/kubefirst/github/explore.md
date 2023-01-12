@@ -48,7 +48,7 @@ store them in a safe place.
 
 ## Step 2: Add Your Team
 
-Navigate to the `gitops` repo in your GitHub organizaiton and edit the file `terraform/users/admin.tf`. In this file, you'll see a commented block that represents another admin user:
+Navigate to the `gitops` repo in your GitHub organization and edit the file `terraform/users/admin.tf`. In this file, you'll see a commented block that represents another admin user:
 
 ```
 # module "admin_one" {
