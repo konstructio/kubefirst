@@ -21,7 +21,7 @@ Before making a code change, first discuss your idea via an [issue](https://gith
 
 Kubefirst is created using the [Go Programming Language](https://go.dev). To set up your computer, follow [these steps](https://go.dev/doc/install).
 
-Once Go is installed, you can run Kubefirst from any branch using `go run .`. Go will automatically install the needed modules listed in the [go.mod](go.mod) file. As an example, if you want to create a [local cluster](https://docs.kubefirst.io/kubefirst/local/install.html), the command would be `go run . local --metaphor-branch main`.
+Once Go is installed, you can run Kubefirst from any branch using `go run .`. Go will automatically install the needed modules listed in the [go.mod](go.mod) file. As an example, if you want to create a [local cluster](https://docs.kubefirst.io/kubefirst/local/install.html), the command would be `go run . local`.
 Since Go is a compiled programming language, every time you use the `run` command, Go will compile the code before running it. If you want to save time, you can compile your code using `go build`, which will generate a file named `kubefirst`. You will then be able to run your compiled version with the `./kubefirst` command.
 
 ## Help
