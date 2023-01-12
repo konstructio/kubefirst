@@ -37,21 +37,27 @@ If you cancel this command and lose these connection, you can reestablish this c
 
 ## Step 2: Make your first automated Terraform change
 
-Go to your new gitops repository in your personal GitHub. Navigate to the `gitops` project and edit the file `terraform/users/admin.tf`. In this file, you'll see some blocks that represent admin users:
+Go to your new gitops repository in your personal GitHub. Navigate to the `gitops` project and edit the file `terraform/users/admins-github.tf`. In this file, you'll see some blocks that represent admin users - the `kubefirst_bot` user, and a commented-out `admin_one` user.
+
 
 ```
 module "admin_one" {
-  source   = "./templates/oidc-user"
-  admins_group_id    = gitlab_group.admins.id
-  developer_group_id = gitlab_group.developer.id
-  username           = "admin1"
-  fullname           = "Admin One"
-  email              = "admin1@yourcompany.com"
-  is_admin           = true
+  source = "./modules/user/github"
+
+  acl_policies            = ["admin"]
+  email                   = "admin@your-company-io.com"
+  first_name              = "Admin"
+  github_username         = "admin_one_github_username"
+  last_name               = "One"
+  username                = "aone"
+  user_disabled           = false
+  userpass_accessor       = data.vault_auth_backend.userpass.accessor
 }
 ```
 
-Edit this code to replace the values for the `module name`, `username`, `fullname`, and `email`. There is also a file for your developers at `terraform/users/developers.tf`. You can duplicate those snippets of code in these files to create as many developers and admins as you need.
+To exercise the user onboarding process, uncomment that admin_one user. Edit this code to replace the values for the `email`, `first_name`, `github_username`, `last_name`, and `username`. 
+
+With the name of your new module in mind, edit the list of `vault_identity_group_member_entity_ids` at the top of this file, adding your new module to the list.
 
 Commit this change to a **new branch** and create a merge request. This will kick off the Atlantis workflow. Within a minute or so of submitting the merge request, a comment will appear on the merge request that shows the terraform plan with the changes it will be making to your infrastructure. 
 
@@ -84,9 +90,9 @@ The example delivery pipeline will:
 - the release stage of the pipeline will republish the chart, this time without the release candidate notation making it an officially released version and prepare the metaphor application chart for the next release version
 - the officially released chart will be set as the desired Helm chart for production.
 
-To watch this pipeline occur, make any change to the `main` branch of one of the `metaphor` repos. If you're not feeling creative, you can just add a newline to the `README.md`. Once a file in `main` is changed, navigate to metaphor's CI/CD in the github Actions tab to see the workflows get submitted to Argo workflows.
+To watch this pipeline occur, make any change to the `main` branch of of the `metaphor-frontend`. If you're not feeling creative, you can just add a newline to the `README.md`. Once a file in `main` is changed, navigate to metaphor-frontend's CI/CD in the github `Actions` tab to see the workflows get submitted to Argo workflows.
 
-You can visit the metaphor development, staging, and production apps in your browser to see the versions change as you complete resources and ArgoCD syncs the apps. The metaphor URLs can be found in your GitOps and metaphor project `README.md` files.
+You can visit the metaphor-frontend development, staging, and production apps in your browser to see the versions change as you complete resources and ArgoCD syncs the apps. The metaphor-frontend URLs can be found in your gitops and metaphor-frontend project `README.md` files.
 
 ## Learning the Ropes
 
