@@ -35,6 +35,8 @@ This provides all of the CI observability your development team needs directly a
 
 ## GitOps Resources
 
+![](../../img/kubefirst/gitlab/gitlab-argo-workflow.png)
+
 ![](../../img/kubefirst/gitops/argocd-app-registrations.png)
 
 Our implementation includes GitOps patterns for numerous source types including:
