@@ -21,7 +21,9 @@ kubefirst local
 
 ### GitHub Authorization during install
 
-The `kubefirst local` command will request that you authorize the Kubefirst CLI to be able to manage Git repositories in your personal GitHub account. It needs this access to add 4 repositories to your account. To do this you'll copy a code that's sent to your terminal, paste it in a GitHub auth page that opens, and hit the `Authorize` button.
+Kubefirst utilizes the user's GitHub token to generate resources within the user's GitHub account, [details](../../common/github-token.md).
+
+At the beginning of the installation, Kubefirst will ask you to generate the GitHub token.
 
 #### Why the Kubefirst cli needs this access
 

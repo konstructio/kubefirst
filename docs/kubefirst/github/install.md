@@ -34,16 +34,12 @@ Your new bot account will need to be associated with a GitHub organization.
 - If you don't already have one that you want to use, while logged into GitHub with your new bot account, establish a new [GitHub organization](https://docs.github.com/en/organizations/collaborating-with-groups-in-organizations/creating-a-new-organization-from-scratch).
 - If you do already have a GitHub org that you want to add Kubefirst to, you'll need to add your new kubefirst bot to the existing organization now.
 
-While logged in with your GitHub bot account, go to your [Personal Access Tokens](https://github.com/settings/tokens) and generate a new
-token with the following permissions:
 
-![GitHub token](../../img/kubefirst/github/github_token.png)
+#### GitHub Authorization during install
 
-Expose the new token to your local environment so the kubefirst cli can leverage it:
+Kubefirst utilizes the user's GitHub token to generate resources within the user's GitHub account, [details](../../common/github-token.md).
 
-```
-export KUBEFIRST_GITHUB_AUTH_TOKEN=your-new-token
-```
+At the beginning of the installation, Kubefirst will ask you to generate the GitHub token.
 
 ### Step 2 - `kubefirst init`
 
