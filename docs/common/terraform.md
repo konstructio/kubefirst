@@ -125,7 +125,7 @@ Any new users you have created through this process will have their temporary in
 
 ![](../../img/kubefirst/getting-started/vault-users.png)
 
-### What else I can use atlantis & terraform for?
+### What else can I use atlantis & terraform for?
 
 For example, you can use your gitops repo to help track the creation of repos:
 
