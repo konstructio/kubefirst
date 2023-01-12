@@ -80,11 +80,11 @@ Once you've provided them this initial password, they can update their own passw
 
 ![](https://user-images.githubusercontent.com/53096417/204801723-602beff0-12f9-45a9-bb9c-4d85a889d1ce.gif)
 
-## Step 3: Deliver Metaphor to Development, Staging, and Production
+## Step 3: Deliver `metaphor-frontend` to your new Development, Staging, and Production
 
-The Metaphor suite is a set of sample applications that we use to demonstrate parts of the platform and to test CI changes.
+The `metaphor-frontend` repo is a simple sample microservice with source code, build, and delivery automation that we use to demonstrate parts of the platform. We also find it to be a valuable way to test CI changes without impacting real apps on your platform.
 
-If you visit its `/.github/workflows/main.yaml` in one of the metaphor repos, you'll see it's just sending some workflows to argo workflows in your local k3d cluster. Those argo workflows are also in the `metaphor` repos in the `.argo` directory.
+If you visit its `/.github/workflows/main.yaml`, you'll see that it's just sending some workflows to argo workflows in your local k3d cluster.
 
 The example delivery pipeline will:
 
