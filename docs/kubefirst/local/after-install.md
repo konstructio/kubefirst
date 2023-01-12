@@ -72,9 +72,13 @@ NOTE: Atlantis merges your Pull Request automatically once an apply is successfu
 
 Atlantis will always run plans automatically for you when a merge request is opened that changes files mapped in `atlantis.yaml`
 
-Any new users you have created through this process will have their temporary initial passwords stored in Vault. You can access Vault using the information provided to you in the terminal as well, and you will find your users' individual initial passwords in the Vault secret store `/secrets/users/<username>`. Once you've provided them this initial password, they can update their password throughout the platform by updating their GitLab user password in their Gitlab profile.
+Any new users you have created through this process will have their temporary initial passwords stored in Vault. You can access Vault using the information provided to you in the terminal as well, and you will find your users' individual initial passwords in the Vault secret store `/secrets/users/<username>`.
 
 ![](../../img/kubefirst/getting-started/vault-users.png)
+
+Once you've provided them this initial password, they can update their own password throughout the platform by updating their userpass entity in vault. Anyone can change their own password, and Admins can reset anyone's password. These rules, just like everything else on Kubefirst, can be configured in your new gitops repository.
+
+![](https://user-images.githubusercontent.com/53096417/204801723-602beff0-12f9-45a9-bb9c-4d85a889d1ce.gif)
 
 ## Step 3: Deliver Metaphor to Development, Staging, and Production
 
