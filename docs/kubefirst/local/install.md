@@ -6,22 +6,12 @@ To use the local version of Kubefirst, you will need to have [Docker installed](
 
 ![Kubefirst local installation diagram](../../img/kubefirst/local/kubefirst-cluster-create.png)
 
-## Step 1 - Download (or upgrade) the Kubefirst CLI
+### Prerequisites
 
-```shell
-brew install kubefirst/tools/kubefirst
-```
+- [To install kubefirst CLI](../../overview/#how-to-install-kubefirst-cli)
 
-There are a few other ways to install Kubefirst for different operating systems, architectures, and containerized environments. See our [installation README](https://github.com/kubefirst/kubefirst/blob/main/build/README.md) for non-brew details.
 
-To upgrade an existing Kubefirst install to the latest version run
-
-```shell
-brew update
-brew upgrade kubefirst
-```
-
-## Step 2 - Create your new local cluster
+## Create your new local cluster
 
 To create a new Kubefirst cluster locally, run
 
@@ -61,3 +51,8 @@ ngrok is a tool that allows us to expose a local server to the internet via a tu
 ## After installation
 
 After the ~5 minutes installation, your browser will launch a new tab to the [Kubefirst Console application](https://github.com/kubefirst/console), which will help you navigate your new suite of tools running in your local k3d cluster.
+
+Continue your journey: 
+
+- [Explore your installation](../explore/)
+- [Destroying](../destroy/)

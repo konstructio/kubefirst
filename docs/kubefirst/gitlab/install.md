@@ -7,7 +7,11 @@ It installs a fully automated platform of open source cloud native tools with a 
 
 ![](../../img/kubefirst/kubefirst-cluster-create.png)
 
-### AWS Prerequisites
+### Prerequisites
+
+- [To install kubefirst CLI](../../overview/#how-to-install-kubefirst-cli)
+
+***AWS Prerequisites***
 
 For your AWS cloud resources to provision we have just a couple prerequisites:    
 
@@ -17,21 +21,8 @@ For your AWS cloud resources to provision we have just a couple prerequisites:
 
 3. you'll need [AdministratorAccess](https://console.aws.amazon.com/iam/home?#/policies/arn:aws:iam::aws:policy/AdministratorAccessserviceLevelSummary) to your aws account ([docs](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys))
 
-### Step 1 - Download
 
-Download the latest kubefirst cli.
-
-**installation using homebrew**
-
-```
-brew install kubefirst/tools/kubefirst
-```
-
-**installation using other methods**
-
-There are a number of other ways to install kubefirst for different operating systems, architectures, and containerized environments. Please see our [installation readme](https://github.com/kubefirst/kubefirst/blob/main/build/README.md) for details.
-
-### Step 2 - `kubefirst init`
+### Step 1 - `kubefirst init`
 
 Then init your local setup providing values for the following flags:
 
@@ -86,7 +77,7 @@ The `init` process produces a directory of utilities, a state file, and some sta
 found at `~/.kubefirst`. [Here](../../tooling/kubefirst-cli.md) you can find more details about `init` command.
 <!-- TODO: check final state file name above - state file collides with directory -->
 
-### Step 3 - `kubefirst cluster create`
+### Step 2 - `kubefirst cluster create`
 
 Now it's time to create the platform, to do so simply run
 
@@ -94,3 +85,10 @@ Now it's time to create the platform, to do so simply run
 kubefirst cluster create
 ```
 <!-- TODO: check final state command above - talk through stack vs cluster with team -->
+
+## What to do next
+
+Continue your journey: 
+
+- [Explore your installation](../explore/)
+- [Destroying](../destroy/)

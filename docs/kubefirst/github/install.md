@@ -10,6 +10,8 @@ It installs a fully automated platform of open source cloud native tools with a 
 
 ### Prerequisites
 
+- [To install kubefirst CLI](../../overview/#how-to-install-kubefirst-cli)
+
 **AWS Prerequisites**
 
 1. Create an AWS account with billing enabled.
@@ -18,21 +20,10 @@ It installs a fully automated platform of open source cloud native tools with a 
 
 3. Connect with [AdministratorAccess](https://console.aws.amazon.com/iam/home?#/policies/arn:aws:iam::aws:policy/AdministratorAccessserviceLevelSummary) IAM credentials to your AWS account ([docs](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys)).
 
-### Step 1 - Download
 
-Download the latest Kubefirst CLI.
 
-**Installation Using Homebrew**
 
-```
-brew install kubefirst/tools/kubefirst
-```
-
-**Installation Using Other Methods**
-
-There are a number of other ways to install Kubefirst for different operating systems, architectures, and containerized environments. Please see our [installation readme](https://github.com/kubefirst/kubefirst/blob/main/build/README.md) for details.
-
-### Step 2 - Create your kubefirst bot user and a personal access token
+### Step 1 - Create your kubefirst bot user and a personal access token
 
 The kubefirst cli will automatically create one admin user for you. We refer to this initial user as the `kubefirst bot`. After the installation, you will temporarily use that `kubefirst bot` to onboard yourself and the rest your team to the platform. From that point forward, the kubefirst bot should only be used for automated activities, and you can use your own personal account.
 
@@ -54,7 +45,7 @@ Expose the new token to your local environment so the kubefirst cli can leverage
 export KUBEFIRST_GITHUB_AUTH_TOKEN=your-new-token
 ```
 
-### Step 3 - `kubefirst init`
+### Step 2 - `kubefirst init`
 
 With your new KUBEFIRST_GITHUB_AUTH_TOKEN exported, let's init your local setup providing values for the following flags:
 
@@ -95,3 +86,10 @@ Now it's time to create the platform, to do so, simply run
 ```
 kubefirst cluster create
 ```
+
+## What to do next
+
+Continue your journey: 
+
+- [Explore your installation](../explore/)
+- [Destroying](../destroy/)

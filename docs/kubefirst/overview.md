@@ -6,7 +6,22 @@ AWS cloud account, you'll get a GitOps cloud management and application delivery
 Terraform workflows, Vault secrets management, **GitLab** or **GitHub** integrations with Argo, and demo applications 
 that demonstrate how it all pieces together.
 
-## Install overview
+## How to install Kubefirst CLI
+
+```shell
+brew install kubefirst/tools/kubefirst
+```
+
+There are a few other ways to install Kubefirst for different operating systems, architectures, and containerized environments. See our [installation README](https://github.com/kubefirst/kubefirst/blob/main/build/README.md) for non-brew details.
+
+To upgrade an existing Kubefirst install to the latest version run
+
+```shell
+brew update
+brew upgrade kubefirst
+```
+
+## Kubefirst Usage
 
 [//]: # (todo: update wording)
 - The `kubefirst` CLI runs on your localhost and will create an **AWS EKS cluster** that includes **GitLab** or **GitHub**, **Vault**, **ArgoCD** and **Argo Workflow**, and example applications with the **Metaphors** application to demonstrate how everything on the platform works.
