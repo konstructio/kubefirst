@@ -21,6 +21,26 @@ that demonstrate how it all pieces together.
 _Note: This infrastructure will run in your AWS cloud and is subject to associated AWS fees - about $10/day USD. 
 to run. Removal of this infrastructure is also automated with a single `kubefirst cluster destroy` command._
 
+## Differences between selection available
+
+|   | local | aws+github | aws+gitlab|
+|:--|:--:|:--:|:--:|
+|how to use| `kubefirst local` | `kubefirst init --cloud aws` | `kubefirst init --cloud aws --git-provider gitlab`
+|argocd| yes | yes| yes|
+|argo workflows| yes | yes| yes|  
+|vault| yes, in dev mode.  | yes, backed with Dynamo db and KMS| yes, backed with Dynamo db and KMS|  
+|atlantis| yes*1 | yes | yes| 
+|metaphor suit| yes | yes | yes| 
+|chartMuseum| yes | yes | yes| 
+|git runner| yes, github runners | yes, github runners | yes, gitlab runners| 
+|HTTPS/SSL Certificates| yes, using mkcert| yes, using let's encrypt| yes, using let's encrypt|
+|external secrets manager| yes | yes | yes| 
+|kubefirst console| yes | yes | yes| 
+|oidc | yes, for argo/argocd | yes | yes| 
+
+
+*1: On local, atlantis uses an ngrok tunnel to allow github to call us back, so it may not be production ready. 
+
 ## Console UI
 
 Once you run `cluster create` command at the end of the installation will open a new browser tab with the Console UI at
