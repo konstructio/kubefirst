@@ -82,8 +82,8 @@ func destroy(cmd *cobra.Command, args []string) error {
 
 	pkg.InformUser("be sure to run `kubefirst clean` before your next cloud provision", silentMode)
 
-	log.Info().Msg("end of execution destroy")
-	fmt.Println("end of execution destroy")
+	log.Info().Msg("destroy was successfully executed!")
+	fmt.Println("destroy was successfully executed!")
 	time.Sleep(time.Millisecond * 100)
 
 	return nil
