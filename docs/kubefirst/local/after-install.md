@@ -34,8 +34,6 @@ The `kubefirst local` command will open a new browser tab at completion with the
 
 ![terminal handoff](../../img/kubefirst/local/handoff-screen.png)
 
-If you cancel this command and lose these connection, you can reestablish this connectivity using the command `kubefirst local connect`.
-
 ## Step 2: Make your first automated Terraform change
 
 Go to your new gitops repository in your personal GitHub. Navigate to the `gitops` project and edit the file `terraform/users/admins-github.tf`. In this file, you'll see some blocks that represent admin users - the `kubefirst_bot` user, and a commented-out `admin_one` user.
