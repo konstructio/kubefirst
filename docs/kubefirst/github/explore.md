@@ -46,7 +46,9 @@ These are **not your personal credentials**. These are administrator credentials
 authenticate and administer your tools if your OIDC provider ever becomes unavailable. Please protect these secrets and 
 store them in a safe place.
 
-## Step 2: Add Your Team
+## Step 2: Add Your Team(optional)
+
+- [Explore Atlantis & Terraform to manage users](../../../common/terraform/#how-can-i-use-atlantis-to-add-a-new-user-on-my-github-backed-installation)
 
 Navigate to the `gitops` repo in your GitHub organizaiton and edit the file `terraform/users/admin.tf`. In this file, you'll see a commented block that represents another admin user:
 

@@ -43,42 +43,10 @@ These are **not your personal credentials**. These are administrator credentials
 authenticate and administer your tools if your OIDC provider ever become unavailable. Please protect these secrets and 
 store them in a safe place.
 
-## Step 2: Add Your Team
+## Step 2: Add Your Team(optional)
 
-Log into gitlab using the root credentials that were provided to you in your terminal.
+- [Explore Atlantis & Terraform to manage users](../../../common/terraform/#how-can-i-use-atlantis-to-add-a-new-user-on-my-gitlab-backed-installation)
 
-Once logged in, navigate to the `gitops` project and edit the file `terraform/users/admin.tf`. In this file, you'll see some blocks that represent admin users:
-
-```
-module "admin_one" {
-  source   = "./templates/oidc-user"
-  admins_group_id    = gitlab_group.admins.id
-  developer_group_id = gitlab_group.developer.id
-  username           = "admin1"
-  fullname           = "Admin One"
-  email              = "admin1@yourcompany.com"
-  is_admin           = true
-}
-```
-
-Edit this code replacing the values for the `module name`, `username`, `fullname`, and `email`. There is also a file for your developers at `terraform/users/developers.tf`. You can duplicate those snippets of code in these files to create as many developers and admins as you need.
-
-Commit this change to a **new branch** and create a merge request. This will kick off the Atlantis workflow. Within a minute or so of submitting the merge request, a comment will appear on the merge request that shows the terraform plan with the changes it will be making to your infrastructure. 
-
-To apply these changes, submit a comment on that Merge Request with the following comment text:
-```
-atlantis apply
-```
-
-Doing so will instruct Atlantis to apply the plan. It will report back with the results of the apply within a minute or so.
-
-NOTE: Atlantis merges your Pull Request automatically once an apply is successfully executed. Don't merge terraform merge requests yourself.
-
-Atlantis will always run plans automatically for you when a merge request is opened that changes files mapped in `atlantis.yaml`
-
-Any new users you have created through this process will have their temporary initial passwords stored in Vault. You can access vault using the information provided to you in the terminal as well, and you will find your users' individual initial passwords in the vault secret store `/secrets/users/<username>`. Once you've provided them this initial password, they can update their password throughout the platform by updating their GitLab user password in their gitlab profile.
-
-![](../../img/kubefirst/getting-started/vault-users.png)
 
 ## Step 3: Deliver Metaphors to Development, Staging, and Production
 
