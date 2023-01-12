@@ -68,8 +68,6 @@ config:
 ```
 
 ```bash
-export KUBEFIRST_GITHUB_AUTH_TOKEN=your-new-token
-
 kubefirst init -c config.yaml
 ```
 
