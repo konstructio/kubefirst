@@ -9,7 +9,18 @@ Kubefirst issue GitHub Tokens at the beginning of the installation using [GitHub
 Kubefirst uses the following scopes to provision the Kubefirst platform:
 
 ```
-repo public_repo admin:repo_hook admin:org admin:public_key admin:org_hook user project delete_repo write:packages admin:gpg_key workflow
+repo 
+public_repo 
+admin:repo_hook 
+admin:org 
+admin:public_key 
+admin:org_hook 
+user 
+project 
+delete_repo 
+write:packages 
+admin:gpg_key 
+workflow
 ```
 
 ## How to create a GitHub Token
