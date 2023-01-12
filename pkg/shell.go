@@ -21,9 +21,13 @@ func ExecShellReturnStrings(command string, args ...string) (string, string, err
 	if err != nil {
 		log.Error().Err(err).Msgf("error executing command")
 	}
-	log.Info().Msgf("Command Execution: %s", command)
-	log.Debug().Msgf("OUT: %s", outb.String())
-	log.Debug().Msgf("ERR: %s", errb.String())
+
+	if len(errb.String()) > 0 {
+		log.Error().Msgf("error executing command: %s", errb.String())
+	}
+
+	log.Info().Str("OUT:", outb.String()).Str("command execution", command).Msg("")
+
 	return outb.String(), errb.String(), err
 }
 
@@ -61,7 +65,7 @@ func ExecShellWithVars(osvars map[string]string, command string, args ...string)
 	doneErr := make(chan bool)
 	go func() {
 		for msg := range stdOut {
-			log.Debug().Msgf("OUT: %s", msg)
+			log.Info().Msgf("OUT: %s", msg)
 		}
 		doneOut <- true
 	}()

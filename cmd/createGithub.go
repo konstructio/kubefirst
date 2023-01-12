@@ -55,10 +55,6 @@ var createGithubCmd = &cobra.Command{
 
 		progressPrinter.IncrementTracker("step-0", 1)
 
-		if !globalFlags.UseTelemetry {
-			informUser("Telemetry Disabled", globalFlags.SilentMode)
-		}
-
 		//* create github teams in the org and gitops repo
 		informUser("Creating gitops/metaphor repos", globalFlags.SilentMode)
 		err = githubAddCmd.RunE(cmd, args)

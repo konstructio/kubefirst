@@ -60,9 +60,6 @@ var createGitlabCmd = &cobra.Command{
 
 		progressPrinter.AddTracker("step-softserve", "Prepare Temporary Repo ", 4)
 		progressPrinter.IncrementTracker("step-softserve", 1)
-		if !globalFlags.UseTelemetry {
-			informUser("Telemetry Disabled", globalFlags.SilentMode)
-		}
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 		informUser("Creating K8S Cluster", globalFlags.SilentMode)
 		terraform.ApplyBaseTerraform(globalFlags.DryRun, directory)

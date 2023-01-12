@@ -15,17 +15,11 @@ If the above command fails to complete due to unforeseen circumstances, you can 
 - gitops
 - metaphor-frontend (only exists if you complete Kubefirst local provisioning)
 
-You also need to delete the GitHub teams named
-- developers
-- admins
-
 You can then manually delete the k3d cluster with the command `k3d cluster delete kubefirst` or `~/.k1/tools/k3d cluster delete kubefirst` if you don't have k3d installed.
 
 To delete your github assets that we created, log into your personal github and remove the following:
 
 - gitops repo
-- metaphor repo
-- metaphor-go repo
 - metaphor-frontend repo
 
 

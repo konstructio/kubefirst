@@ -129,7 +129,6 @@ validated and configured.`,
 		progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
 		progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
 		progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
-		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 1)
 
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
 
@@ -137,6 +136,12 @@ validated and configured.`,
 
 		var telemetryHandler handlers.TelemetryHandler
 		viper.Set("use-telemetry", globalFlags.UseTelemetry)
+
+		if !globalFlags.UseTelemetry {
+			informUser("Telemetry Disabled", globalFlags.SilentMode)
+		} else {
+			pkg.InformUser("Sending installation telemetry", globalFlags.SilentMode)
+		}
 		if globalFlags.UseTelemetry {
 
 			// Instantiates a SegmentIO client to use send messages to the segment API.
@@ -235,7 +240,17 @@ validated and configured.`,
 			if !skipHostedZoneCheck {
 				hostedZoneLiveness := aws.TestHostedZoneLiveness(globalFlags.DryRun, awsFlags.HostedZoneName, hostedZoneId)
 				if !hostedZoneLiveness {
-					log.Panic().Msg("Fail to check the Liveness of HostedZone, we need a valid public HostedZone on the same AWS account that Kubefirst will be installed.")
+					msg := "failed to check the liveness of the HostedZone. A valid public HostedZone on the same AWS " +
+						"account as the one where Kubefirst will be installed is required for this operation to " +
+						"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct AWS account and " +
+						"region.\n - Verify that you have the necessary permissions to access the hosted zone.\n - Check " +
+						"that the hosted zone is correctly configured and is a public hosted zone\n - Check if the " +
+						"hosted zone exists and has the correct name and domain.\n - If you don't have a HostedZone," +
+						"please follow these instructions to create one: " +
+						"https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zones-working-with.html \n\n" +
+						"if you are still facing issues please reach out to support team for further assistance"
+					log.Error().Msg(msg)
+					return errors.New(msg)
 				}
 			} else {
 				log.Info().Msg("skipping hosted zone check")
@@ -281,8 +296,6 @@ validated and configured.`,
 
 		viper.WriteConfig()
 
-		//! tracker 8
-		progressPrinter.IncrementTracker("step-telemetry", 1)
 		time.Sleep(time.Millisecond * 100)
 
 		informUser("init is done!\n", globalFlags.SilentMode)

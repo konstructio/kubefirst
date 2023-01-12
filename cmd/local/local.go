@@ -93,16 +93,14 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 	progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
 	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 4)
-	progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 2)
 	if useTelemetry {
 		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallStarted); err != nil {
 			log.Error().Err(err).Msg("")
 		}
-		pkg.InformUser("Telemetry info sent", silentMode)
+		log.Info().Msg("Telemetry info sent")
 	} else {
 		pkg.InformUser("Telemetry skipped by user request", silentMode)
 	}
-	progressPrinter.IncrementTracker("step-telemetry", 1)
 
 	// todo need to add go channel to control when ngrok should close
 	// and use context to handle closing the open goroutine/connection
@@ -447,11 +445,10 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted); err != nil {
 			log.Error().Err(err).Msg("")
 		}
-		pkg.InformUser("Telemetry info sent", silentMode)
+		log.Info().Msg("Telemetry info sent")
 	} else {
 		pkg.InformUser("Telemetry skipped by user request", silentMode)
 	}
-	progressPrinter.IncrementTracker("step-telemetry", 1)
 
 	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
 	return nil
