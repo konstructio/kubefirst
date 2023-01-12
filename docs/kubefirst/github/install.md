@@ -43,7 +43,7 @@ At the beginning of the installation, Kubefirst will ask you to generate the Git
 
 ### Step 2 - `kubefirst init`
 
-With your new KUBEFIRST_GITHUB_AUTH_TOKEN exported, let's init your local setup providing values for the following flags:
+Let's init your local setup providing values for the following flags:
 
 | Flag               | Description                                                                                                                            | Example                   |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
@@ -60,8 +60,6 @@ With your new KUBEFIRST_GITHUB_AUTH_TOKEN exported, let's init your local setup 
 | --aws-nodes-spot   | nodes spot on AWS EKS compute nodes                                                                                                    | true                      |
 
 ```bash
-export KUBEFIRST_GITHUB_AUTH_TOKEN=your-new-token
-
 kubefirst init \
 --admin-email yourname@yourcompany.com \
 --cloud aws \
