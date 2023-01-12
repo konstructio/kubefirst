@@ -319,24 +319,3 @@ func GitHubAuthToken(userCode, verificationUri string) string {
 
 	return gitHubTokenReport.String()
 }
-
-// LocalConnectSummary builds a string containing local service URLs
-func LocalConnectSummary() string {
-
-	var localConnect bytes.Buffer
-
-	localConnect.WriteString(strings.Repeat("-", 70))
-	localConnect.WriteString("\nKubefirst Local:\n")
-	localConnect.WriteString(strings.Repeat("-", 70))
-
-	localConnect.WriteString(fmt.Sprintf("\n\nKubefirst Console UI: %s\n", pkg.KubefirstConsoleLocalURLTLS))
-	localConnect.WriteString(fmt.Sprintf("ChartmuseumLocalURL: %s\n", pkg.ChartmuseumLocalURLTLS))
-	localConnect.WriteString(fmt.Sprintf("Argo: %s\n", pkg.ArgoLocalURLTLS))
-	localConnect.WriteString(fmt.Sprintf("ArgoCD: %s\n", pkg.ArgoCDLocalURLTLS))
-	localConnect.WriteString(fmt.Sprintf("Vault: %s\n", pkg.VaultLocalURLTLS))
-	localConnect.WriteString(fmt.Sprintf("Atlantis: %s\n", pkg.AtlantisLocalURLTLS))
-	localConnect.WriteString(fmt.Sprintf("Minio: %s\n", pkg.MinioURLTLS))
-	localConnect.WriteString(fmt.Sprintf("Minio Console: %s\n", pkg.MinioConsoleURLTLS))
-
-	return localConnect.String()
-}

@@ -78,7 +78,6 @@ func NewCommand() *cobra.Command {
 	localCmd.SilenceUsage = true
 
 	// wire up new commands
-	localCmd.AddCommand(NewCommandConnect())
 	localCmd.AddCommand(NewDestroyCommand())
 
 	return localCmd
