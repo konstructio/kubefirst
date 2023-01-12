@@ -10,18 +10,18 @@ If you close the handoff screen (by pressing ESC), you can still access the Kube
 
 You now have a k3d cluster with the following content installed in it:
 
-| Application                  | Description                                                                            |
-|------------------------------|----------------------------------------------------------------------------------------|
-| Traefik Ingress Controller   | Native k3d Ingress Controller                                                          |
-| Cert Manager                 | Certificate Automation Utility                                                         |
-| Argo CD                      | GitOps Continuous Delivery                                                             |
-| Argo Workflows               | Application Continuous Integration                                                     |
-| GitHub Action Runner         | GitHub CI Executor                                                                     |
-| Vault                        | Secrets Management                                                                     |
-| Atlantis                     | Terraform Workflow Automation                                                          |
-| External Secrets             | Syncs Kubernetes secrets with Vault secrets                                            |
-| Chart Museum                 | Helm Chart Registry                                                                    |
-| Metaphor Frontend            | (development, staging, production) instance of sample Nextjs and React app             |
+| Application                  | Description                                                                 |
+|------------------------------|-----------------------------------------------------------------------------|
+| Traefik Ingress Controller   | Native k3d Ingress Controller                                               |
+| Cert Manager                 | Certificate Automation Utility                                              |
+| Argo CD                      | GitOps Continuous Delivery                                                  |
+| Argo Workflows               | Application Continuous Integration                                          |
+| GitHub Action Runner         | GitHub CI Executor                                                          |
+| Vault                        | Secrets Management                                                          |
+| Atlantis                     | Terraform Workflow Automation                                               |
+| External Secrets             | Syncs Kubernetes secrets with Vault secrets                                 |
+| Chart Museum                 | Helm Chart Registry                                                         |
+| Metaphor Frontend            | (development, staging, production) instance of sample Next.js and React app |
 
 - These apps are all managed by Argo CD and the app configurations are in the `gitops` repo's `registry` folder.
 
@@ -41,16 +41,15 @@ Go to your new gitops repository in your personal GitHub. Navigate to the `gitop
 
 ```
 module "admin_one" {
-  source = "./modules/user/github"
-
-  acl_policies            = ["admin"]
-  email                   = "admin@your-company-io.com"
-  first_name              = "Admin"
-  github_username         = "admin_one_github_username"
-  last_name               = "One"
-  username                = "aone"
-  user_disabled           = false
-  userpass_accessor       = data.vault_auth_backend.userpass.accessor
+  source            = "./modules/user/github"
+  acl_policies      = ["admin"]
+  email             = "admin@your-company-io.com"
+  first_name        = "Admin"
+  github_username   = "admin_one_github_username"
+  last_name         = "One"
+  username          = "aone"
+  user_disabled     = false
+  userpass_accessor = data.vault_auth_backend.userpass.accessor
 }
 ```
 
@@ -75,7 +74,7 @@ Any new users you have created through this process will have their temporary in
 
 ![](../../img/kubefirst/getting-started/vault-users.png)
 
-Once you've provided them this initial password, they can update their own password throughout the platform by updating their userpass entity in vault. Anyone can change their own password, and Admins can reset anyone's password. These rules, just like everything else on Kubefirst, can be configured in your new gitops repository.
+Once you've provided them this initial password, they can update their own password throughout the platform by updating their user password entity in vault. Anyone can change their own password, and Admins can reset anyone's password. These rules, just like everything else on Kubefirst, can be configured in your new gitops repository.
 
 ![](https://user-images.githubusercontent.com/53096417/204801723-602beff0-12f9-45a9-bb9c-4d85a889d1ce.gif)
 

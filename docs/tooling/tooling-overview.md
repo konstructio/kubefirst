@@ -10,10 +10,12 @@ There are a handful of utilities and CLIs that are needed to be successful on th
 | Utility       | Version | Link                          |
 |---------------|---------|-------------------------------|
 | Argo Workflow | 3.1.3   | [argo](argo.md)               |
-| ArgoCD        |         | [argocd](argocd.md)           |
+| ArgoCD        | 2.4.8   | [argocd](argocd.md)           |
+| Atlantis      | 0.19.2  | [atlantis](atlantis.md)       |
 | AWS CLI       | 2.2.25  | [aws-cli](aws-cli.md)         |
 | Docker        | 20.10.7 | [docker](docker.md)           |
 | Kubectl       | 1.21.3  | [kubectl](kubectl.md)         |
+| ngrok         |         | [ngrok](ngrok.md)             |
 | Kubefirst     | 1.9.0   | [kubefirst](kubefirst-cli.md) |
 | Terraform     | 1.0.3   | [terraform](terraform.md)     |
 | Vault         | 1.8.0   | [vault-cli](vault-cli.md)     |
