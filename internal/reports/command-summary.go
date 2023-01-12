@@ -143,3 +143,11 @@ func StyleMessage(message string) string {
 	style := getStyle()
 	return style.Render(message)
 }
+
+// StyleMessageBlackAndWhite receives a string and return a style black and white string
+func StyleMessageBlackAndWhite(message string) string {
+	style := getStyle()
+	style.Background(lipgloss.Color("black"))
+	style.Foreground(lipgloss.Color("white"))
+	return style.Render(message)
+}
