@@ -9,7 +9,6 @@ yes, here a sample of configs you can use.
 ```yaml 
 config:
   admin-email:  user@domain.com
-  cloud: aws
   hosted-zone-name: my.domain.com
   profile: default
   bot-password: myAmazingPassword
@@ -17,7 +16,7 @@ config:
 ```
 
 ```bash 
-kubefirst init  -c ./values.yaml
+kubefirst init  -c ./values.yaml --cloud aws --git-provider gitlab
 ```
 
 ## Sample of AWS installation Github
@@ -26,15 +25,19 @@ kubefirst init  -c ./values.yaml
 ```yaml 
 config:
   admin-email:  user@domain.com
-  cloud: aws
   hosted-zone-name: my.domain.com
   profile: default
   bot-password: myAmazingPassword
   cluster-name: mycluster
-  github-user: my_github_user
-  github-org: my_github_org
+  github-owner: my_github_org
 ```
 
 ```bash 
-kubefirst init  -c ./values.yaml
+kubefirst init  -c ./values.yaml  --cloud aws 
 ```
+
+# Notes
+
+- The flag `--cloud` is not supported via config file
+- The flag `--git-provider` is not supported via config file, if not passed it will be assumed as a `github` installation.
+- `kubefirst local` has not formal support to config files
