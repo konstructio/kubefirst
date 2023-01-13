@@ -130,6 +130,8 @@ func GetGithubTerraformEnvs(envs map[string]string) map[string]string {
 
 	envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
 	envs["GITHUB_OWNER"] = viper.GetString("github.owner")
+	// todo, this variable is assicated with repos.tf in gitops-template, considering bootstrap container image for metaphor
+	// envs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
 	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kubefirst.bot.public-key")
 
