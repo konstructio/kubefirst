@@ -1,4 +1,4 @@
-# After Install
+# Explore
 
 [//]: # (`todo: need new getting started video for github`)
 
