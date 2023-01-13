@@ -10,7 +10,7 @@ It installs a fully automated platform of open source cloud native tools with a 
 
 ### Prerequisites
 
-- [To install kubefirst CLI](../../overview/#how-to-install-kubefirst-cli)
+- [To install kubefirst CLI](../../overview.md#how-to-install-kubefirst-cli)
 
 **AWS Prerequisites**
 
@@ -85,5 +85,5 @@ kubefirst cluster create
 
 Continue your journey: 
 
-- [Explore your installation](../explore/)
-- [Destroying](../destroy/)
+- [Explore your installation](../explore.md)
+- [Destroying](../destroy.md)
