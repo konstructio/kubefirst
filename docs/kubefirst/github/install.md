@@ -82,12 +82,12 @@ config:
   profile: default
   cluster-name: your-cluster-name
   github-owner: your-github-organization-name
+  cloud: aws 
 ```
 
 ```bash 
-kubefirst init  -c ./config.yaml  --cloud aws 
+kubefirst init  -c ./config.yaml
 ```
-> - The flag `--cloud` is not supported via config file
 
 The `init` process produces a directory of utilities, a state file, and some staged platform content that can now be found at `~/.kubefirst`
 

@@ -63,15 +63,13 @@ config:
   cluster-name: your_cluster_name
   s3-suffix: you-s3-bucket-name
   aws-nodes-spot: true
+  cloud: aws  
+  git-provider: gitlab  
 ```
 
 ```bash
-kubefirst init -c config.yaml --cloud aws  --git-provider gitlab
+kubefirst init -c config.yaml
 ```
-
-> - The flag `--cloud` is not supported via config file
-> - The flag `--git-provider` is not supported via config file, if not passed it will be assumed as a `github` installation.
-
 
 The `init` process produces a directory of utilities, a state file, and some staged platform content that can now be 
 found at `~/.kubefirst`. [Here](../../tooling/kubefirst-cli.md) you can find more details about `init` command.

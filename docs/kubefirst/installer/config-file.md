@@ -13,10 +13,13 @@ config:
   profile: default
   bot-password: myAmazingPassword
   cluster-name: mycluster
+  cloud: aws
+  git-provider: gitlab
+
 ```
 
 ```bash 
-kubefirst init  -c ./values.yaml --cloud aws --git-provider gitlab
+kubefirst init  -c ./values.yaml
 ```
 
 ## Sample of AWS installation Github
@@ -30,14 +33,10 @@ config:
   bot-password: myAmazingPassword
   cluster-name: mycluster
   github-owner: my_github_org
+  cloud: aws
 ```
 
 ```bash 
-kubefirst init  -c ./values.yaml  --cloud aws 
+kubefirst init  -c ./values.yaml
 ```
 
-# Notes
-
-- The flag `--cloud` is not supported via config file
-- The flag `--git-provider` is not supported via config file, if not passed it will be assumed as a `github` installation.
-- `kubefirst local` has not formal support to config files
