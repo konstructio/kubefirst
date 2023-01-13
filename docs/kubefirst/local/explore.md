@@ -36,6 +36,8 @@ The `kubefirst local` command will open a new browser tab at completion with the
 
 ## Step 2: Make your first automated Terraform change(optional)
 
+This step is meant to explore the onboarding process of a new user to your installation:
+
 - [Explore Atlantis & Terraform to manage users](../../../common/terraform/#how-can-i-use-atlantis-to-add-a-new-user-on-my-github-backed-installation)
 
 
