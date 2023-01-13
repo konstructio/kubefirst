@@ -106,7 +106,7 @@ metrics, application performance monitoring, dashboard, and alerting.
 
 The **Metaphors** applications leverages hashicorp **Vault** for secrets management. **Vault** runs in the `mgmt` cluster 
 and metaphor runs in `preprod` and `production`, so it serves as an example for secrets management. To read more see our 
-[Vault documentation](../vault/).
+[Vault documentation](vault.md).
 
 ## How its CI/CD is defined
 
@@ -150,8 +150,8 @@ Here is described how metaphor gives you a demo of most of the tooling added to 
 Want to learn more, check:
 
 - Gitops
-- [CWFTs](../../tooling/argo/cwft-overview/)
-- [Vault](../../common/vault/)
+- [CWFTs](../tooling/argo/cwft-overview.md)
+- [Vault](../common/vault.md)
 
 
 ## Tips

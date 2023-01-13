@@ -28,7 +28,7 @@ Your first login to Vault will be with the root token that is provided to you at
 
 This token is presented on the final installer screen of the CLI or at the `vault.token` field in your `~/.kubefirst` file. You can copy the value it. Then navigate to your vault instance in your browser, select `Token` and paste the token in the password field.
 
-![](../../img/kubefirst/vault/token-login.png)
+![](../img/kubefirst/vault/token-login.png)
 
 While logged in with the root token, navigate to the secret:
 `Secrets -> Users -> kbot`
@@ -42,7 +42,7 @@ Now that you have collected the kbot password, let's log out and back into Vault
 
 When logging in with users instead of tokens, select method `Username` as the login method on the login screen. Enter `kbot` as the username, and paste the password you collected in the Password field and log in.
 
-![](../../img/kubefirst/vault/vault-userpass.png)
+![](../img/kubefirst/vault/vault-userpass.png)
 
 This is the login experience that your team will use when authenticating with Vault. Initially, there will only be a singular `kbot` user created that represents the kubefirst bot account. You can pull request additional admins and developers from your team onto the platform, and they will all log in using the Username method.
 
@@ -63,7 +63,7 @@ There are other authentication schemes available to you as well:
 
 While logged into Vault, navigate to secrets path `secret/development/metaphor`.
 
-![](../../img/kubefirst/vault/vault-secret-example.png)
+![](../img/kubefirst/vault/vault-secret-example.png)
 
 Here you can see we have two secrets stored at named `SECRET_ONE` and `SECRET_TWO` with two "secret values". These two values are obviously not actually sensitive and are for demonstration purposes only. Let's explore how secrets work.
 
@@ -188,7 +188,7 @@ staging secret 1%
 
 Now that you have native Kubernetes secrets available, you can use them however you choose. Our metaphor example uses them as environment variables as shown here:
 
-![](../../img/kubefirst/vault/metaphor-secret-use-in-deployment.png)
+![](../img/kubefirst/vault/metaphor-secret-use-in-deployment.png)
 
 > Note: There are a ton of other ways secrets can be leveraged in your app, like 
 [using secrets as files on pods](https://kubernetes.io/docs/concepts/configuration/secret/), or 
