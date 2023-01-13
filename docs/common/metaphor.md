@@ -106,7 +106,7 @@ metrics, application performance monitoring, dashboard, and alerting.
 
 The **Metaphors** applications leverages hashicorp **Vault** for secrets management. **Vault** runs in the `mgmt` cluster 
 and metaphor runs in `preprod` and `production`, so it serves as an example for secrets management. To read more see our 
-[Vault documentation](../vault/).
+[Vault documentation](./vault.md).
 
 ## How its CI/CD is defined
 
@@ -122,9 +122,9 @@ build
 
 - **Concept 1:** If you are using github(local or cloud), it will be trigger based at `.github/workflows/`; Or if you are using gitlab, installation, it will be trigger based at `.gitlab-ci.yaml`. The idea is that these are used for simply triggering an **argo workflows**.
 
-- **Concept 2:** By using **argo workflows** to drive your CI jobs you can re-use some of the **CWFT** we provide and also create your own [**CWFTs**](../tooling/argo/cwft-overview.html) to help build your toolset, the ideia here is to have more generic automations that are not bound to a given git provider tool. 
+- **Concept 2:** By using **argo workflows** to drive your CI jobs you can re-use some of the **CWFT** we provide and also create your own [**CWFTs**](../tooling/argo/cwft-overview.md) to help build your toolset, the ideia here is to have more generic automations that are not bound to a given git provider tool. 
 
-- **Concept 3:** Use our [**CWFTs**](../tooling/argo/cwft-overview.html) as the basis to build your library of automations by adding new ones that fit your application needs. 
+- **Concept 3:** Use our [**CWFTs**](../tooling/argo/cwft-overview.md) as the basis to build your library of automations by adding new ones that fit your application needs. 
 
 - **Concept 4:** Application is build from a Dockerfile that is defined on the `build` folder. 
 
@@ -150,8 +150,8 @@ Here is described how metaphor gives you a demo of most of the tooling added to 
 Want to learn more, check:
 
 - Gitops
-- [CWFTs](../../tooling/argo/cwft-overview/)
-- [Vault](../../common/vault/)
+- [CWFTs](../tooling/argo/cwft-overview.md)
+- [Vault](./vault.md)
 
 
 ## Tips
