@@ -38,7 +38,7 @@ The `kubefirst local` command will open a new browser tab at completion with the
 
 This step is meant to explore the onboarding process of a new user to your installation:
 
-- [Explore Atlantis & Terraform to manage users](../../../common/terraform/#how-can-i-use-atlantis-to-add-a-new-user-on-my-github-backed-installation)
+- [Explore Atlantis & Terraform to manage users](../../common/terraform.html#how-can-i-use-atlantis-to-add-a-new-user-on-my-github-backed-installation)
 
 
 
@@ -70,4 +70,4 @@ You can [reach out to us](../../community/index.md) if you have any issues along
 
 Continue your journey: 
 
-- [Destroying](../destroy/)
+- [Destroying](./destroy.md)

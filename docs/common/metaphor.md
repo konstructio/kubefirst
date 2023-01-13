@@ -122,9 +122,9 @@ build
 
 - **Concept 1:** If you are using github(local or cloud), it will be trigger based at `.github/workflows/`; Or if you are using gitlab, installation, it will be trigger based at `.gitlab-ci.yaml`. The idea is that these are used for simply triggering an **argo workflows**.
 
-- **Concept 2:** By using **argo workflows** to drive your CI jobs you can re-use some of the **CWFT** we provide and also create your own [**CWFTs**](../../tooling/argo/cwft-overview/) to help build your toolset, the ideia here is to have more generic automations that are not bound to a given git provider tool. 
+- **Concept 2:** By using **argo workflows** to drive your CI jobs you can re-use some of the **CWFT** we provide and also create your own [**CWFTs**](../tooling/argo/cwft-overview.html) to help build your toolset, the ideia here is to have more generic automations that are not bound to a given git provider tool. 
 
-- **Concept 3:** Use our [**CWFTs**](../../tooling/argo/cwft-overview/) as the basis to build your library of automations by adding new ones that fit your application needs. 
+- **Concept 3:** Use our [**CWFTs**](../tooling/argo/cwft-overview.html) as the basis to build your library of automations by adding new ones that fit your application needs. 
 
 - **Concept 4:** Application is build from a Dockerfile that is defined on the `build` folder. 
 
@@ -139,7 +139,7 @@ The files you be interested are:
 chart/Metaphor
 ```
 
-There is a [CWFT meant to bump a chart](../../tooling/argo/cwft-helm/#helm-increment-chart-patch) version and update chart museum. This automation is to guide how to leverage the tooling already embeded on kubefirst to serve applications internally. 
+There is a [CWFT meant to bump a chart](../tooling/argo/cwft-helm.html#helm-increment-chart-patch) version and update chart museum. This automation is to guide how to leverage the tooling already embeded on kubefirst to serve applications internally. 
 
 
 

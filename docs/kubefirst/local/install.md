@@ -56,5 +56,5 @@ After the ~5 minutes installation, your browser will launch a new tab to the [Ku
 
 Continue your journey: 
 
-- [Explore your installation](./explore.html)
-- [Destroying](./destroy.html)
+- [Explore your installation](./explore.md)
+- [Destroying](./destroy.md)
