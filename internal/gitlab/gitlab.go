@@ -174,13 +174,13 @@ func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
 		hostedZoneName := viper.GetString("aws.hostedzonename")
 		resp, _ := http.Get(fmt.Sprintf("https://%s.%s", appName, hostedZoneName))
 		if resp != nil && resp.StatusCode == 200 {
-			log.Printf("%s host resolved, 30 second grace period required...", appName)
+			log.Info().Msgf("%s host resolved, 30 second grace period required...", appName)
 			time.Sleep(time.Second * 30)
 			i = max
 			hostReady = true
 			return hostReady
 		} else {
-			log.Printf("%s host not resolved, sleeping 10s", appName)
+			log.Info().Msgf("%s host not resolved, sleeping 10s", appName)
 			time.Sleep(time.Second * 10)
 		}
 	}
