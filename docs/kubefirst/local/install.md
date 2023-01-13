@@ -8,7 +8,7 @@ To use the local version of Kubefirst, you will need to have [Docker installed](
 
 ### Prerequisites
 
-- [To install kubefirst CLI](../../overview/#how-to-install-kubefirst-cli)
+- [To install kubefirst CLI](../overview.html#how-to-install-kubefirst-cli)
 
 
 ## Create your new local cluster
@@ -56,5 +56,5 @@ After the ~5 minutes installation, your browser will launch a new tab to the [Ku
 
 Continue your journey: 
 
-- [Explore your installation](../explore/)
-- [Destroying](../destroy/)
+- [Explore your installation](./explore.html)
+- [Destroying](./destroy.html)
