@@ -73,7 +73,6 @@ kubefirst init -c config.yaml
 
 The `init` process produces a directory of utilities, a state file, and some staged platform content that can now be 
 found at `~/.kubefirst`. [Here](../../tooling/kubefirst-cli.md) you can find more details about `init` command.
-<!-- TODO: check final state file name above - state file collides with directory -->
 
 ### Step 2 - `kubefirst cluster create`
 
@@ -82,7 +81,6 @@ Now it's time to create the platform, to do so simply run
 ```
 kubefirst cluster create
 ```
-<!-- TODO: check final state command above - talk through stack vs cluster with team -->
 
 ## What to do next
 
