@@ -3,20 +3,19 @@ package civo
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"runtime"
-	"strings"
 
-	"github.com/cip8/autoname"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/civo"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh/terminal"
@@ -41,12 +40,17 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	civoDnsFlag, err := cmd.Flags().GetString("dns")
+	domainNameFlag, err := cmd.Flags().GetString("domain-name")
 	if err != nil {
 		return err
 	}
 
-	civoClusterNameFlag, err := cmd.Flags().GetString("cluster-name")
+	clusterNameFlag, err := cmd.Flags().GetString("cluster-name")
+	if err != nil {
+		return err
+	}
+
+	cloudRegionFlag, err := cmd.Flags().GetString("cloud-region")
 	if err != nil {
 		return err
 	}
@@ -75,6 +79,16 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	metaphorTemplateURLFlag, err := cmd.Flags().GetString("metaphor-template-url")
+	if err != nil {
+		return err
+	}
+
+	metaphorTemplateBranchFlag, err := cmd.Flags().GetString("metaphor-template-branch")
+	if err != nil {
+		return err
+	}
+
 	silentModeFlag, err := cmd.Flags().GetBool("silent-mode")
 	if err != nil {
 		return err
@@ -92,13 +106,21 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.AutomaticEnv()
 	homePath, err := os.UserHomeDir()
 	if err != nil {
-		log.Panic(err)
+		log.Info().Msg(err.Error())
+		return err
 	}
 
 	// todo waiting for johns response
+	// todo this clusterId need to go to state store,
+	// todo placed in configmap in kubefirst namespace, included in telemetry
+	clusterId := viper.GetString("kubefirst.cluster-id")
+	if clusterId == "" {
+		clusterId = pkg.GenerateClusterID()
+		viper.Set("kubefirst.cluster-id", clusterId)
+		viper.WriteConfig()
+	}
+
 	k1Dir := fmt.Sprintf("%s/.k1", homePath)
-	// todo allow for full override of these references via cli flag
-	defaultTemplateRepoGithubOwner := "kubefirst"
 
 	// todo validate flags
 	viper.Set("admin-email", adminEmailFlag)
@@ -122,29 +144,25 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("localhost.os", runtime.GOOS)
 	viper.Set("localhost.architecture", runtime.GOARCH)
 	viper.Set("github.atlantis.webhook.secret", pkg.Random(20))
-	viper.Set("github.atlantis.webhook.url", fmt.Sprintf("https://atlantis.%s/events", civoDnsFlag))
+	viper.Set("github.atlantis.webhook.url", fmt.Sprintf("https://atlantis.%s/events", domainNameFlag))
 	viper.Set("github.repo.gitops.url", fmt.Sprintf("https://github.com/%s/gitops.git", githubOwnerFlag))
-	viper.Set("github.repo.metaphor.url", fmt.Sprintf("https://github.com/%s/metaphor.git", githubOwnerFlag))
 	viper.Set("github.repo.metaphor-frontend.url", fmt.Sprintf("https://github.com/%s/metaphor-frontend.git", githubOwnerFlag))
-	viper.Set("github.repo.metaphor-go.url", fmt.Sprintf("https://github.com/%s/metaphor-go.git", githubOwnerFlag))
 	githubOwnerRootGitURL := fmt.Sprintf("git@github.com:%s", githubOwnerFlag)
 	viper.Set("github.repo.gitops.giturl", fmt.Sprintf("%s/gitops.git", githubOwnerRootGitURL))
 	viper.Set("github.repo.metaphor.giturl", fmt.Sprintf("%s/metaphor-frontend.git", githubOwnerRootGitURL))
 	viper.Set("template-repo.gitops.branch", gitopsTemplateBranchFlag)
 	viper.Set("template-repo.gitops.url", gitopsTemplateURLFlag)
-	// todo accommodate metaphor branch and repo override more intelligently
-	viper.Set("template-repo.metaphor.url", fmt.Sprintf("https://github.com/%s/metaphor.git", defaultTemplateRepoGithubOwner))
-	viper.Set("template-repo.metaphor.branch", "main")
-	viper.Set("template-repo.metaphor-frontend.url", fmt.Sprintf("https://github.com/%s/metaphor-frontend-template.git", defaultTemplateRepoGithubOwner))
-	viper.Set("template-repo.metaphor-frontend.branch", "main")
-	viper.Set("template-repo.metaphor-go.url", fmt.Sprintf("https://github.com/%s/metaphor-go.git", defaultTemplateRepoGithubOwner))
-	viper.Set("template-repo.metaphor-go.branch", "main")
+	viper.Set("template-repo.metaphor-frontend.url", metaphorTemplateURLFlag)
+	viper.Set("template-repo.metaphor-frontend.branch", metaphorTemplateBranchFlag)
 	viper.Set("vault.token", "k1_local_vault_token")
+
+	kubefirstStateStoreBucketName := fmt.Sprintf("k1-state-store-%s-%s", clusterNameFlag, clusterId)
 
 	viper.WriteConfig()
 
 	pkg.InformUser("checking authentication to required providers", silentModeFlag)
 
+	//* CIVO START
 	executionControl := viper.GetBool("kubefirst.checks.civo.complete")
 	if !executionControl {
 		civoToken := viper.GetString("civo.token")
@@ -160,14 +178,55 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 			}
 
 			os.Setenv("CIVO_TOKEN", string(civoToken))
-			log.Printf("CIVO_TOKEN set - continuing")
+			log.Info().Msg("CIVO_TOKEN set - continuing")
 		}
 		viper.Set("kubefirst.checks.civo.complete", true)
 		viper.WriteConfig()
 	} else {
-		log.Println("already completed civo token check - continuing")
+		log.Info().Msg("already completed civo token check - continuing")
 	}
 
+	executionControl = viper.GetBool("civo.object-storage-creds.complete")
+	if !executionControl {
+		creds, err := civo.GetAccessCredentials(kubefirstStateStoreBucketName, cloudRegionFlag)
+		if err != nil {
+			log.Info().Msg(err.Error())
+		}
+		viper.Set("civo.object-storage-creds.access-key-id", creds.AccessKeyID)
+		viper.Set("civo.object-storage-creds.secret-access-key-id", creds.SecretAccessKeyID)
+		viper.Set("civo.object-storage-creds.name", creds.Name)
+		viper.Set("civo.object-storage-creds.id", creds.ID)
+		viper.Set("civo.object-storage-creds.complete", true)
+		viper.WriteConfig()
+		log.Info().Msg("civo object storage credentials created and set")
+	} else {
+		log.Info().Msg("already created civo object storage credentials - continuing")
+	}
+
+	// todo create a new `kubefirst-state-store` bucket
+	executionControl = viper.GetBool("kubefirst.state-store-bucket.complete")
+	if !executionControl {
+		accessKeyId := viper.GetString("civo.object-storage-creds.access-key-id")
+
+		bucket, err := civo.CreateStorageBucket(accessKeyId, kubefirstStateStoreBucketName, cloudRegionFlag)
+		if err != nil {
+			log.Info().Msg(err.Error())
+		}
+
+		viper.Set("civo.object-storage-bucket.id", bucket.ID)
+		viper.Set("civo.object-storage-bucket.name", bucket.Name)
+		viper.Set("kubefirst.state-store-bucket.complete", true)
+		viper.WriteConfig()
+		log.Info().Msg("civo state store bucket created")
+	} else {
+		log.Info().Msg("already created civo state store bucket - continuing")
+	}
+	//* CIVO END
+	//* CIVO END
+	//* CIVO END
+	//* CIVO END
+	//* CIVO END
+	os.Exit(1)
 	executionControl = viper.GetBool("kubefirst.checks.github.complete")
 	if !executionControl {
 
@@ -185,12 +244,12 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
 
 		// get github data to set user based on the provided token
-		log.Println("verifying github authentication")
+		log.Info().Msg("verifying github authentication")
 		githubUser, err := gitHubHandler.GetGitHubUser(githubToken)
 		if err != nil {
 			return err
 		}
-		log.Println("github user is: ", githubUser)
+		log.Info().Msgf("github user is: ", githubUser)
 		// todo evaluate if cloudProviderFlag == "local" {githubOwnerFlag = githubUser} and the rest of the execution is the same
 
 		err = gitHubHandler.CheckGithubOrganizationPermissions(githubToken, githubOwnerFlag, githubUser)
@@ -213,11 +272,11 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 			repositoryDoesNotExistStatusCode := 404
 
 			if responseStatusCode == repositoryExistsStatusCode {
-				log.Printf("repository https://github.com/%s/%s exists", githubOwnerFlag, repositoryName)
+				log.Info().Msgf("repository https://github.com/%s/%s exists", githubOwnerFlag, repositoryName)
 				errorMsg = errorMsg + fmt.Sprintf("https://github.com/%s/%s\n\t", githubOwnerFlag, repositoryName)
 				newRepositoryExists = true
 			} else if responseStatusCode == repositoryDoesNotExistStatusCode {
-				log.Printf("repository https://github.com/%s/%s does not exist, continuing", githubOwnerFlag, repositoryName)
+				log.Info().Msgf("repository https://github.com/%s/%s does not exist, continuing", githubOwnerFlag, repositoryName)
 			}
 		}
 		if newRepositoryExists {
@@ -238,11 +297,11 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 			teamDoesNotExistStatusCode := 404
 
 			if responseStatusCode == teamExistsStatusCode {
-				log.Printf("team https://github.com/%s/%s exists", githubOwnerFlag, teamName)
+				log.Info().Msgf("team https://github.com/%s/%s exists", githubOwnerFlag, teamName)
 				errorMsg = errorMsg + fmt.Sprintf("https://github.com/orgs/%s/teams/%s\n\t", githubOwnerFlag, teamName)
 				newTeamExists = true
 			} else if responseStatusCode == teamDoesNotExistStatusCode {
-				log.Printf("https://github.com/orgs/%s/teams/%s does not exist, continuing", githubOwnerFlag, teamName)
+				log.Info().Msgf("https://github.com/orgs/%s/teams/%s does not exist, continuing", githubOwnerFlag, teamName)
 			}
 		}
 		if newTeamExists {
@@ -256,14 +315,14 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst.checks.github.complete", true)
 		viper.WriteConfig()
 	} else {
-		log.Println("already completed github checks - continuing")
+		log.Info().Msg("already completed github checks - continuing")
 	}
 
 	// todo consider creating a bucket in civo cloud just like aws
 	executionControl = viper.GetBool("kubefirst.checks.bot-setup.complete")
 	if !executionControl {
 
-		log.Println("creating an ssh key pair for your new cloud infrastructure")
+		log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
 		sshPrivateKey, sshPublicKey, err := ssh.CreateSshKeyPair()
 		if err != nil {
 			return err
@@ -271,17 +330,13 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		if len(kbotPasswordFlag) == 0 {
 			kbotPasswordFlag = pkg.Random(20)
 		}
-		log.Println("ssh key pair creation complete")
+		log.Info().Msg("ssh key pair creation complete")
 
-		randomName := strings.ReplaceAll(autoname.Generate(), "_", "-")
-		kubefirstStateStoreBucketName := fmt.Sprintf("k1-state-store-%s-%s", civoClusterNameFlag, randomName)
-		viper.Set("kubefirst.state-store.bucket", kubefirstStateStoreBucketName)
-		viper.Set("kubefirst.bucket.random-name", randomName)
 		viper.Set("kubefirst.telemetry", useTelemetryFlag)
-		viper.Set("kubefirst.cluster-name", civoClusterNameFlag)
+		viper.Set("kubefirst.cluster-name", clusterNameFlag)
 		viper.Set("vault.local.service", config.VaultLocalURL)
-		viper.Set("civo.dns", civoDnsFlag)
-		viper.Set("civo.region", civoRegionFlag)
+		viper.Set("domain-name", domainNameFlag) // todo refactor to domain-name
+		viper.Set("cloud-region", cloudRegionFlag)
 		viper.Set("kubefirst.checks.civo.complete", true)
 
 		viper.Set("kubefirst.bot.password", kbotPasswordFlag)
@@ -290,22 +345,23 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst.bot.user", "kbot")
 		viper.Set("kubefirst.checks.bot-setup.complete", true)
 		viper.WriteConfig()
-		log.Println("kubefirst values and bot-setup complete")
+		log.Info().Msg("kubefirst values and bot-setup complete")
 		// todo, is this a hangover from initial gitlab? do we need this?
-		log.Println("creating argocd-init-values.yaml for initial install")
+		log.Info().Msg("creating argocd-init-values.yaml for initial install")
 		//* ex: `git@github.com:kubefirst` this is allows argocd access to the github organization repositories
 		err = ssh.WriteGithubArgoCdInitValuesFile(githubOwnerRootGitURL, sshPrivateKey)
 		if err != nil {
 			return err
 		}
-		log.Println("argocd-init-values.yaml creation complete")
+		log.Info().Msg("argocd-init-values.yaml creation complete")
 	}
 
-	log.Println("validation and kubefirst cli environment check is complete")
+	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(civoDnsFlag, pkg.MetricInitCompleted); err != nil {
-			log.Println(err)
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitCompleted); err != nil {
+			log.Info().Msg(err.Error())
+			return err
 		}
 	}
 

@@ -419,6 +419,23 @@ func Random(seq int) string {
 	return randSeq(seq)
 }
 
+const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+var seededRand *rand.Rand = rand.New(
+	rand.NewSource(time.Now().UnixNano()))
+
+func StringWithCharset(length int, charset string) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
+}
+
+func GenerateClusterID() string {
+	return StringWithCharset(6, charset)
+}
+
 // RemoveSubDomain receives a host and remove its subdomain, if exists.
 func RemoveSubDomain(fullURL string) (string, error) {
 

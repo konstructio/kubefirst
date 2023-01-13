@@ -62,7 +62,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 	//! viper config variables
 	argocdLocalURL := viper.GetString("argocd.local.service")
-	civoDnsName := viper.GetString("civo.dns")
+	civoDnsName := viper.GetString("domain-name")
 	gitopsTemplateBranch := viper.GetString("template-repo.gitops.branch")
 	gitopsTemplateURL := viper.GetString("template-repo.gitops.url")
 	metaphorTemplateBranch := viper.GetString("template-repo.metaphor-frontend.branch")
@@ -155,6 +155,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := k1GitopsDir + "/terraform/github"
 		tfEnvs := map[string]string{}
+		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
 		tfEnvs = terraform.GetGithubTerraformEnvs(tfEnvs)
 		//! debug log
 		// log.Info().Msgf("tf env vars: ", tfEnvs)
@@ -336,7 +337,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		vault.WaitVaultToBeRunning(dryRun, kubeconfigPath, kubectlClientPath)
 	}
 
-	// Vault port-forward
+	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(vaultStopChannel)
@@ -350,8 +351,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		vaultStopChannel,
 	)
 
+	//! todo need to pass in url values for connectivity
 	k8s.LoopUntilPodIsReady(dryRun, kubeconfigPath, kubectlClientPath)
 
+	//* minio port-forward
 	minioStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(minioStopChannel)
@@ -377,8 +380,9 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("configuring vault with terraform", silentMode)
 
 		tfEnvs := map[string]string{}
+		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
 		tfEnvs = terraform.GetVaultTerraformEnvs(tfEnvs)
-		tfEntrypoint := k1GitopsDir + "/terraform/vault"
+		tfEntrypoint := k1GitopsDir + "/terraform/github"
 		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 
 		pkg.InformUser("vault terraform executed successfully", silentMode)
@@ -400,6 +404,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("applying users terraform", silentMode)
 
 		tfEnvs := map[string]string{}
+		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
 		tfEnvs = terraform.GetUsersTerraformEnvs(tfEnvs)
 		tfEntrypoint := k1GitopsDir + "/terraform/users"
 		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
@@ -437,7 +442,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already resolved host for chartmuseum, continuing")
 	}
 	//! here
-	//* git clone and detokenize the gitops repository
+	//* git clone and detokenize the metaphor-frontend repository
 	// todo improve this logic for removing `kubefirst clean`
 	if !viper.GetBool("template-repo.metaphor-frontend.pushed") {
 
@@ -481,11 +486,31 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
-	//! STOPPING HERE push to remote
-	//! STOPPING HERE push to remote
-	//! STOPPING HERE push to remote
-	//! STOPPING HERE push to remote
-	//! STOPPING HERE push to remote
+	//! STOP DOING METAPHOR SHENANIGANS HERE
+	// clone and detokinze with gitops after repo is avilable
+	// deploy running on github infra shipping to
+	// then pull, detokinze, and push back with self hosted after
+	// system is available
+	//! STOP DOING METAPHOR SHENANIGANS HERE
+	// clone and detokinze with gitops after repo is avilable
+	// deploy running on github infra shipping to
+	// then pull, detokinze, and push back with self hosted after
+	// system is available
+	//! STOP DOING METAPHOR SHENANIGANS HERE
+	// clone and detokinze with gitops after repo is avilable
+	// deploy running on github infra shipping to
+	// then pull, detokinze, and push back with self hosted after
+	// system is available
+	//! STOP DOING METAPHOR SHENANIGANS HERE
+	// clone and detokinze with gitops after repo is avilable
+	// deploy running on github infra shipping to
+	// then pull, detokinze, and push back with self hosted after
+	// system is available
+	//! STOP DOING METAPHOR SHENANIGANS HERE
+	// clone and detokinze with gitops after repo is avilable
+	// deploy running on github infra shipping to
+	// then pull, detokinze, and push back with self hosted after
+	// system is available
 	// pkg.InformUser("Deploying metaphor applications", silentMode)
 	// metaphorBranch := viper.GetString("template-repo.metaphor.branch")
 	// err := metaphor.DeployMetaphorGithubLocal(dryRun, false, githubOwner, metaphorBranch, "")
@@ -539,7 +564,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}()
 		k8s.OpenPortForwardPodWrapper(
 			kubeconfigPath,
-			"atlantis-o",
+			"atlantis-0",
 			"atlantis",
 			4141,
 			4141,
@@ -624,8 +649,8 @@ func printConfirmationScreen() {
 	createKubefirstSummary.WriteString("\nCreate Kubefirst Cluster?\n")
 	createKubefirstSummary.WriteString(strings.Repeat("-", 70))
 	createKubefirstSummary.WriteString("\nCivo Details:\n\n")
-	createKubefirstSummary.WriteString(fmt.Sprintf("DNS:    %s\n", viper.GetString("civo.dns")))
-	createKubefirstSummary.WriteString(fmt.Sprintf("Region: %s\n", viper.GetString("civo.region")))
+	createKubefirstSummary.WriteString(fmt.Sprintf("DNS:    %s\n", viper.GetString("domain-name")))
+	createKubefirstSummary.WriteString(fmt.Sprintf("Region: %s\n", viper.GetString("cloud-region")))
 	createKubefirstSummary.WriteString("\nGithub Organization Details:\n\n")
 	createKubefirstSummary.WriteString(fmt.Sprintf("Organization: %s\n", viper.GetString("github.owner")))
 	createKubefirstSummary.WriteString(fmt.Sprintf("User:         %s\n", viper.GetString("github.user")))
@@ -638,12 +663,8 @@ func printConfirmationScreen() {
 	createKubefirstSummary.WriteString("\nTemplate Repository URL's:\n")
 	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("template-repo.gitops.url")))
 	createKubefirstSummary.WriteString(fmt.Sprintf("    branch:  %s\n", viper.GetString("template-repo.gitops.branch")))
-	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("template-repo.metaphor.url")))
-	createKubefirstSummary.WriteString(fmt.Sprintf("    branch:  %s\n", viper.GetString("template-repo.metaphor.branch")))
 	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("template-repo.metaphor-frontend.url")))
 	createKubefirstSummary.WriteString(fmt.Sprintf("    branch:  %s\n", viper.GetString("template-repo.metaphor-frontend.branch")))
-	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("template-repo.metaphor-go.url")))
-	createKubefirstSummary.WriteString(fmt.Sprintf("    branch:  %s\n", viper.GetString("template-repo.metaphor-go.branch")))
 
 	log.Info().Msg(reports.StyleMessage(createKubefirstSummary.String()))
 }

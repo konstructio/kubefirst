@@ -2,9 +2,7 @@ package civo
 
 import (
 	"errors"
-	"fmt"
 	"log"
-	"os"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/terraform"
@@ -49,7 +47,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("github resources terraform destroyed", silentMode)
 	}
 
-	if viper.GetBool("terraform.civo.apply.complete") || viper.GetBool("terraform.civo.destroy.complete") {
+	if viper.GetBool("terraform.civo.apply.complete") || !viper.GetBool("terraform.civo.destroy.complete") {
 		pkg.InformUser("destroying civo resources with terraform", silentMode)
 
 		tfEntrypoint := config.GitOpsRepoPath + "/terraform/civo"
@@ -72,32 +70,32 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	//* instead of deleting the kubefirst file we can re-use the valuable information about
 	//* things like github, domains, etc.
 	//* we should reset the config to
-	if !viper.GetBool("kubefirst.clean.complete") {
+	// if !viper.GetBool("kubefirst.clean.complete") {
 
-		// delete the gitops repository
-		err := os.RemoveAll(config.K1FolderPath + "/gitops")
-		if err != nil {
-			return fmt.Errorf("unable to delete %q folder, error is: %s", config.K1FolderPath+"/gitops", err)
-		}
+	// 	// delete the gitops repository
+	// 	err := os.RemoveAll(config.K1FolderPath + "/gitops")
+	// 	if err != nil {
+	// 		return fmt.Errorf("unable to delete %q folder, error is: %s", config.K1FolderPath+"/gitops", err)
+	// 	}
 
-		err = os.Remove(config.KubefirstConfigFilePath)
-		if err != nil {
-			return fmt.Errorf("unable to delete %q file, error is: ", err)
-		}
-		// re-create .kubefirst file
-		kubefirstFile, err := os.Create(config.KubefirstConfigFilePath)
-		if err != nil {
-			return fmt.Errorf("error: could not create `$HOME/.kubefirst` file: %v", err)
-		}
-		err = kubefirstFile.Close()
-		if err != nil {
-			return err
-		}
+	// 	err = os.Remove(config.KubefirstConfigFilePath)
+	// 	if err != nil {
+	// 		return fmt.Errorf("unable to delete %q file, error is: ", err)
+	// 	}
+	// 	// re-create .kubefirst file
+	// 	kubefirstFile, err := os.Create(config.KubefirstConfigFilePath)
+	// 	if err != nil {
+	// 		return fmt.Errorf("error: could not create `$HOME/.kubefirst` file: %v", err)
+	// 	}
+	// 	err = kubefirstFile.Close()
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		viper.Set("template-repo.gitops.removed", true)
-		viper.Set("kubefirst.clean.complete", true)
-		viper.WriteConfig()
-	}
+	// 	viper.Set("template-repo.gitops.removed", true)
+	// 	viper.Set("kubefirst.clean.complete", true)
+	// 	viper.WriteConfig()
+	// }
 
 	return nil
 }
