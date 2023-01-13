@@ -40,9 +40,13 @@ This step is meant to explore the onboarding process of a new user to your insta
 
 - [Explore Atlantis & Terraform to manage users](../../common/terraform.html#how-can-i-use-atlantis-to-add-a-new-user-on-my-github-backed-installation)
 
+## Step 3: Accessing the applications
 
+The Console UI will provide you with the URLs to access the applications that were provisioned, and the handoff screen will provide the credentials to login into these applications.
 
-## Step 3: Deliver `metaphor-frontend` to your new Development, Staging, and Production
+After closing the handoff screen, you can also have access to the same credentials via the `~/.kubefirst` file, that hosts the initial credentials for all the installed applications.
+
+## Step 4: Deliver `metaphor-frontend` to your new Development, Staging, and Production
 
 The `metaphor-frontend` repo is a simple sample microservice with source code, build, and delivery automation that we use to demonstrate parts of the platform. We also find it to be a valuable way to test CI changes without impacting real apps on your platform.
 
