@@ -35,7 +35,8 @@ nav:
         - Destroy: 'kubefirst/local/destroy.md'
         - GitHub Repositories: 'kubefirst/local/github-repositories.md'
         - GitOps: 'kubefirst/local/gitops.md'
-        - Credit: 'kubefirst/local/credit.md'        
+        - Credit: 'kubefirst/local/credit.md'   
+        - Limitations: 'kubefirst/local/limitations.md'
       - GitHub Installation:
         - Install: 'kubefirst/github/install.md'
         - Explore: 'kubefirst/github/explore.md'
