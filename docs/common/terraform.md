@@ -20,12 +20,12 @@ If the apply is successful, your code will automatically be merged with master, 
 The following table shows how state is stored based on your installation selection: 
 
 |State Backed|AWS + Github|AWS + Gitlab|Local + Github|
-|:--|:--|:--|:--|
+|:--|:--:|:--:|:--:|
 |AWS S3 Bucket|X|X| |
 |Local - minio in cluster S3 Bucket| | |X|
 
 
-### AWS Cloud install - `kubefirst cluster init -cloud aws`
+### AWS cloud install - `kubefirst cluster init -cloud aws`
 
 
 Your terraform state is stored in an s3 bucket named `k1-state-store-xxxxxx`.
@@ -43,35 +43,88 @@ Your terraform state is stored in a local in cluster s3 bucket named `kubefirst-
 
 ## Tips
 
+### What is the general flow of changes using atlantis for IaC?
+
+- **Create a Commit and Merge Request:** The change described by terraform instructions will be created in a PR at a folder which [atlantis is listening for it](https://github.com/kubefirst/gitops-template/blob/main/atlantis.yaml). Once the Change Request is created on github/gilab, atlantis will plan it and show possible impacts of it. 
+
+- **Approve the change:** Once you are ready, someone with access will provide `atlantis apply` on the change request, triggering the processs of executing the `plan` created. 
+
+- **Change is applied by atlantis**: Atlantis will execute the terraform plan, and terraform will update shared statestore with new current state changes, change request will be merged to main,  reflecting the new desried state. 
+
+> Note: "Change Request" is "Pull Request" on Github and "Merge Request" on Gitlab. 
+
+
 ### How can I use atlantis to add a new user on my github backed installation?
+
+
+#### Create a Commit and Pull Request 
 
 Go to your new gitops repository in your personal GitHub. Navigate to the `gitops` project and edit the file `terraform/users/admins-github.tf`. In this file, you'll see some blocks that represent admin users - the `kubefirst_bot` user, and a commented-out `admin_one` user.
 
+Edit this code to replace the values for the `email`, `first_name`, `github_username`, `last_name`, and `username`. 
+
+Select one of the templates bellow based on your installation selection: 
+
+> Note: These template are samples to board a new `admin` to your installation. At the same folder has a file that can be used to board a developer. 
+
+#### For AWS cloud install use:
+
+If you installed using: `kubefirst cluster create --cloud aws`
 
 ```
 module "admin_one" {
-  source            = "./modules/user/github"
-  acl_policies      = ["admin"]
-  email             = "admin@your-company-io.com"
-  first_name        = "Admin"
-  github_username   = "admin_one_github_username"
-  last_name         = "One"
-  username          = "aone"
-  user_disabled     = false
-  userpass_accessor = data.vault_auth_backend.userpass.accessor
+  source = "./modules/user/github"
+  acl_policies        = ["admin"]
+  email               = "admin@your-company-io.com"
+  first_name          = "Admin"
+  github_username     = "admin_one_github_username"
+  last_name           = "One"
+  initial_password    = var.initial_password
+  team_id             = data.github_team.admins.id
+  username            = "aone"
+  user_disabled       = false
+  userpass_accessor   = data.vault_auth_backend.userpass.accessor
 }
 ```
 
-To exercise the user onboarding process, uncomment that admin_one user. Edit this code to replace the values for the `email`, `first_name`, `github_username`, `last_name`, and `username`. 
+Observe that you need to provide `team_id`to the team you want to bind it in github for github related access and `acl_policies` to bind to rights on vault. 
 
 With the name of your new module in mind, edit the list of `vault_identity_group_member_entity_ids` at the top of this file, adding your new module to the list.
 
+
+#### For local install use:
+
+If you installed using: `kubefirst local`
+
+As, on `local` we don't have the teams usage, as it is not using an org, but users personal account. 
+
+```
+module "admin_one" {
+  source = "./modules/user/github"
+  acl_policies        = ["admin"]
+  email               = "admin@your-company-io.com"
+  first_name          = "Admin"
+  github_username     = "admin_one_github_username"
+  last_name           = "One"
+  initial_password    = var.initial_password
+  username            = "aone"
+  user_disabled       = false
+  userpass_accessor   = data.vault_auth_backend.userpass.accessor
+}
+```
+
 Commit this change to a **new branch** and create a merge request. This will kick off the Atlantis workflow. Within a minute or so of submitting the merge request, a comment will appear on the merge request that shows the terraform plan with the changes it will be making to your infrastructure. 
 
-To apply these changes, submit a comment on that Merge Request with the following comment text:
-```
+
+#### Approve the change
+
+To apply these changes, you or someone in the organization can submit a comment on that Merge Request with the following comment text:
+
+```bash 
 atlantis apply
 ```
+
+#### What happens next?
 
 Doing so will instruct Atlantis to apply the plan. It will report back with the results of the apply within a minute or so.
 
@@ -95,25 +148,40 @@ Log into gitlab using the root credentials that were provided to you in your ter
 Once logged in, navigate to the `gitops` project and edit the file `terraform/users/admin.tf`. In this file, you'll see some blocks that represent admin users:
 
 ```
-module "admin_one" {
-  source   = "./templates/oidc-user"
-  admins_group_id    = gitlab_group.admins.id
-  developer_group_id = gitlab_group.developer.id
-  username           = "admin1"
-  fullname           = "Admin One"
-  email              = "admin1@yourcompany.com"
-  is_admin           = true
+module "kubefirst_bot" {
+  source = "./modules/user/gitlab"
+
+  acl_policies            = ["admin"]
+  email                   = "admin1@yourcompany.com"
+  first_name              = "Admin"
+  fullname                = "Admin One"
+  group_id                = data.vault_identity_group.admins.group_id
+  last_name               = "One"
+  initial_password        = var.initial_password
+    sername               = "admin1"
+  user_disabled           = false
+  userpass_accessor       = data.vault_auth_backend.userpass.accessor
 }
 ```
+
+> Note: This template is a sample to board a new `admin` to your installation. At the same folder has a file that can be used to board a developer. 
+
+
+#### Create a Commit and Merge Request  
 
 Edit this code replacing the values for the `module name`, `username`, `fullname`, and `email`. There is also a file for your developers at `terraform/users/developers.tf`. You can duplicate those snippets of code in these files to create as many developers and admins as you need.
 
 Commit this change to a **new branch** and create a merge request. This will kick off the Atlantis workflow. Within a minute or so of submitting the merge request, a comment will appear on the merge request that shows the terraform plan with the changes it will be making to your infrastructure. 
 
-To apply these changes, submit a comment on that Merge Request with the following comment text:
-```
+#### Approve the change
+
+To apply these changes, you or someone in the organization can submit a comment on that Merge Request with the following comment text:
+
+```bash 
 atlantis apply
 ```
+
+#### What happens next?
 
 Doing so will instruct Atlantis to apply the plan. It will report back with the results of the apply within a minute or so.
 
@@ -125,6 +193,8 @@ Any new users you have created through this process will have their temporary in
 
 ![](../../img/kubefirst/getting-started/vault-users.png)
 
+
+
 ### What else can I use atlantis & terraform for?
 
 For example, you can use your gitops repo to help track the creation of repos:
@@ -135,3 +205,6 @@ For example, you can use your gitops repo to help track the creation of repos:
 
 
 With terraform using the S3 based state store, you can add any terraform file to the gitops repo on which [atlantis is listeting for](https://github.com/kubefirst/gitops-template/blob/main/atlantis.yaml) and atlantis will try to plan and when approved to apply such plan for you. 
+
+
+Beyond repositories and users, atlantis allow you to have your IaC demands to be tracked by your main branch registry. Easing up the usage of terraform based workflows to update the infractruture you are operating.
