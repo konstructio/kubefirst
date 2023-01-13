@@ -49,6 +49,7 @@ store them in a safe place.
 ## Step 2: Add Your Team(optional)
 
 This step is meant to explore the onboarding process of a new user to your installation:
+
 - [Explore Atlantis & Terraform to manage users](../../common/terraform.html#how-can-i-use-atlantis-to-add-a-new-user-on-my-github-backed-installation)
 
 
