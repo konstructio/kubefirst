@@ -47,15 +47,14 @@ Let's init your local setup providing values for the following flags:
 
 | Flag               | Description                                                                                                                            | Example                   |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| --admin-email      | an email address that can be used for certificate renewal alerts and the gitlab root account                                           | your_name@yourcompany.com |
+| --admin-email      | an email address that can be used for certificate renewal alerts                                           | your_name@yourcompany.com |
 | --cloud            | we only support aws, gcp coming soon                                                                                                   | aws                       |
 | --hosted-zone-name | name of the platform's hosted zone domain - this will drive the URLs of your tools (gitlab.yourdomain.com, argocd.yourdomain.com, etc) | yourdomain.com            |
 | --cluster-name     | the name of your cluster                                                                                                               | your_cluster_name         |
 | --region           | name of the aws region in which to place your region specific resources                                                                | us-east-1                 |
 | --profile          | name of the aws profile the cli should leverage                                                                                        | default                   |
 | --s3-suffix        | unique identifier for s3 buckets                                                                                                       | you-s3-bucket-name        |
-| --github-user      | name of your github user                                                                                                               | your_username             |
-| --github-org       | name of your github organization name                                                                                                  | your_organization         |
+| --github-owner       | name of your github organization name                                                                                                  | your_organization         |
 | --aws-nodes-graviton| Graviton nodes (ARM) on AWS EKS compute nodes                                                                                         | true                      |
 | --aws-nodes-spot   | nodes spot on AWS EKS compute nodes                                                                                                    | true                      |
 
@@ -67,7 +66,6 @@ kubefirst init \
 --region us-east-1 \
 --profile default \
 --cluster-name your-cluster-name \
---github-user your-bot-users-github-username \
 --github-owner your-github-organization-name
 ```
 
