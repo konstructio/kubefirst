@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"net/http"
 	"os"
 	"strings"
@@ -12,17 +13,14 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/ssh"
 
-	"github.com/kubefirst/kubefirst/internal/services"
-	"github.com/segmentio/analytics-go"
-
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
-	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/repo"
+	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -134,42 +132,13 @@ validated and configured.`,
 
 		log.Info().Msg("sending init started metric")
 
-		var telemetryHandler handlers.TelemetryHandler
 		viper.Set("use-telemetry", globalFlags.UseTelemetry)
 
 		if !globalFlags.UseTelemetry {
 			informUser("Telemetry Disabled", globalFlags.SilentMode)
 		} else {
 			pkg.InformUser("Sending installation telemetry", globalFlags.SilentMode)
-		}
-		if globalFlags.UseTelemetry {
-
-			// Instantiates a SegmentIO client to use send messages to the segment API.
-			segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
-
-			// SegmentIO library works with queue that is based on timing, we explicit close the http client connection
-			// to force flush in case there is still some pending message in the SegmentIO library queue.
-			defer func(segmentIOClient analytics.Client) {
-				err := segmentIOClient.Close()
-				if err != nil {
-					log.Warn().Msgf("%s", err)
-				}
-			}(segmentIOClient)
-
-			// validate telemetryDomain data
-			telemetryDomain, err := domain.NewTelemetry(
-				pkg.MetricInitStarted,
-				awsFlags.HostedZoneName,
-				configs.K1Version,
-			)
-			if err != nil {
-				log.Warn().Msgf("%s", err)
-			}
-			telemetryService := services.NewSegmentIoService(segmentIOClient)
-			telemetryHandler = handlers.NewTelemetryHandler(telemetryService)
-
-			err = telemetryHandler.SendCountMetric(telemetryDomain)
-			if err != nil {
+			if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitStarted); err != nil {
 				log.Warn().Msgf("%s", err)
 			}
 		}
@@ -280,16 +249,7 @@ validated and configured.`,
 		log.Info().Msg("sending init completed metric")
 
 		if globalFlags.UseTelemetry {
-			telemetryInitCompleted, err := domain.NewTelemetry(
-				pkg.MetricInitCompleted,
-				awsFlags.HostedZoneName,
-				configs.K1Version,
-			)
-			if err != nil {
-				log.Warn().Msgf("%s", err)
-			}
-			err = telemetryHandler.SendCountMetric(telemetryInitCompleted)
-			if err != nil {
+			if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitCompleted); err != nil {
 				log.Warn().Msgf("%s", err)
 			}
 		}
