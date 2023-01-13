@@ -69,6 +69,26 @@ kubefirst init \
 --github-owner your-github-organization-name
 ```
 
+
+
+#### Using a config file
+
+```yaml 
+# config.yaml
+config:
+  admin-email:  yourname@yourcompany.com 
+  hosted-zone-name: yourdomain.com
+  region: us-east-1 
+  profile: default
+  cluster-name: your-cluster-name
+  github-owner: your-github-organization-name
+```
+
+```bash 
+kubefirst init  -c ./config.yaml  --cloud aws 
+```
+> - The flag `--cloud` is not supported via config file
+
 The `init` process produces a directory of utilities, a state file, and some staged platform content that can now be found at `~/.kubefirst`
 
 ### Step 3 - `kubefirst cluster create`

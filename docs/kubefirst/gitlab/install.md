@@ -56,7 +56,7 @@ kubefirst init \
 ```yaml
 # config.yaml
 config:
-  admin-email: your_name@yourcompany.com
+  admin-email: yourname@yourcompany.com
   hosted-zone-name: yourdomain.com
   region: us-east-1
   profile: default
@@ -68,6 +68,10 @@ config:
 ```bash
 kubefirst init -c config.yaml --cloud aws  --git-provider gitlab
 ```
+
+> - The flag `--cloud` is not supported via config file
+> - The flag `--git-provider` is not supported via config file, if not passed it will be assumed as a `github` installation.
+
 
 The `init` process produces a directory of utilities, a state file, and some staged platform content that can now be 
 found at `~/.kubefirst`. [Here](../../tooling/kubefirst-cli.md) you can find more details about `init` command.
