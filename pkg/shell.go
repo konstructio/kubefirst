@@ -26,7 +26,8 @@ func ExecShellReturnStrings(command string, args ...string) (string, string, err
 		log.Error().Msgf("error executing command: %s", errb.String())
 	}
 
-	log.Info().Str("OUT:", outb.String()).Str("command execution", command).Msg("")
+	log.Info().Msgf("OUT: %s", outb.String())
+	log.Info().Msgf("Command: %s", command)
 
 	return outb.String(), errb.String(), err
 }
