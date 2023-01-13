@@ -56,17 +56,19 @@ kubefirst init \
 ```yaml
 # config.yaml
 config:
-  admin-email: your_name@yourcompany.com
+  admin-email: yourname@yourcompany.com
   hosted-zone-name: yourdomain.com
   region: us-east-1
   profile: default
   cluster-name: your_cluster_name
   s3-suffix: you-s3-bucket-name
   aws-nodes-spot: true
+  cloud: aws  
+  git-provider: gitlab  
 ```
 
 ```bash
-kubefirst init -c config.yaml --cloud aws  --git-provider gitlab
+kubefirst init -c config.yaml
 ```
 
 The `init` process produces a directory of utilities, a state file, and some staged platform content that can now be 
