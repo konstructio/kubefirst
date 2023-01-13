@@ -58,7 +58,7 @@ This step is meant to explore the onboarding process of a new user to your insta
 
 Metaphor is our sample application that we use to demonstrate parts of the platform and to test CI changes.
 
-If you visit its `/.github/workflows/main.yaml` in the metaphor repo, you'll see it's just sending some workflows to argo in your local k3d cluster. Those workflows are also in the `metaphor` repo in the `.argo` directory.
+If you visit its `/.github/workflows/main.yaml` in the metaphor repo, you'll see it's just sending some workflows to argo in your local EKS cluster. Those workflows are also in the `metaphor` repo in the `.argo` directory.
 
 The metaphor pipeline will:
 
