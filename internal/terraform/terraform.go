@@ -120,8 +120,8 @@ func GetCivoTerraformEnvs(envs map[string]string) map[string]string {
 
 	envs["CIVO_TOKEN"] = os.Getenv("CIVO_TOKEN")
 	// needed for s3 api connectivity to object storage
-	envs["TF_VAR_aws_access_key_id"] = viper.GetString("civo.object-storage-creds.access-key-id")
-	envs["TF_VAR_aws_secret_access_key"] = viper.GetString("civo.object-storage-creds.secret-key")
+	envs["AWS_ACCESS_KEY_ID"] = viper.GetString("civo.object-storage-creds.access-key-id")
+	envs["AWS_SECRET_ACCESS_KEY"] = viper.GetString("civo.object-storage-creds.secret-access-key-id")
 
 	return envs
 }

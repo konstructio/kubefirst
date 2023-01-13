@@ -7,18 +7,15 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/rs/zerolog/log"
 
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
-	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
@@ -33,12 +30,6 @@ import (
 
 // todo config. should not be referenced outside of validate, if its a value that must be
 // todo generated beyond that we should put it in viper alone
-
-type KubefirstToolConfig struct {
-	namespace string
-	name      string
-}
-
 // todo remove configs/civo.go
 // todo remove all pkg. config values
 
@@ -65,12 +56,12 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	civoDnsName := viper.GetString("domain-name")
 	gitopsTemplateBranch := viper.GetString("template-repo.gitops.branch")
 	gitopsTemplateURL := viper.GetString("template-repo.gitops.url")
-	metaphorTemplateBranch := viper.GetString("template-repo.metaphor-frontend.branch")
-	metaphorTemplateURL := viper.GetString("template-repo.metaphor-frontend.url")
+	metaphorFrontendTemplateBranch := viper.GetString("template-repo.metaphor-frontend.branch")
+	metaphorFrontendTemplateURL := viper.GetString("template-repo.metaphor-frontend.url")
 	k1MetaphorDir := viper.GetString("kubefirst.k1-metaphor-dir")
 	cloudProvider := viper.GetString("cloud-provider")
 	destinationGitopsRepoURL := viper.GetString("github.repo.gitops.giturl")
-	destinationMetaphorRepoURL := viper.GetString("github.repo.metaphor.giturl")
+	destinationMetaphorFrontendRepoURL := viper.GetString("github.repo.metaphor-frontend.giturl")
 	gitProvider := viper.GetString("git-provider")
 	kubefirstBotSSHPrivateKey := viper.GetString("kubefirst.bot.private-key")
 	k1GitopsDir := viper.GetString("kubefirst.k1-gitops-dir")
@@ -87,6 +78,11 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	silentMode := false // todo fix
 	dryRun := false     // todo fix
 	argoCDInitValuesYamlPath := fmt.Sprintf("%s/argocd-init-values.yaml", k1Dir)
+
+	publicKeys, err := ssh.NewPublicKeys("git", []byte(kubefirstBotSSHPrivateKey), "")
+	if err != nil {
+		log.Info().Msgf("generate publickeys failed: %s\n", err.Error())
+	}
 
 	//* emit cluster install started
 	if useTelemetryFlag {
@@ -124,18 +120,17 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("template-repo.gitops.ready-to-push") {
 
 		pkg.InformUser("generating your new gitops repository", silentMode)
-		gitClient.CloneBranchSetMain(gitopsTemplateURL, k1GitopsDir, gitopsTemplateBranch)
+		gitopsRepo, err := gitClient.CloneBranchSetMain(gitopsTemplateURL, k1GitopsDir, gitopsTemplateBranch)
+		if err != nil {
+			log.Print("error opening repo at:", k1GitopsDir)
+		}
 		log.Info().Msg("gitops repository clone complete")
 
 		pkg.AdjustGitopsTemplateContent(cloudProvider, k1GitopsDir, gitProvider)
 
 		pkg.DetokenizeCivoGithubGitops(k1GitopsDir)
 
-		gitopsRepo, err := git.PlainOpen(k1GitopsDir)
-		if err != nil {
-			log.Print("error opening repo at:", k1GitopsDir)
-		}
-		gitClient.AddRemote(k1GitopsDir, gitProvider, destinationGitopsRepoURL, gitopsRepo)
+		gitClient.AddRemote(destinationGitopsRepoURL, gitProvider, gitopsRepo)
 
 		gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
 
@@ -179,11 +174,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			log.Print("error opening repo at:", k1GitopsDir)
 		}
 
-		publicKeys, err := ssh.NewPublicKeys("git", []byte(kubefirstBotSSHPrivateKey), "")
-		if err != nil {
-			log.Info().Msgf("generate publickeys failed: %s\n", err.Error())
-		}
-
 		err = gitopsRepo.Push(&git.PushOptions{
 			RemoteName: gitProvider,
 			Auth:       publicKeys,
@@ -201,6 +191,53 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already pushed detokenized gitops repository content")
 	}
+
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//* git clone and detokenize the metaphor-frontend-template repository
+	if !viper.GetBool("template-repo.metaphor-frontend.pushed") {
+
+		pkg.InformUser("generating your new metaphor-frontend repository", silentMode)
+		metaphorRepo, err := gitClient.CloneBranchSetMain(metaphorFrontendTemplateURL, k1MetaphorDir, metaphorFrontendTemplateBranch)
+		if err != nil {
+			log.Print("error opening repo at:", k1MetaphorDir)
+		}
+		log.Info().Msg("metaphor repository clone complete")
+
+		pkg.DetokenizeCivoGithubMetaphor(k1MetaphorDir)
+		gitClient.AddRemote(destinationMetaphorFrontendRepoURL, gitProvider, metaphorRepo)
+
+		gitClient.Commit(metaphorRepo, "committing detokenized metaphor-frontend-template repo content")
+
+		err = metaphorRepo.Push(&git.PushOptions{
+			RemoteName: gitProvider,
+			Auth:       publicKeys,
+		})
+		if err != nil {
+			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationMetaphorFrontendRepoURL)
+		}
+
+		log.Printf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwner)
+		// todo delete the local gitops repo and re-clone it
+		// todo that way we can stop worrying about which origin we're going to push to
+		pkg.InformUser(fmt.Sprintf("pushed detokenized metaphor-frontend repository to github.com/%s", githubOwner), silentMode)
+
+		viper.Set("template-repo.metaphor-frontend.pushed", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already completed gitops repo generation - continuing")
+	}
+
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
 
 	//* create civo cloud resources
 	if !viper.GetBool("terraform.civo.apply.complete") {
@@ -447,7 +484,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("template-repo.metaphor-frontend.pushed") {
 
 		pkg.InformUser("generating your new metaphor repository", silentMode)
-		metaphorRepo, err := gitClient.CloneBranchSetMain(metaphorTemplateURL, k1MetaphorDir, metaphorTemplateBranch)
+		metaphorRepo, err := gitClient.CloneBranchSetMain(metaphorFrontendTemplateURL, k1MetaphorDir, metaphorFrontendTemplateBranch)
 		if err != nil {
 			log.Info().Msg(err.Error())
 			return err
@@ -456,7 +493,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		pkg.DetokenizeCivoGithubMetaphor(k1MetaphorDir)
 
-		gitClient.AddRemote(k1MetaphorDir, gitProvider, destinationMetaphorRepoURL, metaphorRepo)
+		gitClient.AddRemote(destinationMetaphorFrontendRepoURL, gitProvider, metaphorRepo)
 
 		gitClient.Commit(metaphorRepo, "committing initial detokenized gitops-template repo content")
 
@@ -470,7 +507,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			Auth:       publicKeys,
 		})
 		if err != nil {
-			log.Panic().Msgf("error pushing detokenized metaphor repository to remote %s", destinationMetaphorRepoURL)
+			log.Panic().Msgf("error pushing detokenized metaphor repository to remote %s", destinationMetaphorFrontendRepoURL)
 		}
 
 		log.Printf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwner)
@@ -520,88 +557,89 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// 	log.Info().Msg(err.Error())
 	// }
 
+	//! here is the code im replacing
 	// update terraform s3 backend to internal k8s dns (s3/minio bucket)
-	err := pkg.UpdateTerraformS3BackendForK8sAddress(k1Dir)
-	if err != nil {
-		return err
-	}
+	// err := pkg.UpdateTerraformS3BackendForK8sAddress(k1Dir)
+	// if err != nil {
+	// 	return err
+	// }
 
-	// create a new branch and push changes
-	branchName := "update-s3-backend"
-	branchNameRef := plumbing.ReferenceName("refs/heads/" + branchName)
+	// // create a new branch and push changes
+	// branchName := "update-s3-backend"
+	// branchNameRef := plumbing.ReferenceName("refs/heads/" + branchName)
 
-	githubHost := viper.GetString("github.host")
+	// githubHost := viper.GetString("github.host")
 
-	localRepo := "gitops"
-	remoteName := "github"
-	gitopsRepo := "gitops"
+	// localRepo := "gitops"
+	// remoteName := "github"
+	// gitopsRepo := "gitops"
 
-	// force update cloned gitops-template terraform files to use Minio backend
-	err = gitClient.UpdateLocalTerraformFilesAndPush(
-		githubHost,
-		githubOwner,
-		k1Dir,
-		localRepo,
-		remoteName,
-		branchNameRef,
-	)
-	if err != nil {
-		log.Info().Msg(err.Error())
-	}
+	// // force update cloned gitops-template terraform files to use Minio backend
+	// err = gitClient.UpdateLocalTerraformFilesAndPush(
+	// 	githubHost,
+	// 	githubOwner,
+	// 	k1Dir,
+	// 	localRepo,
+	// 	remoteName,
+	// 	branchNameRef,
+	// )
+	// if err != nil {
+	// 	log.Info().Msg(err.Error())
+	// }
 
-	log.Info().Msg("sleeping after git commit with Minio backend update for Terraform")
-	time.Sleep(3 * time.Second)
+	// log.Info().Msg("sleeping after git commit with Minio backend update for Terraform")
+	// time.Sleep(3 * time.Second)
 
-	// create a PR, atlantis will identify it's a Terraform change/file update and trigger atlantis plan
-	// it's a goroutine since it can run in background
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		// Atlantis port-forward
-		atlantisStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(atlantisStopChannel)
-		}()
-		k8s.OpenPortForwardPodWrapper(
-			kubeconfigPath,
-			"atlantis-0",
-			"atlantis",
-			4141,
-			4141,
-			atlantisStopChannel,
-		)
+	// // create a PR, atlantis will identify it's a Terraform change/file update and trigger atlantis plan
+	// // it's a goroutine since it can run in background
+	// var wg sync.WaitGroup
+	// wg.Add(1)
+	// go func() {
+	// 	// Atlantis port-forward
+	// 	atlantisStopChannel := make(chan struct{}, 1)
+	// 	defer func() {
+	// 		close(atlantisStopChannel)
+	// 	}()
+	// 	k8s.OpenPortForwardPodWrapper(
+	// 		kubeconfigPath,
+	// 		"atlantis-0",
+	// 		"atlantis",
+	// 		4141,
+	// 		4141,
+	// 		atlantisStopChannel,
+	// 	)
 
-		gitHubClient := githubWrapper.New()
-		err = gitHubClient.CreatePR(branchName)
-		if err != nil {
-			log.Info().Msg(err.Error())
-		}
-		log.Info().Msg(`waiting "atlantis plan" to start...`)
-		time.Sleep(5 * time.Second)
+	// 	gitHubClient := githubWrapper.New()
+	// 	err = gitHubClient.CreatePR(branchName)
+	// 	if err != nil {
+	// 		log.Info().Msg(err.Error())
+	// 	}
+	// 	log.Info().Msg(`waiting "atlantis plan" to start...`)
+	// 	time.Sleep(5 * time.Second)
 
-		ok, err := gitHubClient.RetrySearchPullRequestComment(
-			githubOwner,
-			gitopsRepo,
-			"To **apply** all unapplied plans from this pull request, comment",
-			`waiting "atlantis plan" finish to proceed...`,
-		)
-		if err != nil {
-			log.Info().Msg(err.Error())
-		}
+	// 	ok, err := gitHubClient.RetrySearchPullRequestComment(
+	// 		githubOwner,
+	// 		gitopsRepo,
+	// 		"To **apply** all unapplied plans from this pull request, comment",
+	// 		`waiting "atlantis plan" finish to proceed...`,
+	// 	)
+	// 	if err != nil {
+	// 		log.Info().Msg(err.Error())
+	// 	}
 
-		if !ok {
-			log.Info().Msg(`unable to run "atlantis plan"`)
-			wg.Done()
-			return
-		}
+	// 	if !ok {
+	// 		log.Info().Msg(`unable to run "atlantis plan"`)
+	// 		wg.Done()
+	// 		return
+	// 	}
 
-		err = gitHubClient.CommentPR(1, "atlantis apply")
-		if err != nil {
-			log.Info().Err(err).Msg("error commenting on atlantis pull request")
-		}
-		wg.Done()
-	}()
-
+	// 	err = gitHubClient.CommentPR(1, "atlantis apply")
+	// 	if err != nil {
+	// 		log.Info().Err(err).Msg("error commenting on atlantis pull request")
+	// 	}
+	// 	wg.Done()
+	// }()
+	//! here is the code im replacing
 	log.Info().Msg("sending mgmt cluster install completed metric")
 
 	// if useTelemetry {
@@ -623,7 +661,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	pkg.InformUser("Argo User: "+viper.GetString("argocd.admin.username"), silentMode)
 	pkg.InformUser("Argo Password: "+viper.GetString("argocd.admin.password"), silentMode)
 
-	wg.Wait()
+	// wg.Wait()
 
 	return nil
 }

@@ -149,7 +149,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("github.repo.metaphor-frontend.url", fmt.Sprintf("https://github.com/%s/metaphor-frontend.git", githubOwnerFlag))
 	githubOwnerRootGitURL := fmt.Sprintf("git@github.com:%s", githubOwnerFlag)
 	viper.Set("github.repo.gitops.giturl", fmt.Sprintf("%s/gitops.git", githubOwnerRootGitURL))
-	viper.Set("github.repo.metaphor.giturl", fmt.Sprintf("%s/metaphor-frontend.git", githubOwnerRootGitURL))
+	viper.Set("github.repo.metaphor-frontend.giturl", fmt.Sprintf("%s/metaphor-frontend.git", githubOwnerRootGitURL))
 	viper.Set("template-repo.gitops.branch", gitopsTemplateBranchFlag)
 	viper.Set("template-repo.gitops.url", gitopsTemplateURLFlag)
 	viper.Set("template-repo.metaphor-frontend.url", metaphorTemplateURLFlag)
@@ -202,7 +202,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already created civo object storage credentials - continuing")
 	}
-
 	// todo create a new `kubefirst-state-store` bucket
 	executionControl = viper.GetBool("kubefirst.state-store-bucket.complete")
 	if !executionControl {
@@ -222,11 +221,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created civo state store bucket - continuing")
 	}
 	//* CIVO END
-	//* CIVO END
-	//* CIVO END
-	//* CIVO END
-	//* CIVO END
-	os.Exit(1)
+
 	executionControl = viper.GetBool("kubefirst.checks.github.complete")
 	if !executionControl {
 

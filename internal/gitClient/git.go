@@ -29,7 +29,7 @@ const Github = "github"
 const Gitlab = "gitlab"
 
 // AddRemote - clone repo using AddRemote that uses fallback rule to try to capture version
-func AddRemote(gitopsRepoPath, remoteName, newGitRemoteURL string, repo *git.Repository) error {
+func AddRemote(newGitRemoteURL, remoteName string, repo *git.Repository) error {
 
 	log.Info().Msgf("git remote add %s %s", remoteName, newGitRemoteURL)
 	_, err := repo.CreateRemote(&gitConfig.RemoteConfig{

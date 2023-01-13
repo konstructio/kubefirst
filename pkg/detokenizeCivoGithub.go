@@ -50,6 +50,7 @@ func DetokenizeDirectoryCivoGithubGitops(path string, fi os.FileInfo, err error)
 		domainName := viper.GetString("domain-name")
 		atlantisWebhookURL := viper.GetString("github.atlantis.webhook.url")
 		adminEmail := viper.GetString("admin-email")
+		cloudRegion := viper.GetString("cloud-region")
 		clusterName := viper.GetString("kubefirst.cluster-name")
 		githubHost := viper.GetString("github.host")
 		githubOwner := viper.GetString("github.owner")
@@ -103,6 +104,7 @@ func DetokenizeDirectoryCivoGithubGitops(path string, fi os.FileInfo, err error)
 		newContents = strings.Replace(newContents, "<ATLANTIS_INGRESS_URL>", atlantisIngressURL, -1)
 		newContents = strings.Replace(newContents, "<DOMAIN_NAME>", domainName, -1)
 		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", clusterName, -1)
+		newContents = strings.Replace(newContents, "<CLOUD_REGION>", cloudRegion, -1)
 		//! registry
 		newContents = strings.Replace(newContents, "<GITHUB_HOST>", githubHost, -1)
 		newContents = strings.Replace(newContents, "<GITHUB_OWNER>", githubOwner, -1)
@@ -195,19 +197,15 @@ func DetokenizeDirectoryCivoGithubMetaphor(path string, fi os.FileInfo, err erro
 
 		newContents := string(read)
 
-		domainName := viper.GetString("domain-name")
-		cloudRegion := viper.GetString("cloud-region")
-		clusterName := viper.GetString("kubefirst.cluster-name")
-
-		newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEVELOPMENT_INGRESS_URL>", fmt.Sprintf("https://metaphor-frontend-development.%s", domainName), -1)
-		newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING_INGRESS_URL>", fmt.Sprintf("https://metaphor-frontend-staging.%s", domainName), -1)
-		newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PRODUCTION_INGRESS_URL>", fmt.Sprintf("https://metaphor-frontend-production.%s", domainName), -1)
+		newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEVELOPMENT_INGRESS_URL>", fmt.Sprintf("https://metaphor-frontend-development.%s", viper.GetString("domain-name")), -1)
+		newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING_INGRESS_URL>", fmt.Sprintf("https://metaphor-frontend-staging.%s", viper.GetString("domain-name")), -1)
+		newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PRODUCTION_INGRESS_URL>", fmt.Sprintf("https://metaphor-frontend-production.%s", viper.GetString("domain-name")), -1)
 		newContents = strings.Replace(newContents, "<CHECKOUT_CWFT_TEMPLATE>", "git-checkout-with-gitops-ssh", -1)
 		newContents = strings.Replace(newContents, "<COMMIT_CWFT_TEMPLATE>", "git-commit-ssh", -1)
 		newContents = strings.Replace(newContents, "<CONTAINER_REGISTRY>", fmt.Sprintf("ghcr.io/%s/metaphor-frontend", viper.GetString("github.owner")), -1) // todo need to fix metaphor repo names
-		newContents = strings.Replace(newContents, "<DOMAIN_NAME>", domainName, -1)
-		newContents = strings.Replace(newContents, "<CLOUD_REGION>", cloudRegion, -1)
-		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", clusterName, -1)
+		newContents = strings.Replace(newContents, "<DOMAIN_NAME>", viper.GetString("domain-name"), -1)
+		newContents = strings.Replace(newContents, "<CLOUD_REGION>", viper.GetString("cloud-region"), -1)
+		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", viper.GetString("kubefirst.cluster-name"), -1)
 
 		err = os.WriteFile(path, []byte(newContents), 0)
 		if err != nil {
