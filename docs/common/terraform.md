@@ -134,7 +134,7 @@ Atlantis will always run plans automatically for you when a merge request is ope
 
 Any new users you have created through this process will have their temporary initial passwords stored in Vault. You can access Vault using the information provided to you in the terminal as well, and you will find your users' individual initial passwords in the Vault secret store `/secrets/users/<username>`.
 
-![](../../img/kubefirst/getting-started/vault-users.png)
+![](../img/kubefirst/getting-started/vault-users.png)
 
 Once you've provided them this initial password, they can update their own password throughout the platform by updating their user password entity in vault. Anyone can change their own password, and Admins can reset anyone's password. These rules, just like everything else on Kubefirst, can be configured in your new gitops repository.
 
@@ -191,7 +191,7 @@ Atlantis will always run plans automatically for you when a merge request is ope
 
 Any new users you have created through this process will have their temporary initial passwords stored in Vault. You can access vault using the information provided to you in the terminal as well, and you will find your users' individual initial passwords in the vault secret store `/secrets/users/<username>`. 
 
-![](../../img/kubefirst/getting-started/vault-users.png)
+![](../img/kubefirst/getting-started/vault-users.png)
 
 
 

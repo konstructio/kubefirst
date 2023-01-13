@@ -4,17 +4,17 @@ Argo CD is a GitOps oriented continuous delivery tool for Kubernetes. We use it 
 
 Argo CD is really great at providing a straightforward mechanism for you to manage Helm charts, their versions, their configuration overrides, and whether their state is in sync with what is running on your clusters.
 
-![](../../img/kubefirst/argocd/argocd-apps.png)
+![](../img/kubefirst/argocd/argocd-apps.png)
 
 ## Managing Apps in Argo CD
 
 The configuration for all of your apps in your kubernetes cluster  can be found in your new `gitops` repository at path `/registry`.
 
 Gitlab registry applications:
-![](../../img/kubefirst/gitops/registry.png)
+![](../img/kubefirst/gitops/registry.png)
 
 Github registry applications:
-![](../../img/kubefirst/local/gitops-registry.png)
+![](../img/kubefirst/local/gitops-registry.png)
 
 Each of these yaml files will include details regarding the application's source, destination, and Helm configuration overrides.
 
