@@ -148,7 +148,7 @@ Log into gitlab using the root credentials that were provided to you in your ter
 Once logged in, navigate to the `gitops` project and edit the file `terraform/users/admin.tf`. In this file, you'll see some blocks that represent admin users:
 
 ```
-module "kubefirst_bot" {
+module "admin_one" {
   source = "./modules/user/gitlab"
 
   acl_policies            = ["admin"]
@@ -158,7 +158,7 @@ module "kubefirst_bot" {
   group_id                = data.vault_identity_group.admins.group_id
   last_name               = "One"
   initial_password        = var.initial_password
-    sername               = "admin1"
+  username               = "admin1"
   user_disabled           = false
   userpass_accessor       = data.vault_auth_backend.userpass.accessor
 }
