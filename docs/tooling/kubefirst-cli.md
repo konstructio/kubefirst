@@ -122,13 +122,17 @@ Flags:
 Restore the backup SSL that is stored in the S3 bucket and avoid re-issuing new certificates.
 
 ```
+Command used to restore existing saved to recycle certificates on a newer re-installation on an already used domain.
+
 Usage:
-kubefirst restoreSSL [flags]
+  kubefirst restoreSSL [flags]
 
 Flags:
---dry-run         Set to dry-run mode, no changes done on cloud provider selected.
--h, --help        Help for restoreSSL.
---use-telemetry   Installer won't send telemetry data if --use-telemetry=false is set (default true).
+  -c, --config string   File to be imported to bootstrap configs
+      --dry-run         set to dry-run mode, no changes done on cloud provider selected
+  -h, --help            help for restoreSSL
+      --silent          enable silent mode will make the UI return less content to the screen
+      --use-telemetry   installer won't send telemetry data if --use-telemetry=false is set (default true)
 ```
 
 ### state

@@ -14,7 +14,7 @@ import (
 var restoreSSLCmd = &cobra.Command{
 	Use:   "restoreSSL",
 	Short: "Restore SSL certificates from a previous install",
-	Long:  `TBD`,
+	Long:  `Command used to restore existing saved to recycle certificates on a newer re-installation on an already used domain.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("Started restoreSSL")
 		globalFlags, err := flagset.ProcessGlobalFlags(cmd)
