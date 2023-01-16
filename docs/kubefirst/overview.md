@@ -56,7 +56,7 @@ to run. Removal of this infrastructure is also automated with a single `kubefirs
 |HTTPS/SSL Certificates| yes, using mkcert| yes, using let's encrypt| yes, using let's encrypt|
 |external secrets manager| yes | yes | yes| 
 |kubefirst console| yes | yes | yes| 
-|oidc | yes, for argo/argocd | yes | yes| 
+|oidc | no | yes | yes| 
 
 
 ****1: On local, atlantis uses an ngrok tunnel to allow github to call us back, so it may not be production ready.***

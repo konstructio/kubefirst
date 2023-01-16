@@ -16,8 +16,10 @@ Unfortunately, we have some limitations running kubefirst locally, and we listed
 
 ## Features Limitations
 
-Gitlab: to keep the local install "slim" we couldn't offer Gitlab as a Git provider option.
-Ngrok: to allow Github Webhook to reach your machine without exposing them directly to the internet, we use Ngrok to create a tunnel and assign the Ngrok endpoint to Github Webhook.
+**Gitlab:** to keep the local install "slim" we couldn't offer Gitlab as a Git provider option.
+
+**Ngrok:** to allow Github Webhook to reach your machine without exposing them directly to the internet, we use Ngrok to create a tunnel and assign the Ngrok endpoint to Github Webhook.
+
 We use a free tier of this service and have rate limits for data transfer and limited session duration of the tunnel. If the tunnel was closed, we didn't support the reconnect process. If you want to reconnect, you should use the Ngrok tool and update the webhook on GitHub to keep the Atlantis working.
 
 ## Known issues
