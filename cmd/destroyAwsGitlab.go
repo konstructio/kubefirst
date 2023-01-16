@@ -23,8 +23,8 @@ import (
 // destroyAwsGitlabCmd represents the destroyAwsGitlab command
 var destroyAwsGitlabCmd = &cobra.Command{
 	Use:   "destroy-aws-gitlab",
-	Short: "A brief description of your command",
-	Long:  `TDB`,
+	Short: "internals - used to destroy aws-gitlab cloud",
+	Long:  `internal command not meant for users, it will destroy aws-gitlab related resources, use "kubefirst cluster destroy" instead. `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debug().Msg("destroy-aws-gitlab called")
 
