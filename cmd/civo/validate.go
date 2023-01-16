@@ -210,6 +210,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		bucket, err := civo.CreateStorageBucket(accessKeyId, kubefirstStateStoreBucketName, cloudRegionFlag)
 		if err != nil {
 			log.Info().Msg(err.Error())
+			return err
 		}
 
 		viper.Set("civo.object-storage-bucket.id", bucket.ID)
@@ -244,7 +245,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		log.Info().Msgf("github user is: ", githubUser)
+
 		// todo evaluate if cloudProviderFlag == "local" {githubOwnerFlag = githubUser} and the rest of the execution is the same
 
 		err = gitHubHandler.CheckGithubOrganizationPermissions(githubToken, githubOwnerFlag, githubUser)

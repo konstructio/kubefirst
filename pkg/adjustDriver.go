@@ -9,7 +9,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-func AdjustGitopsTemplateContent(cloudProvider, gitopsRepoPath, gitProvider string) error {
+func AdjustGitopsTemplateContent(cloudProvider, gitProvider, gitopsRepoPath string) error {
 	os.RemoveAll(gitopsRepoPath + "/components")
 	os.RemoveAll(gitopsRepoPath + "/localhost")
 	os.RemoveAll(gitopsRepoPath + "/registry")

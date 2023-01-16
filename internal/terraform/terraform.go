@@ -122,6 +122,8 @@ func GetCivoTerraformEnvs(envs map[string]string) map[string]string {
 	// needed for s3 api connectivity to object storage
 	envs["AWS_ACCESS_KEY_ID"] = viper.GetString("civo.object-storage-creds.access-key-id")
 	envs["AWS_SECRET_ACCESS_KEY"] = viper.GetString("civo.object-storage-creds.secret-access-key-id")
+	envs["TF_VAR_aws_access_key_id"] = viper.GetString("civo.object-storage-creds.access-key-id")
+	envs["TF_VAR_aws_secret_access_key"] = viper.GetString("civo.object-storage-creds.secret-access-key-id")
 
 	return envs
 }
@@ -134,6 +136,10 @@ func GetGithubTerraformEnvs(envs map[string]string) map[string]string {
 	// envs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
 	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kubefirst.bot.public-key")
+	envs["AWS_ACCESS_KEY_ID"] = viper.GetString("civo.object-storage-creds.access-key-id")
+	envs["AWS_SECRET_ACCESS_KEY"] = viper.GetString("civo.object-storage-creds.secret-access-key-id")
+	envs["TF_VAR_aws_access_key_id"] = viper.GetString("civo.object-storage-creds.access-key-id")
+	envs["TF_VAR_aws_secret_access_key"] = viper.GetString("civo.object-storage-creds.secret-access-key-id")
 
 	return envs
 }
@@ -150,6 +156,8 @@ func GetUsersTerraformEnvs(envs map[string]string) map[string]string {
 
 func GetVaultTerraformEnvs(envs map[string]string) map[string]string {
 
+	envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+	envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 	envs["TF_VAR_email_address"] = viper.GetString("admin-email")
 	envs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
 	envs["TF_VAR_vault_addr"] = viper.GetString("vault.local.service")

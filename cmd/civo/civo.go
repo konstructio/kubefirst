@@ -126,7 +126,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 		log.Info().Msg("gitops repository clone complete")
 
-		pkg.AdjustGitopsTemplateContent(cloudProvider, k1GitopsDir, gitProvider)
+		pkg.AdjustGitopsTemplateContent(cloudProvider, gitProvider, k1GitopsDir)
 
 		pkg.DetokenizeCivoGithubGitops(k1GitopsDir)
 
@@ -150,10 +150,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := k1GitopsDir + "/terraform/github"
 		tfEnvs := map[string]string{}
-		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
 		tfEnvs = terraform.GetGithubTerraformEnvs(tfEnvs)
-		//! debug log
-		// log.Info().Msgf("tf env vars: ", tfEnvs)
 		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
 			return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
@@ -192,12 +189,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already pushed detokenized gitops repository content")
 	}
 
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
 	//* git clone and detokenize the metaphor-frontend-template repository
 	if !viper.GetBool("template-repo.metaphor-frontend.pushed") {
 
@@ -232,13 +223,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-
 	//* create civo cloud resources
 	if !viper.GetBool("terraform.civo.apply.complete") {
 		pkg.InformUser("Creating civo cloud resources with terraform", silentMode)
@@ -246,8 +230,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		tfEntrypoint := k1GitopsDir + "/terraform/civo"
 		tfEnvs := map[string]string{}
 		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
-		//! debug only log on debug
-		// log.Info().Msgf("tf env vars: ", tfEnvs)
 		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
 			return errors.New(fmt.Sprintf("error creating civo resources with terraform %s : %s", tfEntrypoint, err))
@@ -417,10 +399,13 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("configuring vault with terraform", silentMode)
 
 		tfEnvs := map[string]string{}
-		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
+
 		tfEnvs = terraform.GetVaultTerraformEnvs(tfEnvs)
-		tfEntrypoint := k1GitopsDir + "/terraform/github"
-		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+		tfEntrypoint := k1GitopsDir + "/terraform/vault"
+		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+		if err != nil {
+			return err
+		}
 
 		pkg.InformUser("vault terraform executed successfully", silentMode)
 
@@ -444,8 +429,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
 		tfEnvs = terraform.GetUsersTerraformEnvs(tfEnvs)
 		tfEntrypoint := k1GitopsDir + "/terraform/users"
-		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
-
+		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+		if err != nil {
+			return err
+		}
 		pkg.InformUser("executed users terraform successfully", silentMode)
 		// progressPrinter.IncrementTracker("step-users", 1)
 		viper.Set("terraform.users.apply.complete", true)
@@ -522,6 +509,8 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
+
+	// todo stuff still needs to happen here,
 
 	//! STOP DOING METAPHOR SHENANIGANS HERE
 	// clone and detokinze with gitops after repo is avilable
