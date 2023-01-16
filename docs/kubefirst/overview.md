@@ -23,6 +23,9 @@ brew update
 brew upgrade kubefirst
 ```
 
+Note: To allow installer work with AWS tooling, it is required to have installed [aws-iam-authenticator](https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html). It allows installer to be able to interact with EKS created clusters. 
+
+
 ## Kubefirst Usage
 
 [//]: # (todo: update wording)
