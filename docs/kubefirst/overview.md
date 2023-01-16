@@ -23,8 +23,7 @@ brew update
 brew upgrade kubefirst
 ```
 
-Note: To allow installer work with AWS tooling, it is required to have installed [aws-iam-authenticator](https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html). It allows installer to be able to interact with EKS created clusters. 
-
+**Kubefirst dependencies**: brew install will download [AWS IAM Authenticator](https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html) dependency, that is Helm requirement to authenticate to EKS cluster.
 
 ## Kubefirst Usage
 
@@ -57,7 +56,6 @@ to run. Removal of this infrastructure is also automated with a single `kubefirs
 |external secrets manager| yes | yes | yes| 
 |kubefirst console| yes | yes | yes| 
 |oidc | yes, for argo/argocd | yes | yes| 
-
 
 ****1: On local, atlantis uses an ngrok tunnel to allow github to call us back, so it may not be production ready.***
 
