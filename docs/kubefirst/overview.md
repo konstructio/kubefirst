@@ -23,6 +23,8 @@ brew update
 brew upgrade kubefirst
 ```
 
+**Kubefirst dependencies**: brew install will download [AWS IAM Authenticator](https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html) dependency, that is Helm requirement to authenticate to EKS cluster.
+
 ## Kubefirst Usage
 
 [//]: # (todo: update wording)
