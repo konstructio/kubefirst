@@ -23,8 +23,6 @@ brew update
 brew upgrade kubefirst
 ```
 
-**Kubefirst dependencies**: brew install will download [AWS IAM Authenticator](https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html) dependency, that is Helm requirement to authenticate to EKS clusters.
-
 ## Kubefirst Usage
 
 [//]: # (todo: update wording)
@@ -57,9 +55,9 @@ to run. Removal of this infrastructure is also automated with a single `kubefirs
 |kubefirst console| yes | yes | yes| 
 |oidc | yes, for argo/argocd | yes | yes| 
 
+****1: On local, atlantis uses an ngrok tunnel to allow github to call us back, so it may not be production ready.***
 
-*1: On local, atlantis uses an ngrok tunnel to allow github to call us back, so it may not be production ready. 
-*2: Learn more about mkcert [here](./local/install.html#super-powers-user-needs-and-certificates-to-deal-with-https-locally)
+****2: Learn more about mkcert [here](./local/install.html#super-powers-user-needs-and-certificates-to-deal-with-https-locally)***
 
 ## Console UI
 
