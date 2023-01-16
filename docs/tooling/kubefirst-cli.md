@@ -201,6 +201,8 @@ Flags:
 Restore the backup SSL that is stored in the S3 bucket and avoid re-issuing new certificates.
 
 ```
+Command used to restore existing saved to recycle certificates on a newer re-installation on an already used domain.
+
 Usage:
   kubefirst restoreSSL [flags]
 
