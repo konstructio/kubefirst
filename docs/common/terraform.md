@@ -53,6 +53,7 @@ Your terraform state is stored in a local in cluster s3 bucket named `kubefirst-
 
 > Note: "Change Request" is "Pull Request" on Github and "Merge Request" on Gitlab. 
 
+<sub>***[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1191)***</sub>
 
 ### How can I use atlantis to add a new user on my github backed installation?
 
@@ -140,6 +141,7 @@ Once you've provided them this initial password, they can update their own passw
 
 ![](https://user-images.githubusercontent.com/53096417/204801723-602beff0-12f9-45a9-bb9c-4d85a889d1ce.gif)
 
+<sub>***[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1192)***</sub>
 
 ### How can I use atlantis to add a new user on my gitlab backed installation?
 
@@ -193,6 +195,7 @@ Any new users you have created through this process will have their temporary in
 
 ![](../img/kubefirst/getting-started/vault-users.png)
 
+<sub>***[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1193)***</sub>
 
 
 ### What else can I use atlantis & terraform for?
@@ -208,3 +211,5 @@ With terraform using the S3 based state store, you can add any terraform file to
 
 
 Beyond repositories and users, atlantis allow you to have your IaC demands to be tracked by your main branch registry. Easing up the usage of terraform based workflows to update the infractruture you are operating.
+
+<sub>***[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1194)***</sub>
