@@ -148,7 +148,7 @@ kubefirst local destroy
 
 # What to do next
 
-[Learn More - Getting Started](https://docs.kubefirst.io/kubefirst/getting-started.html)
+[Learn More - Getting Started](https://docs.kubefirst.com/index.html)
 
 
 # If you want learn more 
