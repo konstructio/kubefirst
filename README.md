@@ -103,8 +103,6 @@ kubefirst init \
 --cluster-name your_cluster_name \
 --s3-suffix you-s3-bucket-name \
 --git-provider gitlab \
---gitops-branch main \
---metaphor-branch main \
 --aws-nodes-spot
 ```
 
@@ -122,9 +120,8 @@ kubefirst init \
 --region us-east-1 \
 --profile default \
 --cluster-name your-cluster-name \
---github-owner your-github-organization-name \
---gitops-branch main \
---metaphor-branch main
+--github-owner your-github-organization-name 
+
 ```
 
 ## Creation
