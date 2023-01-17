@@ -212,6 +212,8 @@ Simple, if you are the owner of the user.
 
 ![](../img/kubefirst/vault/kubefirst-1-11-vault-update-password.gif)
 
+<sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1199)_</sub>
+
 ### Who can change users password?
 
 - Yourself logged with your user/password
@@ -219,7 +221,11 @@ Simple, if you are the owner of the user.
 
 References:  [Vault Policies Cloud/AWS](https://github.com/kubefirst/gitops-template/blob/main/terraform/vault/policies.tf) and [Vault Policies Local](https://github.com/kubefirst/gitops-template/blob/main/localhost/terraform/vault/policies.tf)
 
+<sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1200)_</sub>
+
 ### Can someone with the root token update my password?
 
 yes, just follow the steps at **"How can I change my users password?"** select a user, and edit the user. 
 The root token gives full access to update vault secrets. 
+
+<sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1200)_</sub>

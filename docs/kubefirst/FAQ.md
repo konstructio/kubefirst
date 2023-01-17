@@ -6,7 +6,7 @@ If an error occurs, try to run the command again as there is a `~/.kubefirst` fi
 
 If it's still not working, you can join our [Slack community](https://kubefirst.io/slack) and ask for help in the `#helping-hands` channel. You can also open an [issue](https://github.com/kubefirst/kubefirst/issues) describing the problems you are having. We'll gladly work through it with you.
 
-<sub>***[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1184)***</sub>
+<sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1184)_</sub>
 
 ## How do I tear it all down after I'm done checking it out?
 
@@ -16,28 +16,28 @@ Please find that information in the destroying your Kubefirst platform documenta
 - [GitLab](gitlab/destroy.md)
 - [Local](local/destroy.md)
 
-<sub>***[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1186)***</sub>
+<sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1186)_</sub>
 
 ## Kubefirst Local is taking a long time to install, what should I do?
 
 Kubefirst has a known bug downloading Terraform providers. This is a [known issue](https://github.com/kubefirst/kubefirst/issues/1055) and we are working on a fix. In the meantime, you can work around this by running the destroy command and trying it again.
 
-<sub>***[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1187)***</sub>
+<sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1187)_</sub>
 
 ## I'm getting an error about the `kubefirst` command not being found
 
 Kubefirst wasn't correctly installed on your system. Please follow the [installation instructions](./local/install.md) again.
 
-<sub>***[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1188)***</sub>
+<sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1188)_</sub>
 
 ## Where can I have the services passwords?
 
 The passwords are stored in the `~/.kubefirst` file. You can find the password for each service in the `services` section. The handoff screen (the purple screen at the end of the installation) also displays the passwords.
 
-<sub>***[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1189)***</sub>
+<sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1189)_</sub>
 
 ## Are there logs I can look at?
 
 Yes, each command create a log file in the `logs` folder, which is added at the root of the current location: the full path is displayed at the beginning of command outputs. This log file will often describe the details of what happened at the point of failure, and can help indicate the right steps for resolution.
 
-<sub>***[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1190)***</sub>
+<sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1190)_</sub>
