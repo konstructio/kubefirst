@@ -174,7 +174,7 @@ spec:
 ...
 ```
 
-
+<sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1203)_</sub>
 
 ### Can I remove Metaphor on my install? 
 
@@ -184,6 +184,8 @@ yes, how to do it:
 
 - If you are using `kubefirst local` just pass the flag `--skip-metaphor` that will prevent the metaphors applications to be installed at your cluster and repos will not be created. 
 
+<sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1204)_</sub>
+
 ### Can I add gates to prevent metaphor to move between development to production?
 
 yes, the idea of our current approach of self-unfold to all enviroments it is to allow you to test the tires of of your clusterwith minimal need of clicks on the ui, but yes you can create and add a logic on the deployment artifacts to hold until a giving situation is satisfied. 
@@ -192,6 +194,8 @@ You want to be aware of this artifacts at your gitops repo, where the `metaphor`
 - components/development
 - components/staging
 - components/production
+
+<sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1205)_</sub>
 
 ### Where metaphor comes from? What repos will be created on my account/org?
 
@@ -204,3 +208,6 @@ If you are using a cloud(`kubefirst cluster create`) selection you have 3 demo a
 If you are using a local(`kubefirst local`) selection you have 1 demo application:
 
 - [metaphor-frontend](https://github.com/kubefirst/metaphor-frontend-template)
+
+
+<sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1206)_</sub>
