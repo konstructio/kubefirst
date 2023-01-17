@@ -70,7 +70,7 @@ gitlab.subdomain.example.com
 brew install kubefirst/tools/kubefirst
 ```
 
-[Learn more](https://docs.kubefirst.com/preprod/kubefirst/overview.html)
+[Learn more](https://docs.kubefirst.com/kubefirst/overview.html)
 
 ## Other installation techniques:
 
