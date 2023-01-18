@@ -83,3 +83,7 @@ On AWS cloud selection, one step that takes some minutes to conclude is the EKS 
 every resource that was created during the installation, including VPC, load balancer, sub networks and everything else
 that was created like Argo CD, Argo Workflow, demo applications, and GitLab self-hosted.
 
+
+## Credits
+
+[Opene source projects used on Kubefirst](./credit.md)
