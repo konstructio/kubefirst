@@ -25,3 +25,7 @@ tasks:
   integration-test-for-tls-localdev:
     # GOFLAGS="-count=1" disable cache on tests
     - GOFLAGS="-count=1" go test -v -run TestArgoCertificateIntegration ./internal/ssl
+  local-end-to-end-tests:
+    - go test -v -run TestLocalMetaphorFrontendEndToEnd ./tests -count=1
+  cloud-end-to-end-tests:
+    - go test -v -run TestCloudMetaphorsEndToEnd ./tests -count=1
