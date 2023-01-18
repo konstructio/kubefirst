@@ -34,7 +34,6 @@ nav:
         - Explore: 'kubefirst/local/explore.md'
         - Destroy: 'kubefirst/local/destroy.md'
         - GitHub Repositories: 'kubefirst/local/github-repositories.md'        
-        - Credit: 'kubefirst/local/credit.md'   
         - Limitations: 'kubefirst/local/limitations.md'
       - GitHub Installation:
         - Install: 'kubefirst/github/install.md'
@@ -43,7 +42,6 @@ nav:
         - GitHub Repositories: 'kubefirst/github/github-repositories.md'
         - Certificates: 'common/certificates.md'
         - Security: 'common/security.md'
-        - Credit: 'kubefirst/github/credit.md'    
       - GitLab Installation:
         - Install: 'kubefirst/gitlab/install.md'
         - Explore: 'kubefirst/gitlab/explore.md'
@@ -52,7 +50,6 @@ nav:
         - Gitlab Repositories: 'kubefirst/gitlab/gitlab-repositories.md'
         - Certificates: 'common/certificates.md'
         - Security: 'common/security.md'
-        - Credit: 'kubefirst/gitlab/credit.md'        
       - Shared Concepts:        
         - Overview: 'common/shared-concepts-overview.md'
         - Argo CD: 'common/argocd.md'
