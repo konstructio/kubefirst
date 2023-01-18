@@ -34,7 +34,7 @@ var createGitlabCmd = &cobra.Command{
 
 		config := configs.ReadConfig()
 
-		fmt.Println("createGitlab called")
+		log.Debug().Msg("createGitlab called")
 		skipVault, err := cmd.Flags().GetBool("skip-vault")
 		if err != nil {
 			log.Panic().Msgf("%s", err)
@@ -60,9 +60,6 @@ var createGitlabCmd = &cobra.Command{
 
 		progressPrinter.AddTracker("step-softserve", "Prepare Temporary Repo ", 4)
 		progressPrinter.IncrementTracker("step-softserve", 1)
-		if !globalFlags.UseTelemetry {
-			informUser("Telemetry Disabled", globalFlags.SilentMode)
-		}
 		directory := fmt.Sprintf("%s/gitops/terraform/base", config.K1FolderPath)
 		informUser("Creating K8S Cluster", globalFlags.SilentMode)
 		terraform.ApplyBaseTerraform(globalFlags.DryRun, directory)

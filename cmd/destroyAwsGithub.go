@@ -32,10 +32,10 @@ import (
 // destroyAwsGithubCmd represents the destroyAwsGithub command
 var destroyAwsGithubCmd = &cobra.Command{
 	Use:   "destroy-aws-github",
-	Short: "A brief description of your command",
-	Long:  `TBD`,
+	Short: "internals - used to destroy aws-github cloud",
+	Long:  `internal command not meant for users, it will destroy aws-github related resources, use "kubefirst cluster destroy" instead. `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("destroy-aws-github called")
+		log.Debug().Msg("destroy-aws-github called")
 		config := configs.ReadConfig()
 
 		destroyFlags, err := flagset.ProcessDestroyFlags(cmd)

@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -214,6 +216,47 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 			envs["TF_VAR_instance_type"] = "t4g.medium"
 		}
 
+		// Please, let's keep this as insurance mechanism to prevent:
+		// https://github.com/kubefirst/kubefirst/issues/1015
+		// 50% of the time, this should be no-op as ELB should be already be removed, but sometimes ELB are still there.
+		err = aws.DestroyLoadBalancerByName(viper.GetString("aws.elb.name"))
+		if err != nil {
+			log.Info().Msgf("Failed to destroy load balancer: %v", err)
+		}
+		//To allow destruction of SG to not holde destroy of base
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			time.Sleep(120 * time.Second)
+			//destroy all found sg
+			// Please, let's keep this as insurance mechanism to prevent:
+			// https://github.com/kubefirst/kubefirst/issues/1015
+			// Also
+			// https://github.com/kubefirst/kubefirst/issues/1022
+			for _, sg := range viper.GetStringSlice("aws.elb.sg") {
+				for i := 0; i < 15; i++ {
+					log.Info().Msgf("Trying to Security Group: %s", sg)
+					err := aws.DestroySecurityGroupById(sg)
+					if err != nil {
+						log.Warn().Msgf("Failed to destroy security group: %v", err)
+						if strings.Contains(fmt.Sprintf("%v", err), "has a dependent object") {
+							log.Debug().Msgf("Security Group has dependent: %s", sg)
+							time.Sleep(120 * time.Second)
+						} else {
+							// If it is a 404 return or something else the error is ignored by design for now.
+							// We assume it was already removed before
+							log.Debug().Msgf("Security Group failed to be removed, and error was ignored: %s, %v", sg, err)
+							break
+						}
+					} else {
+						log.Debug().Msgf("Security Group was removed as expected: %s", sg)
+						break
+					}
+
+				}
+			}
+			wg.Done()
+		}()
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
 			log.Panic().Err(err).Msg("failed to terraform init base")
@@ -223,7 +266,7 @@ func DestroyBaseTerraform(skipBaseTerraform bool) {
 		if err != nil {
 			log.Panic().Err(err).Msg("failed to terraform destroy base")
 		}
-
+		wg.Wait()
 		viper.Set("destroy.terraformdestroy.base", true)
 		viper.WriteConfig()
 		log.Info().Msg("terraform base destruction complete")

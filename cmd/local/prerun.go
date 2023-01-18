@@ -35,7 +35,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	config := configs.ReadConfig()
 
 	if useTelemetry {
-		log.Info().Msg("sending init started metric")
+		pkg.InformUser("Sending installation telemetry", silentMode)
 		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted); err != nil {
 			log.Error().Err(err).Msg("")
 		}
@@ -151,7 +151,15 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	//
 	// clone gitops template
 	//
-	// todo: add wrapper
+	// todo: temporary code, the full logic will be refactored in the next release
+
+	// translation:
+	//  - if not an execution from a released/binary kubefirst version / development version
+	//  - and metaphor branch is not set, use the default branch
+	if configs.K1Version == configs.DefaultK1Version && metaphorBranch == "" {
+		metaphorBranch = "main"
+	}
+
 	if configs.K1Version == configs.DefaultK1Version {
 
 		gitHubOrg := "kubefirst"

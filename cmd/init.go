@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"net/http"
 	"os"
 	"strings"
@@ -12,17 +13,14 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/ssh"
 
-	"github.com/kubefirst/kubefirst/internal/services"
-	"github.com/segmentio/analytics-go"
-
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
-	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/repo"
+	"github.com/kubefirst/kubefirst/internal/services"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -129,41 +127,18 @@ validated and configured.`,
 		progressPrinter.AddTracker("step-download", pkg.DownloadDependencies, 3)
 		progressPrinter.AddTracker("step-gitops", pkg.CloneAndDetokenizeGitOpsTemplate, 1)
 		progressPrinter.AddTracker("step-ssh", pkg.CreateSSHKey, 1)
-		progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 1)
 
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), globalFlags.SilentMode)
 
-		var telemetryHandler handlers.TelemetryHandler
+		log.Info().Msg("sending init started metric")
+
 		viper.Set("use-telemetry", globalFlags.UseTelemetry)
-		if globalFlags.UseTelemetry {
-			log.Info().Msg("sending init started metric")
 
-			// Instantiates a SegmentIO client to use send messages to the segment API.
-			segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
-
-			// SegmentIO library works with queue that is based on timing, we explicit close the http client connection
-			// to force flush in case there is still some pending message in the SegmentIO library queue.
-			defer func(segmentIOClient analytics.Client) {
-				err := segmentIOClient.Close()
-				if err != nil {
-					log.Warn().Msgf("%s", err)
-				}
-			}(segmentIOClient)
-
-			// validate telemetryDomain data
-			telemetryDomain, err := domain.NewTelemetry(
-				pkg.MetricInitStarted,
-				awsFlags.HostedZoneName,
-				configs.K1Version,
-			)
-			if err != nil {
-				log.Warn().Msgf("%s", err)
-			}
-			telemetryService := services.NewSegmentIoService(segmentIOClient)
-			telemetryHandler = handlers.NewTelemetryHandler(telemetryService)
-
-			err = telemetryHandler.SendCountMetric(telemetryDomain)
-			if err != nil {
+		if !globalFlags.UseTelemetry {
+			informUser("Telemetry Disabled", globalFlags.SilentMode)
+		} else {
+			pkg.InformUser("Sending installation telemetry", globalFlags.SilentMode)
+			if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitStarted); err != nil {
 				log.Warn().Msgf("%s", err)
 			}
 		}
@@ -234,7 +209,17 @@ validated and configured.`,
 			if !skipHostedZoneCheck {
 				hostedZoneLiveness := aws.TestHostedZoneLiveness(globalFlags.DryRun, awsFlags.HostedZoneName, hostedZoneId)
 				if !hostedZoneLiveness {
-					log.Panic().Msg("Fail to check the Liveness of HostedZone, we need a valid public HostedZone on the same AWS account that Kubefirst will be installed.")
+					msg := "failed to check the liveness of the HostedZone. A valid public HostedZone on the same AWS " +
+						"account as the one where Kubefirst will be installed is required for this operation to " +
+						"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct AWS account and " +
+						"region.\n - Verify that you have the necessary permissions to access the hosted zone.\n - Check " +
+						"that the hosted zone is correctly configured and is a public hosted zone\n - Check if the " +
+						"hosted zone exists and has the correct name and domain.\n - If you don't have a HostedZone," +
+						"please follow these instructions to create one: " +
+						"https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zones-working-with.html \n\n" +
+						"if you are still facing issues please reach out to support team for further assistance"
+					log.Error().Msg(msg)
+					return errors.New(msg)
 				}
 			} else {
 				log.Info().Msg("skipping hosted zone check")
@@ -264,25 +249,15 @@ validated and configured.`,
 		log.Info().Msg("sending init completed metric")
 
 		if globalFlags.UseTelemetry {
-			telemetryInitCompleted, err := domain.NewTelemetry(
-				pkg.MetricInitCompleted,
-				awsFlags.HostedZoneName,
-				configs.K1Version,
-			)
-			if err != nil {
-				log.Warn().Msgf("%s", err)
-			}
-			err = telemetryHandler.SendCountMetric(telemetryInitCompleted)
-			if err != nil {
+			if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitCompleted); err != nil {
 				log.Warn().Msgf("%s", err)
 			}
 		}
 
 		viper.WriteConfig()
 
-		//! tracker 8
-		progressPrinter.IncrementTracker("step-telemetry", 1)
-		time.Sleep(time.Millisecond * 100)
+		// workaround to wait for segmentIo process the message
+		time.Sleep(time.Millisecond * 1000)
 
 		informUser("init is done!\n", globalFlags.SilentMode)
 
@@ -293,7 +268,7 @@ validated and configured.`,
 func init() {
 	rootCmd.AddCommand(initCmd)
 	currentCommand := initCmd
-	log.Info().Msg("kubefirst started")
+	//log.Info().Msg("kubefirst started")
 	//log.SetPrefix("LOG: ")
 	//log.SetFlags(log.Ldate | log.Lmicroseconds | log.Llongfile)
 

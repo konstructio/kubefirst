@@ -60,7 +60,12 @@ can manage in Terraform is really getting impressive. [](https://www.terraform.i
 ## Making Terraform Changes
 
 To make infrastructure and configuration changes with Terraform, simply open a merge request in the `gitops` repository.
-Your merge request will automatically provide plans, state locks, and applies, and even comment in the merge request 
+Your merge request will automatically provide plans, state locks, and applies, and even comment in the merge request
 itself. You'll have a simple, peer reviewable, auditable changelog of all infrastructure and configuration changes.
+
+All this automation is possible because of Atlantis. Atlantis is a tool that runs in your Kubernetes cluster and via a
+webhook, listens for merge requests in your GitOps repository. When it sees a merge request, it will run `terraform plan`,
+and post the plan as a comment in the merge request. If the Terraform plan succeed, Atlantis will run `terraform apply`,
+and post the results as a comment in the merge request.
 
 ![](../../img/kubefirst/gitlab-repositories/terraform-atlantis-merge-request.png)

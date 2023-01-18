@@ -6,12 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"io"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocdModel"
@@ -90,7 +91,7 @@ func SyncRetry(httpClient pkg.HTTPDoer, attempts int, interval int, applicationN
 			log.Info().Msg("another operation is already in progress")
 		}
 
-		log.Printf(
+		log.Info().Msgf(
 			"(%d/%d) sleeping %d seconds before trying to ArgoCD sync again, last Sync status is: %q",
 			i+1,
 			attempts,
@@ -139,12 +140,12 @@ func ListApplications(httpClient pkg.HTTPDoer, applicationName string, argoCDTok
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", argoCDToken))
 	res, err := httpClient.Do(req)
 	if err != nil {
-		log.Printf("error sending GET request to ArgoCD for refreshing application (%s)\n", applicationName)
+		log.Warn().Msgf("error sending GET request to ArgoCD for refreshing application (%s)\n", applicationName)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		log.Printf("ArgoCD Sync response http code is: %d", res.StatusCode)
+		log.Warn().Msgf("ArgoCD Sync response http code is: %d", res.StatusCode)
 	}
 
 	body, err := io.ReadAll(res.Body)
@@ -261,7 +262,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 func GetArgocdAuthToken(dryRun bool) string {
 
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, GetArgocdAuthToken skipped.")
+		log.Info().Msg("[#99] Dry-run mode, GetArgocdAuthToken skipped.")
 		return "nothing"
 	}
 
@@ -286,7 +287,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 
 	x := 20
 	for i := 0; i < x; i++ {
-		log.Printf("requesting auth token from argocd: attempt %d of %d", i+1, x)
+		log.Info().Msgf("requesting auth token from argocd: attempt %d of %d", i+1, x)
 		time.Sleep(5 * time.Second)
 		res, err := client.Do(req)
 
@@ -295,7 +296,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 			continue
 		} else {
 			defer res.Body.Close()
-			log.Printf("Request ArgoCD Token: Result HTTP Status %d", res.StatusCode)
+			log.Debug().Msgf("Request ArgoCD Token: Result HTTP Status %d", res.StatusCode)
 			if res.StatusCode != http.StatusOK {
 				log.Print("HTTP status NOK")
 				continue
@@ -312,7 +313,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 				continue
 			}
 			if err := json.Unmarshal(body, &dat); err != nil {
-				log.Printf("error unmarshalling  %s", err)
+				log.Warn().Msgf("error unmarshalling  %s", err)
 				continue
 			}
 			if dat == nil {
@@ -335,7 +336,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 
 func SyncArgocdApplication(dryRun bool, applicationName, argocdAuthToken string) {
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, SyncArgocdApplication skipped.")
+		log.Info().Msg("[#99] Dry-run mode, SyncArgocdApplication skipped.")
 		return
 	}
 
@@ -361,7 +362,7 @@ func ApplyRegistry(dryRun bool) error {
 	if !dryRun {
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/components/helpers/registry-base.yaml", config.K1FolderPath))
 		if err != nil {
-			log.Printf("failed to execute kubectl apply of registry-base: %s", err)
+			log.Warn().Msgf("failed to execute kubectl apply of registry-base: %s", err)
 			return err
 		}
 		time.Sleep(45 * time.Second)
@@ -382,7 +383,7 @@ func ApplyRegistryLocal(dryRun bool) error {
 
 	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/registry.yaml", config.K1FolderPath))
 	if err != nil {
-		log.Printf("failed to execute localhost kubectl apply of registry-base: %s", err)
+		log.Warn().Msgf("failed to execute localhost kubectl apply of registry-base: %s", err)
 		return err
 	}
 	time.Sleep(45 * time.Second)
@@ -473,7 +474,7 @@ func IsAppSynched(token string, applicationName string) (bool, error) {
 // todo: document it, deprecate the other waitArgoCDToBeReady
 func WaitArgoCDToBeReady(dryRun bool) {
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, waitArgoCDToBeReady skipped.")
+		log.Info().Msg("[#99] Dry-run mode, waitArgoCDToBeReady skipped.")
 		return
 	}
 	config := configs.ReadConfig()
