@@ -19,6 +19,7 @@ import (
 //   - logout of the cloud vault
 //   - login to the cloud vault again using kbot credentials and userpass flow
 //   - make sure the kbot is logged in
+//
 // todo: remove sleeps
 func TestCloudVaultLoginEndToEnd(t *testing.T) {
 
@@ -52,7 +53,6 @@ func TestCloudVaultLoginEndToEnd(t *testing.T) {
 	defer cancel()
 
 	// create a timeout
-	// todo: update it
 	ctx, cancel = context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
@@ -87,12 +87,10 @@ func TestCloudVaultLoginEndToEnd(t *testing.T) {
 	); err != nil {
 		t.Error(err)
 	}
-	time.Sleep(3 * time.Second)
 
 	if err = chromedp.Run(ctx, chromedp.Click(`(//a)[10]`)); err != nil {
 		t.Error(err)
 	}
-	time.Sleep(3 * time.Second)
 
 	// show secret
 	if err = chromedp.Run(ctx, chromedp.Click(`//button[@class=' masked-input-toggle button']`)); err != nil {
@@ -105,21 +103,17 @@ func TestCloudVaultLoginEndToEnd(t *testing.T) {
 	); err != nil {
 		t.Error(err)
 	}
-	time.Sleep(3 * time.Second)
 
 	if initialKBotPassword == "" {
 		t.Error("initial kbot password is empty")
 	}
 
-	time.Sleep(5 * time.Second)
 	vaultLogoutURL := vaultURL + "/ui/vault/logout"
 	if err = chromedp.Run(ctx,
 		chromedp.Navigate(vaultLogoutURL),
 	); err != nil {
 		t.Error(err)
 	}
-
-	time.Sleep(3 * time.Second)
 
 	// select
 	if err = chromedp.Run(ctx, chromedp.SetValue(`//select[@class="select"]`, "userpass", chromedp.BySearch)); err != nil {
@@ -133,7 +127,6 @@ func TestCloudVaultLoginEndToEnd(t *testing.T) {
 		t.Error(err)
 	}
 
-	time.Sleep(3 * time.Second)
 	// click sign in
 	if err = chromedp.Run(ctx, chromedp.Click(`//button[@id='auth-submit']`)); err != nil {
 		t.Error(err)
