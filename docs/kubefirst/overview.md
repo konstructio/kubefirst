@@ -84,6 +84,11 @@ every resource that was created during the installation, including VPC, load bal
 that was created like Argo CD, Argo Workflow, demo applications, and GitLab self-hosted.
 
 
+## Learn more
+
+- Learn more about the  fundaments in use at kubefirst [here](../common/shared-concepts-overview.md)
+- Explore the local install [here](./local/install.md)
+
 ## Credits
 
 [Opene source projects used on Kubefirst](./credit.md)

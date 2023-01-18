@@ -10,3 +10,5 @@ Kubefirst helps to explore several technologies/topics in a single bundle, such 
 |[Vault](./vault.md)| What is available on vault on your clusters and how to use it.|
 |[Terraform & Atlantis](./terraform.md)| How to leverage atlantis to use terraform to drive your IaC. |
 |[GitHub Token](./github-token.md)| Details on Github auth for new installations. |
+|[Security](./security.md)| General Security topics for cloud installations. |
+|[Certificates](./certificates.md)| Details on tools to help handle certificates and its quota of generation of new certificates. |

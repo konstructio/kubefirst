@@ -40,22 +40,21 @@ nav:
         - Explore: 'kubefirst/github/explore.md'
         - Destroy: 'kubefirst/github/destroy.md'
         - GitHub Repositories: 'kubefirst/github/github-repositories.md'
-        - Certificates: 'common/certificates.md'
-        - Security: 'common/security.md'
       - GitLab Installation:
         - Install: 'kubefirst/gitlab/install.md'
         - Explore: 'kubefirst/gitlab/explore.md'
         - Destroy: 'kubefirst/gitlab/destroy.md'
         - Gitlab: 'kubefirst/gitlab/gitlab.md'
         - Gitlab Repositories: 'kubefirst/gitlab/gitlab-repositories.md'
-        - Certificates: 'common/certificates.md'
-        - Security: 'common/security.md'
+        
       - Shared Concepts:        
         - Overview: 'common/shared-concepts-overview.md'
         - Argo CD: 'common/argocd.md'
+        - Certificates: 'common/certificates.md'        
         - GitHub Token: 'common/github-token.md'
         - Gitops: 'common/gitops.md'
         - Metaphor: 'common/metaphor.md'
+        - Security: 'common/security.md'
         - Terraform & Atlantis: 'common/terraform.md'                
         - Vault: 'common/vault.md'
       - Installer Options:
