@@ -21,7 +21,7 @@ The Kubefirst platform uses some of the most popular open source projects in the
 |[Kubernetes](https://kubernetes.io/)|X|X|X|
 |[Material for mkdocs](https://squidfunk.github.io/mkdocs-material)|X|X|X|
 |[MinIO](https://min.io/product/kubernetes)| | |X|
-|[mkcert]https://github.com/FiloSottile/mkcert)| | |X|
+|[mkcert](https://github.com/FiloSottile/mkcert)| | |X|
 |[ngrok](https://ngrok.com/)| | |X|
 |[Terraform](https://www.terraform.io/)|X|X|X|
 |[Soft-serve](https://github.com/charmbracelet/soft-serve)| |X| |
