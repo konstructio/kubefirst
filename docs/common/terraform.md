@@ -36,7 +36,8 @@ Note that terraform at times needs to store secrets in your state store, and the
 
 
 ### Local install - `kubefirst local`
-Your terraform state is stored in a local in cluster s3 bucket named `kubefirst-state-store` in minio. 
+Your terraform state is stored in a local in cluster s3 bucket named `kubefirst-state-store` in minio. All minio files will be stored in `$HOME/.k1/minio-storage` folder.
+
 
 **Attention:** if you k3d cluster is destroyed, the state will be destroyed also. Local destroy, will remove the state once executed. 
 
