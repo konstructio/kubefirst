@@ -27,3 +27,11 @@ kubefirst clean
 ```
 
 This step it is not mandatory, but before any new execution of the kubefirstCLI installation for local or cloud selections you will be requested to execute this command, so installer can start from a fresh point. 
+
+## Tips
+
+### Avoiding tools re-download
+
+The kubefirstCLI download some tools used during cluster provisioning, for example, Terraform, Helm, and Kubectl, in versions compatible with Kubefirst and stores them in the K1 folder. 
+If you are using Kufibefirst to demo in conferences or using poor connections (mobile, hotels) you should consider using this additional flag `--preserve-tools` for each cycle of create/destroy. 
+This will preserve tools downloaded and will save time and network bandwidth during cluster provisioning.

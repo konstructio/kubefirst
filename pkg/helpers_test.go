@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -127,7 +128,7 @@ func TestValidateK1Folder(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = os.CreateTemp(populatedTempFolder, "test.ext")
+	_, err = os.Create(fmt.Sprintf("%s/%s", populatedTempFolder, "argocd-init-values.yaml"))
 	if err != nil {
 		t.Error(err)
 	}

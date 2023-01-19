@@ -45,3 +45,11 @@ mkcert -uninstall
 ```
 
 But when you will execute `kubefirst local` posteriorly, to have the certificates trusted in browsers again, you will need to execute `mkcert -install` again.
+
+## Tips
+
+### Avoiding tools re-download
+
+The kubefirstCLI download some tools used during cluster provisioning, for example, Terraform, Helm, and Kubectl, in versions compatible with Kubefirst and stores them in the K1 folder. 
+If you are using Kufibefirst to demo in conferences or using poor connections (mobile, hotels) you should consider using this additional flag `--preserve-tools` for each cycle of create/destroy. 
+This will preserve tools downloaded and will save time and network bandwidth during cluster provisioning.

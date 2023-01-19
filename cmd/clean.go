@@ -4,22 +4,25 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os"
-	"strings"
 )
 
 // cleanCmd removes all kubefirst resources created with the init command
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "removes all kubefirst resources created with the init command",
-	Long: `Kubefirst creates files, folders and cloud buckets during installation at your environment. This command removes and 
-re-create Kubefirst base files. To destroy cloud resources you need to specify additional flags (--destroy-buckets)`,
+	Long: `Kubefirst creates files, folders, cloud buckets and download tools during installation at your environment. 
+This command removes and re-create Kubefirst base files. 
+To destroy cloud resources you need to specify additional flags (--destroy-buckets)
+To preserve the tools downloaded you need to specify additional flag (--preserve-tools).`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		config := configs.ReadConfig()
@@ -58,20 +61,52 @@ re-create Kubefirst base files. To destroy cloud resources you need to specify a
 			}
 		}
 
-		// delete files and folders
-		err = os.RemoveAll(config.K1FolderPath)
+		preserveTools, err := cmd.Flags().GetBool("preserve-tools")
 		if err != nil {
-			return fmt.Errorf("unable to delete %q folder, error is: %s", config.K1FolderPath, err)
+			return err
+		}
+
+		if preserveTools {
+			log.Info().Msg("Cleaning with --preserve-tools enabled")
+			// delete gitops path and argo init values - caching tools to avoid re-download
+			err = os.RemoveAll(config.GitOpsRepoPath)
+			if err != nil {
+				return fmt.Errorf("unable to delete %q folder, error is: %s", config.GitOpsRepoPath, err)
+			}
+			err = os.Remove(config.ArgoCDInitValuesYamlPath)
+			if err != nil {
+				return fmt.Errorf("unable to delete %q file, error is: ", err)
+			}
+
+			log.Debug().Msgf("Removing SSL folder")
+			err = os.RemoveAll(fmt.Sprintf("%s/ssl", config.K1FolderPath))
+			if err != nil {
+				log.Debug().Msgf("unable to delete %q file, error is: ", err)
+			}
+
+			var metaphorFolders = []string{"metaphor", "metaphor-frontend", "metaphor-go"}
+			for _, f := range metaphorFolders {
+				log.Debug().Msgf("Removing metaphors folders: %s", f)
+				err = os.RemoveAll(fmt.Sprintf("%s/%s", config.K1FolderPath, f))
+				if err != nil {
+					log.Debug().Msgf("unable to delete %q file, error is: ", err)
+				}
+			}
+
+		} else {
+			err = os.RemoveAll(config.K1FolderPath)
+			if err != nil {
+				return fmt.Errorf("unable to delete %q folder, error is: %s", config.K1FolderPath, err)
+			}
+
+			if err := os.Mkdir(fmt.Sprintf("%s", config.K1FolderPath), os.ModePerm); err != nil {
+				return fmt.Errorf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1FolderPath, err)
+			}
 		}
 
 		err = os.Remove(config.KubefirstConfigFilePath)
 		if err != nil {
 			return fmt.Errorf("unable to delete %q file, error is: ", err)
-		}
-
-		// re-create folder
-		if err := os.Mkdir(fmt.Sprintf("%s", config.K1FolderPath), os.ModePerm); err != nil {
-			return fmt.Errorf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1FolderPath, err)
 		}
 
 		// re-create .kubefirst file
@@ -117,4 +152,5 @@ func init() {
 	cleanCmd.Flags().Bool("rm-logs", false, "remove logs folder")
 	cleanCmd.Flags().Bool("destroy-buckets", false, "destroy buckets created by init cmd")
 	cleanCmd.Flags().Bool("destroy-confirm", false, "when detroy-buckets flag is provided, we must provide this flag as well to confirm the destroy operation")
+	cleanCmd.Flags().Bool("preserve-tools", false, "preserve all downloaded tools (avoid re-downloading)")
 }

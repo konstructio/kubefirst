@@ -80,6 +80,8 @@ Flags:
       --destroy-buckets   destroy buckets created by init cmd
       --destroy-confirm   when detroy-buckets flag is provided, we must provide this flag as well to confirm the destroy operation
   -h, --help              help for clean
+      --preserve-tools    preserve all downloaded tools (avoid re-downloading)
+
       --rm-logs           remove logs folder
 ```
 
