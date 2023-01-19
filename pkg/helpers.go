@@ -452,11 +452,10 @@ func IsValidURL(rawURL string) error {
 	return nil
 }
 
-// ValidateK1Folder receives a folder path, and expect the Kubefirst configuration folder is empty. It follows this
-// validation list:
-//   - If folder doesn't exist, try to create it
-//   - If folder exists, check if there are files (argocd values file or gitops repo detokenized)
-//   - If folder exists, and has files, inform the user that clean command should be called before a new init
+// ValidateK1Folder receives a folder path, and expects the Kubefirst configuration folder doesn't contain "argocd-init-values.yaml" and/or "gitops/" folder.
+// It follows this validation order:
+//   - If folder doesn't exist, try to create it (happy path)
+//   - If folder exists, and has "argocd-init-values.yaml" and/or "gitops/", abort and return error describing the issue and what should be done
 func ValidateK1Folder(folderPath string) error {
 	hasLeftOvers := false
 
