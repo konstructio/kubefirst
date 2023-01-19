@@ -218,7 +218,7 @@ func PrintSectionMetaphorFrontend() []byte {
 	if viper.GetString("cloud") == pkg.CloudK3d {
 		handOffData.WriteString("\n--- Metaphor Slim ")
 		handOffData.WriteString(strings.Repeat("-", 52))
-		handOffData.WriteString(fmt.Sprintf("\n URL: %s\n", pkg.MetaphorFrontendSlimTLS))
+		handOffData.WriteString(fmt.Sprintf("\n URL: %s\n", pkg.MetaphorFrontendSlimTLSDev))
 		handOffData.WriteString(strings.Repeat("-", 70))
 
 		return handOffData.Bytes()

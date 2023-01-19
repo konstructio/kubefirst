@@ -9,25 +9,41 @@ import (
 	"testing"
 )
 
-// TestLocalMetaphorFrontendEndToEnd tests the Metaphor frontend, and look for a http response code of 200
+// TestLocalMetaphorFrontendEndToEnd tests the Metaphor frontend (dev, staging, prod), and look for a http response code of 200
 func TestLocalMetaphorFrontendEndToEnd(t *testing.T) {
 
 	if testing.Short() {
 		t.Skip("skipping end to tend test")
 	}
 
-	resp, err := http.Get(pkg.MetaphorFrontendSlimTLS)
-	if err != nil {
-		t.Errorf(err.Error())
-		return
+	testCases := []struct {
+		name     string
+		url      string
+		expected int
+	}{
+		{name: "metaphor frontend development", url: pkg.MetaphorFrontendSlimTLSDev, expected: http.StatusOK},
+		{name: "metaphor frontend staging", url: pkg.MetaphorFrontendSlimTLSStaging, expected: http.StatusOK},
+		{name: "metaphor frontend production", url: pkg.MetaphorFrontendSlimTLSProd, expected: http.StatusOK},
 	}
-	defer resp.Body.Close()
 
-	fmt.Println("HTTP status code:", resp.StatusCode)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("HTTP status code is not 200")
+			resp, err := http.Get(tc.url)
+			if err != nil {
+				t.Errorf(err.Error())
+				return
+			}
+			defer resp.Body.Close()
+
+			fmt.Println("HTTP status code:", resp.StatusCode)
+
+			if resp.StatusCode != http.StatusOK {
+				t.Errorf("HTTP status code is not 200")
+			}
+		})
 	}
+
 }
 
 // TestCloudMetaphorsEndToEnd tests the Metaphor frontend, and look for a http response code of 200 for cloud
