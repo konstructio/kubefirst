@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// TestCloudVaultLoginEndToEnd tests the end to end flow of logging into the cloud vault and retrieving a secret from it.
-// This test is not run by default because it requires a cloud vault to be running.
+// TestVaultLoginEndToEnd tests the end to end flow of logging into the cloud and local vault and retrieving a secret
+// from it. This test is not run by default because it requires a cloud vault to be running.
 // This test does:
 //   - login to the cloud vault
 //   - make sure the login was successful
@@ -19,9 +19,7 @@ import (
 //   - logout of the cloud vault
 //   - login to the cloud vault again using kbot credentials and userpass flow
 //   - make sure the kbot is logged in
-//
-// todo: remove sleeps
-func TestCloudVaultLoginEndToEnd(t *testing.T) {
+func TestVaultLoginEndToEnd(t *testing.T) {
 
 	if testing.Short() {
 		t.Skip("skipping end to tend test")
@@ -56,7 +54,16 @@ func TestCloudVaultLoginEndToEnd(t *testing.T) {
 	ctx, cancel = context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
-	vaultURL := "https://vault." + viper.GetString("aws.hostedzonename")
+	// find Vault url
+	var vaultURL string
+	switch viper.GetString("cloud") {
+	case pkg.CloudK3d:
+		vaultURL = viper.GetString("vault.local.service")
+	default:
+		// cloud default
+		vaultURL = "https://vault." + viper.GetString("aws.hostedzonename")
+	}
+
 	if err = chromedp.Run(
 		ctx,
 		chromedp.Navigate(vaultURL),
