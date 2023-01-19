@@ -32,3 +32,11 @@ We use a free tier of this service and have rate limits for data transfer and li
 
 - Conventions: you are demoing the kubefirst using the kubefirst local installation at the convention. You could suffer issues with networking, mainly if the convention facility's network is poor.
 - Mobile Connection: if you use the mobile connection routed to your laptop, the downloads may spend much of your data plan and suffer from the poor mobile connection.
+
+## Tips
+
+### Avoiding tools re-download
+
+The kubefirstCLI download some tools used during cluster provisioning, for example, Terraform, Helm, and Kubectl, in versions compatible with Kubefirst and stores them in the K1 folder. 
+If you are using Kufibefirst to demo in conferences or using poor connections (mobile, hotels) you should consider using this additional flag `--preserve-tools` for each cycle of create/destroy. 
+This will preserve tools downloaded and will save time and network bandwidth during cluster provisioning.
