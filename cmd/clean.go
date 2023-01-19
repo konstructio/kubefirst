@@ -19,8 +19,10 @@ import (
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "removes all kubefirst resources created with the init command",
-	Long: `Kubefirst creates files, folders and cloud buckets during installation at your environment. This command removes and 
-re-create Kubefirst base files. To destroy cloud resources you need to specify additional flags (--destroy-buckets)`,
+	Long: `Kubefirst creates files, folders, cloud buckets and download tools during installation at your environment. 
+This command removes and re-create Kubefirst base files. 
+To destroy cloud resources you need to specify additional flags (--destroy-buckets)
+To preserve the tools downloaded you need to specify additional flag (--preserve-tools).`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		config := configs.ReadConfig()
