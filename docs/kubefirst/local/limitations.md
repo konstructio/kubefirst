@@ -3,7 +3,7 @@
 ## Overview
 
 `Kubefirst local` bring to our local machine the experience of having a cloud environment running locally. This is the best effort to abstract all the convenience of cloud services running inside containers. 
-Thank you for all the projects listed in the [Credit](../local/credit.md) section. 
+Thank you for all the projects listed in the [Credit](../credit.md) section. 
 
 Unfortunately, we have some limitations running kubefirst locally, and we listed below these limitations and possible ways to solve them.
 

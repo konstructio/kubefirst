@@ -33,39 +33,34 @@ nav:
         - Install: 'kubefirst/local/install.md'
         - Explore: 'kubefirst/local/explore.md'
         - Destroy: 'kubefirst/local/destroy.md'
-        - GitHub Repositories: 'kubefirst/local/github-repositories.md'
-        - GitOps: 'kubefirst/local/gitops.md'
-        - Credit: 'kubefirst/local/credit.md'   
+        - GitHub Repositories: 'kubefirst/local/github-repositories.md'        
         - Limitations: 'kubefirst/local/limitations.md'
       - GitHub Installation:
         - Install: 'kubefirst/github/install.md'
         - Explore: 'kubefirst/github/explore.md'
         - Destroy: 'kubefirst/github/destroy.md'
         - GitHub Repositories: 'kubefirst/github/github-repositories.md'
-        - GitOps: 'kubefirst/github/gitops.md'
-        - Certificates: 'common/certificates.md'
-        - Security: 'common/security.md'
-        - Credit: 'kubefirst/github/credit.md'
-        
       - GitLab Installation:
         - Install: 'kubefirst/gitlab/install.md'
         - Explore: 'kubefirst/gitlab/explore.md'
         - Destroy: 'kubefirst/gitlab/destroy.md'
         - Gitlab: 'kubefirst/gitlab/gitlab.md'
         - Gitlab Repositories: 'kubefirst/gitlab/gitlab-repositories.md'
-        - GitOps: 'kubefirst/gitlab/gitops.md'
-        - Certificates: 'common/certificates.md'
-        - Security: 'common/security.md'
-        - Credit: 'kubefirst/gitlab/credit.md'        
+        
       - Shared Concepts:        
+        - Overview: 'common/shared-concepts-overview.md'
         - Argo CD: 'common/argocd.md'
-        - Terraform & Atlantis: 'common/terraform.md'
+        - Certificates: 'common/certificates.md'        
         - GitHub Token: 'common/github-token.md'
+        - Gitops: 'common/gitops.md'
         - Metaphor: 'common/metaphor.md'
+        - Security: 'common/security.md'
+        - Terraform & Atlantis: 'common/terraform.md'                
         - Vault: 'common/vault.md'
       - Installer Options:
         - Config: 'kubefirst/installer/config-file.md'
       - FAQ: 'kubefirst/FAQ.md'
+      - Credits: 'kubefirst/credit.md'
     - Tooling:
       - Overview: 'tooling/tooling-overview.md'
       - Argo CD: 'tooling/argocd.md'
@@ -85,14 +80,18 @@ nav:
       - ngrok: 'tooling/ngrok.md'
       - Shell Utilities: 'tooling/shell-utilities.md'
       - Terraform: 'tooling/terraform.md'
-      - Vault CLI: 'tooling/vault-cli.md'
-    - Legacy Pages:        
+      - Vault CLI: 'tooling/vault-cli.md'    
+    - Moved Pages:        
       - Vault Local: 'kubefirst/local/vault.md'
       - Vault Aws Github: 'kubefirst/github/vault.md'
       - Vault Aws Gitlab: 'kubefirst/gitlab/vault.md'
       - Argo CD Local: 'kubefirst/local/argocd.md'
       - Argo CD Aws Github: 'kubefirst/github/argocd.md'
       - Argo CD Aws Gitlab: 'kubefirst/gitlab/argocd.md'
+      - Credit Local: 'kubefirst/local/credit.md'
+      - Credit Aws Github: 'kubefirst/github/credit.md'
+      - Credit Aws Gitlab: 'kubefirst/gitlab/credit.md'
+
 
 
 
