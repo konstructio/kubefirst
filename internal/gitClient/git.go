@@ -1,6 +1,7 @@
 package gitClient
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -27,6 +28,101 @@ const Github = "github"
 
 // Gitlab - git-provider github
 const Gitlab = "gitlab"
+
+func CloneLocalRepo(repoPath string) (*git.Repository, error) {
+	repo, err := git.PlainOpen(repoPath)
+	if err != nil {
+		return nil, err
+	}
+	return repo, nil
+}
+
+func CheckoutBranch(repo *git.Repository, branch string) (*git.Worktree, error) {
+
+	workTree, err := repo.Worktree()
+	if err != nil {
+		return workTree, err
+	}
+
+	err = workTree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.ReferenceName("refs/heads/" + branch),
+	})
+	if err != nil {
+		return workTree, err
+	}
+
+	return workTree, nil
+}
+
+func CreateBranch(repo *git.Repository, branchName string) error {
+	headRef, err := repo.Head()
+	if err != nil {
+		return err
+	}
+
+	ref := plumbing.NewHashReference(plumbing.ReferenceName("refs/heads/"+branchName), headRef.Hash())
+	if err = repo.Storer.SetReference(ref); err != nil {
+		return err
+	}
+	return nil
+}
+
+func PullBranch(workTree *git.Worktree, remoteName string, gitHubToken string) error {
+	err := workTree.Pull(&git.PullOptions{
+		RemoteName: remoteName,
+		Auth: &http.BasicAuth{
+			Username: "kubefirst-bot",
+			Password: gitHubToken,
+		},
+	})
+	if errors.Is(err, git.NoErrAlreadyUpToDate) {
+		log.Info().Msg("already up to date")
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CommitFiles(workTree *git.Worktree, commitMessage string, files []string) error {
+	for _, file := range files {
+		hash, err := workTree.Add(file)
+		if err != nil {
+			return err
+		}
+		log.Info().Msgf("added file %s to commit, hash %s", file, hash)
+	}
+
+	commitHash, err := workTree.Commit(commitMessage, &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "kubefirst-bot",
+			Email: "kubefirst-bot@kubefirst.com",
+			When:  time.Now(),
+		},
+	})
+	if err != nil {
+		return err
+	}
+	log.Info().Msgf("committed files %s, hash %s", files, commitHash)
+
+	return nil
+}
+
+func PushChanges(repo *git.Repository, remoteName string, gitHubToken string) error {
+	err := repo.Push(&git.PushOptions{
+		RemoteName: remoteName,
+		Auth: &http.BasicAuth{
+			Username: "kubefirst-bot",
+			Password: gitHubToken,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 // CloneRepoAndDetokenizeTemplate - clone repo using CloneRepoAndDetokenizeTemplate that uses fallback rule to try to capture version
 func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, branch string, tag string) (string, error) {
@@ -515,24 +611,6 @@ func CloneBranchSetMain(repoURL string, repoLocalPath string, branch string) (*g
 		}
 	}
 	return repo, nil
-}
-
-// CheckoutBranch checkout a branch
-func CheckoutBranch(repo *git.Repository, branch string) error {
-
-	tree, err := repo.Worktree()
-	if err != nil {
-		return err
-	}
-
-	err = tree.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.NewBranchReferenceName(branch),
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // CloneTag clone a repository using a tag value, and returns a pointer to *git.Repository

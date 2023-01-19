@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/google/go-github/v45/github"
-	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 )
 
@@ -180,48 +179,47 @@ func (g GithubSession) IsRepoInUse(org string, name string) (bool, error) {
 	return false, nil
 }
 
-func (g GithubSession) CreatePR(branchName string) error {
-	title := "update S3 backend to minio / internal k8s dns"
+func (g GithubSession) CreatePR(
+	branchName string,
+	repoName string,
+	gitHubUser string,
+	baseBranch string,
+	title string,
+	body string) error {
+
 	head := branchName
-	body := "use internal Kubernetes dns"
-	base := "main"
 	pr := github.NewPullRequest{
 		Title: &title,
 		Head:  &head,
 		Body:  &body,
-		Base:  &base,
+		Base:  &baseBranch,
 	}
-
-	// todo: receive as parameter
-	gitHubUser := viper.GetString("github.user")
 
 	_, resp, err := g.gitClient.PullRequests.Create(
 		context.Background(),
 		gitHubUser,
-		"gitops",
+		repoName,
 		&pr,
 	)
 	if err != nil {
 		return err
 	}
-	log.Printf("pull request create response http code: %d", resp.StatusCode)
+	log.Info().Msgf("pull request create response http code: %d", resp.StatusCode)
 
 	return nil
 }
 
-func (g GithubSession) CommentPR(prNumber int, body string) error {
+func (g GithubSession) CommentPR(prNumber int, gitHubUser string, body string) error {
 
 	issueComment := github.IssueComment{
 		Body: &body,
 	}
 
-	// todo: receive as parameter
-	gitHubUser := viper.GetString("github.user")
-
 	_, resp, err := g.gitClient.Issues.CreateComment(
 		context.Background(),
 		gitHubUser,
-		"gitops", prNumber,
+		"gitops",
+		prNumber,
 		&issueComment,
 	)
 	if err != nil {

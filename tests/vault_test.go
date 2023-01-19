@@ -104,14 +104,14 @@ func TestVaultLoginEndToEnd(t *testing.T) {
 		t.Error(err)
 	}
 
-	var initialKBotPassword string
+	var initialAOnePassword string
 	if err = chromedp.Run(ctx,
-		chromedp.Text(`//pre[@class='masked-value display-only is-word-break']`, &initialKBotPassword),
+		chromedp.Text(`//pre[@class='masked-value display-only is-word-break']`, &initialAOnePassword),
 	); err != nil {
 		t.Error(err)
 	}
 
-	if initialKBotPassword == "" {
+	if initialAOnePassword == "" {
 		t.Error("initial kbot password is empty")
 	}
 
@@ -127,10 +127,10 @@ func TestVaultLoginEndToEnd(t *testing.T) {
 		t.Error(err)
 	}
 
-	if err = chromedp.Run(ctx, chromedp.SendKeys(`//input[@id="username"]`, "kbot")); err != nil {
+	if err = chromedp.Run(ctx, chromedp.SendKeys(`//input[@id="username"]`, "aone")); err != nil {
 		t.Error(err)
 	}
-	if err = chromedp.Run(ctx, chromedp.SendKeys(`//input[@id="password"]`, initialKBotPassword)); err != nil {
+	if err = chromedp.Run(ctx, chromedp.SendKeys(`//input[@id="password"]`, initialAOnePassword)); err != nil {
 		t.Error(err)
 	}
 
