@@ -81,13 +81,17 @@ nav:
       - Shell Utilities: 'tooling/shell-utilities.md'
       - Terraform: 'tooling/terraform.md'
       - Vault CLI: 'tooling/vault-cli.md'    
-    - Legacy Pages:        
+    - Moved Pages:        
       - Vault Local: 'kubefirst/local/vault.md'
       - Vault Aws Github: 'kubefirst/github/vault.md'
       - Vault Aws Gitlab: 'kubefirst/gitlab/vault.md'
       - Argo CD Local: 'kubefirst/local/argocd.md'
       - Argo CD Aws Github: 'kubefirst/github/argocd.md'
       - Argo CD Aws Gitlab: 'kubefirst/gitlab/argocd.md'
+      - Credit Local: 'kubefirst/local/credit.md'
+      - Credit Aws Github: 'kubefirst/github/credit.md'
+      - Credit Aws Gitlab: 'kubefirst/gitlab/credit.md'
+
 
 
 
