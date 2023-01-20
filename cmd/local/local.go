@@ -392,7 +392,12 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	go func() {
 		pkg.InformUser(`waiting "atlantis plan" finish to proceed...`, silentMode)
 		gitHubClient := githubWrapper.New()
-		err = gitHubClient.CreatePR(branchName)
+
+		base := "main"
+		title := "update S3 backend to minio / internal k8s dns"
+		body := "use internal Kubernetes dns"
+		gitHubUser := viper.GetString("github.user")
+		err = gitHubClient.CreatePR(branchName, "gitops", gitHubUser, base, title, body)
 		if err != nil {
 			log.Error().Err(err).Msg("")
 		}
@@ -415,7 +420,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 			return
 		}
 
-		if err := gitHubClient.CommentPR(1, "atlantis apply"); err != nil {
+		if err := gitHubClient.CommentPR(1, gitHubUser, "atlantis apply"); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 		wg.Done()
