@@ -14,6 +14,10 @@ import (
 	"time"
 )
 
+// todo:
+//  - add docs
+//  - remove the hardcoded values
+//  - you can complain with Joao if you see it after january 23
 func TestGitHubUserCreation(t *testing.T) {
 
 	//
