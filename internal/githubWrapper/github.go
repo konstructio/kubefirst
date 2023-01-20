@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/google/go-github/v45/github"
 	"github.com/spf13/viper"
@@ -278,4 +279,33 @@ func (g GithubSession) RetrySearchPullRequestComment(
 		return true, nil
 	}
 	return false, nil
+}
+
+func (g GithubSession) UpdateWebhook(owner, repo, hookName, hookUrl, hookSecret string, hookEvents []string) error {
+	// List webhooks
+	// Get webhook with name that matches, if exist delete it.
+	// Create new webhook with same name
+	// Return sucess or fail
+	// Note to not support pagination
+
+	hooks, _, err := g.gitClient.Repositories.ListHooks(g.context, owner, repo, &github.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("error when listing a webhook: %v", err)
+	}
+	for i, hook := range hooks {
+		log.Debug().Msgf("%s, %s", i, hook)
+		if hook.Name == &hookName {
+			_, err := g.gitClient.Repositories.DeleteHook(g.context, owner, repo, *hook.ID)
+			if err != nil {
+				return fmt.Errorf("error when removing a webhook: %v", err)
+			}
+			break
+		}
+	}
+	err = g.CreateWebhookRepo(owner, repo, hookName, hookUrl, hookSecret, hookEvents)
+	if err != nil {
+		return fmt.Errorf("error when creating a webhook: %v", err)
+	}
+	return nil
+
 }

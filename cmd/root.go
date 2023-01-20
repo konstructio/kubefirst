@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/cmd/local"
-	"github.com/kubefirst/kubefirst/configs"
 	"os"
+
+	"github.com/kubefirst/kubefirst/cmd/local"
+	"github.com/kubefirst/kubefirst/cmd/tool"
+	"github.com/kubefirst/kubefirst/configs"
 
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/spf13/cobra"
@@ -43,4 +45,5 @@ func Execute() {
 func init() {
 	cobra.OnInitialize()
 	rootCmd.AddCommand(local.NewCommand())
+	rootCmd.AddCommand(tool.NewCommand())
 }
