@@ -125,6 +125,7 @@ func TestGitHubUserCreation(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	// todo: implement atlantis waiting
+	// it will require to update atlantis waiting function, and will be done next
 	println("waiting......")
 	time.Sleep(60 * time.Second)
 	//ok, err := gitHubClient.RetrySearchPullRequestComment(

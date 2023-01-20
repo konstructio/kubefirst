@@ -6,6 +6,7 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
+	"os"
 	"testing"
 	"time"
 )
@@ -19,10 +20,19 @@ import (
 //   - logout of the cloud vault
 //   - login to the cloud vault again using kbot credentials and userpass flow
 //   - make sure the kbot is logged in
+//
+// prerequisites: this test requires E2E_VAULT_USERNAME to be set to "aone" in case we want to test a new created user
+// and "kbot" in case we want to test the login for the initial account
 func TestVaultLoginEndToEnd(t *testing.T) {
 
 	if testing.Short() {
 		t.Skip("skipping end to tend test")
+	}
+
+	username := os.Getenv("E2E_VAULT_USERNAME")
+	if username == "" {
+		t.Error("E2E_VAULT_USERNAME is not set")
+		return
 	}
 
 	config := configs.ReadConfig()
@@ -104,15 +114,15 @@ func TestVaultLoginEndToEnd(t *testing.T) {
 		t.Error(err)
 	}
 
-	var initialAOnePassword string
+	var initialPassword string
 	if err = chromedp.Run(ctx,
-		chromedp.Text(`//pre[@class='masked-value display-only is-word-break']`, &initialAOnePassword),
+		chromedp.Text(`//pre[@class='masked-value display-only is-word-break']`, &initialPassword),
 	); err != nil {
 		t.Error(err)
 	}
 
-	if initialAOnePassword == "" {
-		t.Error("initial kbot password is empty")
+	if initialPassword == "" {
+		t.Error("initial user password is empty")
 	}
 
 	vaultLogoutURL := vaultURL + "/ui/vault/logout"
@@ -127,10 +137,10 @@ func TestVaultLoginEndToEnd(t *testing.T) {
 		t.Error(err)
 	}
 
-	if err = chromedp.Run(ctx, chromedp.SendKeys(`//input[@id="username"]`, "aone")); err != nil {
+	if err = chromedp.Run(ctx, chromedp.SendKeys(`//input[@id="username"]`, username)); err != nil {
 		t.Error(err)
 	}
-	if err = chromedp.Run(ctx, chromedp.SendKeys(`//input[@id="password"]`, initialAOnePassword)); err != nil {
+	if err = chromedp.Run(ctx, chromedp.SendKeys(`//input[@id="password"]`, initialPassword)); err != nil {
 		t.Error(err)
 	}
 
