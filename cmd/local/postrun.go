@@ -45,5 +45,8 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 		wg.Done()
 	}()
 
+	// todo: testing
+	cancelContext()
+
 	return nil
 }

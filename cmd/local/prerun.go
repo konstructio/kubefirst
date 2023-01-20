@@ -25,6 +25,9 @@ import (
 	"github.com/spf13/viper"
 )
 
+// todo: testing
+var cancelContext context.CancelFunc
+
 func validateLocal(cmd *cobra.Command, args []string) error {
 
 	// set log level
@@ -102,7 +105,10 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	go pkg.RunNgrok(context.TODO())
+	// ngrok
+	var ctx context.Context
+	ctx, cancelContext = context.WithCancel(context.Background())
+	go pkg.RunNgrok(ctx)
 
 	viper.Set("github.atlantis.webhook.secret", pkg.Random(20))
 	viper.Set("github.user", githubUser)
