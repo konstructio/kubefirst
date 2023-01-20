@@ -41,6 +41,10 @@ func RunNgrok(ctx context.Context) {
 	}
 
 	for {
+		fmt.Println("---debug---")
+		fmt.Println("current state of the ngrok context is:", ctx.Err())
+		fmt.Println("---debug---")
+
 		fmt.Println(tunnel.URL())
 		conn, err := tunnel.Accept()
 		if err != nil {
@@ -49,7 +53,7 @@ func RunNgrok(ctx context.Context) {
 		}
 
 		if ctx.Err() == nil {
-			log.Info().Msgf("Ngrok is accepting connections", conn.RemoteAddr())
+			log.Info().Msgf("Ngrok is accepting connections: %s", conn.RemoteAddr())
 			go func() {
 				err = handleConn(ctx, conn)
 				if err == nil {

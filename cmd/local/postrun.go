@@ -1,10 +1,8 @@
 package local
 
 import (
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
+	"fmt"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -36,17 +34,25 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 	log.Info().Msgf("Kubefirst Console available at: %s", pkg.KubefirstConsoleLocalURLTLS)
 
 	// managing termination signal from the terminal
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		<-sigs
-		wg.Done()
-	}()
+	// todo: handle user inputs (q, ctrl+c, etc)
+	//sigs := make(chan os.Signal, 1)
+	//signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	//var wg sync.WaitGroup
+	//wg.Add(1)
+	//go func() {
+	//	<-sigs
+	//	wg.Done()
+	//}()
+	//wg.Wait()
 
 	// todo: testing
 	cancelContext()
+	fmt.Println("---debug---")
+	fmt.Println("context killed, waiting...")
+	fmt.Println("---debug---")
+
+	// force wait context kill
+	time.Sleep(1 * time.Second)
 
 	return nil
 }
