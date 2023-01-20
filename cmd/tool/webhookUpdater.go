@@ -9,7 +9,6 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/k8s"
-	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +30,7 @@ func runWebhookUpdater(cmd *cobra.Command, args []string) error {
 	//	- can it be queried by some label on github?
 	// - start witha pre-defined name
 	gitHubClient := githubWrapper.New()
-	clientset, err := k8s.GetClientSet(false)
+	clientset, err := k8s.GetK8SConfig()
 	if err != nil {
 		return fmt.Errorf("error when connecting to k8s: %v", err)
 	}
@@ -39,12 +38,16 @@ func runWebhookUpdater(cmd *cobra.Command, args []string) error {
 	for true {
 		payload, err := CheckNgrokTunnel()
 		if err != nil {
-			log.Warn().Msgf("error checking status of tunnel: %v", err)
+			msg := fmt.Sprintf("error checking status of tunnel: %v", err)
+			log.Warn().Msg(msg)
+			fmt.Println(msg)
 			// We will try again soon, once cluster is more ready
 			continue
 		}
 		if len(payload.Tunnels) > 0 {
-			log.Warn().Msgf("error reading tunnel info:  no tunnels")
+			msg := "error reading tunnel info:  no tunnels"
+			log.Warn().Msg(msg)
+			fmt.Println(msg)
 			// We will try again soon, once cluster is more ready
 			continue
 		}
@@ -59,6 +62,8 @@ func runWebhookUpdater(cmd *cobra.Command, args []string) error {
 		hookEvents := []string{"issue_comment", "pull_request", "pull_request_review", "push"}
 		err = gitHubClient.UpdateWebhook(owner, repo, hookName, hookURL, hookSecret, hookEvents)
 		if err != nil {
+			msg := fmt.Sprintf("error when updating a webhook: %v", err)
+			fmt.Println(msg)
 			return fmt.Errorf("error when updating a webhook: %v", err)
 		}
 		lastTunnel = hookURL
@@ -72,9 +77,12 @@ func runWebhookUpdater(cmd *cobra.Command, args []string) error {
 
 func validateWebhookUpdater(cmd *cobra.Command, args []string) error {
 	if len(repo) < 1 || len(owner) < 1 {
+		msg := fmt.Sprintf("both repo(%s) and owner(%s) must be provided in order for webhookupdater to work as expected", repo, owner)
+		fmt.Println(msg)
 		return fmt.Errorf("both repo(%s) and owner(%s) must be provided in order for webhookupdater to work as expected", repo, owner)
 	}
 	log.Info().Msgf("Validation: Success repo(%s) and owner(%s) provided as epxected", repo, owner)
+	fmt.Println(fmt.Sprintf("Validation: Success repo(%s) and owner(%s) provided as epxected", repo, owner))
 	return nil
 }
 
@@ -95,29 +103,30 @@ type NgrokTunnel struct {
 
 func CheckNgrokTunnel() (*NgrokTunnel, error) {
 
-	url := "http://ngrok.ngrok-agent.svc.cluster.local:4040/api/tunnels"
+	url := "http://ngrok-agent.ngrok-agent.svc.cluster.local:4040/api/tunnels"
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
+		fmt.Println(fmt.Sprintf("%s", err))
 		return &NgrokTunnel{}, err
 	}
-	req.Header.Add("Content-Type", pkg.JSONContentType)
-	req.Header.Add("Accept", pkg.JSONContentType)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
+		fmt.Println(fmt.Sprintf("%s", err))
 		return &NgrokTunnel{}, err
 	}
 	defer res.Body.Close()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
+		fmt.Println(fmt.Sprintf("%s", err))
 		return &NgrokTunnel{}, err
 	}
 
 	var payload NgrokTunnel
 	err = json.Unmarshal(body, &payload)
 	if err != nil {
-		log.Warn().Msgf("%s", err)
+		fmt.Println(fmt.Sprintf("%s", err))
 	}
 	return &payload, nil
 }

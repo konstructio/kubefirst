@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -546,4 +547,18 @@ func CreateSecret(namespace string, secretName string, data map[string][]byte) e
 	}
 
 	return nil
+}
+
+func GetK8SConfig() (*kubernetes.Clientset, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return &kubernetes.Clientset{}, err
+	}
+	clientSet, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return &kubernetes.Clientset{}, err
+	}
+	fmt.Println("Config used")
+	return clientSet, nil
+
 }

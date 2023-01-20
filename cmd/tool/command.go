@@ -15,7 +15,6 @@ func NewCommand() *cobra.Command {
 		Short: "general tools set",
 		Long:  "TBD",
 		RunE:  runTool,
-		// PostRunE: runPostCivo,
 	}
 
 	// wire up new commands
@@ -27,12 +26,11 @@ func NewCommand() *cobra.Command {
 func WebhookUpdater() *cobra.Command {
 
 	webhookUpdater := &cobra.Command{
-		Use:     "tool",
+		Use:     "webhook-checker",
 		Short:   "comand to be used check/update ngrok based webhooks",
 		Long:    "TBD",
 		RunE:    runWebhookUpdater,
 		PreRunE: validateWebhookUpdater,
-		// PostRunE: runPostCivo,
 	}
 
 	webhookUpdater.Flags().StringVar(&owner, "repo", "", "repository that will observed fro changes on tunnels")
