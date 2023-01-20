@@ -105,7 +105,8 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// ngrok
+	// creates a new context, and a cancel function that allows canceling the context. The context is passed as an
+	// argument to the RunNgrok function, which is then started in a new goroutine.
 	var ctx context.Context
 	ctx, cancelContext = context.WithCancel(context.Background())
 	go pkg.RunNgrok(ctx)

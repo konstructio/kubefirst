@@ -1,7 +1,6 @@
 package local
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -45,12 +44,8 @@ func runPostLocal(cmd *cobra.Command, args []string) error {
 	//}()
 	//wg.Wait()
 
-	// todo: testing
 	cancelContext()
-	fmt.Println("---debug---")
-	fmt.Println("context killed, waiting...")
-	fmt.Println("---debug---")
-
+	log.Info().Msg("ngrok context killed")
 	// force wait context kill
 	time.Sleep(1 * time.Second)
 
