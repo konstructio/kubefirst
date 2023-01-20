@@ -112,8 +112,7 @@ func FakeInitAddonsTestCmd() *cobra.Command {
 // Test_Init_k3d_basic
 // simulates: `kubefirst --admin-email user@domain.com --cloud k3d --github-user ghuser --github-org ghorg
 func Test_Init_k3d_basic_github(t *testing.T) {
-	os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
-	defer os.Unsetenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
+	t.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
 	cmd := FakeInitCmd()
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
@@ -267,14 +266,10 @@ func Test_Init_aws_basic_with_profile_and_arn(t *testing.T) {
 func Test_Init_by_var_aws_profile(t *testing.T) {
 	cmd := FakeInitCmd()
 	b := bytes.NewBufferString("")
-	os.Setenv("KUBEFIRST_ADMIN_EMAIL", "user@domain.com")
-	defer os.Unsetenv("KUBEFIRST_ADMIN_EMAIL")
-	os.Setenv("KUBEFIRST_CLOUD", "aws")
-	defer os.Unsetenv("KUBEFIRST_CLOUD")
-	os.Setenv("KUBEFIRST_PROFILE", "default")
-	defer os.Unsetenv("KUBEFIRST_PROFILE")
-	os.Setenv("KUBEFIRST_HOSTED_ZONE_NAME", "mydomain.com")
-	defer os.Unsetenv("KUBEFIRST_HOSTED_ZONE_NAME")
+	t.Setenv("KUBEFIRST_ADMIN_EMAIL", "user@domain.com")
+	t.Setenv("KUBEFIRST_CLOUD", "aws")
+	t.Setenv("KUBEFIRST_PROFILE", "default")
+	t.Setenv("KUBEFIRST_HOSTED_ZONE_NAME", "mydomain.com")
 	cmd.SetOut(b)
 	cmd.SetArgs([]string{"--region", "eu-central-1", "--admin-email", "user@domain.com", "--cloud", "aws", "--hosted-zone-name", "my.domain.com", "--profile", "default"})
 	err := cmd.Execute()
@@ -332,8 +327,7 @@ func Test_Init_Addons_Gitlab(t *testing.T) {
 }
 
 func Test_Init_Addons_Github(t *testing.T) {
-	os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
-	defer os.Unsetenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
+	t.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
 	viper.Set("addons", "")
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
@@ -353,8 +347,7 @@ func Test_Init_Addons_Github(t *testing.T) {
 }
 
 func Test_Init_Addons_Github_Kusk(t *testing.T) {
-	os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
-	defer os.Unsetenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
+	t.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", "ghp_fooBARfoo")
 	viper.Set("addons", "")
 	cmd := FakeInitAddonsTestCmd()
 	b := bytes.NewBufferString("")
