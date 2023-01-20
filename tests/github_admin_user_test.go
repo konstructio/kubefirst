@@ -15,10 +15,14 @@ import (
 )
 
 // todo:
-//  - add docs
-//  - remove the hardcoded values
-//  - you can complain with Joao if you see it after january 23
-func TestGitHubUserCreation(t *testing.T) {
+//   - add docs
+//   - remove the hardcoded values
+//   - you can complain with Joao if you see it after january 23
+func TestGitHubUserCreationEndToEnd(t *testing.T) {
+
+	if testing.Short() {
+		t.Skip("skipping end to tend test")
+	}
 
 	//
 	// git
