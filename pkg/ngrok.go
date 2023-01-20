@@ -52,7 +52,7 @@ func RunNgrok(ctx context.Context) {
 		}
 
 		if ctx.Err() == nil {
-			log.Info().Msgf("Ngrok is accepting connections: %s from %s", conn.RemoteAddr())
+			log.Info().Msgf("Ngrok is accepting connections: %s", conn.RemoteAddr())
 			go func() {
 				err = handleConn(ctx, conn)
 				if err == nil {
