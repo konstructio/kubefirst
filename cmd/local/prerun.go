@@ -25,9 +25,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// todo: testing
-var cancelContext context.CancelFunc
-
 func validateLocal(cmd *cobra.Command, args []string) error {
 
 	// set log level

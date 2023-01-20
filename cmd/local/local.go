@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -40,6 +41,10 @@ var (
 	adminEmail     string
 	templateTag    string
 	logLevel       string
+
+	// ngrok context that is used to control ngrok context cancellation, and is called at the end of the installation,
+	// after the user closes Kubefirst installer.
+	cancelContext context.CancelFunc
 )
 
 func NewCommand() *cobra.Command {
