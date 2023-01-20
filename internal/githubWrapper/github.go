@@ -281,7 +281,7 @@ func (g GithubSession) RetrySearchPullRequestComment(
 	return false, nil
 }
 
-func (g GithubSession) UpdateWebhook(owner, repo, hookName, hookUrl, hookSecret string, hookEvents []string) error {
+func (g GithubSession) UpdateWebhook(owner, repo, hookName, hookUrl, lastHookUrl, hookSecret string, hookEvents []string) error {
 	// List webhooks
 	// Get webhook with name that matches, if exist delete it.
 	// Create new webhook with same name
@@ -294,10 +294,19 @@ func (g GithubSession) UpdateWebhook(owner, repo, hookName, hookUrl, hookSecret 
 	}
 	for i, hook := range hooks {
 		log.Debug().Msgf("%s, %s", i, hook)
-		if hook.Name == &hookName {
-			_, err := g.gitClient.Repositories.DeleteHook(g.context, owner, repo, *hook.ID)
+		oldHookURL := fmt.Sprint(hook.Config["url"])
+		fmt.Printf("\n Found webhook: %v", *hook)
+		fmt.Printf("\n Found webhook: %v", hook)
+		fmt.Printf("\n Found webhook: %v", oldHookURL)
+		//name of hook seems to be no-ops all are called "Web"
+		if oldHookURL == lastHookUrl {
+			fmt.Printf("\n Found match!! webhook: %v", *hook)
+			fmt.Printf("\n Found match!! webhook: %v", hook)
+			oldHookID := *hook.ID
+			fmt.Printf("\n Found match!! webhook: %d", oldHookID)
+			_, err := g.gitClient.Repositories.DeleteHook(g.context, owner, repo, oldHookID)
 			if err != nil {
-				return fmt.Errorf("error when removing a webhook: %v", err)
+				fmt.Printf("\n error when removing a webhook: %v", err)
 			}
 			break
 		}

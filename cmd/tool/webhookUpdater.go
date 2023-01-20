@@ -36,6 +36,7 @@ func runWebhookUpdater(cmd *cobra.Command, args []string) error {
 	}
 	atlantisSecretClient := clientset.CoreV1().Secrets("atlantis")
 	for true {
+		time.Sleep(5 * time.Second)
 		payload, err := CheckNgrokTunnel()
 		if err != nil {
 			msg := fmt.Sprintf("error checking status of tunnel: %v", err)
@@ -44,7 +45,8 @@ func runWebhookUpdater(cmd *cobra.Command, args []string) error {
 			// We will try again soon, once cluster is more ready
 			continue
 		}
-		if len(payload.Tunnels) > 0 {
+		fmt.Printf("%v", payload)
+		if len(payload.Tunnels) < 1 {
 			msg := "error reading tunnel info:  no tunnels"
 			log.Warn().Msg(msg)
 			fmt.Println(msg)
@@ -60,14 +62,14 @@ func runWebhookUpdater(cmd *cobra.Command, args []string) error {
 		}
 		hookSecret := k8s.GetSecretValue(atlantisSecretClient, "atlantis-secrets", "ATLANTIS_GH_WEBHOOK_SECRET")
 		hookEvents := []string{"issue_comment", "pull_request", "pull_request_review", "push"}
-		err = gitHubClient.UpdateWebhook(owner, repo, hookName, hookURL, hookSecret, hookEvents)
+		err = gitHubClient.UpdateWebhook(owner, repo, hookName, hookURL, lastTunnel, hookSecret, hookEvents)
 		if err != nil {
 			msg := fmt.Sprintf("error when updating a webhook: %v", err)
 			fmt.Println(msg)
 			return fmt.Errorf("error when updating a webhook: %v", err)
 		}
 		lastTunnel = hookURL
-		time.Sleep(20 * time.Second)
+
 	}
 
 	return nil
@@ -82,7 +84,7 @@ func validateWebhookUpdater(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("both repo(%s) and owner(%s) must be provided in order for webhookupdater to work as expected", repo, owner)
 	}
 	log.Info().Msgf("Validation: Success repo(%s) and owner(%s) provided as epxected", repo, owner)
-	fmt.Println(fmt.Sprintf("Validation: Success repo(%s) and owner(%s) provided as epxected", repo, owner))
+	fmt.Println(fmt.Sprintf("Validation: Success repo(%s) and owner(%s) provided as expected", repo, owner))
 	return nil
 }
 

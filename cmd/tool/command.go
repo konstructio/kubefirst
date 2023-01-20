@@ -33,8 +33,8 @@ func WebhookUpdater() *cobra.Command {
 		PreRunE: validateWebhookUpdater,
 	}
 
-	webhookUpdater.Flags().StringVar(&owner, "repo", "", "repository that will observed fro changes on tunnels")
-	webhookUpdater.Flags().StringVar(&repo, "owner", "", "owner of repository that will observed fro changes on tunnels, organization or user")
+	webhookUpdater.Flags().StringVar(&owner, "owner", "", "repository that will observed fro changes on tunnels")
+	webhookUpdater.Flags().StringVar(&repo, "repo", "", "owner of repository that will observed fro changes on tunnels, organization or user")
 
 	return webhookUpdater
 }
