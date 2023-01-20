@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"context"
-	"fmt"
 	"github.com/spf13/viper"
 	"golang.ngrok.com/ngrok"
 	"golang.ngrok.com/ngrok/config"
@@ -14,6 +13,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// RunNgrok creates a ngrok tunnel, listens for incoming connections, and starts a goroutine to handle each connection
+// with context passed to it, also it logs the errors and sets the url in viper. RunNgrok is called to run in goroutine
+// the caller needs to cancel the context to stop the tunnel.
 func RunNgrok(ctx context.Context) {
 	defer func() {
 		log.Info().Msg("RunNgrok context was cancelled, conn closed and not accepting new connections, and function exited")
@@ -31,7 +33,7 @@ func RunNgrok(ctx context.Context) {
 		}
 	}()
 
-	fmt.Println("tunnel created: ", tunnel.URL())
+	log.Info().Msgf("tunnel created: %s", tunnel.URL())
 	viper.Set("github.atlantis.webhook.url", tunnel.URL()+"/events")
 	viper.Set("ngrok.url", tunnel.URL())
 	err = viper.WriteConfig()
@@ -41,11 +43,8 @@ func RunNgrok(ctx context.Context) {
 	}
 
 	for {
-		fmt.Println("---debug---")
-		fmt.Println("current state of the ngrok context is:", ctx.Err())
-		fmt.Println("---debug---")
+		log.Debug().Msgf("current state of the ngrok context is (if nil, its healthy): %s", ctx.Err())
 
-		fmt.Println(tunnel.URL())
 		conn, err := tunnel.Accept()
 		if err != nil {
 			log.Error().Err(err).Msg("")
@@ -53,7 +52,7 @@ func RunNgrok(ctx context.Context) {
 		}
 
 		if ctx.Err() == nil {
-			log.Info().Msgf("Ngrok is accepting connections: %s", conn.RemoteAddr())
+			log.Info().Msgf("Ngrok is accepting connections: %s from %s", conn.RemoteAddr())
 			go func() {
 				err = handleConn(ctx, conn)
 				if err == nil {
@@ -71,6 +70,8 @@ func RunNgrok(ctx context.Context) {
 	}
 }
 
+// handleConn handles the connection by copying the data from the connection to the destination address and vice versa
+// it also logs the errors and closes the connection when the context is cancelled
 func handleConn(ctx context.Context, conn net.Conn) error {
 	next, err := net.Dial("tcp", ":80")
 	if err != nil {
