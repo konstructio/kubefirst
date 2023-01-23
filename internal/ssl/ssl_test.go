@@ -47,7 +47,7 @@ func TestArgoCertificateIntegration(t *testing.T) {
 		},
 		{
 			name:    "kubefirst",
-			address: "kubefirst-console.localdev.me",
+			address: "kubefirst.localdev.me",
 		},
 	}
 
