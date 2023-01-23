@@ -185,31 +185,32 @@ func (g GithubSession) CreatePR(
 	gitHubUser string,
 	baseBranch string,
 	title string,
-	body string) error {
+	body string) (*github.PullRequest, error) {
 
 	head := branchName
-	pr := github.NewPullRequest{
+	prData := github.NewPullRequest{
 		Title: &title,
 		Head:  &head,
 		Body:  &body,
 		Base:  &baseBranch,
 	}
 
-	_, resp, err := g.gitClient.PullRequests.Create(
+	pullRequest, resp, err := g.gitClient.PullRequests.Create(
 		context.Background(),
 		gitHubUser,
 		repoName,
-		&pr,
+		&prData,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	log.Info().Msgf("pull request create response http code: %d", resp.StatusCode)
 
-	return nil
+	return pullRequest, nil
 }
 
-func (g GithubSession) CommentPR(prNumber int, gitHubUser string, body string) error {
+func (g GithubSession) CommentPR(pullRequesrt *github.PullRequest, gitHubUser string, body string) error {
 
 	issueComment := github.IssueComment{
 		Body: &body,
@@ -219,7 +220,7 @@ func (g GithubSession) CommentPR(prNumber int, gitHubUser string, body string) e
 		context.Background(),
 		gitHubUser,
 		"gitops",
-		prNumber,
+		*pullRequesrt.Number,
 		&issueComment,
 	)
 	if err != nil {
@@ -232,13 +233,16 @@ func (g GithubSession) CommentPR(prNumber int, gitHubUser string, body string) e
 }
 
 // SearchWordInPullRequestComment look for a specific sentence in a GitHub Pull Request comment
-func (g GithubSession) SearchWordInPullRequestComment(gitHubUser string, gitOpsRepo string, searchFor string) (bool, error) {
+func (g GithubSession) SearchWordInPullRequestComment(gitHubUser string,
+	gitOpsRepo string,
+	pullRequest *github.PullRequest,
+	searchFor string) (bool, error) {
 
 	comments, r, err := g.gitClient.Issues.ListComments(
 		context.Background(),
 		gitHubUser,
 		gitOpsRepo,
-		1,
+		*pullRequest.Number,
 		&github.IssueListCommentsOptions{},
 	)
 	if err != nil {
@@ -258,16 +262,16 @@ func (g GithubSession) SearchWordInPullRequestComment(gitHubUser string, gitOpsR
 	return false, nil
 }
 
-// todo: not sure if this is the right place for this function
 func (g GithubSession) RetrySearchPullRequestComment(
 	gitHubUser string,
 	gitOpsRepo string,
+	pullRequest *github.PullRequest,
 	searchFor string,
 	logMessage string,
 ) (bool, error) {
 
 	for i := 0; i < 30; i++ {
-		ok, err := g.SearchWordInPullRequestComment(gitHubUser, gitOpsRepo, searchFor)
+		ok, err := g.SearchWordInPullRequestComment(gitHubUser, gitOpsRepo, pullRequest, searchFor)
 		if err != nil || !ok {
 			log.Info().Msg(logMessage)
 			time.Sleep(10 * time.Second)

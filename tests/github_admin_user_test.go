@@ -11,13 +11,11 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 )
 
-// todo:
-//   - add docs
-//   - remove the hardcoded values
-//   - you can complain with Joao if you see it after january 23
+// TestGitHubUserCreationEndToEnd is an end-to-end test that creates a new branch, modifies a file, commits the changes,
+// pushes to remote and creates a pull request on GitHub. It requires KUBEFIRST_GITHUB_AUTH_TOKEN environment variable
+// to be set in order to push the changes and create the pull request on GitHub. Unit tests will ignore it.
 func TestGitHubUserCreationEndToEnd(t *testing.T) {
 
 	if testing.Short() {
@@ -25,7 +23,7 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 	}
 
 	//
-	// git
+	// setup
 	//
 	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
 	if token == "" {
@@ -33,13 +31,18 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 	}
 
 	config := configs.ReadConfig()
+	baseBranch := "main"
+	branchName := "e2e_add_aone_user"
 	repoPath := config.K1FolderPath + "/gitops"
 	repo, err := gitClient.CloneLocalRepo(repoPath)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
-	workTree, err := gitClient.CheckoutBranch(repo, "main")
+	//
+	// prepare git
+	//
+	workTree, err := gitClient.CheckoutBranch(repo, baseBranch)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -49,15 +52,19 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	err = gitClient.CreateBranch(repo, "test-branch6")
+	err = gitClient.CreateBranch(repo, branchName)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
-	_, err = gitClient.CheckoutBranch(repo, "test-branch6")
+	_, err = gitClient.CheckoutBranch(repo, branchName)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
+
+	//
+	// file manipulation
+	//
 
 	// Read the file contents into a variable
 	adminGitHubFile := config.K1FolderPath + "/gitops/terraform/users/admins-github.tf"
@@ -69,6 +76,7 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 	var newFile []string
 	lines := strings.Split(string(data), "\n")
 
+	// remove commented lines
 	for _, line := range lines {
 		// remove line comment
 		if strings.HasPrefix(line, "#") {
@@ -96,11 +104,11 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 	}
 
 	//
-	// git
+	// update git remote
 	//
 	files := []string{"terraform/users/admins-github.tf"}
 
-	err = gitClient.CommitFiles(workTree, "test commit 1", files)
+	err = gitClient.CommitFiles(workTree, "[e2e] add aone user", files)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -121,31 +129,33 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 	gitHubUser := viper.GetString("github.user")
 
 	gitHubClient := githubWrapper.New()
-	err = gitHubClient.CreatePR(
-		"test-branch6",
-		"gitops",
+	pullRequest, err := gitHubClient.CreatePR(
+		branchName,
+		viper.GetString("gitops.repo"),
 		gitHubUser,
-		"main",
-		"testing123",
-		"content body",
+		baseBranch,
+		"[e2e] add aone user",
+		"this is automatically created by Kubefirst e2e test",
 	)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	// todo: implement atlantis waiting
-	// it will require to update atlantis waiting function, and will be done next
-	println("waiting......")
-	time.Sleep(60 * time.Second)
-	//ok, err := gitHubClient.RetrySearchPullRequestComment(
-	//	githubOwner,
-	//	pkg.KubefirstGitOpsRepository,
-	//	"To **apply** all unapplied plans from this pull request, comment",
-	//	`waiting "atlantis plan" finish to proceed...`,
-	//)
-	//if err != nil {
-	//	t.Error(err.Error())
-	//}
-	err = gitHubClient.CommentPR(2, gitHubUser, "atlantis apply")
+
+	// wait for atlantis update
+	ok, err := gitHubClient.RetrySearchPullRequestComment(
+		viper.GetString("github.owner"),
+		pkg.KubefirstGitOpsRepository,
+		pullRequest,
+		"To **apply** all unapplied plans from this pull request, comment",
+		`waiting "atlantis plan" finish to proceed...`,
+	)
+	if ok != true {
+		t.Errorf("atlantis plan failed")
+	}
+	if err != nil {
+		t.Error(err.Error())
+	}
+	err = gitHubClient.CommentPR(pullRequest, gitHubUser, "atlantis apply")
 	if err != nil {
 		t.Errorf(err.Error())
 	}

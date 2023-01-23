@@ -47,10 +47,12 @@ func TestVaultLoginEndToEnd(t *testing.T) {
 		t.Error("Vault token is empty")
 	}
 
+	// Headless is active by default
 	opts := append(chromedp.DefaultExecAllocatorOptions[3:],
 		chromedp.NoFirstRun,
 		chromedp.NoDefaultBrowserCheck,
 		chromedp.IgnoreCertErrors,
+		chromedp.Headless,
 	)
 
 	ctx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
@@ -136,6 +138,8 @@ func TestVaultLoginEndToEnd(t *testing.T) {
 	if err = chromedp.Run(ctx, chromedp.SetValue(`//select[@class="select"]`, "userpass", chromedp.BySearch)); err != nil {
 		t.Error(err)
 	}
+	// force wait above select update
+	time.Sleep(1 * time.Second)
 
 	if err = chromedp.Run(ctx, chromedp.SendKeys(`//input[@id="username"]`, username)); err != nil {
 		t.Error(err)
