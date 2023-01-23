@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/rs/zerolog"
 	stdLog "log"
 	"os"
 	"time"
@@ -55,7 +56,7 @@ func main() {
 	stdLog.SetFlags(stdLog.Ldate | stdLog.Lmicroseconds | stdLog.Llongfile)
 
 	// setup Zerolog
-	log.Logger = pkg.ZerologSetup(file)
+	log.Logger = pkg.ZerologSetup(file, zerolog.InfoLevel)
 
 	config := configs.ReadConfig()
 	// setup Viper (for non-local resources)
