@@ -32,7 +32,7 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 
 	config := configs.ReadConfig()
 	baseBranch := "main"
-	branchName := "e2e_add_aone_user"
+	branchName := "e2e_add_new_user"
 	repoPath := config.K1FolderPath + "/gitops"
 	repo, err := gitClient.CloneLocalRepo(repoPath)
 	if err != nil {
@@ -108,7 +108,7 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 	//
 	files := []string{"terraform/users/admins-github.tf"}
 
-	err = gitClient.CommitFiles(workTree, "[e2e] add aone user", files)
+	err = gitClient.CommitFiles(workTree, "[e2e] add new user", files)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -134,7 +134,7 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 		viper.GetString("gitops.repo"),
 		gitHubUser,
 		baseBranch,
-		"[e2e] add aone user",
+		"[e2e] add new user",
 		"this is automatically created by Kubefirst e2e test",
 	)
 	if err != nil {
