@@ -167,6 +167,7 @@ func GetVaultTerraformEnvs(envs map[string]string) map[string]string {
 	envs["TF_VAR_civo_token"] = os.Getenv("CIVO_TOKEN")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
 	envs["TF_VAR_atlantis_repo_webhook_url"] = viper.GetString("github.atlantis.webhook.url")
+	envs["TF_VAR_kubefirst_bot_ssh_private_key"] = viper.GetString("kubefirst.bot.private-key")
 	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kubefirst.bot.public-key")
 
 	return envs

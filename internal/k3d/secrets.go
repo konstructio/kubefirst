@@ -189,7 +189,7 @@ func AddK3DSecrets(dryRun bool, kubeconfigPath string) error {
 		"AWS_SECRET_ACCESS_KEY": []byte("feedkraystars"),
 	}
 	chartmuseumSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "chartmuseum", Namespace: "chartmuseum"},
+		ObjectMeta: metav1.ObjectMeta{Name: "chartmuseum-secrets", Namespace: "chartmuseum"},
 		Data:       dataChartmuseum,
 	}
 	_, err = clientset.CoreV1().Secrets("chartmuseum").Create(context.TODO(), chartmuseumSecret, metav1.CreateOptions{})
