@@ -31,6 +31,11 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 	}
 
 	config := configs.ReadConfig()
+	err := pkg.SetupViper(config)
+	if err != nil {
+		t.Error(err.Error())
+	}
+
 	baseBranch := "main"
 	branchName := "e2e_add_new_user"
 	repoPath := config.K1FolderPath + "/gitops"
@@ -122,17 +127,13 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	err = pkg.SetupViper(config)
-	if err != nil {
-		t.Error(err.Error())
-	}
-	gitHubUser := viper.GetString("github.user")
+	gitHubOwner := viper.GetString("github.owner")
 
 	gitHubClient := githubWrapper.New()
 	pullRequest, err := gitHubClient.CreatePR(
 		branchName,
 		viper.GetString("gitops.repo"),
-		gitHubUser,
+		gitHubOwner,
 		baseBranch,
 		"[e2e] add new user",
 		"this is automatically created by Kubefirst e2e test",
@@ -143,7 +144,7 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 
 	// wait for atlantis update
 	ok, err := gitHubClient.RetrySearchPullRequestComment(
-		viper.GetString("github.owner"),
+		gitHubOwner,
 		pkg.KubefirstGitOpsRepository,
 		pullRequest,
 		"To **apply** all unapplied plans from this pull request, comment",
@@ -155,7 +156,7 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	err = gitHubClient.CommentPR(pullRequest, gitHubUser, "atlantis apply")
+	err = gitHubClient.CommentPR(pullRequest, gitHubOwner, "atlantis apply")
 	if err != nil {
 		t.Errorf(err.Error())
 	}
