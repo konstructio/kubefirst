@@ -12,7 +12,7 @@ Unfortunately, we have some limitations running kubefirst locally, and we listed
 - OS: macOS (Intel or Apple Silicon M1/M2) and Linux AMD64
 - CPU: A Quad Core CPU or Apple Silicon with M1 or M2 chip
 - RAM: 16GB RAM
-- HDD: 10GB HD space (docker images)
+- HDD: 10GB HD space (docker images) + 5GB HD space (minio-storage)
 
 ## Features Limitations
 

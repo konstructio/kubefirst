@@ -2,9 +2,11 @@ package k3d
 
 import (
 	"errors"
-	"github.com/rs/zerolog/log"
+	"fmt"
 	"os"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -18,9 +20,15 @@ func CreateK3dCluster() error {
 	// I tried Terraform templates using: https://registry.terraform.io/providers/pvotal-tech/k3d/latest/docs/resources/cluster
 	// it didn't worked as expected.
 	if !viper.GetBool("k3d.created") {
+		volumeFolder := fmt.Sprintf("%s/minio-storage", config.K1FolderPath)
+		err := os.Mkdir(volumeFolder, 0700)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+			return errors.New("error creating minio-storage directory")
+		}
 		// k3d cluster create kubefirst  --agents 3 --agents-memory 1024m  --registry-create k3d-kubefirst-registry:63630
 		//_, _, err := pkg.ExecShellReturnStrings(config.K3dPath, "cluster", "create", viper.GetString("cluster-name"),
-		_, _, err := pkg.ExecShellReturnStrings(config.K3dPath, "cluster", "create",
+		_, _, err = pkg.ExecShellReturnStrings(config.K3dPath, "cluster", "create",
 			viper.GetString("cluster-name"),
 			"--agents", "3",
 			"--agents-memory", "1024m",
@@ -28,6 +36,7 @@ func CreateK3dCluster() error {
 			"--k3s-arg", `--kubelet-arg=eviction-hard=imagefs.available<1%,nodefs.available<1%@agent:*`,
 			"--k3s-arg", `--kubelet-arg=eviction-minimum-reclaim=imagefs.available=1%,nodefs.available=1%@agent:*`,
 			"--port", "80:80@loadbalancer",
+			"--volume", volumeFolder+":/tmp/minio-storage",
 			"--port", "443:443@loadbalancer")
 		if err != nil {
 			log.Info().Msg("error creating k3d cluster")
