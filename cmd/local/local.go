@@ -402,7 +402,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		title := "update S3 backend to minio / internal k8s dns"
 		body := "use internal Kubernetes dns"
 		gitHubUser := viper.GetString("github.user")
-		err = gitHubClient.CreatePR(branchName, "gitops", gitHubUser, base, title, body)
+		pullRequest, err := gitHubClient.CreatePR(branchName, "gitops", gitHubUser, base, title, body)
 		if err != nil {
 			log.Error().Err(err).Msg("")
 		}
@@ -412,6 +412,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		ok, err := gitHubClient.RetrySearchPullRequestComment(
 			githubOwner,
 			pkg.KubefirstGitOpsRepository,
+			pullRequest,
 			"To **apply** all unapplied plans from this pull request, comment",
 			`waiting "atlantis plan" finish to proceed...`,
 		)
@@ -425,7 +426,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 			return
 		}
 
-		if err := gitHubClient.CommentPR(1, gitHubUser, "atlantis apply"); err != nil {
+		if err := gitHubClient.CommentPR(pullRequest, gitHubUser, "atlantis apply"); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 		wg.Done()
