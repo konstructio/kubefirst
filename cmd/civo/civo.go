@@ -156,7 +156,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
 		}
 
-		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", githubOwner), silentMode)
+		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", githubOwnerFlag), silentMode)
 		viper.Set("terraform.github.apply.complete", true)
 		viper.WriteConfig()
 	} else {
@@ -179,10 +179,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationGitopsRepoURL)
 		}
 
-		log.Printf("successfully pushed gitops to git@github.com/%s/gitops", githubOwner)
+		log.Printf("successfully pushed gitops to git@github.com/%s/gitops", githubOwnerFlag)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
-		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", githubOwner), silentMode)
+		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", githubOwnerFlag), silentMode)
 		viper.Set("github.gitops.repo.pushed", true)
 		viper.WriteConfig()
 	} else {
@@ -212,10 +212,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationMetaphorFrontendRepoURL)
 		}
 
-		log.Printf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwner)
+		log.Printf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwnerFlag)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
-		pkg.InformUser(fmt.Sprintf("pushed detokenized metaphor-frontend repository to github.com/%s", githubOwner), silentMode)
+		pkg.InformUser(fmt.Sprintf("pushed detokenized metaphor-frontend repository to github.com/%s", githubOwnerFlag), silentMode)
 
 		viper.Set("template-repo.metaphor-frontend.pushed", true)
 		viper.WriteConfig()
@@ -497,10 +497,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			log.Panic().Msgf("error pushing detokenized metaphor repository to remote %s", destinationMetaphorFrontendRepoURL)
 		}
 
-		log.Printf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwner)
+		log.Printf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwnerFlag)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
-		pkg.InformUser(fmt.Sprintf("pushed metaphor-frontend content to in github.com/%s", githubOwner), silentMode)
+		pkg.InformUser(fmt.Sprintf("pushed metaphor-frontend content to in github.com/%s", githubOwnerFlag), silentMode)
 
 		// todo emit init telemetry end
 
@@ -539,7 +539,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// system is available
 	// pkg.InformUser("Deploying metaphor applications", silentMode)
 	// metaphorBranch := viper.GetString("template-repo.metaphor.branch")
-	// err := metaphor.DeployMetaphorGithubLocal(dryRun, false, githubOwner, metaphorBranch, "")
+	// err := metaphor.DeployMetaphorGithubLocal(dryRun, false, githubOwnerFlag, metaphorBranch, "")
 	// if err != nil {
 	// 	pkg.InformUser("Error deploy metaphor applications", silentMode)
 	// 	log.Info().Msg("Error running deployMetaphorCmd")
@@ -566,7 +566,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// // force update cloned gitops-template terraform files to use Minio backend
 	// err = gitClient.UpdateLocalTerraformFilesAndPush(
 	// 	githubHost,
-	// 	githubOwner,
+	// 	githubOwnerFlag,
 	// 	k1Dir,
 	// 	localRepo,
 	// 	remoteName,
@@ -607,7 +607,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// 	time.Sleep(5 * time.Second)
 
 	// 	ok, err := gitHubClient.RetrySearchPullRequestComment(
-	// 		githubOwner,
+	// 		githubOwnerFlag,
 	// 		gitopsRepo,
 	// 		"To **apply** all unapplied plans from this pull request, comment",
 	// 		`waiting "atlantis plan" finish to proceed...`,

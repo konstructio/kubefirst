@@ -7,7 +7,7 @@ var (
 	cloudRegionFlag            string
 	cloudProviderFlag          string
 	clusterNameFlag            string
-	githubOwner                string
+	githubOwnerFlag            string
 	gitopsTemplateURLFlag      string
 	gitopsTemplateBranchFlag   string
 	gitProviderFlag            string
@@ -36,7 +36,7 @@ func NewCommand() *cobra.Command {
 	civoCmd.Flags().StringVar(&cloudProviderFlag, "cloud-provider", "civo", "the git provider to use. (i.e. gitlab|github)")
 	civoCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	civoCmd.Flags().StringVar(&domainNameFlag, "domain-name", "k-ray.space", "the Civo DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com)")
-	civoCmd.Flags().StringVar(&githubOwner, "github-owner", "your-dns-io", "the GitHub owner of the new gitops and metaphor repositories")
+	civoCmd.Flags().StringVar(&githubOwnerFlag, "github-owner", "your-dns-io", "the GitHub owner of the new gitops and metaphor repositories")
 	// civoCmd.MarkFlagRequired("github-owner")
 	civoCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "civo-domain-refactor", "the branch to clone for the gitops-template repository")
 	civoCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
