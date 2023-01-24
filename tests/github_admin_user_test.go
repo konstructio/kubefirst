@@ -92,6 +92,9 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 		if strings.Contains(line, "module.kubefirst_bot.vault_identity_entity_id") {
 			line = line + ","
 		}
+		if strings.Contains(line, "admin_one_github_username") {
+			line = strings.Replace(line, "admin_one_github_username", "adminone_gh_user", 1)
+		}
 
 		newFile = append(newFile, line+"\n")
 	}
