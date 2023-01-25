@@ -14,7 +14,7 @@ To use the local version of Kubefirst, you will need to have [Docker installed](
 
 ## 2 Hour Expiration Warning
 
-The ngrok tunnel used for kubefirst local has a 2-hour expiration unless you create an account with ngrok. this expiration will prevent you from using automated infrastructure as code through atlantis, but the rest of the platform will continue to function beyond that ngrok evaluation period. [Create an account with ngrok](https://dashboard.ngrok.com/signup) to prevent this.
+The ngrok tunnel used for kubefirst local has a 2-hour expiration unless you create an account with ngrok. This expiration will prevent you from using automated infrastructure as code through atlantis, but the rest of the platform will continue to function beyond that ngrok evaluation period. [Create an account with ngrok](https://dashboard.ngrok.com/signup) to prevent this.
 
 ## Create your new local cluster
 
