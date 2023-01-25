@@ -22,7 +22,7 @@ kubefirst local
 
 If your run is not successful, errors and troubleshooting information will be stored in a local log file specified during the installation run.
 
-This will be followed by the  the instructions prompt to populate the KUBEFIRST_GITHUB_AUTH_TOKEN env variable. Press ENTER and follow the prompt.
+This will be followed by the  the instructions prompt to populate the `KUBEFIRST_GITHUB_AUTH_TOKEN` env variable. Press `ENTER` and follow the prompt to continue.
 
 The installation process may take a few minutes. If you are successful you should see:
 
@@ -31,6 +31,8 @@ Cluster "kubefirst" is up and running!
 ```
 
 ### Installed Applications
+
+Kubefirst implicitly contains many applications to provide starting capabilities for new users. Operational knowledge of all applications is not necessary to begin using Kubefirst, but is useful to understand your cluster,
 
 A newly created local KubeFirst cluster contains:
 
