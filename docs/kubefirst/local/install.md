@@ -9,7 +9,8 @@ To use the local version of Kubefirst, you will need to have [Docker installed](
 ### Prerequisites
 
 - [To install kubefirst CLI](../overview.html#how-to-install-kubefirst-cli)
-
+- [To install docker](../https://docs.docker.com/get-docker/)
+- [A github account, without an existing repo named 'gitops'](../https://github.com/)
 
 ## Create your new local cluster
 
@@ -18,6 +19,34 @@ To create a new Kubefirst cluster locally, run
 ```shell
 kubefirst local
 ```
+
+If your run is not successful, errors and troubleshooting information will be stored in a local log file specified during the installation run.
+
+This will be followed by the  the instructions prompt to populate the KUBEFIRST_GITHUB_AUTH_TOKEN env variable. Press ENTER and follow the prompt.
+
+The installation process may take a few minutes. If you are successful you should see:
+
+```shell
+Cluster "kubefirst" is up and running!
+```
+
+### Installed Applications
+
+A newly created local KubeFirst cluster contains:
+
+- A private repo named `gitops`. The applications that you build and release on the kubefirst platform will also be registered here in the development, staging, and production folders. 
+- [Argo CD](../https://github.com/argoproj/argo-cd) - GitOps Continuous Delivery
+- [Argo Workflows](../https://argoproj.github.io/argo-workflows/) - Application Continuous Integration
+- [Atlantis](../https://www.runatlantis.io/) - Terraform Workflow Automation
+- [Certificate Issuers](../https://letsencrypt.org/certificates/) - Let's Encrypt browser-trusted certificates
+- [Cert Manager](../https://github.com/cert-manager/cert-manager) - Certificate Automation Utility
+- [Chart Museum](../https://github.com/helm/chartmuseum) - Helm Chart Registry
+- [External Secrets](../https://github.com/external-secrets/kubernetes-external-secrets) - Syncs Kubernetes secrets with Vault secrets
+- [GitHub Action Runner](../https://github.com/features/actions) - Self Hosted GitHub Action Runner
+- [Nginx Ingress Controller](../https://docs.nginx.com/nginx-ingress-controller/intro/overview/) - Ingress Controller
+- [Metaphor](../https://github.com/kubefirst/metaphor-frontend-template) - A sample app to demonstrate CI/CD in on Kubernetes. Contains Devlopment, Staging, and Production environments.
+- [Vault](../https://github.com/hashicorp/vault) - Secrets Management
+
 
 ### GitHub Authorization during install
 
@@ -29,7 +58,7 @@ At the beginning of the installation, Kubefirst will ask you to generate the Git
 
 The [gitops repo](https://github.com/kubefirst/gitops-template) that we create for you will power your local Kubefirst platform. The [metaphor-frontend](https://github.com/kubefirst/metaphor-frontend-template) repo is your microservice example, which demonstrate how to publish and gitops-deliver applications to your new development, staging, and production namespaces in your new local cluster.
 
-### Super powers user needs and Certificates to deal with HTTPS locally.
+### How to resolve HTTPS Certificate Warnings
 
 To increase the experience of Cloud running Kubefirst locally, we use [Mkcert](https://github.com/FiloSottile/mkcert) to generate local certificates and serve `https` with Linkerd Ingress Controller.
 During installation, we generate these certificates and push them to Kubernetes as secrets to attach to Ingress resources.
