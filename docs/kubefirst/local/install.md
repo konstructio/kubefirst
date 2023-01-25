@@ -22,7 +22,7 @@ kubefirst local
 
 If your run is not successful, errors and troubleshooting information will be stored in a local log file specified during the installation run.
 
-This will be followed by the  the instructions prompt to populate the `KUBEFIRST_GITHUB_AUTH_TOKEN` env variable for your [github token](../../common/github-token.md). Press `ENTER` and follow the prompt to continue.
+This will be followed by the instructions prompt to populate the `KUBEFIRST_GITHUB_AUTH_TOKEN` env variable for your [github token](../../common/github-token.md). Press `ENTER` and follow the prompt to continue.
 
 The installation process may take a few minutes. If you are successful you should see:
 
