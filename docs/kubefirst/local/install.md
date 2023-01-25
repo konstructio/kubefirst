@@ -4,11 +4,11 @@
 
 To use the local version of Kubefirst, you will need to have [Docker installed](https://docs.docker.com/get-docker/). You will also need a GitHub account: GitLab for local, and local git repositories are not supported yet.
 
-![Kubefirst local installation diagram](../../img/kubefirst/local/kubefirst-cluster-create.png)
+![Kubefirst local installation diagram](img/kubefirst/local/kubefirst-cluster-create.png)
 
 ### Prerequisites
 
-- [To install kubefirst CLI](../overview.html#how-to-install-kubefirst-cli)
+- [To install kubefirst CLI](overview.html#how-to-install-kubefirst-cli)
 - [To install docker](https://docs.docker.com/get-docker/)
 - [A github account, without an existing repo named 'gitops'](https://github.com/)
 
@@ -22,7 +22,7 @@ kubefirst local
 
 If your run is not successful, errors and troubleshooting information will be stored in a local log file specified during the installation run.
 
-This will be followed by the instructions prompt to populate the `KUBEFIRST_GITHUB_AUTH_TOKEN` env variable for your [github token](../../common/github-token.md). Press `ENTER` and follow the prompt to continue.
+This will be followed by the instructions prompt to populate the `KUBEFIRST_GITHUB_AUTH_TOKEN` env variable for your [github token](common/github-token.md). Press `ENTER` and follow the prompt to continue.
 
 The installation process may take a few minutes. If you are successful you should see:
 
@@ -63,10 +63,10 @@ This step will install the CA (Certificate Authority) of MkCert in your trusted 
 
 ### Atlantis and Ngrok integration
 
-[Ngrok](../https://ngrok.com/) is a tool that allows Kubefirst to expose a local server to the internet via an [ngrok Secure Tunnel](../https://ngrok.com/docs/secure-tunnels/). Kubefirst opens an ngrok Secure Tunnel tunnel during the installation to send events to Atlantis. When the installation finishes, the terminal window hangs at the handoff screen.
+[Ngrok](https://ngrok.com/) is a tool that allows Kubefirst to expose a local server to the internet via an [ngrok Secure Tunnel](https://ngrok.com/docs/secure-tunnels/). Kubefirst opens an ngrok Secure Tunnel tunnel during the installation to send events to Atlantis. When the installation finishes, the terminal window hangs at the handoff screen.
 If the handoff screen in your terminal is closed, the Kubefirst installation terminates and the Ngrok Secure Tunnel is closed.
 
-During cluster provisioning, Terraform communicates with the host machine to create the desired resources. When Atlantis is installed via Kubefirst, it will use ngrok to expose the Atlantis server to the internet via [webhook](../https://zapier.com/blog/what-are-webhooks/?utm_source=google&utm_medium=cpc&utm_campaign=gaw-usa-nua-search-blog-dsa&utm_adgroup=DSA-Guides-What_are_webhooks&utm_term=&utm_content=_pcrid_630760751271_pkw__pmt__pdv_c_slid__pgrid_145358980000_ptaid_dsa-1873981911115_&gclid=Cj0KCQiAw8OeBhCeARIsAGxWtUxZLa8mXxQUt484tVLVjTCCl3zlHEmklG2Gu-EXdy1u521wyIg6EcoaAlS5EALw_wcB).
+During cluster provisioning, Terraform communicates with the host machine to create the desired resources. When Atlantis is installed via Kubefirst, it will use ngrok to expose the Atlantis server to the internet via [webhook](https://zapier.com/blog/what-are-webhooks/?utm_source=google&utm_medium=cpc&utm_campaign=gaw-usa-nua-search-blog-dsa&utm_adgroup=DSA-Guides-What_are_webhooks&utm_term=&utm_content=_pcrid_630760751271_pkw__pmt__pdv_c_slid__pgrid_145358980000_ptaid_dsa-1873981911115_&gclid=Cj0KCQiAw8OeBhCeARIsAGxWtUxZLa8mXxQUt484tVLVjTCCl3zlHEmklG2Gu-EXdy1u521wyIg6EcoaAlS5EALw_wcB).
 
 ## After installation
 
