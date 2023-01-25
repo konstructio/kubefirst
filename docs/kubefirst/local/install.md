@@ -55,7 +55,7 @@ To resolve the warning that the browser shows when you access one of your applic
 ```shel
 mkcert -install
 ```
- We use [Mkcert](https://github.com/FiloSottile/mkcert) to generate local certificates and serve `https` with Linkerd Ingress Controller.
+ We use [Mkcert](https://github.com/FiloSottile/mkcert) to generate local certificates and serve `https` with the Traefik Ingress Controller.
 
 During installation, Kubefirst generates these certificates and pushes them to Kubernetes as secrets to attach to Ingress resources. The browser does not recognize auto-assigned certificates as trusted certificates and will generate security errors. 
 
