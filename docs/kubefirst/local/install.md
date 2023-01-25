@@ -37,17 +37,17 @@ Kubefirst implicitly contains many applications to provide starting capabilities
 A newly created local KubeFirst cluster contains:
 
 - A private repo named `gitops`. The applications that you build and release on the kubefirst platform will also be registered here in the development, staging, and production folders. 
-- [Argo CD](../https://github.com/argoproj/argo-cd) - GitOps Continuous Delivery
-- [Argo Workflows](../https://argoproj.github.io/argo-workflows/) - Application Continuous Integration
-- [Atlantis](../https://www.runatlantis.io/) - Terraform Workflow Automation
-- [Certificate Issuers](../https://letsencrypt.org/certificates/) - Let's Encrypt browser-trusted certificates
-- [Cert Manager](../https://github.com/cert-manager/cert-manager) - Certificate Automation Utility
-- [Chart Museum](../https://github.com/helm/chartmuseum) - Helm Chart Registry
-- [External Secrets](../https://github.com/external-secrets/kubernetes-external-secrets) - Syncs Kubernetes secrets with Vault secrets
-- [GitHub Action Runner](../https://github.com/features/actions) - Self Hosted GitHub Action Runner
-- [Nginx Ingress Controller](../https://docs.nginx.com/nginx-ingress-controller/intro/overview/) - Ingress Controller
-- [Metaphor](../https://github.com/kubefirst/metaphor-frontend-template) - A sample app to demonstrate CI/CD in on Kubernetes. Contains Devlopment, Staging, and Production environments.
-- [Vault](../https://github.com/hashicorp/vault) - Secrets Management
+- [Argo CD](https://github.com/argoproj/argo-cd) - GitOps Continuous Delivery
+- [Argo Workflows](https://argoproj.github.io/argo-workflows/) - Application Continuous Integration
+- [Atlantis](https://www.runatlantis.io/) - Terraform Workflow Automation
+- [Certificate Issuers](https://letsencrypt.org/certificates/) - Let's Encrypt browser-trusted certificates
+- [Cert Manager](https://github.com/cert-manager/cert-manager) - Certificate Automation Utility
+- [Chart Museum](https://github.com/helm/chartmuseum) - Helm Chart Registry
+- [External Secrets](https://github.com/external-secrets/kubernetes-external-secrets) - Syncs Kubernetes secrets with Vault secrets
+- [GitHub Action Runner](https://github.com/features/actions) - Self Hosted GitHub Action Runner
+- [Nginx Ingress Controller](https://docs.nginx.com/nginx-ingress-controller/intro/overview/) - Ingress Controller
+- [Metaphor](https://github.com/kubefirst/metaphor-frontend-template) - A sample app to demonstrate CI/CD in on Kubernetes. Contains Devlopment, Staging, and Production environments.
+- [Vault](https://github.com/hashicorp/vault) - Secrets Management
 
 ### How to resolve HTTPS Certificate Warnings
 
