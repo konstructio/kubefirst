@@ -7,7 +7,7 @@ Kubefirst issue GitHub Tokens at the beginning of the installation using [GitHub
 ## GitHub Token Scopes
 
 Kubefirst uses the following scopes to provision the Kubefirst platform:
-![](../img/kubefirst/github/token.png)
+![](../img/kubefirst/github/scopes.png)
 
 ## How to create a GitHub Token
 
