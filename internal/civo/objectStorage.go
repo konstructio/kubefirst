@@ -7,10 +7,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// todo need to refactor to use the civo client reference
-// todo need to refactor to use the civo client reference
-// todo need to refactor to use the civo client reference
-
 func CreateStorageBucket(accessKeyId, bucketName, region string) (civogo.ObjectStore, error) {
 	client, err := civogo.NewClient(os.Getenv("CIVO_TOKEN"), region)
 	if err != nil {
@@ -31,6 +27,7 @@ func CreateStorageBucket(accessKeyId, bucketName, region string) (civogo.ObjectS
 	return *bucket, nil
 }
 
+// todo refactor or remove this internal library and use the native client. functionality. see next todo client.
 func GetAccessCredentials(credentialName, region string) (civogo.ObjectStoreCredential, error) {
 
 	creds, err := checkKubefirstCredentials(credentialName, region)
@@ -63,7 +60,7 @@ func checkKubefirstCredentials(credentialName, region string) (civogo.ObjectStor
 		return civogo.ObjectStoreCredential{}, err
 	}
 
-	// todo accommodate pagination
+	// todo client.FindObjectStoreCredential()
 	log.Info().Msgf("looking for credential: %s", credentialName)
 	remoteCredentials, err := client.ListObjectStoreCredentials()
 	if err != nil {
@@ -83,6 +80,7 @@ func checkKubefirstCredentials(credentialName, region string) (civogo.ObjectStor
 	return creds, err
 }
 
+// todo client.NewObjectStoreCredential()
 func createAccessCredentials(credentialName, region string) (civogo.ObjectStoreCredential, error) {
 
 	client, err := civogo.NewClient(os.Getenv("CIVO_TOKEN"), region)

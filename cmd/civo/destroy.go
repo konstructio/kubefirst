@@ -1,18 +1,25 @@
 package civo
 
 import (
+	"crypto/tls"
 	"errors"
-	"log"
+	"fmt"
+	"net/http"
+	"os"
 
+	"github.com/civo/civogo"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 func destroyCivo(cmd *cobra.Command, args []string) error {
-	log.Println("running destroy for civo kubefirst installation")
+	log.Info().Msg("running destroy for civo kubefirst installation")
 
 	// nextKubefirstDestroyCommand := "`kubefirst aws destroy"
 	// nextKubefirstDestroyCommand = fmt.Sprintf("%s \n  --skip-tf-aws", nextKubefirstDestroyCommand)
@@ -51,11 +58,71 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	if viper.GetBool("terraform.civo.apply.complete") || !viper.GetBool("terraform.civo.destroy.complete") {
 		pkg.InformUser("destroying civo resources with terraform", silentMode)
 
+		clusterName := viper.GetString("kubefirst.cluster-name")
+		kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
+		region := viper.GetString("cloud-region")
+
+		client, err := civogo.NewClient(os.Getenv("CIVO_TOKEN"), region)
+		if err != nil {
+			log.Info().Msg(err.Error())
+			return err
+		}
+
+		cluster, err := client.FindKubernetesCluster(clusterName)
+		if err != nil {
+			return err
+		}
+		fmt.Println("cluster name: " + cluster.ID)
+
+		clusterVolumes, err := client.ListVolumesForCluster(cluster.ID)
+		if err != nil {
+			return err
+		}
+
+		log.Info().Msg("opening argocd port forward")
+		//* ArgoCD port-forward
+		argoCDStopChannel := make(chan struct{}, 1)
+		defer func() {
+			close(argoCDStopChannel)
+		}()
+		k8s.OpenPortForwardPodWrapper(
+			kubeconfigPath,
+			"argo-cd-server", // todo fix this, it should `argocd`
+			"argocd",
+			8080,
+			8080,
+			argoCDStopChannel,
+		)
+
+		log.Info().Msg("getting new auth token for argocd")
+		argocdAuthToken, err := argocd.GetArgoCDToken(viper.GetString("argocd.admin.username"), viper.GetString("argocd.admin.password"))
+		if err != nil {
+			return err
+		}
+
+		// todo fix false
+		pkg.InformUser(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")), false)
+
+		customTransport := http.DefaultTransport.(*http.Transport).Clone()
+		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		argocdHttpClient := http.Client{Transport: customTransport}
+		log.Info().Msg("deleting the registry application")
+		argocd.DeleteApplication(&argocdHttpClient, "registry", argocdAuthToken, "true")
+
+		for _, vol := range clusterVolumes {
+			fmt.Println("removing volume with name: " + vol.Name)
+			_, err := client.DeleteVolume(vol.ID)
+			if err != nil {
+				return err
+			}
+			fmt.Println("volume " + vol.ID + " deleted")
+		}
+
 		tfEntrypoint := config.GitOpsRepoPath + "/terraform/civo"
 		tfEnvs := map[string]string{}
 		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
 		tfEnvs = terraform.GetGithubTerraformEnvs(tfEnvs)
-		err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+		err = terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)
 			return err

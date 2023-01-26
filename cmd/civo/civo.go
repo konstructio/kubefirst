@@ -390,7 +390,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// todo: can I remove it?
 	time.Sleep(20 * time.Second)
 
-	// configure vault with terraform
+	//* configure vault with terraform
 	executionControl = viper.GetBool("terraform.vault.apply.complete")
 	if !executionControl {
 		// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
@@ -420,7 +420,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already executed vault terraform")
 	}
 
-	// create users
+	//* create users
 	executionControl = viper.GetBool("terraform.users.apply.complete")
 	if !executionControl {
 		pkg.InformUser("applying users terraform", silentMode)
@@ -444,7 +444,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// progressPrinter.IncrementTracker("step-apps", 1)
 	// progressPrinter.IncrementTracker("step-base", 1)
 	// progressPrinter.IncrementTracker("step-apps", 1)
-	// Chartmuseum port-forward
+	//* Chartmuseum port-forward
 	chartmuseumStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(chartmuseumStopChannel)
