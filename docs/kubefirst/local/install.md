@@ -10,7 +10,7 @@ To use the local version of Kubefirst, you will need to have [Docker installed](
 
 - [To install kubefirst CLI](../overview.html#how-to-install-kubefirst-cli)
 - [To install docker](https://docs.docker.com/get-docker/)
-- [A github account, without an existing repo named 'gitops'](https://github.com/)
+- [A personal github account](https://github.com/) (`gitops` and `metaphor-frontend` repositories will be created in your account and should not preexist)
 
 ## 2 Hour Expiration Warning
 
@@ -26,7 +26,9 @@ kubefirst local
 
 If your run is not successful, errors and troubleshooting information will be stored in a local log file specified during the installation run.
 
-This will be followed by the instructions prompt to populate the `KUBEFIRST_GITHUB_AUTH_TOKEN` env variable for your [github token](../common/github-token.md). Press `ENTER` and follow the prompt to continue.
+This will be followed by the instructions prompt to populate the `KUBEFIRST_GITHUB_AUTH_TOKEN` env variable for your [github token](../../common/github-token.md). Press `ENTER` and follow the prompt to continue.
+
+Please export a `KUBEFIRST_GITHUB_AUTH_TOKEN` if you need your ephemeral environment for more than 8 hours. The ephemeral GitHub tokens that we can create for you expire after 8 hours.
 
 The installation process may take a few minutes. If you are successful you should see:
 
@@ -38,19 +40,17 @@ Cluster "kubefirst" is up and running!
 
 Kubefirst implicitly contains many applications to provide starting capabilities for new users. Operational knowledge of all applications is not necessary to begin using Kubefirst, but is useful to understand your cluster.
 
-A newly created local KubeFirst cluster contains:
+A newly created local Kubefirst cluster contains:
 
 - A private repo named `gitops`. The applications that you build and release on the kubefirst platform will also be registered here in the development, staging, and production folders. 
 - [Argo CD](https://github.com/argoproj/argo-cd) - GitOps Continuous Delivery
 - [Argo Workflows](https://argoproj.github.io/argo-workflows/) - Application Continuous Integration
 - [Atlantis](https://www.runatlantis.io/) - Terraform Workflow Automation
-- [Certificate Issuers](https://letsencrypt.org/certificates/) - Let's Encrypt browser-trusted certificates
-- [Cert Manager](https://github.com/cert-manager/cert-manager) - Certificate Automation Utility
 - [Chart Museum](https://github.com/helm/chartmuseum) - Helm Chart Registry
 - [External Secrets](https://github.com/external-secrets/kubernetes-external-secrets) - Syncs Kubernetes secrets with Vault secrets
 - [GitHub Action Runner](https://github.com/features/actions) - Self Hosted GitHub Action Runner
-- [Nginx Ingress Controller](https://docs.nginx.com/nginx-ingress-controller/intro/overview/) - Ingress Controller
 - [Metaphor](https://github.com/kubefirst/metaphor-frontend-template) - A sample app to demonstrate CI/CD in on Kubernetes. Contains Devlopment, Staging, and Production environments.
+- [Traefik](https://github.com/traefik/traefik) - Default Ingress Controller for K3D Clusters
 - [Vault](https://github.com/hashicorp/vault) - Secrets Management
 
 ### How to resolve HTTPS Certificate Warnings
