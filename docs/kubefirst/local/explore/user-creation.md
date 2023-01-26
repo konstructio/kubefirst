@@ -65,4 +65,4 @@ Once you've provided them this initial password, they can update their own passw
 
 ![default user creation](../../../img/kubefirst/local/default-user-creation.png)
 
-The existance of a new user with your specified paramaters demonstrates that you have succesfully updated your users using Atlantis!
+The existence of a new user with your specified parameters demonstrates that you have successfully updated your users using Atlantis!
