@@ -32,7 +32,8 @@ nav:
       - Local Installation:
         - Install: 'kubefirst/local/install.md'
         - Explore:
-          - Explore: 'kubefirst/local/explore/introduction.md'
+          - Overview: 'kubefirst/local/explore/overview.md'
+          - Kubefirst Console: 'kubefirst/local/explore/console.md'
           - Alantis User Creation: 'kubefirst/local/explore/user-creation.md'
         - Destroy: 'kubefirst/local/destroy.md'
         - GitHub Repositories: 'kubefirst/local/github-repositories.md'        

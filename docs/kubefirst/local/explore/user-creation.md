@@ -26,7 +26,8 @@ module "admin_one" {
 }
 ```
 
-Uncomment and edit this code to replace the values for the email, first_name, github_username, last_name, and username before pushing to your branch.
+Uncomment and edit this code to replace the values for the email, first_name, github_username, last_name, and username before pushing to your branch. 
+Note: If you are doing using this walkthrough simply to test Atlantis, you do not need to update these fields to be accurate.
 
 ```
 git add .
