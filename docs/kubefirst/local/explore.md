@@ -4,11 +4,11 @@
 
 [//]: # (<iframe width="784" height="441" src="https://www.youtube.com/embed/KEUOaNMUqOM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>)
 
-The `kubefirst local` execution includes important information toward the end, including URLs and passwords to get to your applications.
+`kubefirst local` provides URLs and passwords that point to local applications. These applications are hosted using [k3d](https://k3d.io) a lightweight wrapper to run k3s (Rancher Lab’s minimal Kubernetes distribution)
 
 If you close the handoff screen (by pressing ESC), you can still access the Kubefirst Console to see all applications, and their local endpoints by opening the Console app.
 
-You now have a k3d cluster with the following content installed in it:
+A newly provisoned local Kubefirst cluster contains the following content installed in it:
 
 | Application                  | Description                                                                 |
 |------------------------------|-----------------------------------------------------------------------------|
