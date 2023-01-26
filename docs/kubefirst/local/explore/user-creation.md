@@ -52,7 +52,7 @@ NOTE: Atlantis merges your Pull Request automatically once an apply is successfu
 
 Atlantis will always run plans automatically for you when a merge request is opened that changes files mapped in atlantis.yaml
 
-Any new users you have created through this process will have their temporary initial passwords stored in [Vault](https://argocd.localdev.me/applications/vault). You can access Vault using the information provided to you in the terminal as well, and you will find your users' individual initial passwords in the Vault secret store /secrets/users/<username>.
+Any new users you have created through this process will have their temporary initial passwords stored in [your local Vault cluster](https://argocd.localdev.me/applications/vault). You can access Vault using the information provided to you in the terminal as well, and you will find your users' individual initial passwords in the Vault secret store /secrets/users/<username>.
 
 ![vault token login](../../../img/kubefirst/local/vault-token-login.png)
 
