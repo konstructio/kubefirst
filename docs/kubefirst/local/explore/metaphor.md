@@ -12,9 +12,9 @@ The example delivery pipeline will:
 
 To watch this pipeline occur, make any change to the `main` branch of of the `metaphor-frontend`. If you're not feeling creative, you can just add a newline to the `README.md`. Once a file in `main` is changed, navigate to metaphor-frontend's CI/CD in the github `Actions` tab to see the workflows get submitted to Argo workflows.
 
-![metaphor-readme-update](../../../img/kubefirst/local/methapor-readme-update.png)
+![metaphor-readme-update](../../../img/kubefirst/local/metaphor-readme-update.png)
 
 You can visit the metaphor-frontend development, staging, and production apps in your browser to see the versions change as you complete resources and ArgoCD syncs the apps. The metaphor-frontend URLs can be found in your gitops and metaphor-frontend project `README.md` files. 
 
-![metaphor-frontend-development](../../../img/kubefirst/local/methapor-frontend-development.png)
+![metaphor-frontend-development](../../../img/kubefirst/local/metaphor-frontend-development.png)
 
