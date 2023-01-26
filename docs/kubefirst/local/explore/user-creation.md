@@ -40,17 +40,12 @@ Create a merge request. This will kick off the Atlantis workflow. Within a minut
 ![atlantis comments](../../../img/kubefirst/local/atlantis-comments.png)
 
 # Are you not getting comments on your PR? Your cert may have expired
-
 The ngrok tunnel used for kubefirst local has a 2-hour expiration unless you create an account with ngrok. This expiration will prevent you from using automated infrastructure as code through atlantis, but the rest of the platform will continue to function beyond that ngrok evaluation period. [Create an account with ngrok](https://dashboard.ngrok.com/signup) to prevent this.
 
-Your ngrok Secure Tunnel
-
-Approve the change
 To apply these changes, you or someone in the organization can submit a comment on that Merge Request with the following comment text:
 
 `atlantis apply`
 
-What happens next?
 Doing so will instruct Atlantis to apply the plan. It will report back with the results of the apply within a minute or so.
 
 NOTE: Atlantis merges your Pull Request automatically once an apply is successfully executed. Don't merge Terraform merge requests yourself.

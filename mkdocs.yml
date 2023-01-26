@@ -35,9 +35,9 @@ nav:
           - Overview: 'kubefirst/local/explore/overview.md'
           - Kubefirst Console: 'kubefirst/local/explore/console.md'
           - Alantis User Creation: 'kubefirst/local/explore/user-creation.md'
-        - Destroy: 'kubefirst/local/destroy.md'
         - GitHub Repositories: 'kubefirst/local/github-repositories.md'        
         - Limitations: 'kubefirst/local/limitations.md'
+        - Destroy: 'kubefirst/local/destroy.md'
       - GitHub Installation:
         - Install: 'kubefirst/github/install.md'
         - Explore: 'kubefirst/github/explore.md'
