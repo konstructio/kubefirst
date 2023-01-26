@@ -27,13 +27,13 @@ A newly provisoned local Kubefirst cluster contains the following content instal
 
 ## Introduction to the Console UI
 
-![terminal handoff](../../img/kubefirst/local/console.png)
+![terminal handoff](../../../img/kubefirst/local/console.png)
 Console UI Screen
 
 The `kubefirst local` command will open a new browser tab at completion with the Console UI at
 `https://kubefirst.localdev.me` to provide you an easy way to navigate through the different services that were provisioned.
 
-![terminal handoff](../../img/kubefirst/local/handoff-screen.png)
+![terminal handoff](../../../img/kubefirst/local/handoff-screen.png)
 Exampe of terminal output following cluster creation
 
 ## Atlantis Example / User Creation walkthrough
@@ -66,9 +66,9 @@ You can visit the metaphor-frontend development, staging, and production apps in
 
 ## Learning the Ropes
 
-We've tried our best to provide the available customizations and patterns of the Kubefirst platform here on our docs site. We've also made [links available](../credit.md) to all of our open source tool's sources of documentation.
+We've tried our best to provide the available customizations and patterns of the Kubefirst platform here on our docs site. We've also made [links available](../../credit.md) to all of our open source tool's sources of documentation.
 
-You can [reach out to us](../../community/index.md) if you have any issues along the way. We're also available for consultation of where you should take the platform based on your organization's needs. We know the technologies inside and out and would love to help you do the same.
+You can [reach out to us](../../../community/index.md) if you have any issues along the way. We're also available for consultation of where you should take the platform based on your organization's needs. We know the technologies inside and out and would love to help you do the same.
 
 ## What to do next
 
