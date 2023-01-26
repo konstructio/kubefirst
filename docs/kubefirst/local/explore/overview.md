@@ -33,11 +33,11 @@ A newly provisoned local Kubefirst cluster contains the following content instal
 
 [Create your own user through Atlantis](../user-creation.md)
 
-## Deliver `metaphor-frontend` to your new Development, Staging, and Production
+## Deliver `metaphor-frontend` to your new Development, Staging, and Production Environments
 
 [Use metaphor as a sample frontend](../metaphor.md)
 
-## Accessing the applications
+## Accessing the Kubefirst Applications
 
 The Console UI will provide you with the URLs to access the applications that were provisioned, and the handoff screen will provide the credentials to login into these applications.
 

@@ -5,10 +5,10 @@ If you visit your `/.github/workflows/main.yaml` in the `metaphor-frontend` repo
 The example delivery pipeline will:
 
 - Publish the metaphor container to your private github.
-- add the metaphor image to a release candidate helm chart and publish it to chartmuseum
-- set the metaphor with the desired Helm chart version in the GitOps repo for development and staging
-- the release stage of the pipeline will republish the chart, this time without the release candidate notation making it an officially released version and prepare the metaphor application chart for the next release version
-- the officially released chart will be set as the desired Helm chart for production.
+- Add the metaphor image to a release candidate helm chart and publish it to chartmuseum
+- Set the metaphor with the desired Helm chart version in the GitOps repo for development and staging
+- Republish the chart with the release stage, this time without the release candidate notation making it an officially released version and prepare the metaphor application chart for the next release version
+- Set The officially released chart as the desired Helm chart for production.
 
 To watch this pipeline occur, make any change to the `main` branch of of the `metaphor-frontend`. If you're not feeling creative, you can just add a newline to the `README.md`. Once a file in `main` is changed, navigate to metaphor-frontend's CI/CD in the github `Actions` tab to see the workflows get submitted to Argo workflows.
 
