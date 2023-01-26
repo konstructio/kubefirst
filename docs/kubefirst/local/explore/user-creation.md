@@ -62,6 +62,6 @@ Any new users you have created through this process will have their temporary in
 
 Once you've provided them this initial password, they can update their own password throughout the platform by updating their user password entity in vault. Anyone can change their own password, and Admins can reset anyone's password. These rules, just like everything else on Kubefirst, can be configured in your new gitops repository.
 
-![default user creation](../../../img/kubefirst/local/default-user-creation)
+![default user creation](../../../img/kubefirst/local/default-user-creation.png)
 
 The existance of a new user with your specified paramaters demonstrates that you have succesfully updated your users using Atlantis!
