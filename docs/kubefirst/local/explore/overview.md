@@ -43,6 +43,8 @@ The Console UI will provide you with the URLs to access the applications that we
 
 After closing the handoff screen, you can also have access to the same credentials via the `~/.kubefirst` file, that hosts the initial credentials for all the installed applications.
 
+Note: please ensure Docker is running on your computer. Without docker you will not be able to acces the k3d resources generated for you.
+
 ## Learning the Ropes
 
 We've tried our best to provide the available customizations and patterns of the Kubefirst platform here on our docs site. We've also made [links available](../../credit.md) to all of our open source tool's sources of documentation.
