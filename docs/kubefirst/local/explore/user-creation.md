@@ -35,7 +35,7 @@ git commit -m feat: add new user
 git push --set-upstream origin new-user
 ```
 
-Create a merge request. This will kick off the Atlantis workflow. Within a minute or so of submitting the merge request, a comment will appear on the merge request that shows the terraform plan with the changes it will be making to your infrastructure. 
+Create a pull request. This will kick off the Atlantis workflow. Within a minute or so of submitting the pull request, a comment will appear on the pull request that shows the terraform plan with the changes it will be making to your infrastructure. 
 
 ![atlantis comments](../../../img/kubefirst/local/atlantis-comments.png)
 
