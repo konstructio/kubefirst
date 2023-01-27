@@ -6,7 +6,7 @@ The example delivery pipeline will:
 
 - Publish the metaphor container to your private github.
 - Add the metaphor image to a release candidate helm chart and publish it to chartmuseum
-- Set the metaphor with the desired Helm chart version in the GitOps repo for development and staging
+- Set the metaphor-frontend application with the desired Helm chart version in the GitOps repo for development and staging
 - Republish the chart with the release stage, this time without the release candidate notation making it an officially released version and prepare the metaphor application chart for the next release version
 - Set the officially released metaphor-frontend chart as the desired Helm chart for production.
 
