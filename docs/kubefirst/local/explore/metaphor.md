@@ -14,7 +14,7 @@ To watch this pipeline occur, make any change to the `main` branch of the `metap
 
 ![metaphor-readme-update](../../../img/kubefirst/local/metaphor-readme-update.png)
 
-You can visit the metaphor-frontend development, staging, and production apps in your browser to see the versions change as you complete resources and ArgoCD syncs the apps. The metaphor-frontend URLs can be found in your gitops and metaphor-frontend project `README.md` files. 
+You can visit the metaphor-frontend development, staging, and production apps in your browser to see the versions change as you complete resources and Argo CD syncs the apps. The metaphor-frontend URLs can be found in your gitops and metaphor-frontend project `README.md` files. 
 
 ![metaphor-frontend-development](../../../img/kubefirst/local/metaphor-frontend-development.png)
 
