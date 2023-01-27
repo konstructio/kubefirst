@@ -34,7 +34,7 @@ nav:
         - Explore:
           - Overview: 'kubefirst/local/explore/overview.md'
           - Kubefirst Console: 'kubefirst/local/explore/console.md'
-          - Alantis User Creation: 'kubefirst/local/explore/user-creation.md'
+          - Atlantis User Creation: 'kubefirst/local/explore/user-creation.md'
           - Metaphor Frontend: 'kubefirst/local/explore/metaphor.md'
         - GitHub Repositories: 'kubefirst/local/github-repositories.md'        
         - Limitations: 'kubefirst/local/limitations.md'
