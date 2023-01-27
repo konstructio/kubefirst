@@ -50,6 +50,11 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	clusterTypeFlag, err := cmd.Flags().GetString("cluster-type")
+	if err != nil {
+		return err
+	}
+
 	cloudRegionFlag, err := cmd.Flags().GetString("cloud-region")
 	if err != nil {
 		return err
@@ -330,6 +335,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 
 		viper.Set("kubefirst.telemetry", useTelemetryFlag)
 		viper.Set("kubefirst.cluster-name", clusterNameFlag)
+		viper.Set("kubefirst.cluster-type", clusterTypeFlag)
 		viper.Set("vault.local.service", config.VaultLocalURL)
 		viper.Set("domain-name", domainNameFlag) // todo refactor to domain-name
 		viper.Set("cloud-region", cloudRegionFlag)

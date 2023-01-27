@@ -52,8 +52,11 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("proceeding with cluster create")
 
 	//! viper config variables
+	//! should varFlag variations be used in here?
 	argocdLocalURL := viper.GetString("argocd.local.service")
 	civoDnsName := viper.GetString("domain-name")
+	clusterName := viper.GetString("kubefirst.cluster-name")
+	clusterType := viper.GetString("kubefirst.cluster-type")
 	gitopsTemplateBranch := viper.GetString("template-repo.gitops.branch")
 	gitopsTemplateURL := viper.GetString("template-repo.gitops.url")
 	metaphorFrontendTemplateBranch := viper.GetString("template-repo.metaphor-frontend.branch")
@@ -126,7 +129,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 		log.Info().Msg("gitops repository clone complete")
 
-		pkg.AdjustGitopsTemplateContent(cloudProvider, gitProvider, k1GitopsDir)
+		pkg.AdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1GitopsDir, k1Dir)
 
 		pkg.DetokenizeCivoGithubGitops(k1GitopsDir)
 
@@ -644,7 +647,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	pkg.InformUser("Welcome to civo kubefirst experience", silentMode)
 	pkg.InformUser("To use your cluster port-forward - argocd", silentMode)
 	pkg.InformUser("If not automatically injected, your kubeconfig is at:", silentMode)
-	pkg.InformUser("k3d kubeconfig get "+viper.GetString("kubefirst.cluster-name"), silentMode)
+	pkg.InformUser("k3d kubeconfig get "+clusterName, silentMode)
 	pkg.InformUser("Expose Argo-CD", silentMode)
 	pkg.InformUser("kubectl -n argocd port-forward svc/argocd-server 8080:80", silentMode)
 	pkg.InformUser("Argo User: "+viper.GetString("argocd.admin.username"), silentMode)

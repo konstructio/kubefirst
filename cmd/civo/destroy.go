@@ -12,7 +12,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/terraform"
-	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -35,10 +34,9 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		return errors.New("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set the environment variable")
 	}
 	// todo with these two..
-	silentMode := false
 	dryRun := false
 	if viper.GetBool("terraform.github.apply.complete") || viper.GetBool("terraform.github.destroy.complete") {
-		pkg.InformUser("destroying github resources with terraform", silentMode)
+		log.Info().Msg("destroying github resources with terraform")
 
 		tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
 		tfEnvs := map[string]string{}
@@ -52,11 +50,11 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("terraform.github.apply.complete", false)
 		viper.Set("terraform.github.destroy.complete", true)
 		viper.WriteConfig()
-		pkg.InformUser("github resources terraform destroyed", silentMode)
+		log.Info().Msg("github resources terraform destroyed")
 	}
 
 	if viper.GetBool("terraform.civo.apply.complete") || !viper.GetBool("terraform.civo.destroy.complete") {
-		pkg.InformUser("destroying civo resources with terraform", silentMode)
+		log.Info().Msg("destroying civo resources with terraform")
 
 		clusterName := viper.GetString("kubefirst.cluster-name")
 		kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
@@ -101,7 +99,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		// todo fix false
-		pkg.InformUser(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")), false)
+		log.Info().Msg(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")))
 
 		customTransport := http.DefaultTransport.(*http.Transport).Clone()
 		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -130,7 +128,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("terraform.civo.apply.complete", false)
 		viper.Set("terraform.civo.destroy.complete", true)
 		viper.WriteConfig()
-		pkg.InformUser("civo resources terraform destroyed", silentMode)
+		log.Info().Msg("civo resources terraform destroyed")
 	}
 
 	//* successful cleanup of resources means we can clean up

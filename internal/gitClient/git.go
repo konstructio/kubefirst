@@ -514,9 +514,7 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, k1Dir, localRepo,
 }
 
 // CloneBranch clone a branch and returns a pointer to git.Repository
-func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
-
-	log.Printf("git cloning by branch, branch: %s", branch)
+func CloneBranch(branch, repoLocalPath, repoURL string) (*git.Repository, error) {
 
 	repo, err := git.PlainClone(repoLocalPath, false, &git.CloneOptions{
 		URL:           repoURL,
@@ -531,11 +529,11 @@ func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repo
 }
 
 // CloneBranchSetMain clone a branch and returns a pointer to git.Repository
-func CloneBranchSetMain(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
+func CloneBranchSetMain(branch, repoURL, repoLocalPath string) (*git.Repository, error) {
 
-	log.Printf("git cloning by branch, branch: %s", branch)
+	log.Info().Msgf("cloning repo: %s - branch: %s", repoURL, branch)
 
-	repo, err := CloneBranch(repoURL, repoLocalPath, branch)
+	repo, err := CloneBranch(branch, repoLocalPath, repoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -572,7 +570,7 @@ func CheckoutBranch(repo *git.Repository, branch string) error {
 }
 
 // CloneTag clone a repository using a tag value, and returns a pointer to *git.Repository
-func CloneTag(repoLocalPath string, githubOrg string, repoName string, tag string) (*git.Repository, error) {
+func CloneTag(githubOrg, repoLocalPath, repoName, tag string) (*git.Repository, error) {
 
 	// todo: repoURL como param
 	repoURL := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)

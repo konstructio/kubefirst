@@ -7,6 +7,7 @@ var (
 	cloudRegionFlag            string
 	cloudProviderFlag          string
 	clusterNameFlag            string
+	clusterTypeFlag            string
 	githubOwnerFlag            string
 	gitopsTemplateURLFlag      string
 	gitopsTemplateBranchFlag   string
@@ -35,6 +36,7 @@ func NewCommand() *cobra.Command {
 	civoCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "NYC1", "the civo region to provision infrastructure in")
 	civoCmd.Flags().StringVar(&cloudProviderFlag, "cloud-provider", "civo", "the git provider to use. (i.e. gitlab|github)")
 	civoCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
+	civoCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
 	civoCmd.Flags().StringVar(&domainNameFlag, "domain-name", "k-ray.space", "the Civo DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com)")
 	civoCmd.Flags().StringVar(&githubOwnerFlag, "github-owner", "your-dns-io", "the GitHub owner of the new gitops and metaphor repositories")
 	// civoCmd.MarkFlagRequired("github-owner")
