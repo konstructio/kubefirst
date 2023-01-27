@@ -8,7 +8,7 @@ The example delivery pipeline will:
 - Add the metaphor image to a release candidate helm chart and publish it to chartmuseum
 - Set the metaphor with the desired Helm chart version in the GitOps repo for development and staging
 - Republish the chart with the release stage, this time without the release candidate notation making it an officially released version and prepare the metaphor application chart for the next release version
-- Set The officially released chart as the desired Helm chart for production.
+- Set the officially released metaphor-frontend chart as the desired Helm chart for production.
 
 To watch this pipeline occur, make any change to the `main` branch of the `metaphor-frontend`. If you're not feeling creative, you can just add a newline to the `README.md`. Once a file in `main` is changed, navigate to metaphor-frontend's CI/CD in the github `Actions` tab to see the workflows get submitted to Argo workflows.
 
