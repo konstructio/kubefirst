@@ -105,6 +105,47 @@ func SyncRetry(httpClient pkg.HTTPDoer, attempts int, interval int, applicationN
 	return false, nil
 }
 
+// create an argocd application
+func CreateApplication(httpClient pkg.HTTPDoer, cascade, applicationName, argoCDToken string) (httpCodeResponse int, syncStatus string, Error error) {
+
+	params := url.Values{}
+	params.Add("cascade", cascade)
+	paramBody := strings.NewReader(params.Encode())
+
+	url := fmt.Sprintf("%s/api/v1/applications/%s", viper.GetString("argocd.local.service"), applicationName)
+	log.Info().Msg(url)
+	req, err := http.NewRequest(http.MethodDelete, url, paramBody)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+		return 0, "", err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", argoCDToken))
+	res, err := httpClient.Do(req)
+	if err != nil {
+		log.Error().Err(err).Msgf("error sending DELETE request to ArgoCD for application (%s)", applicationName)
+		return res.StatusCode, "", err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		log.Warn().Err(err).Msgf("argocd http response code is: %d", res.StatusCode)
+		return res.StatusCode, "", nil
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return res.StatusCode, "", err
+	}
+
+	var syncResponse argocdModel.V1alpha1Application
+	err = json.Unmarshal(body, &syncResponse)
+	if err != nil {
+		return res.StatusCode, "", err
+	}
+
+	return res.StatusCode, syncResponse.Status.Sync.Status, nil
+}
+
 // Sync request ArgoCD to manual sync an application.
 func DeleteApplication(httpClient pkg.HTTPDoer, applicationName, argoCDToken, cascade string) (httpCodeResponse int, syncStatus string, Error error) {
 

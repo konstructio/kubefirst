@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func AdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1DirPath, gitopsRepoPath string) error {
+func CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1DirPath, gitopsRepoPath string) error {
 
 	// remove the unstructured driver content
 	os.RemoveAll(gitopsRepoPath + "/components")
@@ -61,7 +61,7 @@ func AdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitPro
 		return err
 	}
 
-	// todo rename file from `registry-mgmt.yaml` `registry-$clusterName.yaml`
+	//* rename file from `registry-mgmt.yaml` `registry-$clusterName.yaml`
 	originalPath := fmt.Sprintf("%s/registry/%s/registry-mgmt.yaml", gitopsRepoPath, clusterName)
 	newPath := fmt.Sprintf("%s/registry/%s/registry-%s.yaml", gitopsRepoPath, clusterName, clusterName)
 	err = os.Rename(originalPath, newPath)
@@ -72,6 +72,7 @@ func AdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitPro
 
 	os.RemoveAll(driverContent)
 	os.RemoveAll(clusterContent)
+	os.RemoveAll(fmt.Sprintf("%s/workload-cluster-template", gitopsRepoPath)) // todo need to figure out a strategy to include this
 	os.RemoveAll(ciFolderContent)
 	return nil
 }

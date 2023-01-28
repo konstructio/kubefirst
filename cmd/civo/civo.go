@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -123,13 +124,14 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("template-repo.gitops.ready-to-push") {
 
 		pkg.InformUser("generating your new gitops repository", silentMode)
-		gitopsRepo, err := gitClient.CloneBranchSetMain(gitopsTemplateURL, k1GitopsDir, gitopsTemplateBranch)
+		gitopsRepo, err := gitClient.CloneBranchSetMain(gitopsTemplateBranch, gitopsTemplateURL, k1GitopsDir)
 		if err != nil {
 			log.Print("error opening repo at:", k1GitopsDir)
 		}
+
 		log.Info().Msg("gitops repository clone complete")
 
-		pkg.AdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1GitopsDir, k1Dir)
+		pkg.CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1Dir, k1GitopsDir)
 
 		pkg.DetokenizeCivoGithubGitops(k1GitopsDir)
 
@@ -144,7 +146,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
-
+	os.Exit(1)
 	// todo need adopt metaphor-slim and reduce repo count
 	//* create teams and repositories in github
 	executionControl := viper.GetBool("terraform.github.apply.complete")
