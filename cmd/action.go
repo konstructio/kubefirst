@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/kubefirst/kubefirst/internal/gitClient"
@@ -31,7 +30,9 @@ to quickly create a Cobra application.`,
 		gitProvider := viper.GetString("git-provider")
 		k1GitopsDir := viper.GetString("kubefirst.k1-gitops-dir")
 		k1Dir := viper.GetString("kubefirst.k1-directory-path")
-		// destinationGitopsRepoURL := viper.GetString("github.repo.gitops.giturl")
+		clusterName := viper.GetString("kubefirst.cluster-name")
+		clusterType := viper.GetString("kubefirst.cluster-type")
+		destinationGitopsRepoURL := viper.GetString("github.repo.gitops.giturl")
 
 		fmt.Println("gitopsTemplateBranch: ", gitopsTemplateBranch)
 		fmt.Println("gitopsTemplateURL: ", gitopsTemplateURL)
@@ -39,21 +40,20 @@ to quickly create a Cobra application.`,
 		fmt.Println("gitProvider: ", gitProvider)
 		fmt.Println("k1GitopsDir: ", k1GitopsDir)
 
-		_, err := gitClient.CloneBranchSetMain(gitopsTemplateBranch, gitopsTemplateURL, k1GitopsDir)
+		gitopsRepo, err := gitClient.CloneBranchSetMain(gitopsTemplateBranch, gitopsTemplateURL, k1GitopsDir)
 		if err != nil {
 			log.Print("error opening repo at:", k1GitopsDir)
 		}
 
 		log.Info().Msg("gitops repository clone complete")
 
-		pkg.AdjustGitopsTemplateContent(cloudProvider, gitProvider, k1Dir, k1GitopsDir)
-		return errors.New("no error, vars")
+		pkg.AdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1Dir, k1GitopsDir)
 
-		// pkg.DetokenizeCivoGithubGitops(k1GitopsDir)
+		pkg.DetokenizeCivoGithubGitops(k1GitopsDir)
 
-		// gitClient.AddRemote(destinationGitopsRepoURL, gitProvider, gitopsRepo)
+		gitClient.AddRemote(destinationGitopsRepoURL, gitProvider, gitopsRepo)
 
-		// gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
+		gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
 
 		return nil
 	},

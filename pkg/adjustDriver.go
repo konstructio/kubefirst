@@ -23,8 +23,7 @@ func AdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitPro
 	os.RemoveAll(gitopsRepoPath + "/atlantis.yaml")
 	os.RemoveAll(gitopsRepoPath + "/logo.png")
 
-	//* copy civo-github/* $HOME/.k1/gitops/
-	driverContent := fmt.Sprintf("%s/%s-%s/", gitopsRepoPath, cloudProvider, gitProvider)
+	//* copy options
 	opt := cp.Options{
 		Skip: func(src string) (bool, error) {
 			if strings.HasSuffix(src, ".git") {
@@ -37,24 +36,37 @@ func AdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitPro
 
 		},
 	}
-	err := cp.Copy(driverContent, fmt.Sprintf("%s", gitopsRepoPath), opt)
+
+	//* copy civo-github/* $HOME/.k1/gitops/
+	driverContent := fmt.Sprintf("%s/%s-%s/", gitopsRepoPath, cloudProvider, gitProvider)
+	err := cp.Copy(driverContent, gitopsRepoPath, opt)
 	if err != nil {
-		log.Info().Msgf("Error populating gitops repository with %s setup: %s", fmt.Sprintf("%s/%s-%s/%s-cluster-template", gitopsRepoPath, cloudProvider, gitProvider, clusterType), err)
+		log.Info().Msgf("Error populating gitops repository with driver content: %s. error: %s", fmt.Sprintf("%s-%s", cloudProvider, gitProvider), err.Error())
 		return err
 	}
 
-	//* copy civo-github/mgmt-cluster-template/* registry/kubefirst
+	//* copy gitops/$clusterType-cluster-template/* registry/$clusterName
 	clusterContent := fmt.Sprintf("%s/%s-cluster-template", gitopsRepoPath, clusterType)
 	err = cp.Copy(clusterContent, fmt.Sprintf("%s/registry/%s", gitopsRepoPath, clusterName), opt)
 	if err != nil {
-		log.Info().Msgf("Error populating gitops repository with %s setup: %s", fmt.Sprintf("%s/%s-%s/%s-cluster-template", gitopsRepoPath, cloudProvider, gitProvider, clusterType), err)
+		log.Info().Msgf("Error populating cluster content with %s. error: %s", clusterContent, err.Error())
 		return err
 	}
 
+	//* copy gitops/argo-workflows/* $HOME/.k1/argo-workflows
 	ciFolderContent := fmt.Sprintf("%s/argo-workflows", gitopsRepoPath)
 	err = cp.Copy(ciFolderContent, fmt.Sprintf("%s/argo-workflows", k1DirPath), opt)
 	if err != nil {
 		log.Info().Msgf("Error populating gitops repository with %s setup: %s", fmt.Sprintf("%s/%s-%s/%s-cluster-template", gitopsRepoPath, cloudProvider, gitProvider, clusterType), err)
+		return err
+	}
+
+	// todo rename file from `registry-mgmt.yaml` `registry-$clusterName.yaml`
+	originalPath := fmt.Sprintf("%s/registry/%s/registry-mgmt.yaml", gitopsRepoPath, clusterName)
+	newPath := fmt.Sprintf("%s/registry/%s/registry-%s.yaml", gitopsRepoPath, clusterName, clusterName)
+	err = os.Rename(originalPath, newPath)
+	if err != nil {
+		log.Info().Msg(err.Error())
 		return err
 	}
 
