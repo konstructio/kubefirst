@@ -61,14 +61,14 @@ func CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterTy
 		return err
 	}
 
-	//* rename file from `registry-mgmt.yaml` `registry-$clusterName.yaml`
-	originalPath := fmt.Sprintf("%s/registry/%s/registry-mgmt.yaml", gitopsRepoPath, clusterName)
-	newPath := fmt.Sprintf("%s/registry/%s/registry-%s.yaml", gitopsRepoPath, clusterName, clusterName)
-	err = os.Rename(originalPath, newPath)
-	if err != nil {
-		log.Info().Msg(err.Error())
-		return err
-	}
+	// //* rename file from `registry-mgmt.yaml` `registry-$clusterName.yaml`
+	// originalPath := fmt.Sprintf("%s/registry/%s/registry-mgmt.yaml", gitopsRepoPath, clusterName)
+	// newPath := fmt.Sprintf("%s/registry/%s/registry-%s.yaml", gitopsRepoPath, clusterName, clusterName)
+	// err = os.Rename(originalPath, newPath)
+	// if err != nil {
+	// 	log.Info().Msg(err.Error())
+	// 	return err
+	// }
 
 	os.RemoveAll(driverContent)
 	os.RemoveAll(clusterContent)

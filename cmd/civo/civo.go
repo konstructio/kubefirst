@@ -359,7 +359,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.registry.applied")
 	if !executionControl {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
-		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry-%s.yaml", clusterName, clusterName, k1DirPath)
+		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", clusterName, k1DirPath)
 		err := argocd.KubectlCreateApplication(dryRun, kubeconfigPath, kubectlClientPath, k1DirPath, registryYamlPath)
 		if err != nil {
 			log.Info().Msgf("Error applying %s application to argocd", registryYamlPath)
