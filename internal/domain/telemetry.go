@@ -20,7 +20,7 @@ type Telemetry struct {
 
 // NewTelemetry is the Telemetry domain. When instantiating new Telemetries, we're able to validate domain specific
 // values. In this way, domain, handlers and services can work in isolation, and Domain host business logic.
-func NewTelemetry(metricName string, domain string, KubeFirstTeam string, CLIVersion string, ClusterType string, ClusterId string) (Telemetry, error) {
+func NewTelemetry(metricName string, domain string, CLIVersion string) (Telemetry, error) {
 
 	if len(metricName) == 0 {
 		return Telemetry{}, errors.New("unable to create metric, missing metric name")
