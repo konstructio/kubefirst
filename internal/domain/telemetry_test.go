@@ -3,13 +3,11 @@ package domain
 import (
 	"reflect"
 	"testing"
-
-	"github.com/google/uuid"
 )
 
 func TestNewTelemetry(t *testing.T) {
 
-	clusterId := uuid.New().String()
+	clusterId := "c1bfb18c-b3ed-46e5-be48-4ed196e77656"
 	clusterType := "mgmt"
 	kubeFirstTeam := "false"
 	validTelemetry := Telemetry{MetricName: "test metric", Domain: "example.com", CLIVersion: "0.0.0", KubeFirstTeam: kubeFirstTeam, ClusterId: clusterId, ClusterType: clusterType}
