@@ -64,14 +64,15 @@ func NewTelemetry(metricName string, domain string, CLIVersion string, opts ...O
 			MetricName:    metricName,
 			Domain:        "",
 			CLIVersion:    CLIVersion,
-			KubeFirstTeam: kubeFirstTeam,
 			ClusterType:   clusterType,
 			ClusterId:     clusterId,
+			KubeFirstTeam: kubeFirstTeam,
 		}
 		//populate with optional arguments
 		for _, opt := range opts {
 			opt(&telemetry)
 		}
+		//done after initialization to sync optional clusterId and domain
 		telemetry.Domain = telemetry.ClusterId
 
 		return telemetry, nil
@@ -86,9 +87,9 @@ func NewTelemetry(metricName string, domain string, CLIVersion string, opts ...O
 		MetricName:    metricName,
 		Domain:        domain,
 		CLIVersion:    CLIVersion,
-		KubeFirstTeam: kubeFirstTeam,
 		ClusterType:   clusterType,
 		ClusterId:     clusterId,
+		KubeFirstTeam: kubeFirstTeam,
 	}
 	//populate with optional arguments
 	for _, opt := range opts {

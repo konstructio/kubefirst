@@ -10,7 +10,7 @@ func TestNewTelemetry(t *testing.T) {
 	clusterId := "894b39b0-1df7-44b3-a418-a36e298b55a6"
 	clusterType := "mgmt"
 	kubeFirstTeam := "false"
-	validTelemetry := Telemetry{MetricName: "test metric", Domain: "example.com", CLIVersion: "0.0.0", KubeFirstTeam: kubeFirstTeam, ClusterId: clusterId, ClusterType: clusterType}
+	validTelemetry := Telemetry{MetricName: "test metric", Domain: "example.com", CLIVersion: "0.0.0", ClusterId: clusterId, ClusterType: clusterType, KubeFirstTeam: kubeFirstTeam}
 
 	type args struct {
 		metricName    string
@@ -32,9 +32,9 @@ func TestNewTelemetry(t *testing.T) {
 				metricName:    "test metric",
 				domain:        "https://example.com",
 				cliVersion:    "0.0.0",
-				kubeFirstTeam: kubeFirstTeam,
 				clusterId:     clusterId,
 				clusterType:   clusterType,
+				kubeFirstTeam: kubeFirstTeam,
 			},
 			want:    validTelemetry,
 			wantErr: false,
@@ -45,9 +45,9 @@ func TestNewTelemetry(t *testing.T) {
 				metricName:    "test metric",
 				domain:        "https://example-com",
 				cliVersion:    "0.0.0",
-				kubeFirstTeam: kubeFirstTeam,
 				clusterId:     clusterId,
 				clusterType:   clusterType,
+				kubeFirstTeam: kubeFirstTeam,
 			},
 			want:    Telemetry{},
 			wantErr: true,
@@ -58,17 +58,17 @@ func TestNewTelemetry(t *testing.T) {
 				metricName:    "test metric",
 				domain:        "",
 				cliVersion:    "0.0.0",
-				kubeFirstTeam: kubeFirstTeam,
 				clusterId:     clusterId,
 				clusterType:   clusterType,
+				kubeFirstTeam: kubeFirstTeam,
 			},
 			want: Telemetry{
 				MetricName:    "test metric",
 				Domain:        clusterId,
 				CLIVersion:    "0.0.0",
-				KubeFirstTeam: kubeFirstTeam,
 				ClusterId:     clusterId,
 				ClusterType:   clusterType,
+				KubeFirstTeam: kubeFirstTeam,
 			},
 			wantErr: false,
 		},
