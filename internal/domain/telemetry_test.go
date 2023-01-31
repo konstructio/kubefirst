@@ -7,7 +7,7 @@ import (
 
 func TestNewTelemetry(t *testing.T) {
 
-	clusterId := "c1bfb18c-b3ed-46e5-be48-4ed196e77656"
+	clusterId := "894b39b0-1df7-44b3-a418-a36e298b55a6"
 	clusterType := "mgmt"
 	kubeFirstTeam := "false"
 	validTelemetry := Telemetry{MetricName: "test metric", Domain: "example.com", CLIVersion: "0.0.0", KubeFirstTeam: kubeFirstTeam, ClusterId: clusterId, ClusterType: clusterType}
@@ -85,7 +85,7 @@ func TestNewTelemetry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewTelemetry(tt.args.metricName, tt.args.domain, tt.args.cliVersion)
+			got, err := NewTelemetry(tt.args.metricName, tt.args.domain, tt.args.cliVersion, WithClusterId("894b39b0-1df7-44b3-a418-a36e298b55a6"))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewTelemetry() error = %v, wantErr %v", err, tt.wantErr)
 				return
