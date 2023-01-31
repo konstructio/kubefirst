@@ -347,6 +347,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("argocd username and password credentials set successfully", silentMode)
 
 		pkg.InformUser("Getting an argocd auth token", silentMode)
+		// todo return in here and pass argocdAuthToken as a parameter
 		_ = argocd.GetArgocdAuthToken(dryRun)
 		pkg.InformUser("argocd admin auth token set", silentMode)
 
@@ -358,9 +359,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.registry.applied")
 	if !executionControl {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
-		err := argocd.ApplyRegistryLocal(dryRun, kubeconfigPath, kubectlClientPath, k1DirPath)
+		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry-%s.yaml", clusterName, clusterName, k1DirPath)
+		err := argocd.KubectlCreateApplication(dryRun, kubeconfigPath, kubectlClientPath, k1DirPath, registryYamlPath)
 		if err != nil {
-			log.Info().Msg("Error applying registry application to argocd")
+			log.Info().Msgf("Error applying %s application to argocd", registryYamlPath)
 			return err
 		}
 	}

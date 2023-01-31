@@ -277,7 +277,8 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.registry.applied")
 	if !executionControl {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
-		err := argocd.ApplyRegistryLocal(dryRun, config.KubeConfigPath, config.KubectlClientPath, config.K1FolderPath)
+		registryYamlPath := fmt.Sprintf("%s/gitops/registry.yaml", config.K1FolderPath)
+		err := argocd.KubectlCreateApplication(dryRun, config.KubeConfigPath, config.KubectlClientPath, config.K1FolderPath, registryYamlPath)
 		if err != nil {
 			log.Error().Err(err).Msg("Error applying registry application to argocd")
 			return err
