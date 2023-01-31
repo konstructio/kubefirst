@@ -242,11 +242,12 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	// helm install argocd
-	executionControl = viper.GetBool("argocd.helm.install.complete")
-	if !executionControl {
-		pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
-		helm.Install(config.ArgoCDInitValuesYamlPath, dryRun, config.HelmClientPath, helmRepo, config.KubeConfigPath)
-	}
+	// todo undo this is from vault-spike
+	// executionControl = viper.GetBool("argocd.helm.install.complete")
+	// if !executionControl {
+	// 	pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
+	// 	helm.Install(config.ArgoCDInitValuesYamlPath, dryRun, config.HelmClientPath, helmRepo, config.KubeConfigPath)
+	// }
 	progressPrinter.IncrementTracker("step-apps", 1)
 
 	// argocd pods are running
@@ -278,7 +279,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
 		registryYamlPath := fmt.Sprintf("%s/gitops/registry.yaml", config.K1FolderPath)
-		err := argocd.KubectlCreateApplication(dryRun, config.KubeConfigPath, config.KubectlClientPath, config.K1FolderPath, registryYamlPath)
+		err := argocd.KubectlCreateApplication(config.KubeConfigPath, config.KubectlClientPath, config.K1FolderPath, registryYamlPath)
 		if err != nil {
 			log.Error().Err(err).Msg("Error applying registry application to argocd")
 			return err

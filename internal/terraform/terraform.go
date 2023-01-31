@@ -173,6 +173,17 @@ func GetVaultTerraformEnvs(envs map[string]string) map[string]string {
 	return envs
 }
 
+func GetVaultSpikeTerraformEnvs(envs map[string]string) map[string]string {
+	//! need to move this up after spike is complete
+	envs["CIVO_TOKEN"] = os.Getenv("CIVO_TOKEN")
+	envs["TF_VAR_civo_token"] = os.Getenv("CIVO_TOKEN")
+	envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
+	envs["VAULT_TOKEN"] = viper.GetString("vault.token")
+	envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
+
+	return envs
+}
+
 func ApplyBaseTerraform(dryRun bool, directory string) {
 	config := configs.ReadConfig()
 	applyBase := viper.GetBool("create.terraformapplied.base")

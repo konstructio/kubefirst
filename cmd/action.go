@@ -29,7 +29,7 @@ to quickly create a Cobra application.`,
 			Name:      "vault-secrets-backend",
 		}, css)
 
-		fmt.Println(css)
+		fmt.Println(css.Name)
 
 		//!
 
