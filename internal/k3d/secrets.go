@@ -132,17 +132,18 @@ func AddK3DSecrets(dryRun bool, kubeconfigPath string) error {
 	}
 
 	dataArgoCd := map[string][]byte{
-		"password": []byte(os.Getenv("GITHUB_TOKEN")),
-		"url":      []byte(fmt.Sprintf("https://%s/%s/gitops.git", viper.GetString("github.host"), viper.GetString("github.owner"))),
-		"username": []byte(viper.GetString("github.user")),
+		"type":          []byte("git"),
+		"name":          []byte(fmt.Sprintf("%s-gitops", viper.GetString("github.owner"))),
+		"url":           []byte(viper.GetString("github.repo.gitops.giturl")),
+		"sshPrivateKey": []byte(viper.GetString("kubefirst.bot.private-key")),
 	}
 
 	argoCdSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        "github-repo-creds",
+			Name:        "repo-credentials-template",
 			Namespace:   "argocd",
 			Annotations: map[string]string{"managed-by": "argocd.argoproj.io"},
-			Labels:      map[string]string{"argocd.argoproj.io/secret-type": "repo-creds"},
+			Labels:      map[string]string{"argocd.argoproj.io/secret-type": "repository"},
 		},
 		Data: dataArgoCd,
 	}
