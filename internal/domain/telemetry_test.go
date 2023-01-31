@@ -16,9 +16,9 @@ func TestNewTelemetry(t *testing.T) {
 		metricName    string
 		domain        string
 		cliVersion    string
-		kubeFirstTeam string
 		clusterId     string
 		clusterType   string
+		kubeFirstTeam string
 	}
 	tests := []struct {
 		name    string
