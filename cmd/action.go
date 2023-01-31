@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 
-	cssv1beta1 "github.com/external-secrets/external-secrets/apis/externalsecrets/v1beta1"
+	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"github.com/spf13/viper"
 )
 
 // actionCmd represents the action command
@@ -21,15 +21,39 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		var c client.Client
+		// var c client.Client
+		kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
 
-		css := &cssv1beta1.ClusterSecretStore{}
-		c.Get(context.Background(), client.ObjectKey{
-			Namespace: "external-secrets-operator",
-			Name:      "vault-secrets-backend",
-		}, css)
+		clientset, err := k8s.GetClientSet(false, kubeconfigPath)
+		if err != nil {
+			log.Info().Msg("error getting kubernetes clientset")
+		}
+		// podName := &corev1.Pod{}
 
-		fmt.Println(css.Name)
+		// obj := client.ObjectKey{
+		// 	Namespace: "argocd",
+		// 	Name:      "argocd-server-544c569746-d47nx",
+		// }
+
+		// fmt.Println(podName)
+		// fmt.Println(obj)
+		// var css cssv1beta1.ClusterSecretStore{}
+
+		css := clientset.RESTClient().Get().Namespace("external-secrets-operator").Resource("clustersecretstore").Name("vault-secrets-backend")
+		if err != nil {
+			log.Info().Msg("error getting kubernetes clientset")
+		}
+		fmt.Println(*css)
+		// k8sConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+		// if err != nil {
+		// 	return errors.New("error getting k8sClient")
+		// }
+
+		// k8sClient := dynamic.NewForConfigOrDie(k8sConfig)
+
+		// k8sClient.Get()
+
+		// fmt.Println(&css.Name)
 
 		//!
 
@@ -39,7 +63,6 @@ to quickly create a Cobra application.`,
 		// k1DirPath := viper.GetString("kubefirst.k1-directory-path")
 		// helmClientPath := viper.GetString("kubefirst.helm-client-path")
 		// k1GitopsDir := viper.GetString("kubefirst.k1-gitops-dir")
-		// kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
 
 		// kubectlClientPath := viper.GetString("kubefirst.kubectl-client-path")
 		// // registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", k1DirPath, clusterName)
