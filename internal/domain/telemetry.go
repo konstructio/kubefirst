@@ -2,53 +2,63 @@ package domain
 
 import (
 	"errors"
+	"os"
 
-	"github.com/denisbrodbeck/machineid"
+	"github.com/google/uuid"
 	"github.com/kubefirst/kubefirst/pkg"
 )
 
 // Telemetry data that will be consumed by handlers and services
 type Telemetry struct {
-	MetricName string
-	Domain     string
-	CLIVersion string
-	MachineId  string
+	MetricName    string
+	Domain        string
+	CLIVersion    string
+	ClusterType   string
+	ClusterId     string
+	KubeFirstTeam string
 }
 
 // NewTelemetry is the Telemetry domain. When instantiating new Telemetries, we're able to validate domain specific
 // values. In this way, domain, handlers and services can work in isolation, and Domain host business logic.
-func NewTelemetry(metricName string, domain string, CLIVersion string) (Telemetry, error) {
+func NewTelemetry(metricName string, domain string, KubeFirstTeam string, CLIVersion string, ClusterType string, ClusterId string) (Telemetry, error) {
 
 	if len(metricName) == 0 {
 		return Telemetry{}, errors.New("unable to create metric, missing metric name")
 	}
-	machineId, err := machineid.ID()
-	if err != nil {
-		return Telemetry{}, err
+
+	// scan for kubefirst_team env
+	kubeFirstTeam := "false"
+	if os.Getenv("kubefirst_team") == "true" {
+		kubeFirstTeam = "true"
 	}
+	//initialize cluster id
+	clusterId := uuid.New().String()
 
 	// localhost installation doesn't provide hostedzone that are mainly used as domain in this context. In case a
 	// hostedzone is not provided, we assume it's a localhost installation
 	if len(domain) == 0 {
-		domain = machineId
+
 		return Telemetry{
-			MetricName: metricName,
-			Domain:     domain,
-			CLIVersion: CLIVersion,
-			MachineId:  machineId,
+			MetricName:    metricName,
+			Domain:        clusterId,
+			CLIVersion:    CLIVersion,
+			KubeFirstTeam: kubeFirstTeam,
+			ClusterType:   "mgmt",
+			ClusterId:     clusterId,
 		}, nil
 	}
 
-	// we store domain only, not subdomains
-	domain, err = pkg.RemoveSubDomain(domain)
+	domain, err := pkg.RemoveSubDomain(domain)
 	if err != nil {
 		return Telemetry{}, err
 	}
 
 	return Telemetry{
-		MetricName: metricName,
-		Domain:     domain,
-		CLIVersion: CLIVersion,
-		MachineId:  machineId,
+		MetricName:    metricName,
+		Domain:        domain,
+		CLIVersion:    CLIVersion,
+		KubeFirstTeam: kubeFirstTeam,
+		ClusterType:   "mgmt",
+		ClusterId:     clusterId,
 	}, nil
 }
