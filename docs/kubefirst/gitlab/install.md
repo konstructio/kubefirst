@@ -1,4 +1,4 @@
-# Platform Installation with the Kubefirst CLI
+# Gitlab Platform Installation with the Kubefirst CLI
 
 **Kubefirst** is the name of our command line tool that installs the Kubefirst platform and provides some platform 
 conveniences.
