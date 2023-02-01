@@ -5,9 +5,7 @@ import (
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/pkg"
-	"github.com/spf13/cobra"
 )
 
 // Telemetry data that will be consumed by handlers and services
@@ -39,19 +37,6 @@ func WithClusterType(clusterType string) Option {
 func WithKubeFirstTeam(kubeFirstTeam string) Option {
 	return func(f *Telemetry) {
 		f.KubeFirstTeam = kubeFirstTeam
-	}
-}
-
-// Ascertain whether a user is deploying on Github or Gitlab
-func GetGitProvider(cmd *cobra.Command) (string, error) {
-	gitFlags, err := flagset.ProcessGithubAddCmdFlags(cmd)
-	if err != nil {
-		return "", errors.New("unable to process Github CMD Flags")
-	}
-	if gitFlags.GithubUser != "" {
-		return "github", nil
-	} else {
-		return "gitlab", nil
 	}
 }
 
