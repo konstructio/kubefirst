@@ -22,6 +22,18 @@ To delete your github assets that we created, log into your personal github and 
 - gitops repo
 - metaphor-frontend repo
 
+# CLI Example:
+```
+gh repo delete <GITHUB_USERNAME>/metaphor-go --confirm
+gh repo delete <GITHUB_USERNAME>/metaphor-frontend --confirm
+gh repo delete <GITHUB_USERNAME>/metaphor --confirm
+gh repo delete <GITHUB_USERNAME>/gitops --confirm
+
+---
+$HOME/.k1/tools/k3d cluster delete kubefirst
+---
+kubefirst clean
+```
 
 ## Localhost file cleanup
 

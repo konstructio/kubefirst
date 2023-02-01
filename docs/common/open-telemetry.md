@@ -4,3 +4,5 @@ Kubefirst collects data around users in order to optimize future releases. By co
 
 ## How to Opt Out
 
+When installing your KubeFirst cluster through the cli, append the `--use-telemetry=false` flag to opt ourself out of this process.
+
