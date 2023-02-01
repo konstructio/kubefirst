@@ -133,7 +133,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubOrg := viper.GetString("github.owner")
 		githubUser := strings.ToLower(viper.GetString("github.user"))
 		useTelemetry := viper.GetString("use-telemetry")
-		clusterId := viper.GetString("clusterid")
+		clusterId := viper.GetString("cluster-id")
 
 		ngrokURL, err := url.Parse(viper.GetString("ngrok.url"))
 		if err != nil {
