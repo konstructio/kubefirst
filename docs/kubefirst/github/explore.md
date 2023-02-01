@@ -1,4 +1,4 @@
-# Explore
+# Explore (GitHub)
 
 [//]: # (`todo: need new getting started video for github`)
 
