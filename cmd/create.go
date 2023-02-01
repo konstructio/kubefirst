@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 
 	"time"
@@ -74,6 +75,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		}
 
 		if globalFlags.UseTelemetry {
+			gitProvider, err := domain.GetGitProvider(cmd)
 			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallStarted); err != nil {
 				log.Warn().Msgf("%s", err)
 			}

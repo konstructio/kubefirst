@@ -14,7 +14,7 @@ import (
 
 // SendSegmentIoTelemetry is a wrapper function that instantiate SegmentIO handler, service, and sends a track activity to
 // SegmentIO.
-func SendSegmentIoTelemetry(hostedZone string, metricName string) error {
+func SendSegmentIoTelemetry(hostedZone string, metricName string, cloudProvider string, gitProvider string) error {
 	// Instantiates a SegmentIO client to use send messages to the segment API.
 	segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
 
@@ -32,12 +32,14 @@ func SendSegmentIoTelemetry(hostedZone string, metricName string) error {
 		metricName,
 		hostedZone,
 		configs.K1Version,
+		cloudProvider,
+		gitProvider,
 	)
 	if err != nil {
 		return err
 	}
 
-	viper.Set("clusterId", telemetryDomain.ClusterId)
+	viper.Set("cluster-id", telemetryDomain.ClusterId)
 	err = viper.WriteConfig()
 	if err != nil {
 		return err

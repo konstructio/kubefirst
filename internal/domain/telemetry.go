@@ -5,13 +5,17 @@ import (
 	"os"
 
 	"github.com/google/uuid"
+	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/spf13/cobra"
 )
 
 // Telemetry data that will be consumed by handlers and services
 type Telemetry struct {
 	MetricName    string
 	Domain        string
+	CloudProvider string
+	GitProvider   string
 	CLIVersion    string
 	ClusterId     string
 	ClusterType   string
@@ -38,9 +42,22 @@ func WithKubeFirstTeam(kubeFirstTeam string) Option {
 	}
 }
 
+// Ascertain whether a user is deploying on Github or Gitlab
+func GetGitProvider(cmd *cobra.Command) (string, error) {
+	gitFlags, err := flagset.ProcessGithubAddCmdFlags(cmd)
+	if err != nil {
+		return "", errors.New("unable to process Github CMD Flags")
+	}
+	if gitFlags.GithubUser != "" {
+		return "github", nil
+	} else {
+		return "gitlab", nil
+	}
+}
+
 // NewTelemetry is the Telemetry domain. When instantiating new Telemetries, we're able to validate domain specific
 // values. In this way, domain, handlers and services can work in isolation, and Domain host business logic.
-func NewTelemetry(metricName string, domain string, CLIVersion string, opts ...Option) (Telemetry, error) {
+func NewTelemetry(metricName string, domain string, CLIVersion string, cloudProvider string, gitProvider string, opts ...Option) (Telemetry, error) {
 
 	if len(metricName) == 0 {
 		return Telemetry{}, errors.New("unable to create metric, missing metric name")
@@ -64,6 +81,8 @@ func NewTelemetry(metricName string, domain string, CLIVersion string, opts ...O
 			MetricName:    metricName,
 			Domain:        "",
 			CLIVersion:    CLIVersion,
+			CloudProvider: cloudProvider,
+			GitProvider:   gitProvider,
 			ClusterType:   clusterType,
 			ClusterId:     clusterId,
 			KubeFirstTeam: kubeFirstTeam,
