@@ -16,6 +16,8 @@ func TestNewTelemetry(t *testing.T) {
 		metricName    string
 		domain        string
 		cliVersion    string
+		cloudProvider string
+		gitProvider   string
 		clusterId     string
 		clusterType   string
 		kubeFirstTeam string
@@ -32,6 +34,8 @@ func TestNewTelemetry(t *testing.T) {
 				metricName:    "test metric",
 				domain:        "https://example.com",
 				cliVersion:    "0.0.0",
+				cloudProvider: "local",
+				gitProvider:   "github",
 				clusterId:     clusterId,
 				clusterType:   clusterType,
 				kubeFirstTeam: kubeFirstTeam,
@@ -45,6 +49,8 @@ func TestNewTelemetry(t *testing.T) {
 				metricName:    "test metric",
 				domain:        "https://example-com",
 				cliVersion:    "0.0.0",
+				cloudProvider: "local",
+				gitProvider:   "github",
 				clusterId:     clusterId,
 				clusterType:   clusterType,
 				kubeFirstTeam: kubeFirstTeam,
@@ -58,6 +64,8 @@ func TestNewTelemetry(t *testing.T) {
 				metricName:    "test metric",
 				domain:        "",
 				cliVersion:    "0.0.0",
+				cloudProvider: "local",
+				gitProvider:   "github",
 				clusterId:     clusterId,
 				clusterType:   clusterType,
 				kubeFirstTeam: kubeFirstTeam,
@@ -65,6 +73,8 @@ func TestNewTelemetry(t *testing.T) {
 			want: Telemetry{
 				MetricName:    "test metric",
 				Domain:        clusterId,
+				CloudProvider: "local",
+				GitProvider:   "github",
 				CLIVersion:    "0.0.0",
 				ClusterId:     clusterId,
 				ClusterType:   clusterType,
@@ -75,9 +85,11 @@ func TestNewTelemetry(t *testing.T) {
 		{
 			name: "missing telemetry name",
 			args: args{
-				metricName: "",
-				domain:     "example.com",
-				cliVersion: "0.0.0",
+				metricName:    "",
+				domain:        "example.com",
+				cliVersion:    "0.0.0",
+				cloudProvider: "local",
+				gitProvider:   "github",
 			},
 			want:    Telemetry{},
 			wantErr: true,
@@ -85,7 +97,7 @@ func TestNewTelemetry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewTelemetry(tt.args.metricName, tt.args.domain, tt.args.cliVersion, WithClusterId("894b39b0-1df7-44b3-a418-a36e298b55a6"))
+			got, err := NewTelemetry(tt.args.metricName, tt.args.domain, tt.args.cliVersion, tt.args.cloudProvider, tt.args.gitProvider, WithClusterId("894b39b0-1df7-44b3-a418-a36e298b55a6"))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewTelemetry() error = %v, wantErr %v", err, tt.wantErr)
 				return
