@@ -201,8 +201,14 @@ cluster provisioning process spinning up the services, and validates the livenes
 		log.Debug().Msg("sending mgmt cluster install completed metric")
 
 		if globalFlags.UseTelemetry {
-			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallCompleted); err != nil {
-				log.Warn().Msgf("%s", err)
+			if viper.GetString("gitprovider") == "github" {
+				if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallCompleted, "aws", "github"); err != nil {
+					log.Warn().Msgf("%s", err)
+				}
+			} else {
+				if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallCompleted, "aws", "gitlab"); err != nil {
+					log.Warn().Msgf("%s", err)
+				}
 			}
 		}
 

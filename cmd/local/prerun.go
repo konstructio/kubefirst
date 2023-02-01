@@ -36,7 +36,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	if useTelemetry {
 		pkg.InformUser("Sending installation telemetry", silentMode)
-		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted, "local", "github"); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 	}
@@ -246,7 +246,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	pkg.InformUser("initialization step is done!", silentMode)
 
 	if useTelemetry {
-		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted); err != nil {
+		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted, "local", "github"); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 	}
