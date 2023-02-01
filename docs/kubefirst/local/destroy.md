@@ -22,7 +22,7 @@ To delete your github assets that we created, log into your personal github and 
 - gitops repo
 - metaphor-frontend repo
 
-# CLI Example:
+Manual Destroy CLI Example:
 ```
 gh repo delete <GITHUB_USERNAME>/metaphor-go --confirm
 gh repo delete <GITHUB_USERNAME>/metaphor-frontend --confirm
