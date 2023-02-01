@@ -24,6 +24,9 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	// nextKubefirstDestroyCommand = fmt.Sprintf("%s \n  --skip-tf-aws", nextKubefirstDestroyCommand)
 
 	config := configs.GetCivoConfig()
+	clusterName := viper.GetString("kubefirst.cluster-name")
+	k1DirPath := viper.GetString("kubefirst.k1-directory-path")
+	registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", clusterName, k1DirPath)
 
 	githubToken := config.GithubToken
 	civoToken := config.CivoToken
@@ -105,7 +108,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 		argocdHttpClient := http.Client{Transport: customTransport}
 		log.Info().Msg("deleting the registry application")
-		argocd.DeleteApplication(&argocdHttpClient, "registry", argocdAuthToken, "true")
+		argocd.DeleteApplication(&argocdHttpClient, registryYamlPath, argocdAuthToken, "true")
 
 		for _, vol := range clusterVolumes {
 			fmt.Println("removing volume with name: " + vol.Name)

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"time"
 
@@ -72,7 +71,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
 	helmClientPath := viper.GetString("kubefirst.helm-client-path")
 	helmClientVersion := viper.GetString("kubefirst.helm-client-version")
-	k1Dir := viper.GetString("kubefirst.k1-directory-path")
+	k1DirPath := viper.GetString("kubefirst.k1-directory-path")
 	kubectlClientPath := viper.GetString("kubefirst.kubectl-client-path")
 	kubectlClientVersion := viper.GetString("kubefirst.kubectl-client-version")
 	localOs := viper.GetString("localhost.os")
@@ -81,7 +80,8 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	k1ToolsDir := viper.GetString("kubefirst.k1-tools-path")
 	silentMode := false // todo fix
 	dryRun := false     // todo fix
-	argoCDInitValuesYamlPath := fmt.Sprintf("%s/argocd-init-values.yaml", k1Dir)
+	// todo part of vault-spike
+	// argoCDInitValuesYamlPath := fmt.Sprintf("%s/argocd-init-values.yaml", k1DirPath)
 
 	publicKeys, err := ssh.NewPublicKeys("git", []byte(kubefirstBotSSHPrivateKey), "")
 	if err != nil {
@@ -131,7 +131,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		log.Info().Msg("gitops repository clone complete")
 
-		pkg.CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1Dir, k1GitopsDir)
+		pkg.CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1DirPath, k1GitopsDir)
 
 		pkg.DetokenizeCivoGithubGitops(k1GitopsDir)
 
@@ -146,7 +146,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
-	os.Exit(1)
+
+	//** this is where os.Exit(1) was
+	//** this is where os.Exit(1) was
+
 	// todo need adopt metaphor-slim and reduce repo count
 	//* create teams and repositories in github
 	executionControl := viper.GetBool("terraform.github.apply.complete")
@@ -194,15 +197,21 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already pushed detokenized gitops repository content")
 	}
 
+	//!! this is where os.Exit(1) is
+	//!! this is where os.Exit(1) is
+	//!! this is where os.Exit(1) is
+
 	//* git clone and detokenize the metaphor-frontend-template repository
 	if !viper.GetBool("template-repo.metaphor-frontend.pushed") {
 
 		pkg.InformUser("generating your new metaphor-frontend repository", silentMode)
-		metaphorRepo, err := gitClient.CloneBranchSetMain(metaphorFrontendTemplateURL, k1MetaphorDir, metaphorFrontendTemplateBranch)
+		metaphorRepo, err := gitClient.CloneBranchSetMain(metaphorFrontendTemplateBranch, metaphorFrontendTemplateURL, k1MetaphorDir)
 		if err != nil {
 			log.Print("error opening repo at:", k1MetaphorDir)
 		}
 		log.Info().Msg("metaphor repository clone complete")
+
+		pkg.CivoGithubAdjustMetaphorTemplateContent(gitProvider, k1DirPath, k1MetaphorDir)
 
 		pkg.DetokenizeCivoGithubMetaphor(k1MetaphorDir)
 		gitClient.AddRemote(destinationMetaphorFrontendRepoURL, gitProvider, metaphorRepo)
@@ -227,6 +236,9 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
+	//!! this is where os.Exit(1) is
+	//!! this is where os.Exit(1) is
+	//!! this is where os.Exit(1) is
 
 	//* create civo cloud resources
 	if !viper.GetBool("terraform.civo.apply.complete") {
@@ -262,21 +274,21 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already added secrets to k3d cluster")
 	}
 
-	//* create argocd initial repository config
-	// todo gitops this or bootstrap the | keep looking
-	executionControl = viper.GetBool("argocd.initial-repository.created")
-	if !executionControl {
-		pkg.InformUser("create initial argocd repository", silentMode)
-		//Enterprise users need to be able to set the hostname for git.
-		argoCDConfig := argocd.GetArgoCDInitialCloudConfig(destinationGitopsRepoURL, kubefirstBotSSHPrivateKey)
-		err := argocd.CreateInitialArgoCDRepository(argoCDConfig, k1Dir)
-		if err != nil {
-			log.Info().Msg("Error CreateInitialArgoCDRepository")
-			return err
-		}
-	} else {
-		log.Info().Msg("already created initial argocd repository")
-	}
+	// //* create argocd initial repository config
+	// todo is this handled by adding kubernetes secrets?
+	// executionControl = viper.GetBool("argocd.initial-repository.created")
+	// if !executionControl {
+	// 	pkg.InformUser("create initial argocd repository", silentMode)
+	// 	//Enterprise users need to be able to set the hostname for git.
+	// 	argoCDConfig := argocd.GetArgoCDInitialCloudConfig(destinationGitopsRepoURL, kubefirstBotSSHPrivateKey)
+	// 	err := argocd.CreateInitialArgoCDRepository(argoCDConfig, k1DirPath)
+	// 	if err != nil {
+	// 		log.Info().Msg("Error CreateInitialArgoCDRepository")
+	// 		return err
+	// 	}
+	// } else {
+	// 	log.Info().Msg("already created initial argocd repository")
+	// }
 
 	//* helm add argo repository && update
 	helmRepo := helm.HelmRepo{
@@ -293,15 +305,15 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		helm.AddRepoAndUpdateRepo(dryRun, helmClientPath, helmRepo, kubeconfigPath)
 	}
 	//* helm install argocd
-	executionControl = viper.GetBool("argocd.helm.install.complete")
-	if !executionControl {
-		pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
-		// todo adopt golang helm client for helm install
-		err := helm.Install(argoCDInitValuesYamlPath, dryRun, helmClientPath, helmRepo, kubeconfigPath)
-		if err != nil {
-			return err
-		}
-	}
+	// executionControl = viper.GetBool("argocd.helm.install.complete")
+	// if !executionControl {
+	// 	pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
+	// 	// todo adopt golang helm client for helm install
+	// 	err := helm.Install(argoCDInitValuesYamlPath, dryRun, helmClientPath, helmRepo, kubeconfigPath)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	//* argocd pods are running
 	// todo improve this check, also return an error so we can have an exit on failure
@@ -336,6 +348,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("argocd username and password credentials set successfully", silentMode)
 
 		pkg.InformUser("Getting an argocd auth token", silentMode)
+		// todo return in here and pass argocdAuthToken as a parameter
 		_ = argocd.GetArgocdAuthToken(dryRun)
 		pkg.InformUser("argocd admin auth token set", silentMode)
 
@@ -347,9 +360,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.registry.applied")
 	if !executionControl {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
-		err := argocd.ApplyRegistryLocal(dryRun, kubeconfigPath, kubectlClientPath, k1Dir)
+		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", clusterName, k1DirPath)
+		err := argocd.KubectlCreateApplication(kubeconfigPath, kubectlClientPath, k1DirPath, registryYamlPath)
 		if err != nil {
-			log.Info().Msg("Error applying registry application to argocd")
+			log.Info().Msgf("Error applying %s application to argocd", registryYamlPath)
 			return err
 		}
 	}
@@ -553,7 +567,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 	//! here is the code im replacing
 	// update terraform s3 backend to internal k8s dns (s3/minio bucket)
-	// err := pkg.UpdateTerraformS3BackendForK8sAddress(k1Dir)
+	// err := pkg.UpdateTerraformS3BackendForK8sAddress(k1DirPath)
 	// if err != nil {
 	// 	return err
 	// }
@@ -572,7 +586,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// err = gitClient.UpdateLocalTerraformFilesAndPush(
 	// 	githubHost,
 	// 	githubOwnerFlag,
-	// 	k1Dir,
+	// 	k1DirPath,
 	// 	localRepo,
 	// 	remoteName,
 	// 	branchNameRef,

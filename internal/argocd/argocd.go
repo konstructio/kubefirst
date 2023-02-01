@@ -456,22 +456,23 @@ func ApplyRegistry(dryRun bool) error {
 	return nil
 }
 
-// ApplyRegistryLocal - Apply Registry Local application
-func ApplyRegistryLocal(dryRun bool, kubeconfigPath, kubectlClientPath, k1Dir string) error {
+// KubectlCreateApplication - create an argocd application via `kubectl`
+// todo should this be k1.Kubectl ?
+func KubectlCreateApplication(kubeconfigPath, kubectlClientPath, k1Dir, registryYamlPath string) error {
 
-	if viper.GetBool("argocd.registry.applied") || dryRun {
-		log.Info().Msg("skipped ApplyRegistryLocal - ")
-		return nil
-	}
+	// if viper.GetBool("argocd.registry.applied") || dryRun {
+	// 	log.Info().Msg("skipped ApplyRegistryLocal - ")
+	// 	return nil
+	// }
 
-	_, _, err := pkg.ExecShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/registry.yaml", k1Dir))
+	_, _, err := pkg.ExecShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
 	if err != nil {
-		log.Warn().Msgf("failed to execute localhost kubectl apply of registry-base: %s", err)
+		log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", registryYamlPath, err.Error())
 		return err
 	}
-	time.Sleep(45 * time.Second)
-	viper.Set("argocd.registry.applied", true)
-	viper.WriteConfig()
+
+	// viper.Set("argocd.registry.applied", true)
+	// viper.WriteConfig()
 
 	return nil
 }

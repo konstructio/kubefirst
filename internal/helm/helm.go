@@ -102,7 +102,8 @@ func AddRepoAndUpdateRepo(dryRun bool, helmClientPath string, helmRepo HelmRepo,
 	return nil
 }
 
-func Install(argoCDInitValuesYamlPath string, dryRun bool, helmClientPath string, helmRepo HelmRepo, kubeconfigPath string) error {
+// func Install(argoCDInitValuesYamlPath string, dryRun bool, helmClientPath string, helmRepo HelmRepo, kubeconfigPath string) error {
+func Install(dryRun bool, helmClientPath string, helmRepo HelmRepo, kubeconfigPath string) error {
 	if dryRun {
 		log.Info().Msg("[#99] Dry-run mode, helm.Install skipped.")
 		return nil
@@ -110,7 +111,8 @@ func Install(argoCDInitValuesYamlPath string, dryRun bool, helmClientPath string
 
 	log.Info().Msgf("executing `helm install %s` and waiting for completion ", helmRepo.ChartName)
 	// todo remove `"--set", "fullnameOverride=argocd", "--set", "nameOverride=argocd"` see type ConfigRepo
-	a, b, err := pkg.ExecShellReturnStrings(helmClientPath, "--kubeconfig", kubeconfigPath, "upgrade", "--install", helmRepo.ChartName, "--namespace", helmRepo.Namespace, "--create-namespace", "--version", helmRepo.ChartVersion, "--wait", "--set", "fullnameOverride=argo-cd", "--set", "nameOverride=argo-cd", "--values", argoCDInitValuesYamlPath, fmt.Sprintf("%s/%s", helmRepo.RepoName, helmRepo.ChartName))
+	//! , "--values", argoCDInitValuesYamlPath,
+	a, b, err := pkg.ExecShellReturnStrings(helmClientPath, "--kubeconfig", kubeconfigPath, "upgrade", "--install", helmRepo.ChartName, "--namespace", helmRepo.Namespace, "--create-namespace", "--version", helmRepo.ChartVersion, "--wait", "--set", "fullnameOverride=argocd", "--set", "nameOverride=argocd", fmt.Sprintf("%s/%s", helmRepo.RepoName, helmRepo.ChartName))
 	log.Info().Msg(a)
 	log.Info().Msg(b)
 	if err != nil {
