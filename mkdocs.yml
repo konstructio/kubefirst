@@ -58,7 +58,7 @@ nav:
         - GitHub Token: 'common/github-token.md'
         - Gitops: 'common/gitops.md'
         - Metaphor: 'common/metaphor.md'
-        - Open Telemtry: "common/open-telemetry.md"
+        - Open Telemetry: "common/open-telemetry.md"
         - Security: 'common/security.md'
         - Terraform & Atlantis: 'common/terraform.md'                
         - Vault: 'common/vault.md'
