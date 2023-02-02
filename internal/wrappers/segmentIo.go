@@ -1,6 +1,8 @@
 package wrappers
 
 import (
+	"log"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/domain"
 	"github.com/kubefirst/kubefirst/internal/handlers"
@@ -8,12 +10,11 @@ import (
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/segmentio/analytics-go"
 	"github.com/spf13/viper"
-	"log"
 )
 
 // SendSegmentIoTelemetry is a wrapper function that instantiate SegmentIO handler, service, and sends a track activity to
 // SegmentIO.
-func SendSegmentIoTelemetry(hostedZone string, metricName string) error {
+func SendSegmentIoTelemetry(hostedZone string, metricName string, cloudProvider string, gitProvider string) error {
 	// Instantiates a SegmentIO client to use send messages to the segment API.
 	segmentIOClient := analytics.New(pkg.SegmentIOWriteKey)
 
@@ -31,12 +32,14 @@ func SendSegmentIoTelemetry(hostedZone string, metricName string) error {
 		metricName,
 		hostedZone,
 		configs.K1Version,
+		cloudProvider,
+		gitProvider,
 	)
 	if err != nil {
 		return err
 	}
 
-	viper.Set("machineid", telemetryDomain.MachineId)
+	viper.Set("cluster-id", telemetryDomain.ClusterId)
 	err = viper.WriteConfig()
 	if err != nil {
 		return err
