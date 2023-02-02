@@ -5,10 +5,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/rs/zerolog"
 	stdLog "log"
 	"os"
 	"time"
+
+	"github.com/rs/zerolog"
 
 	"github.com/rs/zerolog/log"
 
@@ -33,9 +34,15 @@ func main() {
 
 	logfile := fmt.Sprintf("%s/log_%d.log", logsFolder, epoch)
 	//fmt.Printf("Logging at: %s \n", logfile)
-	fmt.Printf("\n-----------\n")
-	fmt.Printf("Follow your logs with: \n   tail -f  %s \n", logfile)
-	fmt.Printf("\n-----------\n")
+
+	// Avoid printing log helper for certain subcommands
+	var excludeLogHelperFrom []string = []string{"version"}
+	if len(os.Args) > 1 && !pkg.FindStringInSlice(excludeLogHelperFrom, os.Args[1]) {
+		fmt.Printf("\n-----------\n")
+		fmt.Printf("Follow your logs with: \n   tail -f  %s \n", logfile)
+		fmt.Printf("\n-----------\n")
+	}
+
 	file, err := pkg.OpenLogFile(logfile)
 	if err != nil {
 		stdLog.Panicf("unable to store log location, error is: %s", err)
