@@ -458,7 +458,7 @@ func ApplyRegistry(dryRun bool) error {
 
 // KubectlCreateApplication - create an argocd application via `kubectl`
 // todo should this be k1.Kubectl ?
-func KubectlCreateApplication(kubeconfigPath, kubectlClientPath, k1Dir, registryYamlPath string) error {
+func KubectlCreateApplication(kubeconfigPath, kubectlClientPath, registryYamlPath string) error {
 
 	// if viper.GetBool("argocd.registry.applied") || dryRun {
 	// 	log.Info().Msg("skipped ApplyRegistryLocal - ")
