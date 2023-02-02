@@ -764,3 +764,14 @@ func GetCertificateAppList() []CertificateAppList {
 
 	return certificateAppList
 }
+
+// FindStringInSlice takes []string and returns true if the supplied string is in the slice.
+func FindStringInSlice(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
