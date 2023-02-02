@@ -5,8 +5,7 @@ operations out of the box.
 
 It installs a fully automated platform of open source cloud native tools with a simple `kubefirst civo create` command.
 
-<!-- todo get image -->
-<!-- ![](../../img/kubefirst/kubefirst-cluster-create.png) -->
+![](../../img/kubefirst/civo/kubefirst-cluster-create.png)
 
 ### CIVO Prerequisites
 

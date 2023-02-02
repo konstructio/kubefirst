@@ -5,7 +5,7 @@ conveniences.
 
 It installs a fully automated platform of open source cloud native tools with a simple `init` and `create` command.
 
-![](../../img/kubefirst/kubefirst-cluster-create.png)
+![](../../img/kubefirst/gitlab/kubefirst-cluster-create.png)
 
 ### AWS Prerequisites
 
