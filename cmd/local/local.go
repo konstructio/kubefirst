@@ -92,13 +92,14 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
 
-	//tools.RunInfo(cmd, args)
+	gitProvider := viper.GetString("gitprovider")
+	cloud := viper.GetString("cloud")
 
 	progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 	progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
 	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 4)
 	if useTelemetry {
-		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallStarted); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallStarted, cloud, gitProvider); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 		log.Info().Msg("Telemetry info sent")
@@ -111,7 +112,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	//go pkg.RunNgrok(context.TODO(), pkg.LocalAtlantisURL)
 
 	if !viper.GetBool("kubefirst.done") {
-		if viper.GetString("gitprovider") == "github" {
+		if gitProvider == "github" {
 			log.Info().Msg("Installing Github version of Kubefirst")
 			viper.Set("git.mode", "github")
 			err := k3d.CreateK3dCluster()
@@ -452,7 +453,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("sending mgmt cluster install completed metric")
 	if useTelemetry {
-		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted); err != nil {
+		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted, cloud, gitProvider); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 		log.Info().Msg("Telemetry info sent")
