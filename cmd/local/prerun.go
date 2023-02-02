@@ -34,9 +34,12 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
 
+	gitProvider := viper.GetString("gitprovider")
+	cloud := viper.GetString("cloud")
+
 	if useTelemetry {
 		pkg.InformUser("Sending installation telemetry", silentMode)
-		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted, "local", "github"); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted, cloud, gitProvider); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 	}
@@ -246,7 +249,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	pkg.InformUser("initialization step is done!", silentMode)
 
 	if useTelemetry {
-		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted, "local", "github"); err != nil {
+		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted, cloud, gitProvider); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 	}

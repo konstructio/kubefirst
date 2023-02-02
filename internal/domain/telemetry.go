@@ -48,9 +48,9 @@ func NewTelemetry(metricName string, domain string, CLIVersion string, cloudProv
 		return Telemetry{}, errors.New("unable to create metric, missing metric name")
 	}
 
-	// scan for kubefirst_team env
+	// scan for KUBEFIRST_TEAM env
 	kubeFirstTeam := "false"
-	if os.Getenv("kubefirst_team") == "true" {
+	if os.Getenv("KUBEFIRST_TEAM") == "true" {
 		kubeFirstTeam = "true"
 	}
 

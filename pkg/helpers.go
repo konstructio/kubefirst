@@ -56,7 +56,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		return nil
 	}
 
-	if viper.GetString("gitprovider") == "github" && strings.Contains(path, "-gitlab.tf") {
+	if gitProvider == "github" && strings.Contains(path, "-gitlab.tf") {
 		log.Debug().Msgf("github provider specified, removing gitlab terraform file: %s", path)
 		err = os.Remove(path)
 		if err != nil {
@@ -64,7 +64,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		}
 		return nil
 	}
-	if viper.GetString("gitprovider") == "gitlab" && strings.Contains(path, "-github.tf") {
+	if gitProvider == "gitlab" && strings.Contains(path, "-github.tf") {
 		log.Info().Msgf("gitlab is enabled, removing github terraform file: %s", path)
 		err = os.Remove(path)
 		if err != nil {
@@ -134,6 +134,9 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubUser := strings.ToLower(viper.GetString("github.user"))
 		useTelemetry := viper.GetString("use-telemetry")
 		clusterId := viper.GetString("cluster-id")
+		gitProvider := viper.GetString("gitprovider")
+
+		kubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
 
 		ngrokURL, err := url.Parse(viper.GetString("ngrok.url"))
 		if err != nil {
@@ -175,7 +178,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		var repoPathSSH string
 		var repoPathPrefered string
 
-		if viper.GetString("gitprovider") == "github" {
+		if gitProvider == "github" {
 			repoPathHTTPS = "https://" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
 			repoPathSSH = "git@" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
 			repoPathPrefered = repoPathSSH
@@ -255,6 +258,9 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		newContents = strings.Replace(newContents, "<GITHUB_TOKEN>", githubToken, -1)
 		newContents = strings.Replace(newContents, "<USE_TELEMETRY>", useTelemetry, -1)
 		newContents = strings.Replace(newContents, "<CLUSTER_ID>", clusterId, -1)
+		newContents = strings.Replace(newContents, "<CLUSTER_TYPE>", "mgmt", -1)
+		newContents = strings.Replace(newContents, "<GIT_PROVIDER>", gitProvider, -1)
+		newContents = strings.Replace(newContents, "<KUBEFIRST_TEAM>", kubefirstTeam, -1)
 
 		newContents = strings.Replace(newContents, "<REPO_GITOPS>", "gitops", -1)
 
@@ -548,7 +554,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 	}
 
 	// update GitHub Terraform content
-	if viper.GetString("gitprovider") == "github" {
+	if gitProvider == "github" {
 		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
 		if err := replaceFileContent(
 			fullPathKubefirstGitHubFile,
@@ -589,7 +595,7 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 	}
 
 	// update GitHub Terraform content
-	if viper.GetString("gitprovider") == "github" {
+	if gitProvider == "github" {
 		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
 		if err := replaceFileContent(
 			fullPathKubefirstGitHubFile,
