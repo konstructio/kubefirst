@@ -44,6 +44,7 @@ func Detokenize(path string) {
 
 // DetokenizeDirectory - Translate tokens by values on a directory level.
 func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
+
 	if err != nil {
 		return err
 	}
@@ -56,6 +57,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		return nil
 	}
 
+	gitProvider := viper.GetString("gitprovider")
 	if gitProvider == "github" && strings.Contains(path, "-gitlab.tf") {
 		log.Debug().Msgf("github provider specified, removing gitlab terraform file: %s", path)
 		err = os.Remove(path)
@@ -553,6 +555,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 		return err
 	}
 
+	gitProvider := viper.GetString("gitprovider")
 	// update GitHub Terraform content
 	if gitProvider == "github" {
 		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
@@ -594,6 +597,7 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 		return err
 	}
 
+	gitProvider := viper.GetString("gitprovider")
 	// update GitHub Terraform content
 	if gitProvider == "github" {
 		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
