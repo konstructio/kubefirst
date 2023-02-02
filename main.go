@@ -37,7 +37,7 @@ func main() {
 
 	// Avoid printing log helper for certain subcommands
 	var excludeLogHelperFrom []string = []string{"version"}
-	if !pkg.FindStringInSlice(excludeLogHelperFrom, os.Args[1]) {
+	if len(os.Args) > 1 && !pkg.FindStringInSlice(excludeLogHelperFrom, os.Args[1]) {
 		fmt.Printf("\n-----------\n")
 		fmt.Printf("Follow your logs with: \n   tail -f  %s \n", logfile)
 		fmt.Printf("\n-----------\n")
