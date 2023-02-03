@@ -42,7 +42,7 @@ func CreateSshKeyPair() {
 	}
 
 	// generate GitHub keys
-	if publicKey == "" && viper.GetString("gitprovider") == "github" {
+	if publicKey == "" && viper.GetString("git-provider") == "github" {
 
 		log.Info().Msg("generating new key pair for GitHub")
 		publicKey, privateKey, err := generateGitHubKeys()

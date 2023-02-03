@@ -66,7 +66,7 @@ func ProcessInstallerGenericFlags(cmd *cobra.Command) (InstallerGenericFlags, er
 	}
 	flags.GitProvider = gitProvider
 	log.Info().Msgf("git provider: %s", gitProvider)
-	viper.Set("gitprovider", gitProvider)
+	viper.Set("git-provider", gitProvider)
 
 	adminEmail, err := ReadConfigString(cmd, "admin-email")
 	if err != nil {

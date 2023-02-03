@@ -66,7 +66,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	// set default values to kubefirst file
 	viper.Set("gitops.repo", pkg.KubefirstGitOpsRepository)
 	viper.Set("gitops.owner", "kubefirst")
-	viper.Set("gitprovider", pkg.GitHubProviderName)
+	viper.Set("git-provider", pkg.GitHubProviderName)
 	viper.Set("metaphor.branch", metaphorBranch)
 
 	viper.Set("gitops.branch", gitOpsBranch)
