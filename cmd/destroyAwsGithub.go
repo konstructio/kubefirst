@@ -57,7 +57,7 @@ var destroyAwsGithubCmd = &cobra.Command{
 			)
 		}
 
-		gitHubAccessToken := config.GitHubPersonalAccessToken
+		gitHubAccessToken := config.GithubToken
 		httpClient := http.DefaultClient
 		gitHubService := services.NewGitHubService(httpClient)
 		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
@@ -96,7 +96,7 @@ var destroyAwsGithubCmd = &cobra.Command{
 
 		//This should wrapped into a function, maybe to move to: k8s.DeleteRegistryApplication
 		if !destroyFlags.SkipDeleteRegistryApplication {
-			kPortForwardArgocd, _ := k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
+			kPortForwardArgocd, _ := k8s.PortForward(globalFlags.DryRun, "svc/argocd-server", config.KubeConfigPath, config.KubectlClientPath, "argocd", "8080:80")
 			defer func() {
 				if kPortForwardArgocd != nil {
 					log.Info().Msg("Closed argocd port forward")

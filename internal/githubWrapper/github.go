@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/google/go-github/v45/github"
 	"golang.org/x/oauth2"
@@ -23,7 +24,7 @@ type GithubSession struct {
 
 // New - Create a new client for github wrapper
 func New() GithubSession {
-	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
+	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
 		log.Fatal().Msg("Unauthorized: No token present")
 	}
@@ -36,14 +37,14 @@ func New() GithubSession {
 
 }
 
-func (g GithubSession) CreateWebhookRepo(org, repo, hookName, hookUrl, hookSecret string, hookEvents []string) error {
+func (g GithubSession) CreateWebhookRepo(org, repo, hookName, hookURL, hookSecret string, hookEvents []string) error {
 	input := &github.Hook{
 		Name:   &hookName,
 		Events: hookEvents,
 		Config: map[string]interface{}{
 			"content_type": "json",
 			"insecure_ssl": 0,
-			"url":          hookUrl,
+			"url":          hookURL,
 			"secret":       hookSecret,
 		},
 	}
@@ -280,4 +281,16 @@ func (g GithubSession) RetrySearchPullRequestComment(
 		return true, nil
 	}
 	return false, nil
+}
+
+// GetRepo - Always returns a status code for whether a repository exists or not
+func (g GithubSession) CheckRepoExists(owner string, name string) int {
+	_, response, _ := g.gitClient.Repositories.Get(g.context, owner, name)
+	return response.StatusCode
+}
+
+// GetRepo - Always returns a status code for whether a team exists or not
+func (g GithubSession) CheckTeamExists(owner string, name string) int {
+	_, response, _ := g.gitClient.Teams.GetTeamBySlug(g.context, owner, name)
+	return response.StatusCode
 }

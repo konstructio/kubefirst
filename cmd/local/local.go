@@ -131,8 +131,8 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		pkg.InformUser("Creating github resources with terraform", silentMode)
 
-		tfEntrypoint := config.GitOpsLocalRepoPath + "/terraform/github"
-		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
+		tfEntrypoint := config.GitOpsRepoPath + "/terraform/github"
+		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, map[string]string{}) // todo need to get envs
 
 		pkg.InformUser(fmt.Sprintf("Created gitops Repo in github.com/%s", viper.GetString("github.owner")), silentMode)
 		progressPrinter.IncrementTracker("step-github", 1)
@@ -193,7 +193,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	executionControl = viper.GetBool("kubernetes.vault.secret.created")
 	if !executionControl {
-		err := k3d.AddK3DSecrets(dryRun)
+		err := k3d.AddK3DSecrets(dryRun, config.KubeConfigPath)
 		if err != nil {
 			log.Error().Err(err).Msg("Error AddK3DSecrets")
 			return err
@@ -220,7 +220,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 			viper.GetString("botprivatekey"),
 		)
 
-		err := argocd.CreateInitialArgoCDRepository(config, argoCDConfig)
+		err := argocd.CreateInitialArgoCDRepository(argoCDConfig, config.KubeConfigPath)
 		if err != nil {
 			log.Error().Err(err).Msg("Error CreateInitialArgoCDRepository")
 			return err
@@ -241,21 +241,22 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.helm.repo.updated")
 	if !executionControl {
 		pkg.InformUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), silentMode)
-		helm.AddRepoAndUpdateRepo(dryRun, helmRepo)
+		helm.AddRepoAndUpdateRepo(dryRun, config.HelmClientPath, helmRepo, config.KubeConfigPath)
 	}
 
 	// helm install argocd
-	executionControl = viper.GetBool("argocd.helm.install.complete")
-	if !executionControl {
-		pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
-		helm.Install(dryRun, helmRepo)
-	}
+	// todo undo this is from vault-spike
+	// executionControl = viper.GetBool("argocd.helm.install.complete")
+	// if !executionControl {
+	// 	pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
+	// 	helm.Install(config.ArgoCDInitValuesYamlPath, dryRun, config.HelmClientPath, helmRepo, config.KubeConfigPath)
+	// }
 	progressPrinter.IncrementTracker("step-apps", 1)
 
 	// argocd pods are running
 	executionControl = viper.GetBool("argocd.ready")
 	if !executionControl {
-		argocd.WaitArgoCDToBeReady(dryRun)
+		argocd.WaitArgoCDToBeReady(dryRun, config.KubeConfigPath, config.KubectlClientPath)
 		pkg.InformUser("ArgoCD is running, continuing", silentMode)
 	} else {
 		log.Info().Msg("already waited for argocd to be ready")
@@ -265,7 +266,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.credentials.set")
 	if !executionControl {
 		pkg.InformUser("Setting argocd username and password credentials", silentMode)
-		k8s.SetArgocdCreds(dryRun)
+		k8s.SetArgocdCreds(dryRun, config.KubeConfigPath)
 		pkg.InformUser("argocd username and password credentials set successfully", silentMode)
 
 		pkg.InformUser("Getting an argocd auth token", silentMode)
@@ -280,7 +281,8 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.registry.applied")
 	if !executionControl {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
-		err := argocd.ApplyRegistryLocal(dryRun)
+		registryYamlPath := fmt.Sprintf("%s/gitops/registry.yaml", config.K1FolderPath)
+		err := argocd.KubectlCreateApplication(config.KubeConfigPath, config.KubectlClientPath, registryYamlPath)
 		if err != nil {
 			log.Error().Err(err).Msg("Error applying registry application to argocd")
 			return err
@@ -293,10 +295,10 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("vault.status.running")
 	if !executionControl {
 		pkg.InformUser("waiting for Vault to be ready...", silentMode)
-		vault.WaitVaultToBeRunning(dryRun)
+		vault.WaitVaultToBeRunning(dryRun, config.KubeConfigPath, config.KubectlClientPath)
 	}
 
-	k8s.LoopUntilPodIsReady(dryRun)
+	k8s.LoopUntilPodIsReady(dryRun, config.KubeConfigPath, config.KubectlClientPath)
 
 	// configure vault with terraform
 	executionControl = viper.GetBool("terraform.vault.apply.complete")
@@ -308,15 +310,15 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 		//* run vault terraform
 		pkg.InformUser("configuring vault with terraform", silentMode)
-		tfEntrypoint := config.GitOpsLocalRepoPath + "/terraform/vault"
-		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
+		tfEntrypoint := config.GitOpsRepoPath + "/terraform/vault"
+		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, map[string]string{}) // todo need to get envs
 
 		pkg.InformUser("vault terraform executed successfully", silentMode)
 
 		//* create vault configurerd secret
 		// todo remove this code
 		log.Info().Msg("creating vault configured secret")
-		k8s.CreateVaultConfiguredSecret(dryRun, config)
+		k8s.CreateVaultConfiguredSecret(dryRun, config.KubeConfigPath, config.KubectlClientPath)
 		pkg.InformUser("Vault secret created", silentMode)
 	} else {
 		log.Info().Msg("already executed vault terraform")
@@ -327,8 +329,8 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		pkg.InformUser("applying users terraform", silentMode)
 
-		tfEntrypoint := config.GitOpsLocalRepoPath + "/terraform/users"
-		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint)
+		tfEntrypoint := config.GitOpsRepoPath + "/terraform/users"
+		terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, map[string]string{}) // todo need to get envs
 
 		pkg.InformUser("executed users terraform successfully", silentMode)
 		// progressPrinter.IncrementTracker("step-users", 1)
@@ -352,7 +354,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	if !viper.GetBool("chartmuseum.host.resolved") {
 
-		pkg.AwaitHostNTimes(pkg.ChartmuseumLocalURL+"/health", 5, 5)
+		pkg.AwaitHostNTimes(config.ChartmuseumLocalURL+"/health", 5, 5)
 		viper.Set("chartmuseum.host.resolved", true)
 		viper.WriteConfig()
 	} else {
@@ -367,7 +369,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	}
 
 	// update terraform s3 backend to internal k8s dns (s3/minio bucket)
-	err = pkg.UpdateTerraformS3BackendForK8sAddress()
+	err = pkg.UpdateTerraformS3BackendForK8sAddress(config.K1FolderPath)
 	if err != nil {
 		return err
 	}
@@ -380,6 +382,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	err = gitClient.UpdateLocalTerraformFilesAndPush(
 		githubHost,
 		githubOwner,
+		config.K1FolderPath,
 		localRepo,
 		remoteName,
 		branchNameRef,

@@ -36,12 +36,12 @@ clusters without impacting the applications that your engineers and users depend
 
 ## Kubernetes Representations
 
-The **Metaphors** applications are multi-instance load balanced applications. It's deployed to the `development`, 
+The **Metaphor** applications are multi-instance load balanced applications. It's deployed to the `development`, 
 `staging`, and `production` namespaces in your `kubefirst` cluster.
 
 ![](../img/kubefirst/metaphor/metaphor-kubernetes-manifests.png)
 
-The Kubernetes manifests produced by the **Metaphors** applications CI include a working example of a Kubernetes 
+The Kubernetes manifests produced by the **Metaphor** applications CI include a working example of a Kubernetes 
 deployment with downstream ReplicaSet and pods, a service account with a security context used, a service to make the 
 application available to the cluster, and an Ingress to make the service available outside the cluster.
 
@@ -82,7 +82,7 @@ For an AWS Cloud selection(`kubefirst create --cloud aws`):
 
 - the value specified in `spec.rules.host` will automatically create a route53 CNAME that is bound to the Ingress elastic load balancer.
 - The `cert-manager.io/cluster-issuer` annotation will prompt `cert-manager` to automatically create a certificate for your application and will store that cert in the `secretName` specified.
-- NGINX will automatically route traffic to the **Metaphors** applications service based on the path-based/host-based routing specified in `spec.rules`.
+- NGINX will automatically route traffic to the **Metaphor** applications service based on the path-based/host-based routing specified in `spec.rules`.
 
 For a local selection(`kubefirst local`):
 
@@ -91,20 +91,20 @@ For a local selection(`kubefirst local`):
 
 ## Environment Configs and Secrets
 
-The **Metaphors** applications also include a working example of how to leverage a multi-environment secrets management
+The **Metaphor** applications also include a working example of how to leverage a multi-environment secrets management
 paradigm powered by **Vault** and `external-secrets`.
 
 There is also a ConfigMap implementation to demonstrate how to leverage non-sensitive configuration values.
 
 ## Datadog Integrations
 
-The **Metaphors** applications are set up to provide cloud and container observability and monitoring best practices 
-with **Datadog**. It demonstrates using **Datadog** for **Metaphors** application logs, container statistics, application 
+The **Metaphor** applications are set up to provide cloud and container observability and monitoring best practices 
+with **Datadog**. It demonstrates using **Datadog** for **Metaphor** application logs, container statistics, application 
 metrics, application performance monitoring, dashboard, and alerting.
 
 ## Secrets Management
 
-The **Metaphors** applications leverages hashicorp **Vault** for secrets management. **Vault** runs in the `mgmt` cluster 
+The **Metaphor** applications leverages hashicorp **Vault** for secrets management. **Vault** runs in the `mgmt` cluster 
 and metaphor runs in `preprod` and `production`, so it serves as an example for secrets management. To read more see our 
 [Vault documentation](./vault.md).
 

@@ -19,22 +19,22 @@ type CreateHandOff struct {
 	RepoGitops   string
 	RepoMetaphor string
 
-	VaultUrl   string
+	VaultURL   string
 	VaultToken string
 
-	ArgoCDUrl      string
+	ArgoCDURL      string
 	ArgoCDUsername string
 	ArgoCDPassword string
 
-	ArgoWorkflowsUrl string
+	ArgoWorkflowsURL string
 
-	AtlantisUrl string
+	AtlantisURL string
 
-	ChartMuseumUrl string
+	ChartMuseumURL string
 
-	MetaphorDevUrl        string
-	MetaphorStageUrl      string
-	MetaphorProductionUrl string
+	MetaphorDevURL        string
+	MetaphorStageURL      string
+	MetaphorProductionURL string
 }
 
 func BuildCreateHandOffReport(clusterData CreateHandOff) bytes.Buffer {
@@ -64,40 +64,40 @@ func BuildCreateHandOffReport(clusterData CreateHandOff) bytes.Buffer {
 
 	handOffData.WriteString("\n--- Vault ")
 	handOffData.WriteString(strings.Repeat("-", 60))
-	handOffData.WriteString(fmt.Sprintf("\n URL: %s", clusterData.VaultUrl))
+	handOffData.WriteString(fmt.Sprintf("\n URL: %s", clusterData.VaultURL))
 	handOffData.WriteString(fmt.Sprintf("\n token: %s", clusterData.VaultToken))
 	//handOffData.WriteString(strings.Repeat("-", 70))
 
 	handOffData.WriteString("\n--- ArgoCD ")
 	handOffData.WriteString(strings.Repeat("-", 59))
-	handOffData.WriteString(fmt.Sprintf("\n URL: %s", clusterData.ArgoCDUrl))
+	handOffData.WriteString(fmt.Sprintf("\n URL: %s", clusterData.ArgoCDURL))
 	handOffData.WriteString(fmt.Sprintf("\n username: %s", clusterData.ArgoCDUsername))
 	handOffData.WriteString(fmt.Sprintf("\n password: %s", clusterData.ArgoCDPassword))
 	//handOffData.WriteString(strings.Repeat("-", 70))
 
 	handOffData.WriteString("\n--- Argo Workflows ")
 	handOffData.WriteString(strings.Repeat("-", 51))
-	handOffData.WriteString(fmt.Sprintf("\n URL: %s", clusterData.ArgoWorkflowsUrl))
+	handOffData.WriteString(fmt.Sprintf("\n URL: %s", clusterData.ArgoWorkflowsURL))
 	handOffData.WriteString("\n sso credentials only ")
 	handOffData.WriteString("\n * sso enabled ")
 	//handOffData.WriteString(strings.Repeat("-", 70))
 
 	handOffData.WriteString("\n--- Atlantis ")
 	handOffData.WriteString(strings.Repeat("-", 57))
-	handOffData.WriteString(fmt.Sprintf("\n URL: %s", clusterData.AtlantisUrl))
+	handOffData.WriteString(fmt.Sprintf("\n URL: %s", clusterData.AtlantisURL))
 	//handOffData.WriteString(strings.Repeat("-", 70))
 
 	handOffData.WriteString("\n--- Museum ")
 	handOffData.WriteString(strings.Repeat("-", 59))
-	handOffData.WriteString(fmt.Sprintf("\n URL: %s\n", clusterData.ChartMuseumUrl))
+	handOffData.WriteString(fmt.Sprintf("\n URL: %s\n", clusterData.ChartMuseumURL))
 	handOffData.WriteString(" see vault for credentials ")
 	//handOffData.WriteString(strings.Repeat("-", 70))
 
 	handOffData.WriteString("\n--- Metaphor ")
 	handOffData.WriteString(strings.Repeat("-", 57))
-	handOffData.WriteString(fmt.Sprintf("\n Development: %s", clusterData.MetaphorDevUrl))
-	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", clusterData.MetaphorStageUrl))
-	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", clusterData.MetaphorProductionUrl))
+	handOffData.WriteString(fmt.Sprintf("\n Development: %s", clusterData.MetaphorDevURL))
+	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", clusterData.MetaphorStageURL))
+	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", clusterData.MetaphorProductionURL))
 	handOffData.WriteString(strings.Repeat("-", 70))
 
 	return handOffData

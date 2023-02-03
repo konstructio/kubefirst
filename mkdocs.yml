@@ -39,28 +39,31 @@ nav:
         - GitHub Repositories: 'kubefirst/local/github-repositories.md'        
         - Limitations: 'kubefirst/local/limitations.md'
         - Destroy: 'kubefirst/local/destroy.md'
-      - GitHub Installation:
+      - Civo Installation:
+        - Install: 'kubefirst/civo/install.md'
+        - After Install: 'kubefirst/civo/after-install.md'
+        - GitHub Repositories: 'kubefirst/civo/github-repositories.md'
+        - Argo CD: 'kubefirst/civo/argocd.md'
+        - GitOps: 'kubefirst/civo/gitops.md'
+        - Terraform & Atlantis: 'kubefirst/civo/terraform.md'
+        - Vault: 'kubefirst/civo/vault.md'
+        - Metaphor: 'common/metaphor.md'
+        - Credit: 'kubefirst/civo/credit.md'
+        - Destroy: 'kubefirst/civo/destroy.md'
+      - AWS Installation (GitHub):
         - Install: 'kubefirst/github/install.md'
         - Explore: 'kubefirst/github/explore.md'
         - Destroy: 'kubefirst/github/destroy.md'
         - GitHub Repositories: 'kubefirst/github/github-repositories.md'
-      - GitLab Installation:
+      - AWS Installation (GitLab):
         - Install: 'kubefirst/gitlab/install.md'
-        - Explore: 'kubefirst/gitlab/explore.md'
-        - Destroy: 'kubefirst/gitlab/destroy.md'
-        - Gitlab: 'kubefirst/gitlab/gitlab.md'
-        - Gitlab Repositories: 'kubefirst/gitlab/gitlab-repositories.md'
-        
-      - Shared Concepts:        
-        - Overview: 'common/shared-concepts-overview.md'
-        - Argo CD: 'common/argocd.md'
-        - Certificates: 'common/certificates.md'        
-        - GitHub Token: 'common/github-token.md'
-        - Gitops: 'common/gitops.md'
-        - Metaphor: 'common/metaphor.md'
-        - Security: 'common/security.md'
-        - Terraform & Atlantis: 'common/terraform.md'                
-        - Vault: 'common/vault.md'
+        - After Install: 'kubefirst/gitlab/explore.md'
+        - GitLab: 'kubefirst/gitlab/gitlab.md'
+        - GitLab Repositories: 'kubefirst/gitlab/gitlab-repositories.md'
+        - Argo CD: 'kubefirst/gitlab/argocd.md'
+        - GitOps: 'kubefirst/gitlab/gitops.md'
+        - Terraform & Atlantis: 'kubefirst/gitlab/terraform.md'
+        - Vault: 'kubefirst/gitlab/vault.md'
       - Installer Options:
         - Config: 'kubefirst/installer/config-file.md'
       - FAQ: 'kubefirst/FAQ.md'

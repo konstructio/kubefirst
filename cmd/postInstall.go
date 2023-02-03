@@ -5,6 +5,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
@@ -37,8 +38,10 @@ var postInstallCmd = &cobra.Command{
 			return err
 		}
 
+		config := configs.ReadConfig()
+
 		if createFlags.EnableConsole {
-			err := k8s.OpenPortForwardForCloudConConsole()
+			err := k8s.OpenPortForwardForCloudConConsole(config.KubeConfigPath, config.KubectlClientPath)
 			if err != nil {
 				log.Warn().Msgf("%s", err)
 			}

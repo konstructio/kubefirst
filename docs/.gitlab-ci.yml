@@ -28,7 +28,7 @@ publish:
         -p appName="${CI_PROJECT_NAME}" \
         -p ciCommitSha="${CI_COMMIT_SHA}" \
         -p branch="${CI_COMMIT_REF_NAME}" \
-        -p gitRepoUrl="${CI_PROJECT_URL}" \
+        -p gitRepoURL="${CI_PROJECT_URL}" \
         -p shortSha="${CI_COMMIT_SHORT_SHA}" \
         --wait --log
             
@@ -46,7 +46,7 @@ development:
         -p ciCommitSha="${CI_COMMIT_SHA}" \
         -p branch="${CI_COMMIT_REF_NAME}" \
         -p environment="development" \
-        -p gitRepoUrl="${CI_PROJECT_URL}" \
+        -p gitRepoURL="${CI_PROJECT_URL}" \
         -p shortSha="${CI_COMMIT_SHORT_SHA}" \
         --wait --log
 
@@ -64,7 +64,7 @@ release:
         -p ciCommitSha="${CI_COMMIT_SHA}" \
         -p branch="${CI_COMMIT_REF_NAME}" \
         -p environment="production" \
-        -p gitRepoUrl="${CI_PROJECT_URL}" \
+        -p gitRepoURL="${CI_PROJECT_URL}" \
         -p shortSha="${CI_COMMIT_SHORT_SHA}" \
         --wait --log
   when: manual

@@ -71,7 +71,7 @@ const (
 	ChartmuseumNamespace    = "chartmuseum"
 	ChartmuseumPodPort      = 8080
 	ChartmuseumPodLocalPort = 8181
-	ChartmuseumLocalURL     = "http://chartmuseum.localdev.me"
+	ChartmuseumLocalURL     = "http://localhost:8181"
 	ChartmuseumLocalURLTLS  = "https://chartmuseum.localdev.me"
 )
 
@@ -107,9 +107,9 @@ const (
 
 // Atlantis
 const (
+	AtlantisPodPort           = 4141
 	AtlantisPodName           = "atlantis-0"
 	AtlantisNamespace         = "atlantis"
-	AtlantisPodPort           = 4141
 	AtlantisPodLocalPort      = 4141
 	AtlantisLocalURLTEST      = "atlantis.localdev.me"
 	AtlantisLocalURL          = "http://atlantis.localdev.me"

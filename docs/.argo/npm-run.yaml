@@ -8,8 +8,8 @@ spec:
       value: /src/{{workflow.parameters.appName}}
     - name: branch
       value: "{{workflow.parameters.branch}}"
-    - name: gitRepoUrl
-      value: "{{workflow.parameters.gitRepoUrl}}"
+    - name: gitRepoURL
+      value: "{{workflow.parameters.gitRepoURL}}"
     - name: npmScriptName
       value: "{{workflow.parameters.npmScriptName}}"
   templates:
@@ -26,8 +26,8 @@ spec:
             value: "{{workflow.parameters.appDir}}"
           - name: branch
             value: "{{workflow.parameters.branch}}"
-          - name: gitRepoUrl
-            value: "{{workflow.parameters.gitRepoUrl}}"
+          - name: gitRepoURL
+            value: "{{workflow.parameters.gitRepoURL}}"
 
     - - name: npm-install
         templateRef:

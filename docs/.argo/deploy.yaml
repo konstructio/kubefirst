@@ -19,8 +19,8 @@ spec:
       value: "{{workflow.parameters.environment}}"
     - name: fullChartPath # todo make this better? or good enough?
       value: "argocd/apps/{{workflow.parameters.appName}}/us-east-2/{{workflow.parameters.environment}}/Chart.yaml"
-    - name: gitRepoUrl
-      value: "{{workflow.parameters.gitRepoUrl}}"
+    - name: gitRepoURL
+      value: "{{workflow.parameters.gitRepoURL}}"
     - name: shortSha
       value: "{{workflow.parameters.shortSha}}"
   templates:
@@ -37,8 +37,8 @@ spec:
             value: "{{workflow.parameters.appDir}}"
           - name: branch
             value: "{{workflow.parameters.branch}}"
-          - name: gitRepoUrl
-            value: "{{workflow.parameters.gitRepoUrl}}"
+          - name: gitRepoURL
+            value: "{{workflow.parameters.gitRepoURL}}"
     
     - - name: get-initial-chart-version
         templateRef:
