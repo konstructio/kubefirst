@@ -21,9 +21,9 @@ func TestGitLabLivenessIntegration(t *testing.T) {
 		return
 	}
 	// todo local we don't call this function
-	gitlabUrl := fmt.Sprintf("https://gitlab.%s", config.HostedZoneName)
+	gitlabURL := fmt.Sprintf("https://gitlab.%s", config.HostedZoneName)
 
-	req, err := http.NewRequest(http.MethodGet, gitlabUrl, nil)
+	req, err := http.NewRequest(http.MethodGet, gitlabURL, nil)
 	if err != nil {
 		t.Error(err)
 	}

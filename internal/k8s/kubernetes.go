@@ -48,7 +48,7 @@ type PatchJson struct {
 // GetPodsByNamespace provide a namespace and returns a list v1.PodList containing the Pods data from that specific
 // namespace.
 func GetPodsByNamespace(namespace string) (*v1.PodList, error) {
-	clientset, err := GetClientSet(false)
+	clientset, err := GetClientSet(false, "config.KubeConfigPath")
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func GetPodsByNamespace(namespace string) (*v1.PodList, error) {
 
 // IsNamespaceCreated checks if a namespace exists in the cluster.
 func IsNamespaceCreated(namespace string) (bool, error) {
-	clientset, err := GetClientSet(false)
+	clientset, err := GetClientSet(false, "config.KubeConfigPath")
 	if err != nil {
 		return false, err
 	}
@@ -199,14 +199,13 @@ func GetResourcesByJq(dynamic dynamic.Interface, ctx context.Context, group stri
 }
 
 // GetClientSet - Get reference to k8s credentials to use APIS
-func GetClientSet(dryRun bool) (*kubernetes.Clientset, error) {
+func GetClientSet(dryRun bool, kubeconfigPath string) (*kubernetes.Clientset, error) {
 	if dryRun {
 		log.Info().Msgf("[#99] Dry-run mode, GetClientSet skipped.")
 		return nil, nil
 	}
-	config := configs.ReadConfig()
 
-	kubeconfig, err := clientcmd.BuildConfigFromFlags("", config.KubeConfigPath)
+	kubeconfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
 		log.Error().Err(err).Msg("Error getting kubeconfig")
 		return nil, err
@@ -222,15 +221,15 @@ func GetClientSet(dryRun bool) (*kubernetes.Clientset, error) {
 
 // deprecated
 // PortForward - opens port-forward to services
-func PortForward(dryRun bool, namespace string, filter string, ports string) (*exec.Cmd, error) {
+func PortForward(dryRun bool, filter, kubeconfigPath, kubectlClientPath, namespace, ports string) (*exec.Cmd, error) {
 	if dryRun {
 		log.Info().Msg("[#99] Dry-run mode, K8sPortForward skipped.")
 		return nil, nil
 	}
-	config := configs.ReadConfig()
+	// config := configs.ReadConfig()
 
 	var kPortForwardOutb, kPortForwardErrb bytes.Buffer
-	kPortForward := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "port-forward", filter, ports)
+	kPortForward := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", namespace, "port-forward", filter, ports)
 	kPortForward.Stdout = &kPortForwardOutb
 	kPortForward.Stderr = &kPortForwardErrb
 	err := kPortForward.Start()
@@ -244,7 +243,7 @@ func PortForward(dryRun bool, namespace string, filter string, ports string) (*e
 	//this sleep protects that.
 	//Please, don't remove this comment either.
 	time.Sleep(time.Second * 5)
-	log.Info().Msgf("%s %s %s %s %s %s %s %s", config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "port-forward", filter, ports)
+	log.Info().Msgf("%s %s %s %s %s %s %s %s", kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", namespace, "port-forward", filter, ports)
 	if err != nil {
 		// If it doesn't error, we kinda don't care much.
 		log.Info().Msgf("Commad Execution STDOUT: %s", kPortForwardOutb.String())
@@ -256,7 +255,7 @@ func PortForward(dryRun bool, namespace string, filter string, ports string) (*e
 	return kPortForward, nil
 }
 
-func WaitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, podLabel string) {
+func WaitForNamespaceandPods(dryRun bool, kubeconfigPath, kubectlClientPath, namespace, podLabel string) {
 	if dryRun {
 		log.Info().Msg("[#99] Dry-run mode, WaitForNamespaceandPods skipped")
 		return
@@ -264,7 +263,7 @@ func WaitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, pod
 	if !viper.GetBool("create.softserve.ready") {
 		x := 50
 		for i := 0; i < x; i++ {
-			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "get", fmt.Sprintf("namespace/%s", namespace))
+			_, _, err := pkg.ExecShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", namespace, "get", fmt.Sprintf("namespace/%s", namespace))
 			if err != nil {
 				log.Info().Msg(fmt.Sprintf("waiting for %s namespace to create ", namespace))
 				time.Sleep(10 * time.Second)
@@ -275,7 +274,7 @@ func WaitForNamespaceandPods(dryRun bool, config *configs.Config, namespace, pod
 			}
 		}
 		for i := 0; i < x; i++ {
-			_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", namespace, "get", "pods", "-l", podLabel)
+			_, _, err := pkg.ExecShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", namespace, "get", "pods", "-l", podLabel)
 			if err != nil {
 				log.Info().Msg(fmt.Sprintf("waiting for %s pods to create ", namespace))
 				time.Sleep(10 * time.Second)
@@ -302,7 +301,7 @@ func PatchSecret(k8sClient coreV1Types.SecretInterface, secretName, key, val str
 	k8sClient.Update(context.TODO(), secret, metaV1.UpdateOptions{})
 }
 
-func CreateVaultConfiguredSecret(dryRun bool, config *configs.Config) {
+func CreateVaultConfiguredSecret(dryRun bool, kubeconfigPath, kubectlClientPath string) {
 	if dryRun {
 		log.Info().Msg("[#99] Dry-run mode, CreateVaultConfiguredSecret skipped.")
 		return
@@ -312,7 +311,7 @@ func CreateVaultConfiguredSecret(dryRun bool, config *configs.Config) {
 		// todo - https://github.com/bcreane/k8sutils/blob/master/utils.go
 		// kubectl create secret generic vault-configured --from-literal=isConfigured=true
 		// the purpose of this command is to let the vault-unseal Job running in kuberenetes know that external secrets store should be able to connect to the configured vault
-		k := exec.Command(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "vault", "create", "secret", "generic", "vault-configured", "--from-literal=isConfigured=true")
+		k := exec.Command(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "vault", "create", "secret", "generic", "vault-configured", "--from-literal=isConfigured=true")
 		k.Stdout = &output
 		k.Stderr = os.Stderr
 		err := k.Run()
@@ -346,18 +345,18 @@ func WaitForGitlab(dryRun bool, config *configs.Config) {
 	log.Info().Msgf("the output is: %s", output.String())
 }
 
-func RemoveSelfSignedCertArgoCD(argocdPodClient coreV1Types.PodInterface) error {
+func RemoveSelfSignedCertArgoCD(argocdPodClient coreV1Types.PodInterface, kubeconfigPath string) error {
 	log.Info().Msg("Removing Self-Signed Certificate from argocd-secret")
 
 	log.Info().Msgf("Removing tls.crt")
-	err := clearSecretField("argocd", "argocd-secret", "/data/tls.crt")
+	err := clearSecretField("argocd", "argocd-secret", "/data/tls.crt", kubeconfigPath)
 	if err != nil {
 		log.Error().Err(err).Msg("errror removing tls.crt from argo-secret")
 		return err
 	}
 
 	log.Info().Msgf("Removing tls.key")
-	err = clearSecretField("argocd", "argocd-secret", "/data/tls.key")
+	err = clearSecretField("argocd", "argocd-secret", "/data/tls.key", kubeconfigPath)
 	if err != nil {
 		log.Error().Err(err).Msg("error removing tls.crt from argo-secret")
 		return err
@@ -370,7 +369,7 @@ func RemoveSelfSignedCertArgoCD(argocdPodClient coreV1Types.PodInterface) error 
 }
 
 // remove field from k8s secret using sdk
-func clearSecretField(namespace, name, field string) error {
+func clearSecretField(namespace, name, field, kubeconfigPath string) error {
 	log.Info().Msgf("Prepare secret to be patched: ns: %s name: %s path: %s", namespace, name, field)
 	secret := secret{
 		namespace: namespace,
@@ -382,7 +381,7 @@ func clearSecretField(namespace, name, field string) error {
 		Path: field,
 	}}
 
-	clientset, err := GetClientSet(false)
+	clientset, err := GetClientSet(false, kubeconfigPath)
 	if err != nil {
 		log.Error().Err(err).Msg("error creating k8s clientset")
 		return err
@@ -412,7 +411,7 @@ func (p *secret) patchSecret(k8sClient *kubernetes.Clientset, payload []PatchJso
 
 // todo: refactor to use ingress / local dns
 // this is used for local only (create/destroy)
-func LoopUntilPodIsReady(dryRun bool) {
+func LoopUntilPodIsReady(dryRun bool, kubeconfigPath, kubectlClientPath string) {
 	if dryRun {
 		log.Info().Msg("[#99] Dry-run mode, loopUntilPodIsReady skipped.")
 		return
@@ -438,7 +437,7 @@ func LoopUntilPodIsReady(dryRun bool) {
 				// todo: temporary code
 				log.Info().Msgf("trying to open port-forward again...")
 				go func() {
-					_, err := PortForward(false, "vault", "svc/vault", "8200:8200")
+					_, err := PortForward(false, "svc/vault", kubeconfigPath, kubectlClientPath, "vault", "8200:8200")
 					if err != nil {
 						log.Error().Err(err).Msg("error opening Vault port forward")
 					}
@@ -475,7 +474,7 @@ func LoopUntilPodIsReady(dryRun bool) {
 }
 
 // todo: deprecate the other functions
-func SetArgocdCreds(dryRun bool) {
+func SetArgocdCreds(dryRun bool, kubeconfigPath string) {
 	if dryRun {
 		log.Info().Msg("[#99] Dry-run mode, setArgocdCreds skipped.")
 		viper.Set("argocd.admin.password", "dry-run-not-real-pwd")
@@ -483,7 +482,7 @@ func SetArgocdCreds(dryRun bool) {
 		viper.WriteConfig()
 		return
 	}
-	clientset, err := GetClientSet(dryRun)
+	clientset, err := GetClientSet(dryRun, kubeconfigPath)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -520,10 +519,10 @@ func GetIngressHost(k8sClient *kubernetes.Clientset, namespace string, name stri
 //	namespace: namespace where secret will be created
 //	secretName: secret name to be stored at a Kubernetes object
 //	data: a single or collection of []bytes that will be stored as a Kubernetes secret
-func CreateSecret(namespace string, secretName string, data map[string][]byte) error {
+func CreateSecret(kubeconfigPath, namespace, secretName string, data map[string][]byte) error {
 
 	// todo: method
-	clientset, err := GetClientSet(false)
+	clientset, err := GetClientSet(false, kubeconfigPath)
 	if err != nil {
 		return err
 	}

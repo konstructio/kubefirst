@@ -105,7 +105,7 @@ var createGithubCmd = &cobra.Command{
 
 		argoCDConfig := argocd.GetArgoCDInitialCloudConfig(gitopsRepo, botPrivateKey)
 
-		err = argocd.CreateInitialArgoCDRepository(config, argoCDConfig)
+		err = argocd.CreateInitialArgoCDRepository(argoCDConfig, config.KubeConfigPath)
 		if err != nil {
 			log.Warn().Msgf("%s", err)
 			return err
@@ -124,7 +124,7 @@ var createGithubCmd = &cobra.Command{
 		waitArgoCDToBeReady(globalFlags.DryRun)
 		informUser("ArgoCD Ready", globalFlags.SilentMode)
 
-		kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
+		kPortForwardArgocd, err = k8s.PortForward(globalFlags.DryRun, "svc/argocd-server", config.KubeConfigPath, config.KubectlClientPath, "argocd", "8080:80")
 		defer kPortForwardArgocd.Process.Signal(syscall.SIGTERM)
 		informUser(fmt.Sprintf("ArgoCD available at %s", viper.GetString("argocd.local.service")), globalFlags.SilentMode)
 
@@ -159,11 +159,11 @@ var createGithubCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-apps", 1)
 
 		informUser("Waiting vault to be ready", globalFlags.SilentMode)
-		waitVaultToBeRunning(globalFlags.DryRun)
-		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "vault", "svc/vault", "8200:8200")
+		waitVaultToBeRunning(globalFlags.DryRun, config.KubeConfigPath)
+		kPortForwardVault, err := k8s.PortForward(globalFlags.DryRun, "svc/vault", config.KubeConfigPath, config.KubectlClientPath, "vault", "8200:8200")
 		defer kPortForwardVault.Process.Signal(syscall.SIGTERM)
 
-		loopUntilPodIsReady(globalFlags.DryRun)
+		loopUntilPodIsReady(globalFlags.DryRun, config.KubeConfigPath, config.KubectlClientPath)
 		initializeVaultAndAutoUnseal(globalFlags.DryRun)
 		informUser(fmt.Sprintf("Vault available at %s", viper.GetString("vault.local.service")), globalFlags.SilentMode)
 		informUser("Setup Vault", globalFlags.SilentMode)
@@ -180,7 +180,7 @@ var createGithubCmd = &cobra.Command{
 
 			log.Info().Msg("creating vault configured secret")
 
-			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config)
+			k8s.CreateVaultConfiguredSecret(globalFlags.DryRun, config.KubeConfigPath, config.KubectlClientPath)
 			informUser("Vault secret created", globalFlags.SilentMode)
 		}
 		informUser("Terraform Vault", globalFlags.SilentMode)

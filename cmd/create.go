@@ -86,7 +86,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
 
 		config := configs.ReadConfig()
-		gitHubAccessToken := config.GitHubPersonalAccessToken
+		gitHubAccessToken := config.GithubToken
 		if providerValue == pkg.GitHubProviderName && gitHubAccessToken == "" {
 
 			gitHubAccessToken, err = gitHubHandler.AuthenticateUser()
@@ -159,14 +159,14 @@ cluster provisioning process spinning up the services, and validates the livenes
 			}
 		}
 		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
-		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
+		clientset, err := k8s.GetClientSet(globalFlags.DryRun, config.KubeConfigPath)
 		if err != nil {
 			log.Warn().Msgf("Failed to get clientset for k8s : %s", err)
 			extractAwsElbInfoUpdateTrustStore(globalFlags.DryRun)
 			return err
 		}
 		argocdPodClient := clientset.CoreV1().Pods("argocd")
-		err = k8s.RemoveSelfSignedCertArgoCD(argocdPodClient)
+		err = k8s.RemoveSelfSignedCertArgoCD(argocdPodClient, config.KubeConfigPath)
 		if err != nil {
 			log.Warn().Msgf("Error removing self-signed certificate from ArgoCD: %s", err)
 		}

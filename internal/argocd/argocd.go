@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -24,6 +25,7 @@ import (
 
 var ArgocdSecretClient coreV1Types.SecretInterface
 
+// todo call this ArgocdConfig or something not so generic
 // Config ArgoCD configuration
 type Config struct {
 	Configs struct {
@@ -101,6 +103,88 @@ func SyncRetry(httpClient pkg.HTTPDoer, attempts int, interval int, applicationN
 		time.Sleep(time.Duration(interval) * time.Second)
 	}
 	return false, nil
+}
+
+// create an argocd application
+func CreateApplication(httpClient pkg.HTTPDoer, cascade, applicationName, argoCDToken string) (httpCodeResponse int, syncStatus string, Error error) {
+
+	params := url.Values{}
+	params.Add("cascade", cascade)
+	paramBody := strings.NewReader(params.Encode())
+
+	url := fmt.Sprintf("%s/api/v1/applications/%s", viper.GetString("argocd.local.service"), applicationName)
+	log.Info().Msg(url)
+	req, err := http.NewRequest(http.MethodDelete, url, paramBody)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+		return 0, "", err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", argoCDToken))
+	res, err := httpClient.Do(req)
+	if err != nil {
+		log.Error().Err(err).Msgf("error sending DELETE request to ArgoCD for application (%s)", applicationName)
+		return res.StatusCode, "", err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		log.Warn().Err(err).Msgf("argocd http response code is: %d", res.StatusCode)
+		return res.StatusCode, "", nil
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return res.StatusCode, "", err
+	}
+
+	var syncResponse argocdModel.V1alpha1Application
+	err = json.Unmarshal(body, &syncResponse)
+	if err != nil {
+		return res.StatusCode, "", err
+	}
+
+	return res.StatusCode, syncResponse.Status.Sync.Status, nil
+}
+
+// Sync request ArgoCD to manual sync an application.
+func DeleteApplication(httpClient pkg.HTTPDoer, applicationName, argoCDToken, cascade string) (httpCodeResponse int, syncStatus string, Error error) {
+
+	params := url.Values{}
+	params.Add("cascade", cascade)
+	paramBody := strings.NewReader(params.Encode())
+
+	url := fmt.Sprintf("%s/api/v1/applications/%s", viper.GetString("argocd.local.service"), applicationName)
+	log.Info().Msg(url)
+	req, err := http.NewRequest(http.MethodDelete, url, paramBody)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+		return 0, "", err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", argoCDToken))
+	res, err := httpClient.Do(req)
+	if err != nil {
+		log.Error().Err(err).Msgf("error sending DELETE request to ArgoCD for application (%s)", applicationName)
+		return res.StatusCode, "", err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		log.Warn().Err(err).Msgf("argocd http response code is: %d", res.StatusCode)
+		return res.StatusCode, "", nil
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return res.StatusCode, "", err
+	}
+
+	var syncResponse argocdModel.V1alpha1Application
+	err = json.Unmarshal(body, &syncResponse)
+	if err != nil {
+		return res.StatusCode, "", err
+	}
+
+	return res.StatusCode, syncResponse.Status.Sync.Status, nil
 }
 
 func RefreshApplication(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) {
@@ -372,37 +456,37 @@ func ApplyRegistry(dryRun bool) error {
 	return nil
 }
 
-// ApplyRegistryLocal - Apply Registry Local application
-func ApplyRegistryLocal(dryRun bool) error {
-	config := configs.ReadConfig()
+// KubectlCreateApplication - create an argocd application via `kubectl`
+// todo should this be k1.Kubectl ?
+func KubectlCreateApplication(kubeconfigPath, kubectlClientPath, registryYamlPath string) error {
 
-	if viper.GetBool("argocd.registry.applied") || dryRun {
-		log.Info().Msg("skipped ApplyRegistryLocal - ")
-		return nil
-	}
+	// if viper.GetBool("argocd.registry.applied") || dryRun {
+	// 	log.Info().Msg("skipped ApplyRegistryLocal - ")
+	// 	return nil
+	// }
 
-	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "apply", "-f", fmt.Sprintf("%s/gitops/registry.yaml", config.K1FolderPath))
+	_, _, err := pkg.ExecShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
 	if err != nil {
-		log.Warn().Msgf("failed to execute localhost kubectl apply of registry-base: %s", err)
+		log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", registryYamlPath, err.Error())
 		return err
 	}
-	time.Sleep(45 * time.Second)
-	viper.Set("argocd.registry.applied", true)
-	viper.WriteConfig()
+
+	// viper.Set("argocd.registry.applied", true)
+	// viper.WriteConfig()
 
 	return nil
 }
 
 // CreateInitialArgoCDRepository - Fill and create `argocd-init-values.yaml` for GitHub installs.
 // The `argocd-init-values.yaml` is applied during helm install.
-func CreateInitialArgoCDRepository(config *configs.Config, argoConfig Config) error {
+func CreateInitialArgoCDRepository(argoConfig Config, k1Dir string) error {
 
 	argoCdRepoYaml, err := yaml2.Marshal(&argoConfig)
 	if err != nil {
 		return fmt.Errorf("error: marshaling yaml for argo config %s", err)
 	}
 
-	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoCdRepoYaml, 0644)
+	err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", k1Dir), argoCdRepoYaml, 0644)
 	if err != nil {
 		return fmt.Errorf("error: could not write argocd-init-values.yaml %s", err)
 	}
@@ -472,15 +556,14 @@ func IsAppSynched(token string, applicationName string) (bool, error) {
 }
 
 // todo: document it, deprecate the other waitArgoCDToBeReady
-func WaitArgoCDToBeReady(dryRun bool) {
+func WaitArgoCDToBeReady(dryRun bool, kubeconfigPath, kubectlClientVersion string) {
 	if dryRun {
 		log.Info().Msg("[#99] Dry-run mode, waitArgoCDToBeReady skipped.")
 		return
 	}
-	config := configs.ReadConfig()
 	x := 50
 	for i := 0; i < x; i++ {
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "get", "namespace/argocd")
+		_, _, err := pkg.ExecShellReturnStrings(kubectlClientVersion, "--kubeconfig", kubeconfigPath, "get", "namespace/argocd")
 		if err != nil {
 			log.Info().Msg("Waiting argocd to be born")
 			time.Sleep(10 * time.Second)
@@ -491,7 +574,7 @@ func WaitArgoCDToBeReady(dryRun bool) {
 		}
 	}
 	for i := 0; i < x; i++ {
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "-n", "argocd", "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
+		_, _, err := pkg.ExecShellReturnStrings(kubectlClientVersion, "--kubeconfig", kubeconfigPath, "-n", "argocd", "get", "pods", "-l", "app.kubernetes.io/name=argocd-server")
 		if err != nil {
 			log.Info().Msg("Waiting for argocd pods to create, checking in 10 seconds")
 			time.Sleep(10 * time.Second)

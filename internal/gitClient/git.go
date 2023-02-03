@@ -119,6 +119,21 @@ func PushChanges(repo *git.Repository, remoteName string, gitHubToken string) er
 		},
 	})
 	if err != nil {
+		log.Info().Msgf("Error creating remote %s at: %s - %s", remoteName, err)
+		return err
+	}
+	return nil
+}
+
+func AddRemote(newGitRemoteURL, remoteName string, repo *git.Repository) error {
+
+	log.Info().Msgf("git remote add %s %s", remoteName, newGitRemoteURL)
+	_, err := repo.CreateRemote(&gitConfig.RemoteConfig{
+		Name: remoteName,
+		URLs: []string{newGitRemoteURL},
+	})
+	if err != nil {
+		log.Info().Msgf("Error creating remote %s at: %s - %s", remoteName, newGitRemoteURL)
 		return err
 	}
 	return nil
@@ -248,20 +263,44 @@ func CloneGitOpsRepo() {
 	log.Info().Msgf("downloaded gitops repo from template to directory %s%s", config.K1FolderPath, "/gitops")
 }
 
-func ClonePrivateRepo(gitRepoUrl, gitRepoDestinationDir string) {
-	log.Printf("Trying to clone repo %s ", gitRepoUrl)
+func ClonePrivateRepo(gitRepoURL, gitRepoDestinationDir string) {
+	log.Printf("Trying to clone repo %s ", gitRepoURL)
 
 	_, err := git.PlainClone(gitRepoDestinationDir, false, &git.CloneOptions{
 		Auth: &http.BasicAuth{
 			Username: viper.GetString("github.user"),
 			Password: os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")},
 		ReferenceName: plumbing.NewBranchReferenceName("main"),
-		URL:           gitRepoUrl,
+		URL:           gitRepoURL,
 		SingleBranch:  true,
 	})
 	if err != nil {
-		log.Fatal().Err(err).Msgf("error cloning git repository %s", gitRepoUrl)
+		log.Fatal().Err(err).Msgf("error cloning git repository %s", gitRepoURL)
 	}
+}
+
+func Commit(repo *git.Repository, commitMsg string) {
+	w, _ := repo.Worktree()
+
+	log.Printf(commitMsg)
+	status, err := w.Status()
+	if err != nil {
+		log.Info().Msgf("error getting worktree status", err)
+	}
+
+	for file, _ := range status {
+		_, err = w.Add(file)
+		if err != nil {
+			log.Info().Msgf("error getting worktree status", err)
+		}
+	}
+	w.Commit(fmt.Sprintf(commitMsg), &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "kubefirst-bot",
+			Email: "kubefirst-bot@kubefirst.com",
+			When:  time.Now(),
+		},
+	})
 }
 
 func PushGitopsToSoftServe() {
@@ -492,22 +531,19 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 }
 
 // todo: refactor
-func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remoteName string, branchDestiny plumbing.ReferenceName) error {
+func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, k1Dir, localRepo, remoteName string, branchDestiny plumbing.ReferenceName) error {
 
-	cfg := configs.ReadConfig()
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform.lock.hcl", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform.lock.hcl", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate.backup", k1Dir))
 
-	localDirectory := fmt.Sprintf("%s/%s", cfg.K1FolderPath, localRepo)
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform.lock.hcl", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform.lock.hcl", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate.backup", cfg.K1FolderPath))
-
-	log.Info().Msgf("opening repository with gitClient: %s", localDirectory)
-	repo, err := git.PlainOpen(localDirectory)
+	log.Info().Msgf("opening repository with gitClient: %s", fmt.Sprintf("%s/gitops", k1Dir))
+	repo, err := git.PlainOpen(fmt.Sprintf("%s/gitops", k1Dir))
 	if err != nil {
-		log.Panic().Err(err).Msgf("error opening the localDirectory: %s", localDirectory)
+		log.Panic().Err(err).Msgf("error opening the localDirectory: %s", fmt.Sprintf("%s/gitops", k1Dir))
 	}
 
 	url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, localRepo)
@@ -557,7 +593,7 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 		log.Error().Err(err).Msg("")
 	}
 
-	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
+	token := os.Getenv("GITHUB_TOKEN")
 	err = repo.Push(&git.PushOptions{
 		RemoteName: remoteName,
 		Auth: &http.BasicAuth{
@@ -574,9 +610,7 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 }
 
 // CloneBranch clone a branch and returns a pointer to git.Repository
-func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
-
-	log.Printf("git cloning by branch, branch: %s", branch)
+func CloneBranch(branch, repoLocalPath, repoURL string) (*git.Repository, error) {
 
 	repo, err := git.PlainClone(repoLocalPath, false, &git.CloneOptions{
 		URL:           repoURL,
@@ -591,11 +625,11 @@ func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repo
 }
 
 // CloneBranchSetMain clone a branch and returns a pointer to git.Repository
-func CloneBranchSetMain(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
+func CloneBranchSetMain(branch, repoURL, repoLocalPath string) (*git.Repository, error) {
 
-	log.Printf("git cloning by branch, branch: %s", branch)
+	log.Info().Msgf("cloning repo: %s - branch: %s", repoURL, branch)
 
-	repo, err := CloneBranch(repoURL, repoLocalPath, branch)
+	repo, err := CloneBranch(branch, repoLocalPath, repoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -614,7 +648,7 @@ func CloneBranchSetMain(repoURL string, repoLocalPath string, branch string) (*g
 }
 
 // CloneTag clone a repository using a tag value, and returns a pointer to *git.Repository
-func CloneTag(repoLocalPath string, githubOrg string, repoName string, tag string) (*git.Repository, error) {
+func CloneTag(githubOrg, repoLocalPath, repoName, tag string) (*git.Repository, error) {
 
 	// todo: repoURL como param
 	repoURL := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)

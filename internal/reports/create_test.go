@@ -12,7 +12,7 @@ func TestBuildCreateHandOffReport(t *testing.T) {
 	mockPassword := "mock-password"
 
 	handOffData := CreateHandOff{
-		ArgoCDUrl:      mockURL,
+		ArgoCDURL:      mockURL,
 		ArgoCDUsername: mockUsername,
 		ArgoCDPassword: mockPassword,
 	}

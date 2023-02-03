@@ -6,7 +6,7 @@ conveniences.
 It installs a fully automated platform of open source cloud native tools with a simple
 [init](../../tooling/kubefirst-cli.md) and [create](../../tooling/kubefirst-cli.md) command.
 
-![](../../img/kubefirst/github/kubefirst-cluster-create-github.png)
+![](../../img/kubefirst/github/kubefirst-cluster-create.png)
 
 ### Prerequisites
 

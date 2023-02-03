@@ -180,7 +180,9 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		var repoPathSSH string
 		var repoPathPrefered string
 
-		if gitProvider == "github" {
+		config := configs.ReadConfig()
+
+		if viper.GetString("git-provider") == "github" {
 			repoPathHTTPS = "https://" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
 			repoPathSSH = "git@" + githubRepoHost + "/" + githubRepoOwner + "/" + gitopsRepo
 			repoPathPrefered = repoPathSSH
@@ -284,6 +286,26 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 
 		if cloud == CloudK3d {
 			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
+			//!
+			//! todo this definitely breaks something below
+			//!
+			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", config.ArgoWorkflowsLocalURL, -1)
+			newContents = strings.Replace(newContents, "<VAULT_URL>", config.VaultLocalURL, -1)
+			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", config.ArgocdLocalURL, -1)
+			newContents = strings.Replace(newContents, "<ATLANTIS_URL>", config.AtlantisLocalURL, -1)
+			newContents = strings.Replace(newContents, "<CHARTMUSEUM_URL>", config.ChartmuseumLocalURL, -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", config.MetaphorDevelopmentLocalURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_DEV>", config.MetaphorGoDevelopmentLocalURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEV>", config.MetaphorFrontendDevelopmentLocalURL, -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_STAGING>", config.MetaphorStagingLocalURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_STAGING>", config.MetaphorGoStagingLocalURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING>", config.MetaphorFrontendStagingLocalURL, -1)
+
+			newContents = strings.Replace(newContents, "<METAPHOR_PROD>", config.MetaphorProductionLocalURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_GO_PROD>", config.MetaphorGoProductionLocalURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", config.MetaphorFrontendProductionLocalURL, -1)
 			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", ArgoLocalURLTLS, -1)
 			newContents = strings.Replace(newContents, "<VAULT_URL>", VaultLocalURLTLS, -1)
 			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", ArgoCDLocalURLTLS, -1)
@@ -301,6 +323,9 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", fmt.Sprintf("https://metaphor-frontend-production.%s", LocalDNS), -1)
 
 			newContents = strings.Replace(newContents, "<LOCAL_DNS>", LocalDNS, -1)
+			//!
+			//! todo this definitely breaks something ^^
+			//!
 		} else {
 			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
 			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", fmt.Sprintf("https://argo.%s", hostedZoneName), -1)
@@ -401,6 +426,23 @@ func randSeq(n int) string {
 func Random(seq int) string {
 	rand.Seed(time.Now().UnixNano())
 	return randSeq(seq)
+}
+
+const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+var seededRand *rand.Rand = rand.New(
+	rand.NewSource(time.Now().UnixNano()))
+
+func StringWithCharset(length int, charset string) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
+}
+
+func GenerateClusterID() string {
+	return StringWithCharset(6, charset)
 }
 
 // RemoveSubDomain receives a host and remove its subdomain, if exists.
@@ -541,12 +583,10 @@ func replaceFileContent(filPath string, oldContent string, newContent string) er
 // UpdateTerraformS3BackendForK8sAddress during the installation process, Terraform must reach port-forwarded resources
 // to be able to communicate with the services. When Kubefirst finish the installation, and Terraform needs to
 // communicate with the services, it must use the internal Kubernetes addresses.
-func UpdateTerraformS3BackendForK8sAddress() error {
-
-	config := configs.ReadConfig()
+func UpdateTerraformS3BackendForK8sAddress(k1Dir string) error {
 
 	// todo: create a function for file content replacement
-	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", config.K1FolderPath)
+	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", k1Dir)
 	if err := replaceFileContent(
 		vaultMainFile,
 		MinioURL,
@@ -555,10 +595,9 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 		return err
 	}
 
-	gitProvider := viper.GetString("git-provider")
 	// update GitHub Terraform content
-	if gitProvider == "github" {
-		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
+	if viper.GetString("git-provider") == "github" {
+		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", k1Dir)
 		if err := replaceFileContent(
 			fullPathKubefirstGitHubFile,
 			MinioURL,
@@ -568,7 +607,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 		}
 
 		// change remote-backend.tf
-		fullPathRemoteBackendFile := fmt.Sprintf("%s/gitops/terraform/github/remote-backend.tf", config.K1FolderPath)
+		fullPathRemoteBackendFile := fmt.Sprintf("%s/gitops/terraform/github/remote-backend.tf", k1Dir)
 		if err := replaceFileContent(
 			fullPathRemoteBackendFile,
 			MinioURL,

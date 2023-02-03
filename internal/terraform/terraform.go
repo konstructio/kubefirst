@@ -19,11 +19,9 @@ import (
 )
 
 func terraformConfig(terraformEntryPoint string) map[string]string {
-
 	envs := map[string]string{}
 
 	if viper.GetString("cloud") == "aws" {
-		//* AWS_SDK_LOAD_CONFIG=1
 		//* https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs#shared-credentials-file
 		envs["AWS_SDK_LOAD_CONFIG"] = "1"
 		aws.ProfileInjection(&envs)
@@ -41,6 +39,13 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		if nodesSpot {
 			envs["TF_VAR_lifecycle_nodes"] = "SPOT"
 		}
+
+		nodes_graviton := viper.GetBool("aws.nodes_graviton")
+		if nodes_graviton {
+			envs["TF_VAR_ami_type"] = "AL2_ARM_64"
+			envs["TF_VAR_instance_type"] = "t4g.medium"
+		}
+
 		return envs
 	case "vault":
 		log.Info().Msg("Collecting Vault Vars")
@@ -69,7 +74,7 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		envs["TF_VAR_aws_account_id"] = viper.GetString("aws.accountid")
 		envs["TF_VAR_aws_region"] = viper.GetString("aws.region")
 		envs["TF_VAR_email_address"] = viper.GetString("adminemail")
-		envs["TF_VAR_github_token"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
+		envs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
 		envs["TF_VAR_hosted_zone_id"] = viper.GetString("aws.hostedzoneid") //# TODO: are we using this?
 		envs["TF_VAR_hosted_zone_name"] = viper.GetString("aws.hostedzonename")
 		envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
@@ -89,11 +94,11 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 		envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
 		envs["TF_VAR_atlantis_repo_webhook_url"] = viper.GetString("github.atlantis.webhook.url")
-		envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("botpublickey")
+		envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kubefirst.bot.public-key")
 
 		// todo: add validation for localhost
-		envs["TF_VAR_email_address"] = viper.GetString("adminemail")
-		envs["TF_VAR_github_token"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
+		envs["TF_VAR_email_address"] = viper.GetString("admin-email")
+		envs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
 		envs["TF_VAR_vault_addr"] = viper.GetString("vault.local.service")
 		envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
 		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
@@ -104,10 +109,78 @@ func terraformConfig(terraformEntryPoint string) map[string]string {
 		log.Info().Msg("Collecting users Vars")
 		envs["VAULT_TOKEN"] = viper.GetString("vault.token")
 		envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
-		envs["GITHUB_TOKEN"] = os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
+		envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
 		envs["GITHUB_OWNER"] = viper.GetString("github.owner")
 		return envs
 	}
+	return envs
+}
+
+func GetCivoTerraformEnvs(envs map[string]string) map[string]string {
+
+	envs["CIVO_TOKEN"] = os.Getenv("CIVO_TOKEN")
+	// needed for s3 api connectivity to object storage
+	envs["AWS_ACCESS_KEY_ID"] = viper.GetString("civo.object-storage-creds.access-key-id")
+	envs["AWS_SECRET_ACCESS_KEY"] = viper.GetString("civo.object-storage-creds.secret-access-key-id")
+	envs["TF_VAR_aws_access_key_id"] = viper.GetString("civo.object-storage-creds.access-key-id")
+	envs["TF_VAR_aws_secret_access_key"] = viper.GetString("civo.object-storage-creds.secret-access-key-id")
+
+	return envs
+}
+
+func GetGithubTerraformEnvs(envs map[string]string) map[string]string {
+
+	envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+	envs["GITHUB_OWNER"] = viper.GetString("github.owner")
+	// todo, this variable is assicated with repos.tf in gitops-template, considering bootstrap container image for metaphor
+	// envs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
+	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
+	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kubefirst.bot.public-key")
+	envs["AWS_ACCESS_KEY_ID"] = viper.GetString("civo.object-storage-creds.access-key-id")
+	envs["AWS_SECRET_ACCESS_KEY"] = viper.GetString("civo.object-storage-creds.secret-access-key-id")
+	envs["TF_VAR_aws_access_key_id"] = viper.GetString("civo.object-storage-creds.access-key-id")
+	envs["TF_VAR_aws_secret_access_key"] = viper.GetString("civo.object-storage-creds.secret-access-key-id")
+
+	return envs
+}
+
+func GetUsersTerraformEnvs(envs map[string]string) map[string]string {
+
+	envs["VAULT_TOKEN"] = viper.GetString("vault.token")
+	envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
+	envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+	envs["GITHUB_OWNER"] = viper.GetString("github.owner")
+
+	return envs
+}
+
+func GetVaultTerraformEnvs(envs map[string]string) map[string]string {
+
+	envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+	envs["GITHUB_OWNER"] = viper.GetString("github.owner")
+	envs["TF_VAR_email_address"] = viper.GetString("admin-email")
+	envs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
+	envs["TF_VAR_vault_addr"] = viper.GetString("vault.local.service")
+	envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
+	envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
+	envs["VAULT_TOKEN"] = viper.GetString("vault.token")
+	envs["TF_VAR_civo_token"] = os.Getenv("CIVO_TOKEN")
+	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("github.atlantis.webhook.secret")
+	envs["TF_VAR_atlantis_repo_webhook_url"] = viper.GetString("github.atlantis.webhook.url")
+	envs["TF_VAR_kubefirst_bot_ssh_private_key"] = viper.GetString("kubefirst.bot.private-key")
+	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kubefirst.bot.public-key")
+
+	return envs
+}
+
+func GetVaultSpikeTerraformEnvs(envs map[string]string) map[string]string {
+	//! need to move this up after spike is complete
+	envs["CIVO_TOKEN"] = os.Getenv("CIVO_TOKEN")
+	envs["TF_VAR_civo_token"] = os.Getenv("CIVO_TOKEN")
+	envs["VAULT_ADDR"] = viper.GetString("vault.local.service")
+	envs["VAULT_TOKEN"] = viper.GetString("vault.token")
+	envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
+
 	return envs
 }
 
@@ -346,41 +419,35 @@ func DestroyECRTerraform(skipECRTerraform bool) {
 	}
 }
 
-func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
+func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string, tfEnvs map[string]string) error {
 
 	config := configs.ReadConfig()
-	tfEntrypointSplit := strings.Split(tfEntrypoint, "/")
-	kubefirstConfigProperty := tfEntrypointSplit[len(tfEntrypointSplit)-1]
-	log.Printf("Entered Init%s%sTerraform", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
+	log.Printf("initActionAutoApprove - action: %s entrypoint: %s", tfAction, tfEntrypoint)
 
-	kubefirstConfigPath := fmt.Sprintf("terraform.%s.%s.complete", kubefirstConfigProperty, tfAction)
-
-	log.Printf("Executing Init%s%sTerraform", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
 	if dryRun {
-		log.Printf("[#99] Dry-run mode, Init%s%sTerraform skipped", strings.Title(tfAction), strings.Title(kubefirstConfigProperty))
+		log.Printf("[#99] Dry-run mode, action: %s entrypoint: %s", tfAction, tfEntrypoint)
+		return nil
 	}
-
-	envs := terraformConfig(kubefirstConfigProperty)
-	//commenting to avoid log creds
-	//log.Print("tf env vars: ", envs)
 
 	err := os.Chdir(tfEntrypoint)
 	if err != nil {
-		log.Panic().Msgf("error: could not change to directory " + tfEntrypoint)
+		log.Info().Msg("error: could not change to directory " + tfEntrypoint)
+		return err
 	}
-	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
+	err = pkg.ExecShellWithVars(tfEnvs, config.TerraformClientPath, "init")
 	if err != nil {
-		log.Panic().Msgf("error: terraform init for %s failed %s", tfEntrypoint, err)
+		log.Printf("error: terraform init for %s failed: %s", tfEntrypoint, err)
+		return err
 	}
 
-	err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, tfAction, "-auto-approve")
+	err = pkg.ExecShellWithVars(tfEnvs, config.TerraformClientPath, tfAction, "-auto-approve")
 	if err != nil {
-		log.Panic().Msgf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
+		log.Printf("error: terraform %s -auto-approve for %s failed %s", tfAction, tfEntrypoint, err)
+		return err
 	}
 	os.RemoveAll(fmt.Sprintf("%s/.terraform/", tfEntrypoint))
 	os.Remove(fmt.Sprintf("%s/.terraform.lock.hcl", tfEntrypoint))
-	viper.Set(kubefirstConfigPath, true)
-	viper.WriteConfig()
+	return nil
 }
 
 func initAndMigrateActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string) {
@@ -470,14 +537,27 @@ func InitMigrateApplyAutoApprove(dryRun bool, tfEntrypoint string) {
 	initAndMigrateActionAutoApprove(dryRun, tfAction, tfEntrypoint)
 }
 
-func InitApplyAutoApprove(dryRun bool, tfEntrypoint string) {
+func InitApplyAutoApprove(dryRun bool, tfEntrypoint string, tfEnvs map[string]string) error {
 	tfAction := "apply"
-	initActionAutoApprove(dryRun, tfAction, tfEntrypoint)
+	err := initActionAutoApprove(dryRun, tfAction, tfEntrypoint, tfEnvs)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func InitDestroyAutoApprove(dryRun bool, tfEntrypoint string) {
+func InitDestroyAutoApprove(dryRun bool, tfEntrypoint string, tfEnvs map[string]string) error {
 	tfAction := "destroy"
-	initActionAutoApprove(dryRun, tfAction, tfEntrypoint)
+	err := initActionAutoApprove(dryRun, tfAction, tfEntrypoint, tfEnvs)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func InitReconfigureDestroyAutoApprove(dryRun bool, tfEntrypoint string) {
+	tfAction := "destroy"
+	// todo make this private and match the rest of the terraform function calls
+	InitAndReconfigureActionAutoApprove(dryRun, tfAction, tfEntrypoint)
 }
 
 // todo need to write something that outputs -json type and can get multiple values
