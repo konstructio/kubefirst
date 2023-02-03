@@ -34,7 +34,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
 
-	gitProvider := viper.GetString("gitprovider")
+	gitProvider := viper.GetString("git-provider")
 	cloud := viper.GetString("cloud")
 
 	if useTelemetry {

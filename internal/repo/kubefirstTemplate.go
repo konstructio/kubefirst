@@ -78,7 +78,7 @@ func PrepareKubefirstTemplateRepo(dryRun bool, config *configs.Config, githubOrg
 
 	repo, err := git.PlainOpen(directory)
 
-	if viper.GetString("gitprovider") == "github" {
+	if viper.GetString("git-provider") == "github" {
 		githubHost := viper.GetString("github.host")
 		githubOwner := viper.GetString("github.owner")
 

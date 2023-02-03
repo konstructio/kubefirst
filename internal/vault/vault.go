@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"os"
 	"os/exec"
 	"syscall"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	vault "github.com/hashicorp/vault/api"
 	"github.com/kubefirst/kubefirst/configs"
@@ -157,7 +158,7 @@ func GetOidcClientCredentials(dryRun bool) {
 
 	oidcApps := []string{"argo", "argocd"}
 
-	if viper.GetString("gitprovider") == "gitlab" {
+	if viper.GetString("git-provider") == "gitlab" {
 		oidcApps = append(oidcApps, "gitlab")
 	}
 

@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -48,7 +47,7 @@ var deployMetaphorCmd = &cobra.Command{
 				log.Println("Removed repo pre-clone:", directory)
 			}
 		*/
-		if viper.GetString("gitprovider") == "github" {
+		if viper.GetString("git-provider") == "github" {
 			return metaphor.DeployMetaphorGithub(globalFlags)
 		} else {
 			return metaphor.DeployMetaphorGitlab(globalFlags)

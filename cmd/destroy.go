@@ -25,14 +25,14 @@ var destroyCmd = &cobra.Command{
 			//just in case, we need downstream
 			awsProfile := viper.GetString("aws.profile")
 			os.Setenv("AWS_PROFILE", awsProfile)
-			if viper.GetString("gitprovider") == gitClient.Github {
+			if viper.GetString("git-provider") == gitClient.Github {
 				err := destroyAwsGithubCmd.RunE(cmd, args)
 				if err != nil {
 					log.Println("Error destroying aws+github:", err)
 					return err
 				}
 
-			} else if viper.GetString("gitprovider") == gitClient.Gitlab {
+			} else if viper.GetString("git-provider") == gitClient.Gitlab {
 				err := destroyAwsGitlabCmd.RunE(cmd, args)
 				if err != nil {
 					log.Println("Error destroying aws+gitlab:", err)

@@ -135,21 +135,15 @@ validated and configured.`,
 
 		viper.Set("use-telemetry", globalFlags.UseTelemetry)
 
-		gitProvider := viper.GetString("gitprovider")
+		gitProvider := viper.GetString("git-provider")
 		cloud := viper.GetString("cloud")
 
 		if !globalFlags.UseTelemetry {
 			informUser("Telemetry Disabled", globalFlags.SilentMode)
 		} else {
 			pkg.InformUser("Sending installation telemetry", globalFlags.SilentMode)
-			if gitProvider == "github" {
-				if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitStarted, cloud, gitProvider); err != nil {
-					log.Warn().Msgf("%s", err)
-				}
-			} else {
-				if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitStarted, cloud, gitProvider); err != nil {
-					log.Warn().Msgf("%s", err)
-				}
+			if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitStarted, cloud, gitProvider); err != nil {
+				log.Warn().Msgf("%s", err)
 			}
 		}
 
@@ -259,14 +253,8 @@ validated and configured.`,
 		log.Info().Msg("sending init completed metric")
 
 		if globalFlags.UseTelemetry {
-			if viper.GetString("gitprovider") == "github" {
-				if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitCompleted, "aws", "github"); err != nil {
-					log.Warn().Msgf("%s", err)
-				}
-			} else {
-				if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitCompleted, "aws", "gitlab"); err != nil {
-					log.Warn().Msgf("%s", err)
-				}
+			if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitCompleted, "aws", "github"); err != nil {
+				log.Warn().Msgf("%s", err)
 			}
 		}
 
