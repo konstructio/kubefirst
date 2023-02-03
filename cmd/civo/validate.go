@@ -362,7 +362,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitCompleted); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitCompleted, cloudProviderFlag, gitProviderFlag); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}

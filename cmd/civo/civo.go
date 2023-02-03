@@ -90,7 +90,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 	//* emit cluster install started
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(civoDnsName, pkg.MetricMgmtClusterInstallStarted); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(civoDnsName, pkg.MetricMgmtClusterInstallStarted, cloudProvider, gitProvider); err != nil {
 			log.Info().Msg(err.Error())
 		}
 	}
@@ -651,7 +651,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("sending mgmt cluster install completed metric")
 
 	// if useTelemetry {
-	// 	if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted); err != nil {
+	// 	if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted, cloudProvider, gitProvider); err != nil {
 	// 		log.Info().Msg(err)
 	// 	}
 	// 	progressPrinter.IncrementTracker("step-telemetry", 1)
