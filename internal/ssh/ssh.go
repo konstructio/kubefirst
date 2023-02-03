@@ -6,6 +6,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"os"
+
 	"github.com/caarlos0/sshmarshal"
 	goGitSsh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
@@ -16,7 +18,6 @@ import (
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v2"
-	"os"
 )
 
 func CreateSshKeyPair() {
@@ -24,7 +25,7 @@ func CreateSshKeyPair() {
 	publicKey := viper.GetString("botpublickey")
 
 	// generate GitLab keys
-	if publicKey == "" && viper.GetString("gitprovider") == "gitlab" {
+	if publicKey == "" && viper.GetString("git-provider") == "gitlab" {
 
 		log.Info().Msg("generating new key pair for GitLab")
 		publicKey, privateKey, err := generateGitLabKeys()
@@ -41,7 +42,7 @@ func CreateSshKeyPair() {
 	}
 
 	// generate GitHub keys
-	if publicKey == "" && viper.GetString("gitprovider") == "github" {
+	if publicKey == "" && viper.GetString("git-provider") == "github" {
 
 		log.Info().Msg("generating new key pair for GitHub")
 		publicKey, privateKey, err := generateGitHubKeys()
@@ -60,7 +61,7 @@ func CreateSshKeyPair() {
 	publicKey = viper.GetString("botpublickey")
 
 	// todo: break it into smaller function
-	if viper.GetString("gitprovider") != pkg.CloudK3d {
+	if viper.GetString("git-provider") != pkg.CloudK3d {
 
 		config := configs.ReadConfig()
 		privateKey := viper.GetString("botprivatekey")

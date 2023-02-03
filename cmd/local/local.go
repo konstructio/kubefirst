@@ -92,8 +92,8 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
 
-	gitProvider := viper.GetString("gitprovider")
-	cloud := viper.GetString("cloud")
+	gitProvider := "github"
+	cloud := "k3d"
 
 	progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 	progressPrinter.AddTracker("step-base", "Setup base cluster", 2)

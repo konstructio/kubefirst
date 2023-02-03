@@ -57,7 +57,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		return nil
 	}
 
-	gitProvider := viper.GetString("gitprovider")
+	gitProvider := viper.GetString("git-provider")
 	if gitProvider == "github" && strings.Contains(path, "-gitlab.tf") {
 		log.Debug().Msgf("github provider specified, removing gitlab terraform file: %s", path)
 		err = os.Remove(path)
@@ -136,7 +136,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		githubUser := strings.ToLower(viper.GetString("github.user"))
 		useTelemetry := viper.GetString("use-telemetry")
 		clusterId := viper.GetString("cluster-id")
-		gitProvider := viper.GetString("gitprovider")
+		gitProvider := viper.GetString("git-provider")
 
 		kubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
 
@@ -555,7 +555,7 @@ func UpdateTerraformS3BackendForK8sAddress() error {
 		return err
 	}
 
-	gitProvider := viper.GetString("gitprovider")
+	gitProvider := viper.GetString("git-provider")
 	// update GitHub Terraform content
 	if gitProvider == "github" {
 		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
@@ -597,7 +597,7 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 		return err
 	}
 
-	gitProvider := viper.GetString("gitprovider")
+	gitProvider := viper.GetString("git-provider")
 	// update GitHub Terraform content
 	if gitProvider == "github" {
 		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
