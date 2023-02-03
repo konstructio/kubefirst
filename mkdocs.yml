@@ -50,7 +50,7 @@ nav:
         - Metaphor: 'common/metaphor.md'
         - Credit: 'kubefirst/civo/credit.md'
         - Destroy: 'kubefirst/civo/destroy.md'
-      - GitHub Installation:
+      - AWS Installation (GitHub):
         - Install: 'kubefirst/github/install.md'
         - After Install: 'kubefirst/github/after-install.md'
         - GitHub Repositories: 'kubefirst/github/github-repositories.md'
@@ -63,11 +63,11 @@ nav:
         - Security: 'common/security.md'
         - Credit: 'kubefirst/github/credit.md'
         - Destroy: 'kubefirst/github/destroy.md'
-      - GitLab Installation:
+      - AWS Installation (GitLab):
         - Install: 'kubefirst/gitlab/install.md'
         - After Install: 'kubefirst/gitlab/after-install.md'
-        - Gitlab: 'kubefirst/gitlab/gitlab.md'
-        - Gitlab Repositories: 'kubefirst/gitlab/gitlab-repositories.md'
+        - GitLab: 'kubefirst/gitlab/gitlab.md'
+        - GitLab Repositories: 'kubefirst/gitlab/gitlab-repositories.md'
         - Argo CD: 'kubefirst/gitlab/argocd.md'
         - GitOps: 'kubefirst/gitlab/gitops.md'
         - Terraform & Atlantis: 'kubefirst/gitlab/terraform.md'

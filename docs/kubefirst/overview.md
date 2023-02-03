@@ -9,12 +9,12 @@ that demonstrate how it all pieces together.
 ## Install overview
 
 [//]: # (todo: update wording)
-- The `kubefirst` CLI runs on your localhost and will create an **AWS EKS cluster** that includes **GitLab** or **GitHub**, **Vault**, **ArgoCD** and **Argo Workflow**, and example applications with the **Metaphors** application to demonstrate how everything on the platform works.
+- The `kubefirst` CLI runs on your localhost and will create an **AWS EKS cluster** that includes **GitLab** or **GitHub**, **Vault**, **ArgoCD** and **Argo Workflow**, and example applications with the **Metaphor** application to demonstrate how everything on the platform works.
 - The install takes about 30 minutes to execute. Day-2 operations can't commonly be done within the same hour of cluster provisioning. Kubefirst is solving this on our open source platform. We really hope that is worth a [GitHub Kubefirst repository](https://github.com/kubefirst/kubefirst) star to you (top right corner).
 - Your self-hosted GitLab or cloud GitHub will come preconfigured with four Git repositories `kubefirst/gitops` and `kubefirst/metaphor-frontend`, `kubefirst/metaphor-go`, `kubefirst/metaphor`.
 - All of the infrastructure as code will be in your GitOps repository in the Terraform directory. IAC workflows are fully automated with Atlantis by merely opening a merge request against the `gitops` repository.
 - All of the applications running in your Kubernetes cluster are registered in the GitOps repository in the root `/registry` directory.
-- The Metaphors repositories only needs an update to the main branch to deliver the example application to your new development, staging, and production environments. It will hook into your new Vault for secrets, demonstrate automated certs, automated DNS, and GitOps application delivery. Our CI/CD is powered by Argo CD, Argo Workflows, GitLab or GitHub, and Vault.
+- The Metaphor repositories only needs an update to the main branch to deliver the example application to your new development, staging, and production environments. It will hook into your new Vault for secrets, demonstrate automated certs, automated DNS, and GitOps application delivery. Our CI/CD is powered by Argo CD, Argo Workflows, GitLab or GitHub, and Vault.
 - The result will be the most comprehensive start to managing a Kubernetes-centric cloud entirely on open source that you keep and can adjust as you see fit. It is an exceptional fully functioning starting point, with the most comprehensive scope we've ever seen in open source.
 - We'd love to advise your project on next steps - see our available white glove and commercial services.
 

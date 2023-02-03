@@ -332,7 +332,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	}()
 	k8s.OpenPortForwardPodWrapper(
 		kubeconfigPath,
-		"argo-cd-server", // todo fix this, it should `argocd
+		"argocd-server", // todo fix this, it should `argocd
 		"argocd",
 		8080,
 		8080,
@@ -700,13 +700,13 @@ func printConfirmationScreen() {
 	createKubefirstSummary.WriteString("\nGithub Organization Details:\n\n")
 	createKubefirstSummary.WriteString(fmt.Sprintf("Organization: %s\n", viper.GetString("github.owner")))
 	createKubefirstSummary.WriteString(fmt.Sprintf("User:         %s\n", viper.GetString("github.user")))
-	createKubefirstSummary.WriteString("New Github Repository URL's:\n")
+	createKubefirstSummary.WriteString("New Github Repository URLs:\n")
 	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("github.repo.gitops.url")))
 	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("github.repo.metaphor.url")))
 	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("github.repo.metaphor-frontend.url")))
 	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("github.repo.metaphor-go.url")))
 
-	createKubefirstSummary.WriteString("\nTemplate Repository URL's:\n")
+	createKubefirstSummary.WriteString("\nTemplate Repository URLs:\n")
 	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("template-repo.gitops.url")))
 	createKubefirstSummary.WriteString(fmt.Sprintf("    branch:  %s\n", viper.GetString("template-repo.gitops.branch")))
 	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("template-repo.metaphor-frontend.url")))
