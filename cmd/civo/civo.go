@@ -197,10 +197,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already pushed detokenized gitops repository content")
 	}
 
-	//!! this is where os.Exit(1) is
-	//!! this is where os.Exit(1) is
-	//!! this is where os.Exit(1) is
-
 	//* git clone and detokenize the metaphor-frontend-template repository
 	if !viper.GetBool("template-repo.metaphor-frontend.pushed") {
 
@@ -236,9 +232,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
-	//!! this is where os.Exit(1) is
-	//!! this is where os.Exit(1) is
-	//!! this is where os.Exit(1) is
 
 	//* create civo cloud resources
 	if !viper.GetBool("terraform.civo.apply.complete") {
