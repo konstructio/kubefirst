@@ -93,7 +93,7 @@ func Test_DefineSource_set_by_flag(t *testing.T) {
 func Test_DefineSource_set_by_var(t *testing.T) {
 	cmd := NewRootCmd()
 	b := bytes.NewBufferString("")
-	os.Setenv("KUBEFIRST_SAMPLE", "set-by-var")
+	t.Setenv("KUBEFIRST_SAMPLE", "set-by-var")
 	cmd.SetOut(b)
 	err := cmd.Execute()
 	if err != nil {
@@ -148,7 +148,7 @@ func NewRootCmdBool() *cobra.Command {
 func Test_DefineSource_set_by_flag_bool(t *testing.T) {
 	cmd := NewRootCmdBool()
 	b := bytes.NewBufferString("")
-	os.Setenv("KUBEFIRST_SAMPLE", "TRUE")
+	t.Setenv("KUBEFIRST_SAMPLE", "TRUE")
 	cmd.SetOut(b)
 	cmd.SetArgs([]string{"--sample"})
 	err := cmd.Execute()

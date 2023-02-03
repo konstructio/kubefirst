@@ -149,7 +149,7 @@ func validateAwsFlags() error {
 		return errors.New("must provide only one of these arguments: profile or aws-assume-role")
 	}
 
-	if viper.GetString("gitprovider") == "gitlab" && viper.GetBool("aws.nodes_graviton") {
+	if viper.GetString("git-provider") == "gitlab" && viper.GetBool("aws.nodes_graviton") {
 		log.Warn().Msg("GitLab only support x86 compute nodes")
 		return errors.New("GitLab only support x86 compute nodes")
 	}

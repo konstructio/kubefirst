@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os/exec"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -94,7 +93,8 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 		return "", err
 	}
 
-	if err = exec.Command("open", "https://github.com/login/device").Start(); err != nil {
+	if err = pkg.OpenBrowser("https://github.com/login/device"); err != nil {
+		log.Error().Msgf("error opening browser: %s", err)
 		return "", err
 	}
 

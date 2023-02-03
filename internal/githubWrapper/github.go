@@ -12,7 +12,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/google/go-github/v45/github"
-	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 )
 
@@ -181,48 +180,48 @@ func (g GithubSession) IsRepoInUse(org string, name string) (bool, error) {
 	return false, nil
 }
 
-func (g GithubSession) CreatePR(branchName string) error {
-	title := "update S3 backend to minio / internal k8s dns"
+func (g GithubSession) CreatePR(
+	branchName string,
+	repoName string,
+	gitHubUser string,
+	baseBranch string,
+	title string,
+	body string) (*github.PullRequest, error) {
+
 	head := branchName
-	body := "use internal Kubernetes dns"
-	base := "main"
-	pr := github.NewPullRequest{
+	prData := github.NewPullRequest{
 		Title: &title,
 		Head:  &head,
 		Body:  &body,
-		Base:  &base,
+		Base:  &baseBranch,
 	}
 
-	// todo: receive as parameter
-	gitHubUser := viper.GetString("github.user")
-
-	_, resp, err := g.gitClient.PullRequests.Create(
+	pullRequest, resp, err := g.gitClient.PullRequests.Create(
 		context.Background(),
 		gitHubUser,
-		"gitops",
-		&pr,
+		repoName,
+		&prData,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	log.Printf("pull request create response http code: %d", resp.StatusCode)
 
-	return nil
+	log.Info().Msgf("pull request create response http code: %d", resp.StatusCode)
+
+	return pullRequest, nil
 }
 
-func (g GithubSession) CommentPR(prNumber int, body string) error {
+func (g GithubSession) CommentPR(pullRequesrt *github.PullRequest, gitHubUser string, body string) error {
 
 	issueComment := github.IssueComment{
 		Body: &body,
 	}
 
-	// todo: receive as parameter
-	gitHubUser := viper.GetString("github.user")
-
 	_, resp, err := g.gitClient.Issues.CreateComment(
 		context.Background(),
 		gitHubUser,
-		"gitops", prNumber,
+		"gitops",
+		*pullRequesrt.Number,
 		&issueComment,
 	)
 	if err != nil {
@@ -235,13 +234,16 @@ func (g GithubSession) CommentPR(prNumber int, body string) error {
 }
 
 // SearchWordInPullRequestComment look for a specific sentence in a GitHub Pull Request comment
-func (g GithubSession) SearchWordInPullRequestComment(gitHubUser string, gitOpsRepo string, searchFor string) (bool, error) {
+func (g GithubSession) SearchWordInPullRequestComment(gitHubUser string,
+	gitOpsRepo string,
+	pullRequest *github.PullRequest,
+	searchFor string) (bool, error) {
 
 	comments, r, err := g.gitClient.Issues.ListComments(
 		context.Background(),
 		gitHubUser,
 		gitOpsRepo,
-		1,
+		*pullRequest.Number,
 		&github.IssueListCommentsOptions{},
 	)
 	if err != nil {
@@ -261,16 +263,16 @@ func (g GithubSession) SearchWordInPullRequestComment(gitHubUser string, gitOpsR
 	return false, nil
 }
 
-// todo: not sure if this is the right place for this function
 func (g GithubSession) RetrySearchPullRequestComment(
 	gitHubUser string,
 	gitOpsRepo string,
+	pullRequest *github.PullRequest,
 	searchFor string,
 	logMessage string,
 ) (bool, error) {
 
 	for i := 0; i < 30; i++ {
-		ok, err := g.SearchWordInPullRequestComment(gitHubUser, gitOpsRepo, searchFor)
+		ok, err := g.SearchWordInPullRequestComment(gitHubUser, gitOpsRepo, pullRequest, searchFor)
 		if err != nil || !ok {
 			log.Info().Msg(logMessage)
 			time.Sleep(10 * time.Second)

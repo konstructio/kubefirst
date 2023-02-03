@@ -2,8 +2,11 @@ package k3d
 
 import (
 	"errors"
-	"github.com/rs/zerolog/log"
+	"fmt"
+	"os"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -21,6 +24,9 @@ func DeleteK3dCluster() error {
 	}
 	// todo: remove it?
 	time.Sleep(20 * time.Second)
+
+	volumeFolder := fmt.Sprintf("%s/minio-storage", config.K1FolderPath)
+	os.RemoveAll(volumeFolder)
 
 	return nil
 }

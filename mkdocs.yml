@@ -7,6 +7,7 @@ theme:
     - navigation.expand
     - navigation.indexes
     - content.tabs.link
+    - navigation.footer
   logo: img/site/k-ray-light.png
   favicon: img/site/k-ray.png
   icon:
@@ -30,14 +31,13 @@ nav:
       - Overview: 'kubefirst/overview.md'
       - Local Installation:
         - Install: 'kubefirst/local/install.md'
-        - After Install: 'kubefirst/local/after-install.md'
-        - GitHub Repositories: 'kubefirst/local/github-repositories.md'
-        - Argo CD: 'kubefirst/local/argocd.md'
-        - GitOps: 'kubefirst/local/gitops.md'
-        - Terraform & Atlantis: 'kubefirst/local/terraform.md'
-        - Vault: 'kubefirst/local/vault.md'
-        - Metaphor: 'common/metaphor.md'
-        - Credit: 'kubefirst/local/credit.md'
+        - Explore:
+          - Overview: 'kubefirst/local/explore/overview.md'
+          - Kubefirst Console: 'kubefirst/local/explore/console.md'
+          - Atlantis User Creation: 'kubefirst/local/explore/user-creation.md'
+          - Metaphor Frontend: 'kubefirst/local/explore/metaphor.md'
+        - GitHub Repositories: 'kubefirst/local/github-repositories.md'        
+        - Limitations: 'kubefirst/local/limitations.md'
         - Destroy: 'kubefirst/local/destroy.md'
       - Civo Installation:
         - Install: 'kubefirst/civo/install.md'
@@ -52,38 +52,28 @@ nav:
         - Destroy: 'kubefirst/civo/destroy.md'
       - AWS Installation (GitHub):
         - Install: 'kubefirst/github/install.md'
-        - After Install: 'kubefirst/github/after-install.md'
-        - GitHub Repositories: 'kubefirst/github/github-repositories.md'
-        - Argo CD: 'kubefirst/github/argocd.md'
-        - GitOps: 'kubefirst/github/gitops.md'
-        - Terraform & Atlantis: 'kubefirst/github/terraform.md'
-        - Vault: 'kubefirst/github/vault.md'
-        - Metaphor: 'common/metaphor.md'
-        - Certificates: 'common/certificates.md'
-        - Security: 'common/security.md'
-        - Credit: 'kubefirst/github/credit.md'
+        - Explore: 'kubefirst/github/explore.md'
         - Destroy: 'kubefirst/github/destroy.md'
+        - GitHub Repositories: 'kubefirst/github/github-repositories.md'
       - AWS Installation (GitLab):
         - Install: 'kubefirst/gitlab/install.md'
-        - After Install: 'kubefirst/gitlab/after-install.md'
+        - After Install: 'kubefirst/gitlab/explore.md'
         - GitLab: 'kubefirst/gitlab/gitlab.md'
         - GitLab Repositories: 'kubefirst/gitlab/gitlab-repositories.md'
         - Argo CD: 'kubefirst/gitlab/argocd.md'
         - GitOps: 'kubefirst/gitlab/gitops.md'
         - Terraform & Atlantis: 'kubefirst/gitlab/terraform.md'
         - Vault: 'kubefirst/gitlab/vault.md'
-        - Metaphor: 'common/metaphor.md'
-        - Certificates: 'common/certificates.md'
-        - Security: 'common/security.md'
-        - Credit: 'kubefirst/gitlab/credit.md'
-        - Destroy: 'kubefirst/gitlab/destroy.md'
       - Installer Options:
         - Config: 'kubefirst/installer/config-file.md'
       - FAQ: 'kubefirst/FAQ.md'
+      - Credits: 'kubefirst/credit.md'
     - Tooling:
       - Overview: 'tooling/tooling-overview.md'
       - Argo CD: 'tooling/argocd.md'
       - Argo Workflows: 'tooling/argo.md'
+      - Atlantis: 'tooling/atlantis.md'
+      - AWS CLI: 'tooling/aws-cli.md'
       - CWFT:
         - Overview: 'tooling/argo/cwft-overview.md'
         - cwft-ci: 'tooling/argo/cwft-ci.md'
@@ -91,13 +81,27 @@ nav:
         - cwft-git: 'tooling/argo/cwft-git.md'
         - cwft-helm: 'tooling/argo/cwft-helm.md'
         - cwft-npm: 'tooling/argo/cwft-npm.md'
-      - AWS CLI: 'tooling/aws-cli.md'
       - Docker: 'tooling/docker.md'
       - Kubectl:  'tooling/kubectl.md'
       - Kubefirst CLI: 'tooling/kubefirst-cli.md'
+      - ngrok: 'tooling/ngrok.md'
       - Shell Utilities: 'tooling/shell-utilities.md'
       - Terraform: 'tooling/terraform.md'
-      - Vault CLI: 'tooling/vault-cli.md'
+      - Vault CLI: 'tooling/vault-cli.md'    
+    - Moved Pages:        
+      - Vault Local: 'kubefirst/local/vault.md'
+      - Vault Aws Github: 'kubefirst/github/vault.md'
+      - Vault Aws Gitlab: 'kubefirst/gitlab/vault.md'
+      - Argo CD Local: 'kubefirst/local/argocd.md'
+      - Argo CD Aws Github: 'kubefirst/github/argocd.md'
+      - Argo CD Aws Gitlab: 'kubefirst/gitlab/argocd.md'
+      - Credit Local: 'kubefirst/local/credit.md'
+      - Credit Aws Github: 'kubefirst/github/credit.md'
+      - Credit Aws Gitlab: 'kubefirst/gitlab/credit.md'
+
+
+
+
     - Community:
       - Community: 'community/index.md'
     - Roadmap:

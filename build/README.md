@@ -1,12 +1,11 @@
 # Overview 
 
-This page provide sevral ways to explore kubefirst cli, to allow you to choose the one the better fits your prefered way of work. 
+This page provide several ways to explore kubefirst cli, to allow you to choose the one the better fits your preferred way of work. 
 
 
 # Requirements to run the CLI
 
-In order for the CLI to work, We assume you gave your [AWS Credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) files at: `$HOME/.aws`. 
-
+In order for the CLI to work, We assume you gave your [AWS Credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) files at: `$HOME/.aws`, and [AWS IAM Authenticator](https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html) dependency, that is Helm requirement to authenticate to the EKS cluster.
 
 # Getting the binary for linux
 
@@ -21,7 +20,6 @@ chmod +x /usr/local/bin/kubefirst
 
 kubefirst info
 ```
-
 
 # Running CLI in docker container
 

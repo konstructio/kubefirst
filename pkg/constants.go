@@ -145,4 +145,8 @@ const (
 	MetaphorDevelopmentLocalURL         = "http://localhost:3000"
 )
 
-const MetaphorFrontendSlimTLS = "https://metaphor-frontend-development.localdev.me"
+const (
+	MetaphorFrontendSlimTLSDev     = "https://metaphor-frontend-development.localdev.me"
+	MetaphorFrontendSlimTLSStaging = "https://metaphor-frontend-staging.localdev.me"
+	MetaphorFrontendSlimTLSProd    = "https://metaphor-frontend-production.localdev.me"
+)

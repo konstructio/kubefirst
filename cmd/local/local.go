@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -40,6 +41,10 @@ var (
 	adminEmail     string
 	templateTag    string
 	logLevel       string
+
+	// ngrok context that is used to control ngrok context cancellation, and is called at the end of the installation,
+	// after the user closes Kubefirst installer.
+	cancelContext context.CancelFunc
 )
 
 func NewCommand() *cobra.Command {
@@ -78,7 +83,6 @@ func NewCommand() *cobra.Command {
 	localCmd.SilenceUsage = true
 
 	// wire up new commands
-	localCmd.AddCommand(NewCommandConnect())
 	localCmd.AddCommand(NewDestroyCommand())
 
 	return localCmd
@@ -88,28 +92,27 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
 
-	//tools.RunInfo(cmd, args)
+	gitProvider := "github"
+	cloud := "k3d"
 
 	progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 	progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
 	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 4)
-	progressPrinter.AddTracker("step-telemetry", pkg.SendTelemetry, 2)
 	if useTelemetry {
-		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallStarted); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallStarted, cloud, gitProvider); err != nil {
 			log.Error().Err(err).Msg("")
 		}
-		pkg.InformUser("Telemetry info sent", silentMode)
+		log.Info().Msg("Telemetry info sent")
 	} else {
 		pkg.InformUser("Telemetry skipped by user request", silentMode)
 	}
-	progressPrinter.IncrementTracker("step-telemetry", 1)
 
 	// todo need to add go channel to control when ngrok should close
 	// and use context to handle closing the open goroutine/connection
 	//go pkg.RunNgrok(context.TODO(), pkg.LocalAtlantisURL)
 
 	if !viper.GetBool("kubefirst.done") {
-		if viper.GetString("gitprovider") == "github" {
+		if gitProvider == "github" {
 			log.Info().Msg("Installing Github version of Kubefirst")
 			viper.Set("git.mode", "github")
 			err := k3d.CreateK3dCluster()
@@ -398,7 +401,12 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	go func() {
 		pkg.InformUser(`waiting "atlantis plan" finish to proceed...`, silentMode)
 		gitHubClient := githubWrapper.New()
-		err = gitHubClient.CreatePR(branchName)
+
+		base := "main"
+		title := "update S3 backend to minio / internal k8s dns"
+		body := "use internal Kubernetes dns"
+		gitHubUser := viper.GetString("github.user")
+		pullRequest, err := gitHubClient.CreatePR(branchName, "gitops", gitHubUser, base, title, body)
 		if err != nil {
 			log.Error().Err(err).Msg("")
 		}
@@ -408,6 +416,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		ok, err := gitHubClient.RetrySearchPullRequestComment(
 			githubOwner,
 			pkg.KubefirstGitOpsRepository,
+			pullRequest,
 			"To **apply** all unapplied plans from this pull request, comment",
 			`waiting "atlantis plan" finish to proceed...`,
 		)
@@ -421,7 +430,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 			return
 		}
 
-		if err := gitHubClient.CommentPR(1, "atlantis apply"); err != nil {
+		if err := gitHubClient.CommentPR(pullRequest, gitHubUser, "atlantis apply"); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 		wg.Done()
@@ -447,14 +456,13 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("sending mgmt cluster install completed metric")
 	if useTelemetry {
-		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted); err != nil {
+		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted, cloud, gitProvider); err != nil {
 			log.Error().Err(err).Msg("")
 		}
-		pkg.InformUser("Telemetry info sent", silentMode)
+		log.Info().Msg("Telemetry info sent")
 	} else {
 		pkg.InformUser("Telemetry skipped by user request", silentMode)
 	}
-	progressPrinter.IncrementTracker("step-telemetry", 1)
 
 	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
 	return nil

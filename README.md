@@ -79,6 +79,9 @@ gitlab.subdomain.example.com
 ```bash 
 brew install kubefirst/tools/kubefirst
 ```
+
+[Learn more](https://docs.kubefirst.com/kubefirst/overview.html)
+
 ## Other installation techniques:
 
 [Details Here](./build/README.md)
@@ -86,6 +89,7 @@ brew install kubefirst/tools/kubefirst
 ## Initialization
 
 Since Kubefirst 1.9 version, GitHub is also available as a Git platform provider alongside GitLab.
+
 
 ### localhost
 
@@ -101,15 +105,13 @@ To prepare the installation using GitLab you can:
 
 ```bash
 kubefirst init \
+--admin-email yourname@yourcompany.com \
 --cloud aws \
+--hosted-zone-name yourdomain.com \
+--region us-east-1 \
 --profile default \
---region eu-central-1 \
---admin-email user@example.com \
 --cluster-name your_cluster_name \
---hosted-zone-name domain.example \
 --s3-suffix you-s3-bucket-name \
---gitops-branch main \
---metaphor-branch main \
 --git-provider gitlab \
 --aws-nodes-spot
 ```
@@ -122,16 +124,14 @@ To prepare the installation using GitHub you can:
 export KUBEFIRST_GITHUB_AUTH_TOKEN=your_github_auth_token
 
 kubefirst init \
---admin-email yourname@example.com \
+--admin-email yourname@yourcompany.com \
 --cloud aws \
---hosted-zone-name example.com \
---region eu-central-1 \
---cluster-name example_com \
+--hosted-zone-name yourdomain.com \
+--region us-east-1 \
 --profile default \
---github-user yourgithubhandle \
---github-owner yourgithuborganization \
---gitops-branch main \
---metaphor-branch main
+--cluster-name your-cluster-name \
+--github-owner your-github-organization-name 
+
 ```
 
 ## Creation
@@ -150,9 +150,15 @@ It will destroy the kubefirst management cluster, and clean up every change made
 kubefirst cluster destroy
 ```
 
+or for `kubefirst local`:
+
+```bash
+kubefirst local destroy
+```
+
 # What to do next
 
-[Learn More - Getting Started](https://docs.kubefirst.io/kubefirst/getting-started.html)
+[Learn More - Getting Started](https://docs.kubefirst.com/index.html)
 
 
 # If you want learn more 
@@ -167,18 +173,8 @@ kubectl -n argocd port-forward svc/argocd-server 8080:80
 
 ## Available Commands
 
-Kubefirst provides extra tooling for handling the provisioning work.
+- [Kubefirst Commands](https://docs.kubefirst.com/tooling/kubefirst-cli.html)
 
-| Command        | Description                                               |
-|:---------------|:----------------------------------------------------------|
-| clean          | removes all kubefirst resources locally for new execution |
-| cluster create | create a kubefirst management cluster                     |
-| cluster destroy| destroy the kubefirst management cluster                  |
-| info           | provides general Kubefirst setup data                     |
-| init           | initialize your local machine to execute `create`         |
-| version        | print the version number for kubefirst-cli"               |
-
----
 
 ## The Provisioning Process
 

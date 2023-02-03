@@ -50,24 +50,26 @@ func PrintSectionRepoGitlab() []byte {
 	return handOffData.Bytes()
 }
 
-func PrintSectionOverview(kubefirstConsoleURL string) []byte {
+func PrintSectionOverview() []byte {
 	var handOffData bytes.Buffer
 	config := configs.ReadConfig()
 	handOffData.WriteString(strings.Repeat("-", 70))
 	handOffData.WriteString(fmt.Sprintf("\nCluster %q is up and running!:", viper.GetString("cluster-name")))
 	handOffData.WriteString("\nThis information is available at $HOME/.kubefirst ")
-	handOffData.WriteString("\n\nAccess the kubefirst-console from your browser at:\n" + kubefirstConsoleURL + "\n")
+	handOffData.WriteString("\n")
 	handOffData.WriteString("\nPress ESC to leave this screen and return to your shell.")
 
 	if viper.GetString("cloud") == pkg.CloudK3d {
 		handOffData.WriteString("\n\nNotes:")
 		handOffData.WriteString("\n  Kubefirst generated certificates to ensure secure connections to")
-		handOffData.WriteString("\n  your local deployment. Even if your browser warn you about the ")
-		handOffData.WriteString("\n  origin, you can use Kubefirst without any issue. ")
-		handOffData.WriteString("\n  If you want, you can update your OS trust store by running ")
-		handOffData.WriteString("\n  this command and pass your root password:  ")
+		handOffData.WriteString("\n  your local kubernetes services. However they will not")
+		handOffData.WriteString("\n  trusted by your browser by default. ")
+		handOffData.WriteString("\n")
+		handOffData.WriteString("\n  It is safe to ignore the warning and continue to these sites. ")
+		handOffData.WriteString("\n  To remove these warnings, you can install your new certificate ")
+		handOffData.WriteString("\n  to your local trust store by running the following command: ")
 		handOffData.WriteString(fmt.Sprintf("\n    %s -install", config.MkCertPath))
-		handOffData.WriteString("\n  Details:")
+		handOffData.WriteString("\n  For more details on the mkcert utility, please see:")
 		handOffData.WriteString("\n  https://github.com/FiloSottile/mkcert#changing-the-location-of-the-ca-files")
 	}
 	return handOffData.Bytes()
@@ -189,9 +191,9 @@ func PrintSectionMetaphor() []byte {
 
 	handOffData.WriteString("\n--- Metaphor ")
 	handOffData.WriteString(strings.Repeat("-", 57))
-	handOffData.WriteString(fmt.Sprintf("\n Development: %s", fmt.Sprintf("https://metaphor-development.%s", viper.GetString("aws.hostedzonename"))))
-	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", fmt.Sprintf("https://metaphor-staging.%s", viper.GetString("aws.hostedzonename"))))
-	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", fmt.Sprintf("https://metaphor-production.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Development: %s", fmt.Sprintf("https://metaphor-development.%s/app", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", fmt.Sprintf("https://metaphor-staging.%s/app", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", fmt.Sprintf("https://metaphor-production.%s/app", viper.GetString("aws.hostedzonename"))))
 	handOffData.WriteString(strings.Repeat("-", 70))
 
 	return handOffData.Bytes()
@@ -201,9 +203,9 @@ func PrintSectionMetaphorGo() []byte {
 
 	handOffData.WriteString("\n--- Metaphor Go")
 	handOffData.WriteString(strings.Repeat("-", 55))
-	handOffData.WriteString(fmt.Sprintf("\n Development: %s", fmt.Sprintf("https://metaphor-go-development.%s", viper.GetString("aws.hostedzonename"))))
-	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", fmt.Sprintf("https://metaphor-go-staging.%s", viper.GetString("aws.hostedzonename"))))
-	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", fmt.Sprintf("https://metaphor-go-production.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Development: %s", fmt.Sprintf("https://metaphor-go-development.%s/app", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", fmt.Sprintf("https://metaphor-go-staging.%s/app", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", fmt.Sprintf("https://metaphor-go-production.%s/app", viper.GetString("aws.hostedzonename"))))
 	handOffData.WriteString(strings.Repeat("-", 70))
 
 	return handOffData.Bytes()
@@ -214,9 +216,9 @@ func PrintSectionMetaphorFrontend() []byte {
 	var handOffData bytes.Buffer
 
 	if viper.GetString("cloud") == pkg.CloudK3d {
-		handOffData.WriteString("\n\n--- Metaphor Slim ")
-		handOffData.WriteString(strings.Repeat("-", 53))
-		handOffData.WriteString(fmt.Sprintf("\n\n URL: %s\n\n", pkg.MetaphorFrontendSlimTLS))
+		handOffData.WriteString("\n--- Metaphor Slim ")
+		handOffData.WriteString(strings.Repeat("-", 52))
+		handOffData.WriteString(fmt.Sprintf("\n URL: %s\n", pkg.MetaphorFrontendSlimTLSDev))
 		handOffData.WriteString(strings.Repeat("-", 70))
 
 		return handOffData.Bytes()
@@ -228,6 +230,16 @@ func PrintSectionMetaphorFrontend() []byte {
 	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", fmt.Sprintf("https://metaphor-frontend-staging.%s", viper.GetString("aws.hostedzonename"))))
 	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", fmt.Sprintf("https://metaphor-frontend-production.%s", viper.GetString("aws.hostedzonename"))))
 	handOffData.WriteString(strings.Repeat("-", 70))
+
+	return handOffData.Bytes()
+}
+
+func PrintSectionConsole(consoleURL string) []byte {
+
+	var handOffData bytes.Buffer
+	handOffData.WriteString("\n--- Kubefirst Console ")
+	handOffData.WriteString(strings.Repeat("-", 48))
+	handOffData.WriteString(fmt.Sprintf("\n URL: %s", consoleURL))
 
 	return handOffData.Bytes()
 }
@@ -246,13 +258,14 @@ func HandoffScreen(dryRun bool, silentMode bool) {
 	}
 
 	var handOffData bytes.Buffer
-	handOffData.Write(PrintSectionOverview(pkg.KubefirstConsoleLocalURLCloud))
+	handOffData.Write(PrintSectionOverview())
 	handOffData.Write(PrintSectionAws())
-	if viper.GetString("gitprovider") == "github" {
+	if viper.GetString("git-provider") == "github" {
 		handOffData.Write(PrintSectionRepoGithub())
 	} else {
 		handOffData.Write(PrintSectionRepoGitlab())
 	}
+	handOffData.Write(PrintSectionConsole(pkg.KubefirstConsoleLocalURLCloud))
 	handOffData.Write(PrintSectionVault())
 	handOffData.Write(PrintSectionArgoCD())
 	handOffData.Write(PrintSectionArgoWorkflows())
@@ -280,8 +293,9 @@ func LocalHandoffScreen(dryRun bool, silentMode bool) {
 	}
 
 	var handOffData bytes.Buffer
-	handOffData.Write(PrintSectionOverview(pkg.KubefirstConsoleLocalURLTLS))
+	handOffData.Write(PrintSectionOverview())
 	handOffData.Write(PrintSectionRepoGithub())
+	handOffData.Write(PrintSectionConsole(pkg.KubefirstConsoleLocalURLTLS))
 	handOffData.Write(PrintSectionVault())
 	handOffData.Write(PrintSectionArgoCD())
 	handOffData.Write(PrintSectionArgoWorkflows())

@@ -34,10 +34,12 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
 
-	log.Info().Msg("sending init started metric")
+	gitProvider := viper.GetString("git-provider")
+	cloud := viper.GetString("cloud")
 
 	if useTelemetry {
-		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted); err != nil {
+		pkg.InformUser("Sending installation telemetry", silentMode)
+		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted, cloud, gitProvider); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 	}
@@ -64,7 +66,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	// set default values to kubefirst file
 	viper.Set("gitops.repo", pkg.KubefirstGitOpsRepository)
 	viper.Set("gitops.owner", "kubefirst")
-	viper.Set("gitprovider", pkg.GitHubProviderName)
+	viper.Set("git-provider", pkg.GitHubProviderName)
 	viper.Set("metaphor.branch", metaphorBranch)
 
 	viper.Set("gitops.branch", gitOpsBranch)
@@ -103,7 +105,11 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	go pkg.RunNgrok(context.TODO())
+	// creates a new context, and a cancel function that allows canceling the context. The context is passed as an
+	// argument to the RunNgrok function, which is then started in a new goroutine.
+	var ctx context.Context
+	ctx, cancelContext = context.WithCancel(context.Background())
+	go pkg.RunNgrok(ctx)
 
 	viper.Set("github.atlantis.webhook.secret", pkg.Random(20))
 	viper.Set("github.user", githubUser)
@@ -152,7 +158,15 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	//
 	// clone gitops template
 	//
-	// todo: add wrapper
+	// todo: temporary code, the full logic will be refactored in the next release
+
+	// translation:
+	//  - if not an execution from a released/binary kubefirst version / development version
+	//  - and metaphor branch is not set, use the default branch
+	if configs.K1Version == configs.DefaultK1Version && metaphorBranch == "" {
+		metaphorBranch = "main"
+	}
+
 	if configs.K1Version == configs.DefaultK1Version {
 
 		gitHubOrg := "kubefirst"
@@ -235,7 +249,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	pkg.InformUser("initialization step is done!", silentMode)
 
 	if useTelemetry {
-		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted); err != nil {
+		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted, cloud, gitProvider); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 	}

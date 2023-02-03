@@ -158,7 +158,7 @@ func GetOidcClientCredentials(dryRun bool) {
 
 	oidcApps := []string{"argo", "argocd"}
 
-	if viper.GetString("gitprovider") == "gitlab" {
+	if viper.GetString("git-provider") == "gitlab" {
 		oidcApps = append(oidcApps, "gitlab")
 	}
 

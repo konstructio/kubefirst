@@ -174,13 +174,13 @@ func AwaitHostNTimes(appName string, dryRun bool, times int) bool {
 		hostedZoneName := viper.GetString("aws.hostedzonename")
 		resp, _ := http.Get(fmt.Sprintf("https://%s.%s", appName, hostedZoneName))
 		if resp != nil && resp.StatusCode == 200 {
-			log.Printf("%s host resolved, 30 second grace period required...", appName)
+			log.Info().Msgf("%s host resolved, 30 second grace period required...", appName)
 			time.Sleep(time.Second * 30)
 			i = max
 			hostReady = true
 			return hostReady
 		} else {
-			log.Printf("%s host not resolved, sleeping 10s", appName)
+			log.Info().Msgf("%s host not resolved, sleeping 10s", appName)
 			time.Sleep(time.Second * 10)
 		}
 	}
@@ -367,7 +367,7 @@ func DestroyGitlabTerraform(skipGitlabTerraform bool) {
 
 	envs["GITLAB_BASE_URL"] = fmt.Sprintf("https://gitlab.%s", viper.GetString("aws.hostedzonename"))
 
-	if !skipGitlabTerraform && viper.GetString("gitprovider") == "gitlab" {
+	if !skipGitlabTerraform && viper.GetString("git-provider") == "gitlab" {
 		err = pkg.ExecShellWithVars(envs, config.TerraformClientPath, "init")
 		if err != nil {
 			log.Panic().Msgf("failed to terraform init gitlab %s", err)

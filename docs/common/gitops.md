@@ -17,25 +17,38 @@ The benefit of defining your desired state in a declarative way in Git is enormo
 
 ## Pipelines
 
-![](../../img/kubefirst/gitops/gitops-cicd.png)
+![](../img/kubefirst/gitops/gitops-cicd.png)
 
-Our CI pipelines originate in your privately hosted GitHub Actions Runner with a workflow being submitted to Argo Workflows. The workflows will publish your container with a pre-release Helm chart.
+Our CI pipelines originate in your privately hosted git repo trigger mechanism(Github Actions or Gitlab CI) with a workflow being submitted to Argo Workflows. The workflows will publish your container with a pre-release Helm chart.
 
 The pipelines then continue with promotion of the release through the preprod environments.
 
 Once the release is ready, the release chart is published and delivered to production, and the application chart's version will be prepared for the next release.
 
-## GitHub Integration with Argo Workflows
+### GitHub Integration with Argo Workflows
 
-![](../../img/kubefirst/local/github-argo-workflow.png)
+![](../img/kubefirst/github/github-argo-workflow.png)
+
 
 The integration that we've established between GitHub and Argo Workflows will surface your powerful Argo Workflows engine directly in GitHub Actions, so that your developers have all of the workflow execution information available, directly associated with their commit in their application repository.
 
-This provides all of the CI observability your development team needs directly associated with their change in Git.
+
+### GitLab Integration with Argo Workflows
+
+![](../../img/kubefirst/gitops/gitlab-workflows-integration.png)
+
+The integration that we've established between GitLab and Argo Workflows will surface your powerful Argo Workflows engine directly in GitLab's native CI, so that your developers have all of the workflow execution information available directly associated with their commit in their application repository.
+
+![](../img/kubefirst/gitlab/gitlab-argo-workflow.png)
+
+
+## Observability
+
+Independent of the git provider select, the integrations provides all of the CI observability your development team needs directly associated with their change in Git.
 
 ## GitOps Resources
 
-![](../../img/kubefirst/gitops/argocd-app-registrations.png)
+![](../img/kubefirst/gitops/argocd-app-registrations.png)
 
 Our implementation includes GitOps patterns for numerous source types including:
 
@@ -46,5 +59,6 @@ Our implementation includes GitOps patterns for numerous source types including:
 The metaphor example application includes an example of how easy it is to set different configuration overrides for your different environments.
 
 To see what it takes to make the `development` instance of `metaphor` different than the others, visit the `gitops` repo and navigate to `/components/development/metaphor/values.yaml`
+
 
 Any Helm value that should deviate from the default chart can be set here so your environment overrides are always concise and clear.
