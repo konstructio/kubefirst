@@ -34,7 +34,7 @@ func NewCommand() *cobra.Command {
 	// todo review defaults and update descriptions
 	civoCmd.Flags().StringVar(&adminEmailFlag, "admin-email", "jared@kubeshop.io", "email address for let's encrypt certificate notifications")
 	civoCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "NYC1", "the civo region to provision infrastructure in")
-	civoCmd.Flags().StringVar(&cloudProviderFlag, "cloud-provider", "civo", "the git provider to use. (i.e. gitlab|github)")
+	civoCmd.Flags().StringVar(&cloudProviderFlag, "cloud-provider", "civo", "the cloud provider to use. (i.e. civo|aws)")
 	civoCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	civoCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
 	civoCmd.Flags().StringVar(&domainNameFlag, "domain-name", "k-ray.space", "the Civo DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com)")

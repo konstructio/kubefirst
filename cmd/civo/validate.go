@@ -211,6 +211,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("kubefirst.state-store-bucket.complete")
 	if !executionControl {
 		accessKeyId := viper.GetString("civo.object-storage-creds.access-key-id")
+		log.Info().Msgf("access key id %s", accessKeyId)
 
 		bucket, err := civo.CreateStorageBucket(accessKeyId, kubefirstStateStoreBucketName, cloudRegionFlag)
 		if err != nil {
