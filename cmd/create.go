@@ -66,7 +66,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 
 		// todo remove this dependency from create.go
 		hostedZoneName := viper.GetString("aws.hostedzonename")
-		providerValue := viper.GetString("gitprovider")
+		providerValue := viper.GetString("git-provider")
 		cloud := viper.GetString("cloud")
 
 		if !globalFlags.UseTelemetry {
@@ -76,21 +76,14 @@ cluster provisioning process spinning up the services, and validates the livenes
 		}
 
 		if globalFlags.UseTelemetry {
-			if providerValue == "github" {
-				if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallStarted, cloud, providerValue); err != nil {
-					log.Warn().Msgf("%s", err)
-				}
-			} else {
-				if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallStarted, cloud, providerValue); err != nil {
-					log.Warn().Msgf("%s", err)
-				}
+			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallStarted, cloud, providerValue); err != nil {
+				log.Warn().Msgf("%s", err)
 			}
 		}
 
 		httpClient := http.DefaultClient
 		gitHubService := services.NewGitHubService(httpClient)
 		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-
 
 		config := configs.ReadConfig()
 		gitHubAccessToken := config.GitHubPersonalAccessToken
@@ -128,7 +121,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		}
 
 		if !viper.GetBool("kubefirst.done") {
-			if viper.GetString("gitprovider") == "github" {
+			if viper.GetString("git-provider") == "github" {
 				log.Info().Msg("Installing Github version of Kubefirst")
 				viper.Set("git.mode", "github")
 				// if not local it is AWS for now
@@ -202,14 +195,8 @@ cluster provisioning process spinning up the services, and validates the livenes
 		log.Debug().Msg("sending mgmt cluster install completed metric")
 
 		if globalFlags.UseTelemetry {
-			if providerValue == "github" {
-				if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallCompleted, cloud, providerValue); err != nil {
-					log.Warn().Msgf("%s", err)
-				}
-			} else {
-				if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallCompleted, cloud, providerValue); err != nil {
-					log.Warn().Msgf("%s", err)
-				}
+			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallCompleted, cloud, providerValue); err != nil {
+				log.Warn().Msgf("%s", err)
 			}
 		}
 

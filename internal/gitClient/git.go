@@ -528,7 +528,7 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 
 	log.Info().Msg("Committing new changes... PushLocalRepoUpdates")
 
-	if viper.GetString("gitprovider") == "github" {
+	if viper.GetString("git-provider") == "github" {
 		gitHubRemoteBackendFiled := "terraform/users/kubefirst-github.tf"
 		_, err = w.Add(gitHubRemoteBackendFiled)
 		if err != nil {
