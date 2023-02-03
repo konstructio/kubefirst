@@ -305,15 +305,15 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		helm.AddRepoAndUpdateRepo(dryRun, helmClientPath, helmRepo, kubeconfigPath)
 	}
 	//* helm install argocd
-	// executionControl = viper.GetBool("argocd.helm.install.complete")
-	// if !executionControl {
-	// 	pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
-	// 	// todo adopt golang helm client for helm install
-	// 	err := helm.Install(argoCDInitValuesYamlPath, dryRun, helmClientPath, helmRepo, kubeconfigPath)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+	executionControl = viper.GetBool("argocd.helm.install.complete")
+	if !executionControl {
+		pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
+		// todo adopt golang helm client for helm install
+		err := helm.Install(dryRun, helmClientPath, helmRepo, kubeconfigPath)
+		if err != nil {
+			return err
+		}
+	}
 
 	//* argocd pods are running
 	// todo improve this check, also return an error so we can have an exit on failure
@@ -360,10 +360,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.registry.applied")
 	if !executionControl {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
-		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", clusterName, k1DirPath)
-		err := argocd.KubectlCreateApplication(kubeconfigPath, kubectlClientPath, k1DirPath, registryYamlPath)
+		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", k1DirPath, clusterName)
+		_, _, err := pkg.ExecShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
 		if err != nil {
-			log.Info().Msgf("Error applying %s application to argocd", registryYamlPath)
+			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", registryYamlPath, err.Error())
 			return err
 		}
 	}

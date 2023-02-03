@@ -279,7 +279,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
 		registryYamlPath := fmt.Sprintf("%s/gitops/registry.yaml", config.K1FolderPath)
-		err := argocd.KubectlCreateApplication(config.KubeConfigPath, config.KubectlClientPath, config.K1FolderPath, registryYamlPath)
+		err := argocd.KubectlCreateApplication(config.KubeConfigPath, config.KubectlClientPath, registryYamlPath)
 		if err != nil {
 			log.Error().Err(err).Msg("Error applying registry application to argocd")
 			return err
