@@ -30,8 +30,8 @@ import (
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Creates a Kubefirst management cluster",
-	Long: `Based on Kubefirst init command, that creates the Kubefirst configuration file, this command start the
-cluster provisioning process spinning up the services, and validates the liveness of the provisioned services.`,
+	Long: `Based on the kubefirst init command which creates the kubefirst configuration file, this command starts the
+cluster provisioning process, spinning up the services, and validates the liveness of the provisioned services.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		start := time.Now()
 		defer func() {

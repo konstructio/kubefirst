@@ -16,10 +16,9 @@ import (
 // destroyCmd represents the destroy command
 var destroyCmd = &cobra.Command{
 	Use:   "destroy",
-	Short: "destroy Kubefirst management cluster",
-	Long:  "destroy all the resources installed via Kubefirst installer",
+	Short: "Destroy Kubefirst management cluster",
+	Long:  "Destroy all the resources installed via Kubefirst installer",
 	RunE: func(cmd *cobra.Command, args []string) error {
-
 		//Destroy is implemented based on the flavor selected.
 		if viper.GetString("cloud") == pkg.CloudAws {
 			//just in case, we need downstream
@@ -45,7 +44,7 @@ var destroyCmd = &cobra.Command{
 			log.Println("terraform base destruction complete")
 
 		} else {
-			return fmt.Errorf("not supported mode")
+			return fmt.Errorf("nothing to destroy - it looks like you haven't created a cluster yet")
 		}
 
 		time.Sleep(time.Millisecond * 100)

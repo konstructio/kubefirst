@@ -18,14 +18,31 @@ import (
 // cleanCmd removes all kubefirst resources created with the init command
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
-	Short: "removes all kubefirst resources created with the init command",
-	Long: `Kubefirst creates files, folders, cloud buckets and download tools during installation at your environment. 
-This command removes and re-create Kubefirst base files. 
-To destroy cloud resources you need to specify additional flags (--destroy-buckets)
-To preserve the tools downloaded you need to specify additional flag (--preserve-tools).`,
+	Short: "Removes all kubefirst resources created with the init command",
+	Long: `Kubefirst creates files, folders, cloud buckets and downloads tools during installation for your environment.
+This command removes and re-creates Kubefirst base files.
+To destroy cloud resources, you need to specify additional the flag (--destroy-buckets).
+To preserve the tools downloaded during init, you need to specify the additional flag (--preserve-tools).`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		config := configs.ReadConfig()
+
+		// Verify whether or not resources exist
+		var checkCreationFlags []string = []string{
+			// Any resources that generate flags upon creation should be checked here
+			"create.terraformapplied.base",
+			"create.terraformapplied.ci",
+			"create.terraformapplied.ecr",
+			"create.terraformapplied.gitlab",
+			"create.terraformapplied.users",
+			"create.terraformapplied.vault",
+			"github.terraformapplied.gitops",
+		}
+		for _, resource := range checkCreationFlags {
+			if viper.GetBool(resource) {
+				return fmt.Errorf("it looks like you've created a cluster - run `kubefirst cluster destroy` to clean resources up. found: %s", resource)
+			}
+		}
 
 		destroyBuckets, err := cmd.Flags().GetBool("destroy-buckets")
 		if err != nil {
@@ -99,7 +116,7 @@ To preserve the tools downloaded you need to specify additional flag (--preserve
 				return fmt.Errorf("unable to delete %q folder, error is: %s", config.K1FolderPath, err)
 			}
 
-			if err := os.Mkdir(fmt.Sprintf("%s", config.K1FolderPath), os.ModePerm); err != nil {
+			if err := os.Mkdir(config.K1FolderPath, os.ModePerm); err != nil {
 				return fmt.Errorf("error: could not create directory %q - it must exist to continue. error is: %s", config.K1FolderPath, err)
 			}
 		}
