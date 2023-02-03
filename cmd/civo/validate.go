@@ -7,7 +7,6 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/civo"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/handlers"
@@ -27,15 +26,8 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 
 	// todo emit init telemetry begin
 
-	config := configs.GetCivoConfig()
-
 	//* get cli flag values for storage in `$HOME/.kubefirst`
 	adminEmailFlag, err := cmd.Flags().GetString("admin-email")
-	if err != nil {
-		return err
-	}
-
-	cloudProviderFlag, err := cmd.Flags().GetString("cloud-provider")
 	if err != nil {
 		return err
 	}
@@ -75,10 +67,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	gitProviderFlag, err := cmd.Flags().GetString("git-provider")
-	if err != nil {
-		return err
-	}
 	kbotPasswordFlag, err := cmd.Flags().GetString("kbot-password")
 	if err != nil {
 		return err
@@ -125,26 +113,28 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 
-	k1Dir := fmt.Sprintf("%s/.k1", homePath)
+	cloudProvider := "civo"
+	gitProvider := "github"
+	k1DirPath := fmt.Sprintf("%s/.k1", homePath)
 
 	// todo validate flags
 	viper.Set("admin-email", adminEmailFlag)
 	viper.Set("argocd.helm.chart-version", "4.10.5")
 	viper.Set("argocd.local.service", "http://localhost:8080")
 	viper.Set("vault.local.service", "http://localhost:8200")
-	viper.Set("cloud-provider", cloudProviderFlag)
-	viper.Set("git-provider", gitProviderFlag)
-	viper.Set("kubefirst.k1-directory-path", k1Dir)
-	viper.Set("kubefirst.k1-tools-path", fmt.Sprintf("%s/tools", k1Dir))
-	viper.Set("kubefirst.k1-gitops-dir", fmt.Sprintf("%s/gitops", k1Dir))
-	viper.Set("kubefirst.k1-metaphor-dir", fmt.Sprintf("%s/metaphor-frontend", k1Dir))
-	viper.Set("kubefirst.helm-client-path", fmt.Sprintf("%s/tools/helm", k1Dir))
+	viper.Set("cloud-provider", cloudProvider)
+	viper.Set("git-provider", gitProvider)
+	viper.Set("kubefirst.k1-directory-path", k1DirPath)
+	viper.Set("kubefirst.k1-tools-path", fmt.Sprintf("%s/tools", k1DirPath))
+	viper.Set("kubefirst.k1-gitops-dir", fmt.Sprintf("%s/gitops", k1DirPath))
+	viper.Set("kubefirst.k1-metaphor-dir", fmt.Sprintf("%s/metaphor-frontend", k1DirPath))
+	viper.Set("kubefirst.helm-client-path", fmt.Sprintf("%s/tools/helm", k1DirPath))
 	viper.Set("kubefirst.helm-client-version", "v3.6.1")
-	viper.Set("kubefirst.kubeconfig-path", fmt.Sprintf("%s/kubeconfig", k1Dir))
-	viper.Set("kubefirst.kubectl-client-path", fmt.Sprintf("%s/tools/kubectl", k1Dir))
+	viper.Set("kubefirst.kubeconfig-path", fmt.Sprintf("%s/kubeconfig", k1DirPath))
+	viper.Set("kubefirst.kubectl-client-path", fmt.Sprintf("%s/tools/kubectl", k1DirPath))
 	viper.Set("kubefirst.kubectl-client-version", "v1.23.15") // todo make configs like this more discoverable in struct?
 	viper.Set("kubefirst.kubefirst-config-path", fmt.Sprintf("%s/%s", homePath, ".kubefirst"))
-	viper.Set("kubefirst.terraform-client-path", fmt.Sprintf("%s/tools/terraform", k1Dir))
+	viper.Set("kubefirst.terraform-client-path", fmt.Sprintf("%s/tools/terraform", k1DirPath))
 	viper.Set("kubefirst.terraform-client-version", "1.0.11")
 	viper.Set("localhost.os", runtime.GOOS)
 	viper.Set("localhost.architecture", runtime.GOARCH)
@@ -233,7 +223,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 
 		httpClient := http.DefaultClient
-		githubToken := config.GithubToken
+		githubToken := os.Getenv("GITHUB_TOKEN")
 		if len(githubToken) == 0 {
 			// todo ask for user input here
 			// 1. enter github personal access token
@@ -251,8 +241,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-
-		// todo evaluate if cloudProviderFlag == "local" {githubOwnerFlag = githubUser} and the rest of the execution is the same
 
 		err = gitHubHandler.CheckGithubOrganizationPermissions(githubToken, githubOwnerFlag, githubUser)
 		if err != nil {
@@ -337,7 +325,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst.telemetry", useTelemetryFlag)
 		viper.Set("kubefirst.cluster-name", clusterNameFlag)
 		viper.Set("kubefirst.cluster-type", clusterTypeFlag)
-		viper.Set("vault.local.service", config.VaultLocalURL)
 		viper.Set("domain-name", domainNameFlag) // todo refactor to domain-name
 		viper.Set("cloud-region", cloudRegionFlag)
 		viper.Set("kubefirst.checks.civo.complete", true)
@@ -362,7 +349,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitCompleted, cloudProviderFlag, gitProviderFlag); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitCompleted, cloudProvider, gitProvider); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
