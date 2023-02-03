@@ -6,7 +6,7 @@ Join the `kubefirst` slack workspace by following [this link](https://join.slack
 
 ### Issues
 
-To open an issue or request a feature, submit a new issue against the kubefirst repo [here](https://github.com/kubefirst/nebulous/issues)
+To open an issue or request a feature, submit a new issue against the kubefirst repo [here](https://github.com/kubefirst/kubefirst/issues)
 
 ### Zoom
 
@@ -15,4 +15,3 @@ We're happy to engage with you to talk through your use cases and any points of 
 ### Email
 
 To request more information or schedule a demo email <info@kubefirst.com>
-
