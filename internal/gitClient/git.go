@@ -32,8 +32,8 @@ const Gitlab = "gitlab"
 
 func Clone(gitRef, repoLocalPath, repoURL string) (*git.Repository, error) {
 
-	isSemVer := semver.IsValid(gitRef)
-	fmt.Println(isSemVer)
+	// kubefirst tags do not contain a `v` prefix, to use the library requires the v to be valid
+	isSemVer := semver.IsValid("v" + gitRef)
 
 	var refName plumbing.ReferenceName
 
@@ -55,7 +55,7 @@ func Clone(gitRef, repoLocalPath, repoURL string) (*git.Repository, error) {
 	return repo, nil
 }
 
-func CloneRefSetMain(gitRef, refType, repoLocalPath, repoURL string) (*git.Repository, error) {
+func CloneRefSetMain(gitRef, repoLocalPath, repoURL string) (*git.Repository, error) {
 
 	log.Info().Msgf("cloning url: %s - git ref: %s", repoURL, gitRef)
 
