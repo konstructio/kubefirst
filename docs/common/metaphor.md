@@ -139,7 +139,7 @@ The files you be interested are:
 chart/Metaphor
 ```
 
-There is a [CWFT meant to bump a chart](../tooling/argo/cwft-helm.html#helm-increment-chart-patch) version and update chart museum. This automation is to guide how to leverage the tooling already embeded on kubefirst to serve applications internally. 
+There is a [CWFT meant to bump a chart](../tooling/argo/cwft-helm.md#helm-increment-chart-patch) version and update chart museum. This automation is to guide how to leverage the tooling already embeded on kubefirst to serve applications internally. 
 
 
 

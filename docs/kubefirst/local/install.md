@@ -8,7 +8,7 @@ To use the local version of Kubefirst, you will need to have [Docker installed](
 
 ### Prerequisites
 
-- [To install kubefirst CLI](../overview.html#how-to-install-kubefirst-cli)
+- [To install kubefirst CLI](../overview.md#how-to-install-kubefirst-cli)
 - [To install docker](https://docs.docker.com/get-docker/)
 - [A personal github account](https://github.com/) (`gitops` and `metaphor-frontend` repositories will be created in your account and should not preexist)
 

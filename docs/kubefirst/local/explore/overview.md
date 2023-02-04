@@ -27,15 +27,15 @@ A newly provisoned local Kubefirst cluster contains the following content instal
 
 ## Introduction to the Console UI
 
-[Learn how to use the Kubefirst Console](../console.md)
+[Learn how to use the Kubefirst Console](./console.md)
 
 ## Atlantis Example / User Creation Walkthrough
 
-[Create your own user through Atlantis](../user-creation.md)
+[Create your own user through Atlantis](./user-creation.md)
 
 ## Deliver `metaphor-frontend` to your new Development, Staging, and Production Environments
 
-[Use metaphor as a sample frontend](../metaphor.md)
+[Use metaphor as a sample frontend](./metaphor.md)
 
 ## Accessing the Kubefirst Applications
 

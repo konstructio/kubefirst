@@ -59,7 +59,7 @@ to run. Removal of this infrastructure is also automated with a single `kubefirs
 
 ****1: On local, atlantis uses an ngrok tunnel to allow github to call us back, so it may not be production ready.***
 
-****2: Learn more about mkcert [here](./local/install.html#super-powers-user-needs-and-certificates-to-deal-with-https-locally)***
+****2: Learn more about mkcert [here](./local/install.md#super-powers-user-needs-and-certificates-to-deal-with-https-locally)***
 
 ## Console UI
 
