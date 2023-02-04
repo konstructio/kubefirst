@@ -48,7 +48,6 @@ ready to be customized to suit your company's needs.
   - [Available Commands](#available-commands)
   - [The Provisioning Process](#the-provisioning-process)
   - [Feed K-Ray](#feed-k-ray)
-- [todo](#todo)
 
 ![kubefirst architecture diagram](/images/kubefirst-arch.png)
 
@@ -185,8 +184,3 @@ kubectl -n argocd port-forward svc/argocd-server 8080:80
 Did you know our superhero mascot K-Ray gets its frictionless superpowers from a healthy diet of GitHub stars? K-Ray gets soooo hungry too - you wouldn't believe it. Feed K-Ray a GitHub star ⭐ above to bookmark our project and keep K-Ray happy!!
 
 [![Star History Chart](https://api.star-history.com/svg?repos=kubefirst/kubefirst&type=Date)](https://star-history.com/#kubefirst/kubefirst&Date)
-
-
-# todo
-- config can't be called in a context outside of the main driver.
-  - if we accommodate this then we will eliminate bugs from re-using functions
