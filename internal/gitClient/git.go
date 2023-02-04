@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"golang.org/x/mod/semver"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -28,6 +29,77 @@ const Github = "github"
 
 // Gitlab - git-provider github
 const Gitlab = "gitlab"
+
+func Clone(gitRef, repoLocalPath, repoURL string) (*git.Repository, error) {
+
+	isSemVer := semver.IsValid(gitRef)
+	fmt.Println(isSemVer)
+
+	var refName plumbing.ReferenceName
+
+	if isSemVer {
+		refName = plumbing.NewTagReferenceName(gitRef)
+	} else {
+		refName = plumbing.NewBranchReferenceName(gitRef)
+	}
+
+	repo, err := git.PlainClone(repoLocalPath, false, &git.CloneOptions{
+		URL:           repoURL,
+		ReferenceName: refName,
+		SingleBranch:  true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return repo, nil
+}
+
+func CloneRefSetMain(gitRef, refType, repoLocalPath, repoURL string) (*git.Repository, error) {
+
+	log.Info().Msgf("cloning url: %s - git ref: %s", repoURL, gitRef)
+
+	repo, err := Clone(gitRef, repoLocalPath, repoURL)
+	if err != nil {
+		return nil, err
+	}
+
+	if gitRef != "main" {
+		repo, err = SetRefToMainBranch(repo)
+		if err != nil {
+			return nil, fmt.Errorf("error setting main branch from git ref: %s", gitRef)
+		}
+
+		// remove old git ref
+		err = repo.Storer.RemoveReference(plumbing.NewBranchReferenceName(gitRef))
+		if err != nil {
+			return nil, fmt.Errorf("error removing previous git ref: %s", err)
+		}
+	}
+	return repo, nil
+}
+
+// SetRefToMainBranch point branch or tag to main
+func SetRefToMainBranch(repo *git.Repository) (*git.Repository, error) {
+	w, _ := repo.Worktree()
+	branchName := plumbing.NewBranchReferenceName("main")
+	headRef, err := repo.Head()
+	if err != nil {
+		return nil, fmt.Errorf("Error Setting reference: %s", err)
+	}
+
+	ref := plumbing.NewHashReference(branchName, headRef.Hash())
+	err = repo.Storer.SetReference(ref)
+	if err != nil {
+		return nil, fmt.Errorf("error Storing reference: %s", err)
+	}
+
+	err = w.Checkout(&git.CheckoutOptions{Branch: ref.Name()})
+	if err != nil {
+		return nil, fmt.Errorf("error checking out main: %s", err)
+	}
+	return repo, nil
+}
 
 func CloneLocalRepo(repoPath string) (*git.Repository, error) {
 	repo, err := git.PlainOpen(repoPath)
