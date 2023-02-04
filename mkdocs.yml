@@ -61,8 +61,8 @@ nav:
         - GitLab: 'kubefirst/gitlab/gitlab.md'
         - GitLab Repositories: 'kubefirst/gitlab/gitlab-repositories.md'
         - Argo CD: 'kubefirst/gitlab/argocd.md'
-        - GitOps: 'kubefirst/gitlab/gitops.md'
-        - Terraform & Atlantis: 'kubefirst/gitlab/terraform.md'
+        - GitOps: 'common/gitops.md'
+        - Terraform & Atlantis: 'common/terraform.md'
         - Vault: 'kubefirst/gitlab/vault.md'
       - Installer Options:
         - Config: 'kubefirst/installer/config-file.md'
