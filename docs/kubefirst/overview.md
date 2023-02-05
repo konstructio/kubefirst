@@ -44,8 +44,8 @@ to run. Removal of this infrastructure is also automated with a single `kubefirs
 ## Differences between selection available
 
 |   | local | aws+github | aws+gitlab | civo+github |
-|:--|:--:|:--:|:--:|
-|how to use| `kubefirst local` | `kubefirst init --cloud aws` | `kubefirst init --cloud aws --git-provider gitlab` | `kubefirst civo create`
+|:--|:--:|:--:|:--:|:--:|
+|how to use| `kubefirst local` | `kubefirst init --cloud aws` | `kubefirst init --cloud aws --git-provider gitlab` | `kubefirst civo create` |
 |argocd| yes | yes | yes | yes |
 |argo workflows| yes | yes | yes | yes |
 |vault| yes, in dev mode | yes, backed with DynamoDB and KMS| yes, backed with DynamoDB and KMS| yes, in dev mode | 
