@@ -1,16 +1,27 @@
-# Choose your adventure
+# Kubefirst Platforms
 
-The Kubefirst Platform now supports **4 different installation types!!!**
+## What is Kubefirst?
 
-## Kubefirst Local (GitHub Only)
+Kubefirst is a fully automated and operational open source platform that includes some of the most popular open source tools available in the 
+Kubernetes space, all working together from a single command. 
+
+We support local, AWS, and Civo clouds. By running our cli commands against your empty environment, you'll get a GitOps cloud management and application delivery ecosystem complete with automated 
+Terraform workflows, Vault secrets management, GitLab or GitHub integrations with Argo, and demo applications 
+that demonstrate how it all pieces together.
+
+![](./img/kubefirst/kubefirst-arch.png)
+
+## Installation Types
+
+### Kubefirst Local (GitHub Only)
 
 This is the **fastest** way to check out the kubefirst platform. This installation type will automatically create a local k3d cluster on your laptop, put a gitops repository in your personal GitHub account, and bootstrap the local cluster against that new repository. You will be able to run gitops deployments, build images, publish helm charts, and even run automated infrastructure as code, all without a cloud account or a domain requirement.
 
-## Kubefirst on CIVO Cloud (GitHub Only)
+### Kubefirst on CIVO Cloud (GitHub Only)
 
 The perfect cloud environment when Kubernetes will be the center of attention. A **simple cloud footprint** with a powerful open source cloud native tool set for identity management, infrastructure management, application delivery, and secrets management.
 
-## Kubefirst on AWS (GitHub or GitLab)
+### Kubefirst on AWS (GitHub or GitLab)
 
 Our AWS cloud platform can accommodate all of the **needs of your enterprise** and supports both [GitHub](https://www.github.com) and [GitLab](https://www.gitlab.com) providers. 
 
@@ -20,7 +31,7 @@ The GitLab option will move your git repositories to your newly created kubefirs
 
 ---
 
-## Choose Your Kubefirst Platform
+## Choose Your Platform
 
 |                                    |                                    |
 |:----------------------------------:|:----------------------------------:|

@@ -1,14 +1,3 @@
-# What is Kubefirst?
-
-Kubefirst is a fully automated and operational open source platform that includes some of the most popular open source tools available in the 
-Kubernetes space, all working together from a single command. 
-
-We support local, AWS, and Civo clouds. By running our cli commands against your empty environment, you'll get a GitOps cloud management and application delivery ecosystem complete with automated 
-Terraform workflows, Vault secrets management, GitLab or GitHub integrations with Argo, and demo applications 
-that demonstrate how it all pieces together.
-
-![](../img/kubefirst/kubefirst-arch.png)
-
 ## How to install Kubefirst CLI
 
 ```shell
@@ -23,8 +12,6 @@ To upgrade an existing Kubefirst install to the latest version run
 brew update
 brew upgrade kubefirst
 ```
-
-**Kubefirst dependencies**: brew install will download [AWS IAM Authenticator](https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html) dependency, that is Helm requirement to authenticate to EKS cluster.
 
 ## Kubefirst Usage
 
@@ -41,22 +28,20 @@ brew upgrade kubefirst
 
 |   | local | aws + github | aws + gitlab | civo + github |
 |:--|:--:|:--:|:--:|:--:|
-|how to use| `kubefirst local` | `kubefirst init --cloud aws` | `kubefirst init --cloud aws --git-provider gitlab` | `kubefirst civo create` |
-|argocd| yes | yes | yes | yes |
+|how to use | `kubefirst local` | `kubefirst init --cloud aws` | `kubefirst init --cloud aws --git-provider gitlab` | `kubefirst civo create` |
+|argocd | yes | yes | yes | yes |
 |argo workflows| yes | yes | yes | yes |
-|vault| yes, in dev mode | yes, backed with DynamoDB and KMS| yes, backed with DynamoDB and KMS| yes, in dev mode | 
-|atlantis| yes*1 | yes | yes |  yes | 
+|vault | yes, in dev mode | yes, backed with DynamoDB and KMS| yes, backed with DynamoDB and KMS| yes, in dev mode | 
+|atlantis | yes *1 | yes | yes |  yes | 
 |metaphor | metaphor-frontend | metaphor suite | metaphor suite| metaphor-frontend | 
 |chartmuseum | yes | yes | yes | yes | 
 |self-hosted runner| github action runner runner | github action runner runner | gitlab-runner | github action runner runner | 
-|HTTPS/SSL Certificates| mkcert| let's encrypt | let's encrypt | let's encrypt |
+|HTTPS/SSL Certificates | mkcert| let's encrypt | let's encrypt | let's encrypt |
 |external-secrets-operator | yes | yes | yes |  yes | 
 |kubefirst console| yes | yes | yes| yes | 
-|oidc | no | yes | yes| yes | 
+|oidc | no | yes | yes | yes | 
 
-****1: On local, atlantis uses an ngrok tunnel to allow github to call us back, so it may not be production ready.***
-
-****2: Learn more about mkcert [here](./local/install.md#super-powers-user-needs-and-certificates-to-deal-with-https-locally)***
+*1: On local, atlantis uses an ngrok tunnel to allow github to call us back, so it may not be production ready.*
 
 ## Console UI
 
@@ -66,10 +51,9 @@ Once you run `kubefirst cluster create` command at the end of the installation w
 
 ![console ui](../img/kubefirst/github/console.png)
 
-### Local
+### Local Console UI
 Once you run `kubefirst local` command at the end of the installation will open a new browser tab with the Console UI at
 `https://kubefirst.localdev.me` to provide you a dashboard to navigate through the different services that were previsioned.
-
 
 ## Destroying
 
