@@ -21,7 +21,7 @@ using cert-manager and the Let's Encrypt cluster-issuer.
 
 
 The available Metaphor applications are, **Metaphor (NodeJS API)**, **Metaphor (Go API)** and **Metaphor Frontend**.
-The Metaphor applications are describe in more details [here](../../common/metaphor.md).
+The Metaphor applications are describe in more details [here](../../explore/metaphor.md).
 
 ## GitHub Repository Management
 

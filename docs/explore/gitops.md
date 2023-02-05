@@ -1,8 +1,8 @@
 # Kubefirst GitOps CI/CD
 
-## Say Goodbye to Deployment Scripts with GitOps
+The days of scripting `kubectl apply` and `helm install` in your operations are over. The kubefirst platform comes with all the tools you need to run a scalable gitops platform powered by argo cd gitops.
 
-With our GitOps patterns, the days of scripting `kubectl apply` and `helm install` operations are over. Your pipeline's job to deploy code is to simply to set the version of the app you want in the `main` branch of the `gitops` repository.
+![](../img/kubefirst/gitops/gitops-flow.png)
 
 ## The Benefits of GitOps
 
@@ -29,9 +29,7 @@ Once the release is ready, the release chart is published and delivered to produ
 
 ![](../img/kubefirst/github/github-argo-workflow.png)
 
-
 The integration that we've established between GitHub and Argo Workflows will surface your powerful Argo Workflows engine directly in GitHub Actions, so that your developers have all of the workflow execution information available, directly associated with their commit in their application repository.
-
 
 ### GitLab Integration with Argo Workflows
 
@@ -41,16 +39,9 @@ The integration that we've established between GitLab and Argo Workflows will su
 
 ![](../img/kubefirst/gitlab/gitlab-argo-workflow.png)
 
-
-## Observability
-
-Independent of the git provider select, the integrations provides all of the CI observability your development team needs directly associated with their change in Git.
-
 ## GitOps Resources
 
-![](../img/kubefirst/gitops/argocd-app-registrations.png)
-
-Our implementation includes GitOps patterns for numerous source types including:
+Our registry includes GitOps patterns for numerous source types including:
 
 - Helm Charts
 - Wrapper Charts
@@ -59,6 +50,5 @@ Our implementation includes GitOps patterns for numerous source types including:
 The metaphor example application includes an example of how easy it is to set different configuration overrides for your different environments.
 
 To see what it takes to make the `development` instance of `metaphor` different than the others, visit the `gitops` repo and navigate to `/components/development/metaphor/values.yaml`
-
 
 Any Helm value that should deviate from the default chart can be set here so your environment overrides are always concise and clear.
