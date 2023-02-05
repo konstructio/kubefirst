@@ -2,6 +2,8 @@
 
 The days of scripting `kubectl apply` and `helm install` in your operations are over. The kubefirst platform comes with all the tools you need to run a scalable gitops platform powered by argo cd gitops.
 
+![](../img/kubefirst/gitops/gitops-flow.png)
+
 ## The Benefits of GitOps
 
 The benefit of defining your desired state in a declarative way in Git is enormous.
