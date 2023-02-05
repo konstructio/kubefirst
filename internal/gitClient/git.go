@@ -79,7 +79,7 @@ func CloneRefSetMain(gitRef, repoLocalPath, repoURL string) (*git.Repository, er
 	return repo, nil
 }
 
-// SetRefToMainBranch point branch or tag to main
+// SetRefToMainBranch sets the provided gitRef (branch or tag) to the main branch
 func SetRefToMainBranch(repo *git.Repository) (*git.Repository, error) {
 	w, _ := repo.Worktree()
 	branchName := plumbing.NewBranchReferenceName("main")
@@ -354,19 +354,21 @@ func ClonePrivateRepo(gitRepoURL, gitRepoDestinationDir string) {
 	}
 }
 
-func Commit(repo *git.Repository, commitMsg string) {
+func Commit(repo *git.Repository, commitMsg string) error {
 	w, _ := repo.Worktree()
 
 	log.Printf(commitMsg)
 	status, err := w.Status()
 	if err != nil {
 		log.Info().Msgf("error getting worktree status", err)
+		return err
 	}
 
 	for file, _ := range status {
 		_, err = w.Add(file)
 		if err != nil {
 			log.Info().Msgf("error getting worktree status", err)
+			return err
 		}
 	}
 	w.Commit(fmt.Sprintf(commitMsg), &git.CommitOptions{
@@ -376,6 +378,7 @@ func Commit(repo *git.Repository, commitMsg string) {
 			When:  time.Now(),
 		},
 	})
+	return nil
 }
 
 func PushGitopsToSoftServe() {

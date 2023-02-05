@@ -165,12 +165,13 @@ func DetokenizeDirectoryCivoGithubGitops(path string, fi os.FileInfo, err error)
 }
 
 // DetokenizeCivoGithubMetaphor - Translate tokens by values on a given path
-func DetokenizeCivoGithubMetaphor(path string) {
+func DetokenizeCivoGithubMetaphor(path string) error {
 
 	err := filepath.Walk(path, DetokenizeDirectoryCivoGithubMetaphor)
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
+	return nil
 }
 
 // DetokenizeDirectoryCivoGithubMetaphor - Translate tokens by values on a directory level.
