@@ -1,6 +1,4 @@
-# Explore (GitLab)
-
-**psssst** *- if you plan to destroy your kubefirst platform and recreate it again we recommend running `kubefirst backupSSL` to re-use your ssl certs from Let's Encrypt. See the [docs](https://docs.kubefirst.io/explore/certificates.html#backup-and-restore-certificates).*
+# Overview
 
 <iframe width="784" height="441" src="https://www.youtube.com/embed/KEUOaNMUqOM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
@@ -35,7 +33,7 @@ You now have an EKS cluster with the following content installed in it:
 Once you run the `cluster create` command at the end of the installation, a new browser tab will open with the Console UI at
 `http://localhost:9094` to provide you a dashboard to navigate through the different services that were previsioned.
 
-![console ui](../../img/kubefirst/github/console.png)
+![console ui](../../img/kubefirst/gitlab/console.png)
 
 ![terminal handoff](../../img/kubefirst/getting-started/cluster-create-result.png)
 
@@ -81,9 +79,3 @@ releases complete and argocd syncs the apps. The metaphor URLs can be found in y
 We've tried our best to surface available customizations and patterns of the Kubefirst platform here on our docs site. We've also made [links available](../credit.md) to all of our open source tools' own sources of documentation as well.
 
 You can [reach out to us](../../community/index.md) if you have any issues along the way. We're also available for consultation about where you should take the platform based on your organization's needs. We know the technologies inside and out and would love to help you do the same.
-
-## What to do next
-
-Continue your journey: 
-
-- [Destroying](./destroy.md)
