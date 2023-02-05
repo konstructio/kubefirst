@@ -1,6 +1,6 @@
 # Explore
 
-**psssst** *- if you plan to destroy your kubefirst platform and recreate it again we recommend running `kubefirst backupSSL` to re-use your ssl certs from Let's Encrypt. See the [docs](https://docs.kubefirst.io/common/certificates.html#backup-and-restore-certificates).*
+**psssst** *- if you plan to destroy your kubefirst platform and recreate it again we recommend running `kubefirst backupSSL` to re-use your ssl certs from Let's Encrypt. See the [docs](https://docs.kubefirst.io/explore/certificates.html#backup-and-restore-certificates).*
 
 <iframe width="784" height="441" src="https://www.youtube.com/embed/KEUOaNMUqOM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
@@ -47,7 +47,7 @@ store them in a safe place.
 
 This step is meant to explore the onboarding process of a new user to your installation:
 
-- [Explore Atlantis & Terraform to manage users](../../common/terraform.md#how-can-i-use-atlantis-to-add-a-new-user-on-my-gitlab-backed-installation)
+- [Explore Atlantis & Terraform to manage users](../../explore/terraform.md#how-can-i-use-atlantis-to-add-a-new-user-on-my-gitlab-backed-installation)
 
 
 ## Step 3: Deliver Metaphor to Development, Staging, and Production

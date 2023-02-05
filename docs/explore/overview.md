@@ -1,6 +1,4 @@
-# Overview
-
-Kubefirst helps to explore several technologies/topics in a single bundle, such as:
+# A Deeper Look At The Kubefirst Platform
 
 | Topic | Overview|
 |:---|:---|

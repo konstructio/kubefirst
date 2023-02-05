@@ -1,4 +1,4 @@
-# Explore
+# Overview
 
 [//]: # (`todo: need new getting started video for github`)
 
@@ -6,7 +6,7 @@
   <iframe width="1280" height="400" src="https://www.youtube.com/embed/KEUOaNMUqOM" frameborder="0" allowfullscreen></iframe>
 </div>
 
-**psssst** *- if you plan to destroy your kubefirst platform and recreate it again we recommend running `kubefirst backupSSL` to re-use your ssl certs from Let's Encrypt. See the [docs](https://docs.kubefirst.io/common/certificates.html#backup-and-restore-certificates).*
+**psssst** *- if you plan to destroy your kubefirst platform and recreate it again we recommend running `kubefirst backupSSL` to re-use your ssl certs from Let's Encrypt. See the [docs](https://docs.kubefirst.io/explore/certificates.html#backup-and-restore-certificates).*
 
 The `kubefirst cluster create` execution includes important information toward the end, including URLs and passwords. Please save this information! 
 
@@ -50,7 +50,7 @@ store them in a safe place.
 
 This step is meant to explore the onboarding process of a new user to your installation:
 
-- [Explore Atlantis & Terraform to manage users](../../common/terraform.md#how-can-i-use-atlantis-to-add-a-new-user-on-my-github-backed-installation)
+- [Explore Atlantis & Terraform to manage users](../../explore/terraform.md#how-can-i-use-atlantis-to-add-a-new-user-on-my-github-backed-installation)
 
 
 
@@ -80,6 +80,5 @@ You can [reach out to us](../../community/index.md) if you have any issues along
 
 ## What to do next
 
-Continue your journey: 
+[Continue your journey](../../explore/overview.md)
 
-- [Destroying](./destroy.md)
