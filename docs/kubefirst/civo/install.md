@@ -1,4 +1,4 @@
-# Civo Platform Installation with the Kubefirst CLI
+# Civo Platform Installation
 
 `kubefirst` is our command line tool that installs the Kubefirst platform to your local or cloud environment. It installs a fully automated platform of open source cloud native tools to your Civo cloud with a simple `kubefirst civo create` command.
 
