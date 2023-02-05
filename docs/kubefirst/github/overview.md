@@ -52,6 +52,8 @@ This step is meant to explore the onboarding process of a new user to your insta
 
 - [Explore Atlantis & Terraform to manage users](../../explore/terraform.md#how-can-i-use-atlantis-to-add-a-new-user-on-my-github-backed-installation)
 
+
+
 ## Step 3: Deliver Metaphor to Development, Staging, and Production
 
 Metaphor is our sample application that we use to demonstrate parts of the platform and to test CI changes.
