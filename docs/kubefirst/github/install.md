@@ -1,4 +1,4 @@
-# Platform Installation with the Kubefirst CLI
+# AWS Platform Installation using GitHub
 
 **Kubefirst** is the name of our command line tool that installs the Kubefirst platform and provides some platform
 conveniences.
@@ -20,6 +20,7 @@ It installs a fully automated platform of open source cloud native tools with a 
 
 3. Connect with [AdministratorAccess](https://console.aws.amazon.com/iam/home?#/policies/arn:aws:iam::aws:policy/AdministratorAccessserviceLevelSummary) IAM credentials to your AWS account ([docs](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys)).
 
+4. Our brew package will automatically install the [AWS IAM Authenticator](https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html) dependency. If you use another installation method, you will need to install this utility.
 
 
 
