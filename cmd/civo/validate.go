@@ -327,7 +327,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst.cluster-type", clusterTypeFlag)
 		viper.Set("domain-name", domainNameFlag) // todo refactor to domain-name
 		viper.Set("cloud-region", cloudRegionFlag)
-		viper.Set("kubefirst.checks.civo.complete", true)
 
 		viper.Set("kubefirst.bot.password", kbotPasswordFlag)
 		viper.Set("kubefirst.bot.private-key", sshPrivateKey)
