@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"golang.org/x/mod/semver"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -29,6 +30,78 @@ const Github = "github"
 // Gitlab - git-provider github
 const Gitlab = "gitlab"
 
+func Clone(gitRef, repoLocalPath, repoURL string) (*git.Repository, error) {
+
+	// kubefirst tags do not contain a `v` prefix, to use the library requires the v to be valid
+	isSemVer := semver.IsValid("v" + gitRef)
+
+	var refName plumbing.ReferenceName
+
+	if isSemVer {
+		refName = plumbing.NewTagReferenceName(gitRef)
+	} else {
+		refName = plumbing.NewBranchReferenceName(gitRef)
+	}
+
+	repo, err := git.PlainClone(repoLocalPath, false, &git.CloneOptions{
+		URL:           repoURL,
+		ReferenceName: refName,
+		SingleBranch:  true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return repo, nil
+}
+
+func CloneRefSetMain(gitRef, repoLocalPath, repoURL string) (*git.Repository, error) {
+
+	log.Info().Msgf("cloning url: %s - git ref: %s", repoURL, gitRef)
+
+	repo, err := Clone(gitRef, repoLocalPath, repoURL)
+	if err != nil {
+		return nil, err
+	}
+
+	if gitRef != "main" {
+		repo, err = SetRefToMainBranch(repo)
+		if err != nil {
+			return nil, fmt.Errorf("error setting main branch from git ref: %s", gitRef)
+		}
+
+		// remove old git ref
+		err = repo.Storer.RemoveReference(plumbing.NewBranchReferenceName(gitRef))
+		if err != nil {
+			return nil, fmt.Errorf("error removing previous git ref: %s", err)
+		}
+	}
+	return repo, nil
+}
+
+// SetRefToMainBranch sets the provided gitRef (branch or tag) to the main branch
+func SetRefToMainBranch(repo *git.Repository) (*git.Repository, error) {
+	w, _ := repo.Worktree()
+	branchName := plumbing.NewBranchReferenceName("main")
+	headRef, err := repo.Head()
+	if err != nil {
+		return nil, fmt.Errorf("Error Setting reference: %s", err)
+	}
+
+	ref := plumbing.NewHashReference(branchName, headRef.Hash())
+	err = repo.Storer.SetReference(ref)
+	if err != nil {
+		return nil, fmt.Errorf("error Storing reference: %s", err)
+	}
+
+	err = w.Checkout(&git.CheckoutOptions{Branch: ref.Name()})
+	if err != nil {
+		return nil, fmt.Errorf("error checking out main: %s", err)
+	}
+	return repo, nil
+}
+
+//! deprecated
 func CloneLocalRepo(repoPath string) (*git.Repository, error) {
 	repo, err := git.PlainOpen(repoPath)
 	if err != nil {
@@ -139,6 +212,7 @@ func AddRemote(newGitRemoteURL, remoteName string, repo *git.Repository) error {
 	return nil
 }
 
+//! deprecated
 // CloneRepoAndDetokenizeTemplate - clone repo using CloneRepoAndDetokenizeTemplate that uses fallback rule to try to capture version
 func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, branch string, tag string) (string, error) {
 	config := configs.ReadConfig()
@@ -241,6 +315,7 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 	return nil
 }
 
+//! deprecated
 func CloneGitOpsRepo() {
 
 	config := configs.ReadConfig()
@@ -279,19 +354,21 @@ func ClonePrivateRepo(gitRepoURL, gitRepoDestinationDir string) {
 	}
 }
 
-func Commit(repo *git.Repository, commitMsg string) {
+func Commit(repo *git.Repository, commitMsg string) error {
 	w, _ := repo.Worktree()
 
 	log.Printf(commitMsg)
 	status, err := w.Status()
 	if err != nil {
 		log.Info().Msgf("error getting worktree status", err)
+		return err
 	}
 
 	for file, _ := range status {
 		_, err = w.Add(file)
 		if err != nil {
 			log.Info().Msgf("error getting worktree status", err)
+			return err
 		}
 	}
 	w.Commit(fmt.Sprintf(commitMsg), &git.CommitOptions{
@@ -301,6 +378,7 @@ func Commit(repo *git.Repository, commitMsg string) {
 			When:  time.Now(),
 		},
 	})
+	return nil
 }
 
 func PushGitopsToSoftServe() {
@@ -609,6 +687,7 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, k1Dir, localRepo,
 	return nil
 }
 
+//! deprecated
 // CloneBranch clone a branch and returns a pointer to git.Repository
 func CloneBranch(branch, repoLocalPath, repoURL string) (*git.Repository, error) {
 
@@ -624,6 +703,7 @@ func CloneBranch(branch, repoLocalPath, repoURL string) (*git.Repository, error)
 	return repo, nil
 }
 
+//! deprecated
 // CloneBranchSetMain clone a branch and returns a pointer to git.Repository
 func CloneBranchSetMain(branch, repoURL, repoLocalPath string) (*git.Repository, error) {
 
@@ -647,6 +727,7 @@ func CloneBranchSetMain(branch, repoURL, repoLocalPath string) (*git.Repository,
 	return repo, nil
 }
 
+//! deprecated
 // CloneTag clone a repository using a tag value, and returns a pointer to *git.Repository
 func CloneTag(githubOrg, repoLocalPath, repoName, tag string) (*git.Repository, error) {
 
@@ -668,6 +749,7 @@ func CloneTag(githubOrg, repoLocalPath, repoName, tag string) (*git.Repository, 
 	return repo, nil
 }
 
+//! deprecated
 // CloneTagSetMain  CloneTag plus fixes branch to be main
 func CloneTagSetMain(repoLocalPath string, githubOrg string, repoName string, tag string) (*git.Repository, error) {
 
@@ -685,6 +767,7 @@ func CloneTagSetMain(repoLocalPath string, githubOrg string, repoName string, ta
 	return repo, nil
 }
 
+//! deprecated
 // SetToMainBranch point branch or tag to main
 func SetToMainBranch(repo *git.Repository) (*git.Repository, error) {
 	w, _ := repo.Worktree()
@@ -707,6 +790,7 @@ func SetToMainBranch(repo *git.Repository) (*git.Repository, error) {
 	return repo, nil
 }
 
+//! deprecated
 // CheckoutTag repository checkout based on a tag
 func CheckoutTag(repo *git.Repository, tag string) error {
 
@@ -725,6 +809,7 @@ func CheckoutTag(repo *git.Repository, tag string) error {
 	return nil
 }
 
+//! deprecated
 // CreateGitHubRemote create a remote repository entry
 func CreateGitHubRemote(gitOpsLocalRepoPath string, gitHubUser string, repoName string) error {
 

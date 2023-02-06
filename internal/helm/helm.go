@@ -75,7 +75,6 @@ type HelmRepo struct {
 	ChartVersion string
 }
 
-// todo use the golang helm client
 func AddRepoAndUpdateRepo(dryRun bool, helmClientPath string, helmRepo HelmRepo, kubeconfigPath string) error {
 	if dryRun {
 		log.Info().Msg("[#99] Dry-run mode, helm.AddRepoAndUpdateRepo skipped.")

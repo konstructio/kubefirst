@@ -74,6 +74,7 @@ require (
 	github.com/segmentio/backo-go v1.0.1 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
+	golang.org/x/mod v0.7.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 )

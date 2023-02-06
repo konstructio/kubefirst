@@ -38,9 +38,9 @@ func NewCommand() *cobra.Command {
 
 func Create() *cobra.Command {
 	createCmd := &cobra.Command{
-		Use:     "create",
-		Short:   "create the k",
-		Long:    "todo",
+		Use:   "create",
+		Short: "create the kubefirst platform running on civo kubernetes",
+		// Long:    "",
 		PreRunE: validateCivo,
 		RunE:    runCivo,
 	}
@@ -69,7 +69,7 @@ func Create() *cobra.Command {
 func Destroy() *cobra.Command {
 	destroyCmd := &cobra.Command{
 		Use:   "destroy",
-		Short: "destroy civo cloud",
+		Short: "destroy the kubefirst platform",
 		Long:  "todo",
 		RunE:  destroyCivo,
 	}
