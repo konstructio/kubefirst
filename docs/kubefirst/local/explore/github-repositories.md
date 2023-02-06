@@ -2,7 +2,7 @@
 
 When you install the local version of kubefirst, 2 new repositories will be added to your personal github account as shown here.
 
-![GitHub repositories](../../img/kubefirst/local/repos-list.png)
+![GitHub repositories](../../../img/kubefirst/local/repos-list.png)
 
 ## Repository Summary
 
@@ -20,7 +20,7 @@ created in Route 53 using external-dns. It also has auto-renewing, short-lived c
 
 
 The available Metaphor application is **Metaphor Frontend** which is a slim version of our Metaphor Suite. Uses NextJS to provide both API and a Frontend application. 
-The Metaphor applications are described in more details [here](../../common/metaphor.md).
+The Metaphor applications are described in more details [here](../../../explore/metaphor.md).
 
 ## GitHub Repository Management
 
@@ -52,4 +52,4 @@ To make infrastructure and configuration changes with Terraform, simply open a m
 Your merge request will automatically provide plans, state locks, and applies, and even comment in the merge request 
 itself. You'll have a simple, peer reviewable, auditable changelog of all infrastructure and configuration changes.
 
-![](../../img/kubefirst/local/atlantis.png)
+![](../../../img/kubefirst/local/atlantis.png)

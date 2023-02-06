@@ -1,47 +1,39 @@
 # Metaphor
 
-**Metaphor** is a suite of demo microservice applications to demonstrate how an application can be integrated into the 
-Kubefirst platform following best practices. The demo applications consists of a **Metaphor frontend**, 
-**Metaphor Go API**, and **Metaphor NodeJS API**.
-
-
-
+`metaphor` is a suite of demo microservice applications to demonstrate how an application can be integrated into the kubefirst platform following best practices.
 
 The following table shows what will be installed based with your selection: 
 
-|Application|AWS + Github|AWS + Gitlab|Local + Github|
-|:--|:--|:--|:--|
-|Metaphor|X|X| |
-|Metaphor Go|X|X| |
-|Metaphor Frontend|X|X|X|
-
-
+|Application|AWS + Github|AWS + Gitlab|Civo + Github|Local + Github|
+|:--|:--|:--|:--|:--|
+|`metaphor`|X|X| | |
+|`metaphor-go`|X|X| | |
+|`metaphor-frontend`|X|X|X|X|
 
 ## Best Practices
 
-The **Metaphors** applications provide a demonstration space for application best practices in a tangible way that's 
+The `metaphor` applications provide a demonstration space for application best practices in a tangible way that's 
 easy to apply to other projects. When engineers discover good patterns to use in other 
-projects, they can add that new idea in the most straightforward way possible to the Metaphor applications as well. By doing so 
-our engineering team can fully engage with the best application approaches.
+projects, they can add that new idea in the most straightforward way possible to the Metaphor applications as well. By doing so our engineering team can fully engage with the best application approaches.
 
 ## CI/CD 
 
-The **Metaphors** applications come with complete CI/CD processes including automated builds, container Helm chart creation, container 
+The `metaphor` applications come with complete CI/CD processes including automated builds, container Helm chart creation, container 
 and Helm chart publishing, linting, tests, GitOps deployments to `development`, `staging`, and `production` namespaces, 
 release management, version management, and hotfixes. It serves as an excellent proving ground for changes to the CI/CD layer.
 
-When a new version of our CI is needed, it's best to adopt that new version of the CI in a **Metaphor** application
+When a new version of our CI is needed, it's best to adopt that new version of the CI in a `metaphor` application
 first. Run through the adjustments to your automation and test it through all of your environments and kubernetes 
 clusters without impacting the applications that your engineers and users depend on.
 
 ## Kubernetes Representations
 
-The **Metaphor** applications are multi-instance load balanced applications. It's deployed to the `development`, 
+The `metaphor` applications are multi-instance load balanced applications. It's deployed to the `development`, 
 `staging`, and `production` namespaces in your `kubefirst` cluster.
 
 ![](../img/kubefirst/metaphor/metaphor-kubernetes-manifests.png)
 
-The Kubernetes manifests produced by the **Metaphor** applications CI include a working example of a Kubernetes 
+The Kubernetes manifests produced by the `metaphor` applications CI include a working example of a Kubernetes 
 deployment with downstream ReplicaSet and pods, a service account with a security context used, a service to make the 
 application available to the cluster, and an Ingress to make the service available outside the cluster.
 
@@ -82,7 +74,7 @@ For an AWS Cloud selection(`kubefirst create --cloud aws`):
 
 - the value specified in `spec.rules.host` will automatically create a route53 CNAME that is bound to the Ingress elastic load balancer.
 - The `cert-manager.io/cluster-issuer` annotation will prompt `cert-manager` to automatically create a certificate for your application and will store that cert in the `secretName` specified.
-- NGINX will automatically route traffic to the **Metaphor** applications service based on the path-based/host-based routing specified in `spec.rules`.
+- NGINX will automatically route traffic to the `metaphor` applications service based on the path-based/host-based routing specified in `spec.rules`.
 
 For a local selection(`kubefirst local`):
 
@@ -91,26 +83,26 @@ For a local selection(`kubefirst local`):
 
 ## Environment Configs and Secrets
 
-The **Metaphor** applications also include a working example of how to leverage a multi-environment secrets management
+The `metaphor` applications also include a working example of how to leverage a multi-environment secrets management
 paradigm powered by **Vault** and `external-secrets`.
 
 There is also a ConfigMap implementation to demonstrate how to leverage non-sensitive configuration values.
 
 ## Datadog Integrations
 
-The **Metaphor** applications are set up to provide cloud and container observability and monitoring best practices 
-with **Datadog**. It demonstrates using **Datadog** for **Metaphor** application logs, container statistics, application 
+The `metaphor` applications are set up to provide cloud and container observability and monitoring best practices 
+with **Datadog**. It demonstrates using **Datadog** for `metaphor` application logs, container statistics, application 
 metrics, application performance monitoring, dashboard, and alerting.
 
 ## Secrets Management
 
-The **Metaphor** applications leverages hashicorp **Vault** for secrets management. **Vault** runs in the `mgmt` cluster 
+The `metaphor` applications leverages hashicorp **Vault** for secrets management. **Vault** runs in the `mgmt` cluster 
 and metaphor runs in `preprod` and `production`, so it serves as an example for secrets management. To read more see our 
 [Vault documentation](./vault.md).
 
 ## How its CI/CD is defined
 
-These are the key files/folders to be replciated in case, you want to use **Metaphor** to your aplication:
+These are the key files/folders to be replciated in case, you want to use `metaphor` to your aplication:
 
 ```bash 
 .argo
@@ -129,7 +121,7 @@ build
 - **Concept 4:** Application is build from a Dockerfile that is defined on the `build` folder. 
 
 
-## Metaphors and Helm 
+## Metaphor and Helm 
 
 We provide a sample application that is packed with helm, you don't need to use helm. if you want to use it, we show how to handle charts update flow based on helm charts and gitops. 
 
@@ -139,7 +131,7 @@ The files you be interested are:
 chart/Metaphor
 ```
 
-There is a [CWFT meant to bump a chart](../tooling/argo/cwft-helm.html#helm-increment-chart-patch) version and update chart museum. This automation is to guide how to leverage the tooling already embeded on kubefirst to serve applications internally. 
+There is a [CWFT meant to bump a chart](../tooling/argo/cwft-helm.md#helm-increment-chart-patch) version and update chart museum. This automation is to guide how to leverage the tooling already embeded on kubefirst to serve applications internally. 
 
 
 
@@ -180,9 +172,9 @@ spec:
 
 yes, how to do it:  
 
-- If you are using `kubefirst create cluster` just pass the flag `--skip-metaphor-services` that will prevent the metaphors applications to be installed at your cluster and repos will not be created. 
+- If you are using `kubefirst create cluster` just pass the flag `--skip-metaphor-services` that will prevent the metaphor applications to be installed at your cluster and repos will not be created. 
 
-- If you are using `kubefirst local` just pass the flag `--skip-metaphor` that will prevent the metaphors applications to be installed at your cluster and repos will not be created. 
+- If you are using `kubefirst local` just pass the flag `--skip-metaphor` that will prevent the metaphor applications to be installed at your cluster and repos will not be created. 
 
 <sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1204)_</sub>
 
@@ -197,15 +189,15 @@ You want to be aware of this artifacts at your gitops repo, where the `metaphor`
 
 <sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1205)_</sub>
 
-### Where metaphor comes from? What repos will be created on my account/org?
+### What repos will be created on my account/org?
 
-If you are using a cloud(`kubefirst cluster create`) selection you have 3 demo applications:
+If you are using the aws command `kubefirst cluster create` you will get 3 demo applications:
 
 - [metaphor-frontend](https://github.com/kubefirst/metaphor-frontend-template)
 - [metaphor](https://github.com/kubefirst/metaphor-template)
 - [metaphor-go](https://github.com/kubefirst/metaphor-go-template)
 
-If you are using a local(`kubefirst local`) selection you have 1 demo application:
+If you are using `kubefirst local` or `kubefirst civo` you have 1 demo application:
 
 - [metaphor-frontend](https://github.com/kubefirst/metaphor-frontend-template)
 

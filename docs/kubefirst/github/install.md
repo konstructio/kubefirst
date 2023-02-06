@@ -1,4 +1,4 @@
-# Platform Installation with the Kubefirst CLI
+# AWS Platform Installation using GitHub
 
 **Kubefirst** is the name of our command line tool that installs the Kubefirst platform and provides some platform
 conveniences.
@@ -10,7 +10,7 @@ It installs a fully automated platform of open source cloud native tools with a 
 
 ### Prerequisites
 
-- [To install kubefirst CLI](../overview.html#how-to-install-kubefirst-cli)
+- [To install kubefirst CLI](../overview.md#how-to-install-kubefirst-cli)
 
 **AWS Prerequisites**
 
@@ -20,6 +20,7 @@ It installs a fully automated platform of open source cloud native tools with a 
 
 3. Connect with [AdministratorAccess](https://console.aws.amazon.com/iam/home?#/policies/arn:aws:iam::aws:policy/AdministratorAccessserviceLevelSummary) IAM credentials to your AWS account ([docs](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys)).
 
+4. Our brew package will automatically install the [AWS IAM Authenticator](https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html) dependency. If you use another installation method, you will need to install this utility.
 
 
 
@@ -37,7 +38,7 @@ Your new bot account will need to be associated with a GitHub organization.
 
 #### GitHub Authorization during install
 
-Kubefirst utilizes the user's GitHub token to generate resources within the user's GitHub account, [details](../../common/github-token.md).
+Kubefirst utilizes the user's GitHub token to generate resources within the user's GitHub account, [details](../../explore/github-token.md).
 
 At the beginning of the installation, Kubefirst will ask you to generate the GitHub token.
 
@@ -103,5 +104,4 @@ kubefirst cluster create
 
 Continue your journey: 
 
-- [Explore your installation](./explore.md)
-- [Destroying](./destroy.md)
+- [Explore your installation](./overview.md)

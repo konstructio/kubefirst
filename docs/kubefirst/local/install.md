@@ -1,6 +1,6 @@
-# Local Installation with the Kubefirst CLI
+# Local Platform Installation
 
-**Kubefirst** is the name of our command line tool that installs the Kubefirst platform to your local or cloud environment.
+`kubefirst` is the name of our command line tool that installs the Kubefirst platform to your local or cloud environment.
 
 To use the local version of Kubefirst, you will need to have [Docker installed](https://docs.docker.com/get-docker/). You will also need a GitHub account: GitLab for local, and local git repositories are not supported yet.
 
@@ -8,7 +8,7 @@ To use the local version of Kubefirst, you will need to have [Docker installed](
 
 ### Prerequisites
 
-- [To install kubefirst CLI](../overview.html#how-to-install-kubefirst-cli)
+- [To install kubefirst CLI](../overview.md#how-to-install-kubefirst-cli)
 - [To install docker](https://docs.docker.com/get-docker/)
 - [A personal github account](https://github.com/) (`gitops` and `metaphor-frontend` repositories will be created in your account and should not preexist)
 
@@ -26,7 +26,7 @@ kubefirst local
 
 If your run is not successful, errors and troubleshooting information will be stored in a local log file specified during the installation run.
 
-This will be followed by the instructions prompt to populate the `KUBEFIRST_GITHUB_AUTH_TOKEN` env variable for your [github token](../../common/github-token.md). Press `ENTER` and follow the prompt to continue.
+This will be followed by the instructions prompt to populate the `KUBEFIRST_GITHUB_AUTH_TOKEN` env variable for your [github token](../../explore/github-token.md). Press `ENTER` and follow the prompt to continue.
 
 Please export a `KUBEFIRST_GITHUB_AUTH_TOKEN` if you need your ephemeral environment for more than 8 hours. The ephemeral GitHub tokens that we can create for you expire after 8 hours.
 
