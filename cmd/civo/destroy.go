@@ -36,7 +36,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	if len(civoToken) == 0 {
 		return errors.New("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set the environment variable")
 	}
-	// todo with these two..
+
 	dryRun := false
 	if viper.GetBool("terraform.github.apply.complete") || viper.GetBool("terraform.github.destroy.complete") {
 		log.Info().Msg("destroying github resources with terraform")
@@ -101,7 +101,6 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		// todo fix false
 		log.Info().Msg(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")))
 
 		customTransport := http.DefaultTransport.(*http.Transport).Clone()

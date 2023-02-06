@@ -24,7 +24,7 @@ func NewCommand() *cobra.Command {
 		Use:     "civo",
 		Short:   "kubefirst civo installation",
 		Long:    "kubefirst civo",
-		PreRunE: validateCivo, // todo what should this function be called?
+		PreRunE: validateCivo,
 		RunE:    runCivo,
 		// PostRunE: runPostCivo,
 	}

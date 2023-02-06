@@ -152,7 +152,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
-	// todo need adopt metaphor-slim and reduce repo count
 	//* create teams and repositories in github
 	executionControl := viper.GetBool("terraform.github.apply.complete")
 	if !executionControl {
