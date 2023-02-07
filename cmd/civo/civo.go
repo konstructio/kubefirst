@@ -79,10 +79,11 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	silentMode := false
 	dryRun := false // todo deprecate this?
 
-	publicKeys, err := ssh.NewPublicKeys("git", []byte(kubefirstBotSSHPrivateKey), "")
-	if err != nil {
-		log.Info().Msgf("generate publickeys failed: %s\n", err.Error())
-	}
+	// todo must uncomment
+	// publicKeys, err := ssh.NewPublicKeys("git", []byte(kubefirstBotSSHPrivateKey), "")
+	// if err != nil {
+	// 	log.Info().Msgf("generate publickeys failed: %s\n", err.Error())
+	// }
 
 	//* emit cluster install started
 	if useTelemetryFlag {
@@ -152,51 +153,51 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
-	//* create teams and repositories in github
-	executionControl := viper.GetBool("terraform.github.apply.complete")
-	if !executionControl {
-		pkg.InformUser("Creating github resources with terraform", silentMode)
+	// //* create teams and repositories in github
+	// executionControl := viper.GetBool("terraform.github.apply.complete")
+	// if !executionControl {
+	// 	pkg.InformUser("Creating github resources with terraform", silentMode)
 
-		tfEntrypoint := k1GitopsDir + "/terraform/github"
-		tfEnvs := map[string]string{}
-		tfEnvs = terraform.GetGithubTerraformEnvs(tfEnvs)
-		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
-		if err != nil {
-			return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
-		}
+	// 	tfEntrypoint := k1GitopsDir + "/terraform/github"
+	// 	tfEnvs := map[string]string{}
+	// 	tfEnvs = terraform.GetGithubTerraformEnvs(tfEnvs)
+	// 	err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+	// 	if err != nil {
+	// 		return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
+	// 	}
 
-		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", githubOwnerFlag), silentMode)
-		viper.Set("terraform.github.apply.complete", true)
-		viper.WriteConfig()
-	} else {
-		log.Info().Msg("already created github terraform resources")
-	}
+	// 	pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", githubOwnerFlag), silentMode)
+	// 	viper.Set("terraform.github.apply.complete", true)
+	// 	viper.WriteConfig()
+	// } else {
+	// 	log.Info().Msg("already created github terraform resources")
+	// }
 
-	//* push detokenized gitops-template repository content to new remote
-	executionControl = viper.GetBool("github.gitops.repo.pushed")
-	if !executionControl {
-		gitopsRepo, err := git.PlainOpen(k1GitopsDir)
-		if err != nil {
-			log.Print("error opening repo at:", k1GitopsDir)
-		}
+	// //* push detokenized gitops-template repository content to new remote
+	// executionControl := viper.GetBool("github.gitops.repo.pushed")
+	// if !executionControl {
+	// 	gitopsRepo, err := git.PlainOpen(k1GitopsDir)
+	// 	if err != nil {
+	// 		log.Print("error opening repo at:", k1GitopsDir)
+	// 	}
 
-		err = gitopsRepo.Push(&git.PushOptions{
-			RemoteName: gitProvider,
-			Auth:       publicKeys,
-		})
-		if err != nil {
-			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationGitopsRepoURL)
-		}
+	// 	err = gitopsRepo.Push(&git.PushOptions{
+	// 		RemoteName: gitProvider,
+	// 		Auth:       publicKeys,
+	// 	})
+	// 	if err != nil {
+	// 		log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationGitopsRepoURL)
+	// 	}
 
-		log.Printf("successfully pushed gitops to git@github.com/%s/gitops", githubOwnerFlag)
-		// todo delete the local gitops repo and re-clone it
-		// todo that way we can stop worrying about which origin we're going to push to
-		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", githubOwnerFlag), silentMode)
-		viper.Set("github.gitops.repo.pushed", true)
-		viper.WriteConfig()
-	} else {
-		log.Info().Msg("already pushed detokenized gitops repository content")
-	}
+	// 	log.Printf("successfully pushed gitops to git@github.com/%s/gitops", githubOwnerFlag)
+	// 	// todo delete the local gitops repo and re-clone it
+	// 	// todo that way we can stop worrying about which origin we're going to push to
+	// 	pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", githubOwnerFlag), silentMode)
+	// 	viper.Set("github.gitops.repo.pushed", true)
+	// 	viper.WriteConfig()
+	// } else {
+	// 	log.Info().Msg("already pushed detokenized gitops repository content")
+	// }
 
 	//* git clone and detokenize the metaphor-frontend-template repository
 	if !viper.GetBool("template-repo.metaphor-frontend.pushed") {
@@ -206,7 +207,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		pkg.InformUser("generating your new metaphor-frontend repository", silentMode)
-		metaphorRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranch, k1MetaphorDir, gitopsTemplateURL)
+		metaphorRepo, err := gitClient.CloneRefSetMain(metaphorFrontendTemplateBranch, k1MetaphorDir, metaphorFrontendTemplateURL)
 		if err != nil {
 			log.Print("error opening repo at:", k1MetaphorDir)
 		}
@@ -232,13 +233,13 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		err = metaphorRepo.Push(&git.PushOptions{
-			RemoteName: gitProvider,
-			Auth:       publicKeys,
-		})
-		if err != nil {
-			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationMetaphorFrontendRepoURL)
-		}
+		// err = metaphorRepo.Push(&git.PushOptions{
+		// 	RemoteName: gitProvider,
+		// 	Auth:       publicKeys,
+		// })
+		// if err != nil {
+		// 	log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationMetaphorFrontendRepoURL)
+		// }
 
 		log.Printf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwnerFlag)
 		// todo delete the local gitops repo and re-clone it
@@ -274,7 +275,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	// todo deconstruct CreateNamespaces / CreateSecret
 	// todo move secret structs to constants to be leveraged by either local or civo
-	executionControl = viper.GetBool("kubernetes.secrets.created")
+	executionControl := viper.GetBool("kubernetes.secrets.created")
 	if !executionControl {
 		err := k3d.AddK3DSecrets(dryRun, kubeconfigPath)
 		if err != nil {
