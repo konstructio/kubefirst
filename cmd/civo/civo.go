@@ -15,10 +15,10 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/civo"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/helm"
-	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/terraform"
@@ -275,13 +275,13 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// todo move secret structs to constants to be leveraged by either local or civo
 	executionControl = viper.GetBool("kubernetes.secrets.created")
 	if !executionControl {
-		err := k3d.AddK3DSecrets(dryRun, kubeconfigPath)
+		err := civo.BootstrapCivoMgmtCluster(dryRun, kubeconfigPath)
 		if err != nil {
-			log.Info().Msg("Error AddK3DSecrets")
+			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
 			return err
 		}
 	} else {
-		log.Info().Msg("already added secrets to k3d cluster")
+		log.Info().Msg("already added secrets to civo cluster")
 	}
 
 	//* helm add argo repository && update

@@ -1,4 +1,4 @@
-package k3d
+package civo
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func AddK3DSecrets(dryRun bool, kubeconfigPath string) error {
+func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
 	clientset, err := k8s.GetClientSet(dryRun, kubeconfigPath)
 	if err != nil {
 		log.Info().Msg("error getting kubernetes clientset")
@@ -31,6 +31,19 @@ func AddK3DSecrets(dryRun bool, kubeconfigPath string) error {
 		}
 		log.Info().Msgf("%d, %s", i, s)
 		log.Info().Msgf("namespace created: %s", s)
+	}
+
+	dataCivoCreds := map[string][]byte{
+		"civo-token": []byte(os.Getenv("CIVO_TOKEN")),
+	}
+	civoSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "civo-creds", Namespace: "external-dns"},
+		Data:       dataCivoCreds,
+	}
+	_, err = clientset.CoreV1().Secrets("external-dns").Create(context.TODO(), civoSecret, metav1.CreateOptions{})
+	if err != nil {
+		log.Info().Msgf("Error:", err)
+		return errors.New("error creating kubernetes secret: external-dns/civo-creds")
 	}
 
 	minioCreds := map[string][]byte{
@@ -166,11 +179,12 @@ func AddK3DSecrets(dryRun bool, kubeconfigPath string) error {
 		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: atlantis/atlantis-secrets")
 	}
+
 	dataChartmuseum := map[string][]byte{
 		"BASIC_AUTH_USER":       []byte("k-ray"),
 		"BASIC_AUTH_PASS":       []byte("feedkraystars"),
-		"AWS_ACCESS_KEY_ID":     []byte("k-ray"),
-		"AWS_SECRET_ACCESS_KEY": []byte("feedkraystars"),
+		"AWS_ACCESS_KEY_ID":     []byte(viper.GetString("civo.object-storage-creds.access-key-id")),
+		"AWS_SECRET_ACCESS_KEY": []byte(viper.GetString("civo.object-storage-creds.secret-access-key-id")),
 	}
 	chartmuseumSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "chartmuseum-secrets", Namespace: "chartmuseum"},
