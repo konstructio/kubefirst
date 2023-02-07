@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/civo"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/handlers"
@@ -96,7 +97,24 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	// if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
 	// 	return err
 	// }
-	viper.AutomaticEnv()
+
+	// this branch flag value is overridden with a tag when running from a
+	// kubefirst binary for version compatibility
+	if gitopsTemplateBranchFlag == "main" && configs.K1Version != "development" {
+		gitopsTemplateBranchFlag = configs.K1Version
+	}
+	log.Info().Msg(fmt.Sprintf("kubefirst version configs.K1Version: %s ", configs.K1Version))
+	log.Info().Msg(fmt.Sprintf("cloning gitops-template repo url: %s ", gitopsTemplateURLFlag))
+	log.Info().Msg(fmt.Sprintf("cloning gitops-template repo branch: %s ", gitopsTemplateBranchFlag))
+	// this branch flag value is overridden with a tag when running from a
+	// kubefirst binary for version compatibility
+	if metaphorTemplateBranchFlag == "main" && configs.K1Version != "development" {
+		metaphorTemplateBranchFlag = configs.K1Version
+	}
+
+	log.Info().Msg(fmt.Sprintf("cloning metaphor template url: %s ", metaphorTemplateURLFlag))
+	log.Info().Msg(fmt.Sprintf("cloning metaphor template branch: %s ", metaphorTemplateBranchFlag))
+
 	homePath, err := os.UserHomeDir()
 	if err != nil {
 		log.Info().Msg(err.Error())

@@ -38,11 +38,11 @@ func NewCommand() *cobra.Command {
 
 func Create() *cobra.Command {
 	createCmd := &cobra.Command{
-		Use:   "create",
-		Short: "create the kubefirst platform running on civo kubernetes",
-		// Long:    "",
-		PreRunE: validateCivo,
-		RunE:    runCivo,
+		Use:              "create",
+		Short:            "create the kubefirst platform running on civo kubernetes",
+		TraverseChildren: true,
+		PreRunE:          validateCivo,
+		RunE:             runCivo,
 	}
 
 	// todo review defaults and update descriptions
