@@ -22,7 +22,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/terraform"
-	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
@@ -364,11 +363,14 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// vault in running state
-	executionControl = viper.GetBool("vault.status.running")
-	if !executionControl {
-		pkg.InformUser("Waiting for vault to be ready", silentMode)
-		vault.WaitVaultToBeRunning(dryRun, kubeconfigPath, kubectlClientPath)
-	}
+	// this condition doesnt work for civo,
+	// executionControl = viper.GetBool("vault.status.running")
+	// if !executionControl {
+	// 	pkg.InformUser("Waiting for vault to be ready", silentMode)
+	// 	vault.WaitVaultToBeRunning(dryRun, kubeconfigPath, kubectlClientPath)
+	// }
+	// todo fix this hack, but vault is unsealed by default in current state
+	time.Sleep(time.Second * 15)
 
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
@@ -385,24 +387,9 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	)
 
 	//! todo need to pass in url values for connectivity
-	k8s.LoopUntilPodIsReady(dryRun, kubeconfigPath, kubectlClientPath)
-
-	//* minio port-forward
-	minioStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(minioStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		kubeconfigPath,
-		"minio",
-		"minio",
-		9000,
-		9000,
-		minioStopChannel,
-	)
-
-	// todo: can I remove it?
-	time.Sleep(20 * time.Second)
+	// k8s.LoopUntilPodIsReady(dryRun, kubeconfigPath, kubectlClientPath)
+	// todo fix this hack, but vault is unsealed by default in current state
+	time.Sleep(time.Second * 15)
 
 	//* configure vault with terraform
 	executionControl = viper.GetBool("terraform.vault.apply.complete")
@@ -415,6 +402,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		tfEnvs := map[string]string{}
 
 		tfEnvs = terraform.GetVaultTerraformEnvs(tfEnvs)
+		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
 		tfEntrypoint := k1GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
