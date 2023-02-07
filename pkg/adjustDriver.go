@@ -45,7 +45,7 @@ func CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterTy
 		return err
 	}
 
-	//* copy gitops/$clusterType-cluster-template/* registry/$clusterName
+	//* copy $HOME/.k1/gitops/${clusterType}-cluster-template/* $HOME/.k1/gitops/registry/${clusterName}
 	clusterContent := fmt.Sprintf("%s/%s-cluster-template", gitopsRepoPath, clusterType)
 	err = cp.Copy(clusterContent, fmt.Sprintf("%s/registry/%s", gitopsRepoPath, clusterName), opt)
 	if err != nil {
@@ -60,15 +60,6 @@ func CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterTy
 		log.Info().Msgf("Error populating gitops repository with %s setup: %s", fmt.Sprintf("%s/%s-%s/%s-cluster-template", gitopsRepoPath, cloudProvider, gitProvider, clusterType), err)
 		return err
 	}
-
-	// //* rename file from `registry-mgmt.yaml` `registry-$clusterName.yaml`
-	// originalPath := fmt.Sprintf("%s/registry/%s/registry-mgmt.yaml", gitopsRepoPath, clusterName)
-	// newPath := fmt.Sprintf("%s/registry/%s/registry-%s.yaml", gitopsRepoPath, clusterName, clusterName)
-	// err = os.Rename(originalPath, newPath)
-	// if err != nil {
-	// 	log.Info().Msg(err.Error())
-	// 	return err
-	// }
 
 	os.RemoveAll(driverContent)
 	os.RemoveAll(clusterContent)
@@ -102,7 +93,7 @@ func CivoGithubAdjustMetaphorTemplateContent(gitProvider, k1DirPath, metaphorRep
 	githubActionsFolderContent := fmt.Sprintf("%s/argo-workflows/.github", k1DirPath)
 	err := cp.Copy(githubActionsFolderContent, fmt.Sprintf("%s/.github", metaphorRepoPath), opt)
 	if err != nil {
-		log.Info().Msgf("Error metaphor repository with %s setup: %s", githubActionsFolderContent, err)
+		log.Info().Msgf("error populating metaphor repository with %s: %s", githubActionsFolderContent, err)
 		return err
 	}
 
@@ -110,7 +101,7 @@ func CivoGithubAdjustMetaphorTemplateContent(gitProvider, k1DirPath, metaphorRep
 	argoWorkflowsFolderContent := fmt.Sprintf("%s/argo-workflows/.argo", k1DirPath)
 	err = cp.Copy(argoWorkflowsFolderContent, fmt.Sprintf("%s/.argo", metaphorRepoPath), opt)
 	if err != nil {
-		log.Info().Msgf("Error metaphor repository with %s setup: %s", argoWorkflowsFolderContent, err)
+		log.Info().Msgf("error populating metaphor repository with %s: %s", argoWorkflowsFolderContent, err)
 		return err
 	}
 

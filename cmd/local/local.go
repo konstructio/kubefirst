@@ -246,11 +246,11 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	// helm install argocd
 	// todo undo this is from vault-spike
-	// executionControl = viper.GetBool("argocd.helm.install.complete")
-	// if !executionControl {
-	// 	pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
-	// 	helm.Install(config.ArgoCDInitValuesYamlPath, dryRun, config.HelmClientPath, helmRepo, config.KubeConfigPath)
-	// }
+	executionControl = viper.GetBool("argocd.helm.install.complete")
+	if !executionControl {
+		pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
+		helm.Install(dryRun, config.HelmClientPath, helmRepo, config.KubeConfigPath)
+	}
 	progressPrinter.IncrementTracker("step-apps", 1)
 
 	// argocd pods are running

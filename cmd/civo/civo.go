@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
@@ -28,10 +29,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// todo config. should not be referenced outside of validate, if its a value that must be
-// todo generated beyond that we should put it in viper alone
-// todo remove configs/civo.go
-// todo remove all pkg. config values
+// todo more error handling on function calls
 
 func runCivo(cmd *cobra.Command, args []string) error {
 
@@ -71,17 +69,15 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
 	helmClientPath := viper.GetString("kubefirst.helm-client-path")
 	helmClientVersion := viper.GetString("kubefirst.helm-client-version")
-	k1DirPath := viper.GetString("kubefirst.k1-directory-path")
+	k1DirPath := viper.GetString("kubefirst.k1-dir")
 	kubectlClientPath := viper.GetString("kubefirst.kubectl-client-path")
 	kubectlClientVersion := viper.GetString("kubefirst.kubectl-client-version")
 	localOs := viper.GetString("localhost.os")
 	localArchitecture := viper.GetString("localhost.architecture")
 	terraformClientVersion := viper.GetString("kubefirst.terraform-client-version")
-	k1ToolsDir := viper.GetString("kubefirst.k1-tools-path")
-	silentMode := false // todo fix
-	dryRun := false     // todo fix
-	// todo part of vault-spike
-	// argoCDInitValuesYamlPath := fmt.Sprintf("%s/argocd-init-values.yaml", k1DirPath)
+	k1ToolsDir := viper.GetString("kubefirst.k1-tools-dir")
+	silentMode := false
+	dryRun := false // todo deprecate this?
 
 	publicKeys, err := ssh.NewPublicKeys("git", []byte(kubefirstBotSSHPrivateKey), "")
 	if err != nil {
@@ -124,33 +120,38 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("template-repo.gitops.ready-to-push") {
 
 		pkg.InformUser("generating your new gitops repository", silentMode)
-		gitopsRepo, err := gitClient.CloneBranchSetMain(gitopsTemplateBranch, gitopsTemplateURL, k1GitopsDir)
+		gitopsRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranch, k1GitopsDir, gitopsTemplateURL)
 		if err != nil {
 			log.Print("error opening repo at:", k1GitopsDir)
 		}
-
 		log.Info().Msg("gitops repository clone complete")
 
-		pkg.CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1DirPath, k1GitopsDir)
+		err = pkg.CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1DirPath, k1GitopsDir)
+		if err != nil {
+			return err
+		}
 
 		pkg.DetokenizeCivoGithubGitops(k1GitopsDir)
+		if err != nil {
+			return err
+		}
+		err = gitClient.AddRemote(destinationGitopsRepoURL, gitProvider, gitopsRepo)
+		if err != nil {
+			return err
+		}
 
-		gitClient.AddRemote(destinationGitopsRepoURL, gitProvider, gitopsRepo)
-
-		gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
+		err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
+		if err != nil {
+			return err
+		}
 
 		// todo emit init telemetry end
-
 		viper.Set("template-repo.gitops.ready-to-push", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
-	//** this is where os.Exit(1) was
-	//** this is where os.Exit(1) was
-
-	// todo need adopt metaphor-slim and reduce repo count
 	//* create teams and repositories in github
 	executionControl := viper.GetBool("terraform.github.apply.complete")
 	if !executionControl {
@@ -200,19 +201,36 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	//* git clone and detokenize the metaphor-frontend-template repository
 	if !viper.GetBool("template-repo.metaphor-frontend.pushed") {
 
+		if configs.K1Version != "" {
+			gitopsTemplateBranch = configs.K1Version
+		}
+
 		pkg.InformUser("generating your new metaphor-frontend repository", silentMode)
-		metaphorRepo, err := gitClient.CloneBranchSetMain(metaphorFrontendTemplateBranch, metaphorFrontendTemplateURL, k1MetaphorDir)
+		metaphorRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranch, k1MetaphorDir, gitopsTemplateURL)
 		if err != nil {
 			log.Print("error opening repo at:", k1MetaphorDir)
 		}
-		log.Info().Msg("metaphor repository clone complete")
 
-		pkg.CivoGithubAdjustMetaphorTemplateContent(gitProvider, k1DirPath, k1MetaphorDir)
+		fmt.Println("metaphor repository clone complete")
 
-		pkg.DetokenizeCivoGithubMetaphor(k1MetaphorDir)
-		gitClient.AddRemote(destinationMetaphorFrontendRepoURL, gitProvider, metaphorRepo)
+		err = pkg.CivoGithubAdjustMetaphorTemplateContent(gitProvider, k1DirPath, k1MetaphorDir)
+		if err != nil {
+			return err
+		}
 
-		gitClient.Commit(metaphorRepo, "committing detokenized metaphor-frontend-template repo content")
+		err = pkg.DetokenizeCivoGithubMetaphor(k1MetaphorDir)
+		if err != nil {
+			return err
+		}
+		err = gitClient.AddRemote(destinationMetaphorFrontendRepoURL, gitProvider, metaphorRepo)
+		if err != nil {
+			return err
+		}
+
+		err = gitClient.Commit(metaphorRepo, "committing detokenized metaphor-frontend-template repo content")
+		if err != nil {
+			return err
+		}
 
 		err = metaphorRepo.Push(&git.PushOptions{
 			RemoteName: gitProvider,

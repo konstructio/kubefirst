@@ -124,8 +124,8 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("vault.local.service", "http://localhost:8200")
 	viper.Set("cloud-provider", cloudProvider)
 	viper.Set("git-provider", gitProvider)
-	viper.Set("kubefirst.k1-directory-path", k1DirPath)
-	viper.Set("kubefirst.k1-tools-path", fmt.Sprintf("%s/tools", k1DirPath))
+	viper.Set("kubefirst.k1-dir", k1DirPath)
+	viper.Set("kubefirst.k1-tools-dir", fmt.Sprintf("%s/tools", k1DirPath))
 	viper.Set("kubefirst.k1-gitops-dir", fmt.Sprintf("%s/gitops", k1DirPath))
 	viper.Set("kubefirst.k1-metaphor-dir", fmt.Sprintf("%s/metaphor-frontend", k1DirPath))
 	viper.Set("kubefirst.helm-client-path", fmt.Sprintf("%s/tools/helm", k1DirPath))
@@ -197,7 +197,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already created civo object storage credentials - continuing")
 	}
-	// todo create a new `kubefirst-state-store` bucket
+
 	executionControl = viper.GetBool("kubefirst.state-store-bucket.complete")
 	if !executionControl {
 		accessKeyId := viper.GetString("civo.object-storage-creds.access-key-id")
@@ -225,11 +225,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		httpClient := http.DefaultClient
 		githubToken := os.Getenv("GITHUB_TOKEN")
 		if len(githubToken) == 0 {
-			// todo ask for user input here
-			// 1. enter github personal access token
-			// 2. generate temporary token with device login
-			// todo write temporary token to viper
-			// todo write function for checking the ephemeral token
 			return errors.New("ephemeral tokens not supported for cloud installations, please set a GITHUB_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init")
 		}
 		gitHubService := services.NewGitHubService(httpClient)
@@ -251,7 +246,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		// todo this block need to be pulled into githubHandler. -- begin
 		newRepositoryExists := false
 		// todo hoist to globals
-		newRepositoryNames := []string{"gitops", "metaphor", "metaphor-frontend", "metaphor-go"}
+		newRepositoryNames := []string{"gitops", "metaphor-frontend"}
 		errorMsg := "the following repositories must be removed before continuing with your kubefirst installation.\n\t"
 
 		for _, repositoryName := range newRepositoryNames {
@@ -308,7 +303,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed github checks - continuing")
 	}
 
-	// todo consider creating a bucket in civo cloud just like aws
 	executionControl = viper.GetBool("kubefirst.checks.bot-setup.complete")
 	if !executionControl {
 
@@ -325,7 +319,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst.telemetry", useTelemetryFlag)
 		viper.Set("kubefirst.cluster-name", clusterNameFlag)
 		viper.Set("kubefirst.cluster-type", clusterTypeFlag)
-		viper.Set("domain-name", domainNameFlag) // todo refactor to domain-name
+		viper.Set("domain-name", domainNameFlag)
 		viper.Set("cloud-region", cloudRegionFlag)
 
 		viper.Set("kubefirst.bot.password", kbotPasswordFlag)
