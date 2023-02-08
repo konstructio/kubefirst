@@ -147,17 +147,17 @@ func PrintSectionArgoWorkflows() []byte {
 
 func PrintSectionAtlantis() []byte {
 
-	var atlantisUrl string
+	var atlantisURL string
 	if viper.GetString("cloud") == pkg.CloudK3d {
-		atlantisUrl = pkg.AtlantisLocalURLTLS
+		atlantisURL = pkg.AtlantisLocalURLTLS
 	} else {
-		atlantisUrl = fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename"))
+		atlantisURL = fmt.Sprintf("https://atlantis.%s", viper.GetString("aws.hostedzonename"))
 	}
 
 	var handOffData bytes.Buffer
 	handOffData.WriteString("\n--- Atlantis ")
 	handOffData.WriteString(strings.Repeat("-", 57))
-	handOffData.WriteString(fmt.Sprintf("\n URL: %s", atlantisUrl))
+	handOffData.WriteString(fmt.Sprintf("\n URL: %s", atlantisURL))
 
 	return handOffData.Bytes()
 }
@@ -260,7 +260,7 @@ func HandoffScreen(dryRun bool, silentMode bool) {
 	var handOffData bytes.Buffer
 	handOffData.Write(PrintSectionOverview())
 	handOffData.Write(PrintSectionAws())
-	if viper.GetString("gitprovider") == "github" {
+	if viper.GetString("git-provider") == "github" {
 		handOffData.Write(PrintSectionRepoGithub())
 	} else {
 		handOffData.Write(PrintSectionRepoGitlab())
@@ -318,4 +318,29 @@ func GitHubAuthToken(userCode, verificationUri string) string {
 	gitHubTokenReport.WriteString("\n\nA GitHub Access Token is required to provision GitHub repositories and run workflows in GitHub.")
 
 	return gitHubTokenReport.String()
+}
+
+// LocalConnectSummary builds a string containing local service URLs
+func LocalConnectSummary() string {
+
+	config := configs.ReadConfig()
+
+	var localConnect bytes.Buffer
+
+	localConnect.WriteString(strings.Repeat("-", 70))
+	localConnect.WriteString("\nKubefirst Local:\n")
+	localConnect.WriteString(strings.Repeat("-", 70))
+
+	localConnect.WriteString(fmt.Sprintf("\n\nKubefirst Console:    %s\n", pkg.KubefirstConsoleLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Chart Museum:         %s\n", pkg.ChartmuseumLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Argo:                 %s/workflows\n", config.ArgoWorkflowsLocalURL))
+	localConnect.WriteString(fmt.Sprintf("ArgoCD:               %s\n", pkg.ArgoCDLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Vault:                %s\n", pkg.VaultLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Atlantis:             %s\n", pkg.AtlantisLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Minio Console:        %s\n", "pkg.MinioConsoleURL")) // todo figure out the source of truth and fix
+	localConnect.WriteString(fmt.Sprintf("Metaphor Frontend:    %s\n", pkg.MetaphorFrontendDevelopmentLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Metaphor Go:          %s/app\n", pkg.MetaphorGoDevelopmentLocalURL))
+	localConnect.WriteString(fmt.Sprintf("Metaphor:             %s/app\n", pkg.MetaphorDevelopmentLocalURL))
+
+	return localConnect.String()
 }

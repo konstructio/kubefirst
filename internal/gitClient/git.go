@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"golang.org/x/mod/semver"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -29,6 +30,78 @@ const Github = "github"
 // Gitlab - git-provider github
 const Gitlab = "gitlab"
 
+func Clone(gitRef, repoLocalPath, repoURL string) (*git.Repository, error) {
+
+	// kubefirst tags do not contain a `v` prefix, to use the library requires the v to be valid
+	isSemVer := semver.IsValid("v" + gitRef)
+
+	var refName plumbing.ReferenceName
+
+	if isSemVer {
+		refName = plumbing.NewTagReferenceName(gitRef)
+	} else {
+		refName = plumbing.NewBranchReferenceName(gitRef)
+	}
+
+	repo, err := git.PlainClone(repoLocalPath, false, &git.CloneOptions{
+		URL:           repoURL,
+		ReferenceName: refName,
+		SingleBranch:  true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return repo, nil
+}
+
+func CloneRefSetMain(gitRef, repoLocalPath, repoURL string) (*git.Repository, error) {
+
+	log.Info().Msgf("cloning url: %s - git ref: %s", repoURL, gitRef)
+
+	repo, err := Clone(gitRef, repoLocalPath, repoURL)
+	if err != nil {
+		return nil, err
+	}
+
+	if gitRef != "main" {
+		repo, err = SetRefToMainBranch(repo)
+		if err != nil {
+			return nil, fmt.Errorf("error setting main branch from git ref: %s", gitRef)
+		}
+
+		// remove old git ref
+		err = repo.Storer.RemoveReference(plumbing.NewBranchReferenceName(gitRef))
+		if err != nil {
+			return nil, fmt.Errorf("error removing previous git ref: %s", err)
+		}
+	}
+	return repo, nil
+}
+
+// SetRefToMainBranch sets the provided gitRef (branch or tag) to the main branch
+func SetRefToMainBranch(repo *git.Repository) (*git.Repository, error) {
+	w, _ := repo.Worktree()
+	branchName := plumbing.NewBranchReferenceName("main")
+	headRef, err := repo.Head()
+	if err != nil {
+		return nil, fmt.Errorf("Error Setting reference: %s", err)
+	}
+
+	ref := plumbing.NewHashReference(branchName, headRef.Hash())
+	err = repo.Storer.SetReference(ref)
+	if err != nil {
+		return nil, fmt.Errorf("error Storing reference: %s", err)
+	}
+
+	err = w.Checkout(&git.CheckoutOptions{Branch: ref.Name()})
+	if err != nil {
+		return nil, fmt.Errorf("error checking out main: %s", err)
+	}
+	return repo, nil
+}
+
+//! deprecated
 func CloneLocalRepo(repoPath string) (*git.Repository, error) {
 	repo, err := git.PlainOpen(repoPath)
 	if err != nil {
@@ -119,11 +192,27 @@ func PushChanges(repo *git.Repository, remoteName string, gitHubToken string) er
 		},
 	})
 	if err != nil {
+		log.Info().Msgf("Error creating remote %s at: %s - %s", remoteName, err)
 		return err
 	}
 	return nil
 }
 
+func AddRemote(newGitRemoteURL, remoteName string, repo *git.Repository) error {
+
+	log.Info().Msgf("git remote add %s %s", remoteName, newGitRemoteURL)
+	_, err := repo.CreateRemote(&gitConfig.RemoteConfig{
+		Name: remoteName,
+		URLs: []string{newGitRemoteURL},
+	})
+	if err != nil {
+		log.Info().Msgf("Error creating remote %s at: %s - %s", remoteName, newGitRemoteURL)
+		return err
+	}
+	return nil
+}
+
+//! deprecated
 // CloneRepoAndDetokenizeTemplate - clone repo using CloneRepoAndDetokenizeTemplate that uses fallback rule to try to capture version
 func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, branch string, tag string) (string, error) {
 	config := configs.ReadConfig()
@@ -226,6 +315,7 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 	return nil
 }
 
+//! deprecated
 func CloneGitOpsRepo() {
 
 	config := configs.ReadConfig()
@@ -248,20 +338,47 @@ func CloneGitOpsRepo() {
 	log.Info().Msgf("downloaded gitops repo from template to directory %s%s", config.K1FolderPath, "/gitops")
 }
 
-func ClonePrivateRepo(gitRepoUrl, gitRepoDestinationDir string) {
-	log.Printf("Trying to clone repo %s ", gitRepoUrl)
+func ClonePrivateRepo(gitRepoURL, gitRepoDestinationDir string) {
+	log.Printf("Trying to clone repo %s ", gitRepoURL)
 
 	_, err := git.PlainClone(gitRepoDestinationDir, false, &git.CloneOptions{
 		Auth: &http.BasicAuth{
 			Username: viper.GetString("github.user"),
 			Password: os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")},
 		ReferenceName: plumbing.NewBranchReferenceName("main"),
-		URL:           gitRepoUrl,
+		URL:           gitRepoURL,
 		SingleBranch:  true,
 	})
 	if err != nil {
-		log.Fatal().Err(err).Msgf("error cloning git repository %s", gitRepoUrl)
+		log.Fatal().Err(err).Msgf("error cloning git repository %s", gitRepoURL)
 	}
+}
+
+func Commit(repo *git.Repository, commitMsg string) error {
+	w, _ := repo.Worktree()
+
+	log.Printf(commitMsg)
+	status, err := w.Status()
+	if err != nil {
+		log.Info().Msgf("error getting worktree status", err)
+		return err
+	}
+
+	for file, _ := range status {
+		_, err = w.Add(file)
+		if err != nil {
+			log.Info().Msgf("error getting worktree status", err)
+			return err
+		}
+	}
+	w.Commit(fmt.Sprintf(commitMsg), &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "kubefirst-bot",
+			Email: "kubefirst-bot@kubefirst.com",
+			When:  time.Now(),
+		},
+	})
+	return nil
 }
 
 func PushGitopsToSoftServe() {
@@ -492,22 +609,19 @@ func PushLocalRepoUpdates(githubHost, githubOwner, localRepo, remoteName string)
 }
 
 // todo: refactor
-func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remoteName string, branchDestiny plumbing.ReferenceName) error {
+func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, k1Dir, localRepo, remoteName string, branchDestiny plumbing.ReferenceName) error {
 
-	cfg := configs.ReadConfig()
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform.lock.hcl", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform.lock.hcl", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate", k1Dir))
+	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate.backup", k1Dir))
 
-	localDirectory := fmt.Sprintf("%s/%s", cfg.K1FolderPath, localRepo)
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/vault/.terraform.lock.hcl", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/.terraform.lock.hcl", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate", cfg.K1FolderPath))
-	os.RemoveAll(fmt.Sprintf("%s/gitops/terraform/github/terraform.tfstate.backup", cfg.K1FolderPath))
-
-	log.Info().Msgf("opening repository with gitClient: %s", localDirectory)
-	repo, err := git.PlainOpen(localDirectory)
+	log.Info().Msgf("opening repository with gitClient: %s", fmt.Sprintf("%s/gitops", k1Dir))
+	repo, err := git.PlainOpen(fmt.Sprintf("%s/gitops", k1Dir))
 	if err != nil {
-		log.Panic().Err(err).Msgf("error opening the localDirectory: %s", localDirectory)
+		log.Panic().Err(err).Msgf("error opening the localDirectory: %s", fmt.Sprintf("%s/gitops", k1Dir))
 	}
 
 	url := fmt.Sprintf("https://%s/%s/%s", githubHost, githubOwner, localRepo)
@@ -528,7 +642,7 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 
 	log.Info().Msg("Committing new changes... PushLocalRepoUpdates")
 
-	if viper.GetString("gitprovider") == "github" {
+	if viper.GetString("git-provider") == "github" {
 		gitHubRemoteBackendFiled := "terraform/users/kubefirst-github.tf"
 		_, err = w.Add(gitHubRemoteBackendFiled)
 		if err != nil {
@@ -557,7 +671,7 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 		log.Error().Err(err).Msg("")
 	}
 
-	token := os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")
+	token := os.Getenv("GITHUB_TOKEN")
 	err = repo.Push(&git.PushOptions{
 		RemoteName: remoteName,
 		Auth: &http.BasicAuth{
@@ -573,10 +687,9 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, localRepo, remote
 	return nil
 }
 
+//! deprecated
 // CloneBranch clone a branch and returns a pointer to git.Repository
-func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
-
-	log.Printf("git cloning by branch, branch: %s", branch)
+func CloneBranch(branch, repoLocalPath, repoURL string) (*git.Repository, error) {
 
 	repo, err := git.PlainClone(repoLocalPath, false, &git.CloneOptions{
 		URL:           repoURL,
@@ -590,12 +703,13 @@ func CloneBranch(repoURL string, repoLocalPath string, branch string) (*git.Repo
 	return repo, nil
 }
 
+//! deprecated
 // CloneBranchSetMain clone a branch and returns a pointer to git.Repository
-func CloneBranchSetMain(repoURL string, repoLocalPath string, branch string) (*git.Repository, error) {
+func CloneBranchSetMain(branch, repoURL, repoLocalPath string) (*git.Repository, error) {
 
-	log.Printf("git cloning by branch, branch: %s", branch)
+	log.Info().Msgf("cloning repo: %s - branch: %s", repoURL, branch)
 
-	repo, err := CloneBranch(repoURL, repoLocalPath, branch)
+	repo, err := CloneBranch(branch, repoLocalPath, repoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -613,8 +727,9 @@ func CloneBranchSetMain(repoURL string, repoLocalPath string, branch string) (*g
 	return repo, nil
 }
 
+//! deprecated
 // CloneTag clone a repository using a tag value, and returns a pointer to *git.Repository
-func CloneTag(repoLocalPath string, githubOrg string, repoName string, tag string) (*git.Repository, error) {
+func CloneTag(githubOrg, repoLocalPath, repoName, tag string) (*git.Repository, error) {
 
 	// todo: repoURL como param
 	repoURL := fmt.Sprintf("https://github.com/%s/%s-template", githubOrg, repoName)
@@ -634,6 +749,7 @@ func CloneTag(repoLocalPath string, githubOrg string, repoName string, tag strin
 	return repo, nil
 }
 
+//! deprecated
 // CloneTagSetMain  CloneTag plus fixes branch to be main
 func CloneTagSetMain(repoLocalPath string, githubOrg string, repoName string, tag string) (*git.Repository, error) {
 
@@ -651,6 +767,7 @@ func CloneTagSetMain(repoLocalPath string, githubOrg string, repoName string, ta
 	return repo, nil
 }
 
+//! deprecated
 // SetToMainBranch point branch or tag to main
 func SetToMainBranch(repo *git.Repository) (*git.Repository, error) {
 	w, _ := repo.Worktree()
@@ -673,6 +790,7 @@ func SetToMainBranch(repo *git.Repository) (*git.Repository, error) {
 	return repo, nil
 }
 
+//! deprecated
 // CheckoutTag repository checkout based on a tag
 func CheckoutTag(repo *git.Repository, tag string) error {
 
@@ -691,6 +809,7 @@ func CheckoutTag(repo *git.Repository, tag string) error {
 	return nil
 }
 
+//! deprecated
 // CreateGitHubRemote create a remote repository entry
 func CreateGitHubRemote(gitOpsLocalRepoPath string, gitHubUser string, repoName string) error {
 

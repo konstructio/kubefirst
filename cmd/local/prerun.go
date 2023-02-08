@@ -34,9 +34,12 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
 
+	gitProvider := viper.GetString("git-provider")
+	cloud := viper.GetString("cloud")
+
 	if useTelemetry {
 		pkg.InformUser("Sending installation telemetry", silentMode)
-		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted, cloud, gitProvider); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 	}
@@ -63,7 +66,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	// set default values to kubefirst file
 	viper.Set("gitops.repo", pkg.KubefirstGitOpsRepository)
 	viper.Set("gitops.owner", "kubefirst")
-	viper.Set("gitprovider", pkg.GitHubProviderName)
+	viper.Set("git-provider", pkg.GitHubProviderName)
 	viper.Set("metaphor.branch", metaphorBranch)
 
 	viper.Set("gitops.branch", gitOpsBranch)
@@ -246,7 +249,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	pkg.InformUser("initialization step is done!", silentMode)
 
 	if useTelemetry {
-		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted); err != nil {
+		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted, cloud, gitProvider); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 	}

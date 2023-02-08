@@ -42,7 +42,7 @@ var k1ReadyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		portForwardArgocd, err := k8s.PortForward(globalFlags.DryRun, "argocd", "svc/argocd-server", "8080:80")
+		portForwardArgocd, err := k8s.PortForward(globalFlags.DryRun, "svc/argocd-server", config.KubeConfigPath, config.KubectlClientPath, "argocd", "8080:80")
 		defer func() {
 			if portForwardArgocd != nil {
 				log.Info().Msg("Closed argoCD port forward")

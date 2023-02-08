@@ -29,6 +29,10 @@ type GitHubUser struct {
 	Login string `json:"login"`
 }
 
+type GitHubOrganizationRole struct {
+	Role string `json:"role"`
+}
+
 // GitHubHandler receives a GitHubService
 type GitHubHandler struct {
 	service *services.GitHubService
@@ -160,5 +164,52 @@ func (handler GitHubHandler) GetGitHubUser(gitHubAccessToken string) (string, er
 
 	log.Info().Msgf("GitHub user: %s", githubUser.Login)
 	return githubUser.Login, nil
+
+}
+
+func (handler GitHubHandler) CheckGithubOrganizationPermissions(githubToken, githubOwner, githubUsername string) error {
+
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.github.com/orgs/%s/memberships/%s", githubOwner, githubUsername), nil)
+	if err != nil {
+		log.Info().Msg("error setting github owner permissions request")
+	}
+
+	req.Header.Add("Content-Type", pkg.JSONContentType)
+	req.Header.Add("Accept", "application/vnd.github+json")
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", githubToken))
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf(
+			"something went wrong calling GitHub API, http status code is: %d, and response is: %q",
+			res.StatusCode,
+			string(body),
+		)
+	}
+
+	var gitHubOrganizationRole GitHubOrganizationRole
+	err = json.Unmarshal(body, &gitHubOrganizationRole)
+	if err != nil {
+		return err
+	}
+
+	log.Info().Msgf("the github owner role is: %s", gitHubOrganizationRole.Role)
+
+	if gitHubOrganizationRole.Role != "admin" {
+		errMsg := fmt.Sprintf("Authenticated user (via GITHUB_TOKEN) doesn't have adequate permissions.\n Make sure they are an `Owner` in %s.\n Current role: %s", githubOwner, gitHubOrganizationRole.Role)
+		return errors.New(errMsg)
+	}
+
+	return nil
 
 }

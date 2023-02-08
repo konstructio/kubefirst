@@ -23,9 +23,16 @@ tasks:
     - go run . clean --destroy-buckets --destroy-confirm || echo $?
     - aws s3 sync $HOME/kubefirst/logs s3://$CICD_LOGS_BUCKET
   integration-test-for-tls-localdev:
-    # GOFLAGS="-count=1" disable cache on tests
-    - GOFLAGS="-count=1" go test -v -run TestArgoCertificateIntegration ./internal/ssl
-  local-end-to-end-tests:
+    - go test -v -run TestArgoCertificateIntegration ./internal/ssl -count=1
+  e2e-test-local-metaphors:
     - go test -v -run TestLocalMetaphorFrontendEndToEnd ./tests -count=1
-  cloud-end-to-end-tests:
+  e2e-test-cloud-metaphors:
     - go test -v -run TestCloudMetaphorsEndToEnd ./tests -count=1
+  e2e-test-github-user-creation-and-login:
+    # creates GitHub user
+    - go test -v -run TestGitHubUserCreationEndToEnd ./tests -count=1
+    # before checking if user exists, we need to wait for Atlantis apply to finish
+    - sleep 10
+    # check is the created user can log in into Vault
+    # this test requires E2E_VAULT_USERNAME to be set (aone, or kbot)
+    - go test -v -run TestVaultLoginEndToEnd ./tests -count=1

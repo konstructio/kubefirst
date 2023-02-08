@@ -14,8 +14,8 @@ spec:
       value: "{{workflow.parameters.ciCommitSha}}"
     - name: branch
       value: "{{workflow.parameters.branch}}"
-    - name: gitRepoUrl
-      value: "{{workflow.parameters.gitRepoUrl}}"
+    - name: gitRepoURL
+      value: "{{workflow.parameters.gitRepoURL}}"
     - name: shortSha
       value: "{{workflow.parameters.shortSha}}"
   templates:
@@ -32,8 +32,8 @@ spec:
             value: "{{workflow.parameters.appDir}}"
           - name: branch
             value: "{{workflow.parameters.branch}}"
-          - name: gitRepoUrl
-            value: "{{workflow.parameters.gitRepoUrl}}"
+          - name: gitRepoURL
+            value: "{{workflow.parameters.gitRepoURL}}"
 
     - - name: publish-container
         templateRef:

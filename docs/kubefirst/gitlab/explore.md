@@ -1,6 +1,4 @@
-# Explore
-
-**psssst** *- if you plan to destroy your kubefirst platform and recreate it again we recommend running `kubefirst backupSSL` to re-use your ssl certs from Let's Encrypt. See the [docs](https://docs.kubefirst.io/common/certificates.html#backup-and-restore-certificates).*
+# Overview
 
 <iframe width="784" height="441" src="https://www.youtube.com/embed/KEUOaNMUqOM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
@@ -35,7 +33,7 @@ You now have an EKS cluster with the following content installed in it:
 Once you run the `cluster create` command at the end of the installation, a new browser tab will open with the Console UI at
 `http://localhost:9094` to provide you a dashboard to navigate through the different services that were previsioned.
 
-![console ui](../../img/kubefirst/github/console.png)
+![console ui](../../img/kubefirst/gitlab/console.png)
 
 ![terminal handoff](../../img/kubefirst/getting-started/cluster-create-result.png)
 
@@ -47,16 +45,16 @@ store them in a safe place.
 
 This step is meant to explore the onboarding process of a new user to your installation:
 
-- [Explore Atlantis & Terraform to manage users](../../common/terraform.html#how-can-i-use-atlantis-to-add-a-new-user-on-my-gitlab-backed-installation)
+- [Explore Atlantis & Terraform to manage users](../../explore/terraform.md#how-can-i-use-atlantis-to-add-a-new-user-on-my-gitlab-backed-installation)
 
 
-## Step 3: Deliver Metaphors to Development, Staging, and Production
+## Step 3: Deliver Metaphor to Development, Staging, and Production
 
-Metaphors are our sample applications that we use to demonstrate parts of the platform and to test CI changes. It's the 
+Metaphor is a suite of sample microservice applications that we use to demonstrate parts of the platform and to test CI changes. It's the 
 other project in the Kubefirst group in GitLab.
 
-If you visit its `.gitlab-ci.yml` in the metaphors repositories root, you'll see it's sending some workflows to argo. 
-Those workflows are also in the `metaphors` repo in the `.argo` directory.
+If you visit its `.gitlab-ci.yml` in the metaphor repositories root, you'll see it's sending some workflows to argo. 
+Those workflows are also in the `metaphor` repo in the `.argo` directory.
 
 The metaphor pipeline will:
 
@@ -66,7 +64,7 @@ The metaphor pipeline will:
 - the release stage of the pipeline will republish the chart, this time without the release candidate notation making it an officially released version, and prepare the metaphor application chart for the next release version
 - the officially released chart will be set as the desired helm chart for production
 
-To watch this pipeline occur, make any change to the `main` branch of the `metaphors` repo. If you're not feeling 
+To watch this pipeline occur, make any change to the `main` branch of the `metaphor` repo. If you're not feeling 
 creative, we put a file at `.argo/ci-files/trigger.txt` that you can use. Once a file in `main` is changed, navigate to 
 metaphor's CI/CD in GitLab to see the workflows get submitted to argo workflows.
 
@@ -81,9 +79,3 @@ releases complete and argocd syncs the apps. The metaphor URLs can be found in y
 We've tried our best to surface available customizations and patterns of the Kubefirst platform here on our docs site. We've also made [links available](../credit.md) to all of our open source tools' own sources of documentation as well.
 
 You can [reach out to us](../../community/index.md) if you have any issues along the way. We're also available for consultation about where you should take the platform based on your organization's needs. We know the technologies inside and out and would love to help you do the same.
-
-## What to do next
-
-Continue your journey: 
-
-- [Destroying](./destroy.md)

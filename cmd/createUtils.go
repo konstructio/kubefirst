@@ -29,7 +29,8 @@ func setArgocdCreds(dryRun bool) {
 		viper.WriteConfig()
 		return
 	}
-	clientset, err := k8s.GetClientSet(dryRun)
+	config := configs.ReadConfig()
+	clientset, err := k8s.GetClientSet(dryRun, config.KubeConfigPath)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -80,7 +81,7 @@ func waitArgoCDToBeReady(dryRun bool) {
 }
 
 // deprecated
-func waitVaultToBeRunning(dryRun bool) {
+func waitVaultToBeRunning(dryRun bool, kubeconfigPath string) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, waitVaultToBeRunning skipped.")
 		return
@@ -108,7 +109,7 @@ func waitVaultToBeRunning(dryRun bool) {
 	// waits for Vault Pod
 	x = 50
 	for i := 0; i < x; i++ {
-		clientset, err := k8s.GetClientSet(dryRun)
+		clientset, err := k8s.GetClientSet(dryRun, kubeconfigPath)
 		if err != nil {
 			log.Error().Err(err).Msg("")
 		}
@@ -130,7 +131,7 @@ func waitVaultToBeRunning(dryRun bool) {
 }
 
 // deprecated
-func loopUntilPodIsReady(dryRun bool) {
+func loopUntilPodIsReady(dryRun bool, kubeconfigPath, kubectlClientPath string) {
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, loopUntilPodIsReady skipped.")
 		return
@@ -154,7 +155,7 @@ func loopUntilPodIsReady(dryRun bool) {
 				// todo: temporary code
 				log.Info().Msg("trying to open port-forward again...")
 				go func() {
-					_, err := k8s.PortForward(false, "vault", "svc/vault", "8200:8200")
+					_, err := k8s.PortForward(false, "svc/vault", kubeconfigPath, kubectlClientPath, "vault", "8200:8200")
 					if err != nil {
 						log.Error().Err(err).Msg("error opening Vault port forward")
 					}

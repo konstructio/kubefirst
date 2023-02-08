@@ -37,7 +37,7 @@ var addCiCmd = &cobra.Command{
 			return err
 		}
 
-		if viper.GetString("gitprovider") == "gitlab" {
+		if viper.GetString("git-provider") == "gitlab" {
 			log.Print("Deploying CI on Gitlab...")
 			ciTools.DeployOnGitlab(globalFlags, bucketName)
 		}

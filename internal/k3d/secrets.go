@@ -15,10 +15,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func AddK3DSecrets(dryrun bool) error {
-	clientset, err := k8s.GetClientSet(dryrun)
+func AddK3DSecrets(dryRun bool, kubeconfigPath string) error {
+	clientset, err := k8s.GetClientSet(dryRun, kubeconfigPath)
+	if err != nil {
+		log.Info().Msg("error getting kubernetes clientset")
+	}
 
-	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "github-runner", "vault", "development", "staging", "production", "kubefirst", "minio"}
+	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "external-dns", "github-runner", "vault", "development", "staging", "production"}
 	for i, s := range newNamespaces {
 		namespace := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s}}
 		_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
@@ -27,33 +30,33 @@ func AddK3DSecrets(dryrun bool) error {
 			return errors.New("error creating namespace")
 		}
 		log.Info().Msgf("%d, %s", i, s)
-		log.Info().Msgf("Namespace Created: %s", s)
+		log.Info().Msgf("namespace created: %s", s)
 	}
 
-	dataArgo := map[string][]byte{
+	minioCreds := map[string][]byte{
 		"accesskey": []byte("k-ray"),
 		"secretkey": []byte("feedkraystars"),
 	}
-	argoSecret := &v1.Secret{
+	minioSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "minio-creds", Namespace: "argo"},
-		Data:       dataArgo,
+		Data:       minioCreds,
 	}
-	_, err = clientset.CoreV1().Secrets("argo").Create(context.TODO(), argoSecret, metav1.CreateOptions{})
+	_, err = clientset.CoreV1().Secrets("argo").Create(context.TODO(), minioSecret, metav1.CreateOptions{})
 	if err != nil {
 		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: argo/minio-creds")
 	}
-	viper.Set("kubernetes.argo-minio.secret.created", true)
-	viper.WriteConfig()
 
 	dataArgoCiSecrets := map[string][]byte{
 		"BASIC_AUTH_USER":       []byte("k-ray"),
 		"BASIC_AUTH_PASS":       []byte("feedkraystars"),
 		"USERNAME":              []byte(viper.GetString("github.user")),
-		"PERSONAL_ACCESS_TOKEN": []byte(os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")),
+		"PERSONAL_ACCESS_TOKEN": []byte(os.Getenv("GITHUB_TOKEN")),
 		"username":              []byte(viper.GetString("github.user")),
-		"password":              []byte(os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")),
+		"password":              []byte(os.Getenv("GITHUB_TOKEN")),
 	}
+
+	//*
 	argoCiSecrets := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "ci-secrets", Namespace: "argo"},
 		Data:       dataArgoCiSecrets,
@@ -63,10 +66,8 @@ func AddK3DSecrets(dryrun bool) error {
 		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: argo/ci-secrets")
 	}
-	viper.Set("kubernetes.argo-ci.secret.created", true)
-	viper.WriteConfig()
 
-	usernamePasswordString := fmt.Sprintf("%s:%s", viper.GetString("github.user"), os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN"))
+	usernamePasswordString := fmt.Sprintf("%s:%s", viper.GetString("github.user"), os.Getenv("GITHUB_TOKEN"))
 	usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
 
 	dockerConfigString := fmt.Sprintf(`{"auths": {"https://ghcr.io/": {"auth": "%s"}}}`, usernamePasswordStringB64)
@@ -112,21 +113,20 @@ func AddK3DSecrets(dryrun bool) error {
 		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: production/docker-config")
 	}
-	viper.Set("kubernetes.argo-docker.secret.created", true)
-	viper.WriteConfig()
 
 	dataArgoCd := map[string][]byte{
-		"password": []byte(os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")),
-		"url":      []byte(fmt.Sprintf("https://%s/%s/gitops.git", viper.GetString("github.host"), viper.GetString("github.owner"))),
-		"username": []byte(viper.GetString("github.user")),
+		"type":          []byte("git"),
+		"name":          []byte(fmt.Sprintf("%s-gitops", viper.GetString("github.owner"))),
+		"url":           []byte(viper.GetString("github.repo.gitops.giturl")),
+		"sshPrivateKey": []byte(viper.GetString("kubefirst.bot.private-key")),
 	}
 
 	argoCdSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        "github-repo-creds",
+			Name:        "repo-credentials-template",
 			Namespace:   "argocd",
 			Annotations: map[string]string{"managed-by": "argocd.argoproj.io"},
-			Labels:      map[string]string{"argocd.argoproj.io/secret-type": "repo-creds"},
+			Labels:      map[string]string{"argocd.argoproj.io/secret-type": "repository"},
 		},
 		Data: dataArgoCd,
 	}
@@ -135,11 +135,9 @@ func AddK3DSecrets(dryrun bool) error {
 		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: argo/minio-creds")
 	}
-	viper.Set("kubernetes.argo-minio.secret.created", true)
-	viper.WriteConfig()
 
 	dataAtlantis := map[string][]byte{
-		"ATLANTIS_GH_TOKEN":                   []byte(os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")),
+		"ATLANTIS_GH_TOKEN":                   []byte(os.Getenv("GITHUB_TOKEN")),
 		"ATLANTIS_GH_USER":                    []byte(viper.GetString("github.user")),
 		"ATLANTIS_GH_HOSTNAME":                []byte(viper.GetString("github.host")),
 		"ATLANTIS_GH_WEBHOOK_SECRET":          []byte(viper.GetString("github.atlantis.webhook.secret")),
@@ -148,12 +146,12 @@ func AddK3DSecrets(dryrun bool) error {
 		"ARGOCD_SERVER":                       []byte("http://localhost:8080"),
 		"ARGO_SERVER_URL":                     []byte("argo.argo.svc.cluster.local:443"),
 		"GITHUB_OWNER":                        []byte(viper.GetString("github.owner")),
-		"GITHUB_TOKEN":                        []byte(os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")),
+		"GITHUB_TOKEN":                        []byte(os.Getenv("GITHUB_TOKEN")),
 		"TF_VAR_atlantis_repo_webhook_secret": []byte(viper.GetString("github.atlantis.webhook.secret")),
 		"TF_VAR_atlantis_repo_webhook_url":    []byte(viper.GetString("github.atlantis.webhook.url")),
 		"TF_VAR_email_address":                []byte(viper.GetString("adminemail")),
-		"TF_VAR_github_token":                 []byte(os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")),
-		"TF_VAR_kubefirst_bot_ssh_public_key": []byte(viper.GetString("botpublickey")),
+		"TF_VAR_github_token":                 []byte(os.Getenv("GITHUB_TOKEN")),
+		"TF_VAR_kubefirst_bot_ssh_public_key": []byte(viper.GetString("kubefirst.bot.public-key")),
 		"TF_VAR_vault_addr":                   []byte("http://vault.vault.svc.cluster.local:8200"),
 		"TF_VAR_vault_token":                  []byte("k1_local_vault_token"),
 		"VAULT_ADDR":                          []byte("http://vault.vault.svc.cluster.local:8200"),
@@ -168,9 +166,6 @@ func AddK3DSecrets(dryrun bool) error {
 		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: atlantis/atlantis-secrets")
 	}
-	viper.Set("kubernetes.atlantis.secret.created", true)
-	viper.WriteConfig()
-
 	dataChartmuseum := map[string][]byte{
 		"BASIC_AUTH_USER":       []byte("k-ray"),
 		"BASIC_AUTH_PASS":       []byte("feedkraystars"),
@@ -178,7 +173,7 @@ func AddK3DSecrets(dryrun bool) error {
 		"AWS_SECRET_ACCESS_KEY": []byte("feedkraystars"),
 	}
 	chartmuseumSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "chartmuseum", Namespace: "chartmuseum"},
+		ObjectMeta: metav1.ObjectMeta{Name: "chartmuseum-secrets", Namespace: "chartmuseum"},
 		Data:       dataChartmuseum,
 	}
 	_, err = clientset.CoreV1().Secrets("chartmuseum").Create(context.TODO(), chartmuseumSecret, metav1.CreateOptions{})
@@ -186,11 +181,9 @@ func AddK3DSecrets(dryrun bool) error {
 		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: chartmuseum/chartmuseum")
 	}
-	viper.Set("kubernetes.chartmuseum.secret.created", true)
-	viper.WriteConfig()
 
 	dataGh := map[string][]byte{
-		"github_token": []byte(os.Getenv("KUBEFIRST_GITHUB_AUTH_TOKEN")),
+		"github_token": []byte(os.Getenv("GITHUB_TOKEN")),
 	}
 	ghRunnerSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "controller-manager", Namespace: "github-runner"},
@@ -201,8 +194,6 @@ func AddK3DSecrets(dryrun bool) error {
 		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: github-runner/controller-manager")
 	}
-	viper.Set("kubernetes.github-runner.secret.created", true)
-	viper.WriteConfig()
 
 	vaultData := map[string][]byte{
 		"token": []byte("k1_local_vault_token"),
@@ -216,7 +207,7 @@ func AddK3DSecrets(dryrun bool) error {
 		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: github-runner/controller-manager")
 	}
-	viper.Set("kubernetes.vault.secret.created", true)
+	viper.Set("kubernetes.secrets.created", true)
 	viper.WriteConfig()
 
 	return nil

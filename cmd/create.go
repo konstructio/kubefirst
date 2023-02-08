@@ -66,6 +66,8 @@ cluster provisioning process spinning up the services, and validates the livenes
 
 		// todo remove this dependency from create.go
 		hostedZoneName := viper.GetString("aws.hostedzonename")
+		providerValue := viper.GetString("git-provider")
+		cloud := viper.GetString("cloud")
 
 		if !globalFlags.UseTelemetry {
 			informUser("Telemetry Disabled", globalFlags.SilentMode)
@@ -74,7 +76,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		}
 
 		if globalFlags.UseTelemetry {
-			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallStarted); err != nil {
+			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallStarted, cloud, providerValue); err != nil {
 				log.Warn().Msgf("%s", err)
 			}
 		}
@@ -83,10 +85,8 @@ cluster provisioning process spinning up the services, and validates the livenes
 		gitHubService := services.NewGitHubService(httpClient)
 		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
 
-		providerValue := viper.GetString("gitprovider")
-
 		config := configs.ReadConfig()
-		gitHubAccessToken := config.GitHubPersonalAccessToken
+		gitHubAccessToken := config.GithubToken
 		if providerValue == pkg.GitHubProviderName && gitHubAccessToken == "" {
 
 			gitHubAccessToken, err = gitHubHandler.AuthenticateUser()
@@ -121,7 +121,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		}
 
 		if !viper.GetBool("kubefirst.done") {
-			if viper.GetString("gitprovider") == "github" {
+			if viper.GetString("git-provider") == "github" {
 				log.Info().Msg("Installing Github version of Kubefirst")
 				viper.Set("git.mode", "github")
 				// if not local it is AWS for now
@@ -159,14 +159,14 @@ cluster provisioning process spinning up the services, and validates the livenes
 			}
 		}
 		informUser("Removing self-signed Argo certificate", globalFlags.SilentMode)
-		clientset, err := k8s.GetClientSet(globalFlags.DryRun)
+		clientset, err := k8s.GetClientSet(globalFlags.DryRun, config.KubeConfigPath)
 		if err != nil {
 			log.Warn().Msgf("Failed to get clientset for k8s : %s", err)
 			extractAwsElbInfoUpdateTrustStore(globalFlags.DryRun)
 			return err
 		}
 		argocdPodClient := clientset.CoreV1().Pods("argocd")
-		err = k8s.RemoveSelfSignedCertArgoCD(argocdPodClient)
+		err = k8s.RemoveSelfSignedCertArgoCD(argocdPodClient, config.KubeConfigPath)
 		if err != nil {
 			log.Warn().Msgf("Error removing self-signed certificate from ArgoCD: %s", err)
 		}
@@ -195,7 +195,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		log.Debug().Msg("sending mgmt cluster install completed metric")
 
 		if globalFlags.UseTelemetry {
-			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallCompleted); err != nil {
+			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallCompleted, cloud, providerValue); err != nil {
 				log.Warn().Msgf("%s", err)
 			}
 		}

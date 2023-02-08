@@ -2,6 +2,7 @@ package helm
 
 import (
 	"fmt"
+
 	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
@@ -74,16 +75,14 @@ type HelmRepo struct {
 	ChartVersion string
 }
 
-func AddRepoAndUpdateRepo(dryRun bool, helmRepo HelmRepo) error {
+func AddRepoAndUpdateRepo(dryRun bool, helmClientPath string, helmRepo HelmRepo, kubeconfigPath string) error {
 	if dryRun {
 		log.Info().Msg("[#99] Dry-run mode, helm.AddRepoAndUpdateRepo skipped.")
 		return nil
 	}
 
-	config := configs.ReadConfig()
-
 	log.Info().Msgf("executing `helm repo add %s %s` ", helmRepo.RepoName, helmRepo.RepoURL)
-	_, _, err := pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "repo", "add", helmRepo.RepoName, helmRepo.RepoURL)
+	_, _, err := pkg.ExecShellReturnStrings(helmClientPath, "--kubeconfig", kubeconfigPath, "repo", "add", helmRepo.RepoName, helmRepo.RepoURL)
 	if err != nil {
 		log.Error().Err(err).Msgf("error adding helm repo %s", helmRepo.RepoName)
 		return err
@@ -92,7 +91,7 @@ func AddRepoAndUpdateRepo(dryRun bool, helmRepo HelmRepo) error {
 	viper.WriteConfig()
 
 	log.Info().Msg("executing `helm repo update`")
-	_, _, err = pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "repo", "update")
+	_, _, err = pkg.ExecShellReturnStrings(helmClientPath, "--kubeconfig", kubeconfigPath, "repo", "update")
 	if err != nil {
 		log.Error().Err(err).Msgf("error updating helm repo %s", helmRepo.RepoName)
 		return err
@@ -102,19 +101,22 @@ func AddRepoAndUpdateRepo(dryRun bool, helmRepo HelmRepo) error {
 	return nil
 }
 
-func Install(dryRun bool, helmRepo HelmRepo) error {
+// func Install(argoCDInitValuesYamlPath string, dryRun bool, helmClientPath string, helmRepo HelmRepo, kubeconfigPath string) error {
+func Install(dryRun bool, helmClientPath string, helmRepo HelmRepo, kubeconfigPath string) error {
 	if dryRun {
 		log.Info().Msg("[#99] Dry-run mode, helm.Install skipped.")
 		return nil
 	}
 
-	config := configs.ReadConfig()
-
 	log.Info().Msgf("executing `helm install %s` and waiting for completion ", helmRepo.ChartName)
 	// todo remove `"--set", "fullnameOverride=argocd", "--set", "nameOverride=argocd"` see type ConfigRepo
-	_, _, err := pkg.ExecShellReturnStrings(config.HelmClientPath, "--kubeconfig", config.KubeConfigPath, "upgrade", "--install", helmRepo.ChartName, "--namespace", helmRepo.Namespace, "--create-namespace", "--version", helmRepo.ChartVersion, "--wait", "--set", "fullnameOverride=argocd", "--set", "nameOverride=argocd", "--values", config.ArgoCDInitValuesYamlPath, fmt.Sprintf("%s/%s", helmRepo.RepoName, helmRepo.ChartName))
+	//! , "--values", argoCDInitValuesYamlPath,
+	a, b, err := pkg.ExecShellReturnStrings(helmClientPath, "--kubeconfig", kubeconfigPath, "upgrade", "--install", helmRepo.ChartName, "--namespace", helmRepo.Namespace, "--create-namespace", "--version", helmRepo.ChartVersion, "--wait", "--set", "fullnameOverride=argocd", "--set", "nameOverride=argocd", fmt.Sprintf("%s/%s", helmRepo.RepoName, helmRepo.ChartName))
+	log.Info().Msg(a)
+	log.Info().Msg(b)
 	if err != nil {
-		log.Error().Err(err).Msgf("error: could not helm install %s - %s", helmRepo.ChartName, err)
+		log.Error().Err(err).Msgf("error: could not helm install %s - %s", helmRepo.ChartName, err.Error())
+		return err
 	}
 	viper.Set("argocd.helm.install.complete", true)
 	viper.WriteConfig()

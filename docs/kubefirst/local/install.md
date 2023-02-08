@@ -1,6 +1,6 @@
-# Local Installation with the Kubefirst CLI
+# Local Platform Installation
 
-**Kubefirst** is the name of our command line tool that installs the Kubefirst platform to your local or cloud environment.
+`kubefirst` is the name of our command line tool that installs the Kubefirst platform to your local or cloud environment.
 
 To use the local version of Kubefirst, you will need to have [Docker installed](https://docs.docker.com/get-docker/). You will also need a GitHub account: GitLab for local, and local git repositories are not supported yet.
 
@@ -8,8 +8,13 @@ To use the local version of Kubefirst, you will need to have [Docker installed](
 
 ### Prerequisites
 
-- [To install kubefirst CLI](../overview.html#how-to-install-kubefirst-cli)
+- [To install kubefirst CLI](../overview.md#how-to-install-kubefirst-cli)
+- [To install docker](https://docs.docker.com/get-docker/)
+- [A personal github account](https://github.com/) (`gitops` and `metaphor-frontend` repositories will be created in your account and should not preexist)
 
+## 2 Hour Expiration Warning
+
+The ngrok tunnel used for kubefirst local has a 2-hour expiration unless you create an account with ngrok. This expiration will prevent you from using automated infrastructure as code through atlantis, but the rest of the platform will continue to function beyond that ngrok evaluation period. [Create an account with ngrok](https://dashboard.ngrok.com/signup) to prevent this.
 
 ## Create your new local cluster
 
@@ -19,36 +24,53 @@ To create a new Kubefirst cluster locally, run
 kubefirst local
 ```
 
-### GitHub Authorization during install
+If your run is not successful, errors and troubleshooting information will be stored in a local log file specified during the installation run.
 
-Kubefirst utilizes the user's GitHub token to generate resources within the user's GitHub account, [details](../../common/github-token.md).
+This will be followed by the instructions prompt to populate the `KUBEFIRST_GITHUB_AUTH_TOKEN` env variable for your [github token](../../explore/github-token.md). Press `ENTER` and follow the prompt to continue.
 
-At the beginning of the installation, Kubefirst will ask you to generate the GitHub token.
+Please export a `KUBEFIRST_GITHUB_AUTH_TOKEN` if you need your ephemeral environment for more than 8 hours. The ephemeral GitHub tokens that we can create for you expire after 8 hours.
 
-#### Why the Kubefirst cli needs this access
+The installation process may take a few minutes. If you are successful you should see:
 
-The [gitops repo](https://github.com/kubefirst/gitops-template) that we create for you will power your local Kubefirst platform. The [metaphor-frontend](https://github.com/kubefirst/metaphor-frontend-template) repo is your microservice example, which demonstrate how to publish and gitops-deliver applications to your new development, staging, and production namespaces in your new local cluster.
+```shell
+Cluster "kubefirst" is up and running!
+```
 
-### Super powers user needs and Certificates to deal with HTTPS locally.
+#### Installed Applications
 
-To increase the experience of Cloud running Kubefirst locally, we use [Mkcert](https://github.com/FiloSottile/mkcert) to generate local certificates and serve `https` with Linkerd Ingress Controller.
-During installation, we generate these certificates and push them to Kubernetes as secrets to attach to Ingress resources.
-Since the certificates are auto-assigned, the browser doesn't recognize them as trusted certificates. 
-To resolve the warning that the browser shows when you access one of your applications,  we recommend to run the command:
+Kubefirst implicitly contains many applications to provide starting capabilities for new users. Operational knowledge of all applications is not necessary to begin using Kubefirst, but is useful to understand your cluster.
+
+A newly created local Kubefirst cluster contains:
+
+- A private repo named `gitops`. The applications that you build and release on the kubefirst platform will also be registered here in the development, staging, and production folders. 
+- [Argo CD](https://github.com/argoproj/argo-cd) - GitOps Continuous Delivery
+- [Argo Workflows](https://argoproj.github.io/argo-workflows/) - Application Continuous Integration
+- [Atlantis](https://www.runatlantis.io/) - Terraform Workflow Automation
+- [Chart Museum](https://github.com/helm/chartmuseum) - Helm Chart Registry
+- [External Secrets](https://github.com/external-secrets/kubernetes-external-secrets) - Syncs Kubernetes secrets with Vault secrets
+- [GitHub Action Runner](https://github.com/features/actions) - Self Hosted GitHub Action Runner
+- [Metaphor](https://github.com/kubefirst/metaphor-frontend-template) - A sample app to demonstrate CI/CD in on Kubernetes. Contains Devlopment, Staging, and Production environments.
+- [Traefik](https://github.com/traefik/traefik) - Default Ingress Controller for K3D Clusters
+- [Vault](https://github.com/hashicorp/vault) - Secrets Management
+
+### How to resolve HTTPS Certificate Warnings
+
+To resolve the warning that the browser shows when you access one of your applications, run the command:
 ```shel
 mkcert -install
 ```
-We recommend that you run this command above to avoid asking for your password and that you can understand with transparency why a superuser password is requested.
+ We use [Mkcert](https://github.com/FiloSottile/mkcert) to generate local certificates and serve `https` with the Traefik Ingress Controller.
 
-This step will install the CA (Certificate Authority) of MkCert in your trusted store and will make the browser trust in certificates generated by your Kubefirst local install.
+During installation, Kubefirst generates these certificates and pushes them to Kubernetes as secrets to attach to Ingress resources. The browser does not recognize auto-assigned certificates as trusted certificates and will generate security errors. 
 
-### Atlantis and ngrok integration
+This step will install the CA (Certificate Authority) of MkCert in your trusted store and will allow the browser to trust in certificates generated by your Kubefirst local install.
 
-During cluster provisioning, Terraform communicates with the host machine to create the desired resources. When Atlantis is installed via Kubefirst, it will use ngrok to expose the Atlantis server to the internet via webhook.
+### Atlantis and Ngrok integration
 
-Webhooks are the way GitHub listen to events, and forward the request to a service. As an example, when a new commit is pushed to a repository, Atlantis will receive an event call, and run a plan.
+[Ngrok](https://ngrok.com/) is a tool that allows Kubefirst to expose a local server to the internet via an [ngrok Secure Tunnel](https://ngrok.com/docs/secure-tunnels/). Kubefirst opens an ngrok Secure Tunnel tunnel during the installation to send events to Atlantis. When the installation finishes, the terminal window hangs at the handoff screen.
+If the handoff screen in your terminal is closed, the Kubefirst installation terminates and the Ngrok Secure Tunnel is closed.
 
-ngrok is a tool that allows us to expose a local server to the internet via a tunnel, Kubefirst opens the tunnel during the installation, and Atlantis receive the events via the tunnel. When the installation finish, it hangs at the handoff screen. The tunnel will be closed once the handoff screen is closed, and the Kubefirst installation process dies.
+During cluster provisioning, Terraform communicates with the host machine to create the desired resources. When Atlantis is installed via Kubefirst, it will use ngrok to expose the Atlantis server to the internet via [webhook](https://zapier.com/blog/what-are-webhooks/?utm_source=google&utm_medium=cpc&utm_campaign=gaw-usa-nua-search-blog-dsa&utm_adgroup=DSA-Guides-What_are_webhooks&utm_term=&utm_content=_pcrid_630760751271_pkw__pmt__pdv_c_slid__pgrid_145358980000_ptaid_dsa-1873981911115_&gclid=Cj0KCQiAw8OeBhCeARIsAGxWtUxZLa8mXxQUt484tVLVjTCCl3zlHEmklG2Gu-EXdy1u521wyIg6EcoaAlS5EALw_wcB).
 
 ## After installation
 
@@ -56,5 +78,5 @@ After the ~5 minutes installation, your browser will launch a new tab to the [Ku
 
 Continue your journey: 
 
-- [Explore your installation](./explore.md)
+- [Explore your installation](./explore/overview.md)
 - [Destroying](./destroy.md)

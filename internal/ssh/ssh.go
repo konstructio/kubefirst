@@ -6,83 +6,84 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/caarlos0/sshmarshal"
 	goGitSsh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/argocd"
-	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
-	"gopkg.in/yaml.v2"
-	"os"
 )
 
-func CreateSshKeyPair() {
+func CreateSshKeyPair() (string, string, error) {
 
-	publicKey := viper.GetString("botpublickey")
-
-	// generate GitLab keys
-	if publicKey == "" && viper.GetString("gitprovider") == "gitlab" {
-
-		log.Info().Msg("generating new key pair for GitLab")
-		publicKey, privateKey, err := generateGitLabKeys()
-		if err != nil {
-			log.Error().Err(err).Msg("")
-		}
-
-		viper.Set("botpublickey", publicKey)
-		viper.Set("botprivatekey", privateKey)
-		err = viper.WriteConfig()
-		if err != nil {
-			log.Panic().Msg("error: could not write to viper config")
-		}
+	pubKey, privKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return "", "", err
 	}
 
-	// generate GitHub keys
-	if publicKey == "" && viper.GetString("gitprovider") == "github" {
-
-		log.Info().Msg("generating new key pair for GitHub")
-		publicKey, privateKey, err := generateGitHubKeys()
-		if err != nil {
-			log.Error().Err(err).Msg("")
-		}
-
-		viper.Set("botpublickey", publicKey)
-		viper.Set("botprivatekey", privateKey)
-		err = viper.WriteConfig()
-		if err != nil {
-			log.Panic().Msg("error: could not write to viper config")
-		}
-
+	ecdsaPublicKey, err := ssh.NewPublicKey(pubKey)
+	if err != nil {
+		return "", "", err
 	}
-	publicKey = viper.GetString("botpublickey")
 
-	// todo: break it into smaller function
-	if viper.GetString("gitprovider") != pkg.CloudK3d {
-
-		config := configs.ReadConfig()
-		privateKey := viper.GetString("botprivatekey")
-
-		argoCDConfig := argocd.Config{}
-		argoCDConfig.Configs.Repositories.SoftServeGitops.URL = "ssh://soft-serve.soft-serve.svc.cluster.local:22/gitops"
-		argoCDConfig.Configs.Repositories.SoftServeGitops.Insecure = "true"
-		argoCDConfig.Configs.Repositories.SoftServeGitops.Type = "gitClient"
-		argoCDConfig.Configs.Repositories.SoftServeGitops.Name = "soft-serve-gitops"
-		argoCDConfig.Configs.CredentialTemplates.SSHCreds.URL = "ssh://soft-serve.soft-serve.svc.cluster.local:22"
-		argoCDConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = privateKey
-
-		argoData, err := yaml.Marshal(&argoCDConfig)
-		if err != nil {
-			log.Panic().Err(err).Msg("")
-		}
-
-		err = os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argoData, 0644)
-		if err != nil {
-			log.Panic().Msgf("error: could not write argocd-init-values.yaml %s", err)
-		}
+	pemPrivateKey, err := sshmarshal.MarshalPrivateKey(privKey, "kubefirst key")
+	if err != nil {
+		return "", "", err
 	}
+
+	privateKey := string(pem.EncodeToMemory(pemPrivateKey))
+	publicKey := string(ssh.MarshalAuthorizedKey(ecdsaPublicKey))
+
+	return privateKey, publicKey, nil
+}
+
+func PublicKeyV2() (*goGitSsh.PublicKeys, error) {
+	var publicKey *goGitSsh.PublicKeys
+	publicKey, err := goGitSsh.NewPublicKeys("kube1st", []byte(viper.GetString("kubefirst.bot.private-key")), "")
+	if err != nil {
+		return nil, err
+	}
+	return publicKey, err
+}
+
+func PublicKey() (*goGitSsh.PublicKeys, error) {
+	var publicKey *goGitSsh.PublicKeys
+	publicKey, err := goGitSsh.NewPublicKeys("gitClient", []byte(viper.GetString("botprivatekey")), "")
+	if err != nil {
+		return nil, err
+	}
+	return publicKey, err
+}
+
+// todo hack - need something more substantial and accommodating and not in ssh..
+func WriteGithubArgoCdInitValuesFile(githubGitopsSshURL, sshPrivateKey string) error {
+
+	config := configs.ReadConfig()
+
+	var argocdInitValuesYaml = []byte(fmt.Sprintf(`
+configs:
+  repositories:
+    gitops:
+      url: %s/gitops.git
+      type: gitClient
+      name: gitops
+  credentialTemplates:
+    ssh-creds:
+      url: %s
+      sshPrivateKey: |
+        %s
+`, githubGitopsSshURL, githubGitopsSshURL, strings.ReplaceAll(sshPrivateKey, "\n", "\n        ")))
+
+	err := os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
+	if err != nil {
+		log.Info().Msgf("error: could not write %s/argocd-init-values.yaml %s", config.K1FolderPath, err)
+		return err
+	}
+	return nil
 }
 
 // generateGitHubKeys generate Public and Private ED25519 keys for GitHub.
@@ -132,13 +133,4 @@ func generateGitLabKeys() (string, string, error) {
 	))
 
 	return publicKey, privateKey, nil
-}
-
-func PublicKey() (*goGitSsh.PublicKeys, error) {
-	var publicKey *goGitSsh.PublicKeys
-	publicKey, err := goGitSsh.NewPublicKeys("gitClient", []byte(viper.GetString("botprivatekey")), "")
-	if err != nil {
-		log.Panic().Err(err).Msg("error: could not write to viper config")
-	}
-	return publicKey, err
 }
