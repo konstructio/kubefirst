@@ -229,8 +229,8 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	// todo: this doesn't default to testing the dns check
 	skipDomainCheck := viper.GetBool("init.domaincheck.enabled")
 	if !skipDomainCheck {
-		hostedZoneLiveness := civo.TestDomainLiveness(false, domainNameFlag, domainId, cloudRegionFlag)
-		if !hostedZoneLiveness {
+		domainLiveness := civo.TestDomainLiveness(false, domainNameFlag, domainId, cloudRegionFlag)
+		if !domainLiveness {
 			msg := "failed to check the liveness of the Domain. A valid public Domain on the same CIVO " +
 				"account as the one where Kubefirst will be installed is required for this operation to " +
 				"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct CIVO account and " +

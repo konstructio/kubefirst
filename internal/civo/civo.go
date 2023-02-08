@@ -24,7 +24,7 @@ var backupResolver = &net.Resolver{
 
 func TestDomainLiveness(dryRun bool, domainName, domainId, region string) bool {
 	if dryRun {
-		log.Info().Msg("[#99] Dry-run mode, TestHostedZoneLiveness skipped.")
+		log.Info().Msg("[#99] Dry-run mode, TestDomainZoneLiveness skipped.")
 		return true
 	}
 
@@ -60,7 +60,7 @@ func TestDomainLiveness(dryRun bool, domainName, domainId, region string) bool {
 		return true
 	}
 
-	//create record if it does not exists
+	//create record if it does not exist
 	_, err = civoClient.CreateDNSRecord(domainId, civoRecordConfig)
 	if err != nil {
 		log.Warn().Msgf("%s", err)
@@ -93,13 +93,13 @@ func TestDomainLiveness(dryRun bool, domainName, domainId, region string) bool {
 			}
 		}
 		if count == 100 {
-			log.Panic().Msg("unable to resolve hosted zone dns record. please check your domain registrar")
+			log.Panic().Msg("unable to resolve domain dns record. please check your domain registrar")
 		}
 	}
 	return true
 }
 
-// GetDNSInfo try to reach the provided hosted zone
+// GetDNSInfo try to reach the provided domain
 func GetDNSInfo(domainName, region string) (string, error) {
 
 	log.Info().Msg("GetDNSInfo (working...)")
@@ -115,7 +115,6 @@ func GetDNSInfo(domainName, region string) (string, error) {
 		log.Info().Msg(err.Error())
 		return "", err
 	}
-	//dereferenceCivoDNSDomain := *civoDNSDomain
 
 	return civoDNSDomain.ID, nil
 
