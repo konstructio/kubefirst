@@ -91,7 +91,7 @@ func DetokenizeDirectoryCivoGithubGitops(path string, fi os.FileInfo, err error)
 		metaphorGoStagingIngressURL := fmt.Sprintf("https://metaphor-go-staging.%s", domainName)
 		metaphorGoProductionIngressURL := fmt.Sprintf("https://metaphor-go-production.%s", domainName)
 
-		newContents = strings.Replace(newContents, "<GIT_PROVIDER>", "GitHub", -1)
+		newContents = strings.Replace(newContents, "<GIT_PROVIDER>", "github", -1)
 		newContents = strings.Replace(newContents, "<GIT_NAMESPACE>", "N/A", -1)
 		newContents = strings.Replace(newContents, "<GIT_DESCRIPTION>", "GitHub hosted git", -1)
 		newContents = strings.Replace(newContents, "<GIT_URL>", gitopsURL, -1)
