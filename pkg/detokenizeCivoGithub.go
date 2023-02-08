@@ -62,6 +62,7 @@ func DetokenizeDirectoryCivoGithubGitops(path string, fi os.FileInfo, err error)
 		argoWorkflowsIngressURL := fmt.Sprintf("https://argo.%s", domainName)
 		argoWorkflowsIngressNoHttpsURL := fmt.Sprintf("argo.%s", domainName)
 		gitopsNoHttpsURL := fmt.Sprintf("github.com/%s/gitops.git", viper.GetString("github.owner"))
+		clusterType := viper.GetString("kubefirst.cluster-type")
 		atlantisAllowList := fmt.Sprintf("github.com/%s/gitops", viper.GetString("github.owner"))
 		gitopsURL := fmt.Sprintf("https://github.com/%s/gitops.git", viper.GetString("github.owner"))
 		vaultIngressURL := fmt.Sprintf("https://vault.%s", domainName)
@@ -70,6 +71,12 @@ func DetokenizeDirectoryCivoGithubGitops(path string, fi os.FileInfo, err error)
 		atlantisIngressNoHttpsURL := fmt.Sprintf("atlantis.%s", domainName)
 		atlantisIngressURL := fmt.Sprintf("https://atlantis.%s", domainName)
 		chartmuseumIngressURL := fmt.Sprintf("https://chartmuseum.%s", domainName)
+
+		isKubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
+
+		if isKubefirstTeam == "" {
+			isKubefirstTeam = "false"
+		}
 
 		// todo consolidate
 		metaphorDevelopmentIngressNoHttpsURL := fmt.Sprintf("metaphor-development.%s", domainName)
@@ -111,6 +118,8 @@ func DetokenizeDirectoryCivoGithubGitops(path string, fi os.FileInfo, err error)
 		newContents = strings.Replace(newContents, "<CLUSTER_NAME>", clusterName, -1)
 		newContents = strings.Replace(newContents, "<CLOUD_PROVIDER>", cloudProvider, -1)
 		newContents = strings.Replace(newContents, "<CLOUD_REGION>", cloudRegion, -1)
+		newContents = strings.Replace(newContents, "<KUBEFIRST_TEAM>", isKubefirstTeam, -1)
+		newContents = strings.Replace(newContents, "<CLUSTER_TYPE>", clusterType, -1)
 
 		//! registry
 		newContents = strings.Replace(newContents, "<GITHUB_HOST>", githubHost, -1)
