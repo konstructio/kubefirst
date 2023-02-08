@@ -46,6 +46,22 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
 		return errors.New("error creating kubernetes secret: external-dns/civo-creds")
 	}
 
+	// vault access
+	dataExternalSecretsOperator := map[string][]byte{
+		"vault-token": []byte("k1_local_vault_token"),
+	}
+	externalSecretOperatorSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "vault-token", Namespace: "external-secrets-operator"},
+		Data:       dataExternalSecretsOperator,
+	}
+	_, err = clientset.CoreV1().Secrets("external-secrets-operator").Create(context.TODO(), externalSecretOperatorSecret, metav1.CreateOptions{})
+
+	if err != nil {
+		log.Info().Msgf("Error:", err)
+		return errors.New("error creating kubernetes secret: external-secrets-operator/vault-token")
+	}
+	log.Info().Msg("created secret: external-secrets-operator/vault-token")
+
 	minioCreds := map[string][]byte{
 		"accesskey": []byte("k-ray"),
 		"secretkey": []byte("feedkraystars"),
@@ -61,12 +77,11 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
 	}
 
 	dataArgoCiSecrets := map[string][]byte{
-		"BASIC_AUTH_USER":       []byte("k-ray"),
-		"BASIC_AUTH_PASS":       []byte("feedkraystars"),
-		"USERNAME":              []byte(viper.GetString("github.user")),
-		"PERSONAL_ACCESS_TOKEN": []byte(os.Getenv("GITHUB_TOKEN")),
-		"username":              []byte(viper.GetString("github.user")),
-		"password":              []byte(os.Getenv("GITHUB_TOKEN")),
+		"accesskey":       []byte(viper.GetString("civo.object-storage-creds.access-key-id")),
+		"secretkey":       []byte(viper.GetString("civo.object-storage-creds.secret-access-key-id")),
+		"BASIC_AUTH_USER": []byte("k-ray"),
+		"BASIC_AUTH_PASS": []byte("feedkraystars"),
+		"SSH_PRIVATE_KEY": []byte(viper.GetString("kubefirst.bot.private-key")),
 	}
 
 	//*
