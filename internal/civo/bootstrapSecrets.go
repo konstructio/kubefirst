@@ -21,7 +21,7 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
 		log.Info().Msg("error getting kubernetes clientset")
 	}
 
-	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "external-dns", "github-runner", "vault", "development", "staging", "production"}
+	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "external-dns", "external-secrets-operator", "github-runner", "vault", "development", "staging", "production"}
 	for i, s := range newNamespaces {
 		namespace := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s}}
 		_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
