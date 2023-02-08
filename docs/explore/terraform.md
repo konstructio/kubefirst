@@ -56,7 +56,7 @@ Your terraform state is stored in a local in cluster s3 bucket named `kubefirst-
 
 <sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1191)_</sub>
 
-### How can I use atlantis to add a new user on my github backed installation?
+### How can I use Atlantis to add a new user on my GitHub backed installation?
 
 
 #### Create a Commit and Pull Request 
@@ -89,12 +89,12 @@ module "admin_one" {
 }
 ```
 
-Observe that you need to provide `team_id` to the team you want to bind it in github for github related access and `acl_policies` to bind to rights on vault. 
+Observe that you need to provide `team_id` to the team you want to bind it in GitHub for GitHub related access and `acl_policies` to bind to rights on vault. 
 
 With the name of your new module in mind, edit the list of `vault_identity_group_member_entity_ids` at the top of this file, adding your new module to the list.
 
 
-#### For local install use:
+#### For local installation use:
 
 If you installed using: `kubefirst local`
 
@@ -140,7 +140,10 @@ Any new users you have created through this process will have their temporary in
 
 Once you've provided them this initial password, they can update their own password throughout the platform by updating their user password entity in vault. Anyone can change their own password, and Admins can reset anyone's password. These rules, just like everything else on Kubefirst, can be configured in your new gitops repository.
 
+
 ![](https://user-images.githubusercontent.com/53096417/204801723-602beff0-12f9-45a9-bb9c-4d85a889d1ce.gif)
+
+For a more detailed example you can have a look at the [reference file](https://github.com/kubefirst/gitops-template/blob/main/localhost/terraform/users/admins-github.tf)
 
 <sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1192)_</sub>
 
