@@ -88,7 +88,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		}()
 		k8s.OpenPortForwardPodWrapper(
 			kubeconfigPath,
-			"argo-cd-server", // todo fix this, it should `argocd`
+			"argocd-server",
 			"argocd",
 			8080,
 			8080,
