@@ -34,19 +34,19 @@ func GetAccessCredentials(credentialName, region string) (civogo.ObjectStoreCred
 	if err != nil {
 		log.Info().Msg(err.Error())
 	}
-	
+
 	if creds == (civogo.ObjectStoreCredential{}) {
 		log.Info().Msgf("credential name: %s not found, creating", credentialName)
 		creds, err = createAccessCredentials(credentialName, region)
 		if err != nil {
 			return civogo.ObjectStoreCredential{}, err
 		}
-	
+
 		creds, err = getAccessCredentials(creds.ID, region)
 		if err != nil {
 			return civogo.ObjectStoreCredential{}, err
 		}
-	
+
 		log.Info().Msgf("created object storage credential %s", credentialName)
 		return creds, nil
 	}
@@ -80,6 +80,21 @@ func checkKubefirstCredentials(credentialName, region string) (civogo.ObjectStor
 	}
 
 	return creds, err
+}
+
+func CheckIfStorageBucketExists(bucketName, region string) (civogo.ObjectStore, error) {
+	client, err := civogo.NewClient(os.Getenv("CIVO_TOKEN"), region)
+	if err != nil {
+		log.Info().Msg(err.Error())
+		return civogo.ObjectStore{}, err
+	}
+
+	bucket, err := client.FindObjectStore(bucketName)
+	if err != nil {
+		return civogo.ObjectStore{}, err
+	}
+
+	return *bucket, nil
 }
 
 // todo client.NewObjectStoreCredential()
