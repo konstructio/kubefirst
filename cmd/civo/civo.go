@@ -443,44 +443,31 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created users with terraform")
 	}
 
-	// progressPrinter.IncrementTracker("step-apps", 1)
-	// progressPrinter.IncrementTracker("step-base", 1)
-	// progressPrinter.IncrementTracker("step-apps", 1)
-	//* Chartmuseum port-forward
-	chartmuseumStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(chartmuseumStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		kubeconfigPath,
-		"chartmuseum",
-		"chartmuseum",
-		8080,
-		8081,
-		chartmuseumStopChannel,
-	)
-
-	if !viper.GetBool("chartmuseum.host.resolved") {
-		pkg.AwaitHostNTimes("http://localhost:8181/health", 5, 5)
-		viper.Set("chartmuseum.host.resolved", true)
-		viper.WriteConfig()
-	} else {
-		log.Info().Msg("already resolved host for chartmuseum, continuing")
-	}
-
 	log.Info().Msg("Kubefirst installation finished successfully")
 	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
-
 	pkg.InformUser("Welcome to civo kubefirst experience", silentMode)
 	pkg.InformUser("To use your cluster port-forward - argocd", silentMode)
 	pkg.InformUser("If not automatically injected, your kubeconfig is at:", silentMode)
-	pkg.InformUser("k3d kubeconfig get "+clusterName, silentMode)
+	pkg.InformUser("civo kubeconfig get "+clusterName, silentMode)
 	pkg.InformUser("Expose Argo-CD", silentMode)
 	pkg.InformUser("kubectl -n argocd port-forward svc/argocd-server 8080:80", silentMode)
 	pkg.InformUser("Argo User: "+viper.GetString("argocd.admin.username"), silentMode)
 	pkg.InformUser("Argo Password: "+viper.GetString("argocd.admin.password"), silentMode)
 
-	// wg.Wait()
+	log.Info().Msg("Starting the presentation of console and api for the handoff screen")
+
+	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+	}
+	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+	}
+
+	reports.LocalHandoffScreen(dryRun, silentMode)
+
+	log.Info().Msgf("Kubefirst Console available at: %s", pkg.KubefirstConsoleLocalURLCloud)
 
 	return nil
 }
