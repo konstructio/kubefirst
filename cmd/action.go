@@ -38,6 +38,7 @@ to quickly create a Cobra application.`,
 		clusteIssuersDir := fmt.Sprintf("%s/clusterissuers", sslDir)
 		secretsDir := fmt.Sprintf("%s/secrets", sslDir)
 
+		//* create ssl backup directories
 		paths := []string{sslDir, certificatesDir, clusteIssuersDir, secretsDir}
 
 		for _, path := range paths {
@@ -80,7 +81,7 @@ to quickly create a Cobra application.`,
 				secret.SetResourceVersion("")
 				secret.SetUID("")
 
-				fileName := fmt.Sprintf("%s/ssl/%s/secrets/%s-%s.yaml", k1Dir, domainName, secret.Namespace, secret.Name)
+				fileName := fmt.Sprintf("%s/%s-%s.yaml", secretsDir, secret.Namespace, secret.Name)
 				fmt.Printf("writing file: %s\n\n", fileName)
 				yamlContent, err := yaml.Marshal(secret)
 				if err != nil {
@@ -120,7 +121,7 @@ to quickly create a Cobra application.`,
 			clusterissuer.SetUID("")
 			clusterissuer.Status = cmv1.IssuerStatus{}
 
-			fileName := fmt.Sprintf("%s/ssl/%s/clusterissuers/%s.yaml", k1Dir, domainName, clusterissuer.Name)
+			fileName := fmt.Sprintf("%s/%s.yaml", clusteIssuersDir, clusterissuer.Name)
 			fmt.Printf("writing file: %s\n", fileName)
 			yamlContent, err := yaml.Marshal(clusterissuer)
 			if err != nil {
@@ -145,7 +146,7 @@ to quickly create a Cobra application.`,
 				cert.SetCreationTimestamp(metav1.Time{})
 				cert.SetUID("")
 
-				fileName := fmt.Sprintf("%s/ssl/%s/certificates/%s-%s.yaml", k1Dir, domainName, cert.Namespace, cert.Name)
+				fileName := fmt.Sprintf("%s/%s-%s.yaml", certificatesDir, cert.Namespace, cert.Name)
 				fmt.Printf("writing file: %s\n", fileName)
 				yamlContent, err := yaml.Marshal(cert)
 				if err != nil {

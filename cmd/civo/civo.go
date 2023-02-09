@@ -33,6 +33,8 @@ import (
 func runCivo(cmd *cobra.Command, args []string) error {
 
 	// config := configs.GetCivoConfig()
+	CERT_MANAGER_CRD_VERSION := "v1.11.0"
+	fmt.Println(CERT_MANAGER_CRD_VERSION)
 	log.Info().Msg("runCivo command is starting ")
 	// var userInput string
 	// printConfirmationScreen()
@@ -281,6 +283,22 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already added secrets to civo cluster")
 	}
+
+	//!
+	//!
+	//* here we need to add logic for restoring cert-manager resources
+	//* add crds ( use execShellReturnErrors )
+	// https://raw.githubusercontent.com/cert-manager/cert-manager/v1.11.0/deploy/crds/crd-clusterissuers.yaml
+	// https://raw.githubusercontent.com/cert-manager/cert-manager/v1.11.0/deploy/crds/crd-certificates.yaml
+	//* add secrets
+	//* add certificates
+	//* add clusterissuer
+	//!
+	//!
+	// _, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "create", "ns", ns)
+	// if err != nil {
+	// 	log.Info().Msgf("failed to create ns: %s, assuming that exists...", err)
+	// }
 
 	//* helm add argo repository && update
 	helmRepo := helm.HelmRepo{
