@@ -210,8 +210,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			log.Print("error opening repo at:", k1MetaphorDir)
 		}
 
-		fmt.Println("metaphor repository clone complete")
-
 		err = pkg.CivoGithubAdjustMetaphorTemplateContent(gitProvider, k1DirPath, k1MetaphorDir)
 		if err != nil {
 			return err
@@ -370,7 +368,8 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// 	vault.WaitVaultToBeRunning(dryRun, kubeconfigPath, kubectlClientPath)
 	// }
 	// todo fix this hack, but vault is unsealed by default in current state
-	time.Sleep(time.Second * 15)
+	log.Info().Msg("waiting for vault pods to be running")
+	time.Sleep(time.Second * 25)
 
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
@@ -389,6 +388,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	//! todo need to pass in url values for connectivity
 	// k8s.LoopUntilPodIsReady(dryRun, kubeconfigPath, kubectlClientPath)
 	// todo fix this hack, but vault is unsealed by default in current state
+	log.Info().Msg("port forward to vault complete")
 	time.Sleep(time.Second * 15)
 
 	//* configure vault with terraform
