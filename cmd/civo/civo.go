@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -21,6 +23,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -53,8 +56,9 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	//! viper config variables
 	//! should varFlag variations be used in here?
 	argocdLocalURL := viper.GetString("argocd.local.service")
-	civoDnsName := viper.GetString("domain-name")
+	domainName := viper.GetString("domain-name")
 	clusterName := viper.GetString("kubefirst.cluster-name")
+	k1Dir := viper.GetString("kubefirst.k1-dir")
 	clusterType := viper.GetString("kubefirst.cluster-type")
 	gitopsTemplateBranch := viper.GetString("template-repo.gitops.branch")
 	gitopsTemplateURL := viper.GetString("template-repo.gitops.url")
@@ -79,6 +83,23 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	k1ToolsDir := viper.GetString("kubefirst.k1-tools-dir")
 	silentMode := false
 	dryRun := false // todo deprecate this?
+	backupDir := fmt.Sprintf("%s/ssl/%s", k1Dir, domainName)
+
+	//* create ssl backup directories
+	if _, err := os.Stat(backupDir + "/certificates"); os.IsNotExist(err) {
+		// path/to/whatever does not exist
+		paths := []string{backupDir + "/certificates", backupDir + "/clusterissuers", backupDir + "/secrets"}
+
+		for _, path := range paths {
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				fmt.Println("checking path: ", path)
+				err := os.MkdirAll(path, os.ModePerm)
+				if err != nil {
+					fmt.Println("directory already exists, continuing")
+				}
+			}
+		}
+	}
 
 	publicKeys, err := ssh.NewPublicKeys("git", []byte(kubefirstBotSSHPrivateKey), "")
 	if err != nil {
@@ -87,7 +108,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 	//* emit cluster install started
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(civoDnsName, pkg.MetricMgmtClusterInstallStarted, cloudProvider, gitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(domainName, pkg.MetricMgmtClusterInstallStarted, cloudProvider, gitProvider); err != nil {
 			log.Info().Msg(err.Error())
 		}
 	}
@@ -284,21 +305,23 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already added secrets to civo cluster")
 	}
 
-	//!
-	//!
-	//* here we need to add logic for restoring cert-manager resources
-	//* add crds ( use execShellReturnErrors )
-	// https://raw.githubusercontent.com/cert-manager/cert-manager/v1.11.0/deploy/crds/crd-clusterissuers.yaml
-	// https://raw.githubusercontent.com/cert-manager/cert-manager/v1.11.0/deploy/crds/crd-certificates.yaml
-	//* add secrets
-	//* add certificates
-	//* add clusterissuer
-	//!
-	//!
-	// _, _, err := pkg.ExecShellReturnStrings(config.KubectlClientPath, "--kubeconfig", config.KubeConfigPath, "create", "ns", ns)
-	// if err != nil {
-	// 	log.Info().Msgf("failed to create ns: %s, assuming that exists...", err)
-	// }
+	//* check for ssl restore
+	fmt.Println("checking for tls secrets to restore")
+	secretsFilesToRestore, err := ioutil.ReadDir(backupDir + "/secrets")
+	if err != nil {
+		return err
+	}
+	if len(secretsFilesToRestore) != 0 {
+		// todo would like these but requires CRD's and is not currently supported
+		// add crds ( use execShellReturnErrors? )
+		// https://raw.githubusercontent.com/cert-manager/cert-manager/v1.11.0/deploy/crds/crd-clusterissuers.yaml
+		// https://raw.githubusercontent.com/cert-manager/cert-manager/v1.11.0/deploy/crds/crd-certificates.yaml
+		// add certificates, and clusterissuers
+		fmt.Printf("found %d tls secrets to restore", len(secretsFilesToRestore))
+		ssl.Restore(backupDir, domainName, kubeconfigPath)
+	} else {
+		fmt.Println("no files found in secrets directory, continuing")
+	}
 
 	//* helm add argo repository && update
 	helmRepo := helm.HelmRepo{
@@ -309,6 +332,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		ChartVersion: "4.10.5",
 	}
 
+	//* helm add repo and update
 	executionControl = viper.GetBool("argocd.helm.repo.updated")
 	if !executionControl {
 		pkg.InformUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), silentMode)
@@ -350,7 +374,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	)
 	pkg.InformUser(fmt.Sprintf("port-forward to argocd is available at %s", argocdLocalURL), silentMode)
 
-	// argocd pods are ready, get and set credentials
+	//* argocd pods are ready, get and set credentials
 	executionControl = viper.GetBool("argocd.credentials.set")
 	if !executionControl {
 		pkg.InformUser("Setting argocd username and password credentials", silentMode)
@@ -366,7 +390,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 
-	// argocd sync registry and start sync waves
+	//* argocd sync registry and start sync waves
 	executionControl = viper.GetBool("argocd.registry.applied")
 	if !executionControl {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
@@ -378,7 +402,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// vault in running state
+	//* vault in running state
 	// this condition doesnt work for civo,
 	// executionControl = viper.GetBool("vault.status.running")
 	// if !executionControl {

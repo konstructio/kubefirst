@@ -3,22 +3,28 @@ package ssl
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
+	cmv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cm "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	"github.com/rs/zerolog/log"
 
-	"github.com/ghodss/yaml"
+	ghoddsYaml "github.com/ghodss/yaml"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	yaml2 "gopkg.in/yaml.v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	v1 "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/yaml"
 )
 
 func getNamespacesToBackupSSL() (ns []string) {
@@ -65,7 +71,7 @@ func getItemsToBackup(apiGroup string, apiVersion string, resourceType string, n
 				return nil, fmt.Errorf("error converting object on json: %s", err)
 			}
 			//yamlObj, err := yaml.JSONToYAML(jsonObj)
-			yamlObj, err := yaml.JSONToYAML(jsonObj)
+			yamlObj, err := ghoddsYaml.JSONToYAML(jsonObj)
 			if err != nil {
 				return nil, fmt.Errorf("error converting object from json to yaml: %s", err)
 			}
@@ -302,5 +308,154 @@ func createCertificateForLocal(config *configs.Config, app pkg.CertificateAppLis
 		return fmt.Errorf("failed to generate %s SSL certificate using MkCert: %v", app.AppName, err)
 	}
 
+	return nil
+}
+
+func Restore(backupDir, domainName, kubeconfigPath string) error {
+
+	sslSecretFiles, err := ioutil.ReadDir(backupDir + "/secrets")
+	if err != nil {
+		return err
+	}
+
+	clientset, err := k8s.GetClientSet(false, kubeconfigPath)
+	if err != nil {
+		fmt.Println("error getting cert manager clientset")
+		return err
+	}
+
+	for _, secret := range sslSecretFiles {
+
+		// file is named with convention $namespace-$secretName.yaml
+		//  todo link to backup source code
+		namespace := strings.Split(secret.Name(), "-")[0]
+		fmt.Println("creating secret" + secret.Name())
+
+		f, err := os.ReadFile(backupDir + "/secrets/" + secret.Name())
+		if err != nil {
+			return err
+		}
+
+		secretData := &v1.SecretApplyConfiguration{}
+
+		err = yaml.Unmarshal(f, secretData)
+		if err != nil {
+			return err
+		}
+
+		sec, err := clientset.CoreV1().Secrets(namespace).Apply(context.Background(), secretData, metav1.ApplyOptions{FieldManager: "application/apply-patch"})
+		if err != nil {
+			return err
+		}
+		fmt.Println("created secret: ", sec.Name)
+	}
+	return nil
+}
+
+func Backup(backupDir, domainName, k1Dir, kubeconfigPath string) error {
+
+	clientset, err := k8s.GetClientSet(false, kubeconfigPath)
+	if err != nil {
+		fmt.Println("error building rest config")
+		return err
+	}
+
+	//* corev1 secret resources
+	secrets, err := clientset.CoreV1().Secrets("").List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		fmt.Println("error listing secrets in all namespaces")
+		return err
+	}
+
+	for _, secret := range secrets.Items {
+		if strings.Contains(secret.Name, "-tls") {
+			fmt.Println("backing up secret (ns/resource): " + secret.Namespace + "/" + secret.Name)
+
+			// modify fields of secret for restore
+			secret.APIVersion = "v1"
+			secret.Kind = "Secret"
+			secret.SetManagedFields(nil)
+			secret.SetOwnerReferences(nil)
+			secret.SetAnnotations(nil)
+			secret.SetCreationTimestamp(metav1.Time{})
+			secret.SetResourceVersion("")
+			secret.SetUID("")
+
+			fileName := fmt.Sprintf("%s/%s-%s.yaml", backupDir+"/secrets", secret.Namespace, secret.Name)
+			fmt.Printf("writing file: %s\n\n", fileName)
+			yamlContent, err := yaml.Marshal(secret)
+			if err != nil {
+				return fmt.Errorf("unable to marshal yaml: %s", err)
+			}
+			pkg.CreateFile(fileName, yamlContent)
+
+		} else {
+			fmt.Println("skipping secret: ", secret.Name)
+		}
+	}
+
+	//* cert manager certificate resources
+	k8sConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	if err != nil {
+		fmt.Println("error building cert manager cmClientSet")
+		return err
+	}
+	cmClientSet, err := cm.NewForConfig(k8sConfig)
+	if err != nil {
+		fmt.Println("error getting cert manager clientset")
+		return err
+	}
+
+	clusterIssuers, err := cmClientSet.CertmanagerV1().ClusterIssuers().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		fmt.Println("error getting clusterissuers")
+		return err
+	}
+
+	for _, clusterissuer := range clusterIssuers.Items {
+		clusterissuer.SetManagedFields(nil)
+		clusterissuer.SetOwnerReferences(nil)
+		clusterissuer.SetAnnotations(nil)
+		clusterissuer.SetResourceVersion("")
+		clusterissuer.SetCreationTimestamp(metav1.Time{})
+		clusterissuer.SetUID("")
+		clusterissuer.Status = cmv1.IssuerStatus{}
+
+		fileName := fmt.Sprintf("%s/%s.yaml", backupDir+"/clusterissuers", clusterissuer.Name)
+		fmt.Printf("writing file: %s\n", fileName)
+		yamlContent, err := yaml.Marshal(clusterissuer)
+		if err != nil {
+			return fmt.Errorf("unable to marshal yaml: %s", err)
+		}
+		pkg.CreateFile(fileName, yamlContent)
+	}
+
+	certs, err := cmClientSet.CertmanagerV1().Certificates("").List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		fmt.Println("error getting list of certificates")
+	}
+
+	for _, cert := range certs.Items {
+		if strings.Contains(cert.Name, "-tls") {
+			fmt.Println("backing up certificate (ns/resource): " + cert.Namespace + "/" + cert.Name)
+			cert.SetManagedFields(nil)
+			cert.SetOwnerReferences(nil)
+			cert.SetAnnotations(nil)
+			cert.SetResourceVersion("")
+			cert.Status = cmv1.CertificateStatus{}
+			cert.SetCreationTimestamp(metav1.Time{})
+			cert.SetUID("")
+
+			fileName := fmt.Sprintf("%s/%s-%s.yaml", backupDir+"/certificates", cert.Namespace, cert.Name)
+			fmt.Printf("writing file: %s\n", fileName)
+			yamlContent, err := yaml.Marshal(cert)
+			if err != nil {
+				return fmt.Errorf("unable to marshal yaml: %s", err)
+			}
+			pkg.CreateFile(fileName, yamlContent)
+		} else {
+			fmt.Println("skipping certficate (ns/resource): " + cert.Namespace + "/" + cert.Name)
+		}
+	}
 	return nil
 }
