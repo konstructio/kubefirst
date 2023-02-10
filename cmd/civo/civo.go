@@ -36,8 +36,6 @@ import (
 func runCivo(cmd *cobra.Command, args []string) error {
 
 	// config := configs.GetCivoConfig()
-	CERT_MANAGER_CRD_VERSION := "v1.11.0"
-	fmt.Println(CERT_MANAGER_CRD_VERSION)
 	log.Info().Msg("runCivo command is starting ")
 	// var userInput string
 	// printConfirmationScreen()
