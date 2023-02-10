@@ -90,10 +90,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		for _, path := range paths {
 			if _, err := os.Stat(path); os.IsNotExist(err) {
-				fmt.Println("checking path: ", path)
+				log.Info().Msgf("checking path: %s", path)
 				err := os.MkdirAll(path, os.ModePerm)
 				if err != nil {
-					fmt.Println("directory already exists, continuing")
+					log.Info().Msg("directory already exists, continuing")
 				}
 			}
 		}
@@ -304,7 +304,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	//* check for ssl restore
-	fmt.Println("checking for tls secrets to restore")
+	log.Info().Msg("checking for tls secrets to restore")
 	secretsFilesToRestore, err := ioutil.ReadDir(backupDir + "/secrets")
 	if err != nil {
 		return err
@@ -315,10 +315,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		// https://raw.githubusercontent.com/cert-manager/cert-manager/v1.11.0/deploy/crds/crd-clusterissuers.yaml
 		// https://raw.githubusercontent.com/cert-manager/cert-manager/v1.11.0/deploy/crds/crd-certificates.yaml
 		// add certificates, and clusterissuers
-		fmt.Printf("found %d tls secrets to restore", len(secretsFilesToRestore))
+		log.Info().Msgf("found %d tls secrets to restore", len(secretsFilesToRestore))
 		ssl.Restore(backupDir, domainName, kubeconfigPath)
 	} else {
-		fmt.Println("no files found in secrets directory, continuing")
+		log.Info().Msg("no files found in secrets directory, continuing")
 	}
 
 	//* helm add argo repository && update

@@ -320,7 +320,6 @@ func Restore(backupDir, domainName, kubeconfigPath string) error {
 
 	clientset, err := k8s.GetClientSet(false, kubeconfigPath)
 	if err != nil {
-		fmt.Println("error getting cert manager clientset")
 		return err
 	}
 
@@ -329,7 +328,7 @@ func Restore(backupDir, domainName, kubeconfigPath string) error {
 		// file is named with convention $namespace-$secretName.yaml
 		//  todo link to backup source code
 		namespace := strings.Split(secret.Name(), "-")[0]
-		fmt.Println("creating secret" + secret.Name())
+		log.Info().Msg("creating secret" + secret.Name())
 
 		f, err := os.ReadFile(backupDir + "/secrets/" + secret.Name())
 		if err != nil {
@@ -347,7 +346,7 @@ func Restore(backupDir, domainName, kubeconfigPath string) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println("created secret: ", sec.Name)
+		log.Info().Msgf("created secret: %s", sec.Name)
 	}
 	return nil
 }
@@ -356,20 +355,18 @@ func Backup(backupDir, domainName, k1Dir, kubeconfigPath string) error {
 
 	clientset, err := k8s.GetClientSet(false, kubeconfigPath)
 	if err != nil {
-		fmt.Println("error building rest config")
 		return err
 	}
 
 	//* corev1 secret resources
 	secrets, err := clientset.CoreV1().Secrets("").List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		fmt.Println("error listing secrets in all namespaces")
 		return err
 	}
 
 	for _, secret := range secrets.Items {
 		if strings.Contains(secret.Name, "-tls") {
-			fmt.Println("backing up secret (ns/resource): " + secret.Namespace + "/" + secret.Name)
+			log.Info().Msg("backing up secret (ns/resource): " + secret.Namespace + "/" + secret.Name)
 
 			// modify fields of secret for restore
 			secret.APIVersion = "v1"
@@ -382,7 +379,7 @@ func Backup(backupDir, domainName, k1Dir, kubeconfigPath string) error {
 			secret.SetUID("")
 
 			fileName := fmt.Sprintf("%s/%s-%s.yaml", backupDir+"/secrets", secret.Namespace, secret.Name)
-			fmt.Printf("writing file: %s\n\n", fileName)
+			log.Info().Msgf("writing file: %s\n\n", fileName)
 			yamlContent, err := yaml.Marshal(secret)
 			if err != nil {
 				return fmt.Errorf("unable to marshal yaml: %s", err)
@@ -390,25 +387,22 @@ func Backup(backupDir, domainName, k1Dir, kubeconfigPath string) error {
 			pkg.CreateFile(fileName, yamlContent)
 
 		} else {
-			fmt.Println("skipping secret: ", secret.Name)
+			log.Info().Msgf("skipping secret: %s", secret.Name)
 		}
 	}
 
 	//* cert manager certificate resources
 	k8sConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
-		fmt.Println("error building cert manager cmClientSet")
 		return err
 	}
 	cmClientSet, err := cm.NewForConfig(k8sConfig)
 	if err != nil {
-		fmt.Println("error getting cert manager clientset")
 		return err
 	}
 
 	clusterIssuers, err := cmClientSet.CertmanagerV1().ClusterIssuers().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		fmt.Println("error getting clusterissuers")
 		return err
 	}
 
@@ -422,7 +416,7 @@ func Backup(backupDir, domainName, k1Dir, kubeconfigPath string) error {
 		clusterissuer.Status = cmv1.IssuerStatus{}
 
 		fileName := fmt.Sprintf("%s/%s.yaml", backupDir+"/clusterissuers", clusterissuer.Name)
-		fmt.Printf("writing file: %s\n", fileName)
+		log.Info().Msgf("writing file: %s\n", fileName)
 		yamlContent, err := yaml.Marshal(clusterissuer)
 		if err != nil {
 			return fmt.Errorf("unable to marshal yaml: %s", err)
@@ -432,12 +426,12 @@ func Backup(backupDir, domainName, k1Dir, kubeconfigPath string) error {
 
 	certs, err := cmClientSet.CertmanagerV1().Certificates("").List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		fmt.Println("error getting list of certificates")
+		log.Info().Msg("error getting list of certificates")
 	}
 
 	for _, cert := range certs.Items {
 		if strings.Contains(cert.Name, "-tls") {
-			fmt.Println("backing up certificate (ns/resource): " + cert.Namespace + "/" + cert.Name)
+			log.Info().Msg("backing up certificate (ns/resource): " + cert.Namespace + "/" + cert.Name)
 			cert.SetManagedFields(nil)
 			cert.SetOwnerReferences(nil)
 			cert.SetAnnotations(nil)
@@ -447,14 +441,14 @@ func Backup(backupDir, domainName, k1Dir, kubeconfigPath string) error {
 			cert.SetUID("")
 
 			fileName := fmt.Sprintf("%s/%s-%s.yaml", backupDir+"/certificates", cert.Namespace, cert.Name)
-			fmt.Printf("writing file: %s\n", fileName)
+			log.Info().Msgf("writing file: %s\n", fileName)
 			yamlContent, err := yaml.Marshal(cert)
 			if err != nil {
 				return fmt.Errorf("unable to marshal yaml: %s", err)
 			}
 			pkg.CreateFile(fileName, yamlContent)
 		} else {
-			fmt.Println("skipping certficate (ns/resource): " + cert.Namespace + "/" + cert.Name)
+			log.Info().Msg("skipping certficate (ns/resource): " + cert.Namespace + "/" + cert.Name)
 		}
 	}
 	return nil
