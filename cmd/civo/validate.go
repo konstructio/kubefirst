@@ -25,8 +25,6 @@ import (
 // this function needs to provide all the generated values and provides a single space for writing and updating configuration up front.
 func validateCivo(cmd *cobra.Command, args []string) error {
 
-	// todo emit init telemetry begin
-
 	//* get cli flag values for storage in `$HOME/.kubefirst`
 	adminEmailFlag, err := cmd.Flags().GetString("admin-email")
 	if err != nil {
@@ -93,6 +91,16 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	cloudProvider := "civo"
+	gitProvider := "github"
+
+	if useTelemetryFlag {
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitStarted, cloudProvider, gitProvider); err != nil {
+			log.Info().Msg(err.Error())
+			return err
+		}
+	}
+
 	//! hack
 	// if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
 	// 	return err
@@ -131,8 +139,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 
-	cloudProvider := "civo"
-	gitProvider := "github"
 	k1DirPath := fmt.Sprintf("%s/.k1", homePath)
 
 	// todo validate flags

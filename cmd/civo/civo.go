@@ -78,6 +78,13 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	silentMode := false
 	dryRun := false // todo deprecate this?
 
+	if useTelemetryFlag {
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, cloudProvider, gitProvider); err != nil {
+			log.Info().Msg(err.Error())
+			return err
+		}
+	}
+
 	publicKeys, err := ssh.NewPublicKeys("git", []byte(kubefirstBotSSHPrivateKey), "")
 	if err != nil {
 		log.Info().Msgf("generate publickeys failed: %s\n", err.Error())
@@ -121,7 +128,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("generating your new gitops repository", silentMode)
 		gitopsRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranch, k1GitopsDir, gitopsTemplateURL)
 		if err != nil {
-			log.Print("error opening repo at:", k1GitopsDir)
+			log.Info().Msgf("error opening repo at: %s", k1GitopsDir)
 		}
 		log.Info().Msg("gitops repository clone complete")
 
@@ -176,7 +183,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		gitopsRepo, err := git.PlainOpen(k1GitopsDir)
 		if err != nil {
-			log.Print("error opening repo at:", k1GitopsDir)
+			log.Info().Msgf("error opening repo at: %s", k1GitopsDir)
 		}
 
 		err = gitopsRepo.Push(&git.PushOptions{
@@ -187,7 +194,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationGitopsRepoURL)
 		}
 
-		log.Printf("successfully pushed gitops to git@github.com/%s/gitops", githubOwnerFlag)
+		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/gitops", githubOwnerFlag)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
 		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", githubOwnerFlag), silentMode)
@@ -207,10 +214,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("generating your new metaphor-frontend repository", silentMode)
 		metaphorRepo, err := gitClient.CloneRefSetMain(metaphorFrontendTemplateBranch, k1MetaphorDir, metaphorFrontendTemplateURL)
 		if err != nil {
-			log.Print("error opening repo at:", k1MetaphorDir)
+			log.Info().Msgf("error opening repo at:", k1MetaphorDir)
 		}
 
-		fmt.Println("metaphor repository clone complete")
+		log.Info().Msg("metaphor repository clone complete")
 
 		err = pkg.CivoGithubAdjustMetaphorTemplateContent(gitProvider, k1DirPath, k1MetaphorDir)
 		if err != nil {
@@ -239,7 +246,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationMetaphorFrontendRepoURL)
 		}
 
-		log.Printf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwnerFlag)
+		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwnerFlag)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
 		pkg.InformUser(fmt.Sprintf("pushed detokenized metaphor-frontend repository to github.com/%s", githubOwnerFlag), silentMode)
@@ -370,8 +377,11 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// 	vault.WaitVaultToBeRunning(dryRun, kubeconfigPath, kubectlClientPath)
 	// }
 	// todo fix this hack, but vault is unsealed by default in current state
-	time.Sleep(time.Second * 15)
+	log.Info().Msg("DEBUG -- sleeping to allow vault to start")
+	time.Sleep(time.Second * 30)
+	// todo, add a healthcheck here to see if this is when we return
 
+	log.Info().Msg("DEBUG -- hit port forward to vault")
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
 	defer func() {
@@ -385,7 +395,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		8200,
 		vaultStopChannel,
 	)
-
+	log.Info().Msg("DEBUG -- if this logged its good news")
 	//! todo need to pass in url values for connectivity
 	// k8s.LoopUntilPodIsReady(dryRun, kubeconfigPath, kubectlClientPath)
 	// todo fix this hack, but vault is unsealed by default in current state
@@ -443,7 +453,11 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created users with terraform")
 	}
 
-	log.Info().Msg("Kubefirst installation finished successfully")
+	log.Info().Msg("your kubefirst platform installation has completed!")
+	log.Info().Msg("visit ")
+	//!
+	//!
+	//!
 	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
 	pkg.InformUser("Welcome to civo kubefirst experience", silentMode)
 	pkg.InformUser("To use your cluster port-forward - argocd", silentMode)
@@ -468,6 +482,13 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	reports.LocalHandoffScreen(dryRun, silentMode)
 
 	log.Info().Msgf("Kubefirst Console available at: %s", pkg.KubefirstConsoleLocalURLCloud)
+
+	if useTelemetryFlag {
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallCompleted, cloudProvider, gitProvider); err != nil {
+			log.Info().Msg(err.Error())
+			return err
+		}
+	}
 
 	return nil
 }
