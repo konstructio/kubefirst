@@ -27,6 +27,7 @@ require (
 	github.com/hashicorp/vault/api v1.8.2
 	github.com/itchyny/gojq v0.12.8
 	github.com/jedib0t/go-pretty/v6 v6.3.1
+	github.com/manifoldco/promptui v0.9.0
 	github.com/otiai10/copy v1.7.0
 	github.com/rs/zerolog v1.28.0
 	github.com/segmentio/analytics-go v3.1.0+incompatible
@@ -35,6 +36,7 @@ require (
 	golang.ngrok.com/ngrok v1.0.0
 	golang.org/x/crypto v0.5.0
 	golang.org/x/exp v0.0.0-20221012211006-4de253d81b95
+	golang.org/x/mod v0.7.0
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
@@ -50,6 +52,7 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/chromedp/cdproto v0.0.0-20230109101555-6b041c6303cc // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
+	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/emicklei/go-restful/v3 v3.10.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
@@ -74,7 +77,6 @@ require (
 	github.com/segmentio/backo-go v1.0.1 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
-	golang.org/x/mod v0.7.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 )
@@ -103,7 +105,7 @@ require (
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
-	github.com/fatih/color v1.13.0 // indirect
+	github.com/fatih/color v1.13.0
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect

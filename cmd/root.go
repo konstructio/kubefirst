@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/fatih/color"
 	"os"
 
 	"github.com/kubefirst/kubefirst/cmd/civo"
@@ -25,7 +26,9 @@ var rootCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("To learn more about kubefirst, run:")
-		fmt.Println("  kubefirst help")
+		fmt.Println(color.New(color.FgGreen, color.Bold).Sprint("  kubefirst help"))
+		Interactive(cmd.Commands())
+
 	},
 }
 
