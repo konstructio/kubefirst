@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"strings"
 	"time"
 
@@ -80,21 +79,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 	//* create ssl backup directories
 	backupDir := fmt.Sprintf("%s/ssl/%s", k1Dir, domainName)
-
-	if _, err := os.Stat(backupDir + "/certificates"); os.IsNotExist(err) {
-		// path/to/whatever does not exist
-		paths := []string{backupDir + "/certificates", backupDir + "/clusterissuers", backupDir + "/secrets"}
-
-		for _, path := range paths {
-			if _, err := os.Stat(path); os.IsNotExist(err) {
-				log.Info().Msgf("checking path: %s", path)
-				err := os.MkdirAll(path, os.ModePerm)
-				if err != nil {
-					log.Info().Msg("directory already exists, continuing")
-				}
-			}
-		}
-	}
 
 	//* generate public keys for ssh
 	publicKeys, err := ssh.NewPublicKeys("git", []byte(kubefirstBotSSHPrivateKey), "")
