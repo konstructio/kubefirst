@@ -46,6 +46,19 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// https://github.com/cli/cli/blob/trunk/internal/authflow/flow.go#L37
 	// to do consider if we can credit github on theirs
 
+	// Check quotas
+	quotaMessage, quotaFailures, quotaWarnings, err := returnCivoQuotaEvaluation(false)
+	if err != nil {
+		return err
+	}
+	switch {
+	case quotaFailures > 0:
+		fmt.Println(reports.StyleMessage(quotaMessage))
+		return errors.New("At least one of your Civo quotas is close to its limit. Please check the error message above for additional details.")
+	case quotaWarnings > 0:
+		fmt.Println(reports.StyleMessage(quotaMessage))
+	}
+
 	printConfirmationScreen()
 	log.Info().Msg("proceeding with cluster create")
 
@@ -77,10 +90,16 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	silentMode := false // todo deprecate this?
 	terraformClientVersion := viper.GetString("kubefirst.terraform-client-version")
 
-	//* create ssl backup directories
 	backupDir := fmt.Sprintf("%s/ssl/%s", k1Dir, domainName)
 
 	//* generate public keys for ssh
+	if useTelemetryFlag {
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, cloudProvider, gitProvider); err != nil {
+			log.Info().Msg(err.Error())
+			return err
+		}
+	}
+
 	publicKeys, err := ssh.NewPublicKeys("git", []byte(kubefirstBotSSHPrivateKey), "")
 	if err != nil {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
@@ -124,7 +143,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("generating your new gitops repository", silentMode)
 		gitopsRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranch, k1GitopsDir, gitopsTemplateURL)
 		if err != nil {
-			log.Print("error opening repo at:", k1GitopsDir)
+			log.Info().Msgf("error opening repo at: %s", k1GitopsDir)
 		}
 		log.Info().Msg("gitops repository clone complete")
 
@@ -179,7 +198,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		gitopsRepo, err := git.PlainOpen(k1GitopsDir)
 		if err != nil {
-			log.Print("error opening repo at:", k1GitopsDir)
+			log.Info().Msgf("error opening repo at: %s", k1GitopsDir)
 		}
 
 		err = gitopsRepo.Push(&git.PushOptions{
@@ -190,7 +209,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationGitopsRepoURL)
 		}
 
-		log.Printf("successfully pushed gitops to git@github.com/%s/gitops", githubOwnerFlag)
+		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/gitops", githubOwnerFlag)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
 		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", githubOwnerFlag), silentMode)
@@ -210,10 +229,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("generating your new metaphor-frontend repository", silentMode)
 		metaphorRepo, err := gitClient.CloneRefSetMain(metaphorFrontendTemplateBranch, k1MetaphorDir, metaphorFrontendTemplateURL)
 		if err != nil {
-			log.Print("error opening repo at:", k1MetaphorDir)
+			log.Info().Msgf("error opening repo at:", k1MetaphorDir)
 		}
 
-		fmt.Println("metaphor repository clone complete")
+		log.Info().Msg("metaphor repository clone complete")
 
 		err = pkg.CivoGithubAdjustMetaphorTemplateContent(gitProvider, k1Dir, k1MetaphorDir)
 		if err != nil {
@@ -242,7 +261,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationMetaphorFrontendRepoURL)
 		}
 
-		log.Printf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwnerFlag)
+		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwnerFlag)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
 		pkg.InformUser(fmt.Sprintf("pushed detokenized metaphor-frontend repository to github.com/%s", githubOwnerFlag), silentMode)
@@ -393,8 +412,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// }
 	// todo fix this hack, but vault is unsealed by default in current state
 	log.Info().Msg("waiting for vault pods to be running")
-	time.Sleep(time.Second * 25)
+	time.Sleep(time.Second * 30)
+	// todo, add a healthcheck here to see if this is when we return
 
+	log.Info().Msg("DEBUG -- hit port forward to vault")
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
 	defer func() {
@@ -408,7 +429,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		8200,
 		vaultStopChannel,
 	)
-
 	//! todo need to pass in url values for connectivity
 	// k8s.LoopUntilPodIsReady(dryRun, kubeconfigPath, kubectlClientPath)
 	// todo fix this hack, but vault is unsealed by default in current state
@@ -467,18 +487,23 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created users with terraform")
 	}
 
-	log.Info().Msg("Kubefirst installation finished successfully")
-	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
-	pkg.InformUser("Welcome to civo kubefirst experience", silentMode)
-	pkg.InformUser("To use your cluster port-forward - argocd", silentMode)
-	pkg.InformUser("If not automatically injected, your kubeconfig is at:", silentMode)
-	pkg.InformUser("civo kubeconfig get "+clusterName, silentMode)
-	pkg.InformUser("Expose Argo-CD", silentMode)
-	pkg.InformUser("kubectl -n argocd port-forward svc/argocd-server 8080:80", silentMode)
-	pkg.InformUser("Argo User: "+viper.GetString("argocd.admin.username"), silentMode)
-	pkg.InformUser("Argo Password: "+viper.GetString("argocd.admin.password"), silentMode)
+	//* console port-forward
+	//! todo need to add the same health / readiness check to console as vault above
+	// consoleStopChannel := make(chan struct{}, 1)
+	// defer func() {
+	// 	close(consoleStopChannel)
+	// }()
+	// k8s.OpenPortForwardPodWrapper(
+	// 	kubeconfigPath,
+	// 	"kubefirst-console",
+	// 	"kubefirst",
+	// 	9094,
+	// 	8080,
+	// 	consoleStopChannel,
+	// )
 
-	log.Info().Msg("Starting the presentation of console and api for the handoff screen")
+	log.Info().Msg("kubefirst installation complete")
+	log.Info().Msg("welcome to your new kubefirst platform powered by Civo cloud")
 
 	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
 	if err != nil {
@@ -491,7 +516,12 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 	reports.LocalHandoffScreen(dryRun, silentMode)
 
-	log.Info().Msgf("Kubefirst Console available at: %s", pkg.KubefirstConsoleLocalURLCloud)
+	if useTelemetryFlag {
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallCompleted, cloudProvider, gitProvider); err != nil {
+			log.Info().Msg(err.Error())
+			return err
+		}
+	}
 
 	return nil
 }

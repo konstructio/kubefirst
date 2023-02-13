@@ -25,17 +25,19 @@ import (
 // this function needs to provide all the generated values and provides a single space for writing and updating configuration up front.
 func validateCivo(cmd *cobra.Command, args []string) error {
 
-	// todo emit init telemetry begin
-
 	//* get cli flag values for storage in `$HOME/.kubefirst`
 	adminEmailFlag, err := cmd.Flags().GetString("admin-email")
 	if err != nil {
 		return err
+	} else if adminEmailFlag == "" {
+		return errors.New("admin-email flag cannot be empty")
 	}
 
 	domainNameFlag, err := cmd.Flags().GetString("domain-name")
 	if err != nil {
 		return err
+	} else if domainNameFlag == "" {
+		return errors.New("domain-name flag cannot be empty")
 	}
 
 	clusterNameFlag, err := cmd.Flags().GetString("cluster-name")
@@ -56,6 +58,8 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	githubOwnerFlag, err := cmd.Flags().GetString("github-owner")
 	if err != nil {
 		return err
+	} else if githubOwnerFlag == "" {
+		return errors.New("github-owner flag cannot be empty")
 	}
 
 	gitopsTemplateURLFlag, err := cmd.Flags().GetString("gitops-template-url")
@@ -93,6 +97,16 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	cloudProvider := "civo"
+	gitProvider := "github"
+
+	if useTelemetryFlag {
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitStarted, cloudProvider, gitProvider); err != nil {
+			log.Info().Msg(err.Error())
+			return err
+		}
+	}
+
 	// this branch flag value is overridden with a tag when running from a
 	// kubefirst binary for version compatibility
 	if gitopsTemplateBranchFlag == "main" && configs.K1Version != "development" {
@@ -126,8 +140,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 
-	cloudProvider := "civo"
-	gitProvider := "github"
 	k1Dir := fmt.Sprintf("%s/.k1", homePath)
 
 	//* create k1Dir if it doesn't exist
