@@ -93,11 +93,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	//! hack
-	// if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
-	// 	return err
-	// }
-
 	// this branch flag value is overridden with a tag when running from a
 	// kubefirst binary for version compatibility
 	if gitopsTemplateBranchFlag == "main" && configs.K1Version != "development" {
@@ -134,6 +129,14 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	cloudProvider := "civo"
 	gitProvider := "github"
 	k1Dir := fmt.Sprintf("%s/.k1", homePath)
+
+	//* create k1Dir if it doesn't exist
+	if _, err := os.Stat(k1Dir); os.IsNotExist(err) {
+		err := os.MkdirAll(k1Dir, os.ModePerm)
+		if err != nil {
+			log.Info().Msgf("%s directory already exists, continuing", k1Dir)
+		}
+	}
 
 	// todo validate flags
 	viper.Set("admin-email", adminEmailFlag)
