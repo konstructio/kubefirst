@@ -101,11 +101,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	//! hack
-	// if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
-	// 	return err
-	// }
-
 	// this branch flag value is overridden with a tag when running from a
 	// kubefirst binary for version compatibility
 	if gitopsTemplateBranchFlag == "main" && configs.K1Version != "development" {
@@ -139,7 +134,15 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 
-	k1DirPath := fmt.Sprintf("%s/.k1", homePath)
+	k1Dir := fmt.Sprintf("%s/.k1", homePath)
+
+	//* create k1Dir if it doesn't exist
+	if _, err := os.Stat(k1Dir); os.IsNotExist(err) {
+		err := os.MkdirAll(k1Dir, os.ModePerm)
+		if err != nil {
+			log.Info().Msgf("%s directory already exists, continuing", k1Dir)
+		}
+	}
 
 	// todo validate flags
 	viper.Set("admin-email", adminEmailFlag)
@@ -148,17 +151,17 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("vault.local.service", "http://localhost:8200")
 	viper.Set("cloud-provider", cloudProvider)
 	viper.Set("git-provider", gitProvider)
-	viper.Set("kubefirst.k1-dir", k1DirPath)
-	viper.Set("kubefirst.k1-tools-dir", fmt.Sprintf("%s/tools", k1DirPath))
-	viper.Set("kubefirst.k1-gitops-dir", fmt.Sprintf("%s/gitops", k1DirPath))
-	viper.Set("kubefirst.k1-metaphor-dir", fmt.Sprintf("%s/metaphor-frontend", k1DirPath))
-	viper.Set("kubefirst.helm-client-path", fmt.Sprintf("%s/tools/helm", k1DirPath))
+	viper.Set("kubefirst.k1-dir", k1Dir)
+	viper.Set("kubefirst.k1-tools-dir", fmt.Sprintf("%s/tools", k1Dir))
+	viper.Set("kubefirst.k1-gitops-dir", fmt.Sprintf("%s/gitops", k1Dir))
+	viper.Set("kubefirst.k1-metaphor-dir", fmt.Sprintf("%s/metaphor-frontend", k1Dir))
+	viper.Set("kubefirst.helm-client-path", fmt.Sprintf("%s/tools/helm", k1Dir))
 	viper.Set("kubefirst.helm-client-version", "v3.6.1")
-	viper.Set("kubefirst.kubeconfig-path", fmt.Sprintf("%s/kubeconfig", k1DirPath))
-	viper.Set("kubefirst.kubectl-client-path", fmt.Sprintf("%s/tools/kubectl", k1DirPath))
+	viper.Set("kubefirst.kubeconfig-path", fmt.Sprintf("%s/kubeconfig", k1Dir))
+	viper.Set("kubefirst.kubectl-client-path", fmt.Sprintf("%s/tools/kubectl", k1Dir))
 	viper.Set("kubefirst.kubectl-client-version", "v1.23.15") // todo make configs like this more discoverable in struct?
 	viper.Set("kubefirst.kubefirst-config-path", fmt.Sprintf("%s/%s", homePath, ".kubefirst"))
-	viper.Set("kubefirst.terraform-client-path", fmt.Sprintf("%s/tools/terraform", k1DirPath))
+	viper.Set("kubefirst.terraform-client-path", fmt.Sprintf("%s/tools/terraform", k1Dir))
 	viper.Set("kubefirst.terraform-client-version", "1.0.11")
 	viper.Set("localhost.os", runtime.GOOS)
 	viper.Set("localhost.architecture", runtime.GOARCH)
@@ -220,6 +223,37 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("civo object storage credentials created and set")
 	} else {
 		log.Info().Msg("already created civo object storage credentials - continuing")
+	}
+
+	// domain id
+	domainId, err := civo.GetDNSInfo(domainNameFlag, cloudRegionFlag)
+	if err != nil {
+		log.Info().Msg(err.Error())
+	}
+
+	// viper values set in above function
+	log.Info().Msgf("domainId: %s", domainId)
+
+	//! tracker 3
+	// todo: this doesn't default to testing the dns check
+	skipDomainCheck := viper.GetBool("init.domaincheck.enabled")
+	if !skipDomainCheck {
+		domainLiveness := civo.TestDomainLiveness(false, domainNameFlag, domainId, cloudRegionFlag)
+		if !domainLiveness {
+			msg := "failed to check the liveness of the Domain. A valid public Domain on the same CIVO " +
+				"account as the one where Kubefirst will be installed is required for this operation to " +
+				"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct CIVO account and " +
+				"region.\n - Verify that you have the necessary permissions to access the domain.\n - Check " +
+				"that the domain is correctly configured and is a public domain\n - Check if the " +
+				"domain exists and has the correct name and domain.\n - If you don't have a Domain," +
+				"please follow these instructions to create one: " +
+				"https://www.civo.com/learn/configure-dns \n\n" +
+				"if you are still facing issues please reach out to support team for further assistance"
+			log.Error().Msg(msg)
+			return errors.New(msg)
+		}
+	} else {
+		log.Info().Msg("skipping domain check")
 	}
 
 	executionControl = viper.GetBool("kubefirst.state-store-bucket.complete")
@@ -356,7 +390,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		// todo, is this a hangover from initial gitlab? do we need this?
 		log.Info().Msg("creating argocd-init-values.yaml for initial install")
 		//* ex: `git@github.com:kubefirst` this is allows argocd access to the github organization repositories
-		err = ssh.WriteGithubArgoCdInitValuesFile(githubOwnerRootGitURL, sshPrivateKey)
+		err = ssh.WriteGithubArgoCdInitValuesFile(githubOwnerRootGitURL, k1Dir, sshPrivateKey)
 		if err != nil {
 			return err
 		}
