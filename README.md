@@ -49,7 +49,7 @@ ready to be customized to suit your company's needs.
   - [The Provisioning Process](#the-provisioning-process)
   - [Feed K-Ray](#feed-k-ray)
 
-![kubefirst architecture diagram](../docs/)/
+![kubefirst architecture diagram](https://github.com/kubefirst/kubefirst/blob/main/images/kubefirst-arch.png)
 
 ## DNS Setup
 
