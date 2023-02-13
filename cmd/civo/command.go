@@ -1,8 +1,11 @@
 package civo
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+)
 
 var (
+	// Create
 	adminEmailFlag             string
 	cloudRegionFlag            string
 	clusterNameFlag            string
@@ -16,6 +19,9 @@ var (
 	kbotPasswordFlag           string
 	silentModeFlag             bool
 	useTelemetryFlag           bool
+
+	// Quota
+	quotaShowAllFlag bool
 )
 
 func NewCommand() *cobra.Command {
@@ -30,8 +36,7 @@ func NewCommand() *cobra.Command {
 	civoCmd.SilenceUsage = true
 
 	// wire up new commands
-	civoCmd.AddCommand(Destroy())
-	civoCmd.AddCommand(Create())
+	civoCmd.AddCommand(Create(), Destroy(), Quota())
 
 	return civoCmd
 }
@@ -46,14 +51,14 @@ func Create() *cobra.Command {
 	}
 
 	// todo review defaults and update descriptions
-	createCmd.Flags().StringVar(&adminEmailFlag, "admin-email", "", "email address for let's encrypt certificate notifications")
+	createCmd.Flags().StringVar(&adminEmailFlag, "admin-email", "", "email address for let's encrypt certificate notifications (required)")
+	createCmd.MarkFlagRequired("admin-email")
 	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "NYC1", "the civo region to provision infrastructure in")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
-	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the Civo DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com)")
-	createCmd.Flags().StringVar(&githubOwnerFlag, "github-owner", "", "the GitHub owner of the new gitops and metaphor repositories")
-	createCmd.MarkFlagRequired("admin-email")
+	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the Civo DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
+	createCmd.Flags().StringVar(&githubOwnerFlag, "github-owner", "", "the GitHub owner of the new gitops and metaphor repositories (required)")
 	createCmd.MarkFlagRequired("github-owner")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "main", "the branch to clone for the gitops-template repository")
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
@@ -75,4 +80,16 @@ func Destroy() *cobra.Command {
 	}
 
 	return destroyCmd
+}
+
+func Quota() *cobra.Command {
+	quotaCmd := &cobra.Command{
+		Use:   "quota",
+		Short: "Check Civo quota status",
+		Long:  "Check Civo quota status. By default, only ones close to limits will be shown.",
+		RunE:  evalCivoQuota,
+	}
+
+	quotaCmd.Flags().BoolVar(&quotaShowAllFlag, "show-all", false, "show all quotas regardless of usage")
+	return quotaCmd
 }

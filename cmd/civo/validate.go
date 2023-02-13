@@ -31,11 +31,15 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	adminEmailFlag, err := cmd.Flags().GetString("admin-email")
 	if err != nil {
 		return err
+	} else if adminEmailFlag == "" {
+		return errors.New("admin-email flag cannot be empty")
 	}
 
 	domainNameFlag, err := cmd.Flags().GetString("domain-name")
 	if err != nil {
 		return err
+	} else if domainNameFlag == "" {
+		return errors.New("domain-name flag cannot be empty")
 	}
 
 	clusterNameFlag, err := cmd.Flags().GetString("cluster-name")
@@ -56,6 +60,8 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	githubOwnerFlag, err := cmd.Flags().GetString("github-owner")
 	if err != nil {
 		return err
+	} else if githubOwnerFlag == "" {
+		return errors.New("github-owner flag cannot be empty")
 	}
 
 	gitopsTemplateURLFlag, err := cmd.Flags().GetString("gitops-template-url")

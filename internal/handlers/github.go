@@ -146,7 +146,7 @@ func (handler GitHubHandler) GetGitHubUser(gitHubAccessToken string) (string, er
 
 	if res.StatusCode != http.StatusOK {
 		return "", fmt.Errorf(
-			"something went wrong calling GitHub API, http status code is: %d, and response is: %q",
+			"something went wrong calling GitHub API during user lookup, http status code is: %d, and response is: %q",
 			res.StatusCode,
 			string(body),
 		)
@@ -191,7 +191,7 @@ func (handler GitHubHandler) CheckGithubOrganizationPermissions(githubToken, git
 
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf(
-			"something went wrong calling GitHub API, http status code is: %d, and response is: %q",
+			"something went wrong calling GitHub API during org lookup, http status code is: %d, and response is: %q",
 			res.StatusCode,
 			string(body),
 		)
