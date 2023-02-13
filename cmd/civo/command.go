@@ -30,8 +30,9 @@ func NewCommand() *cobra.Command {
 	civoCmd.SilenceUsage = true
 
 	// wire up new commands
-	civoCmd.AddCommand(Destroy())
+	civoCmd.AddCommand(BackupSSL())
 	civoCmd.AddCommand(Create())
+	civoCmd.AddCommand(Destroy())
 
 	return civoCmd
 }
@@ -75,4 +76,15 @@ func Destroy() *cobra.Command {
 	}
 
 	return destroyCmd
+}
+
+func BackupSSL() *cobra.Command {
+	backupSSLCmd := &cobra.Command{
+		Use:   "backup-ssl", // todo welcome feedback on this command name
+		Short: "backup the cluster resources related tls certificates",
+		Long:  "kubefirst uses a combination of external-dns, ingress-nginx, and cert-manager for the provisioning automated tls certificates for services with an ingress. this command will backup all the necessary resources to allow for a restore of the resources in a new cluster with the same domain name",
+		RunE:  backupCivoSSL,
+	}
+
+	return backupSSLCmd
 }

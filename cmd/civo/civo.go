@@ -35,7 +35,6 @@ import (
 
 func runCivo(cmd *cobra.Command, args []string) error {
 
-	// config := configs.GetCivoConfig()
 	log.Info().Msg("runCivo command is starting ")
 	// var userInput string
 	// printConfirmationScreen()
@@ -51,38 +50,37 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	printConfirmationScreen()
 	log.Info().Msg("proceeding with cluster create")
 
-	//! viper config variables
-	//! should varFlag variations be used in here?
 	argocdLocalURL := viper.GetString("argocd.local.service")
-	domainName := viper.GetString("domain-name")
+	cloudProvider := viper.GetString("cloud-provider")
 	clusterName := viper.GetString("kubefirst.cluster-name")
 	clusterType := viper.GetString("kubefirst.cluster-type")
-	gitopsTemplateBranch := viper.GetString("template-repo.gitops.branch")
-	gitopsTemplateURL := viper.GetString("template-repo.gitops.url")
-	metaphorFrontendTemplateBranch := viper.GetString("template-repo.metaphor-frontend.branch")
-	metaphorFrontendTemplateURL := viper.GetString("template-repo.metaphor-frontend.url")
-	k1MetaphorDir := viper.GetString("kubefirst.k1-metaphor-dir")
-	cloudProvider := viper.GetString("cloud-provider")
 	destinationGitopsRepoURL := viper.GetString("github.repo.gitops.giturl")
 	destinationMetaphorFrontendRepoURL := viper.GetString("github.repo.metaphor-frontend.giturl")
+	domainName := viper.GetString("domain-name")
+	dryRun := false // todo deprecate this?
+	gitopsTemplateBranch := viper.GetString("template-repo.gitops.branch")
+	gitopsTemplateURL := viper.GetString("template-repo.gitops.url")
 	gitProvider := viper.GetString("git-provider")
-	kubefirstBotSSHPrivateKey := viper.GetString("kubefirst.bot.private-key")
-	k1GitopsDir := viper.GetString("kubefirst.k1-gitops-dir")
-	kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
 	helmClientPath := viper.GetString("kubefirst.helm-client-path")
 	helmClientVersion := viper.GetString("kubefirst.helm-client-version")
 	k1Dir := viper.GetString("kubefirst.k1-dir")
+	k1GitopsDir := viper.GetString("kubefirst.k1-gitops-dir")
+	k1MetaphorDir := viper.GetString("kubefirst.k1-metaphor-dir")
+	k1ToolsDir := viper.GetString("kubefirst.k1-tools-dir")
+	kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
 	kubectlClientPath := viper.GetString("kubefirst.kubectl-client-path")
 	kubectlClientVersion := viper.GetString("kubefirst.kubectl-client-version")
+	kubefirstBotSSHPrivateKey := viper.GetString("kubefirst.bot.private-key")
 	localOs := viper.GetString("localhost.os")
 	localArchitecture := viper.GetString("localhost.architecture")
+	metaphorFrontendTemplateBranch := viper.GetString("template-repo.metaphor-frontend.branch")
+	metaphorFrontendTemplateURL := viper.GetString("template-repo.metaphor-frontend.url")
+	silentMode := false // todo deprecate this?
 	terraformClientVersion := viper.GetString("kubefirst.terraform-client-version")
-	k1ToolsDir := viper.GetString("kubefirst.k1-tools-dir")
-	silentMode := false
-	dryRun := false // todo deprecate this?
-	backupDir := fmt.Sprintf("%s/ssl/%s", k1Dir, domainName)
 
 	//* create ssl backup directories
+	backupDir := fmt.Sprintf("%s/ssl/%s", k1Dir, domainName)
+
 	if _, err := os.Stat(backupDir + "/certificates"); os.IsNotExist(err) {
 		// path/to/whatever does not exist
 		paths := []string{backupDir + "/certificates", backupDir + "/clusterissuers", backupDir + "/secrets"}
@@ -98,9 +96,10 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	//* generate public keys for ssh
 	publicKeys, err := ssh.NewPublicKeys("git", []byte(kubefirstBotSSHPrivateKey), "")
 	if err != nil {
-		log.Info().Msgf("generate publickeys failed: %s\n", err.Error())
+		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
 	}
 
 	//* emit cluster install started
