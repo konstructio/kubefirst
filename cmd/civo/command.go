@@ -36,15 +36,20 @@ func NewCommand() *cobra.Command {
 	civoCmd.SilenceUsage = true
 
 	// wire up new commands
-<<<<<<< HEAD
-	civoCmd.AddCommand(BackupSSL())
-	civoCmd.AddCommand(Create())
-	civoCmd.AddCommand(Destroy())
-=======
-	civoCmd.AddCommand(Create(), Destroy(), Quota())
->>>>>>> 712dbc6cba6c64c6a8e2ebb6dc4fddf64c5ab099
+	civoCmd.AddCommand(BackupSSL(), Create(), Destroy(), Quota())
 
 	return civoCmd
+}
+
+func BackupSSL() *cobra.Command {
+	backupSSLCmd := &cobra.Command{
+		Use:   "backup-ssl", // todo welcome feedback on this command name
+		Short: "backup the cluster resources related tls certificates",
+		Long:  "kubefirst uses a combination of external-dns, ingress-nginx, and cert-manager for the provisioning automated tls certificates for services with an ingress. this command will backup all the necessary resources to allow for a restore of the resources in a new cluster with the same domain name",
+		RunE:  backupCivoSSL,
+	}
+
+	return backupSSLCmd
 }
 
 func Create() *cobra.Command {
@@ -86,17 +91,6 @@ func Destroy() *cobra.Command {
 	}
 
 	return destroyCmd
-}
-
-func BackupSSL() *cobra.Command {
-	backupSSLCmd := &cobra.Command{
-		Use:   "backup-ssl", // todo welcome feedback on this command name
-		Short: "backup the cluster resources related tls certificates",
-		Long:  "kubefirst uses a combination of external-dns, ingress-nginx, and cert-manager for the provisioning automated tls certificates for services with an ingress. this command will backup all the necessary resources to allow for a restore of the resources in a new cluster with the same domain name",
-		RunE:  backupCivoSSL,
-	}
-
-	return backupSSLCmd
 }
 
 func Quota() *cobra.Command {
