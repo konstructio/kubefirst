@@ -56,7 +56,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	argocdLocalURL := viper.GetString("argocd.local.service")
 	domainName := viper.GetString("domain-name")
 	clusterName := viper.GetString("kubefirst.cluster-name")
-	k1Dir := viper.GetString("kubefirst.k1-dir")
 	clusterType := viper.GetString("kubefirst.cluster-type")
 	gitopsTemplateBranch := viper.GetString("template-repo.gitops.branch")
 	gitopsTemplateURL := viper.GetString("template-repo.gitops.url")
@@ -72,7 +71,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
 	helmClientPath := viper.GetString("kubefirst.helm-client-path")
 	helmClientVersion := viper.GetString("kubefirst.helm-client-version")
-	k1DirPath := viper.GetString("kubefirst.k1-dir")
+	k1Dir := viper.GetString("kubefirst.k1-dir")
 	kubectlClientPath := viper.GetString("kubefirst.kubectl-client-path")
 	kubectlClientVersion := viper.GetString("kubefirst.kubectl-client-version")
 	localOs := viper.GetString("localhost.os")
@@ -146,7 +145,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 		log.Info().Msg("gitops repository clone complete")
 
-		err = pkg.CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1DirPath, k1GitopsDir)
+		err = pkg.CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1Dir, k1GitopsDir)
 		if err != nil {
 			return err
 		}
@@ -231,7 +230,9 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			log.Print("error opening repo at:", k1MetaphorDir)
 		}
 
-		err = pkg.CivoGithubAdjustMetaphorTemplateContent(gitProvider, k1DirPath, k1MetaphorDir)
+		fmt.Println("metaphor repository clone complete")
+
+		err = pkg.CivoGithubAdjustMetaphorTemplateContent(gitProvider, k1Dir, k1MetaphorDir)
 		if err != nil {
 			return err
 		}
@@ -392,7 +393,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("argocd.registry.applied")
 	if !executionControl {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
-		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", k1DirPath, clusterName)
+		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", k1Dir, clusterName)
 		_, _, err := pkg.ExecShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
 		if err != nil {
 			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", registryYamlPath, err.Error())
