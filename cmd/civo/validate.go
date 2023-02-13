@@ -133,7 +133,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 
 	cloudProvider := "civo"
 	gitProvider := "github"
-	k1DirPath := fmt.Sprintf("%s/.k1", homePath)
+	k1Dir := fmt.Sprintf("%s/.k1", homePath)
 
 	// todo validate flags
 	viper.Set("admin-email", adminEmailFlag)
@@ -142,17 +142,17 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("vault.local.service", "http://localhost:8200")
 	viper.Set("cloud-provider", cloudProvider)
 	viper.Set("git-provider", gitProvider)
-	viper.Set("kubefirst.k1-dir", k1DirPath)
-	viper.Set("kubefirst.k1-tools-dir", fmt.Sprintf("%s/tools", k1DirPath))
-	viper.Set("kubefirst.k1-gitops-dir", fmt.Sprintf("%s/gitops", k1DirPath))
-	viper.Set("kubefirst.k1-metaphor-dir", fmt.Sprintf("%s/metaphor-frontend", k1DirPath))
-	viper.Set("kubefirst.helm-client-path", fmt.Sprintf("%s/tools/helm", k1DirPath))
+	viper.Set("kubefirst.k1-dir", k1Dir)
+	viper.Set("kubefirst.k1-tools-dir", fmt.Sprintf("%s/tools", k1Dir))
+	viper.Set("kubefirst.k1-gitops-dir", fmt.Sprintf("%s/gitops", k1Dir))
+	viper.Set("kubefirst.k1-metaphor-dir", fmt.Sprintf("%s/metaphor-frontend", k1Dir))
+	viper.Set("kubefirst.helm-client-path", fmt.Sprintf("%s/tools/helm", k1Dir))
 	viper.Set("kubefirst.helm-client-version", "v3.6.1")
-	viper.Set("kubefirst.kubeconfig-path", fmt.Sprintf("%s/kubeconfig", k1DirPath))
-	viper.Set("kubefirst.kubectl-client-path", fmt.Sprintf("%s/tools/kubectl", k1DirPath))
+	viper.Set("kubefirst.kubeconfig-path", fmt.Sprintf("%s/kubeconfig", k1Dir))
+	viper.Set("kubefirst.kubectl-client-path", fmt.Sprintf("%s/tools/kubectl", k1Dir))
 	viper.Set("kubefirst.kubectl-client-version", "v1.23.15") // todo make configs like this more discoverable in struct?
 	viper.Set("kubefirst.kubefirst-config-path", fmt.Sprintf("%s/%s", homePath, ".kubefirst"))
-	viper.Set("kubefirst.terraform-client-path", fmt.Sprintf("%s/tools/terraform", k1DirPath))
+	viper.Set("kubefirst.terraform-client-path", fmt.Sprintf("%s/tools/terraform", k1Dir))
 	viper.Set("kubefirst.terraform-client-version", "1.0.11")
 	viper.Set("localhost.os", runtime.GOOS)
 	viper.Set("localhost.architecture", runtime.GOARCH)
@@ -381,7 +381,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		// todo, is this a hangover from initial gitlab? do we need this?
 		log.Info().Msg("creating argocd-init-values.yaml for initial install")
 		//* ex: `git@github.com:kubefirst` this is allows argocd access to the github organization repositories
-		err = ssh.WriteGithubArgoCdInitValuesFile(githubOwnerRootGitURL, sshPrivateKey)
+		err = ssh.WriteGithubArgoCdInitValuesFile(githubOwnerRootGitURL, k1Dir, sshPrivateKey)
 		if err != nil {
 			return err
 		}
