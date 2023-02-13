@@ -216,6 +216,37 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created civo object storage credentials - continuing")
 	}
 
+	// domain id
+	domainId, err := civo.GetDNSInfo(domainNameFlag, cloudRegionFlag)
+	if err != nil {
+		log.Info().Msg(err.Error())
+	}
+
+	// viper values set in above function
+	log.Info().Msgf("domainId: %s", domainId)
+
+	//! tracker 3
+	// todo: this doesn't default to testing the dns check
+	skipDomainCheck := viper.GetBool("init.domaincheck.enabled")
+	if !skipDomainCheck {
+		domainLiveness := civo.TestDomainLiveness(false, domainNameFlag, domainId, cloudRegionFlag)
+		if !domainLiveness {
+			msg := "failed to check the liveness of the Domain. A valid public Domain on the same CIVO " +
+				"account as the one where Kubefirst will be installed is required for this operation to " +
+				"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct CIVO account and " +
+				"region.\n - Verify that you have the necessary permissions to access the domain.\n - Check " +
+				"that the domain is correctly configured and is a public domain\n - Check if the " +
+				"domain exists and has the correct name and domain.\n - If you don't have a Domain," +
+				"please follow these instructions to create one: " +
+				"https://www.civo.com/learn/configure-dns \n\n" +
+				"if you are still facing issues please reach out to support team for further assistance"
+			log.Error().Msg(msg)
+			return errors.New(msg)
+		}
+	} else {
+		log.Info().Msg("skipping domain check")
+	}
+
 	executionControl = viper.GetBool("kubefirst.state-store-bucket.complete")
 	if !executionControl {
 		accessKeyId := viper.GetString("civo.object-storage-creds.access-key-id")
