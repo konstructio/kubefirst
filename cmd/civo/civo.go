@@ -377,7 +377,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// 	vault.WaitVaultToBeRunning(dryRun, kubeconfigPath, kubectlClientPath)
 	// }
 	// todo fix this hack, but vault is unsealed by default in current state
-	log.Info().Msg("DEBUG -- sleeping to allow vault to start")
+	log.Info().Msg("sleeping to allow vault to start")
 	time.Sleep(time.Second * 30)
 	// todo, add a healthcheck here to see if this is when we return
 
@@ -395,7 +395,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		8200,
 		vaultStopChannel,
 	)
-	log.Info().Msg("DEBUG -- if this logged its good news")
 	//! todo need to pass in url values for connectivity
 	// k8s.LoopUntilPodIsReady(dryRun, kubeconfigPath, kubectlClientPath)
 	// todo fix this hack, but vault is unsealed by default in current state
@@ -453,22 +452,23 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created users with terraform")
 	}
 
-	log.Info().Msg("your kubefirst platform installation has completed!")
-	log.Info().Msg("visit ")
-	//!
-	//!
-	//!
-	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
-	pkg.InformUser("Welcome to civo kubefirst experience", silentMode)
-	pkg.InformUser("To use your cluster port-forward - argocd", silentMode)
-	pkg.InformUser("If not automatically injected, your kubeconfig is at:", silentMode)
-	pkg.InformUser("civo kubeconfig get "+clusterName, silentMode)
-	pkg.InformUser("Expose Argo-CD", silentMode)
-	pkg.InformUser("kubectl -n argocd port-forward svc/argocd-server 8080:80", silentMode)
-	pkg.InformUser("Argo User: "+viper.GetString("argocd.admin.username"), silentMode)
-	pkg.InformUser("Argo Password: "+viper.GetString("argocd.admin.password"), silentMode)
+	//* console port-forward
+	//! todo need to add the same health / readiness check to console as vault above
+	// consoleStopChannel := make(chan struct{}, 1)
+	// defer func() {
+	// 	close(consoleStopChannel)
+	// }()
+	// k8s.OpenPortForwardPodWrapper(
+	// 	kubeconfigPath,
+	// 	"kubefirst-console",
+	// 	"kubefirst",
+	// 	9094,
+	// 	8080,
+	// 	consoleStopChannel,
+	// )
 
-	log.Info().Msg("Starting the presentation of console and api for the handoff screen")
+	log.Info().Msg("kubefirst installation complete")
+	log.Info().Msg("welcome to your new kubefirst platform powered by Civo cloud")
 
 	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
 	if err != nil {
@@ -480,8 +480,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	reports.LocalHandoffScreen(dryRun, silentMode)
-
-	log.Info().Msgf("Kubefirst Console available at: %s", pkg.KubefirstConsoleLocalURLCloud)
 
 	if useTelemetryFlag {
 		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallCompleted, cloudProvider, gitProvider); err != nil {
