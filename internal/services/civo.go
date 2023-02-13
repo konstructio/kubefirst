@@ -14,7 +14,7 @@ type CivoService struct {
 }
 
 type CivoCluster struct {
-	Name string `json:name`
+	Name string `json:"name"`
 }
 
 type CivoClusterList struct {

@@ -45,6 +45,19 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// https://github.com/cli/cli/blob/trunk/internal/authflow/flow.go#L37
 	// to do consider if we can credit github on theirs
 
+	// Check quotas
+	quotaMessage, quotaFailures, quotaWarnings, err := returnCivoQuotaEvaluation(false)
+	if err != nil {
+		return err
+	}
+	switch {
+	case quotaFailures > 0:
+		fmt.Println(reports.StyleMessage(quotaMessage))
+		return errors.New("At least one of your Civo quotas is close to its limit. Please check the error message above for additional details.")
+	case quotaWarnings > 0:
+		fmt.Println(reports.StyleMessage(quotaMessage))
+	}
+
 	printConfirmationScreen()
 	log.Info().Msg("proceeding with cluster create")
 
