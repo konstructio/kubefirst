@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1DirPath, gitopsRepoPath string) error {
+func CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1Dir, gitopsRepoPath string) error {
 
 	// remove the unstructured driver content
 	os.RemoveAll(gitopsRepoPath + "/components")
@@ -55,7 +55,7 @@ func CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterTy
 
 	//* copy gitops/argo-workflows/* $HOME/.k1/argo-workflows
 	ciFolderContent := fmt.Sprintf("%s/argo-workflows", gitopsRepoPath)
-	err = cp.Copy(ciFolderContent, fmt.Sprintf("%s/argo-workflows", k1DirPath), opt)
+	err = cp.Copy(ciFolderContent, fmt.Sprintf("%s/argo-workflows", k1Dir), opt)
 	if err != nil {
 		log.Info().Msgf("Error populating gitops repository with %s setup: %s", fmt.Sprintf("%s/%s-%s/%s-cluster-template", gitopsRepoPath, cloudProvider, gitProvider, clusterType), err)
 		return err
@@ -68,7 +68,7 @@ func CivoGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterTy
 	return nil
 }
 
-func CivoGithubAdjustMetaphorTemplateContent(gitProvider, k1DirPath, metaphorRepoPath string) error {
+func CivoGithubAdjustMetaphorTemplateContent(gitProvider, k1Dir, metaphorRepoPath string) error {
 
 	// remove the unstructured driver content
 	os.RemoveAll(metaphorRepoPath + "/.argo")
@@ -90,7 +90,7 @@ func CivoGithubAdjustMetaphorTemplateContent(gitProvider, k1DirPath, metaphorRep
 	}
 
 	//* copy $HOME/.k1/argo-workflows/.github/* $HOME/.k1/metaphor-frontend/.github
-	githubActionsFolderContent := fmt.Sprintf("%s/argo-workflows/.github", k1DirPath)
+	githubActionsFolderContent := fmt.Sprintf("%s/argo-workflows/.github", k1Dir)
 	err := cp.Copy(githubActionsFolderContent, fmt.Sprintf("%s/.github", metaphorRepoPath), opt)
 	if err != nil {
 		log.Info().Msgf("error populating metaphor repository with %s: %s", githubActionsFolderContent, err)
@@ -98,7 +98,7 @@ func CivoGithubAdjustMetaphorTemplateContent(gitProvider, k1DirPath, metaphorRep
 	}
 
 	//* copy $HOME/.k1/argo-workflows/.argo/* $HOME/.k1/metaphor-frontend/.argo
-	argoWorkflowsFolderContent := fmt.Sprintf("%s/argo-workflows/.argo", k1DirPath)
+	argoWorkflowsFolderContent := fmt.Sprintf("%s/argo-workflows/.argo", k1Dir)
 	err = cp.Copy(argoWorkflowsFolderContent, fmt.Sprintf("%s/.argo", metaphorRepoPath), opt)
 	if err != nil {
 		log.Info().Msgf("error populating metaphor repository with %s: %s", argoWorkflowsFolderContent, err)

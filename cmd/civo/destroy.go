@@ -25,8 +25,8 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 
 	config := configs.GetCivoConfig()
 	clusterName := viper.GetString("kubefirst.cluster-name")
-	k1DirPath := viper.GetString("kubefirst.k1-dir")
-	registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", clusterName, k1DirPath)
+	k1Dir := viper.GetString("kubefirst.k1-dir")
+	registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", clusterName, k1Dir)
 
 	githubToken := config.GithubToken
 	civoToken := config.CivoToken
