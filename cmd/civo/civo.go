@@ -471,20 +471,35 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created users with terraform")
 	}
 
+	// Wait for console Deployment Pods to transition to Running
+	consoleDeployment, err := k8s.ReturnDeploymentObject(
+		kubeconfigPath,
+		"app.kubernetes.io/instance",
+		"kubefirst-console",
+		"kubefirst",
+		60,
+	)
+	if err != nil {
+		log.Info().Msgf("Error finding console Deployment: %s", err)
+	}
+	_, err = k8s.WaitForDeploymentReady(kubeconfigPath, consoleDeployment, 120)
+	if err != nil {
+		log.Info().Msgf("Error waiting for console Deployment ready state: %s", err)
+	}
+
 	//* console port-forward
-	//! todo need to add the same health / readiness check to console as vault above
-	// consoleStopChannel := make(chan struct{}, 1)
-	// defer func() {
-	// 	close(consoleStopChannel)
-	// }()
-	// k8s.OpenPortForwardPodWrapper(
-	// 	kubeconfigPath,
-	// 	"kubefirst-console",
-	// 	"kubefirst",
-	// 	9094,
-	// 	8080,
-	// 	consoleStopChannel,
-	// )
+	consoleStopChannel := make(chan struct{}, 1)
+	defer func() {
+		close(consoleStopChannel)
+	}()
+	k8s.OpenPortForwardPodWrapper(
+		kubeconfigPath,
+		"kubefirst-console",
+		"kubefirst",
+		8080,
+		9094,
+		consoleStopChannel,
+	)
 
 	log.Info().Msg("kubefirst installation complete")
 	log.Info().Msg("welcome to your new kubefirst platform powered by Civo cloud")

@@ -12,6 +12,53 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// ReturnDeploymentObject returns a matching appsv1.Deployment object based on the filters
+func ReturnDeploymentObject(kubeConfigPath string, matchLabel string, matchLabelValue string, namespace string, timeoutSeconds float64) (*appsv1.Deployment, error) {
+	clientset, err := GetClientSet(false, kubeConfigPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter
+	deploymentListOptions := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", matchLabel, matchLabelValue),
+	}
+
+	// Create watch operation
+	objWatch, err := clientset.
+		AppsV1().
+		Deployments(namespace).
+		Watch(context.Background(), deploymentListOptions)
+	if err != nil {
+		log.Fatal().Msgf("Error when attempting to search for Deployment: %s", err)
+	}
+	log.Info().Msgf("Waiting for %s Deployment to be created.", matchLabelValue)
+
+	objChan := objWatch.ResultChan()
+	for {
+		select {
+		case event, ok := <-objChan:
+			time.Sleep(time.Second * 1)
+			if !ok {
+				// Error if the channel closes
+				log.Fatal().Msgf("Error waiting for %s Deployment to be created: %s", matchLabelValue, err)
+			}
+			if event.
+				Object.(*appsv1.Deployment).Status.Replicas > 0 {
+				spec, err := clientset.AppsV1().Deployments(namespace).List(context.Background(), deploymentListOptions)
+				if err != nil {
+					log.Fatal().Msgf("Error when searching for Deployment: %s", err)
+					return nil, err
+				}
+				return &spec.Items[0], nil
+			}
+		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
+			log.Error().Msg("The Deployment was not created within the timeout period.")
+			return nil, errors.New("The Deployment was not created within the timeout period.")
+		}
+	}
+}
+
 // ReturnPodObject returns a matching v1.Pod object based on the filters
 func ReturnPodObject(kubeConfigPath string, matchLabel string, matchLabelValue string, namespace string, timeoutSeconds float64) (*v1.Pod, error) {
 	clientset, err := GetClientSet(false, kubeConfigPath)
@@ -111,6 +158,52 @@ func ReturnStatefulSetObject(kubeConfigPath string, matchLabel string, matchLabe
 		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
 			log.Error().Msg("The StatefulSet was not created within the timeout period.")
 			return nil, errors.New("The StatefulSet was not created within the timeout period.")
+		}
+	}
+}
+
+// WaitForDeploymentReady waits for a target Deployment to become ready
+func WaitForDeploymentReady(kubeConfigPath string, deployment *appsv1.Deployment, timeoutSeconds int64) (bool, error) {
+	clientset, err := GetClientSet(false, kubeConfigPath)
+	if err != nil {
+		return false, err
+	}
+
+	// Format list for metav1.ListOptions for watch
+	configuredReplicas := deployment.Status.Replicas
+	watchOptions := metav1.ListOptions{
+		FieldSelector: fmt.Sprintf(
+			"metadata.name=%s", deployment.Name),
+	}
+
+	// Create watch operation
+	objWatch, err := clientset.
+		AppsV1().
+		Deployments(deployment.ObjectMeta.Namespace).
+		Watch(context.Background(), watchOptions)
+	if err != nil {
+		log.Fatal().Msgf("Error when attempting to wait for Deployment: %s", err)
+	}
+	log.Info().Msgf("Waiting for %s Deployment to be ready. This could take up to %v seconds.", deployment.Name, timeoutSeconds)
+
+	objChan := objWatch.ResultChan()
+	for {
+		select {
+		case event, ok := <-objChan:
+			time.Sleep(time.Second * 1)
+			if !ok {
+				// Error if the channel closes
+				log.Fatal().Msgf("Error waiting for Deployment: %s", err)
+			}
+			if event.
+				Object.(*appsv1.Deployment).
+				Status.ReadyReplicas == configuredReplicas {
+				log.Info().Msgf("All Pods in Deployment %s are ready.", deployment.Name)
+				return true, nil
+			}
+		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
+			log.Error().Msg("The Deployment was not ready within the timeout period.")
+			return false, errors.New("The Deployment was not ready within the timeout period.")
 		}
 	}
 }
