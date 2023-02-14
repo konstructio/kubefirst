@@ -329,14 +329,20 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	//* argocd pods are running
-	// todo improve this check, also return an error so we can have an exit on failure
-	executionControl = viper.GetBool("argocd.ready")
-	if !executionControl {
-		argocd.WaitArgoCDToBeReady(dryRun, kubeconfigPath, kubectlClientPath)
-		pkg.InformUser("ArgoCD is running, continuing", silentMode)
-	} else {
-		log.Info().Msg("already waited for argocd to be ready")
+	// Wait for ArgoCD StatefulSet Pods to transition to Running
+	argoCDStatefulSet, err := k8s.ReturnStatefulSetObject(
+		kubeconfigPath,
+		"app.kubernetes.io/part-of",
+		"argocd",
+		"argocd",
+		60,
+	)
+	if err != nil {
+		log.Info().Msgf("Error finding ArgoCD StatefulSet: %s", err)
+	}
+	_, err = k8s.WaitForStatefulSetReady(kubeconfigPath, argoCDStatefulSet, 90)
+	if err != nil {
+		log.Info().Msgf("Error waiting for ArgoCD StatefulSet ready state: %s", err)
 	}
 
 	//* ArgoCD port-forward
@@ -383,11 +389,17 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// Wait for Vault StatefulSet Pods to transition to Running
-	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(configs.GetCivoConfig().KubeConfigPath, "vault", "vault", 60)
+	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
+		kubeconfigPath,
+		"app.kubernetes.io/instance",
+		"vault",
+		"vault",
+		60,
+	)
 	if err != nil {
 		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(configs.GetCivoConfig().KubeConfigPath, vaultStatefulSet, 60)
+	_, err = k8s.WaitForStatefulSetReady(kubeconfigPath, vaultStatefulSet, 60)
 	if err != nil {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
