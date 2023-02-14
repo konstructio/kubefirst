@@ -382,17 +382,15 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// vault in running state
-	// this condition doesnt work for civo,
-	// executionControl = viper.GetBool("vault.status.running")
-	// if !executionControl {
-	// 	pkg.InformUser("Waiting for vault to be ready", silentMode)
-	// 	vault.WaitVaultToBeRunning(dryRun, kubeconfigPath, kubectlClientPath)
-	// }
-	// todo fix this hack, but vault is unsealed by default in current state
-	log.Info().Msg("sleeping to allow vault to start")
-	time.Sleep(time.Second * 30)
-	// todo, add a healthcheck here to see if this is when we return
+	// Wait for Vault StatefulSet Pods to transition to Running
+	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(configs.GetCivoConfig().KubeConfigPath, "vault", "vault", 60)
+	if err != nil {
+		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
+	}
+	_, err = k8s.WaitForStatefulSetReady(configs.GetCivoConfig().KubeConfigPath, vaultStatefulSet, 60)
+	if err != nil {
+		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
+	}
 
 	log.Info().Msg("DEBUG -- hit port forward to vault")
 	//* vault port-forward
@@ -408,10 +406,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		8200,
 		vaultStopChannel,
 	)
-	//! todo need to pass in url values for connectivity
-	// k8s.LoopUntilPodIsReady(dryRun, kubeconfigPath, kubectlClientPath)
-	// todo fix this hack, but vault is unsealed by default in current state
-	time.Sleep(time.Second * 15)
 
 	//* configure vault with terraform
 	executionControl = viper.GetBool("terraform.vault.apply.complete")
