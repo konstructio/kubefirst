@@ -328,7 +328,7 @@ func Restore(backupDir, domainName, kubeconfigPath string) error {
 		// file is named with convention $namespace-$secretName.yaml
 		//  todo link to backup source code
 		namespace := strings.Split(secret.Name(), "-")[0]
-		log.Info().Msg("creating secret" + secret.Name())
+		log.Info().Msg("creating secret: " + secret.Name())
 
 		f, err := os.ReadFile(backupDir + "/secrets/" + secret.Name())
 		if err != nil {
