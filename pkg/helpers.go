@@ -285,7 +285,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		}
 
 		if cloud == CloudK3d {
-			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
+			newContents = strings.Replace(newContents, "<CLOUD_PROVIDER>", cloud, -1)
 			//!
 			//! todo this definitely breaks something below
 			//!
@@ -327,7 +327,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			//! todo this definitely breaks something ^^
 			//!
 		} else {
-			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
+			newContents = strings.Replace(newContents, "<CLOUD_PROVIDER>", cloud, -1)
 			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", fmt.Sprintf("https://argo.%s", hostedZoneName), -1)
 			newContents = strings.Replace(newContents, "<VAULT_URL>", fmt.Sprintf("https://vault.%s", hostedZoneName), -1)
 			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", fmt.Sprintf("https://argocd.%s", hostedZoneName), -1)
