@@ -42,7 +42,7 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
 	}
 	_, err = clientset.CoreV1().Secrets("external-dns").Create(context.TODO(), civoSecret, metav1.CreateOptions{})
 	if err != nil {
-		log.Info().Msgf("Error:", err)
+		log.Info().Msgf("Error: %s", err)
 		return errors.New("error creating kubernetes secret: external-dns/civo-creds")
 	}
 
@@ -57,7 +57,7 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
 	_, err = clientset.CoreV1().Secrets("external-secrets-operator").Create(context.TODO(), externalSecretOperatorSecret, metav1.CreateOptions{})
 
 	if err != nil {
-		log.Info().Msgf("Error:", err)
+		log.Info().Msgf("Error: %s", err)
 		return errors.New("error creating kubernetes secret: external-secrets-operator/vault-token")
 	}
 	log.Info().Msg("created secret: external-secrets-operator/vault-token")
