@@ -18,7 +18,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 // validateCivo is responsible for gathering all of the information required to execute a kubefirst civo cloud creation with github (currently)
@@ -200,7 +200,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 
 		if civoToken == "" {
 			fmt.Println("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security to retrieve your token\nand enter it here, then press Enter:")
-			civoToken, err := terminal.ReadPassword(0)
+			civoToken, err := term.ReadPassword(0)
 			if err != nil {
 				return errors.New("error reading password input from user")
 			}

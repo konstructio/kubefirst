@@ -824,3 +824,48 @@ func FindStringInSlice(s []string, str string) bool {
 
 	return false
 }
+
+func ResetK1Dir(k1Dir, kubefirstFilePath string) error {
+	//* directories
+	err := os.RemoveAll(k1Dir + "/argo-workflows")
+	if err != nil {
+		return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/argo-workflows", err)
+	}
+	err = os.RemoveAll(k1Dir + "/gitops")
+	if err != nil {
+		return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/gitops", err)
+	}
+	err = os.RemoveAll(k1Dir + "/metaphor-frontend")
+	if err != nil {
+		return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/metaphor-frontend", err)
+	}
+
+	// todo look at logic to not re-download
+	err = os.RemoveAll(k1Dir + "/tools")
+	if err != nil {
+		return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/tools", err)
+	}
+
+	//* files
+	err = os.Remove(k1Dir + "/argocd-init-values.yaml")
+	if err != nil {
+		return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/argocd-init-values.yaml", err)
+	}
+	err = os.Remove(kubefirstFilePath)
+	if err != nil {
+		return fmt.Errorf("unable to delete `$HOME/.kubefirst`, error: %s", err)
+	}
+
+	// re-create .kubefirst file
+	kubefirstFile, err := os.Create(kubefirstFilePath)
+	if err != nil {
+		return fmt.Errorf("unable to create `$HOME/.kubefirst`: %v", err)
+	}
+	err = kubefirstFile.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}

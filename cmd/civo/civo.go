@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"strings"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -32,7 +34,6 @@ import (
 
 func runCivo(cmd *cobra.Command, args []string) error {
 
-	// config := configs.GetCivoConfig()
 	log.Info().Msg("runCivo command is starting ")
 	// var userInput string
 	// printConfirmationScreen()
@@ -61,36 +62,37 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	printConfirmationScreen()
 	log.Info().Msg("proceeding with cluster create")
 
-	//! viper config variables
-	//! should varFlag variations be used in here?
 	argocdLocalURL := viper.GetString("argocd.local.service")
-	civoDnsName := viper.GetString("domain-name")
+	cloudProvider := viper.GetString("cloud-provider")
 	clusterName := viper.GetString("kubefirst.cluster-name")
 	clusterType := viper.GetString("kubefirst.cluster-type")
-	gitopsTemplateBranch := viper.GetString("template-repo.gitops.branch")
-	gitopsTemplateURL := viper.GetString("template-repo.gitops.url")
-	metaphorFrontendTemplateBranch := viper.GetString("template-repo.metaphor-frontend.branch")
-	metaphorFrontendTemplateURL := viper.GetString("template-repo.metaphor-frontend.url")
-	k1MetaphorDir := viper.GetString("kubefirst.k1-metaphor-dir")
-	cloudProvider := viper.GetString("cloud-provider")
 	destinationGitopsRepoURL := viper.GetString("github.repo.gitops.giturl")
 	destinationMetaphorFrontendRepoURL := viper.GetString("github.repo.metaphor-frontend.giturl")
+	domainName := viper.GetString("domain-name")
+	dryRun := false // todo deprecate this?
+	gitopsTemplateBranch := viper.GetString("template-repo.gitops.branch")
+	gitopsTemplateURL := viper.GetString("template-repo.gitops.url")
 	gitProvider := viper.GetString("git-provider")
-	kubefirstBotSSHPrivateKey := viper.GetString("kubefirst.bot.private-key")
-	k1GitopsDir := viper.GetString("kubefirst.k1-gitops-dir")
-	kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
 	helmClientPath := viper.GetString("kubefirst.helm-client-path")
 	helmClientVersion := viper.GetString("kubefirst.helm-client-version")
 	k1Dir := viper.GetString("kubefirst.k1-dir")
+	k1GitopsDir := viper.GetString("kubefirst.k1-gitops-dir")
+	k1MetaphorDir := viper.GetString("kubefirst.k1-metaphor-dir")
+	k1ToolsDir := viper.GetString("kubefirst.k1-tools-dir")
+	kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
 	kubectlClientPath := viper.GetString("kubefirst.kubectl-client-path")
 	kubectlClientVersion := viper.GetString("kubefirst.kubectl-client-version")
+	kubefirstBotSSHPrivateKey := viper.GetString("kubefirst.bot.private-key")
 	localOs := viper.GetString("localhost.os")
 	localArchitecture := viper.GetString("localhost.architecture")
+	metaphorFrontendTemplateBranch := viper.GetString("template-repo.metaphor-frontend.branch")
+	metaphorFrontendTemplateURL := viper.GetString("template-repo.metaphor-frontend.url")
+	silentMode := false // todo deprecate this?
 	terraformClientVersion := viper.GetString("kubefirst.terraform-client-version")
-	k1ToolsDir := viper.GetString("kubefirst.k1-tools-dir")
-	silentMode := false
-	dryRun := false // todo deprecate this?
 
+	backupDir := fmt.Sprintf("%s/ssl/%s", k1Dir, domainName)
+
+	//* generate public keys for ssh
 	if useTelemetryFlag {
 		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, cloudProvider, gitProvider); err != nil {
 			log.Info().Msg(err.Error())
@@ -100,12 +102,12 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 	publicKeys, err := ssh.NewPublicKeys("git", []byte(kubefirstBotSSHPrivateKey), "")
 	if err != nil {
-		log.Info().Msgf("generate publickeys failed: %s\n", err.Error())
+		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
 	}
 
 	//* emit cluster install started
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(civoDnsName, pkg.MetricMgmtClusterInstallStarted, cloudProvider, gitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(domainName, pkg.MetricMgmtClusterInstallStarted, cloudProvider, gitProvider); err != nil {
 			log.Info().Msg(err.Error())
 		}
 	}
@@ -304,6 +306,24 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already added secrets to civo cluster")
 	}
 
+	//* check for ssl restore
+	log.Info().Msg("checking for tls secrets to restore")
+	secretsFilesToRestore, err := ioutil.ReadDir(backupDir + "/secrets")
+	if err != nil {
+		return err
+	}
+	if len(secretsFilesToRestore) != 0 {
+		// todo would like these but requires CRD's and is not currently supported
+		// add crds ( use execShellReturnErrors? )
+		// https://raw.githubusercontent.com/cert-manager/cert-manager/v1.11.0/deploy/crds/crd-clusterissuers.yaml
+		// https://raw.githubusercontent.com/cert-manager/cert-manager/v1.11.0/deploy/crds/crd-certificates.yaml
+		// add certificates, and clusterissuers
+		log.Info().Msgf("found %d tls secrets to restore", len(secretsFilesToRestore))
+		ssl.Restore(backupDir, domainName, kubeconfigPath)
+	} else {
+		log.Info().Msg("no files found in secrets directory, continuing")
+	}
+
 	//* helm add argo repository && update
 	helmRepo := helm.HelmRepo{
 		RepoName:     "argo",
@@ -313,6 +333,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		ChartVersion: "4.10.5",
 	}
 
+	//* helm add repo and update
 	executionControl = viper.GetBool("argocd.helm.repo.updated")
 	if !executionControl {
 		pkg.InformUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), silentMode)
@@ -360,7 +381,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	)
 	pkg.InformUser(fmt.Sprintf("port-forward to argocd is available at %s", argocdLocalURL), silentMode)
 
-	// argocd pods are ready, get and set credentials
+	//* argocd pods are ready, get and set credentials
 	executionControl = viper.GetBool("argocd.credentials.set")
 	if !executionControl {
 		pkg.InformUser("Setting argocd username and password credentials", silentMode)
@@ -376,7 +397,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 
-	// argocd sync registry and start sync waves
+	//* argocd sync registry and start sync waves
 	executionControl = viper.GetBool("argocd.registry.applied")
 	if !executionControl {
 		pkg.InformUser("applying the registry application to argocd", silentMode)
