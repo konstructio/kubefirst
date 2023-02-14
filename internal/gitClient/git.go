@@ -101,7 +101,7 @@ func SetRefToMainBranch(repo *git.Repository) (*git.Repository, error) {
 	return repo, nil
 }
 
-//! deprecated
+// ! deprecated
 func CloneLocalRepo(repoPath string) (*git.Repository, error) {
 	repo, err := git.PlainOpen(repoPath)
 	if err != nil {
@@ -192,7 +192,7 @@ func PushChanges(repo *git.Repository, remoteName string, gitHubToken string) er
 		},
 	})
 	if err != nil {
-		log.Info().Msgf("Error creating remote %s at: %s - %s", remoteName, err)
+		log.Info().Msgf("Error creating remote %s at: %s", remoteName, err)
 		return err
 	}
 	return nil
@@ -206,13 +206,13 @@ func AddRemote(newGitRemoteURL, remoteName string, repo *git.Repository) error {
 		URLs: []string{newGitRemoteURL},
 	})
 	if err != nil {
-		log.Info().Msgf("Error creating remote %s at: %s - %s", remoteName, newGitRemoteURL)
+		log.Info().Msgf("Error creating remote %s at: %s", remoteName, newGitRemoteURL)
 		return err
 	}
 	return nil
 }
 
-//! deprecated
+// ! deprecated
 // CloneRepoAndDetokenizeTemplate - clone repo using CloneRepoAndDetokenizeTemplate that uses fallback rule to try to capture version
 func CloneRepoAndDetokenizeTemplate(githubOwner, repoName, folderName string, branch string, tag string) (string, error) {
 	config := configs.ReadConfig()
@@ -315,7 +315,7 @@ func PopulateRepoWithToken(owner string, repo string, sourceFolder string, gitHo
 	return nil
 }
 
-//! deprecated
+// ! deprecated
 func CloneGitOpsRepo() {
 
 	config := configs.ReadConfig()
@@ -360,14 +360,14 @@ func Commit(repo *git.Repository, commitMsg string) error {
 	log.Printf(commitMsg)
 	status, err := w.Status()
 	if err != nil {
-		log.Info().Msgf("error getting worktree status", err)
+		log.Info().Msgf("error getting worktree status: %s", err)
 		return err
 	}
 
 	for file, _ := range status {
 		_, err = w.Add(file)
 		if err != nil {
-			log.Info().Msgf("error getting worktree status", err)
+			log.Info().Msgf("error getting worktree status: %s", err)
 			return err
 		}
 	}
@@ -687,7 +687,7 @@ func UpdateLocalTerraformFilesAndPush(githubHost, githubOwner, k1Dir, localRepo,
 	return nil
 }
 
-//! deprecated
+// ! deprecated
 // CloneBranch clone a branch and returns a pointer to git.Repository
 func CloneBranch(branch, repoLocalPath, repoURL string) (*git.Repository, error) {
 
@@ -703,7 +703,7 @@ func CloneBranch(branch, repoLocalPath, repoURL string) (*git.Repository, error)
 	return repo, nil
 }
 
-//! deprecated
+// ! deprecated
 // CloneBranchSetMain clone a branch and returns a pointer to git.Repository
 func CloneBranchSetMain(branch, repoURL, repoLocalPath string) (*git.Repository, error) {
 
@@ -727,7 +727,7 @@ func CloneBranchSetMain(branch, repoURL, repoLocalPath string) (*git.Repository,
 	return repo, nil
 }
 
-//! deprecated
+// ! deprecated
 // CloneTag clone a repository using a tag value, and returns a pointer to *git.Repository
 func CloneTag(githubOrg, repoLocalPath, repoName, tag string) (*git.Repository, error) {
 
@@ -749,7 +749,7 @@ func CloneTag(githubOrg, repoLocalPath, repoName, tag string) (*git.Repository, 
 	return repo, nil
 }
 
-//! deprecated
+// ! deprecated
 // CloneTagSetMain  CloneTag plus fixes branch to be main
 func CloneTagSetMain(repoLocalPath string, githubOrg string, repoName string, tag string) (*git.Repository, error) {
 
@@ -767,7 +767,7 @@ func CloneTagSetMain(repoLocalPath string, githubOrg string, repoName string, ta
 	return repo, nil
 }
 
-//! deprecated
+// ! deprecated
 // SetToMainBranch point branch or tag to main
 func SetToMainBranch(repo *git.Repository) (*git.Repository, error) {
 	w, _ := repo.Worktree()
@@ -790,7 +790,7 @@ func SetToMainBranch(repo *git.Repository) (*git.Repository, error) {
 	return repo, nil
 }
 
-//! deprecated
+// ! deprecated
 // CheckoutTag repository checkout based on a tag
 func CheckoutTag(repo *git.Repository, tag string) error {
 
@@ -809,7 +809,7 @@ func CheckoutTag(repo *git.Repository, tag string) error {
 	return nil
 }
 
-//! deprecated
+// ! deprecated
 // CreateGitHubRemote create a remote repository entry
 func CreateGitHubRemote(gitOpsLocalRepoPath string, gitHubUser string, repoName string) error {
 
