@@ -350,14 +350,20 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	//* argocd pods are running
-	// todo improve this check, also return an error so we can have an exit on failure
-	executionControl = viper.GetBool("argocd.ready")
-	if !executionControl {
-		argocd.WaitArgoCDToBeReady(dryRun, kubeconfigPath, kubectlClientPath)
-		pkg.InformUser("ArgoCD is running, continuing", silentMode)
-	} else {
-		log.Info().Msg("already waited for argocd to be ready")
+	// Wait for ArgoCD StatefulSet Pods to transition to Running
+	argoCDStatefulSet, err := k8s.ReturnStatefulSetObject(
+		kubeconfigPath,
+		"app.kubernetes.io/part-of",
+		"argocd",
+		"argocd",
+		60,
+	)
+	if err != nil {
+		log.Info().Msgf("Error finding ArgoCD StatefulSet: %s", err)
+	}
+	_, err = k8s.WaitForStatefulSetReady(kubeconfigPath, argoCDStatefulSet, 90)
+	if err != nil {
+		log.Info().Msgf("Error waiting for ArgoCD StatefulSet ready state: %s", err)
 	}
 
 	//* ArgoCD port-forward
@@ -403,17 +409,21 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	//* vault in running state
-	// this condition doesnt work for civo,
-	// executionControl = viper.GetBool("vault.status.running")
-	// if !executionControl {
-	// 	pkg.InformUser("Waiting for vault to be ready", silentMode)
-	// 	vault.WaitVaultToBeRunning(dryRun, kubeconfigPath, kubectlClientPath)
-	// }
-	// todo fix this hack, but vault is unsealed by default in current state
-	log.Info().Msg("waiting for vault pods to be running")
-	time.Sleep(time.Second * 30)
-	// todo, add a healthcheck here to see if this is when we return
+	// Wait for Vault StatefulSet Pods to transition to Running
+	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
+		kubeconfigPath,
+		"app.kubernetes.io/instance",
+		"vault",
+		"vault",
+		60,
+	)
+	if err != nil {
+		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
+	}
+	_, err = k8s.WaitForStatefulSetReady(kubeconfigPath, vaultStatefulSet, 60)
+	if err != nil {
+		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
+	}
 
 	log.Info().Msg("DEBUG -- hit port forward to vault")
 	//* vault port-forward
@@ -429,11 +439,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		8200,
 		vaultStopChannel,
 	)
-	//! todo need to pass in url values for connectivity
-	// k8s.LoopUntilPodIsReady(dryRun, kubeconfigPath, kubectlClientPath)
-	// todo fix this hack, but vault is unsealed by default in current state
-	log.Info().Msg("port forward to vault complete")
-	time.Sleep(time.Second * 15)
 
 	//* configure vault with terraform
 	executionControl = viper.GetBool("terraform.vault.apply.complete")
@@ -487,20 +492,35 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created users with terraform")
 	}
 
+	// Wait for console Deployment Pods to transition to Running
+	consoleDeployment, err := k8s.ReturnDeploymentObject(
+		kubeconfigPath,
+		"app.kubernetes.io/instance",
+		"kubefirst-console",
+		"kubefirst",
+		60,
+	)
+	if err != nil {
+		log.Info().Msgf("Error finding console Deployment: %s", err)
+	}
+	_, err = k8s.WaitForDeploymentReady(kubeconfigPath, consoleDeployment, 120)
+	if err != nil {
+		log.Info().Msgf("Error waiting for console Deployment ready state: %s", err)
+	}
+
 	//* console port-forward
-	//! todo need to add the same health / readiness check to console as vault above
-	// consoleStopChannel := make(chan struct{}, 1)
-	// defer func() {
-	// 	close(consoleStopChannel)
-	// }()
-	// k8s.OpenPortForwardPodWrapper(
-	// 	kubeconfigPath,
-	// 	"kubefirst-console",
-	// 	"kubefirst",
-	// 	9094,
-	// 	8080,
-	// 	consoleStopChannel,
-	// )
+	consoleStopChannel := make(chan struct{}, 1)
+	defer func() {
+		close(consoleStopChannel)
+	}()
+	k8s.OpenPortForwardPodWrapper(
+		kubeconfigPath,
+		"kubefirst-console",
+		"kubefirst",
+		8080,
+		9094,
+		consoleStopChannel,
+	)
 
 	log.Info().Msg("kubefirst installation complete")
 	log.Info().Msg("welcome to your new kubefirst platform powered by Civo cloud")
