@@ -28,7 +28,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	githubOwner := viper.GetString("github.owner")
 	k1Dir := viper.GetString("kubefirst.k1-dir")
 	k1GitopsDir := viper.GetString("kubefirst.k1-gitops-dir")
-	kubefirstConfigPath := viper.GetString("kubefirst-config-path")
+	kubefirstConfigPath := viper.GetString("kubefirst.kubefirst-config-path")
 	registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", clusterName, k1Dir)
 
 	// todo improve these checks, make them standard for
@@ -42,7 +42,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		return errors.New("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set the environment variable")
 	}
 
-	if viper.GetBool("terraform.github.apply.complete") || viper.GetBool("terraform.github.destroy.complete") {
+	if viper.GetBool("terraform.github.apply.complete") {
 		log.Info().Msg("destroying github resources with terraform")
 
 		tfEntrypoint := k1GitopsDir + "/terraform/github"
@@ -60,7 +60,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("github resources terraform destroyed")
 	}
 
-	if viper.GetBool("terraform.civo.apply.complete") || !viper.GetBool("terraform.civo.destroy.complete") {
+	if viper.GetBool("terraform.civo.apply.complete") {
 		log.Info().Msg("destroying civo resources with terraform")
 
 		clusterName := viper.GetString("kubefirst.cluster-name")

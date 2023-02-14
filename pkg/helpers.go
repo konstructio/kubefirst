@@ -840,6 +840,12 @@ func ResetK1Dir(k1Dir, kubefirstFilePath string) error {
 		return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/metaphor-frontend", err)
 	}
 
+	// todo look at logic to not re-download
+	err = os.RemoveAll(k1Dir + "/tools")
+	if err != nil {
+		return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/tools", err)
+	}
+
 	//* files
 	err = os.Remove(k1Dir + "/argocd-init-values.yaml")
 	if err != nil {
