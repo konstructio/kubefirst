@@ -310,7 +310,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("checking for tls secrets to restore")
 	secretsFilesToRestore, err := ioutil.ReadDir(backupDir + "/secrets")
 	if err != nil {
-		return err
+		log.Info().Msgf("%s", err)
 	}
 	if len(secretsFilesToRestore) != 0 {
 		// todo would like these but requires CRD's and is not currently supported
