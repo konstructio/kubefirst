@@ -229,7 +229,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("generating your new metaphor-frontend repository", silentMode)
 		metaphorRepo, err := gitClient.CloneRefSetMain(metaphorFrontendTemplateBranch, k1MetaphorDir, metaphorFrontendTemplateURL)
 		if err != nil {
-			log.Info().Msgf("error opening repo at:", k1MetaphorDir)
+			log.Info().Msgf("error opening repo at: %s", k1MetaphorDir)
 		}
 
 		log.Info().Msg("metaphor repository clone complete")
