@@ -153,7 +153,7 @@ func ReadConfig() *Config {
 	config.K3dPath = fmt.Sprintf("%s/k3d", config.K1ToolsPath)
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.NgrokVersion = "v3"
-	config.TerraformVersion = "1.0.11"
+	config.TerraformVersion = "1.3.8"
 	config.ArgoCDChartHelmVersion = "4.10.5"
 	config.ArgoCDInitValuesYamlPath = fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath)
 	// todo adopt latest helmVersion := "v3.9.0"

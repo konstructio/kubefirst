@@ -168,7 +168,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("kubefirst.kubectl-client-version", "v1.23.15") // todo make configs like this more discoverable in struct?
 	viper.Set("kubefirst.kubefirst-config-path", fmt.Sprintf("%s/%s", homePath, ".kubefirst"))
 	viper.Set("kubefirst.terraform-client-path", fmt.Sprintf("%s/tools/terraform", k1Dir))
-	viper.Set("kubefirst.terraform-client-version", "1.0.11")
+	viper.Set("kubefirst.terraform-client-version", "1.3.8")
 	viper.Set("localhost.os", runtime.GOOS)
 	viper.Set("localhost.architecture", runtime.GOARCH)
 	viper.Set("github.atlantis.webhook.secret", pkg.Random(20))
