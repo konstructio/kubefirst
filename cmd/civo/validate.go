@@ -181,8 +181,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("tools.localhost.os", runtime.GOOS)
 	viper.Set("tools.localhost.architecture", runtime.GOARCH)
 
-	viper.Set("vault.token", "k1_local_vault_token") //* should we move this to where we normally get the vault token?
-
 	kubefirstStateStoreBucketName := fmt.Sprintf("k1-state-store-%s-%s", clusterNameFlag, clusterId)
 
 	viper.WriteConfig()
@@ -260,7 +258,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("skipping domain check")
 	}
 
-	executionControl = viper.GetBool("kubefirst.state-store-create")
+	executionControl = viper.GetBool("kubefirst-checks.state-store-create")
 	if !executionControl {
 		accessKeyId := viper.GetString("kubefirst.state-store-creds.access-key-id")
 		log.Info().Msgf("access key id %s", accessKeyId)
@@ -273,7 +271,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 
 		viper.Set("kubefirst.state-store.id", bucket.ID)
 		viper.Set("kubefirst.state-store.name", bucket.Name)
-		viper.Set("kubefirst.state-store-create", true)
+		viper.Set("kubefirst-checks.state-store-create", true)
 		viper.WriteConfig()
 		log.Info().Msg("civo state store bucket created")
 	} else {

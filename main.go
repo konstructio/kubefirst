@@ -81,7 +81,7 @@ func main() {
 		stdLog.Panic(err)
 	}
 
-	viper.Set("logs-location", logsFolder)
+	viper.Set("k1-paths.logs-dir", logsFolder)
 	err = viper.WriteConfig()
 	if err != nil {
 		stdLog.Panicf("unable to set log-file-location, error is: %s", err)
