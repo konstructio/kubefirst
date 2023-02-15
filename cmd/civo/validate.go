@@ -394,7 +394,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	}
-	os.Exit(1)
 
 	// todo progress bars
 	// time.Sleep(time.Millisecond * 100) // to allow progress bars to finish
