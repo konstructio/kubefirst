@@ -23,11 +23,21 @@ func main() {
 	now := time.Now()
 	epoch := now.Unix()
 
-	currentFolder, err := os.Getwd()
+	homePath, err := os.UserHomeDir()
 	if err != nil {
-		stdLog.Panicf("unable to get current folder location, error is: %s", err)
+		log.Info().Msg(err.Error())
 	}
-	logsFolder := fmt.Sprintf("%s/%s", currentFolder, "logs")
+
+	k1Dir := fmt.Sprintf("%s/.k1", homePath)
+
+	//* create k1Dir if it doesn't exist
+	if _, err := os.Stat(k1Dir); os.IsNotExist(err) {
+		err := os.MkdirAll(k1Dir, os.ModePerm)
+		if err != nil {
+			log.Info().Msgf("%s directory already exists, continuing", k1Dir)
+		}
+	}
+	logsFolder := fmt.Sprintf("%s/logs", k1Dir)
 	// we're ignoring folder creation handling at the moment
 	// todo: add folder creation handler
 	_ = os.Mkdir(logsFolder, 0700)
