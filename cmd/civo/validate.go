@@ -156,39 +156,41 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.metaphor-template-url", metaphorTemplateURLFlag)
 	viper.Set("flags.use-telemetry", useTelemetryFlag)
 
-	viper.Set("kubefirst.cluster-id", clusterId)
-
 	viper.Set("components.argocd.helm-chart-version", "4.10.5")
 	viper.Set("components.argocd.port-forward-url", "http://localhost:8080")
+	viper.Set("components.atlantis.webhook.secret", pkg.Random(20))
+	viper.Set("components.atlantis.webhook.url", fmt.Sprintf("https://atlantis.%s/events", domainNameFlag))
+	viper.Set("components.vault.port-forward-url", "http://localhost:8200")
+	viper.Set("components.vault.token", "k1_local_vault_token")
 
-	viper.Set("argocd.local.service", "http://localhost:8080")
-	viper.Set("vault.local.service", "http://localhost:8200")
-	viper.Set("kubefirst.k1-dir", k1Dir)
-	viper.Set("kubefirst.k1-tools-dir", fmt.Sprintf("%s/tools", k1Dir))
-	viper.Set("kubefirst.k1-gitops-dir", fmt.Sprintf("%s/gitops", k1Dir))
-	viper.Set("kubefirst.k1-metaphor-dir", fmt.Sprintf("%s/metaphor-frontend", k1Dir))
-	viper.Set("kubefirst.helm-client-path", fmt.Sprintf("%s/tools/helm", k1Dir))
-	viper.Set("kubefirst.helm-client-version", "v3.6.1")
-	viper.Set("kubefirst.kubeconfig-path", fmt.Sprintf("%s/kubeconfig", k1Dir))
-	viper.Set("kubefirst.kubectl-client-path", fmt.Sprintf("%s/tools/kubectl", k1Dir))
-	viper.Set("kubefirst.kubectl-client-version", "v1.23.15") // todo make configs like this more discoverable in struct?
-	viper.Set("kubefirst.kubefirst-config-path", fmt.Sprintf("%s/%s", homePath, ".kubefirst"))
-	viper.Set("kubefirst.terraform-client-path", fmt.Sprintf("%s/tools/terraform", k1Dir))
-	viper.Set("kubefirst.terraform-client-version", "1.0.11")
-	viper.Set("localhost.os", runtime.GOOS)
-	viper.Set("localhost.architecture", runtime.GOARCH)
-	viper.Set("github.atlantis.webhook.secret", pkg.Random(20))
-	viper.Set("github.atlantis.webhook.url", fmt.Sprintf("https://atlantis.%s/events", domainNameFlag))
-	viper.Set("github.repo.gitops.url", fmt.Sprintf("https://github.com/%s/gitops.git", githubOwnerFlag))
-	viper.Set("github.repo.metaphor-frontend.url", fmt.Sprintf("https://github.com/%s/metaphor-frontend.git", githubOwnerFlag))
+	viper.Set("github.host", "github.com")
+	viper.Set("github.owner", githubOwnerFlag)
+	viper.Set("github.repos.gitops.url", fmt.Sprintf("https://github.com/%s/gitops.git", githubOwnerFlag))
+	viper.Set("github.repos.metaphor.url", fmt.Sprintf("https://github.com/%s/metaphor-frontend.git", githubOwnerFlag))
 	githubOwnerRootGitURL := fmt.Sprintf("git@github.com:%s", githubOwnerFlag)
-	viper.Set("github.repo.gitops.giturl", fmt.Sprintf("%s/gitops.git", githubOwnerRootGitURL))
-	viper.Set("github.repo.metaphor-frontend.giturl", fmt.Sprintf("%s/metaphor-frontend.git", githubOwnerRootGitURL))
-	viper.Set("template-repo.gitops.branch", gitopsTemplateBranchFlag)
-	viper.Set("template-repo.gitops.url", gitopsTemplateURLFlag)
-	viper.Set("template-repo.metaphor-frontend.url", metaphorTemplateURLFlag)
-	viper.Set("template-repo.metaphor-frontend.branch", metaphorTemplateBranchFlag)
-	viper.Set("vault.token", "k1_local_vault_token")
+	viper.Set("github.repos.gitops.git-url", fmt.Sprintf("%s/gitops.git", githubOwnerRootGitURL))
+	viper.Set("github.repos.metaphor.git-url", fmt.Sprintf("%s/metaphor-frontend.git", githubOwnerRootGitURL))
+
+	viper.Set("k1-paths.gitops-dir", fmt.Sprintf("%s/gitops", k1Dir))
+	viper.Set("k1-paths.helm-client", fmt.Sprintf("%s/tools/helm", k1Dir))
+	viper.Set("k1-paths.k1-dir", k1Dir)
+	viper.Set("k1-paths.kubeconfig", fmt.Sprintf("%s/kubeconfig", k1Dir))
+	viper.Set("k1-paths.kubectl-client", fmt.Sprintf("%s/tools/kubectl", k1Dir))
+	viper.Set("k1-paths.kubefirst-config", fmt.Sprintf("%s/%s", homePath, ".kubefirst"))
+	//! viper.Set("k1-paths.logs-dir", fmt.Sprintf("%s/logs", k1Dir)) // find corresponding update
+	viper.Set("k1-paths.metaphor-dir", fmt.Sprintf("%s/metaphor-frontend", k1Dir))
+	viper.Set("k1-paths.terraform-client", fmt.Sprintf("%s/tools/terraform", k1Dir))
+	viper.Set("k1-paths.tools-dir", fmt.Sprintf("%s/tools", k1Dir))
+
+	viper.Set("kubefirst.cluster-id", clusterId)
+
+	viper.Set("tools.helm.client-version", "v3.6.1")
+	viper.Set("tools.kubectl.client-version", "v1.23.15")
+	viper.Set("tools.terraform.client-version", "1.3.8")
+	viper.Set("tools.localhost.os", runtime.GOOS)
+	viper.Set("tools.localhost.architecture", runtime.GOARCH)
+
+	viper.Set("vault.token", "k1_local_vault_token") //* should we move this to where we normally get the vault token?
 
 	kubefirstStateStoreBucketName := fmt.Sprintf("k1-state-store-%s-%s", clusterNameFlag, clusterId)
 
@@ -197,7 +199,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("checking authentication to required providers")
 
 	//* CIVO START
-	executionControl := viper.GetBool("kubefirst-checks.civo.complete")
+	executionControl := viper.GetBool("kubefirst-checks.cloud-credentials")
 	if !executionControl {
 		civoToken := viper.GetString("civo.token")
 		if os.Getenv("CIVO_TOKEN") != "" {
@@ -214,42 +216,39 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 			os.Setenv("CIVO_TOKEN", string(civoToken))
 			log.Info().Msg("CIVO_TOKEN set - continuing")
 		}
-		viper.Set("kubefirst-checks.civo.complete", true)
+		viper.Set("kubefirst-checks.cloud-credentials", true)
 		viper.WriteConfig()
 	} else {
-		log.Info().Msg("already completed civo token check - continuing")
+		log.Info().Msg("already completed cloud credentials check - continuing")
 	}
 
-	executionControl = viper.GetBool("civo.object-storage-creds.complete")
+	executionControl = viper.GetBool("kubefirst-checks.state-store-creds")
 	if !executionControl {
 		creds, err := civo.GetAccessCredentials(kubefirstStateStoreBucketName, cloudRegionFlag)
 		if err != nil {
 			log.Info().Msg(err.Error())
 		}
-		viper.Set("civo.object-storage-creds.access-key-id", creds.AccessKeyID)
-		viper.Set("civo.object-storage-creds.secret-access-key-id", creds.SecretAccessKeyID)
-		viper.Set("civo.object-storage-creds.name", creds.Name)
-		viper.Set("civo.object-storage-creds.id", creds.ID)
-		viper.Set("civo.object-storage-creds.complete", true)
+		viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyID)
+		viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKeyID)
+		viper.Set("kubefirst.state-store-creds.name", creds.Name)
+		viper.Set("kubefirst.state-store-creds.id", creds.ID)
+		viper.Set("kubefirst-checks.state-store-creds", true)
 		viper.WriteConfig()
 		log.Info().Msg("civo object storage credentials created and set")
 	} else {
 		log.Info().Msg("already created civo object storage credentials - continuing")
 	}
 
-	// domain id
-	domainId, err := civo.GetDNSInfo(domainNameFlag, cloudRegionFlag)
-	if err != nil {
-		log.Info().Msg(err.Error())
-	}
-
-	// viper values set in above function
-	log.Info().Msgf("domainId: %s", domainId)
-
-	//! tracker 3
-	// todo: this doesn't default to testing the dns check
-	skipDomainCheck := viper.GetBool("init.domaincheck.enabled")
+	skipDomainCheck := viper.GetBool("kubefirst-checks.domain-liveness")
 	if !skipDomainCheck {
+		// domain id
+		domainId, err := civo.GetDNSInfo(domainNameFlag, cloudRegionFlag)
+		if err != nil {
+			log.Info().Msg(err.Error())
+		}
+
+		// viper values set in above function
+		log.Info().Msgf("domainId: %s", domainId)
 		domainLiveness := civo.TestDomainLiveness(false, domainNameFlag, domainId, cloudRegionFlag)
 		if !domainLiveness {
 			msg := "failed to check the liveness of the Domain. A valid public Domain on the same CIVO " +
@@ -261,16 +260,18 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 				"please follow these instructions to create one: " +
 				"https://www.civo.com/learn/configure-dns \n\n" +
 				"if you are still facing issues please reach out to support team for further assistance"
-			log.Error().Msg(msg)
+
 			return errors.New(msg)
 		}
+		viper.Set("kubefirst-checks.domain-liveness", true)
+		viper.WriteConfig()
 	} else {
 		log.Info().Msg("skipping domain check")
 	}
 
-	executionControl = viper.GetBool("kubefirst.state-store-bucket.complete")
+	executionControl = viper.GetBool("kubefirst.state-store-create")
 	if !executionControl {
-		accessKeyId := viper.GetString("civo.object-storage-creds.access-key-id")
+		accessKeyId := viper.GetString("kubefirst.state-store-creds.access-key-id")
 		log.Info().Msgf("access key id %s", accessKeyId)
 
 		bucket, err := civo.CreateStorageBucket(accessKeyId, kubefirstStateStoreBucketName, cloudRegionFlag)
@@ -279,9 +280,9 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		viper.Set("civo.object-storage-bucket.id", bucket.ID)
-		viper.Set("civo.object-storage-bucket.name", bucket.Name)
-		viper.Set("kubefirst.state-store-bucket.complete", true)
+		viper.Set("kubefirst.state-store.id", bucket.ID)
+		viper.Set("kubefirst.state-store.name", bucket.Name)
+		viper.Set("kubefirst.state-store-create", true)
 		viper.WriteConfig()
 		log.Info().Msg("civo state store bucket created")
 	} else {
@@ -289,13 +290,13 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	}
 	//* CIVO END
 
-	executionControl = viper.GetBool("kubefirst-checks.github.complete")
+	executionControl = viper.GetBool("kubefirst-checks.github-credentials")
 	if !executionControl {
 
 		httpClient := http.DefaultClient
 		githubToken := os.Getenv("GITHUB_TOKEN")
 		if len(githubToken) == 0 {
-			return errors.New("ephemeral tokens not supported for cloud installations, please set a GITHUB_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init")
+			return errors.New("please set a GITHUB_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init")
 		}
 		gitHubService := services.NewGitHubService(httpClient)
 		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
@@ -306,6 +307,8 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+		viper.Set("github.user", githubUser)
+		viper.WriteConfig()
 
 		err = gitHubHandler.CheckGithubOrganizationPermissions(githubToken, githubOwnerFlag, githubUser)
 		if err != nil {
@@ -365,15 +368,14 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		// todo this block need to be pulled into githubHandler. -- end
 		// todo this should have a collective message of issues for the user
 		// todo to clean up with relevant commands
-		viper.Set("github.owner", githubOwnerFlag)
-		viper.Set("github.user", githubUser)
-		viper.Set("kubefirst-checks.github.complete", true)
+
+		viper.Set("kubefirst-checks.github-credentials", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already completed github checks - continuing")
 	}
 
-	executionControl = viper.GetBool("kubefirst-checks.bot-setup.complete")
+	executionControl = viper.GetBool("kubefirst-checks.kbot-setup")
 	if !executionControl {
 
 		log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
@@ -386,21 +388,13 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		}
 		log.Info().Msg("ssh key pair creation complete")
 
-		viper.Set("kubefirst.bot.password", kbotPasswordFlag)
-		viper.Set("kubefirst.bot.private-key", sshPrivateKey)
-		viper.Set("kubefirst.bot.public-key", sshPublicKey)
-		viper.Set("kubefirst.bot.user", "kbot")
-		viper.Set("kubefirst-checks.bot-setup.complete", true)
+		viper.Set("kbot.password", kbotPasswordFlag)
+		viper.Set("kbot.private-key", sshPrivateKey)
+		viper.Set("kbot.public-key", sshPublicKey)
+		viper.Set("kbot.username", "kbot")
+		viper.Set("kubefirst-checks.kbot-setup", true)
 		viper.WriteConfig()
-		log.Info().Msg("kubefirst values and bot-setup complete")
-		// todo, is this a hangover from initial gitlab? do we need this?
-		log.Info().Msg("creating argocd-init-values.yaml for initial install")
-		//* ex: `git@github.com:kubefirst` this is allows argocd access to the github organization repositories
-		err = ssh.WriteGithubArgoCdInitValuesFile(githubOwnerRootGitURL, k1Dir, sshPrivateKey)
-		if err != nil {
-			return err
-		}
-		log.Info().Msg("argocd-init-values.yaml creation complete")
+		log.Info().Msg("kbot-setup complete")
 	}
 
 	log.Info().Msg("validation and kubefirst cli environment check is complete")

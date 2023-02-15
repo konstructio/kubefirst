@@ -62,31 +62,31 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	printConfirmationScreen()
 	log.Info().Msg("proceeding with cluster create")
 
-	argocdLocalURL := viper.GetString("argocd.local.service")
+	argocdLocalURL := viper.GetString("components.argocd.port-forward-url")
 	cloudProvider := viper.GetString("cloud-provider")
 	clusterName := viper.GetString("kubefirst.cluster-name")
 	clusterType := viper.GetString("kubefirst.cluster-type")
-	destinationGitopsRepoURL := viper.GetString("github.repo.gitops.giturl")
-	destinationMetaphorFrontendRepoURL := viper.GetString("github.repo.metaphor-frontend.giturl")
+	destinationGitopsRepoURL := viper.GetString("github.repos.gitops.git-url")
+	destinationMetaphorRepoURL := viper.GetString("github.repos.metaphor.git-url")
 	domainName := viper.GetString("domain-name")
 	dryRun := false // todo deprecate this?
-	gitopsTemplateBranch := viper.GetString("template-repo.gitops.branch")
-	gitopsTemplateURL := viper.GetString("template-repo.gitops.url")
+	gitopsTemplateBranch := viper.GetString("flags.gitops-template-branch")
+	gitopsTemplateURL := viper.GetString("flags.gitops-template-url")
 	gitProvider := viper.GetString("git-provider")
-	helmClientPath := viper.GetString("kubefirst.helm-client-path")
+	helmClientPath := viper.GetString("k1-paths.helm-client")
 	helmClientVersion := viper.GetString("kubefirst.helm-client-version")
-	k1Dir := viper.GetString("kubefirst.k1-dir")
-	k1GitopsDir := viper.GetString("kubefirst.k1-gitops-dir")
-	k1MetaphorDir := viper.GetString("kubefirst.k1-metaphor-dir")
-	k1ToolsDir := viper.GetString("kubefirst.k1-tools-dir")
-	kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
-	kubectlClientPath := viper.GetString("kubefirst.kubectl-client-path")
+	k1Dir := viper.GetString("k1-paths.k1-dir")
+	k1GitopsDir := viper.GetString("k1-paths.gitops-dir")
+	k1MetaphorDir := viper.GetString("k1-paths.metaphor-dir")
+	k1ToolsDir := viper.GetString("k1-paths.tools-dir")
+	kubeconfigPath := viper.GetString("k1-paths.kubeconfig")
+	kubectlClientPath := viper.GetString("k1-paths.kubectl-client")
 	kubectlClientVersion := viper.GetString("kubefirst.kubectl-client-version")
 	kubefirstBotSSHPrivateKey := viper.GetString("kubefirst.bot.private-key")
 	localOs := viper.GetString("localhost.os")
 	localArchitecture := viper.GetString("localhost.architecture")
-	metaphorFrontendTemplateBranch := viper.GetString("template-repo.metaphor-frontend.branch")
-	metaphorFrontendTemplateURL := viper.GetString("template-repo.metaphor-frontend.url")
+	metaphorTemplateBranch := viper.GetString("flags.metaphor-template-branch")
+	metaphorTemplateURL := viper.GetString("flags.metaphor-template-url")
 	silentMode := false // todo deprecate this?
 	terraformClientVersion := viper.GetString("kubefirst.terraform-client-version")
 
@@ -232,7 +232,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		pkg.InformUser("generating your new metaphor-frontend repository", silentMode)
-		metaphorRepo, err := gitClient.CloneRefSetMain(metaphorFrontendTemplateBranch, k1MetaphorDir, metaphorFrontendTemplateURL)
+		metaphorRepo, err := gitClient.CloneRefSetMain(metaphorTemplateBranch, k1MetaphorDir, metaphorTemplateURL)
 		if err != nil {
 			log.Info().Msgf("error opening repo at: %s", k1MetaphorDir)
 		}
@@ -248,7 +248,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		err = gitClient.AddRemote(destinationMetaphorFrontendRepoURL, gitProvider, metaphorRepo)
+		err = gitClient.AddRemote(destinationMetaphorRepoURL, gitProvider, metaphorRepo)
 		if err != nil {
 			return err
 		}
@@ -263,7 +263,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			Auth:       publicKeys,
 		})
 		if err != nil {
-			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationMetaphorFrontendRepoURL)
+			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationMetaphorRepoURL)
 		}
 
 		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwnerFlag)
@@ -597,16 +597,14 @@ func printConfirmationScreen() {
 	createKubefirstSummary.WriteString(fmt.Sprintf("Organization: %s\n", viper.GetString("github.owner")))
 	createKubefirstSummary.WriteString(fmt.Sprintf("User:         %s\n", viper.GetString("github.user")))
 	createKubefirstSummary.WriteString("New Github Repository URLs:\n")
-	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("github.repo.gitops.url")))
-	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("github.repo.metaphor.url")))
-	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("github.repo.metaphor-frontend.url")))
-	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("github.repo.metaphor-go.url")))
+	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("github.repos.gitops.url")))
+	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("github.repos.metaphor.url")))
 
 	createKubefirstSummary.WriteString("\nTemplate Repository URLs:\n")
-	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("template-repo.gitops.url")))
-	createKubefirstSummary.WriteString(fmt.Sprintf("    branch:  %s\n", viper.GetString("template-repo.gitops.branch")))
-	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("template-repo.metaphor-frontend.url")))
-	createKubefirstSummary.WriteString(fmt.Sprintf("    branch:  %s\n", viper.GetString("template-repo.metaphor-frontend.branch")))
+	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("flags.gitops-template-url")))
+	createKubefirstSummary.WriteString(fmt.Sprintf("    branch:  %s\n", viper.GetString("flags.gitops-template-branch")))
+	createKubefirstSummary.WriteString(fmt.Sprintf("  %s\n", viper.GetString("flags.metaphor-template-url")))
+	createKubefirstSummary.WriteString(fmt.Sprintf("    branch:  %s\n", viper.GetString("flags.metaphor-template-branch")))
 
 	log.Info().Msg(reports.StyleMessage(createKubefirstSummary.String()))
 }

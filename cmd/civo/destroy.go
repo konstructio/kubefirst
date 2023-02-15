@@ -27,8 +27,8 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	domainName := viper.GetString("domain-name")
 	dryRun := false
 	githubOwner := viper.GetString("github.owner")
-	k1Dir := viper.GetString("kubefirst.k1-dir")
-	k1GitopsDir := viper.GetString("kubefirst.k1-gitops-dir")
+	k1Dir := viper.GetString("k1-paths.k1-dir")
+	k1GitopsDir := viper.GetString("k1-paths.gitops-dir")
 	kubefirstConfigPath := viper.GetString("kubefirst.kubefirst-config-path")
 	registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", clusterName, k1Dir)
 
@@ -65,7 +65,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("destroying civo resources with terraform")
 
 		clusterName := viper.GetString("kubefirst.cluster-name")
-		kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
+		kubeconfigPath := viper.GetString("k1-paths.kubeconfig")
 		region := viper.GetString("cloud-region")
 
 		client, err := civogo.NewClient(os.Getenv("CIVO_TOKEN"), region)
@@ -101,12 +101,12 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		)
 
 		log.Info().Msg("getting new auth token for argocd")
-		argocdAuthToken, err := argocd.GetArgoCDToken(viper.GetString("argocd.admin.username"), viper.GetString("argocd.admin.password"))
+		argocdAuthToken, err := argocd.GetArgoCDToken(viper.GetString("components.argocd.username"), viper.GetString("components.argocd.password"))
 		if err != nil {
 			return err
 		}
 
-		log.Info().Msg(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("argocd.local.service")))
+		log.Info().Msg(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("components.argocd.port-forward-url")))
 
 		customTransport := http.DefaultTransport.(*http.Transport).Clone()
 		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}

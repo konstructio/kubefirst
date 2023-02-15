@@ -847,10 +847,16 @@ func ResetK1Dir(k1Dir, kubefirstFilePath string) error {
 	}
 
 	//* files
+	//! this might fail with an adjustment made to validate
 	err = os.Remove(k1Dir + "/argocd-init-values.yaml")
 	if err != nil {
 		return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/argocd-init-values.yaml", err)
 	}
+	// viper.Set("kubefirst-checks", nil)
+	// viper.Set("components", nil)
+	// viper.Set("kubefirst", nil)
+	// viper.Set("kbot", nil)
+	// viper.Set("github", nil)
 	err = os.Remove(kubefirstFilePath)
 	if err != nil {
 		return fmt.Errorf("unable to delete `$HOME/.kubefirst`, error: %s", err)
