@@ -9,6 +9,7 @@ import (
 
 	"github.com/civo/civogo"
 	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/civo"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -47,8 +48,8 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := k1GitopsDir + "/terraform/github"
 		tfEnvs := map[string]string{}
-		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
-		tfEnvs = terraform.GetGithubTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
 		err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -125,8 +126,8 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("destroying civo cloud resources")
 		tfEntrypoint := k1GitopsDir + "/terraform/civo"
 		tfEnvs := map[string]string{}
-		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
-		tfEnvs = terraform.GetGithubTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
 		err = terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)

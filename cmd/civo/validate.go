@@ -159,6 +159,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("kubefirst.cluster-id", clusterId)
 
 	viper.Set("components.argocd.helm-chart-version", "4.10.5")
+	viper.Set("components.argocd.port-forward-url", "http://localhost:8080")
 
 	viper.Set("argocd.local.service", "http://localhost:8080")
 	viper.Set("vault.local.service", "http://localhost:8200")

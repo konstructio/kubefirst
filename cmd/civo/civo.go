@@ -185,7 +185,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := k1GitopsDir + "/terraform/github"
 		tfEnvs := map[string]string{}
-		tfEnvs = terraform.GetGithubTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
 		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
 			return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
@@ -283,7 +283,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := k1GitopsDir + "/terraform/civo"
 		tfEnvs := map[string]string{}
-		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
 			return errors.New(fmt.Sprintf("error creating civo resources with terraform %s : %s", tfEntrypoint, err))
@@ -407,8 +407,8 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		viper.Set("argocd.admin.password", argocdPassword)
-		viper.Set("argocd.admin.username", "admin")
+		viper.Set("components.argocd.password", argocdPassword)
+		viper.Set("components.argocd.username", "admin")
 		viper.WriteConfig()
 		log.Info().Msg("argocd username and password credentials set successfully")
 
@@ -480,8 +480,8 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 
-		tfEnvs = terraform.GetVaultTerraformEnvs(tfEnvs)
-		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetVaultTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 		tfEntrypoint := k1GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -489,12 +489,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		pkg.InformUser("vault terraform executed successfully", silentMode)
-
-		//* create vault configured secret
-		// todo remove this code
-		log.Info().Msg("creating vault configured secret")
-		k8s.CreateVaultConfiguredSecret(dryRun, kubeconfigPath, kubectlClientPath)
-		pkg.InformUser("Vault secret created", silentMode)
 		viper.Set("kubefirst-checks.terraform-apply-vault", true)
 		viper.WriteConfig()
 	} else {
@@ -507,8 +501,8 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		pkg.InformUser("applying users terraform", silentMode)
 
 		tfEnvs := map[string]string{}
-		tfEnvs = terraform.GetCivoTerraformEnvs(tfEnvs)
-		tfEnvs = terraform.GetUsersTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetUsersTerraformEnvs(tfEnvs)
 		tfEntrypoint := k1GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
