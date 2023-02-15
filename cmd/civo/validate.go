@@ -25,7 +25,6 @@ import (
 // this function needs to provide all the generated values and provides a single space for writing and updating configuration up front.
 func validateCivo(cmd *cobra.Command, args []string) error {
 
-	//* get cli flag values for storage in `$HOME/.kubefirst`
 	adminEmailFlag, err := cmd.Flags().GetString("admin-email")
 	if err != nil {
 		return err
@@ -33,11 +32,9 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		return errors.New("admin-email flag cannot be empty")
 	}
 
-	domainNameFlag, err := cmd.Flags().GetString("domain-name")
+	cloudRegionFlag, err := cmd.Flags().GetString("cloud-region")
 	if err != nil {
 		return err
-	} else if domainNameFlag == "" {
-		return errors.New("domain-name flag cannot be empty")
 	}
 
 	clusterNameFlag, err := cmd.Flags().GetString("cluster-name")
@@ -50,9 +47,11 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	cloudRegionFlag, err := cmd.Flags().GetString("cloud-region")
+	domainNameFlag, err := cmd.Flags().GetString("domain-name")
 	if err != nil {
 		return err
+	} else if domainNameFlag == "" {
+		return errors.New("domain-name flag cannot be empty")
 	}
 
 	githubOwnerFlag, err := cmd.Flags().GetString("github-owner")
@@ -87,14 +86,17 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	silentModeFlag, err := cmd.Flags().GetBool("silent-mode")
+	useTelemetryFlag, err := cmd.Flags().GetBool("use-telemetry")
 	if err != nil {
 		return err
 	}
 
-	useTelemetryFlag, err := cmd.Flags().GetBool("use-telemetry")
-	if err != nil {
-		return err
+	// todo placed in configmap in kubefirst namespace, included in telemetry
+	clusterId := viper.GetString("kubefirst.cluster-id")
+	if clusterId == "" {
+		clusterId = pkg.GenerateClusterID()
+		viper.Set("kubefirst.cluster-id", clusterId)
+		viper.WriteConfig()
 	}
 
 	cloudProvider := "civo"
@@ -130,16 +132,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// todo waiting for johns response
-	// todo this clusterId need to go to state store,
-	// todo placed in configmap in kubefirst namespace, included in telemetry
-	clusterId := viper.GetString("kubefirst.cluster-id")
-	if clusterId == "" {
-		clusterId = pkg.GenerateClusterID()
-		viper.Set("kubefirst.cluster-id", clusterId)
-		viper.WriteConfig()
-	}
-
 	k1Dir := fmt.Sprintf("%s/.k1", homePath)
 
 	//* create k1Dir if it doesn't exist
@@ -151,12 +143,25 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// todo validate flags
-	viper.Set("admin-email", adminEmailFlag)
-	viper.Set("argocd.helm.chart-version", "4.10.5")
+	viper.Set("flags.admin-email", adminEmailFlag)
+	viper.Set("flags.cloud-provider", cloudProvider)
+	viper.Set("flags.cloud-region", cloudRegionFlag)
+	viper.Set("flags.cluster-name", clusterNameFlag)
+	viper.Set("flags.cluster-type", clusterTypeFlag)
+	viper.Set("flags.domain-name", domainNameFlag)
+	viper.Set("flags.git-provider", gitProvider)
+	viper.Set("flags.gitops-template-branch", gitopsTemplateBranchFlag)
+	viper.Set("flags.gitops-template-url", gitopsTemplateURLFlag)
+	viper.Set("flags.metaphor-template-branch", metaphorTemplateBranchFlag)
+	viper.Set("flags.metaphor-template-url", metaphorTemplateURLFlag)
+	viper.Set("flags.use-telemetry", useTelemetryFlag)
+
+	viper.Set("kubefirst.cluster-id", clusterId)
+
+	viper.Set("components.argocd.helm-chart-version", "4.10.5")
+
 	viper.Set("argocd.local.service", "http://localhost:8080")
 	viper.Set("vault.local.service", "http://localhost:8200")
-	viper.Set("cloud-provider", cloudProvider)
-	viper.Set("git-provider", gitProvider)
 	viper.Set("kubefirst.k1-dir", k1Dir)
 	viper.Set("kubefirst.k1-tools-dir", fmt.Sprintf("%s/tools", k1Dir))
 	viper.Set("kubefirst.k1-gitops-dir", fmt.Sprintf("%s/gitops", k1Dir))
@@ -188,10 +193,10 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 
 	viper.WriteConfig()
 
-	pkg.InformUser("checking authentication to required providers", silentModeFlag)
+	log.Info().Msg("checking authentication to required providers")
 
 	//* CIVO START
-	executionControl := viper.GetBool("kubefirst.checks.civo.complete")
+	executionControl := viper.GetBool("kubefirst-checks.civo.complete")
 	if !executionControl {
 		civoToken := viper.GetString("civo.token")
 		if os.Getenv("CIVO_TOKEN") != "" {
@@ -208,7 +213,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 			os.Setenv("CIVO_TOKEN", string(civoToken))
 			log.Info().Msg("CIVO_TOKEN set - continuing")
 		}
-		viper.Set("kubefirst.checks.civo.complete", true)
+		viper.Set("kubefirst-checks.civo.complete", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already completed civo token check - continuing")
@@ -283,7 +288,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	}
 	//* CIVO END
 
-	executionControl = viper.GetBool("kubefirst.checks.github.complete")
+	executionControl = viper.GetBool("kubefirst-checks.github.complete")
 	if !executionControl {
 
 		httpClient := http.DefaultClient
@@ -361,13 +366,13 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		// todo to clean up with relevant commands
 		viper.Set("github.owner", githubOwnerFlag)
 		viper.Set("github.user", githubUser)
-		viper.Set("kubefirst.checks.github.complete", true)
+		viper.Set("kubefirst-checks.github.complete", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already completed github checks - continuing")
 	}
 
-	executionControl = viper.GetBool("kubefirst.checks.bot-setup.complete")
+	executionControl = viper.GetBool("kubefirst-checks.bot-setup.complete")
 	if !executionControl {
 
 		log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
@@ -380,17 +385,11 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 		}
 		log.Info().Msg("ssh key pair creation complete")
 
-		viper.Set("kubefirst.telemetry", useTelemetryFlag)
-		viper.Set("kubefirst.cluster-name", clusterNameFlag)
-		viper.Set("kubefirst.cluster-type", clusterTypeFlag)
-		viper.Set("domain-name", domainNameFlag)
-		viper.Set("cloud-region", cloudRegionFlag)
-
 		viper.Set("kubefirst.bot.password", kbotPasswordFlag)
 		viper.Set("kubefirst.bot.private-key", sshPrivateKey)
 		viper.Set("kubefirst.bot.public-key", sshPublicKey)
 		viper.Set("kubefirst.bot.user", "kbot")
-		viper.Set("kubefirst.checks.bot-setup.complete", true)
+		viper.Set("kubefirst-checks.bot-setup.complete", true)
 		viper.WriteConfig()
 		log.Info().Msg("kubefirst values and bot-setup complete")
 		// todo, is this a hangover from initial gitlab? do we need this?

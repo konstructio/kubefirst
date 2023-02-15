@@ -17,7 +17,6 @@ var (
 	metaphorTemplateURLFlag    string
 	domainNameFlag             string
 	kbotPasswordFlag           string
-	silentModeFlag             bool
 	useTelemetryFlag           bool
 
 	// Quota
@@ -43,9 +42,9 @@ func NewCommand() *cobra.Command {
 
 func BackupSSL() *cobra.Command {
 	backupSSLCmd := &cobra.Command{
-		Use:   "backup-ssl", // todo welcome feedback on this command name
-		Short: "backup the cluster resources related tls certificates",
-		Long:  "kubefirst uses a combination of external-dns, ingress-nginx, and cert-manager for the provisioning automated tls certificates for services with an ingress. this command will backup all the necessary resources to allow for a restore of the resources in a new cluster with the same domain name",
+		Use:   "backup-ssl",
+		Short: "backup the cluster resources related tls certificates from cert-manager",
+		Long:  "kubefirst uses a combination of external-dns, ingress-nginx, and cert-manager for provisioning automated tls certificates for services with an ingress. this command will backup all the kubernetes resources to restore in a new cluster with the same domain name",
 		RunE:  backupCivoSSL,
 	}
 
@@ -76,9 +75,8 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&kbotPasswordFlag, "kbot-password", "", "the default password to use for the kbot user")
 	createCmd.Flags().StringVar(&metaphorTemplateBranchFlag, "metaphor-template-branch", "main", "the branch to clone for the metaphor-template repository")
 	createCmd.Flags().StringVar(&metaphorTemplateURLFlag, "metaphor-template-url", "https://github.com/kubefirst/metaphor-frontend-template.git", "the fully qualified url to the metaphor-template repository to clone")
-
-	createCmd.Flags().BoolVar(&silentModeFlag, "silent-mode", false, "suppress output to the terminal")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
+
 	return createCmd
 }
 

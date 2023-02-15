@@ -236,8 +236,5 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
 		log.Error().Err(err).Msg("")
 		return errors.New("error creating kubernetes secret: github-runner/controller-manager")
 	}
-	viper.Set("kubernetes.secrets.created", true)
-	viper.WriteConfig()
-
 	return nil
 }

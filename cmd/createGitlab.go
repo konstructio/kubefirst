@@ -131,6 +131,8 @@ var createGitlabCmd = &cobra.Command{
 			log.Warn().Msg("Error installing argocd")
 			return err
 		}
+		viper.Set("argocd.helm.install.complete", true)
+		viper.WriteConfig()
 
 		//! argocd was just helm installed
 		waitArgoCDToBeReady(globalFlags.DryRun)

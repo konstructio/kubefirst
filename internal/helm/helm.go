@@ -96,8 +96,7 @@ func AddRepoAndUpdateRepo(dryRun bool, helmClientPath string, helmRepo HelmRepo,
 		log.Error().Err(err).Msgf("error updating helm repo %s", helmRepo.RepoName)
 		return err
 	}
-	viper.Set("argocd.helm.repo.updated", true)
-	viper.WriteConfig()
+
 	return nil
 }
 
@@ -118,7 +117,6 @@ func Install(dryRun bool, helmClientPath string, helmRepo HelmRepo, kubeconfigPa
 		log.Error().Err(err).Msgf("error: could not helm install %s - %s", helmRepo.ChartName, err.Error())
 		return err
 	}
-	viper.Set("argocd.helm.install.complete", true)
-	viper.WriteConfig()
+
 	return nil
 }

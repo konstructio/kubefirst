@@ -105,6 +105,11 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
 	}
 
+	clientset, err := k8s.GetClientSet(dryRun, kubeconfigPath)
+	if err != nil {
+		return err
+	}
+
 	//* emit cluster install started
 	if useTelemetryFlag {
 		if err := wrappers.SendSegmentIoTelemetry(domainName, pkg.MetricMgmtClusterInstallStarted, cloudProvider, gitProvider); err != nil {
@@ -113,7 +118,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	//* download dependencies to `$HOME/.k1/tools`
-	if !viper.GetBool("kubefirst.dependency-download.complete") {
+	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
 
 		err := downloadManager.CivoDownloadTools(helmClientPath,
@@ -129,7 +134,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		log.Info().Msg("download dependencies `$HOME/.k1/tools` complete")
-		viper.Set("kubefirst.dependency-download.complete", true)
+		viper.Set("kubefirst-checks.tools-downloaded", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already completed download of dependencies to `$HOME/.k1/tools` - continuing")
@@ -138,7 +143,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
-	if !viper.GetBool("template-repo.gitops.ready-to-push") {
+	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 
 		pkg.InformUser("generating your new gitops repository", silentMode)
 		gitopsRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranch, k1GitopsDir, gitopsTemplateURL)
@@ -167,14 +172,14 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		// todo emit init telemetry end
-		viper.Set("template-repo.gitops.ready-to-push", true)
+		viper.Set("kubefirst-checks.gitops-ready-to-push", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
 	//* create teams and repositories in github
-	executionControl := viper.GetBool("terraform.github.apply.complete")
+	executionControl := viper.GetBool("kubefirst-checks.terraform-apply-github")
 	if !executionControl {
 		pkg.InformUser("Creating github resources with terraform", silentMode)
 
@@ -187,14 +192,14 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", githubOwnerFlag), silentMode)
-		viper.Set("terraform.github.apply.complete", true)
+		viper.Set("kubefirst-checks.terraform-apply-github", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already created github terraform resources")
 	}
 
 	//* push detokenized gitops-template repository content to new remote
-	executionControl = viper.GetBool("github.gitops.repo.pushed")
+	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
 	if !executionControl {
 		gitopsRepo, err := git.PlainOpen(k1GitopsDir)
 		if err != nil {
@@ -213,14 +218,14 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
 		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", githubOwnerFlag), silentMode)
-		viper.Set("github.gitops.repo.pushed", true)
+		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already pushed detokenized gitops repository content")
 	}
 
 	//* git clone and detokenize the metaphor-frontend-template repository
-	if !viper.GetBool("template-repo.metaphor-frontend.pushed") {
+	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
 
 		if configs.K1Version != "" {
 			gitopsTemplateBranch = configs.K1Version
@@ -266,14 +271,14 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		// todo that way we can stop worrying about which origin we're going to push to
 		pkg.InformUser(fmt.Sprintf("pushed detokenized metaphor-frontend repository to github.com/%s", githubOwnerFlag), silentMode)
 
-		viper.Set("template-repo.metaphor-frontend.pushed", true)
+		viper.Set("kubefirst-checks.metaphor-repo-pushed", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
 	//* create civo cloud resources
-	if !viper.GetBool("terraform.civo.apply.complete") {
+	if !viper.GetBool("kubefirst-checks.terraform-apply-civo") {
 		pkg.InformUser("Creating civo cloud resources with terraform", silentMode)
 
 		tfEntrypoint := k1GitopsDir + "/terraform/civo"
@@ -285,7 +290,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		pkg.InformUser("Created civo cloud resources", silentMode)
-		viper.Set("terraform.civo.apply.complete", true)
+		viper.Set("kubefirst-checks.terraform-apply-civo", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already created github terraform resources")
@@ -295,13 +300,16 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	// todo deconstruct CreateNamespaces / CreateSecret
 	// todo move secret structs to constants to be leveraged by either local or civo
-	executionControl = viper.GetBool("kubernetes.secrets.created")
+	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
 		err := civo.BootstrapCivoMgmtCluster(dryRun, kubeconfigPath)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
 			return err
 		}
+		viper.Set("kubefirst-checks.k8s-secrets-created", true)
+		viper.WriteConfig()
+
 	} else {
 		log.Info().Msg("already added secrets to civo cluster")
 	}
@@ -334,13 +342,16 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	//* helm add repo and update
-	executionControl = viper.GetBool("argocd.helm.repo.updated")
+	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-repo-added")
 	if !executionControl {
-		pkg.InformUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), silentMode)
+		log.Info().Msgf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL)
 		helm.AddRepoAndUpdateRepo(dryRun, helmClientPath, helmRepo, kubeconfigPath)
+		log.Info().Msg("helm repo added")
+		viper.Set("kubefirst-checks.argocd-helm-repo-added", true)
+		viper.WriteConfig()
 	}
 	//* helm install argocd
-	executionControl = viper.GetBool("argocd.helm.install.complete")
+	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-install")
 	if !executionControl {
 		pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
 		// todo adopt golang helm client for helm install
@@ -348,6 +359,8 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+		viper.Set("kubefirst-checks.argocd-helm-install", true)
+		viper.WriteConfig()
 	}
 
 	// Wait for ArgoCD StatefulSet Pods to transition to Running
@@ -379,34 +392,52 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		8080,
 		argoCDStopChannel,
 	)
-	pkg.InformUser(fmt.Sprintf("port-forward to argocd is available at %s", argocdLocalURL), silentMode)
+	log.Info().Msgf("port-forward to argocd is available at %s", argocdLocalURL)
 
 	//* argocd pods are ready, get and set credentials
-	executionControl = viper.GetBool("argocd.credentials.set")
+	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
 	if !executionControl {
-		pkg.InformUser("Setting argocd username and password credentials", silentMode)
-		k8s.SetArgocdCreds(dryRun, kubeconfigPath)
-		pkg.InformUser("argocd username and password credentials set successfully", silentMode)
+		log.Info().Msg("Setting argocd username and password credentials")
 
-		pkg.InformUser("Getting an argocd auth token", silentMode)
+		argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+
+		argocdPassword := k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
+		if argocdPassword == "" {
+			log.Info().Msg("argocd password not found in secret")
+			return err
+		}
+
+		viper.Set("argocd.admin.password", argocdPassword)
+		viper.Set("argocd.admin.username", "admin")
+		viper.WriteConfig()
+		log.Info().Msg("argocd username and password credentials set successfully")
+
+		log.Info().Msg("Getting an argocd auth token")
 		// todo return in here and pass argocdAuthToken as a parameter
-		_ = argocd.GetArgocdAuthToken(dryRun)
-		pkg.InformUser("argocd admin auth token set", silentMode)
+		token, err := argocd.GetArgoCDToken("admin", argocdPassword)
+		if err != nil {
+			return err
+		}
 
-		viper.Set("argocd.credentials.set", true)
+		log.Info().Msg("argocd admin auth token set")
+
+		viper.Set("components.argocd.auth-token", token)
+		viper.Set("kubefirst-checks.argocd-credentials-set", true)
 		viper.WriteConfig()
 	}
 
 	//* argocd sync registry and start sync waves
-	executionControl = viper.GetBool("argocd.registry.applied")
+	executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
 	if !executionControl {
-		pkg.InformUser("applying the registry application to argocd", silentMode)
+		log.Info().Msg("applying the registry application to argocd")
 		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", k1Dir, clusterName)
 		_, _, err := pkg.ExecShellReturnStrings(kubectlClientPath, "--kubeconfig", kubeconfigPath, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
 		if err != nil {
 			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", registryYamlPath, err.Error())
 			return err
 		}
+		viper.Set("kubefirst-checks.argocd-create-registry", true)
+		viper.WriteConfig()
 	}
 
 	// Wait for Vault StatefulSet Pods to transition to Running
@@ -425,7 +456,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
 
-	log.Info().Msg("DEBUG -- hit port forward to vault")
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
 	defer func() {
@@ -441,7 +471,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	)
 
 	//* configure vault with terraform
-	executionControl = viper.GetBool("terraform.vault.apply.complete")
+	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
 	if !executionControl {
 		// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
 
@@ -465,14 +495,14 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("creating vault configured secret")
 		k8s.CreateVaultConfiguredSecret(dryRun, kubeconfigPath, kubectlClientPath)
 		pkg.InformUser("Vault secret created", silentMode)
-		viper.Set("terraform.vault.apply.complete", true)
+		viper.Set("kubefirst-checks.terraform-apply-vault", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already executed vault terraform")
 	}
 
 	//* create users
-	executionControl = viper.GetBool("terraform.users.apply.complete")
+	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-users")
 	if !executionControl {
 		pkg.InformUser("applying users terraform", silentMode)
 
@@ -486,7 +516,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 		pkg.InformUser("executed users terraform successfully", silentMode)
 		// progressPrinter.IncrementTracker("step-users", 1)
-		viper.Set("terraform.users.apply.complete", true)
+		viper.Set("kubefirst-checks.terraform-apply-users", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already created users with terraform")

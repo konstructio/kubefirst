@@ -280,8 +280,6 @@ func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (
 // are stored in the viper file.
 func GetArgoCDToken(username string, password string) (string, error) {
 
-	// todo: top caller should receive the token, and then update the viper file outside of this function. This will
-	// 		 help this functions to be more generic and can be used for different purposes.
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
 	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	httpClient := http.Client{Transport: customTransport}
@@ -309,7 +307,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return "", errors.New("unable to retrieve ArgoCD token")
+		return "", errors.New("unable to retrieve argocd token")
 	}
 
 	body, err := io.ReadAll(res.Body)
@@ -324,17 +322,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 	}
 	token := fmt.Sprintf("%v", jsonReturn["token"])
 	if len(token) == 0 {
-		return "", errors.New("unable to retrieve ArgoCD token, make sure ArgoCD credentials are correct")
-	}
-
-	// todo: top caller should receive the token, and then update the viper file outside of this function. This will
-	// 		 help this functions to be more generic and can be used for different purposes.
-	// update config file
-	viper.Set("argocd.admin.apitoken", token)
-	err = viper.WriteConfig()
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		return "", err
+		return "", errors.New("unable to retrieve argocd token, make sure provided credentials are valid")
 	}
 
 	return token, nil
