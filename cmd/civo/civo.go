@@ -145,7 +145,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 
-		pkg.InformUser("generating your new gitops repository", silentMode)
+		log.Info().Msg("generating your new gitops repository")
 		gitopsRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranch, k1GitopsDir, gitopsTemplateURL)
 		if err != nil {
 			log.Info().Msgf("error opening repo at: %s", k1GitopsDir)
@@ -181,7 +181,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	//* create teams and repositories in github
 	executionControl := viper.GetBool("kubefirst-checks.terraform-apply-github")
 	if !executionControl {
-		pkg.InformUser("Creating github resources with terraform", silentMode)
+		log.Info().Msg("Creating github resources with terraform")
 
 		tfEntrypoint := k1GitopsDir + "/terraform/github"
 		tfEnvs := map[string]string{}
@@ -191,7 +191,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
 		}
 
-		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", githubOwnerFlag), silentMode)
+		log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
 		viper.Set("kubefirst-checks.terraform-apply-github", true)
 		viper.WriteConfig()
 	} else {
@@ -217,7 +217,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/gitops", githubOwnerFlag)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
-		pkg.InformUser(fmt.Sprintf("Created git repositories and teams in github.com/%s", githubOwnerFlag), silentMode)
+		log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
 		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
 		viper.WriteConfig()
 	} else {
@@ -231,7 +231,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			gitopsTemplateBranch = configs.K1Version
 		}
 
-		pkg.InformUser("generating your new metaphor-frontend repository", silentMode)
+		log.Info().Msg("generating your new metaphor-frontend repository")
 		metaphorRepo, err := gitClient.CloneRefSetMain(metaphorTemplateBranch, k1MetaphorDir, metaphorTemplateURL)
 		if err != nil {
 			log.Info().Msgf("error opening repo at: %s", k1MetaphorDir)
@@ -269,7 +269,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwnerFlag)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
-		pkg.InformUser(fmt.Sprintf("pushed detokenized metaphor-frontend repository to github.com/%s", githubOwnerFlag), silentMode)
+		log.Info().Msgf("pushed detokenized metaphor-frontend repository to github.com/%s", githubOwnerFlag)
 
 		viper.Set("kubefirst-checks.metaphor-repo-pushed", true)
 		viper.WriteConfig()
@@ -279,7 +279,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 	//* create civo cloud resources
 	if !viper.GetBool("kubefirst-checks.terraform-apply-civo") {
-		pkg.InformUser("Creating civo cloud resources with terraform", silentMode)
+		log.Info().Msg("Creating civo cloud resources with terraform")
 
 		tfEntrypoint := k1GitopsDir + "/terraform/civo"
 		tfEnvs := map[string]string{}
@@ -289,7 +289,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			return errors.New(fmt.Sprintf("error creating civo resources with terraform %s : %s", tfEntrypoint, err))
 		}
 
-		pkg.InformUser("Created civo cloud resources", silentMode)
+		log.Info().Msg("Created civo cloud resources")
 		viper.Set("kubefirst-checks.terraform-apply-civo", true)
 		viper.WriteConfig()
 	} else {
@@ -353,7 +353,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	//* helm install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-install")
 	if !executionControl {
-		pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
+		log.Info().Msgf("helm install %s and wait", helmRepo.RepoName)
 		// todo adopt golang helm client for helm install
 		err := helm.Install(dryRun, helmClientPath, helmRepo, kubeconfigPath)
 		if err != nil {
@@ -476,7 +476,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
 
 		//* run vault terraform
-		pkg.InformUser("configuring vault with terraform", silentMode)
+		log.Info().Msg("configuring vault with terraform")
 
 		tfEnvs := map[string]string{}
 
@@ -488,7 +488,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		pkg.InformUser("vault terraform executed successfully", silentMode)
+		log.Info().Msg("vault terraform executed successfully")
 		viper.Set("kubefirst-checks.terraform-apply-vault", true)
 		viper.WriteConfig()
 	} else {
@@ -498,7 +498,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	//* create users
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-users")
 	if !executionControl {
-		pkg.InformUser("applying users terraform", silentMode)
+		log.Info().Msg("applying users terraform")
 
 		tfEnvs := map[string]string{}
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
@@ -508,7 +508,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		pkg.InformUser("executed users terraform successfully", silentMode)
+		log.Info().Msg("executed users terraform successfully")
 		// progressPrinter.IncrementTracker("step-users", 1)
 		viper.Set("kubefirst-checks.terraform-apply-users", true)
 		viper.WriteConfig()

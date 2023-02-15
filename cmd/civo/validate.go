@@ -114,17 +114,17 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	if gitopsTemplateBranchFlag == "main" && configs.K1Version != "development" {
 		gitopsTemplateBranchFlag = configs.K1Version
 	}
-	log.Info().Msg(fmt.Sprintf("kubefirst version configs.K1Version: %s ", configs.K1Version))
-	log.Info().Msg(fmt.Sprintf("cloning gitops-template repo url: %s ", gitopsTemplateURLFlag))
-	log.Info().Msg(fmt.Sprintf("cloning gitops-template repo branch: %s ", gitopsTemplateBranchFlag))
+	log.Info().Msgf("kubefirst version configs.K1Version: %s ", configs.K1Version)
+	log.Info().Msgf("cloning gitops-template repo url: %s ", gitopsTemplateURLFlag)
+	log.Info().Msgf("cloning gitops-template repo branch: %s ", gitopsTemplateBranchFlag)
 	// this branch flag value is overridden with a tag when running from a
 	// kubefirst binary for version compatibility
 	if metaphorTemplateBranchFlag == "main" && configs.K1Version != "development" {
 		metaphorTemplateBranchFlag = configs.K1Version
 	}
 
-	log.Info().Msg(fmt.Sprintf("cloning metaphor template url: %s ", metaphorTemplateURLFlag))
-	log.Info().Msg(fmt.Sprintf("cloning metaphor template branch: %s ", metaphorTemplateBranchFlag))
+	log.Info().Msgf("cloning metaphor template url: %s ", metaphorTemplateURLFlag)
+	log.Info().Msgf("cloning metaphor template branch: %s ", metaphorTemplateBranchFlag)
 
 	homePath, err := os.UserHomeDir()
 	if err != nil {
@@ -396,6 +396,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	}
+	os.Exit(1)
 
 	// todo progress bars
 	// time.Sleep(time.Millisecond * 100) // to allow progress bars to finish

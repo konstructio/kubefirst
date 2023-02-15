@@ -106,7 +106,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log.Info().Msg(fmt.Sprintf("port-forward to argocd is available at %s", viper.GetString("components.argocd.port-forward-url")))
+		log.Info().Msgf("port-forward to argocd is available at %s", viper.GetString("components.argocd.port-forward-url"))
 
 		customTransport := http.DefaultTransport.(*http.Transport).Clone()
 		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
