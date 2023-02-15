@@ -134,15 +134,6 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 
 	k1Dir := fmt.Sprintf("%s/.k1", homePath)
 
-	//* create k1Dir if it doesn't exist
-	if _, err := os.Stat(k1Dir); os.IsNotExist(err) {
-		err := os.MkdirAll(k1Dir, os.ModePerm)
-		if err != nil {
-			log.Info().Msgf("%s directory already exists, continuing", k1Dir)
-		}
-	}
-
-	// todo validate flags
 	viper.Set("flags.admin-email", adminEmailFlag)
 	viper.Set("flags.cloud-provider", cloudProvider)
 	viper.Set("flags.cloud-region", cloudRegionFlag)
@@ -177,7 +168,7 @@ func validateCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("k1-paths.kubeconfig", fmt.Sprintf("%s/kubeconfig", k1Dir))
 	viper.Set("k1-paths.kubectl-client", fmt.Sprintf("%s/tools/kubectl", k1Dir))
 	viper.Set("k1-paths.kubefirst-config", fmt.Sprintf("%s/%s", homePath, ".kubefirst"))
-	//! viper.Set("k1-paths.logs-dir", fmt.Sprintf("%s/logs", k1Dir)) // find corresponding update
+	viper.Set("k1-paths.logs-dir", fmt.Sprintf("%s/logs", k1Dir))
 	viper.Set("k1-paths.metaphor-dir", fmt.Sprintf("%s/metaphor-frontend", k1Dir))
 	viper.Set("k1-paths.terraform-client", fmt.Sprintf("%s/tools/terraform", k1Dir))
 	viper.Set("k1-paths.tools-dir", fmt.Sprintf("%s/tools", k1Dir))
