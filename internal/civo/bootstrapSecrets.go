@@ -77,11 +77,11 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
 	}
 
 	dataArgoCiSecrets := map[string][]byte{
-		"accesskey":       []byte(viper.GetString("civo.object-storage-creds.access-key-id")),
-		"secretkey":       []byte(viper.GetString("civo.object-storage-creds.secret-access-key-id")),
+		"accesskey":       []byte(viper.GetString("kubefirst.state-store-creds.access-key-id")),
+		"secretkey":       []byte(viper.GetString("kubefirst.state-store-creds.secret-access-key-id")),
 		"BASIC_AUTH_USER": []byte("k-ray"),
 		"BASIC_AUTH_PASS": []byte("feedkraystars"),
-		"SSH_PRIVATE_KEY": []byte(viper.GetString("kubefirst.bot.private-key")),
+		"SSH_PRIVATE_KEY": []byte(viper.GetString("kbot.private-key")),
 	}
 
 	//*
@@ -145,8 +145,8 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
 	dataArgoCd := map[string][]byte{
 		"type":          []byte("git"),
 		"name":          []byte(fmt.Sprintf("%s-gitops", viper.GetString("github.owner"))),
-		"url":           []byte(viper.GetString("github.repo.gitops.giturl")),
-		"sshPrivateKey": []byte(viper.GetString("kubefirst.bot.private-key")),
+		"url":           []byte(viper.GetString("github.repo.gitops.git-url")),
+		"sshPrivateKey": []byte(viper.GetString("kbot.private-key")),
 	}
 
 	argoCdSecret := &v1.Secret{
@@ -179,7 +179,7 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
 		"TF_VAR_atlantis_repo_webhook_url":    []byte(viper.GetString("github.atlantis.webhook.url")),
 		"TF_VAR_email_address":                []byte(viper.GetString("adminemail")),
 		"TF_VAR_github_token":                 []byte(os.Getenv("GITHUB_TOKEN")),
-		"TF_VAR_kubefirst_bot_ssh_public_key": []byte(viper.GetString("kubefirst.bot.public-key")),
+		"TF_VAR_kubefirst_bot_ssh_public_key": []byte(viper.GetString("kbot.public-key")),
 		"TF_VAR_vault_addr":                   []byte("http://vault.vault.svc.cluster.local:8200"),
 		"TF_VAR_vault_token":                  []byte("k1_local_vault_token"),
 		"VAULT_ADDR":                          []byte("http://vault.vault.svc.cluster.local:8200"),
@@ -198,8 +198,8 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
 	dataChartmuseum := map[string][]byte{
 		"BASIC_AUTH_USER":       []byte("k-ray"),
 		"BASIC_AUTH_PASS":       []byte("feedkraystars"),
-		"AWS_ACCESS_KEY_ID":     []byte(viper.GetString("civo.object-storage-creds.access-key-id")),
-		"AWS_SECRET_ACCESS_KEY": []byte(viper.GetString("civo.object-storage-creds.secret-access-key-id")),
+		"AWS_ACCESS_KEY_ID":     []byte(viper.GetString("kubefirst.state-store-creds.access-key-id")),
+		"AWS_SECRET_ACCESS_KEY": []byte(viper.GetString("kubefirst.state-store-creds.secret-access-key-id")),
 	}
 	chartmuseumSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "chartmuseum-secrets", Namespace: "chartmuseum"},
