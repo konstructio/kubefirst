@@ -142,22 +142,24 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	//* remove local content and kubefirst config file for re-execution
-	if viper.GetBool("kubefirst-checks.terraform-apply-github") && viper.GetBool("kubefirst-checks.terraform-apply-civo") {
+	if !viper.GetBool("kubefirst-checks.terraform-apply-github") && !viper.GetBool("kubefirst-checks.terraform-apply-civo") {
 		log.Info().Msg("removing previous platform content")
+
 		err := pkg.ResetK1Dir(k1Dir, kubefirstConfigPath)
 		if err != nil {
 			return err
 		}
 		log.Info().Msg("previous platform content removed")
-	}
 
-	log.Info().Msg("resetting `$HOME/.kubefirst` config")
-	viper.Set("argocd", "")
-	viper.Set("github", "")
-	viper.Set("components", "")
-	viper.Set("kbot", "")
-	viper.Set("kubefirst-checks", "")
-	viper.Set("kubefirst", "")
+		log.Info().Msg("resetting `$HOME/.kubefirst` config")
+		viper.Set("argocd", "")
+		viper.Set("github", "")
+		viper.Set("components", "")
+		viper.Set("kbot", "")
+		viper.Set("kubefirst-checks", "")
+		viper.Set("kubefirst", "")
+		viper.WriteConfig()
+	}
 
 	fmt.Println("\nsuccessfully removed previous platform content from `$HOME/.k1`")
 	fmt.Println("to recreate your kubefirst platform run")
