@@ -153,7 +153,7 @@ func DeleteApplication(httpClient pkg.HTTPDoer, applicationName, argoCDToken, ca
 	params.Add("cascade", cascade)
 	paramBody := strings.NewReader(params.Encode())
 
-	url := fmt.Sprintf("%s/api/v1/applications/%s", viper.GetString("argocd.local.service"), applicationName)
+	url := fmt.Sprintf("%s/api/v1/applications/%s", viper.GetString("components.argocd.port-forward-url"), applicationName)
 	log.Info().Msg(url)
 	req, err := http.NewRequest(http.MethodDelete, url, paramBody)
 	if err != nil {

@@ -63,9 +63,9 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	if viper.GetBool("kubefirst-checks.terraform-apply-civo") {
 		log.Info().Msg("destroying civo resources with terraform")
 
-		clusterName := viper.GetString("kubefirst.cluster-name")
+		clusterName := viper.GetString("flags.cluster-name")
 		kubeconfigPath := viper.GetString("k1-paths.kubeconfig")
-		region := viper.GetString("cloud-region")
+		region := viper.GetString("flags.cloud-region")
 
 		client, err := civogo.NewClient(os.Getenv("CIVO_TOKEN"), region)
 		if err != nil {
@@ -111,7 +111,11 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 		argocdHttpClient := http.Client{Transport: customTransport}
 		log.Info().Msg("deleting the registry application")
-		argocd.DeleteApplication(&argocdHttpClient, registryYamlPath, argocdAuthToken, "true")
+		httpCode, _, err := argocd.DeleteApplication(&argocdHttpClient, registryYamlPath, argocdAuthToken, "true")
+		if err != nil {
+			return err
+		}
+		log.Info().Msgf("http status code %d", httpCode)
 
 		for _, vol := range clusterVolumes {
 			log.Info().Msg("removing volume with name: " + vol.Name)
@@ -148,12 +152,12 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	log.Info().Msg("resetting `$HOME/.kubefirst` config")
-	viper.Set("argocd", nil)
-	viper.Set("github", nil)
-	viper.Set("components", nil)
-	viper.Set("kbot", nil)
-	viper.Set("kubefirst-checks", nil)
-	viper.Set("kubefirst", nil)
+	viper.Set("argocd", "")
+	viper.Set("github", "")
+	viper.Set("components", "")
+	viper.Set("kbot", "")
+	viper.Set("kubefirst-checks", "")
+	viper.Set("kubefirst", "")
 
 	fmt.Println("\nsuccessfully removed previous platform content from `$HOME/.k1`")
 	fmt.Println("to recreate your kubefirst platform run")
