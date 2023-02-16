@@ -22,14 +22,14 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("destroying kubefirst platform in civo")
 
-	adminEmail := viper.GetString("admin-email")
-	clusterName := viper.GetString("kubefirst.cluster-name")
-	domainName := viper.GetString("domain-name")
+	adminEmail := viper.GetString("flags.admin-email")
+	clusterName := viper.GetString("flags.cluster-name")
+	domainName := viper.GetString("flags.domain-name")
 	dryRun := false
 	githubOwner := viper.GetString("github.owner")
 	k1Dir := viper.GetString("k1-paths.k1-dir")
 	k1GitopsDir := viper.GetString("k1-paths.gitops-dir")
-	kubefirstConfigPath := viper.GetString("kubefirst.kubefirst-config-path")
+	kubefirstConfigPath := viper.GetString("k1-paths.kubefirst-config")
 	registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", clusterName, k1Dir)
 
 	// todo improve these checks, make them standard for
@@ -43,7 +43,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		return errors.New("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set the environment variable")
 	}
 
-	if viper.GetBool("terraform.github.apply.complete") {
+	if viper.GetBool("kubefirst-checks.terraform-apply-github") {
 		log.Info().Msg("destroying github resources with terraform")
 
 		tfEntrypoint := k1GitopsDir + "/terraform/github"
@@ -55,13 +55,12 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)
 			return err
 		}
-		viper.Set("terraform.github.apply.complete", false)
-		viper.Set("terraform.github.destroy.complete", true)
+		viper.Set("kubefirst-checks.terraform-apply-github", false)
 		viper.WriteConfig()
 		log.Info().Msg("github resources terraform destroyed")
 	}
 
-	if viper.GetBool("terraform.civo.apply.complete") {
+	if viper.GetBool("kubefirst-checks.terraform-apply-civo") {
 		log.Info().Msg("destroying civo resources with terraform")
 
 		clusterName := viper.GetString("kubefirst.cluster-name")
@@ -133,20 +132,30 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)
 			return err
 		}
-		viper.Set("terraform.civo.apply.complete", false)
-		viper.Set("terraform.civo.destroy.complete", true)
+		viper.Set("kubefirst-checks.terraform-apply-civo", false)
 		viper.WriteConfig()
 		log.Info().Msg("civo resources terraform destroyed")
 	}
 
 	//* remove local content and kubefirst config file for re-execution
-	log.Info().Msg("removing previous platform content")
-	err := pkg.ResetK1Dir(k1Dir, kubefirstConfigPath)
-	if err != nil {
-		return err
+	if viper.GetBool("kubefirst-checks.terraform-apply-github") && viper.GetBool("kubefirst-checks.terraform-apply-civo") {
+		log.Info().Msg("removing previous platform content")
+		err := pkg.ResetK1Dir(k1Dir, kubefirstConfigPath)
+		if err != nil {
+			return err
+		}
+		log.Info().Msg("previous platform content removed")
 	}
 
-	fmt.Println("\nsuccessfully removed previous platform content from $HOME/.k1")
+	log.Info().Msg("resetting `$HOME/.kubefirst` config")
+	viper.Set("argocd", nil)
+	viper.Set("github", nil)
+	viper.Set("components", nil)
+	viper.Set("kbot", nil)
+	viper.Set("kubefirst-checks", nil)
+	viper.Set("kubefirst", nil)
+
+	fmt.Println("\nsuccessfully removed previous platform content from `$HOME/.k1`")
 	fmt.Println("to recreate your kubefirst platform run")
 	fmt.Println("\n\nkubefirst civo create \\")
 	fmt.Printf("    --admin-email %s \\\n", adminEmail)

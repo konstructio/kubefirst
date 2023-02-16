@@ -826,50 +826,41 @@ func FindStringInSlice(s []string, str string) bool {
 }
 
 func ResetK1Dir(k1Dir, kubefirstFilePath string) error {
-	//* directories
-	err := os.RemoveAll(k1Dir + "/argo-workflows")
-	if err != nil {
-		return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/argo-workflows", err)
-	}
-	err = os.RemoveAll(k1Dir + "/gitops")
-	if err != nil {
-		return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/gitops", err)
-	}
-	err = os.RemoveAll(k1Dir + "/metaphor-frontend")
-	if err != nil {
-		return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/metaphor-frontend", err)
+
+	if _, err := os.Stat(k1Dir + "/argo-workflows"); !os.IsNotExist(err) {
+		// path/to/whatever exists
+		err := os.RemoveAll(k1Dir + "/argo-workflows")
+		if err != nil {
+			return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/argo-workflows", err)
+		}
 	}
 
+	if _, err := os.Stat(k1Dir + "/gitops"); !os.IsNotExist(err) {
+		err := os.RemoveAll(k1Dir + "/gitops")
+		if err != nil {
+			return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/gitops", err)
+		}
+	}
+	if _, err := os.Stat(k1Dir + "/metaphor-frontend"); !os.IsNotExist(err) {
+		err := os.RemoveAll(k1Dir + "/metaphor-frontend")
+		if err != nil {
+			return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/metaphor-frontend", err)
+		}
+	}
 	// todo look at logic to not re-download
-	err = os.RemoveAll(k1Dir + "/tools")
-	if err != nil {
-		return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/tools", err)
+	if _, err := os.Stat(k1Dir + "/tools"); !os.IsNotExist(err) {
+		err = os.RemoveAll(k1Dir + "/tools")
+		if err != nil {
+			return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/tools", err)
+		}
 	}
-
 	//* files
 	//! this might fail with an adjustment made to validate
-	err = os.Remove(k1Dir + "/argocd-init-values.yaml")
-	if err != nil {
-		return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/argocd-init-values.yaml", err)
-	}
-	// viper.Set("kubefirst-checks", nil)
-	// viper.Set("components", nil)
-	// viper.Set("kubefirst", nil)
-	// viper.Set("kbot", nil)
-	// viper.Set("github", nil)
-	err = os.Remove(kubefirstFilePath)
-	if err != nil {
-		return fmt.Errorf("unable to delete `$HOME/.kubefirst`, error: %s", err)
-	}
-
-	// re-create .kubefirst file
-	kubefirstFile, err := os.Create(kubefirstFilePath)
-	if err != nil {
-		return fmt.Errorf("unable to create `$HOME/.kubefirst`: %v", err)
-	}
-	err = kubefirstFile.Close()
-	if err != nil {
-		return err
+	if _, err := os.Stat(k1Dir + "/argocd-init-values.yaml"); !os.IsNotExist(err) {
+		err = os.Remove(k1Dir + "/argocd-init-values.yaml")
+		if err != nil {
+			return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/argocd-init-values.yaml", err)
+		}
 	}
 
 	return nil

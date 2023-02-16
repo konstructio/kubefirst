@@ -242,6 +242,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		pkg.InformUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), silentMode)
 		helm.AddRepoAndUpdateRepo(dryRun, config.HelmClientPath, helmRepo, config.KubeConfigPath)
+		viper.Set("argocd.helm.repo.added", true)
 		viper.Set("argocd.helm.repo.updated", true)
 		viper.WriteConfig()
 	}

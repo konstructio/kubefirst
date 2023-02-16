@@ -87,8 +87,6 @@ func AddRepoAndUpdateRepo(dryRun bool, helmClientPath string, helmRepo HelmRepo,
 		log.Error().Err(err).Msgf("error adding helm repo %s", helmRepo.RepoName)
 		return err
 	}
-	viper.Set("argocd.helm.repo.added", true)
-	viper.WriteConfig()
 
 	log.Info().Msg("executing `helm repo update`")
 	_, _, err = pkg.ExecShellReturnStrings(helmClientPath, "--kubeconfig", kubeconfigPath, "repo", "update")
