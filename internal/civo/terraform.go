@@ -36,7 +36,7 @@ func GetGithubTerraformEnvs(envs map[string]string) map[string]string {
 
 func GetUsersTerraformEnvs(envs map[string]string) map[string]string {
 
-	envs["VAULT_TOKEN"] = viper.GetString("vault.token")
+	envs["VAULT_TOKEN"] = viper.GetString("components.vault.token")
 	envs["VAULT_ADDR"] = viper.GetString("components.vault.port-forward-url")
 	envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
 	envs["GITHUB_OWNER"] = viper.GetString("github.owner")
@@ -51,9 +51,9 @@ func GetVaultTerraformEnvs(envs map[string]string) map[string]string {
 	envs["TF_VAR_email_address"] = viper.GetString("flags.admin-email")
 	envs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
 	envs["TF_VAR_vault_addr"] = viper.GetString("components.vault.port-forward-url")
-	envs["TF_VAR_vault_token"] = viper.GetString("vault.token")
+	envs["TF_VAR_vault_token"] = viper.GetString("components.vault.token")
 	envs["VAULT_ADDR"] = viper.GetString("components.vault.port-forward-url")
-	envs["VAULT_TOKEN"] = viper.GetString("vault.token")
+	envs["VAULT_TOKEN"] = viper.GetString("components.vault.token")
 	envs["TF_VAR_civo_token"] = os.Getenv("CIVO_TOKEN")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("components.atlantis.webhook.secret")
 	envs["TF_VAR_atlantis_repo_webhook_url"] = viper.GetString("components.atlantis.webhook.url")

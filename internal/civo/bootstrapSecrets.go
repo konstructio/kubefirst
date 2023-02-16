@@ -145,7 +145,7 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
 	dataArgoCd := map[string][]byte{
 		"type":          []byte("git"),
 		"name":          []byte(fmt.Sprintf("%s-gitops", viper.GetString("github.owner"))),
-		"url":           []byte(viper.GetString("github.repo.gitops.git-url")),
+		"url":           []byte(viper.GetString("github.repos.gitops.git-url")),
 		"sshPrivateKey": []byte(viper.GetString("kbot.private-key")),
 	}
 
