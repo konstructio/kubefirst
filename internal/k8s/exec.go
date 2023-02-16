@@ -4,13 +4,121 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"golang.org/x/crypto/ssh/terminal"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/remotecommand"
 )
+
+func CreateSecretV2(kubeConfigPath string, secret *v1.Secret) error {
+	clientset, err := GetClientSet(false, kubeConfigPath)
+	if err != nil {
+		return err
+	}
+
+	_, err = clientset.CoreV1().Secrets("default").Create(
+		context.Background(),
+		secret,
+		metaV1.CreateOptions{},
+	)
+	if err != nil {
+		return err
+	}
+	log.Info().Msgf("Created Secret %s in Namespace %s\n", secret.Name, secret.Namespace)
+	return nil
+}
+
+func ReadSecretV2(kubeConfigPath string, secretName string) (map[string]string, error) {
+	clientset, err := GetClientSet(false, kubeConfigPath)
+	if err != nil {
+		return map[string]string{}, err
+	}
+
+	secret, err := clientset.CoreV1().Secrets("default").Get(context.Background(), secretName, metaV1.GetOptions{})
+	if err != nil {
+		log.Error().Msgf("Error getting secret: %s\n", err)
+		return map[string]string{}, nil
+	}
+
+	parsedSecretData := make(map[string]string)
+	for key, value := range secret.Data {
+		parsedSecretData[key] = string(value)
+	}
+
+	return parsedSecretData, nil
+}
+
+// PodExecSession executes a command against a Pod
+func PodExecSession(kubeConfigPath string, p *PodSessionOptions) error {
+	// v1.PodExecOptions is passed to the rest client to form the req URL
+	podExecOptions := v1.PodExecOptions{
+		Stdin:   true,
+		Stdout:  true,
+		Stderr:  true,
+		TTY:     p.TtyEnabled,
+		Command: p.Command,
+	}
+
+	err := podExec(kubeConfigPath, p, podExecOptions)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// podExec performs kube-exec on a Pod with a given command
+func podExec(kubeConfigPath string, ps *PodSessionOptions, pe v1.PodExecOptions) error {
+	clientset, err := GetClientSet(false, kubeConfigPath)
+	if err != nil {
+		return err
+	}
+
+	config, err := GetClientConfig(false, kubeConfigPath)
+	if err != nil {
+		return err
+	}
+
+	// Format the request to be sent to the API
+	req := clientset.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(ps.PodName).
+		Namespace(ps.Namespace).
+		SubResource("exec")
+	req.VersionedParams(&pe, scheme.ParameterCodec)
+
+	// POST op against Kubernetes API to initiate remote command
+	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
+	if err != nil {
+		log.Fatal().Msgf("Error executing command on Pod: %s", err)
+		return err
+	}
+
+	// Put the terminal into raw mode to prevent it echoing characters twice
+	oldState, err := terminal.MakeRaw(0)
+	if err != nil {
+		log.Fatal().Msgf("Error when attempting to start terminal: %s", err)
+		return err
+	}
+	defer terminal.Restore(0, oldState)
+
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+		Tty:    ps.TtyEnabled,
+	})
+	if err != nil {
+		log.Fatal().Msgf("Error running command on Pod: %s", err)
+	}
+	return nil
+}
 
 // ReturnDeploymentObject returns a matching appsv1.Deployment object based on the filters
 func ReturnDeploymentObject(kubeConfigPath string, matchLabel string, matchLabelValue string, namespace string, timeoutSeconds float64) (*appsv1.Deployment, error) {

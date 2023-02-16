@@ -24,6 +24,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/kubefirst/kubefirst/internal/terraform"
+	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
@@ -469,6 +470,27 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		8200,
 		vaultStopChannel,
 	)
+
+	// Initialize and unseal Vault
+	opts := vault.VaultUnsealOptions{
+		VaultAPIAddress:      "http://localhost:8200",
+		HighAvailability:     true,
+		HighAvailabilityType: "raft",
+		RaftLeader:           true,
+		RaftFollower:         false,
+		UseAPI:               true,
+	}
+	vault.UnsealVault(kubeconfigPath, &opts)
+
+	opts = vault.VaultUnsealOptions{
+		HighAvailability:     true,
+		HighAvailabilityType: "raft",
+		Nodes:                3,
+		RaftLeader:           false,
+		RaftFollower:         true,
+		UseAPI:               false,
+	}
+	vault.UnsealVault(kubeconfigPath, &opts)
 
 	//* configure vault with terraform
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
