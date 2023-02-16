@@ -13,8 +13,8 @@ import (
 func backupCivoSSL(cmd *cobra.Command, args []string) error {
 
 	domainName := viper.GetString("domain-name")
-	k1Dir := viper.GetString("kubefirst.k1-dir")
-	kubeconfigPath := viper.GetString("kubefirst.kubeconfig-path")
+	k1Dir := viper.GetString("k1-paths.k1-dir")
+	kubeconfigPath := viper.GetString("k1-paths.kubeconfig")
 	backupDir := fmt.Sprintf("%s/ssl/%s", k1Dir, domainName)
 
 	if _, err := os.Stat(backupDir + "/certificates"); os.IsNotExist(err) {

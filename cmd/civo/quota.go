@@ -71,7 +71,7 @@ func returnCivoQuotaEvaluation(showAll bool) (string, int, int, error) {
 
 	quota, err := client.GetQuota()
 	if err != nil {
-		log.Info().Msg(fmt.Sprintf("failed to fetch civo quota: %s", err))
+		log.Info().Msgf("failed to fetch civo quota: %s", err)
 		return "", 0, 0, err
 
 	}
@@ -82,12 +82,12 @@ func returnCivoQuotaEvaluation(showAll bool) (string, int, int, error) {
 	// Marshal quota and unmarshal into map
 	quotaJSON, err := json.Marshal(quota)
 	if err != nil {
-		log.Info().Msg(fmt.Sprintf("failed to marshal civo quota struct: %s", err))
+		log.Info().Msgf("failed to marshal civo quota struct: %s", err)
 		return "", 0, 0, err
 	}
 	err = json.Unmarshal(quotaJSON, &quotaMap)
 	if err != nil {
-		log.Info().Msg(fmt.Sprintf("failed to unmarshal civo quota struct: %s", err))
+		log.Info().Msgf("failed to unmarshal civo quota struct: %s", err)
 		return "", 0, 0, err
 	}
 

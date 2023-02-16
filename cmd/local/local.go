@@ -242,6 +242,9 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		pkg.InformUser(fmt.Sprintf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL), silentMode)
 		helm.AddRepoAndUpdateRepo(dryRun, config.HelmClientPath, helmRepo, config.KubeConfigPath)
+		viper.Set("argocd.helm.repo.added", true)
+		viper.Set("argocd.helm.repo.updated", true)
+		viper.WriteConfig()
 	}
 
 	// helm install argocd
@@ -250,6 +253,8 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		pkg.InformUser(fmt.Sprintf("helm install %s and wait", helmRepo.RepoName), silentMode)
 		helm.Install(dryRun, config.HelmClientPath, helmRepo, config.KubeConfigPath)
+		viper.Set("argocd.helm.install.complete", true)
+		viper.WriteConfig()
 	}
 	progressPrinter.IncrementTracker("step-apps", 1)
 
