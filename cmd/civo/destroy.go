@@ -30,7 +30,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	k1Dir := viper.GetString("k1-paths.k1-dir")
 	k1GitopsDir := viper.GetString("k1-paths.gitops-dir")
 	kubefirstConfigPath := viper.GetString("k1-paths.kubefirst-config")
-	registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", clusterName, k1Dir)
+	registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", k1Dir, clusterName)
 
 	// todo improve these checks, make them standard for
 	// both create and destroy
