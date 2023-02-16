@@ -105,11 +105,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
 	}
 
-	clientset, err := k8s.GetClientSet(dryRun, kubeconfigPath)
-	if err != nil {
-		return err
-	}
-
 	//* emit cluster install started
 	if useTelemetryFlag {
 		if err := wrappers.SendSegmentIoTelemetry(domainName, pkg.MetricMgmtClusterInstallStarted, cloudProvider, gitProvider); err != nil {
@@ -294,6 +289,11 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already created github terraform resources")
+	}
+
+	clientset, err := k8s.GetClientSet(dryRun, kubeconfigPath)
+	if err != nil {
+		return err
 	}
 
 	// kubernetes.BootstrapSecrets
