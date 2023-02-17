@@ -472,6 +472,8 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	)
 
 	// Initialize and unseal Vault
+	// todo: Verify the port-forward above actually doesn't close until the top level
+	// func completes - if not, this first step won't work
 	vault.UnsealVault(kubeconfigPath, &vault.VaultUnsealOptions{
 		VaultAPIAddress:      "http://localhost:8200",
 		HighAvailability:     true,
