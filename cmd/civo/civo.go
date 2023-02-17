@@ -472,25 +472,23 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	)
 
 	// Initialize and unseal Vault
-	opts := vault.VaultUnsealOptions{
+	vault.UnsealVault(kubeconfigPath, &vault.VaultUnsealOptions{
 		VaultAPIAddress:      "http://localhost:8200",
 		HighAvailability:     true,
 		HighAvailabilityType: "raft",
 		RaftLeader:           true,
 		RaftFollower:         false,
 		UseAPI:               true,
-	}
-	vault.UnsealVault(kubeconfigPath, &opts)
+	})
 
-	opts = vault.VaultUnsealOptions{
+	vault.UnsealVault(kubeconfigPath, &vault.VaultUnsealOptions{
 		HighAvailability:     true,
 		HighAvailabilityType: "raft",
 		Nodes:                3,
 		RaftLeader:           false,
 		RaftFollower:         true,
 		UseAPI:               false,
-	}
-	vault.UnsealVault(kubeconfigPath, &opts)
+	})
 
 	//* configure vault with terraform
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
