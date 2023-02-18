@@ -2,10 +2,12 @@ package civo
 
 import (
 	"fmt"
-	"log"
+
+	"os"
 	"runtime"
 
 	"github.com/caarlos0/env/v6"
+	"github.com/rs/zerolog/log"
 )
 
 type CivoConfig struct {
@@ -18,37 +20,47 @@ type CivoConfig struct {
 	DestinationMetaphorRepoGitURL   string
 	GitopsDir                       string
 	HelmClient                      string
+	K1Dir                           string
 	Kubeconfig                      string
 	KubectlClient                   string
 	KubefirstConfig                 string
 	LogsDir                         string
 	MetaphorDir                     string
+	RegistryYaml                    string
+	SSLBackupDir                    string
 	TerraformClient                 string
 	ToolsDir                        string
 }
 
-func GetConfig(homeDir, githubOwnerFlag string) *CivoConfig {
+func GetConfig(clusterName string, domainName string, githubOwner string) *CivoConfig {
 
 	config := CivoConfig{}
 
 	// todo do we want these from envs?
 	if err := env.Parse(&config); err != nil {
-		log.Println("something went wrong loading the environment variables")
-		log.Panic(err)
+		log.Panic().Msgf("error reading environment variables %s", err.Error())
 	}
 
-	config.DestinationGitopsRepoHttpsURL = fmt.Sprintf("https://github.com/%s/gitops.git", githubOwnerFlag)
-	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@github.com:%s/gitops.git", githubOwnerFlag)
-	config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("https://github.com/%s/metaphor-frontend.git", githubOwnerFlag)
-	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@github.com:%s/metaphor-frontend.git", githubOwnerFlag)
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Panic().Msg(err.Error())
+	}
+
+	config.DestinationGitopsRepoHttpsURL = fmt.Sprintf("https://github.com/%s/gitops.git", githubOwner)
+	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@github.com:%s/gitops.git", githubOwner)
+	config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("https://github.com/%s/metaphor-frontend.git", githubOwner)
+	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@github.com:%s/metaphor-frontend.git", githubOwner)
 
 	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
 	config.HelmClient = fmt.Sprintf("%s/.k1/tools/helm", homeDir)
 	config.Kubeconfig = fmt.Sprintf("%s/.k1/kubeconfig", homeDir)
+	config.K1Dir = fmt.Sprintf("%s/.k1", homeDir)
 	config.KubectlClient = fmt.Sprintf("%s/.k1/tools/kubectl", homeDir)
 	config.KubefirstConfig = fmt.Sprintf("%s/.k1/%s", homeDir, ".kubefirst")
 	config.LogsDir = fmt.Sprintf("%s/.k1/logs", homeDir)
 	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor-frontend", homeDir)
+	config.RegistryYaml = fmt.Sprintf("%s/.k1/gitops/registry/%s/registry.yaml", homeDir, clusterName)
+	config.SSLBackupDir = fmt.Sprintf("%s/.k1/ssl/%s", homeDir, domainName)
 	config.TerraformClient = fmt.Sprintf("%s/.k1/tools/terraform", homeDir)
 	config.ToolsDir = fmt.Sprintf("%s/.k1/tools", homeDir)
 
