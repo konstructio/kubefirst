@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -217,6 +218,23 @@ func GetClientSet(dryRun bool, kubeconfigPath string) (*kubernetes.Clientset, er
 	}
 
 	return clientset, nil
+}
+
+// GetClientConfig returns a rest.Config object for working with the Kubernetes
+// API
+func GetClientConfig(dryRun bool, kubeconfigPath string) (*rest.Config, error) {
+	if dryRun {
+		log.Info().Msgf("[#99] Dry-run mode, GetClientConfig skipped.")
+		return nil, nil
+	}
+
+	clientconfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	if err != nil {
+		log.Error().Err(err).Msg("Error getting kubeconfig")
+		return nil, err
+	}
+
+	return clientconfig, nil
 }
 
 // deprecated

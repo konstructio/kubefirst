@@ -24,6 +24,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/kubefirst/kubefirst/internal/terraform"
+	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
@@ -374,7 +375,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding ArgoCD StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(kubeconfigPath, argoCDStatefulSet, 90)
+	_, err = k8s.WaitForStatefulSetReady(kubeconfigPath, argoCDStatefulSet, 90, false)
 	if err != nil {
 		log.Info().Msgf("Error waiting for ArgoCD StatefulSet ready state: %s", err)
 	}
@@ -451,7 +452,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(kubeconfigPath, vaultStatefulSet, 60)
+	_, err = k8s.WaitForStatefulSetReady(kubeconfigPath, vaultStatefulSet, 60, true)
 	if err != nil {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
@@ -469,6 +470,27 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		8200,
 		vaultStopChannel,
 	)
+
+	// Initialize and unseal Vault
+	// todo: Verify the port-forward above actually doesn't close until the top level
+	// func completes - if not, this first step won't work
+	vault.UnsealVault(kubeconfigPath, &vault.VaultUnsealOptions{
+		VaultAPIAddress:      "http://localhost:8200",
+		HighAvailability:     true,
+		HighAvailabilityType: "raft",
+		RaftLeader:           true,
+		RaftFollower:         false,
+		UseAPI:               true,
+	})
+
+	vault.UnsealVault(kubeconfigPath, &vault.VaultUnsealOptions{
+		HighAvailability:     true,
+		HighAvailabilityType: "raft",
+		Nodes:                3,
+		RaftLeader:           false,
+		RaftFollower:         true,
+		UseAPI:               false,
+	})
 
 	//* configure vault with terraform
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
