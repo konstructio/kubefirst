@@ -8,28 +8,23 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
-// todo can we take the final struct
-
 type CivoConfig struct {
-	CivoToken        string `env:"CIVO_TOKEN"`
-	ClusterName      string `env:"CLUSTER_NAME"`
-	GithubToken      string `env:"GITHUB_TOKEN"`
-	KubefirstLogPath string `env:"KUBEFIRST_LOG_PATH" envDefault:"logs"`
+	CivoToken   string `env:"CIVO_TOKEN"`
+	GithubToken string `env:"GITHUB_TOKEN"`
 
 	DestinationGitopsRepoHttpsURL   string
 	DestinationGitopsRepoGitURL     string
 	DestinationMetaphorRepoHttpsURL string
 	DestinationMetaphorRepoGitURL   string
-
-	GitopsDir       string
-	HelmClient      string
-	Kubeconfig      string
-	kubectlClient   string
-	KubefirstConfig string
-	LogsDir         string
-	MetaphorDir     string
-	TerraformClient string
-	ToolsDir        string
+	GitopsDir                       string
+	HelmClient                      string
+	Kubeconfig                      string
+	KubectlClient                   string
+	KubefirstConfig                 string
+	LogsDir                         string
+	MetaphorDir                     string
+	TerraformClient                 string
+	ToolsDir                        string
 }
 
 func GetConfig(homeDir, githubOwnerFlag string) *CivoConfig {
@@ -50,7 +45,7 @@ func GetConfig(homeDir, githubOwnerFlag string) *CivoConfig {
 	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
 	config.HelmClient = fmt.Sprintf("%s/.k1/tools/helm", homeDir)
 	config.Kubeconfig = fmt.Sprintf("%s/.k1/kubeconfig", homeDir)
-	config.kubectlClient = fmt.Sprintf("%s/.k1/tools/kubectl", homeDir)
+	config.KubectlClient = fmt.Sprintf("%s/.k1/tools/kubectl", homeDir)
 	config.KubefirstConfig = fmt.Sprintf("%s/.k1/%s", homeDir, ".kubefirst")
 	config.LogsDir = fmt.Sprintf("%s/.k1/logs", homeDir)
 	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor-frontend", homeDir)
