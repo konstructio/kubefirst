@@ -6,10 +6,11 @@ import (
 
 var (
 	// Create
-	adminEmailFlag             string
+	alertsEmailFlag            string
 	cloudRegionFlag            string
 	clusterNameFlag            string
 	clusterTypeFlag            string
+	dryRun                     bool
 	githubOwnerFlag            string
 	gitopsTemplateURLFlag      string
 	gitopsTemplateBranchFlag   string
@@ -56,18 +57,18 @@ func Create() *cobra.Command {
 		Use:              "create",
 		Short:            "create the kubefirst platform running on civo kubernetes",
 		TraverseChildren: true,
-		PreRunE:          validateCivo,
 		RunE:             runCivo,
 	}
 
 	// todo review defaults and update descriptions
-	createCmd.Flags().StringVar(&adminEmailFlag, "admin-email", "", "email address for let's encrypt certificate notifications (required)")
-	createCmd.MarkFlagRequired("admin-email")
+	createCmd.Flags().StringVar(&alertsEmailFlag, "alerts-email", "", "email address for let's encrypt certificate notifications (required)")
+	createCmd.MarkFlagRequired("alerts-email")
 	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "NYC1", "the civo region to provision infrastructure in")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the Civo DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
+	createCmd.Flags().BoolVar(&dryRun, "dry-run", false, "don't execute the installation")
 	createCmd.Flags().StringVar(&githubOwnerFlag, "github-owner", "", "the GitHub owner of the new gitops and metaphor repositories (required)")
 	createCmd.MarkFlagRequired("github-owner")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "main", "the branch to clone for the gitops-template repository")
