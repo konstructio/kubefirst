@@ -375,7 +375,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding ArgoCD StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(kubeconfigPath, argoCDStatefulSet, 90)
+	_, err = k8s.WaitForStatefulSetReady(kubeconfigPath, argoCDStatefulSet, 90, false)
 	if err != nil {
 		log.Info().Msgf("Error waiting for ArgoCD StatefulSet ready state: %s", err)
 	}
@@ -452,7 +452,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(kubeconfigPath, vaultStatefulSet, 60)
+	_, err = k8s.WaitForStatefulSetReady(kubeconfigPath, vaultStatefulSet, 60, true)
 	if err != nil {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}

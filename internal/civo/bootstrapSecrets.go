@@ -64,10 +64,31 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
 
 	// This is necessary since it's required to be present when configuring the Vault auth
 	// for Kubernetes so that permissions can be associated with the ServiceAccount
-	externalSecretOperatorServiceAccount := &v1.ServiceAccount{
+
+	// atlantis
+	var automountServiceAccountToken bool = true
+	atlantisServiceAccount := &v1.ServiceAccount{
+		ObjectMeta:                   metav1.ObjectMeta{Name: "atlantis", Namespace: "atlantis"},
+		AutomountServiceAccountToken: &automountServiceAccountToken,
+	}
+	_, err = clientset.CoreV1().ServiceAccounts(
+		"atlantis").Create(
+		context.TODO(), atlantisServiceAccount, metav1.CreateOptions{},
+	)
+	if err != nil {
+		log.Info().Msgf("Error: %s", err)
+		return errors.New("error creating kubernetes service account: atlantis/atlantis")
+	}
+	log.Info().Msg("created service account: atlantis/atlantis")
+
+	// external-secrets-operator
+	externalSecretsOperatorServiceAccount := &v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{Name: "external-secrets", Namespace: "external-secrets-operator"},
 	}
-	_, err = clientset.CoreV1().ServiceAccounts("external-secrets-operator").Create(context.TODO(), externalSecretOperatorServiceAccount, metav1.CreateOptions{})
+	_, err = clientset.CoreV1().ServiceAccounts(
+		"external-secrets-operator").Create(
+		context.TODO(), externalSecretsOperatorServiceAccount, metav1.CreateOptions{},
+	)
 	if err != nil {
 		log.Info().Msgf("Error: %s", err)
 		return errors.New("error creating kubernetes service account: external-secrets-operator/external-secrets")

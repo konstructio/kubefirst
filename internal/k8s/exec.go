@@ -23,7 +23,7 @@ func CreateSecretV2(kubeConfigPath string, secret *v1.Secret) error {
 		return err
 	}
 
-	_, err = clientset.CoreV1().Secrets("default").Create(
+	_, err = clientset.CoreV1().Secrets(secret.Namespace).Create(
 		context.Background(),
 		secret,
 		metaV1.CreateOptions{},
@@ -35,13 +35,13 @@ func CreateSecretV2(kubeConfigPath string, secret *v1.Secret) error {
 	return nil
 }
 
-func ReadSecretV2(kubeConfigPath string, secretName string) (map[string]string, error) {
+func ReadSecretV2(kubeConfigPath string, namespace string, secretName string) (map[string]string, error) {
 	clientset, err := GetClientSet(false, kubeConfigPath)
 	if err != nil {
 		return map[string]string{}, err
 	}
 
-	secret, err := clientset.CoreV1().Secrets("default").Get(context.Background(), secretName, metaV1.GetOptions{})
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(context.Background(), secretName, metaV1.GetOptions{})
 	if err != nil {
 		log.Error().Msgf("Error getting secret: %s\n", err)
 		return map[string]string{}, nil
@@ -366,7 +366,7 @@ func WaitForPodReady(kubeConfigPath string, pod *v1.Pod, timeoutSeconds int64) (
 }
 
 // WaitForStatefulSetReady waits for a target StatefulSet to become ready
-func WaitForStatefulSetReady(kubeConfigPath string, statefulset *appsv1.StatefulSet, timeoutSeconds int64) (bool, error) {
+func WaitForStatefulSetReady(kubeConfigPath string, statefulset *appsv1.StatefulSet, timeoutSeconds int64, ignoreReady bool) (bool, error) {
 	clientset, err := GetClientSet(false, kubeConfigPath)
 	if err != nil {
 		return false, err
@@ -398,12 +398,22 @@ func WaitForStatefulSetReady(kubeConfigPath string, statefulset *appsv1.Stateful
 				// Error if the channel closes
 				log.Fatal().Msgf("Error waiting for StatefulSet: %s", err)
 			}
-			if event.
-				Object.(*appsv1.StatefulSet).
-				Status.ReadyReplicas == configuredReplicas {
-				log.Info().Msgf("All Pods in StatefulSet %s are ready.", statefulset.Name)
-				return true, nil
+			if ignoreReady {
+				if event.
+					Object.(*appsv1.StatefulSet).
+					Status.CurrentReplicas == configuredReplicas {
+					log.Info().Msgf("All Pods in StatefulSet %s have been created.", statefulset.Name)
+					return true, nil
+				}
+			} else {
+				if event.
+					Object.(*appsv1.StatefulSet).
+					Status.ReadyReplicas == configuredReplicas {
+					log.Info().Msgf("All Pods in StatefulSet %s are ready.", statefulset.Name)
+					return true, nil
+				}
 			}
+
 		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
 			log.Error().Msg("The StatefulSet was not ready within the timeout period.")
 			return false, errors.New("The StatefulSet was not ready within the timeout period.")
