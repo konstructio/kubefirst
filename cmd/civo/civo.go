@@ -114,7 +114,6 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 	config := civo.GetConfig(clusterNameFlag, domainNameFlag, githubOwnerFlag)
 
-	sslBackupDir := fmt.Sprintf("%s/ssl/%s", config.K1Dir, domainNameFlag)
 	var sshPrivateKey, sshPublicKey string
 
 	// todo placed in configmap in kubefirst namespace, included in telemetry
@@ -628,7 +627,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 	//* check for ssl restore
 	log.Info().Msg("checking for tls secrets to restore")
-	secretsFilesToRestore, err := ioutil.ReadDir(sslBackupDir + "/secrets")
+	secretsFilesToRestore, err := ioutil.ReadDir(config.SSLBackupDir + "/secrets")
 	if err != nil {
 		log.Info().Msgf("%s", err)
 	}
@@ -639,7 +638,7 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		// https://raw.githubusercontent.com/cert-manager/cert-manager/v1.11.0/deploy/crds/crd-certificates.yaml
 		// add certificates, and clusterissuers
 		log.Info().Msgf("found %d tls secrets to restore", len(secretsFilesToRestore))
-		ssl.Restore(sslBackupDir, domainNameFlag, config.Kubeconfig)
+		ssl.Restore(config.SSLBackupDir, domainNameFlag, config.Kubeconfig)
 	} else {
 		log.Info().Msg("no files found in secrets directory, continuing")
 	}
