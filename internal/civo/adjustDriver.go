@@ -1,4 +1,4 @@
-package pkg
+package civo
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	cp "github.com/otiai10/copy"
+
 	"github.com/rs/zerolog/log"
 )
 
