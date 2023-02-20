@@ -16,7 +16,6 @@ var (
 	gitopsTemplateBranchFlag   string
 	metaphorTemplateBranchFlag string
 	metaphorTemplateURLFlag    string
-	domainNameFlag             string
 	kbotPasswordFlag           string
 	useTelemetryFlag           bool
 

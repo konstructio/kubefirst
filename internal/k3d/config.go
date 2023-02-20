@@ -10,7 +10,11 @@ import (
 )
 
 const (
+	CloudProvider    = "k3d"
+	DomainName       = "localdev.me"
 	HelmVersion      = "v3.6.1"
+	GitProvider      = "github"
+	GithubHost       = "github.com"
 	K3dVersion       = "v5.4.6"
 	KubectlVersion   = "v1.22.0"
 	LocalhostOS      = runtime.GOOS
@@ -62,9 +66,23 @@ func GetConfig(githubOwner string) *K3dConfig {
 	return &config
 }
 
-// helm
-// k3d
-// kubectl
-// mkcert
-//* terraform
-//
+type K3dTokenValues struct {
+	GithubOwner                   string
+	GithubUser                    string
+	GitopsRepoGitURL              string
+	DomainName                    string
+	AtlantisAllowList             string
+	NgrokHost                     string
+	AlertsEmail                   string
+	ClusterName                   string
+	ClusterType                   string
+	GithubHost                    string
+	ArgoWorkflowsIngressURL       string
+	VaultIngressURL               string
+	ArgocdIngressURL              string
+	AtlantisIngressURL            string
+	MetaphorDevelopmentIngressURL string
+	MetaphorStagingIngressURL     string
+	MetaphorProductionIngressURL  string
+	KubefirstVersion              string
+}

@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
@@ -65,5 +66,36 @@ func CreateK3dCluster() error {
 	} else {
 		log.Info().Msg("K3d Cluster already created")
 	}
+	return nil
+}
+
+//  should tokens be a *K3dTokenValues? does it matter
+func PrepareGitopsRepository(clusterName, clusterType, k1Dir, gitopsDir string, gitopsTemplateBranch string, gitopsTemplateURL string, tokens *K3dTokenValues) error {
+
+	_, err := gitClient.CloneRefSetMain(gitopsTemplateBranch, gitopsDir, gitopsTemplateURL)
+	if err != nil {
+		log.Info().Msgf("error opening repo at: %s", gitopsDir)
+	}
+	log.Info().Msg("gitops repository clone complete")
+
+	err = k3dGithubAdjustGitopsTemplateContent(CloudProvider, clusterName, clusterType, GitProvider, k1Dir, gitopsDir)
+	if err != nil {
+		return err
+	}
+
+	DetokenizeK3dGithubGitops(gitopsDir, tokens)
+	if err != nil {
+		return err
+	}
+	os.Exit(1)
+	// err = gitClient.AddRemote(destinationGitopsRepoGitURL, GitProvider, gitopsRepo)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
 }

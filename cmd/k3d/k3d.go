@@ -11,8 +11,6 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/civo"
-	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
@@ -80,12 +78,44 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// required for destroy command
 	viper.Set("flags.cluster-name", clusterNameFlag)
-	viper.Set("flags.domain-name", domainNameFlag)
+	viper.Set("flags.domain-name", k3d.DomainName)
 	viper.Set("flags.dry-run", dryRunFlag)
 	viper.Set("flags.github-owner", githubOwnerFlag)
 	viper.WriteConfig()
 
+	// creates a new context, and a cancel function that allows canceling the context. The context is passed as an
+	// argument to the RunNgrok function, which is then started in a new goroutine.
+	var ctx context.Context
+	ctx, cancelContext = context.WithCancel(context.Background())
+	go pkg.RunNgrok(ctx)
+	if err != nil {
+		return err
+	}
+	ngrokHost := viper.GetString("ngrok.host")
+
 	config := k3d.GetConfig(githubOwnerFlag)
+
+	k3dTokens := k3d.K3dTokenValues{}
+
+	// not sure if there is a better way to do this
+	k3dTokens.GithubOwner = githubOwnerFlag
+	k3dTokens.GithubUser = githubOwnerFlag
+	k3dTokens.GitopsRepoGitURL = config.DestinationGitopsRepoGitURL
+	k3dTokens.DomainName = k3d.DomainName
+	k3dTokens.AtlantisAllowList = fmt.Sprintf("github.com/%s/gitops", githubOwnerFlag)
+	k3dTokens.NgrokHost = ngrokHost
+	k3dTokens.AlertsEmail = "REMOVE_THIS_VALUE"
+	k3dTokens.ClusterName = clusterNameFlag
+	k3dTokens.ClusterType = clusterTypeFlag
+	k3dTokens.GithubHost = k3d.GithubHost
+	k3dTokens.ArgoWorkflowsIngressURL = fmt.Sprintf("https://argo.%s", k3d.DomainName)
+	k3dTokens.VaultIngressURL = fmt.Sprintf("https://vault.%s", k3d.DomainName)
+	k3dTokens.ArgocdIngressURL = fmt.Sprintf("https://argocd.%s", k3d.DomainName)
+	k3dTokens.AtlantisIngressURL = fmt.Sprintf("https://atlantis.%s", k3d.DomainName)
+	k3dTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("metaphor-development.%s", k3d.DomainName)
+	k3dTokens.MetaphorStagingIngressURL = fmt.Sprintf("metaphor-staging.%s", k3d.DomainName)
+	k3dTokens.MetaphorProductionIngressURL = fmt.Sprintf("metaphor-production.%s", k3d.DomainName)
+	k3dTokens.KubefirstVersion = configs.K1Version
 
 	var sshPrivateKey, sshPublicKey string
 
@@ -98,7 +128,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitStarted, civo.CloudProvider, civo.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitStarted, k3d.CloudProvider, k3d.GitProvider); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
@@ -147,12 +177,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			pkg.MinimumAvailableDiskSize,
 		)
 	}
-
-	// creates a new context, and a cancel function that allows canceling the context. The context is passed as an
-	// argument to the RunNgrok function, which is then started in a new goroutine.
-	var ctx context.Context
-	ctx, cancelContext = context.WithCancel(context.Background())
-	go pkg.RunNgrok(ctx)
 
 	executionControl := viper.GetBool("kubefirst-checks.github-credentials")
 	if !executionControl {
@@ -260,20 +284,20 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitCompleted, civo.CloudProvider, civo.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitCompleted, k3d.CloudProvider, k3d.GitProvider); err != nil {
+			log.Info().Msg(err.Error())
+			return err
+		}
+	}
+
+	if useTelemetryFlag {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, k3d.GitProvider); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
 	}
 
 	//* generate public keys for ssh
-	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, civo.CloudProvider, civo.GitProvider); err != nil {
-			log.Info().Msg(err.Error())
-			return err
-		}
-	}
-
 	publicKeys, err := ssh.NewPublicKeys("git", []byte(sshPrivateKey), "")
 	if err != nil {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
@@ -282,7 +306,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	//* emit cluster install started
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, civo.CloudProvider, civo.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, k3d.GitProvider); err != nil {
 			log.Info().Msg(err.Error())
 		}
 	}
@@ -291,15 +315,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
 
-		// err = downloadManager.DownloadTools(config)
-		// if err != nil {
-		// 	return err
-		// }
-		// log.Info().Msg("dependency installation complete")
-		// err = downloadManager.DownloadLocalTools(config)
-		// if err != nil {
-		// 	return err
-		// }
+		err := k3d.DownloadTools(githubOwnerFlag)
+		if err != nil {
+			return err
+		}
 
 		log.Info().Msg("download dependencies `$HOME/.k1/tools` complete")
 		viper.Set("kubefirst-checks.tools-downloaded", true)
@@ -314,27 +333,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 
 		log.Info().Msg("generating your new gitops repository")
-		gitopsRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranchFlag, config.GitopsDir, gitopsTemplateURLFlag)
-		if err != nil {
-			log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
-		}
-		log.Info().Msg("gitops repository clone complete")
 
-		err = pkg.CivoGithubAdjustGitopsTemplateContent(civo.CloudProvider, clusterNameFlag, clusterTypeFlag, civo.GitProvider, config.K1Dir, config.GitopsDir)
-		if err != nil {
-			return err
-		}
-
-		pkg.DetokenizeCivoGithubGitops(config.GitopsDir)
-		if err != nil {
-			return err
-		}
-		err = gitClient.AddRemote(config.DestinationGitopsRepoGitURL, civo.GitProvider, gitopsRepo)
-		if err != nil {
-			return err
-		}
-
-		err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
+		err := k3d.PrepareGitopsRepository(clusterNameFlag,
+			clusterTypeFlag,
+			config.K1Dir,
+			config.GitopsDir,
+			gitopsTemplateBranchFlag,
+			gitopsTemplateURLFlag,
+			&k3dTokens,
+		)
 		if err != nil {
 			return err
 		}
@@ -353,7 +360,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// 	tfEntrypoint := config.GitopsDir + "/terraform/github"
 	// 	tfEnvs := map[string]string{}
-	// 	tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
+	// 	tfEnvs = k3d.GetGithubTerraformEnvs(tfEnvs)
 	// 	err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 	// 	if err != nil {
 	// 		return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
@@ -375,7 +382,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// 	}
 
 	// 	err = gitopsRepo.Push(&git.PushOptions{
-	// 		RemoteName: civo.GitProvider,
+	// 		RemoteName: k3d.GitProvider,
 	// 		Auth:       publicKeys,
 	// 	})
 	// 	if err != nil {
@@ -407,7 +414,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// 	log.Info().Msg("metaphor repository clone complete")
 
-	// 	err = pkg.CivoGithubAdjustMetaphorTemplateContent(civo.GitProvider, config.K1Dir, config.MetaphorDir)
+	// 	err = pkg.CivoGithubAdjustMetaphorTemplateContent(k3d.GitProvider, config.K1Dir, config.MetaphorDir)
 	// 	if err != nil {
 	// 		return err
 	// 	}
@@ -416,7 +423,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// 	if err != nil {
 	// 		return err
 	// 	}
-	// 	err = gitClient.AddRemote(config.DestinationMetaphorRepoGitURL, civo.GitProvider, metaphorRepo)
+	// 	err = gitClient.AddRemote(config.DestinationMetaphorRepoGitURL, k3d.GitProvider, metaphorRepo)
 	// 	if err != nil {
 	// 		return err
 	// 	}
@@ -427,7 +434,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// 	}
 
 	// 	err = metaphorRepo.Push(&git.PushOptions{
-	// 		RemoteName: civo.GitProvider,
+	// 		RemoteName: k3d.GitProvider,
 	// 		Auth:       publicKeys,
 	// 	})
 	// 	if err != nil {
@@ -472,7 +479,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// // todo move secret structs to constants to be leveraged by either local or civo
 	// executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	// if !executionControl {
-	// 	err := civo.BootstrapCivoMgmtCluster(dryRunFlag, config.Kubeconfig)
+	// 	err := k3d.BootstrapCivoMgmtCluster(dryRunFlag, config.Kubeconfig)
 	// 	if err != nil {
 	// 		log.Info().Msg("Error adding kubernetes secrets for bootstrap")
 	// 		return err
@@ -496,7 +503,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// 	// https://raw.githubusercontent.com/cert-manager/cert-manager/v1.11.0/deploy/crds/crd-certificates.yaml
 	// 	// add certificates, and clusterissuers
 	// 	log.Info().Msgf("found %d tls secrets to restore", len(secretsFilesToRestore))
-	// 	ssl.Restore(config.SSLBackupDir, domainNameFlag, config.Kubeconfig)
+	// 	ssl.Restore(config.SSLBackupDir, k3d.DomainName, config.Kubeconfig)
 	// } else {
 	// 	log.Info().Msg("no files found in secrets directory, continuing")
 	// }
@@ -565,7 +572,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// 	8080,
 	// 	argoCDStopChannel,
 	// )
-	// log.Info().Msgf("port-forward to argocd is available at %s", civo.ArgocdPortForwardURL)
+	// log.Info().Msgf("port-forward to argocd is available at %s", k3d.ArgocdPortForwardURL)
 
 	// //* argocd pods are ready, get and set credentials
 	// executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
@@ -657,8 +664,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// 	tfEnvs := map[string]string{}
 
-	// 	tfEnvs = civo.GetVaultTerraformEnvs(tfEnvs)
-	// 	tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
+	// 	tfEnvs = k3d.GetVaultTerraformEnvs(tfEnvs)
+	// 	tfEnvs = k3d.GetCivoTerraformEnvs(tfEnvs)
 	// 	tfEntrypoint := config.GitopsDir + "/terraform/vault"
 	// 	err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 	// 	if err != nil {
@@ -678,8 +685,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// 	log.Info().Msg("applying users terraform")
 
 	// 	tfEnvs := map[string]string{}
-	// 	tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-	// 	tfEnvs = civo.GetUsersTerraformEnvs(tfEnvs)
+	// 	tfEnvs = k3d.GetCivoTerraformEnvs(tfEnvs)
+	// 	tfEnvs = k3d.GetUsersTerraformEnvs(tfEnvs)
 	// 	tfEntrypoint := config.GitopsDir + "/terraform/users"
 	// 	err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 	// 	if err != nil {
@@ -739,7 +746,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// reports.LocalHandoffScreen(dryRunFlag, false)
 
 	// if useTelemetryFlag {
-	// 	if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallCompleted, civo.CloudProvider, civo.GitProvider); err != nil {
+	// 	if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallCompleted, k3d.CloudProvider, k3d.GitProvider); err != nil {
 	// 		log.Info().Msg(err.Error())
 	// 		return err
 	// 	}
