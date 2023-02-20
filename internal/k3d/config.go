@@ -28,15 +28,17 @@ type K3dConfig struct {
 	CivoToken   string `env:"CIVO_TOKEN"`
 
 	// these
-	DestinationGitopsRepoGitURL string
-	GitopsDir                   string
-	HelmClient                  string
-	K1Dir                       string
-	K3dClient                   string
-	KubectlClient               string
-	MkCertClient                string
-	TerraformClient             string
-	ToolsDir                    string
+	DestinationGitopsRepoGitURL   string
+	DestinationMetaphorRepoGitURL string
+	GitopsDir                     string
+	MetaphorDir                   string
+	HelmClient                    string
+	K1Dir                         string
+	K3dClient                     string
+	KubectlClient                 string
+	MkCertClient                  string
+	TerraformClient               string
+	ToolsDir                      string
 }
 
 // GetConfig - load default values from kubefirst installer
@@ -54,11 +56,13 @@ func GetConfig(githubOwner string) *K3dConfig {
 	}
 
 	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@github.com:%s/gitops.git", githubOwner)
+	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@github.com:%s/metaphor-frontend.git", githubOwner)
 	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
 	config.HelmClient = fmt.Sprintf("%s/.k1/tools/helm", homeDir)
 	config.K1Dir = fmt.Sprintf("%s/.k1", homeDir)
 	config.K3dClient = fmt.Sprintf("%s/.k1/tools/k3d", homeDir)
 	config.KubectlClient = fmt.Sprintf("%s/.k1/tools/kubectl", homeDir)
+	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor-frontend", homeDir)
 	config.MkCertClient = fmt.Sprintf("%s/.k1/tools/mkcert", homeDir)
 	config.TerraformClient = fmt.Sprintf("%s/.k1/tools/terraform", homeDir)
 	config.ToolsDir = fmt.Sprintf("%s/.k1/tools", homeDir)
@@ -66,7 +70,7 @@ func GetConfig(githubOwner string) *K3dConfig {
 	return &config
 }
 
-type K3dTokenValues struct {
+type GitopsTokenValues struct {
 	GithubOwner                   string
 	GithubUser                    string
 	GitopsRepoGitURL              string
@@ -85,4 +89,14 @@ type K3dTokenValues struct {
 	MetaphorStagingIngressURL     string
 	MetaphorProductionIngressURL  string
 	KubefirstVersion              string
+}
+
+type MetaphorTokenValues struct {
+	ClusterName                   string
+	CloudRegion                   string
+	ContainerRegistryURL          string
+	DomainName                    string
+	MetaphorDevelopmentIngressURL string
+	MetaphorStagingIngressURL     string
+	MetaphorProductionIngressURL  string
 }

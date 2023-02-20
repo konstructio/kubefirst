@@ -57,8 +57,14 @@ func k3dGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterTyp
 	return nil
 }
 
-func K3dGithubAdjustMetaphorTemplateContent(gitProvider, k1Dir, metaphorRepoPath string) error {
+// todo better name here
+func k3dGithubAdjustMetaphorTemplateContent(gitProvider, k1Dir, metaphorRepoPath string) error {
 
+	fmt.Println(gitProvider)
+	fmt.Println(k1Dir)
+	fmt.Println(metaphorRepoPath)
+
+	log.Info().Msg("removing old metaphor ci content")
 	// remove the unstructured driver content
 	os.RemoveAll(metaphorRepoPath + "/.argo")
 	os.RemoveAll(metaphorRepoPath + "/.github")
@@ -78,16 +84,18 @@ func K3dGithubAdjustMetaphorTemplateContent(gitProvider, k1Dir, metaphorRepoPath
 		},
 	}
 
-	//* copy $HOME/.k1/argo-workflows/.github/* $HOME/.k1/metaphor-frontend/.github
-	githubActionsFolderContent := fmt.Sprintf("%s/argo-workflows/.github", k1Dir)
+	//* copy $HOME/.k1/gitops/.kubefirst/ci/.github/* $HOME/.k1/metaphor-frontend/.github
+	githubActionsFolderContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.github", k1Dir)
+	log.Info().Msgf("copying ci content: %s", githubActionsFolderContent)
 	err := cp.Copy(githubActionsFolderContent, fmt.Sprintf("%s/.github", metaphorRepoPath), opt)
 	if err != nil {
 		log.Info().Msgf("error populating metaphor repository with %s: %s", githubActionsFolderContent, err)
 		return err
 	}
 
-	//* copy $HOME/.k1/argo-workflows/.argo/* $HOME/.k1/metaphor-frontend/.argo
-	argoWorkflowsFolderContent := fmt.Sprintf("%s/argo-workflows/.argo", k1Dir)
+	//* copy $HOME/.k1/gitops/.kubefirst/ci/.argo/* $HOME/.k1/metaphor-frontend/.argo
+	argoWorkflowsFolderContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.argo", k1Dir)
+	log.Info().Msgf("copying ci content: %s", argoWorkflowsFolderContent)
 	err = cp.Copy(argoWorkflowsFolderContent, fmt.Sprintf("%s/.argo", metaphorRepoPath), opt)
 	if err != nil {
 		log.Info().Msgf("error populating metaphor repository with %s: %s", argoWorkflowsFolderContent, err)

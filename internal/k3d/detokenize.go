@@ -10,7 +10,7 @@ import (
 )
 
 // DetokenizeCivoGithubGitops - Translate tokens by values on a given path
-func DetokenizeK3dGithubGitops(path string, tokens *K3dTokenValues) error {
+func DetokenizeK3dGithubGitops(path string, tokens *GitopsTokenValues) error {
 
 	err := filepath.Walk(path, detokenizeK3dGithubdGitops(path, tokens))
 	if err != nil {
@@ -20,12 +20,12 @@ func DetokenizeK3dGithubGitops(path string, tokens *K3dTokenValues) error {
 	return nil
 }
 
-func detokenizeK3dGithubdMetaphor(path string, tokens *K3dTokenValues) filepath.WalkFunc {
+func detokenizeK3dGithubdMetaphor(path string, tokens *GitopsTokenValues) filepath.WalkFunc {
 	// todo implement
 	return nil
 }
 
-func detokenizeK3dGithubdGitops(path string, tokens *K3dTokenValues) filepath.WalkFunc {
+func detokenizeK3dGithubdGitops(path string, tokens *GitopsTokenValues) filepath.WalkFunc {
 	return filepath.WalkFunc(func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -62,6 +62,43 @@ func detokenizeK3dGithubdGitops(path string, tokens *K3dTokenValues) filepath.Wa
 			newContents = strings.Replace(newContents, "<GITOPS_REPO_GIT_URL>", tokens.GitopsRepoGitURL, -1)
 			newContents = strings.Replace(newContents, "<NGROK_HOST>", tokens.NgrokHost, -1)
 			newContents = strings.Replace(newContents, "<VAULT_INGRESS_URL>", tokens.VaultIngressURL, -1)
+
+			err = ioutil.WriteFile(path, []byte(newContents), 0)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func detokenizeCivoGithubMetaphor(metaphorDir string, tokens *MetaphorTokenValues) filepath.WalkFunc {
+	return filepath.WalkFunc(func(path string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !!fi.IsDir() {
+			return nil
+		}
+
+		// var matched bool
+		matched, err := filepath.Match("*", fi.Name())
+		if matched {
+			read, err := ioutil.ReadFile(path)
+			if err != nil {
+				return err
+			}
+
+			// todo reduce to terraform tokens by moving to helm chart?
+			newContents := string(read)
+			newContents = strings.Replace(newContents, "<METAPHOR_DEVELOPMENT_INGRESS_URL>", tokens.MetaphorDevelopmentIngressURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_STAGING_INGRESS_URL>", tokens.MetaphorStagingIngressURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_PRODUCTION_INGRESS_URL>", tokens.MetaphorProductionIngressURL, -1)
+			newContents = strings.Replace(newContents, "<CONTAINER_REGISTRY>", tokens.ContainerRegistryURL, -1) // todo need to fix metaphor repo names
+			newContents = strings.Replace(newContents, "<DOMAIN_NAME>", tokens.DomainName, -1)
+			newContents = strings.Replace(newContents, "<CLOUD_REGION>", tokens.CloudRegion, -1)
+			newContents = strings.Replace(newContents, "<CLUSTER_NAME>", tokens.ClusterName, -1)
 
 			err = ioutil.WriteFile(path, []byte(newContents), 0)
 			if err != nil {

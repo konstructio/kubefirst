@@ -69,7 +69,7 @@ func CreateK3dCluster() error {
 	return nil
 }
 
-//  should tokens be a *K3dTokenValues? does it matter
+//  should tokens be a *GitopsTokenValues? does it matter
 func PrepareGitopsRepository(clusterName string,
 	clusterType string,
 	destinationGitopsRepoGitURL string,
@@ -77,7 +77,7 @@ func PrepareGitopsRepository(clusterName string,
 	gitopsTemplateBranch string,
 	gitopsTemplateURL string,
 	k1Dir string,
-	tokens *K3dTokenValues,
+	tokens *GitopsTokenValues,
 ) error {
 
 	gitopsRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranch, gitopsDir, gitopsTemplateURL)
@@ -104,5 +104,46 @@ func PrepareGitopsRepository(clusterName string,
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func PrepareMetaphorRepository(
+	destinationMetaphorRepoGitURL string,
+	k1Dir string,
+	metaphorDir string,
+	metaphorTemplateBranch string,
+	metaphorTemplateURL string,
+	tokens *MetaphorTokenValues,
+) error {
+
+	log.Info().Msg("generating your new metaphor-frontend repository")
+	metaphorRepo, err := gitClient.CloneRefSetMain(metaphorTemplateBranch, metaphorDir, metaphorTemplateURL)
+	if err != nil {
+		log.Info().Msgf("error opening repo at: %s", metaphorDir)
+	}
+
+	log.Info().Msg("metaphor repository clone complete")
+
+	err = k3dGithubAdjustMetaphorTemplateContent(GitProvider, k1Dir, metaphorDir)
+	if err != nil {
+		return err
+	}
+
+	detokenizeCivoGithubMetaphor(metaphorDir, tokens)
+
+	err = gitClient.AddRemote(destinationMetaphorRepoGitURL, GitProvider, metaphorRepo)
+	if err != nil {
+		return err
+	}
+
+	err = gitClient.Commit(metaphorRepo, "committing detokenized metaphor-frontend-template repo content")
+	if err != nil {
+		return err
+	}
+
+	if err != nil {
+		log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationMetaphorRepoGitURL)
+	}
+
 	return nil
 }
