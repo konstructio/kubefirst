@@ -9,6 +9,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/rs/zerolog/log"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
@@ -299,7 +300,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	//* generate public keys for ssh
-	publicKeys, err := ssh.NewPublicKeys("git", []byte(sshPrivateKey), "")
+	publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
 	if err != nil {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
 	}
@@ -384,31 +385,31 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created github terraform resources")
 	}
 
-	// //* push detokenized gitops-template repository content to new remote
-	// executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
-	// if !executionControl {
-	// 	gitopsRepo, err := git.PlainOpen(config.GitopsDir)
-	// 	if err != nil {
-	// 		log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
-	// 	}
+	//* push detokenized gitops-template repository content to new remote
+	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
+	if !executionControl {
+		gitopsRepo, err := git.PlainOpen(config.GitopsDir)
+		if err != nil {
+			log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
+		}
 
-	// 	err = gitopsRepo.Push(&git.PushOptions{
-	// 		RemoteName: k3d.GitProvider,
-	// 		Auth:       publicKeys,
-	// 	})
-	// 	if err != nil {
-	// 		log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", config.DestinationGitopsRepoGitURL)
-	// 	}
+		err = gitopsRepo.Push(&git.PushOptions{
+			RemoteName: k3d.GitProvider,
+			Auth:       publicKeys,
+		})
+		if err != nil {
+			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", config.DestinationGitopsRepoGitURL)
+		}
 
-	// 	log.Info().Msgf("successfully pushed gitops to git@github.com/%s/gitops", githubOwnerFlag)
-	// 	// todo delete the local gitops repo and re-clone it
-	// 	// todo that way we can stop worrying about which origin we're going to push to
-	// 	log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
-	// 	viper.Set("kubefirst-checks.gitops-repo-pushed", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already pushed detokenized gitops repository content")
-	// }
+		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/gitops", githubOwnerFlag)
+		// todo delete the local gitops repo and re-clone it
+		// todo that way we can stop worrying about which origin we're going to push to
+		log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
+		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already pushed detokenized gitops repository content")
+	}
 
 	// //* git clone and detokenize the metaphor-frontend-template repository
 	// if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
