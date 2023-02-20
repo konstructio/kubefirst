@@ -10,17 +10,19 @@ import (
 )
 
 const (
-	CloudProvider    = "k3d"
-	DomainName       = "localdev.me"
-	HelmVersion      = "v3.6.1"
-	GitProvider      = "github"
-	GithubHost       = "github.com"
-	K3dVersion       = "v5.4.6"
-	KubectlVersion   = "v1.22.0"
-	LocalhostOS      = runtime.GOOS
-	LocalhostARCH    = runtime.GOARCH
-	MkCertVersion    = "v1.4.4"
-	TerraformVersion = "1.3.8"
+	CloudProvider        = "k3d"
+	DomainName           = "localdev.me"
+	HelmVersion          = "v3.6.1"
+	GitProvider          = "github"
+	GithubHost           = "github.com"
+	K3dVersion           = "v5.4.6"
+	KubectlVersion       = "v1.22.0"
+	LocalhostOS          = runtime.GOOS
+	LocalhostARCH        = runtime.GOARCH
+	MkCertVersion        = "v1.4.4"
+	TerraformVersion     = "1.3.8"
+	ArgocdPortForwardURL = "http://localhost:8080"
+	VaultPortForwardURL  = "http://localhost:8200"
 )
 
 type K3dConfig struct {

@@ -16,7 +16,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/helm"
-	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/metaphor"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
@@ -193,11 +192,11 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	executionControl = viper.GetBool("kubernetes.vault.secret.created")
 	if !executionControl {
-		err := k3d.AddK3DSecrets(dryRun, config.KubeConfigPath)
-		if err != nil {
-			log.Error().Err(err).Msg("Error AddK3DSecrets")
-			return err
-		}
+		// err := k3d.AddK3DSecrets(dryRun, config.KubeConfigPath)
+		// if err != nil {
+		// 	log.Error().Err(err).Msg("Error AddK3DSecrets")
+		// 	return err
+		// }
 	} else {
 		log.Info().Msg("already added secrets to k3d cluster")
 	}

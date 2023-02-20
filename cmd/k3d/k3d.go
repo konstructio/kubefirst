@@ -12,8 +12,11 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
+	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k3d"
+	"github.com/kubefirst/kubefirst/internal/k8s"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
@@ -356,6 +359,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
+	atlantisWebhookURL := fmt.Sprintf("%s/events", viper.GetString("ngrok.host"))
+
 	// //* create teams and repositories in github
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-github")
 	if !executionControl {
@@ -367,7 +372,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
 		tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
-		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = fmt.Sprintf("%s/events", viper.GetString("ngrok.host"))
+		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
 		tfEnvs["AWS_ACCESS_KEY_ID"] = "kray"
 		tfEnvs["AWS_SECRET_ACCESS_KEY"] = "feedkraystars"
@@ -468,18 +473,27 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created k3d cluster resources")
 	}
 
-	// clientset, err := k8s.GetClientSet(dryRunFlag, config.Kubeconfig)
-	// if err != nil {
-	// 	return err
-	// }
+	clientset, err := k8s.GetClientSet(dryRunFlag, config.Kubeconfig)
+	if err != nil {
+		return err
+	}
 
-	// // kubernetes.BootstrapSecrets
-	// // todo there is a secret condition in AddK3DSecrets to this not checked
-	// // todo deconstruct CreateNamespaces / CreateSecret
-	// // todo move secret structs to constants to be leveraged by either local or civo
+	// kubernetes.BootstrapSecrets
+	// todo there is a secret condition in AddK3DSecrets to this not checked
+	// todo deconstruct CreateNamespaces / CreateSecret
+	// todo move secret structs to constants to be leveraged by either local or civo
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
-		err := k3d.AddK3DSecrets(false, config.Kubeconfig)
+		err := k3d.AddK3DSecrets(
+			atlantisWebhookSecret,
+			atlantisWebhookURL,
+			viper.GetString("kbot.public-key"),
+			config.DestinationGitopsRepoGitURL,
+			viper.GetString("kbot.private-key"),
+			false,
+			githubOwnerFlag,
+			config.Kubeconfig,
+		)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
 			return err
@@ -508,121 +522,121 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// 	log.Info().Msg("no files found in secrets directory, continuing")
 	// }
 
-	// //* helm add argo repository && update
-	// helmRepo := helm.HelmRepo{
-	// 	RepoName:     "argo",
-	// 	RepoURL:      "https://argoproj.github.io/argo-helm",
-	// 	ChartName:    "argo-cd",
-	// 	Namespace:    "argocd",
-	// 	ChartVersion: "4.10.5",
-	// }
+	//* helm add argo repository && update
+	helmRepo := helm.HelmRepo{
+		RepoName:     "argo",
+		RepoURL:      "https://argoproj.github.io/argo-helm",
+		ChartName:    "argo-cd",
+		Namespace:    "argocd",
+		ChartVersion: "4.10.5",
+	}
 
-	// //* helm add repo and update
-	// executionControl = viper.GetBool("kubefirst-checks.argocd-helm-repo-added")
-	// if !executionControl {
-	// 	log.Info().Msgf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL)
-	// 	helm.AddRepoAndUpdateRepo(dryRunFlag, config.HelmClient, helmRepo, config.Kubeconfig)
-	// 	log.Info().Msg("helm repo added")
-	// 	viper.Set("kubefirst-checks.argocd-helm-repo-added", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("argo helm repository already added, continuing")
-	// }
-	// //* helm install argocd
-	// executionControl = viper.GetBool("kubefirst-checks.argocd-helm-install")
-	// if !executionControl {
-	// 	log.Info().Msgf("helm install %s and wait", helmRepo.RepoName)
-	// 	// todo adopt golang helm client for helm install
-	// 	err := helm.Install(dryRunFlag, config.HelmClient, helmRepo, config.Kubeconfig)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	viper.Set("kubefirst-checks.argocd-helm-install", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("argo helm already installed, continuing")
-	// }
+	//* helm add repo and update
+	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-repo-added")
+	if !executionControl {
+		log.Info().Msgf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL)
+		helm.AddRepoAndUpdateRepo(dryRunFlag, config.HelmClient, helmRepo, config.Kubeconfig)
+		log.Info().Msg("helm repo added")
+		viper.Set("kubefirst-checks.argocd-helm-repo-added", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("argo helm repository already added, continuing")
+	}
+	//* helm install argocd
+	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-install")
+	if !executionControl {
+		log.Info().Msgf("helm install %s and wait", helmRepo.RepoName)
+		// todo adopt golang helm client for helm install
+		err := helm.Install(dryRunFlag, config.HelmClient, helmRepo, config.Kubeconfig)
+		if err != nil {
+			return err
+		}
+		viper.Set("kubefirst-checks.argocd-helm-install", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("argo helm already installed, continuing")
+	}
 
-	// // Wait for ArgoCD StatefulSet Pods to transition to Running
-	// argoCDStatefulSet, err := k8s.ReturnStatefulSetObject(
-	// 	config.Kubeconfig,
-	// 	"app.kubernetes.io/part-of",
-	// 	"argocd",
-	// 	"argocd",
-	// 	60,
-	// )
-	// if err != nil {
-	// 	log.Info().Msgf("Error finding ArgoCD StatefulSet: %s", err)
-	// }
-	// _, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, argoCDStatefulSet, 90)
-	// if err != nil {
-	// 	log.Info().Msgf("Error waiting for ArgoCD StatefulSet ready state: %s", err)
-	// }
+	// Wait for ArgoCD StatefulSet Pods to transition to Running
+	argoCDStatefulSet, err := k8s.ReturnStatefulSetObject(
+		config.Kubeconfig,
+		"app.kubernetes.io/part-of",
+		"argocd",
+		"argocd",
+		60,
+	)
+	if err != nil {
+		log.Info().Msgf("Error finding ArgoCD StatefulSet: %s", err)
+	}
+	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, argoCDStatefulSet, 90, false)
+	if err != nil {
+		log.Info().Msgf("Error waiting for ArgoCD StatefulSet ready state: %s", err)
+	}
 
-	// //* ArgoCD port-forward
-	// argoCDStopChannel := make(chan struct{}, 1)
-	// defer func() {
-	// 	close(argoCDStopChannel)
-	// }()
-	// k8s.OpenPortForwardPodWrapper(
-	// 	config.Kubeconfig,
-	// 	"argocd-server", // todo fix this, it should `argocd
-	// 	"argocd",
-	// 	8080,
-	// 	8080,
-	// 	argoCDStopChannel,
-	// )
-	// log.Info().Msgf("port-forward to argocd is available at %s", k3d.ArgocdPortForwardURL)
+	//* ArgoCD port-forward
+	argoCDStopChannel := make(chan struct{}, 1)
+	defer func() {
+		close(argoCDStopChannel)
+	}()
+	k8s.OpenPortForwardPodWrapper(
+		config.Kubeconfig,
+		"argocd-server",
+		"argocd",
+		8080,
+		8080,
+		argoCDStopChannel,
+	)
+	log.Info().Msgf("port-forward to argocd is available at %s", k3d.ArgocdPortForwardURL)
 
-	// //* argocd pods are ready, get and set credentials
-	// executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
-	// if !executionControl {
-	// 	log.Info().Msg("Setting argocd username and password credentials")
+	//* argocd pods are ready, get and set credentials
+	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
+	if !executionControl {
+		log.Info().Msg("Setting argocd username and password credentials")
 
-	// 	argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+		argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
-	// 	argocdPassword := k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
-	// 	if argocdPassword == "" {
-	// 		log.Info().Msg("argocd password not found in secret")
-	// 		return err
-	// 	}
+		argocdPassword := k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
+		if argocdPassword == "" {
+			log.Info().Msg("argocd password not found in secret")
+			return err
+		}
 
-	// 	viper.Set("components.argocd.password", argocdPassword)
-	// 	viper.Set("components.argocd.username", "admin")
-	// 	viper.WriteConfig()
-	// 	log.Info().Msg("argocd username and password credentials set successfully")
+		viper.Set("components.argocd.password", argocdPassword)
+		viper.Set("components.argocd.username", "admin")
+		viper.WriteConfig()
+		log.Info().Msg("argocd username and password credentials set successfully")
 
-	// 	log.Info().Msg("Getting an argocd auth token")
-	// 	// todo return in here and pass argocdAuthToken as a parameter
-	// 	token, err := argocd.GetArgoCDToken("admin", argocdPassword)
-	// 	if err != nil {
-	// 		return err
-	// 	}
+		log.Info().Msg("Getting an argocd auth token")
+		// todo return in here and pass argocdAuthToken as a parameter
+		token, err := argocd.GetArgoCDToken("admin", argocdPassword)
+		if err != nil {
+			return err
+		}
 
-	// 	log.Info().Msg("argocd admin auth token set")
+		log.Info().Msg("argocd admin auth token set")
 
-	// 	viper.Set("components.argocd.auth-token", token)
-	// 	viper.Set("kubefirst-checks.argocd-credentials-set", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("argo credentials already set, continuing")
-	// }
+		viper.Set("components.argocd.auth-token", token)
+		viper.Set("kubefirst-checks.argocd-credentials-set", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("argo credentials already set, continuing")
+	}
 
-	// //* argocd sync registry and start sync waves
-	// executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
-	// if !executionControl {
-	// 	log.Info().Msg("applying the registry application to argocd")
-	// 	registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", config.K1Dir, clusterNameFlag)
-	// 	_, _, err := pkg.ExecShellReturnStrings(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
-	// 	if err != nil {
-	// 		log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", registryYamlPath, err.Error())
-	// 		return err
-	// 	}
-	// 	viper.Set("kubefirst-checks.argocd-create-registry", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("argocd registry create already done, continuing")
-	// }
+	//* argocd sync registry and start sync waves
+	executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
+	if !executionControl {
+		log.Info().Msg("applying the registry application to argocd")
+		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", config.K1Dir, clusterNameFlag)
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
+		if err != nil {
+			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", registryYamlPath, err.Error())
+			return err
+		}
+		viper.Set("kubefirst-checks.argocd-create-registry", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("argocd registry create already done, continuing")
+	}
 
 	// // Wait for Vault StatefulSet Pods to transition to Running
 	// vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
