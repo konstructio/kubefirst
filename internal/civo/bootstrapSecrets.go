@@ -47,20 +47,53 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
 	}
 
 	// vault access
-	dataExternalSecretsOperator := map[string][]byte{
-		"vault-token": []byte("k1_local_vault_token"),
-	}
-	externalSecretOperatorSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "vault-token", Namespace: "external-secrets-operator"},
-		Data:       dataExternalSecretsOperator,
-	}
-	_, err = clientset.CoreV1().Secrets("external-secrets-operator").Create(context.TODO(), externalSecretOperatorSecret, metav1.CreateOptions{})
+	// todo: this won't be necessary after the current fixes are implemented
+	// dataExternalSecretsOperator := map[string][]byte{
+	// 	"vault-token": []byte("k1_local_vault_token"),
+	// }
+	// externalSecretOperatorSecret := &v1.Secret{
+	// 	ObjectMeta: metav1.ObjectMeta{Name: "vault-token", Namespace: "external-secrets-operator"},
+	// 	Data:       dataExternalSecretsOperator,
+	// }
+	// _, err = clientset.CoreV1().Secrets("external-secrets-operator").Create(context.TODO(), externalSecretOperatorSecret, metav1.CreateOptions{})
+	// if err != nil {
+	// 	log.Info().Msgf("Error: %s", err)
+	// 	return errors.New("error creating kubernetes secret: external-secrets-operator/vault-token")
+	// }
+	// log.Info().Msg("created secret: external-secrets-operator/vault-token")
 
+	// This is necessary since it's required to be present when configuring the Vault auth
+	// for Kubernetes so that permissions can be associated with the ServiceAccount
+
+	// atlantis
+	var automountServiceAccountToken bool = true
+	atlantisServiceAccount := &v1.ServiceAccount{
+		ObjectMeta:                   metav1.ObjectMeta{Name: "atlantis", Namespace: "atlantis"},
+		AutomountServiceAccountToken: &automountServiceAccountToken,
+	}
+	_, err = clientset.CoreV1().ServiceAccounts(
+		"atlantis").Create(
+		context.TODO(), atlantisServiceAccount, metav1.CreateOptions{},
+	)
 	if err != nil {
 		log.Info().Msgf("Error: %s", err)
-		return errors.New("error creating kubernetes secret: external-secrets-operator/vault-token")
+		return errors.New("error creating kubernetes service account: atlantis/atlantis")
 	}
-	log.Info().Msg("created secret: external-secrets-operator/vault-token")
+	log.Info().Msg("created service account: atlantis/atlantis")
+
+	// external-secrets-operator
+	externalSecretsOperatorServiceAccount := &v1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{Name: "external-secrets", Namespace: "external-secrets-operator"},
+	}
+	_, err = clientset.CoreV1().ServiceAccounts(
+		"external-secrets-operator").Create(
+		context.TODO(), externalSecretsOperatorServiceAccount, metav1.CreateOptions{},
+	)
+	if err != nil {
+		log.Info().Msgf("Error: %s", err)
+		return errors.New("error creating kubernetes service account: external-secrets-operator/external-secrets")
+	}
+	log.Info().Msg("created service account: external-secrets-operator/external-secrets")
 
 	minioCreds := map[string][]byte{
 		"accesskey": []byte("k-ray"),
