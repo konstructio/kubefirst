@@ -14,6 +14,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
+	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
@@ -355,24 +356,33 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	// //* create teams and repositories in github
-	// executionControl = viper.GetBool("kubefirst-checks.terraform-apply-github")
-	// if !executionControl {
-	// 	log.Info().Msg("Creating github resources with terraform")
+	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-github")
+	if !executionControl {
+		log.Info().Msg("Creating github resources with terraform")
 
-	// 	tfEntrypoint := config.GitopsDir + "/terraform/github"
-	// 	tfEnvs := map[string]string{}
-	// 	tfEnvs = k3d.GetGithubTerraformEnvs(tfEnvs)
-	// 	err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
-	// 	if err != nil {
-	// 		return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
-	// 	}
+		tfEntrypoint := config.GitopsDir + "/terraform/github"
+		tfEnvs := map[string]string{}
+		// tfEnvs = k3d.GetGithubTerraformEnvs(tfEnvs)
+		tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+		tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
+		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
+		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = fmt.Sprintf("%s/events", viper.GetString("ngrok.host"))
+		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+		tfEnvs["AWS_ACCESS_KEY_ID"] = "kray"
+		tfEnvs["AWS_SECRET_ACCESS_KEY"] = "feedkraystars"
+		tfEnvs["TF_VAR_aws_access_key_id"] = "kray"
+		tfEnvs["TF_VAR_aws_secret_access_key"] = "feedkraystars"
+		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		if err != nil {
+			return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
+		}
 
-	// 	log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
-	// 	viper.Set("kubefirst-checks.terraform-apply-github", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already created github terraform resources")
-	// }
+		log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
+		viper.Set("kubefirst-checks.terraform-apply-github", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already created github terraform resources")
+	}
 
 	// //* push detokenized gitops-template repository content to new remote
 	// executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
