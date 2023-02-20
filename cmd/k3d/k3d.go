@@ -437,6 +437,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			RemoteName: k3d.GitProvider,
 			Auth:       publicKeys,
 		})
+		if err != nil {
+			return err
+		}
 
 		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwnerFlag)
 		// todo delete the local gitops repo and re-clone it
@@ -449,21 +452,21 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
-	// //* create civo cloud resources
-	// if !viper.GetBool("kubefirst-checks.terraform-apply-k3d") {
-	// 	log.Info().Msg("Creating civo cloud resources with terraform")
+	//* create civo cloud resources
+	if !viper.GetBool("kubefirst-checks.terraform-apply-k3d") {
+		log.Info().Msg("Creating civo cloud resources with terraform")
 
-	// 	err := k3d.CreateK3dCluster()
-	// 	if err != nil {
-	// 		return err
-	// 	}
+		err := k3d.ClusterCreate(clusterNameFlag, config.K1Dir, config.K3dClient, config.Kubeconfig)
+		if err != nil {
+			return err
+		}
 
-	// 	log.Info().Msg("created k3d cluster")
-	// 	viper.Set("kubefirst-checks.terraform-apply-k3d", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already created civo terraform resources")
-	// }
+		log.Info().Msg("successfully created k3d cluster")
+		viper.Set("kubefirst-checks.terraform-apply-k3d", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already created k3d cluster resources")
+	}
 
 	// clientset, err := k8s.GetClientSet(dryRunFlag, config.Kubeconfig)
 	// if err != nil {
@@ -474,18 +477,18 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// // todo there is a secret condition in AddK3DSecrets to this not checked
 	// // todo deconstruct CreateNamespaces / CreateSecret
 	// // todo move secret structs to constants to be leveraged by either local or civo
-	// executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
-	// if !executionControl {
-	// 	err := k3d.BootstrapCivoMgmtCluster(dryRunFlag, config.Kubeconfig)
-	// 	if err != nil {
-	// 		log.Info().Msg("Error adding kubernetes secrets for bootstrap")
-	// 		return err
-	// 	}
-	// 	viper.Set("kubefirst-checks.k8s-secrets-created", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already added secrets to civo cluster")
-	// }
+	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
+	if !executionControl {
+		err := k3d.AddK3DSecrets(false, config.Kubeconfig)
+		if err != nil {
+			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
+			return err
+		}
+		viper.Set("kubefirst-checks.k8s-secrets-created", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already added secrets to civo cluster")
+	}
 
 	// //* check for ssl restore
 	// log.Info().Msg("checking for tls secrets to restore")
