@@ -447,12 +447,12 @@ func runCivo(cmd *cobra.Command, args []string) error {
 		}
 		log.Info().Msg("gitops repository clone complete")
 
-		err = pkg.CivoGithubAdjustGitopsTemplateContent(civo.CloudProvider, clusterNameFlag, clusterTypeFlag, civo.GitProvider, config.K1Dir, config.GitopsDir)
+		err = civo.CivoGithubAdjustGitopsTemplateContent(civo.CloudProvider, clusterNameFlag, clusterTypeFlag, civo.GitProvider, config.K1Dir, config.GitopsDir)
 		if err != nil {
 			return err
 		}
 
-		pkg.DetokenizeCivoGithubGitops(config.GitopsDir)
+		civo.DetokenizeCivoGithubGitops(config.GitopsDir)
 		if err != nil {
 			return err
 		}
@@ -540,12 +540,12 @@ func runCivo(cmd *cobra.Command, args []string) error {
 
 		log.Info().Msg("metaphor repository clone complete")
 
-		err = pkg.CivoGithubAdjustMetaphorTemplateContent(civo.GitProvider, config.K1Dir, config.MetaphorDir)
+		err = civo.CivoGithubAdjustMetaphorTemplateContent(civo.GitProvider, config.K1Dir, config.MetaphorDir)
 		if err != nil {
 			return err
 		}
 
-		err = pkg.DetokenizeCivoGithubMetaphor(config.MetaphorDir)
+		err = civo.DetokenizeCivoGithubMetaphor(config.MetaphorDir)
 		if err != nil {
 			return err
 		}
