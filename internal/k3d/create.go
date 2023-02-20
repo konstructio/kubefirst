@@ -70,9 +70,17 @@ func CreateK3dCluster() error {
 }
 
 //  should tokens be a *K3dTokenValues? does it matter
-func PrepareGitopsRepository(clusterName, clusterType, k1Dir, gitopsDir string, gitopsTemplateBranch string, gitopsTemplateURL string, tokens *K3dTokenValues) error {
+func PrepareGitopsRepository(clusterName string,
+	clusterType string,
+	destinationGitopsRepoGitURL string,
+	gitopsDir string,
+	gitopsTemplateBranch string,
+	gitopsTemplateURL string,
+	k1Dir string,
+	tokens *K3dTokenValues,
+) error {
 
-	_, err := gitClient.CloneRefSetMain(gitopsTemplateBranch, gitopsDir, gitopsTemplateURL)
+	gitopsRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranch, gitopsDir, gitopsTemplateURL)
 	if err != nil {
 		log.Info().Msgf("error opening repo at: %s", gitopsDir)
 	}
@@ -87,15 +95,14 @@ func PrepareGitopsRepository(clusterName, clusterType, k1Dir, gitopsDir string, 
 	if err != nil {
 		return err
 	}
-	os.Exit(1)
-	// err = gitClient.AddRemote(destinationGitopsRepoGitURL, GitProvider, gitopsRepo)
-	// if err != nil {
-	// 	return err
-	// }
+	err = gitClient.AddRemote(destinationGitopsRepoGitURL, GitProvider, gitopsRepo)
+	if err != nil {
+		return err
+	}
 
-	// err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
-	// if err != nil {
-	// 	return err
-	// }
+	err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
+	if err != nil {
+		return err
+	}
 	return nil
 }

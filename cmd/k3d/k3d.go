@@ -336,10 +336,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		err := k3d.PrepareGitopsRepository(clusterNameFlag,
 			clusterTypeFlag,
-			config.K1Dir,
+			config.DestinationGitopsRepoGitURL,
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
+			config.K1Dir,
 			&k3dTokens,
 		)
 		if err != nil {
