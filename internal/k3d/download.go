@@ -5,11 +5,19 @@ import (
 	"os"
 
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
+	"github.com/rs/zerolog/log"
 )
 
-func DownloadTools(githubOwner string) error {
+func DownloadTools(githubOwner string, toolsDir string) error {
 
-	config := GetConfig("jarededwards")
+	config := GetConfig(githubOwner)
+
+	if _, err := os.Stat(toolsDir); os.IsNotExist(err) {
+		err := os.MkdirAll(toolsDir, os.ModePerm)
+		if err != nil {
+			log.Info().Msgf("%s directory already exists, continuing", toolsDir)
+		}
+	}
 
 	// * helm
 	helmTarAddress := fmt.Sprintf("%s-%s/helm", LocalhostOS, LocalhostARCH)
