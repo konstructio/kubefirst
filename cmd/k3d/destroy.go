@@ -91,5 +91,12 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 
+	if _, err := os.Stat(config.K1Dir + "/kubeconfig"); !os.IsNotExist(err) {
+		err = os.Remove(config.K1Dir + "/kubeconfig")
+		if err != nil {
+			return fmt.Errorf("unable to delete %q folder, error: %s", config.K1Dir+"/kubeconfig", err)
+		}
+	}
+
 	return nil
 }
