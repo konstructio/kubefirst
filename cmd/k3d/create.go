@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/rs/zerolog/log"
@@ -17,6 +18,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/internal/reports"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
@@ -320,7 +322,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
 
-		err := k3d.DownloadTools(githubOwnerFlag)
+		err := k3d.DownloadTools(githubOwnerFlag, config.ToolsDir)
 		if err != nil {
 			return err
 		}
@@ -638,135 +640,153 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("argocd registry create already done, continuing")
 	}
 
-	// // Wait for Vault StatefulSet Pods to transition to Running
-	// vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
-	// 	config.Kubeconfig,
-	// 	"app.kubernetes.io/instance",
-	// 	"vault",
-	// 	"vault",
-	// 	60,
-	// )
-	// if err != nil {
-	// 	log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
-	// }
-	// _, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, vaultStatefulSet, 60)
-	// if err != nil {
-	// 	log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
-	// }
+	// Wait for Vault StatefulSet Pods to transition to Running
+	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
+		config.Kubeconfig,
+		"app.kubernetes.io/instance",
+		"vault",
+		"vault",
+		60,
+	)
+	if err != nil {
+		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
+	}
+	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, vaultStatefulSet, 60, false)
+	if err != nil {
+		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
+	}
 
-	// //* vault port-forward
-	// vaultStopChannel := make(chan struct{}, 1)
-	// defer func() {
-	// 	close(vaultStopChannel)
-	// }()
-	// k8s.OpenPortForwardPodWrapper(
-	// 	config.Kubeconfig,
-	// 	"vault-0",
-	// 	"vault",
-	// 	8200,
-	// 	8200,
-	// 	vaultStopChannel,
-	// )
+	//* vault port-forward
+	vaultStopChannel := make(chan struct{}, 1)
+	defer func() {
+		close(vaultStopChannel)
+	}()
+	k8s.OpenPortForwardPodWrapper(
+		config.Kubeconfig,
+		"vault-0",
+		"vault",
+		8200,
+		8200,
+		vaultStopChannel,
+	)
 
-	// //* configure vault with terraform
-	// executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
-	// if !executionControl {
-	// 	// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
+	//* configure vault with terraform
+	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
+	if !executionControl {
+		// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
 
-	// 	//* run vault terraform
-	// 	log.Info().Msg("configuring vault with terraform")
+		//* run vault terraform
+		log.Info().Msg("configuring vault with terraform")
 
-	// 	tfEnvs := map[string]string{}
+		tfEnvs := map[string]string{}
 
-	// 	tfEnvs = k3d.GetVaultTerraformEnvs(tfEnvs)
-	// 	tfEnvs = k3d.GetCivoTerraformEnvs(tfEnvs)
-	// 	tfEntrypoint := config.GitopsDir + "/terraform/vault"
-	// 	err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
-	// 	if err != nil {
-	// 		return err
-	// 	}
+		tfEnvs["TF_VAR_email_address"] = "your@email.com"
+		tfEnvs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
+		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
+		tfEnvs["TF_VAR_vault_token"] = "k1_local_vault_token"
+		tfEnvs["VAULT_ADDR"] = k3d.VaultPortForwardURL
+		tfEnvs["VAULT_TOKEN"] = "k1_local_vault_token"
+		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
+		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
+		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
 
-	// 	log.Info().Msg("vault terraform executed successfully")
-	// 	viper.Set("kubefirst-checks.terraform-apply-vault", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already executed vault terraform")
-	// }
+		tfEntrypoint := config.GitopsDir + "/terraform/vault"
+		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		if err != nil {
+			return err
+		}
 
-	// //* create users
-	// executionControl = viper.GetBool("kubefirst-checks.terraform-apply-users")
-	// if !executionControl {
-	// 	log.Info().Msg("applying users terraform")
+		log.Info().Msg("vault terraform executed successfully")
+		viper.Set("kubefirst-checks.terraform-apply-vault", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already executed vault terraform")
+	}
 
-	// 	tfEnvs := map[string]string{}
-	// 	tfEnvs = k3d.GetCivoTerraformEnvs(tfEnvs)
-	// 	tfEnvs = k3d.GetUsersTerraformEnvs(tfEnvs)
-	// 	tfEntrypoint := config.GitopsDir + "/terraform/users"
-	// 	err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	log.Info().Msg("executed users terraform successfully")
-	// 	// progressPrinter.IncrementTracker("step-users", 1)
-	// 	viper.Set("kubefirst-checks.terraform-apply-users", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already created users with terraform")
-	// }
+	//* create users
+	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-users")
+	if !executionControl {
+		log.Info().Msg("applying users terraform")
 
-	// // Wait for console Deployment Pods to transition to Running
-	// consoleDeployment, err := k8s.ReturnDeploymentObject(
-	// 	config.Kubeconfig,
-	// 	"app.kubernetes.io/instance",
-	// 	"kubefirst-console",
-	// 	"kubefirst",
-	// 	60,
-	// )
-	// if err != nil {
-	// 	log.Info().Msgf("Error finding console Deployment: %s", err)
-	// }
-	// _, err = k8s.WaitForDeploymentReady(config.Kubeconfig, consoleDeployment, 120)
-	// if err != nil {
-	// 	log.Info().Msgf("Error waiting for console Deployment ready state: %s", err)
-	// }
+		tfEnvs := map[string]string{}
+		tfEnvs["TF_VAR_email_address"] = "your@email.com"
+		tfEnvs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
+		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
+		tfEnvs["TF_VAR_vault_token"] = "k1_local_vault_token"
+		tfEnvs["VAULT_ADDR"] = k3d.VaultPortForwardURL
+		tfEnvs["VAULT_TOKEN"] = "k1_local_vault_token"
+		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
+		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
+		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+		tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+		tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
 
-	// //* console port-forward
-	// consoleStopChannel := make(chan struct{}, 1)
-	// defer func() {
-	// 	close(consoleStopChannel)
-	// }()
-	// k8s.OpenPortForwardPodWrapper(
-	// 	config.Kubeconfig,
-	// 	"kubefirst-console",
-	// 	"kubefirst",
-	// 	8080,
-	// 	9094,
-	// 	consoleStopChannel,
-	// )
+		tfEntrypoint := config.GitopsDir + "/terraform/users"
+		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		if err != nil {
+			return err
+		}
+		log.Info().Msg("executed users terraform successfully")
+		// progressPrinter.IncrementTracker("step-users", 1)
+		viper.Set("kubefirst-checks.terraform-apply-users", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already created users with terraform")
+	}
 
-	// log.Info().Msg("kubefirst installation complete")
-	// log.Info().Msg("welcome to your new kubefirst platform powered by Civo cloud")
+	// Wait for console Deployment Pods to transition to Running
+	consoleDeployment, err := k8s.ReturnDeploymentObject(
+		config.Kubeconfig,
+		"app.kubernetes.io/instance",
+		"kubefirst-console",
+		"kubefirst",
+		60,
+	)
+	if err != nil {
+		log.Info().Msgf("Error finding console Deployment: %s", err)
+	}
+	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, consoleDeployment, 120)
+	if err != nil {
+		log.Info().Msgf("Error waiting for console Deployment ready state: %s", err)
+	}
 
-	// err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
-	// if err != nil {
-	// 	log.Error().Err(err).Msg("")
-	// }
+	//* console port-forward
+	consoleStopChannel := make(chan struct{}, 1)
+	defer func() {
+		close(consoleStopChannel)
+	}()
+	k8s.OpenPortForwardPodWrapper(
+		config.Kubeconfig,
+		"kubefirst-console",
+		"kubefirst",
+		8080,
+		9094,
+		consoleStopChannel,
+	)
 
-	// err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
-	// if err != nil {
-	// 	log.Error().Err(err).Msg("")
-	// }
+	log.Info().Msg("kubefirst installation complete")
+	log.Info().Msg("welcome to your new kubefirst platform powered by Civo cloud")
 
-	// reports.LocalHandoffScreen(dryRunFlag, false)
+	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+	}
 
-	// if useTelemetryFlag {
-	// 	if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallCompleted, k3d.CloudProvider, k3d.GitProvider); err != nil {
-	// 		log.Info().Msg(err.Error())
-	// 		return err
-	// 	}
-	// }
+	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+	}
 
-	// time.Sleep(time.Millisecond * 100) // allows progress bars to finish
+	reports.LocalHandoffScreen(dryRunFlag, false)
+
+	if useTelemetryFlag {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallCompleted, k3d.CloudProvider, k3d.GitProvider); err != nil {
+			log.Info().Msg(err.Error())
+			return err
+		}
+	}
+
+	time.Sleep(time.Millisecond * 100) // allows progress bars to finish
 
 	return nil
 }
