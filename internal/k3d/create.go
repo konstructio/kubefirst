@@ -115,7 +115,7 @@ func PrepareMetaphorRepository(
 		return err
 	}
 
-	detokenizeCivoGithubMetaphor(metaphorDir, tokens)
+	detokenizeGithubMetaphor(metaphorDir, tokens)
 
 	err = gitClient.AddRemote(destinationMetaphorRepoGitURL, GitProvider, metaphorRepo)
 	if err != nil {
