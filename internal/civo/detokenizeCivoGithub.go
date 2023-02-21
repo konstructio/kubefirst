@@ -6,8 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/spf13/viper"
 )
 
 // detokenizeGithubGitops - Translate tokens by values on a given path
@@ -161,15 +159,15 @@ func detokenizeCivoGitopsMetaphor(path string, tokens *MetaphorTokenValues) file
 
 			// todo reduce to terraform tokens by moving to helm chart?
 			newContents := string(read)
-			newContents = strings.Replace(newContents, "<CHECKOUT_CWFT_TEMPLATE>", "git-checkout-with-gitops-ssh", -1)
-			newContents = strings.Replace(newContents, "<CLOUD_REGION>", viper.GetString("flags.cloud-region"), -1)
-			newContents = strings.Replace(newContents, "<CLUSTER_NAME>", viper.GetString("flags.cluster-name"), -1)
-			newContents = strings.Replace(newContents, "<COMMIT_CWFT_TEMPLATE>", "git-commit-ssh", -1)
-			newContents = strings.Replace(newContents, "<CONTAINER_REGISTRY>", fmt.Sprintf("ghcr.io/%s/metaphor-frontend", viper.GetString("github.owner")), -1) // todo need to fix metaphor repo names
-			newContents = strings.Replace(newContents, "<DOMAIN_NAME>", viper.GetString("flags.domain-name"), -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEVELOPMENT_INGRESS_URL>", fmt.Sprintf("https://metaphor-frontend-development.%s", viper.GetString("flags.domain-name")), -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PRODUCTION_INGRESS_URL>", fmt.Sprintf("https://metaphor-frontend-production.%s", viper.GetString("flags.domain-name")), -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING_INGRESS_URL>", fmt.Sprintf("https://metaphor-frontend-staging.%s", viper.GetString("flags.domain-name")), -1)
+			newContents = strings.Replace(newContents, "<CHECKOUT_CWFT_TEMPLATE>", tokens.CheckoutCWFTTemplate, -1)
+			newContents = strings.Replace(newContents, "<CLOUD_REGION>", tokens.CloudRegion, -1)
+			newContents = strings.Replace(newContents, "<CLUSTER_NAME>", tokens.ClusterName, -1)
+			newContents = strings.Replace(newContents, "<COMMIT_CWFT_TEMPLATE>", tokens.CommitCWFTTemplate, -1)
+			newContents = strings.Replace(newContents, "<CONTAINER_REGISTRY>", tokens.ContainerRegistryURL, -1) // todo need to fix metaphor repo names
+			newContents = strings.Replace(newContents, "<DOMAIN_NAME>", tokens.DomainName, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEVELOPMENT_INGRESS_URL>", tokens.MetaphorFrontendDevelopmentIngressURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PRODUCTION_INGRESS_URL>", tokens.MetaphorFrontendProductionIngressURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING_INGRESS_URL>", tokens.MetaphorFrontendStagingIngressURL, -1)
 
 			err = ioutil.WriteFile(path, []byte(newContents), 0)
 			if err != nil {

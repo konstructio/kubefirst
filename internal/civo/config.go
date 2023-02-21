@@ -146,10 +146,10 @@ type GitOpsDirectoryValues struct {
 }
 
 type MetaphorTokenValues struct {
-	CheckoutCWFTTemplate                  bool
+	CheckoutCWFTTemplate                  string
 	CloudRegion                           string
 	ClusterName                           string
-	CommitCWFTTemplate                    bool
+	CommitCWFTTemplate                    string
 	ContainerRegistryURL                  string
 	DomainName                            string
 	MetaphorFrontendDevelopmentIngressURL string

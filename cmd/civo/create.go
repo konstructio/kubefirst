@@ -569,10 +569,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	metaphorTemplateTokens := civo.MetaphorTokenValues{
-		CheckoutCWFTTemplate:                  false,
+		CheckoutCWFTTemplate:                  "git-checkout-with-gitops-ssh",
 		CloudRegion:                           cloudRegionFlag,
 		ClusterName:                           clusterNameFlag,
-		CommitCWFTTemplate:                    false,
+		CommitCWFTTemplate:                    "git-commit-ssh",
 		ContainerRegistryURL:                  fmt.Sprintf("ghcr.io/%s/metaphor-frontend", githubOwnerFlag),
 		DomainName:                            domainNameFlag,
 		MetaphorFrontendDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", domainNameFlag),
