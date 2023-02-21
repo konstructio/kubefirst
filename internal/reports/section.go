@@ -307,6 +307,25 @@ func LocalHandoffScreen(dryRun bool, silentMode bool) {
 
 }
 
+// CivoHandoff prints the handoff screen
+func CivoHandoff(clusterName string, domainName string) {
+
+	var handOffData bytes.Buffer
+	handOffData.WriteString(strings.Repeat("-", 70))
+	handOffData.WriteString(fmt.Sprintf("\nCluster %q is up and running!", clusterName))
+	handOffData.WriteString("\n\nIf you close this window you can find these values in")
+	handOffData.WriteString("\nThe platform details are available at `$HOME/.kubefirst`")
+
+	handOffData.WriteString("\n")
+	handOffData.WriteString("\n--- Vault " + strings.Repeat("-", 60))
+	handOffData.WriteString(fmt.Sprintf("\n URL: https://vault.%s", domainName))
+	handOffData.WriteString("\nTo access vault")
+	handOffData.WriteString("\nPress ESC to leave this screen and return to your shell.")
+
+	CommandSummary(handOffData)
+
+}
+
 func GitHubAuthToken(userCode, verificationUri string) string {
 	var gitHubTokenReport bytes.Buffer
 	gitHubTokenReport.WriteString(strings.Repeat("-", 69))

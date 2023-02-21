@@ -2,11 +2,12 @@ package pkg
 
 import (
 	"context"
+	"io"
+	"net"
+
 	"github.com/spf13/viper"
 	"golang.ngrok.com/ngrok"
 	"golang.ngrok.com/ngrok/config"
-	"io"
-	"net"
 
 	"github.com/rs/zerolog/log"
 	_ "github.com/spf13/viper"
@@ -33,9 +34,9 @@ func RunNgrok(ctx context.Context) {
 		}
 	}()
 
+	// todo remove this viper.Set and return the value
 	log.Info().Msgf("tunnel created: %s", tunnel.URL())
-	viper.Set("github.atlantis.webhook.url", tunnel.URL()+"/events")
-	viper.Set("ngrok.url", tunnel.URL())
+	viper.Set("ngrok.host", tunnel.URL())
 	err = viper.WriteConfig()
 	if err != nil {
 		log.Error().Err(err).Msg("")

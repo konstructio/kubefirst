@@ -90,7 +90,7 @@ func (m Model) View() string {
 }
 
 func (m Model) headerView() string {
-	title := titleStyle.Render("Kubefirst cluster management")
+	title := titleStyle.Render("kubefirst platform")
 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(title)))
 	return lipgloss.JoinHorizontal(lipgloss.Center, title, line)
 }

@@ -15,7 +15,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -60,10 +59,10 @@ type quotaFormattedOutput struct {
 }
 
 // returnCivoQuotaEvaluation fetches quota from civo and compares limits to usage
-func returnCivoQuotaEvaluation(showAll bool) (string, int, int, error) {
+func returnCivoQuotaEvaluation(cloudRegion string, showAll bool) (string, int, int, error) {
 	// Fetch quota from civo
 
-	client, err := civogo.NewClient(os.Getenv("CIVO_TOKEN"), viper.GetString("cloud-region"))
+	client, err := civogo.NewClient(os.Getenv("CIVO_TOKEN"), cloudRegion)
 	if err != nil {
 		log.Info().Msg(err.Error())
 		return "", 0, 0, err
@@ -168,12 +167,17 @@ func evalCivoQuota(cmd *cobra.Command, args []string) error {
 		return errors.New("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set CIVO_TOKEN.\n")
 	}
 
+	cloudRegionFlag, err := cmd.Flags().GetString("cloud-region")
+	if err != nil {
+		return err
+	}
+
 	quotaShowAllFlag, err := cmd.Flags().GetBool("show-all")
 	if err != nil {
 		return err
 	}
 
-	message, _, _, err := returnCivoQuotaEvaluation(quotaShowAllFlag)
+	message, _, _, err := returnCivoQuotaEvaluation(cloudRegionFlag, quotaShowAllFlag)
 	if err != nil {
 		return err
 	}

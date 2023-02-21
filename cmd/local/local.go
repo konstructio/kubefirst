@@ -16,7 +16,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/helm"
-	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/metaphor"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
@@ -115,10 +114,10 @@ func runLocal(cmd *cobra.Command, args []string) error {
 		if gitProvider == "github" {
 			log.Info().Msg("Installing Github version of Kubefirst")
 			viper.Set("git.mode", "github")
-			err := k3d.CreateK3dCluster()
-			if err != nil {
-				return err
-			}
+			// err := k3d.ClusterCreate()
+			// if err != nil {
+			// 	return err
+			// }
 		}
 		viper.Set("kubefirst.done", true)
 		viper.WriteConfig()
@@ -160,11 +159,11 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("k3d.created")
 	if !executionControl {
 		pkg.InformUser("Creating K8S Cluster", silentMode)
-		err := k3d.CreateK3dCluster()
-		if err != nil {
-			log.Error().Err(err).Msg("Error installing k3d cluster")
-			return err
-		}
+		// err := k3d.ClusterCreate()
+		// if err != nil {
+		// 	log.Error().Err(err).Msg("Error installing k3d cluster")
+		// 	return err
+		// }
 	} else {
 		log.Info().Msg("already created k3d cluster")
 	}
@@ -193,11 +192,11 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	executionControl = viper.GetBool("kubernetes.vault.secret.created")
 	if !executionControl {
-		err := k3d.AddK3DSecrets(dryRun, config.KubeConfigPath)
-		if err != nil {
-			log.Error().Err(err).Msg("Error AddK3DSecrets")
-			return err
-		}
+		// err := k3d.AddK3DSecrets(dryRun, config.KubeConfigPath)
+		// if err != nil {
+		// 	log.Error().Err(err).Msg("Error AddK3DSecrets")
+		// 	return err
+		// }
 	} else {
 		log.Info().Msg("already added secrets to k3d cluster")
 	}

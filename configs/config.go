@@ -102,6 +102,11 @@ type Config struct {
 	TerraformVaultEntrypointPath  string
 	GithubToken                   string `env:"GITHUB_TOKEN"`
 	CivoToken                     string `env:"CIVO_TOKEN"`
+
+	// these
+	GitopsDir                   string
+	DestinationGitopsRepoGitURL string
+	K1Dir                       string
 }
 
 // ReadConfig - load default values from kubefirst installer
@@ -123,6 +128,10 @@ func ReadConfig() *Config {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homePath)
+	config.K1Dir = fmt.Sprintf("%s/.k1", homePath)
+
 	config.K1ToolsPath = fmt.Sprintf("%s/tools", config.K1FolderPath)
 	config.KubefirstConfigFileName = ".kubefirst"
 	config.KubefirstConfigFilePath = fmt.Sprintf("%s/%s", homePath, config.KubefirstConfigFileName)
