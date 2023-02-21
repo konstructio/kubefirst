@@ -38,18 +38,16 @@ type K3dConfig struct {
 	GithubToken string `env:"GITHUB_TOKEN"`
 	CivoToken   string `env:"CIVO_TOKEN"`
 
-	// these
 	DestinationGitopsRepoGitURL   string
 	DestinationMetaphorRepoGitURL string
 	GitopsDir                     string
-	MetaphorDir                   string
 	HelmClient                    string
 	K1Dir                         string
 	K3dClient                     string
-	KubectlClient                 string
 	Kubeconfig                    string
+	KubectlClient                 string
 	KubefirstConfig               string
-	KubefirstConsoleURL           string
+	MetaphorDir                   string
 	MkCertClient                  string
 	TerraformClient               string
 	ToolsDir                      string
