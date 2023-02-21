@@ -9,10 +9,10 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 )
 
-// DetokenizeCivoGithubGitops - Translate tokens by values on a given path
-func DetokenizeK3dGithubGitops(path string, tokens *GitopsTokenValues) error {
+// detokenizeGithubGitops - Translate tokens by values on a given path
+func detokenizeGithubGitops(path string, tokens *GitopsTokenValues) error {
 
-	err := filepath.Walk(path, detokenizeK3dGithubdGitops(path, tokens))
+	err := filepath.Walk(path, detokenizeGitops(path, tokens))
 	if err != nil {
 		return err
 	}
@@ -20,12 +20,7 @@ func DetokenizeK3dGithubGitops(path string, tokens *GitopsTokenValues) error {
 	return nil
 }
 
-func detokenizeK3dGithubdMetaphor(path string, tokens *GitopsTokenValues) filepath.WalkFunc {
-	// todo implement
-	return nil
-}
-
-func detokenizeK3dGithubdGitops(path string, tokens *GitopsTokenValues) filepath.WalkFunc {
+func detokenizeGitops(path string, tokens *GitopsTokenValues) filepath.WalkFunc {
 	return filepath.WalkFunc(func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -72,7 +67,18 @@ func detokenizeK3dGithubdGitops(path string, tokens *GitopsTokenValues) filepath
 	})
 }
 
-func detokenizeCivoGithubMetaphor(metaphorDir string, tokens *MetaphorTokenValues) filepath.WalkFunc {
+// detokenizeGithubMetaphor - Translate tokens by values on a given path
+func detokenizeGithubMetaphor(path string, tokens *MetaphorTokenValues) error {
+
+	err := filepath.Walk(path, detokenize(path, tokens))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func detokenize(metaphorDir string, tokens *MetaphorTokenValues) filepath.WalkFunc {
 	return filepath.WalkFunc(func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err

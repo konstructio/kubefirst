@@ -60,10 +60,6 @@ func k3dGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterTyp
 // todo better name here
 func k3dGithubAdjustMetaphorTemplateContent(gitProvider, k1Dir, metaphorRepoPath string) error {
 
-	fmt.Println(gitProvider)
-	fmt.Println(k1Dir)
-	fmt.Println(metaphorRepoPath)
-
 	log.Info().Msg("removing old metaphor ci content")
 	// remove the unstructured driver content
 	os.RemoveAll(metaphorRepoPath + "/.argo")

@@ -165,9 +165,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 
-	kubefirstStateStoreBucketName := fmt.Sprintf("k1-state-store-%s-%s", clusterNameFlag, clusterId)
-	fmt.Println(kubefirstStateStoreBucketName)
-
 	log.Info().Msg("checking authentication to required providers")
 
 	// check disk
@@ -309,7 +306,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
 	}
-	fmt.Println(publicKeys)
 
 	//* emit cluster install started
 	if useTelemetryFlag {
@@ -655,6 +651,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
+
+	time.Sleep(time.Second * 45)
 
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)

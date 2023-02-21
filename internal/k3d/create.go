@@ -77,7 +77,7 @@ func PrepareGitopsRepository(clusterName string,
 		return err
 	}
 
-	DetokenizeK3dGithubGitops(gitopsDir, tokens)
+	detokenizeGithubGitops(gitopsDir, tokens)
 	if err != nil {
 		return err
 	}

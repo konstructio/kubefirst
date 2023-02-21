@@ -81,7 +81,6 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("previous platform content removed")
 
 		log.Info().Msg("resetting `$HOME/.kubefirst` config")
-		// todo re-evaluate
 		viper.Set("argocd", "")
 		viper.Set("github", "")
 		viper.Set("components", "")
@@ -97,6 +96,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("unable to delete %q folder, error: %s", config.K1Dir+"/kubeconfig", err)
 		}
 	}
+	fmt.Println("your kubefirst platform running in k3d has been destroyed")
 
 	return nil
 }
