@@ -58,7 +58,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	if viper.GetBool("kubefirst-checks.terraform-apply-k3d") {
-		log.Info().Msg("destroying civo resources with terraform")
+		log.Info().Msg("destroying k3d resources with terraform")
 
 		err := k3d.DeleteK3dCluster(clusterName, config.K1Dir, config.K3dClient)
 		if err != nil {
@@ -67,7 +67,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 		viper.Set("kubefirst-checks.terraform-apply-k3d", false)
 		viper.WriteConfig()
-		log.Info().Msg("civo resources terraform destroyed")
+		log.Info().Msg("k3d resources terraform destroyed")
 	}
 
 	//* remove local content and kubefirst config file for re-execution

@@ -455,9 +455,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
-	//* create civo cloud resources
+	//* create k3d resources
 	if !viper.GetBool("kubefirst-checks.terraform-apply-k3d") {
-		log.Info().Msg("Creating civo cloud resources with terraform")
+		log.Info().Msg("Creating k3d cluster")
 
 		err := k3d.ClusterCreate(clusterNameFlag, config.K1Dir, config.K3dClient, config.Kubeconfig)
 		if err != nil {
@@ -499,7 +499,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst-checks.k8s-secrets-created", true)
 		viper.WriteConfig()
 	} else {
-		log.Info().Msg("already added secrets to civo cluster")
+		log.Info().Msg("already added secrets to k3d cluster")
 	}
 
 	// //* check for ssl restore
@@ -764,7 +764,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	)
 
 	log.Info().Msg("kubefirst installation complete")
-	log.Info().Msg("welcome to your new kubefirst platform powered by Civo cloud")
+	log.Info().Msg("welcome to your new kubefirst platform running in K3d")
 
 	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
 	if err != nil {

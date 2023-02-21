@@ -25,19 +25,19 @@ var (
 
 func NewCommand() *cobra.Command {
 
-	civoCmd := &cobra.Command{
+	k3dCmd := &cobra.Command{
 		Use:   "k3d",
 		Short: "kubefirst k3d installation",
 		Long:  "kubefirst k3d",
 	}
 
 	// on error, doesnt show helper/usage
-	civoCmd.SilenceUsage = true
+	k3dCmd.SilenceUsage = true
 
 	// wire up new commands
-	civoCmd.AddCommand(Create(), Destroy())
+	k3dCmd.AddCommand(Create(), Destroy())
 
-	return civoCmd
+	return k3dCmd
 }
 
 func Create() *cobra.Command {
