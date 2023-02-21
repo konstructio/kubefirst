@@ -57,7 +57,7 @@ func Create() *cobra.Command {
 		Use:              "create",
 		Short:            "create the kubefirst platform running on civo kubernetes",
 		TraverseChildren: true,
-		RunE:             runCivo,
+		RunE:             createCivo,
 	}
 
 	// todo review defaults and update descriptions

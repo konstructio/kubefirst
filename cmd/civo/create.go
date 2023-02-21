@@ -35,7 +35,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func runCivo(cmd *cobra.Command, args []string) error {
+func createCivo(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 6)
 	progressPrinter.AddTracker("platform-create", "Creating your kubefirst platform", 13)
