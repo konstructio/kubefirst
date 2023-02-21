@@ -41,10 +41,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("platform-create", "Creating your kubefirst platform", 13)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	// alertsEmailFlag, err := cmd.Flags().GetString("alerts-email")
-	// if err != nil {
-	// 	return err
-	// }
+	alertsEmailFlag, err := cmd.Flags().GetString("alerts-email")
+	if err != nil {
+		return err
+	}
 
 	cloudRegionFlag, err := cmd.Flags().GetString("cloud-region")
 	if err != nil {
@@ -107,13 +107,18 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// required for destroy command
+	viper.Set("flags.alerts-email", alertsEmailFlag)
 	viper.Set("flags.cluster-name", clusterNameFlag)
 	viper.Set("flags.domain-name", domainNameFlag)
 	viper.Set("flags.dry-run", dryRunFlag)
 	viper.Set("flags.github-owner", githubOwnerFlag)
 	viper.WriteConfig()
 
+	// Instantiate config
 	config := civo.GetConfig(clusterNameFlag, domainNameFlag, githubOwnerFlag)
+	// These need to be set for reference elsewhere
+	viper.Set("github.repos.gitops.git-url", config.DestinationGitopsRepoGitURL)
+	viper.WriteConfig()
 
 	var sshPrivateKey, sshPublicKey string
 
@@ -124,6 +129,51 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst.cluster-id", clusterId)
 		viper.WriteConfig()
 	}
+	kubefirstStateStoreBucketName := fmt.Sprintf("k1-state-store-%s-%s", clusterNameFlag, clusterId)
+
+	// Detokenize
+	isKubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
+
+	if isKubefirstTeam == "" {
+		isKubefirstTeam = "false"
+	}
+	gitopsDirectoryTokens := civo.GitOpsDirectoryValues{
+		AlertsEmail:                    alertsEmailFlag,
+		AtlantisAllowList:              fmt.Sprintf("github.com/%s/gitops", githubOwnerFlag),
+		CloudProvider:                  civo.CloudProvider,
+		CloudRegion:                    cloudRegionFlag,
+		ClusterName:                    clusterNameFlag,
+		ClusterType:                    clusterTypeFlag,
+		DomainName:                     domainNameFlag,
+		KubeconfigPath:                 config.Kubeconfig,
+		KubefirstStateStoreBucket:      kubefirstStateStoreBucketName,
+		KubefirstTeam:                  isKubefirstTeam,
+		KubefirstVersion:               "0.0.0",
+		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
+		ArgoCDIngressNoHTTPSURL:        fmt.Sprintf("argocd.%s", domainNameFlag),
+		ArgoWorkflowsIngressURL:        fmt.Sprintf("https://argo.%s", domainNameFlag),
+		ArgoWorkflowsIngressNoHTTPSURL: fmt.Sprintf("argo.%s", domainNameFlag),
+		AtlantisIngressURL:             fmt.Sprintf("https://atlantis.%s", domainNameFlag),
+		AtlantisIngressNoHTTPSURL:      fmt.Sprintf("atlantis.%s", domainNameFlag),
+		ChartMuseumIngressURL:          fmt.Sprintf("https://chartmuseum.%s", domainNameFlag),
+		VaultIngressURL:                fmt.Sprintf("https://vault.%s", domainNameFlag),
+		VaultIngressNoHTTPSURL:         fmt.Sprintf("vault.%s", domainNameFlag),
+		VouchIngressURL:                fmt.Sprintf("https://vouch.%s", domainNameFlag),
+		GitDescription:                 "GitHub hosted git",
+		GitNamespace:                   "N/A",
+		GitProvider:                    civo.GitProvider,
+		GitRunner:                      "GitHub Action Runner",
+		GitRunnerDescription:           "Self Hosted GitHub Action Runner",
+		GitRunnerNS:                    "github-runner",
+		GitURL:                         gitopsTemplateURLFlag,
+		GitHubHost:                     fmt.Sprintf("https://github.com/%s/gitops.git", githubOwnerFlag),
+		GitHubOwner:                    githubOwnerFlag,
+		GitOpsRepoAtlantisWebhookURL:   fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
+		GitOpsRepoGitURL:               config.DestinationGitopsRepoGitURL,
+		GitOpsRepoNoHTTPSURL:           fmt.Sprintf("github.com/%s/gitops.git", githubOwnerFlag),
+	}
+	viper.Set("github.atlantis.webhook.url", fmt.Sprintf("https://atlantis.%s/events", domainNameFlag))
+	viper.WriteConfig()
 
 	if useTelemetryFlag {
 		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitStarted, civo.CloudProvider, civo.GitProvider); err != nil {
@@ -156,11 +206,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 
-	kubefirstStateStoreBucketName := fmt.Sprintf("k1-state-store-%s-%s", clusterNameFlag, clusterId)
-
 	log.Info().Msg("checking authentication to required providers")
 
-	//* CIVO START
 	executionControl := viper.GetBool("kubefirst-checks.cloud-credentials")
 	if !executionControl {
 
@@ -283,6 +330,15 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		// get github data to set user based on the provided token
 		log.Info().Msg("verifying github authentication")
 		githubUser, err := gitHubHandler.GetGitHubUser(githubToken)
+		if err != nil {
+			return err
+		}
+
+		// Set in config and in viper
+		gitopsDirectoryTokens.GitHubUser = githubUser
+		viper.Set("github.user", githubUser)
+
+		err = viper.WriteConfig()
 		if err != nil {
 			return err
 		}
@@ -420,7 +476,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			civo.KubectlClientVersion,
 			civo.LocalhostOS,
 			civo.LocalhostArch,
-			config.TerraformClient,
+			civo.TerraformClientVersion,
 			config.ToolsDir,
 		)
 		if err != nil {
@@ -453,7 +509,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		civo.DetokenizeCivoGithubGitops(config.GitopsDir)
+		err = civo.DetokenizeCivoGithubGitops(config.GitopsDir, &gitopsDirectoryTokens)
 		if err != nil {
 			return err
 		}
@@ -526,6 +582,18 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("platform-create", 1)
 	}
 
+	metaphorTemplateTokens := civo.MetaphorTokenValues{
+		CheckoutCWFTTemplate:                  "git-checkout-with-gitops-ssh",
+		CloudRegion:                           cloudRegionFlag,
+		ClusterName:                           clusterNameFlag,
+		CommitCWFTTemplate:                    "git-commit-ssh",
+		ContainerRegistryURL:                  fmt.Sprintf("ghcr.io/%s/metaphor-frontend", githubOwnerFlag),
+		DomainName:                            domainNameFlag,
+		MetaphorFrontendDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", domainNameFlag),
+		MetaphorFrontendProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
+		MetaphorFrontendStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
+	}
+
 	//* git clone and detokenize the metaphor-frontend-template repository
 	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
 
@@ -546,7 +614,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		err = civo.DetokenizeCivoGithubMetaphor(config.MetaphorDir)
+		err = civo.DetokenizeCivoGithubMetaphor(config.MetaphorDir, &metaphorTemplateTokens)
 		if err != nil {
 			return err
 		}
@@ -829,7 +897,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 
-		tfEnvs = civo.GetVaultTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetVaultTerraformEnvs(config, tfEnvs)
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
@@ -853,7 +921,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-		tfEnvs = civo.GetUsersTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetUsersTerraformEnvs(config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
