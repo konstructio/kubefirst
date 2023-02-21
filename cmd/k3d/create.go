@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -15,10 +16,12 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
+	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/kubefirst/kubefirst/internal/services"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
@@ -83,6 +86,19 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	httpClient := http.DefaultClient
+	gitHubService := services.NewGitHubService(httpClient)
+	gitHubHandler := handlers.NewGitHubHandler(gitHubService)
+
+	// get github data to set user based on the provided token
+	log.Info().Msg("verifying github authentication")
+	githubUser, err := gitHubHandler.GetGitHubUser(os.Getenv("GITHUB_TOKEN"))
+	if err != nil {
+		return err
+	}
+	// today we override the owner to be the user's token by default
+	githubOwnerFlag = githubUser
+
 	// required for destroy command
 	viper.Set("flags.cluster-name", clusterNameFlag)
 	viper.Set("flags.domain-name", k3d.DomainName)
@@ -103,26 +119,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	config := k3d.GetConfig(githubOwnerFlag)
 
 	gitopsTemplateTokens := k3d.GitopsTokenValues{}
-
-	// not sure if there is a better way to do this
-	gitopsTemplateTokens.GithubOwner = githubOwnerFlag
-	gitopsTemplateTokens.GithubUser = githubOwnerFlag
-	gitopsTemplateTokens.GitopsRepoGitURL = config.DestinationGitopsRepoGitURL
-	gitopsTemplateTokens.DomainName = k3d.DomainName
-	gitopsTemplateTokens.AtlantisAllowList = fmt.Sprintf("github.com/%s/gitops", githubOwnerFlag)
-	gitopsTemplateTokens.NgrokHost = ngrokHost
-	gitopsTemplateTokens.AlertsEmail = "REMOVE_THIS_VALUE"
-	gitopsTemplateTokens.ClusterName = clusterNameFlag
-	gitopsTemplateTokens.ClusterType = clusterTypeFlag
-	gitopsTemplateTokens.GithubHost = k3d.GithubHost
-	gitopsTemplateTokens.ArgoWorkflowsIngressURL = fmt.Sprintf("https://argo.%s", k3d.DomainName)
-	gitopsTemplateTokens.VaultIngressURL = fmt.Sprintf("https://vault.%s", k3d.DomainName)
-	gitopsTemplateTokens.ArgocdIngressURL = fmt.Sprintf("https://argocd.%s", k3d.DomainName)
-	gitopsTemplateTokens.AtlantisIngressURL = fmt.Sprintf("https://atlantis.%s", k3d.DomainName)
-	gitopsTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("metaphor-development.%s", k3d.DomainName)
-	gitopsTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("metaphor-staging.%s", k3d.DomainName)
-	gitopsTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("metaphor-production.%s", k3d.DomainName)
-	gitopsTemplateTokens.KubefirstVersion = configs.K1Version
 
 	var sshPrivateKey, sshPublicKey string
 
@@ -185,20 +181,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	executionControl := viper.GetBool("kubefirst-checks.github-credentials")
 	if !executionControl {
 
-		// httpClient := http.DefaultClient
 		githubToken := os.Getenv("GITHUB_TOKEN")
 		if len(githubToken) == 0 {
 			return errors.New("please set a GITHUB_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init")
 		}
-		// gitHubService := services.NewGitHubService(httpClient)
-		// gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-
-		// get github data to set user based on the provided token
-		log.Info().Msg("verifying github authentication")
-		// githubUser, err := gitHubHandler.GetGitHubUser(githubToken)
-		// if err != nil {
-		// 	return err
-		// }
 
 		githubWrapper := githubWrapper.New()
 		// todo this block need to be pulled into githubHandler. -- begin
@@ -329,6 +315,26 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already completed download of dependencies to `$HOME/.k1/tools` - continuing")
 	}
+
+	// not sure if there is a better way to do this
+	gitopsTemplateTokens.GithubOwner = githubOwnerFlag
+	gitopsTemplateTokens.GithubUser = githubOwnerFlag
+	gitopsTemplateTokens.GitopsRepoGitURL = config.DestinationGitopsRepoGitURL
+	gitopsTemplateTokens.DomainName = k3d.DomainName
+	gitopsTemplateTokens.AtlantisAllowList = fmt.Sprintf("github.com/%s/gitops", githubOwnerFlag)
+	gitopsTemplateTokens.NgrokHost = ngrokHost
+	gitopsTemplateTokens.AlertsEmail = "REMOVE_THIS_VALUE"
+	gitopsTemplateTokens.ClusterName = clusterNameFlag
+	gitopsTemplateTokens.ClusterType = clusterTypeFlag
+	gitopsTemplateTokens.GithubHost = k3d.GithubHost
+	gitopsTemplateTokens.ArgoWorkflowsIngressURL = fmt.Sprintf("https://argo.%s", k3d.DomainName)
+	gitopsTemplateTokens.VaultIngressURL = fmt.Sprintf("https://vault.%s", k3d.DomainName)
+	gitopsTemplateTokens.ArgocdIngressURL = fmt.Sprintf("https://argocd.%s", k3d.DomainName)
+	gitopsTemplateTokens.AtlantisIngressURL = fmt.Sprintf("https://atlantis.%s", k3d.DomainName)
+	gitopsTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("metaphor-development.%s", k3d.DomainName)
+	gitopsTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("metaphor-staging.%s", k3d.DomainName)
+	gitopsTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("metaphor-production.%s", k3d.DomainName)
+	gitopsTemplateTokens.KubefirstVersion = configs.K1Version
 
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
