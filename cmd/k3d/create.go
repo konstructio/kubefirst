@@ -586,6 +586,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	)
 	log.Info().Msgf("port-forward to argocd is available at %s", k3d.ArgocdPortForwardURL)
 
+	var argocdPassword string
 	//* argocd pods are ready, get and set credentials
 	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
 	if !executionControl {
@@ -593,7 +594,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
-		argocdPassword := k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
+		argocdPassword = k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
 		if argocdPassword == "" {
 			log.Info().Msg("argocd password not found in secret")
 			return err
@@ -775,7 +776,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Error().Err(err).Msg("")
 	}
 
-	reports.LocalHandoffScreen(dryRunFlag, false)
+	reports.LocalHandoffScreenV2(argocdPassword, clusterNameFlag, githubOwnerFlag, config, dryRunFlag, false)
 
 	if useTelemetryFlag {
 		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallCompleted, k3d.CloudProvider, k3d.GitProvider); err != nil {
