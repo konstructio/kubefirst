@@ -13,15 +13,11 @@ const (
 	CloudProvider          = "civo"
 	GitProvider            = "github"
 	GithubHost             = "github.com"
-	HelmClientVersion      = "v3.6.1"
-	HelmVersion            = "v3.6.1"
+	HelmClientVersion      = "v3.11.1"
 	KubectlClientVersion   = "v1.23.15"
-	KubectlVersion         = "v1.22.0"
 	LocalhostOS            = runtime.GOOS
 	LocalhostArch          = runtime.GOARCH
 	TerraformClientVersion = "1.3.8"
-	TerraformVersion       = "1.3.8"
-
 	ArgocdHelmChartVersion = "4.10.5"
 	ArgocdPortForwardURL   = "http://localhost:8080"
 	VaultPortForwardURL    = "http://localhost:8200"

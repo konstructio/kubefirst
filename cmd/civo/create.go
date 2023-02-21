@@ -107,13 +107,18 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// required for destroy command
+	viper.Set("flags.alerts-email", alertsEmailFlag)
 	viper.Set("flags.cluster-name", clusterNameFlag)
 	viper.Set("flags.domain-name", domainNameFlag)
 	viper.Set("flags.dry-run", dryRunFlag)
 	viper.Set("flags.github-owner", githubOwnerFlag)
 	viper.WriteConfig()
 
+	// Instantiate config
 	config := civo.GetConfig(clusterNameFlag, domainNameFlag, githubOwnerFlag)
+	// These need to be set for reference elsewhere
+	viper.Set("github.repos.gitops.git-url", config.DestinationGitopsRepoGitURL)
+	viper.WriteConfig()
 
 	var sshPrivateKey, sshPublicKey string
 
@@ -163,12 +168,12 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		GitURL:                         gitopsTemplateURLFlag,
 		GitHubHost:                     fmt.Sprintf("https://github.com/%s/gitops.git", githubOwnerFlag),
 		GitHubOwner:                    githubOwnerFlag,
-		// todo fix
-		GitHubUser:                   "kubefirst-demo-bot",
-		GitOpsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
-		GitOpsRepoGitURL:             config.DestinationGitopsRepoGitURL,
-		GitOpsRepoNoHTTPSURL:         fmt.Sprintf("github.com/%s/gitops.git", githubOwnerFlag),
+		GitOpsRepoAtlantisWebhookURL:   fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
+		GitOpsRepoGitURL:               config.DestinationGitopsRepoGitURL,
+		GitOpsRepoNoHTTPSURL:           fmt.Sprintf("github.com/%s/gitops.git", githubOwnerFlag),
 	}
+	viper.Set("github.atlantis.webhook.url", fmt.Sprintf("https://atlantis.%s/events", domainNameFlag))
+	viper.WriteConfig()
 
 	if useTelemetryFlag {
 		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitStarted, civo.CloudProvider, civo.GitProvider); err != nil {
@@ -329,6 +334,15 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
+		// Set in config and in viper
+		gitopsDirectoryTokens.GitHubUser = githubUser
+		viper.Set("github.user", githubUser)
+
+		err = viper.WriteConfig()
+		if err != nil {
+			return err
+		}
+
 		err = gitHubHandler.CheckGithubOrganizationPermissions(githubToken, githubOwnerFlag, githubUser)
 		if err != nil {
 			return err
@@ -462,7 +476,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			civo.KubectlClientVersion,
 			civo.LocalhostOS,
 			civo.LocalhostArch,
-			config.TerraformClient,
+			civo.TerraformClientVersion,
 			config.ToolsDir,
 		)
 		if err != nil {
@@ -883,7 +897,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 
-		tfEnvs = civo.GetVaultTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetVaultTerraformEnvs(config, tfEnvs)
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
@@ -907,7 +921,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-		tfEnvs = civo.GetUsersTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetUsersTerraformEnvs(config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {

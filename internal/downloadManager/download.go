@@ -562,7 +562,7 @@ func CivoDownloadTools(helmClientPath, helmClientVersion, kubectlClientPath, kub
 		terraformDownloadZipPath := fmt.Sprintf("%s/terraform.zip", toolsDirPath)
 		err = DownloadFile(terraformDownloadZipPath, terraformDownloadURL)
 		if err != nil {
-			errorChannel <- fmt.Errorf("error reading terraform file, %v", err)
+			errorChannel <- fmt.Errorf("error downloading terraform file, %v", err)
 			return
 		}
 
@@ -596,7 +596,7 @@ func CivoDownloadTools(helmClientPath, helmClientVersion, kubectlClientPath, kub
 			localOs,
 			localArchitecture,
 		)
-		log.Info().Msgf("Downloading terraform from %s", helmDownloadURL)
+		log.Info().Msgf("Downloading helm from %s", helmDownloadURL)
 		helmDownloadTarGzPath := fmt.Sprintf("%s/helm.tar.gz", toolsDirPath)
 
 		err = DownloadFile(helmDownloadTarGzPath, helmDownloadURL)
@@ -678,7 +678,7 @@ func DownloadFile(localFilename string, url string) error {
 
 	// check server response
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unable to download the required filed, the HTTP return status is: %s", resp.Status)
+		return fmt.Errorf("unable to download the required file, the HTTP return status is: %s", resp.Status)
 	}
 
 	// writer the body to the file
