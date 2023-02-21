@@ -35,7 +35,7 @@ func NewCommand() *cobra.Command {
 	civoCmd.SilenceUsage = true
 
 	// wire up new commands
-	civoCmd.AddCommand(Create())
+	civoCmd.AddCommand(Create(), Destroy())
 
 	return civoCmd
 }
