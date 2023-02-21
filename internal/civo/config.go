@@ -2,12 +2,29 @@ package civo
 
 import (
 	"fmt"
-
+	"log"
 	"os"
 	"runtime"
 
 	"github.com/caarlos0/env/v6"
-	"github.com/rs/zerolog/log"
+)
+
+const (
+	CloudProvider          = "civo"
+	GitProvider            = "github"
+	GithubHost             = "github.com"
+	HelmClientVersion      = "v3.6.1"
+	HelmVersion            = "v3.6.1"
+	KubectlClientVersion   = "v1.23.15"
+	KubectlVersion         = "v1.22.0"
+	LocalhostOS            = runtime.GOOS
+	LocalhostArch          = runtime.GOARCH
+	TerraformClientVersion = "1.3.8"
+	TerraformVersion       = "1.3.8"
+
+	ArgocdHelmChartVersion = "4.10.5"
+	ArgocdPortForwardURL   = "http://localhost:8080"
+	VaultPortForwardURL    = "http://localhost:8200"
 )
 
 type CivoConfig struct {
@@ -23,6 +40,7 @@ type CivoConfig struct {
 	K1Dir                           string
 	Kubeconfig                      string
 	KubectlClient                   string
+	KubefirstBotSSHPrivateKey       string
 	KubefirstConfig                 string
 	LogsDir                         string
 	MetaphorDir                     string
@@ -32,18 +50,18 @@ type CivoConfig struct {
 	ToolsDir                        string
 }
 
+// GetConfig - load default values from kubefirst installer
 func GetConfig(clusterName string, domainName string, githubOwner string) *CivoConfig {
-
 	config := CivoConfig{}
 
 	// todo do we want these from envs?
 	if err := env.Parse(&config); err != nil {
-		log.Panic().Msgf("error reading environment variables %s", err.Error())
+		log.Panic(fmt.Sprintf("error reading environment variables %s", err.Error()))
 	}
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		log.Panic().Msg(err.Error())
+		log.Panic(err.Error())
 	}
 
 	config.DestinationGitopsRepoHttpsURL = fmt.Sprintf("https://github.com/%s/gitops.git", githubOwner)
@@ -67,15 +85,74 @@ func GetConfig(clusterName string, domainName string, githubOwner string) *CivoC
 	return &config
 }
 
-const (
-	ArgocdPortForwardURL   = "http://localhost:8080"
-	ArgocdHelmChartVersion = "4.10.5"
-	CloudProvider          = "civo"
-	GitProvider            = "github"
-	HelmClientVersion      = "v3.6.1"
-	KubectlClientVersion   = "v1.23.15"
-	LocalhostOS            = runtime.GOOS
-	LocalhostArch          = runtime.GOARCH
-	TerraformClientVersion = "1.3.8"
-	VaultPortForwardURL    = "http://localhost:8200"
-)
+type GitOpsDirectoryValues struct {
+	AlertsEmail               string
+	AtlantisAllowList         string
+	CloudProvider             string
+	CloudRegion               string
+	ClusterName               string
+	ClusterType               string
+	DomainName                string
+	KubeconfigPath            string
+	KubefirstStateStoreBucket string
+	KubefirstTeam             string
+	KubefirstVersion          string
+
+	ArgoCDIngressURL               string
+	ArgoCDIngressNoHTTPSURL        string
+	ArgoWorkflowsIngressURL        string
+	ArgoWorkflowsIngressNoHTTPSURL string
+	AtlantisIngressURL             string
+	AtlantisIngressNoHTTPSURL      string
+	ChartMuseumIngressURL          string
+	VaultIngressURL                string
+	VaultIngressNoHTTPSURL         string
+	VouchIngressURL                string
+
+	GitDescription       string
+	GitNamespace         string
+	GitProvider          string
+	GitRunner            string
+	GitRunnerDescription string
+	GitRunnerNS          string
+	GitURL               string
+
+	GitHubHost  string
+	GitHubOwner string
+	GitHubUser  string
+
+	GitOpsRepoAtlantisWebhookURL string
+	GitOpsRepoGitURL             string
+	GitOpsRepoNoHTTPSURL         string
+
+	// MetaphorDevelopmentIngressURL                string
+	// MetaphorDevelopmentIngressNoHTTPSURL         string
+	// MetaphorProductionIngressURL                 string
+	// MetaphorProductionIngressNoHTTPSURL          string
+	// MetaphorStagingIngressURL                    string
+	// MetaphorStagingIngressNoHTTPSURL             string
+	// MetaphorFrontendDevelopmentIngressURL        string
+	// MetaphorFrontendDevelopmentIngressNoHTTPSURL string
+	// MetaphorFrontendProductionIngressURL         string
+	// MetaphorFrontendProductionIngressNoHTTPSURL  string
+	// MetaphorFrontendStagingIngressURL            string
+	// MetaphorFrontendStagingIngressNoHTTPSURL     string
+	// MetaphorGoDevelopmentIngressURL              string
+	// MetaphorGoDevelopmentIngressNoHTTPSURL       string
+	// MetaphorGoProductionIngressURL               string
+	// MetaphorGoProductionIngressNoHTTPSURL        string
+	// MetaphorGoStagingIngressURL                  string
+	// MetaphorGoStagingIngressNoHTTPSURL           string
+}
+
+type MetaphorTokenValues struct {
+	CheckoutCWFTTemplate                  bool
+	CloudRegion                           string
+	ClusterName                           string
+	CommitCWFTTemplate                    bool
+	ContainerRegistryURL                  string
+	DomainName                            string
+	MetaphorFrontendDevelopmentIngressURL string
+	MetaphorFrontendProductionIngressURL  string
+	MetaphorFrontendStagingIngressURL     string
+}

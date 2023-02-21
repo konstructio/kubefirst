@@ -11,7 +11,6 @@ import (
 )
 
 func backupCivoSSL(cmd *cobra.Command, args []string) error {
-
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
 	githubOwner := viper.GetString("flags.github-owner")
