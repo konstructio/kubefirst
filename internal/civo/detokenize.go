@@ -163,7 +163,7 @@ func detokenizeCivoGitopsMetaphor(path string, tokens *MetaphorTokenValues) file
 			newContents = strings.Replace(newContents, "<CLOUD_REGION>", tokens.CloudRegion, -1)
 			newContents = strings.Replace(newContents, "<CLUSTER_NAME>", tokens.ClusterName, -1)
 			newContents = strings.Replace(newContents, "<COMMIT_CWFT_TEMPLATE>", tokens.CommitCWFTTemplate, -1)
-			newContents = strings.Replace(newContents, "<CONTAINER_REGISTRY>", tokens.ContainerRegistryURL, -1) // todo need to fix metaphor repo names
+			newContents = strings.Replace(newContents, "<CONTAINER_REGISTRY_URL>", tokens.ContainerRegistryURL, -1) // todo need to fix metaphor repo names
 			newContents = strings.Replace(newContents, "<DOMAIN_NAME>", tokens.DomainName, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEVELOPMENT_INGRESS_URL>", tokens.MetaphorFrontendDevelopmentIngressURL, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PRODUCTION_INGRESS_URL>", tokens.MetaphorFrontendProductionIngressURL, -1)
