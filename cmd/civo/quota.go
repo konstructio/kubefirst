@@ -61,7 +61,6 @@ type quotaFormattedOutput struct {
 // returnCivoQuotaEvaluation fetches quota from civo and compares limits to usage
 func returnCivoQuotaEvaluation(cloudRegion string, showAll bool) (string, int, int, error) {
 	// Fetch quota from civo
-
 	client, err := civogo.NewClient(os.Getenv("CIVO_TOKEN"), cloudRegion)
 	if err != nil {
 		log.Info().Msg(err.Error())
@@ -125,7 +124,7 @@ func returnCivoQuotaEvaluation(cloudRegion string, showAll bool) (string, int, i
 	}
 
 	// Parse the entire message
-	const messageHeader = "Civo Quota Health\n\nNote that if any of these are approaching their limits, you may want to increase them."
+	var messageHeader = fmt.Sprintf("Civo Quota Health\nRegion: %s\n\nNote that if any of these are approaching their limits, you may want to increase them.", cloudRegion)
 	sort.Strings(output)
 	result := printCivoQuotaWarning(messageHeader, output)
 
@@ -151,6 +150,9 @@ func printCivoQuotaWarning(messageHeader string, output []string) string {
 	createCivoQuotaWarning.WriteString("\n")
 	for _, result := range output {
 		createCivoQuotaWarning.WriteString(fmt.Sprintf("%s\n", result))
+	}
+	if len(output) == 0 {
+		createCivoQuotaWarning.WriteString("All quotas are healthy. To show all quotas regardless, run `kubefirst civo quota --show-all`\n")
 	}
 	createCivoQuotaWarning.WriteString("\nIf you encounter any errors while working with Civo, request a limit increase for your account before retrying.\n\n")
 	createCivoQuotaWarning.WriteString(civoQuotaIncreaseLink)
