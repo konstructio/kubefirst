@@ -20,8 +20,9 @@ const (
 	LocalhostArch          = runtime.GOARCH
 	TerraformClientVersion = "1.3.8"
 	ArgocdHelmChartVersion = "4.10.5"
-	ArgocdPortForwardURL   = "http://localhost:8080"
-	VaultPortForwardURL    = pkg.ArgocdPortForwardURL
+
+	ArgocdPortForwardURL = pkg.ArgocdPortForwardURL
+	VaultPortForwardURL  = pkg.VaultPortForwardURL
 )
 
 type CivoConfig struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -56,17 +57,17 @@ func ReadSecretV2(kubeConfigPath string, namespace string, secretName string) (m
 }
 
 // PodExecSession executes a command against a Pod
-func PodExecSession(kubeConfigPath string, p *PodSessionOptions) error {
+func PodExecSession(kubeConfigPath string, p *PodSessionOptions, silent bool) error {
 	// v1.PodExecOptions is passed to the rest client to form the req URL
 	podExecOptions := v1.PodExecOptions{
-		Stdin:   true,
-		Stdout:  true,
-		Stderr:  true,
+		Stdin:   p.Stdin,
+		Stdout:  p.Stdout,
+		Stderr:  p.Stderr,
 		TTY:     p.TtyEnabled,
 		Command: p.Command,
 	}
 
-	err := podExec(kubeConfigPath, p, podExecOptions)
+	err := podExec(kubeConfigPath, p, podExecOptions, silent)
 	if err != nil {
 		return err
 	}
@@ -74,7 +75,7 @@ func PodExecSession(kubeConfigPath string, p *PodSessionOptions) error {
 }
 
 // podExec performs kube-exec on a Pod with a given command
-func podExec(kubeConfigPath string, ps *PodSessionOptions, pe v1.PodExecOptions) error {
+func podExec(kubeConfigPath string, ps *PodSessionOptions, pe v1.PodExecOptions, silent bool) error {
 	clientset, err := GetClientSet(false, kubeConfigPath)
 	if err != nil {
 		return err
@@ -108,9 +109,15 @@ func podExec(kubeConfigPath string, ps *PodSessionOptions, pe v1.PodExecOptions)
 	}
 	defer terminal.Restore(0, oldState)
 
+	var showOutput io.Writer
+	if silent {
+		showOutput = io.Discard
+	} else {
+		showOutput = os.Stdout
+	}
 	err = exec.Stream(remotecommand.StreamOptions{
 		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
+		Stdout: showOutput,
 		Stderr: os.Stderr,
 		Tty:    ps.TtyEnabled,
 	})

@@ -62,9 +62,12 @@ func UnsealVault(kubeConfigPath string, o *VaultUnsealOptions) {
 					Command:    []string{"/bin/sh", "-c", fmt.Sprintf("vault operator raft join %s:8200", vaultRaftPrimaryAddress)},
 					Namespace:  VaultNamespace,
 					PodName:    fmt.Sprintf("vault-%d", i),
-					TtyEnabled: true,
+					Stdin:      true,
+					Stdout:     true,
+					Stderr:     true,
+					TtyEnabled: false,
 				}
-				err = k8s.PodExecSession(kubeConfigPath, &podSessionOpts)
+				err = k8s.PodExecSession(kubeConfigPath, &podSessionOpts, true)
 				if err != nil {
 					log.Printf("Error running command on Vault Pod: %s", err)
 				}
@@ -78,9 +81,12 @@ func UnsealVault(kubeConfigPath string, o *VaultUnsealOptions) {
 							Command:    []string{"/bin/sh", "-c", fmt.Sprintf("vault operator unseal %s", rk)},
 							Namespace:  VaultNamespace,
 							PodName:    fmt.Sprintf("vault-%d", i),
-							TtyEnabled: true,
+							Stdin:      true,
+							Stdout:     true,
+							Stderr:     true,
+							TtyEnabled: false,
 						}
-						err = k8s.PodExecSession(kubeConfigPath, &podSessionOpts)
+						err = k8s.PodExecSession(kubeConfigPath, &podSessionOpts, true)
 						if err != nil {
 							log.Printf("Error running command on Vault Pod: %s", err)
 						}
