@@ -5,5 +5,8 @@ type PodSessionOptions struct {
 	Command    []string
 	Namespace  string
 	PodName    string
+	Stdin      bool
+	Stdout     bool
+	Stderr     bool
 	TtyEnabled bool
 }
