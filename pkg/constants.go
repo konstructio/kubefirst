@@ -47,11 +47,12 @@ const (
 
 // Argo
 const (
-	ArgoPodName      = "argo-server"
-	ArgoNamespace    = "argo"
-	ArgoPodPort      = 2746
-	ArgoPodLocalPort = 2746
-	ArgoLocalURLTLS  = "https://argo.localdev.me"
+	ArgoPodName          = "argo-server"
+	ArgoNamespace        = "argo"
+	ArgoPodPort          = 2746
+	ArgoPodLocalPort     = 2746
+	ArgoLocalURLTLS      = "https://argo.localdev.me"
+	ArgocdPortForwardURL = "http://localhost:8080"
 )
 
 // ArgoCD

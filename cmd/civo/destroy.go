@@ -60,7 +60,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("destroying civo resources with terraform")
 
 		clusterName := viper.GetString("flags.cluster-name")
-		kubeconfigPath := viper.GetString("k1-paths.kubeconfig")
+		kubeconfigPath := config.Kubeconfig
 		region := viper.GetString("flags.cloud-region")
 
 		client, err := civogo.NewClient(os.Getenv("CIVO_TOKEN"), region)
@@ -101,13 +101,13 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log.Info().Msgf("port-forward to argocd is available at %s", viper.GetString("components.argocd.port-forward-url"))
+		log.Info().Msgf("port-forward to argocd is available at %s", civo.ArgocdPortForwardURL)
 
 		customTransport := http.DefaultTransport.(*http.Transport).Clone()
 		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 		argocdHttpClient := http.Client{Transport: customTransport}
 		log.Info().Msg("deleting the registry application")
-		httpCode, _, err := argocd.DeleteApplication(&argocdHttpClient, config.RegistryYaml, argocdAuthToken, "true")
+		httpCode, _, err := argocd.DeleteApplication(&argocdHttpClient, config.RegistryAppName, argocdAuthToken, "true")
 		if err != nil {
 			return err
 		}
