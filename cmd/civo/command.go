@@ -100,6 +100,7 @@ func Quota() *cobra.Command {
 		RunE:  evalCivoQuota,
 	}
 
+	quotaCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "NYC1", "the civo region to monitor quotas in")
 	quotaCmd.Flags().BoolVar(&quotaShowAllFlag, "show-all", false, "show all quotas regardless of usage")
 	return quotaCmd
 }
