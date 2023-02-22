@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/caarlos0/env/v6"
+	"github.com/kubefirst/kubefirst/pkg"
 )
 
 const (
@@ -20,7 +21,7 @@ const (
 	TerraformClientVersion = "1.3.8"
 	ArgocdHelmChartVersion = "4.10.5"
 	ArgocdPortForwardURL   = "http://localhost:8080"
-	VaultPortForwardURL    = "http://localhost:8200"
+	VaultPortForwardURL    = pkg.ArgocdPortForwardURL
 )
 
 type CivoConfig struct {
@@ -40,6 +41,7 @@ type CivoConfig struct {
 	KubefirstConfig                 string
 	LogsDir                         string
 	MetaphorDir                     string
+	RegistryAppName                 string
 	RegistryYaml                    string
 	SSLBackupDir                    string
 	TerraformClient                 string
@@ -73,6 +75,7 @@ func GetConfig(clusterName string, domainName string, githubOwner string) *CivoC
 	config.KubefirstConfig = fmt.Sprintf("%s/.k1/%s", homeDir, ".kubefirst")
 	config.LogsDir = fmt.Sprintf("%s/.k1/logs", homeDir)
 	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor-frontend", homeDir)
+	config.RegistryAppName = "registry"
 	config.RegistryYaml = fmt.Sprintf("%s/.k1/gitops/registry/%s/registry.yaml", homeDir, clusterName)
 	config.SSLBackupDir = fmt.Sprintf("%s/.k1/ssl/%s", homeDir, domainName)
 	config.TerraformClient = fmt.Sprintf("%s/.k1/tools/terraform", homeDir)
