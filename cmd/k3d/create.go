@@ -26,6 +26,8 @@ import (
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -659,7 +661,54 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
 
-	time.Sleep(time.Second * 45)
+	time.Sleep(time.Second * 5)
+
+	minioStopChannel := make(chan struct{}, 1)
+	defer func() {
+		close(minioStopChannel)
+	}()
+	k8s.OpenPortForwardPodWrapper(
+		config.Kubeconfig,
+		"minio",
+		"minio",
+		9000,
+		9000,
+		minioStopChannel,
+	)
+
+	//copy files to Minio
+
+	endpoint := "localhost:9000"
+	accessKeyID := "k-ray"
+	secretAccessKey := "feedkraystars"
+
+	// Initialize minio client object.
+	minioClient, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+		Secure: false,
+		Region: "us-k3d-1",
+	})
+
+	if err != nil {
+		log.Info().Msgf("Error creating Minio client: %s", err)
+	}
+
+	log.Info().Msgf("%#v\n", minioClient) // minioClient is now set up
+
+	objectName := "terraform/github/terraform.tfstate"
+	filePath := config.K1Dir + "/gitops/terraform/github/terraform.tfstate"
+	contentType := "xl.meta"
+
+	bucketName := "kubefirst-state-store"
+	log.Info().Msgf("BucketName: %s", bucketName)
+
+	// Upload the zip file with FPutObject
+	info, err := minioClient.FPutObject(ctx, bucketName, objectName, filePath, minio.PutObjectOptions{ContentType: contentType})
+	if err != nil {
+		log.Info().Msgf("Error uploading to Minio bucket: %s", err)
+	}
+
+	log.Printf("Successfully uploaded %s to bucket %d\n", objectName, info.Bucket)
 
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)

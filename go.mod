@@ -20,7 +20,7 @@ require (
 	github.com/chromedp/chromedp v0.8.7
 	github.com/cip8/autoname v1.0.0
 	github.com/civo/civogo v0.3.23
-	github.com/dustin/go-humanize v1.0.0
+	github.com/dustin/go-humanize v1.0.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-github/v45 v45.0.0
@@ -34,7 +34,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.11.0
 	golang.ngrok.com/ngrok v1.0.0
-	golang.org/x/crypto v0.5.0
+	golang.org/x/crypto v0.6.0
 	golang.org/x/exp v0.0.0-20221012211006-4de253d81b95
 	golang.org/x/mod v0.7.0
 	golang.org/x/sync v0.1.0
@@ -67,10 +67,16 @@ require (
 	github.com/inconshreveable/log15/v3 v3.0.0-testing.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
+	github.com/klauspost/compress v1.15.15 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/minio/md5-simd v1.1.2 // indirect
+	github.com/minio/sha256-simd v1.0.0 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/rs/xid v1.4.0 // indirect
 	github.com/segmentio/backo-go v1.0.1 // indirect
+	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	k8s.io/apiextensions-apiserver v0.26.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20221207184640-f3cff1453715 // indirect
@@ -142,6 +148,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
+	github.com/minio/minio-go/v7 v7.0.49
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
@@ -167,11 +174,11 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.4.0
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/term v0.4.0
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/term v0.5.0
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221205194025-8222ab48f5fc // indirect
