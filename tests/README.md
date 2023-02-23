@@ -15,22 +15,22 @@ This directory contains end to end tests to be run against a running Kubefirst i
 
 ## Taskfile to trigger sequential execution of the tests
 
-Kubefirst make use of [Taskfile](https://github.com/go-task/task) (instead of makefile), to trigger sequential execution of the tests. The [Taskfile](../Taskfile.yaml) is located in the root of this repository. The following test cases are avaialble:
+Kubefirst make use of [Taskfile](https://github.com/go-task/task) (instead of makefile), to trigger sequential execution of the tests. The [Taskfile](../Taskfile.yaml) is located in the root of this repository, so you need to run the tests from there. The following test cases are avaialble:
 
 ### test Traefik rules and TLS certificates
 
 ```bash
-task integration-test-for-tls-localdev:
+task integration-test-for-tls-localdev
 ```
 
 ### test Metaphor application
 
 ```bash
-task e2e-test-local-metaphors:
+task e2e-test-local-metaphors
 ```
 
 ### test user creation via IAC/Webhooks/Atlantis/Terraform, and check if is able to login with the new user
 
 ```bash
-task e2e-test-github-user-creation-and-login:
+task e2e-test-github-user-creation-and-login
 ```
