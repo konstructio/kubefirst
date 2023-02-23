@@ -112,7 +112,7 @@ func CreateApplication(httpClient pkg.HTTPDoer, cascade, applicationName, argoCD
 	params.Add("cascade", cascade)
 	paramBody := strings.NewReader(params.Encode())
 
-	url := fmt.Sprintf("%s/api/v1/applications/%s", viper.GetString("argocd.local.service"), applicationName)
+	url := fmt.Sprintf("%s/api/v1/applications/%s", GetArgoEndpoint(), applicationName)
 	log.Info().Msg(url)
 	req, err := http.NewRequest(http.MethodDelete, url, paramBody)
 	if err != nil {
@@ -153,7 +153,7 @@ func DeleteApplication(httpClient pkg.HTTPDoer, applicationName, argoCDToken, ca
 	params.Add("cascade", cascade)
 	paramBody := strings.NewReader(params.Encode())
 
-	url := fmt.Sprintf("%s/api/v1/applications/%s", viper.GetString("argocd.local.service"), applicationName)
+	url := fmt.Sprintf("%s/api/v1/applications/%s", GetArgoEndpoint(), applicationName)
 	log.Info().Msg(url)
 	req, err := http.NewRequest(http.MethodDelete, url, paramBody)
 	if err != nil {
@@ -189,7 +189,7 @@ func DeleteApplication(httpClient pkg.HTTPDoer, applicationName, argoCDToken, ca
 
 func RefreshApplication(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) {
 
-	url := fmt.Sprintf("%s/api/v1/applications?refresh=true", viper.GetString("argocd.local.service"))
+	url := fmt.Sprintf("%s/api/v1/applications?refresh=true", GetArgoEndpoint())
 	log.Debug().Msg(url)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -215,7 +215,7 @@ func RefreshApplication(httpClient pkg.HTTPDoer, applicationName string, argoCDT
 
 func ListApplications(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) {
 
-	url := fmt.Sprintf("%s/api/v1/applications", viper.GetString("argocd.local.service"))
+	url := fmt.Sprintf("%s/api/v1/applications", GetArgoEndpoint())
 	log.Debug().Msg(url)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -242,7 +242,7 @@ func ListApplications(httpClient pkg.HTTPDoer, applicationName string, argoCDTok
 // Sync request ArgoCD to manual sync an application.
 func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (httpCodeResponse int, syncStatus string, Error error) {
 
-	url := fmt.Sprintf("%s/api/v1/applications/%s/sync", viper.GetString("argocd.local.service"), applicationName)
+	url := fmt.Sprintf("%s/api/v1/applications/%s/sync", GetArgoEndpoint(), applicationName)
 	log.Info().Msg(url)
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
@@ -280,8 +280,6 @@ func Sync(httpClient pkg.HTTPDoer, applicationName string, argoCDToken string) (
 // are stored in the viper file.
 func GetArgoCDToken(username string, password string) (string, error) {
 
-	// todo: top caller should receive the token, and then update the viper file outside of this function. This will
-	// 		 help this functions to be more generic and can be used for different purposes.
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
 	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	httpClient := http.Client{Transport: customTransport}
@@ -309,7 +307,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return "", errors.New("unable to retrieve ArgoCD token")
+		return "", errors.New("unable to retrieve argocd token")
 	}
 
 	body, err := io.ReadAll(res.Body)
@@ -324,17 +322,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 	}
 	token := fmt.Sprintf("%v", jsonReturn["token"])
 	if len(token) == 0 {
-		return "", errors.New("unable to retrieve ArgoCD token, make sure ArgoCD credentials are correct")
-	}
-
-	// todo: top caller should receive the token, and then update the viper file outside of this function. This will
-	// 		 help this functions to be more generic and can be used for different purposes.
-	// update config file
-	viper.Set("argocd.admin.apitoken", token)
-	err = viper.WriteConfig()
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		return "", err
+		return "", errors.New("unable to retrieve argocd token, make sure provided credentials are valid")
 	}
 
 	return token, nil
@@ -352,7 +340,7 @@ func GetArgocdAuthToken(dryRun bool) string {
 
 	time.Sleep(15 * time.Second)
 
-	url := fmt.Sprintf("%s/api/v1/session", viper.GetString("argocd.local.service"))
+	url := fmt.Sprintf("%s/api/v1/session", GetArgoEndpoint())
 
 	payload := strings.NewReader(fmt.Sprintf("{\n\t\"username\":\"admin\",\"password\":\"%s\"\n}", viper.GetString("argocd.admin.password")))
 
@@ -630,4 +618,16 @@ func GetArgoCDInitialCloudConfig(gitOpsRepo string, botPrivateKey string) Config
 	argoCDConfig.Configs.CredentialTemplates.SSHCreds.SSHPrivateKey = botPrivateKey
 
 	return argoCDConfig
+}
+
+// GetArgoEndpoint provides a solution in the interim for returning the correct
+// endpoint address
+func GetArgoEndpoint() string {
+	var argoCDLocalEndpoint string
+	if viper.GetString("argocd.local.service") != "" {
+		argoCDLocalEndpoint = viper.GetString("argocd.local.service")
+	} else {
+		argoCDLocalEndpoint = pkg.ArgocdPortForwardURL
+	}
+	return argoCDLocalEndpoint
 }

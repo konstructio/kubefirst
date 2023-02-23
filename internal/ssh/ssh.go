@@ -11,7 +11,6 @@ import (
 
 	"github.com/caarlos0/sshmarshal"
 	goGitSsh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
-	"github.com/kubefirst/kubefirst/configs"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ed25519"
@@ -60,9 +59,7 @@ func PublicKey() (*goGitSsh.PublicKeys, error) {
 }
 
 // todo hack - need something more substantial and accommodating and not in ssh..
-func WriteGithubArgoCdInitValuesFile(githubGitopsSshURL, sshPrivateKey string) error {
-
-	config := configs.ReadConfig()
+func WriteGithubArgoCdInitValuesFile(githubGitopsSshURL, k1Dir, sshPrivateKey string) error {
 
 	var argocdInitValuesYaml = []byte(fmt.Sprintf(`
 configs:
@@ -78,9 +75,9 @@ configs:
         %s
 `, githubGitopsSshURL, githubGitopsSshURL, strings.ReplaceAll(sshPrivateKey, "\n", "\n        ")))
 
-	err := os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath), argocdInitValuesYaml, 0644)
+	err := os.WriteFile(fmt.Sprintf("%s/argocd-init-values.yaml", k1Dir), argocdInitValuesYaml, 0644)
 	if err != nil {
-		log.Info().Msgf("error: could not write %s/argocd-init-values.yaml %s", config.K1FolderPath, err)
+		log.Info().Msgf("error: could not write %s/argocd-init-values.yaml %s", k1Dir, err)
 		return err
 	}
 	return nil

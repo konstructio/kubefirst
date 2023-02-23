@@ -102,6 +102,11 @@ type Config struct {
 	TerraformVaultEntrypointPath  string
 	GithubToken                   string `env:"GITHUB_TOKEN"`
 	CivoToken                     string `env:"CIVO_TOKEN"`
+
+	// these
+	GitopsDir                   string
+	DestinationGitopsRepoGitURL string
+	K1Dir                       string
 }
 
 // ReadConfig - load default values from kubefirst installer
@@ -123,6 +128,10 @@ func ReadConfig() *Config {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homePath)
+	config.K1Dir = fmt.Sprintf("%s/.k1", homePath)
+
 	config.K1ToolsPath = fmt.Sprintf("%s/tools", config.K1FolderPath)
 	config.KubefirstConfigFileName = ".kubefirst"
 	config.KubefirstConfigFilePath = fmt.Sprintf("%s/%s", homePath, config.KubefirstConfigFileName)
@@ -153,7 +162,7 @@ func ReadConfig() *Config {
 	config.K3dPath = fmt.Sprintf("%s/k3d", config.K1ToolsPath)
 	config.CertsPath = fmt.Sprintf("%s/ssl", config.K1FolderPath)
 	config.NgrokVersion = "v3"
-	config.TerraformVersion = "1.0.11"
+	config.TerraformVersion = "1.3.8"
 	config.ArgoCDChartHelmVersion = "4.10.5"
 	config.ArgoCDInitValuesYamlPath = fmt.Sprintf("%s/argocd-init-values.yaml", config.K1FolderPath)
 	// todo adopt latest helmVersion := "v3.9.0"

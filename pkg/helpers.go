@@ -285,7 +285,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 		}
 
 		if cloud == CloudK3d {
-			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
+			newContents = strings.Replace(newContents, "<CLOUD_PROVIDER>", cloud, -1)
 			//!
 			//! todo this definitely breaks something below
 			//!
@@ -327,7 +327,7 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			//! todo this definitely breaks something ^^
 			//!
 		} else {
-			newContents = strings.Replace(newContents, "<CLOUD>", cloud, -1)
+			newContents = strings.Replace(newContents, "<CLOUD_PROVIDER>", cloud, -1)
 			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_URL>", fmt.Sprintf("https://argo.%s", hostedZoneName), -1)
 			newContents = strings.Replace(newContents, "<VAULT_URL>", fmt.Sprintf("https://vault.%s", hostedZoneName), -1)
 			newContents = strings.Replace(newContents, "<ARGO_CD_URL>", fmt.Sprintf("https://argocd.%s", hostedZoneName), -1)
@@ -371,7 +371,7 @@ func SetupViper(config *configs.Config) error {
 
 	if _, err := os.Stat(viperConfigFile); errors.Is(err, os.ErrNotExist) {
 		log.Printf("Config file not found, creating a blank one: %s \n", viperConfigFile)
-		err = os.WriteFile(viperConfigFile, []byte("createdBy: installer\n\n"), 0700)
+		err = os.WriteFile(viperConfigFile, []byte(""), 0700)
 		if err != nil {
 			return fmt.Errorf("unable to create blank config file, error is: %s", err)
 		}
@@ -823,4 +823,46 @@ func FindStringInSlice(s []string, str string) bool {
 	}
 
 	return false
+}
+
+func ResetK1Dir(k1Dir, kubefirstFilePath string) error {
+
+	if _, err := os.Stat(k1Dir + "/argo-workflows"); !os.IsNotExist(err) {
+		// path/to/whatever exists
+		err := os.RemoveAll(k1Dir + "/argo-workflows")
+		if err != nil {
+			return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/argo-workflows", err)
+		}
+	}
+
+	if _, err := os.Stat(k1Dir + "/gitops"); !os.IsNotExist(err) {
+		err := os.RemoveAll(k1Dir + "/gitops")
+		if err != nil {
+			return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/gitops", err)
+		}
+	}
+	if _, err := os.Stat(k1Dir + "/metaphor-frontend"); !os.IsNotExist(err) {
+		err := os.RemoveAll(k1Dir + "/metaphor-frontend")
+		if err != nil {
+			return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/metaphor-frontend", err)
+		}
+	}
+	// todo look at logic to not re-download
+	if _, err := os.Stat(k1Dir + "/tools"); !os.IsNotExist(err) {
+		err = os.RemoveAll(k1Dir + "/tools")
+		if err != nil {
+			return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/tools", err)
+		}
+	}
+	//* files
+	//! this might fail with an adjustment made to validate
+	if _, err := os.Stat(k1Dir + "/argocd-init-values.yaml"); !os.IsNotExist(err) {
+		err = os.Remove(k1Dir + "/argocd-init-values.yaml")
+		if err != nil {
+			return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/argocd-init-values.yaml", err)
+		}
+	}
+
+	return nil
+
 }

@@ -2,12 +2,12 @@ package local
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/internal/reports"
 	"time"
+
+	"github.com/kubefirst/kubefirst/internal/reports"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
-	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
@@ -73,10 +73,10 @@ func destroy(cmd *cobra.Command, args []string) error {
 	// todo --skip-cluster-destroy
 	log.Info().Msg("deleting K3d cluster...")
 	pkg.InformUser("deleting k3d cluster", silentMode)
-	err := k3d.DeleteK3dCluster()
-	if err != nil {
-		return err
-	}
+	// err := k3d.DeleteK3dCluster()
+	// if err != nil {
+	// 	return err
+	// }
 	log.Info().Msg("deleting K3d cluster, done")
 	pkg.InformUser("k3d cluster deleted", silentMode)
 

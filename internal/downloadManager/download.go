@@ -31,6 +31,55 @@ type TerraformVersion struct {
 	TerraformVersion string `json:"terraform_version"`
 }
 
+func DownloadTarGz(binaryPath string, tarAddress string, targzPath string, URL string) error {
+
+	log.Info().Msgf("Downloading tar.gz from %s", URL)
+
+	err := DownloadFile(targzPath, URL)
+	if err != nil {
+		return err
+	}
+
+	tarContent, err := os.Open(targzPath)
+	if err != nil {
+		return err
+	}
+
+	extractFileFromTarGz(
+		tarContent,
+		tarAddress,
+		binaryPath,
+	)
+	os.Remove(targzPath)
+	err = os.Chmod(binaryPath, 0755)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func DownloadZip(toolsDir string, URL string, zipPath string) error {
+
+	log.Info().Msgf("Downloading zip from %s", "URL")
+
+	err := DownloadFile(zipPath, URL)
+	if err != nil {
+		return err
+	}
+
+	err = unzip(zipPath, toolsDir)
+	if err != nil {
+		return err
+	}
+
+	err = os.RemoveAll(zipPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // DownloadLocalTools - Download extra tools needed for local installations scenarios
 func DownloadLocalTools(config *configs.Config) error {
 	log.Info().Msg("starting checking tool downloads")
@@ -53,7 +102,7 @@ func DownloadLocalTools(config *configs.Config) error {
 			config.LocalOs,
 			config.LocalArchitecture,
 		)
-		err = downloadFile(config.K3dPath, k3dDownloadURL)
+		err = DownloadFile(config.K3dPath, k3dDownloadURL)
 		if err != nil {
 			errorChannel <- err
 			return
@@ -80,7 +129,7 @@ func DownloadLocalTools(config *configs.Config) error {
 				config.LocalOs,
 				config.LocalArchitecture,
 			)
-			err = downloadFile(config.K3dPath, k3dDownloadUrl)
+			err = DownloadFile(config.K3dPath, k3dDownloadUrl)
 			if err != nil {
 				errorChannel <- err
 				return
@@ -105,7 +154,7 @@ func DownloadLocalTools(config *configs.Config) error {
 			config.LocalOs,
 			config.LocalArchitecture,
 		)
-		err = downloadFile(config.MkCertPath, mkCertDownloadURL)
+		err = DownloadFile(config.MkCertPath, mkCertDownloadURL)
 		if err != nil {
 			errorChannel <- err
 			if FileExists(config.MkCertPath) && VerifyCacheMkCert(config) {
@@ -131,7 +180,7 @@ func DownloadLocalTools(config *configs.Config) error {
 					config.LocalOs,
 					config.LocalArchitecture,
 				)
-				err = downloadFile(config.MkCertPath, mkCertDownloadUrl)
+				err = DownloadFile(config.MkCertPath, mkCertDownloadUrl)
 				if err != nil {
 					errorChannel <- err
 					return
@@ -266,7 +315,7 @@ func DownloadTools(config *configs.Config) error {
 	go func() {
 		kVersion := config.KubectlVersion
 		if config.LocalOs == "darwin" && config.LocalArchitecture == "arm64" {
-			kVersion = config.KubectlVersionM1
+			kVersion = config.KubectlVersion
 		}
 
 		kubectlDownloadURL := fmt.Sprintf(
@@ -276,7 +325,7 @@ func DownloadTools(config *configs.Config) error {
 			config.LocalArchitecture,
 		)
 		log.Info().Msgf("Downloading kubectl from: %s", kubectlDownloadURL)
-		err = downloadFile(config.KubectlClientPath, kubectlDownloadURL)
+		err = DownloadFile(config.KubectlClientPath, kubectlDownloadURL)
 		if err != nil {
 			errorChannel <- err
 			return
@@ -304,7 +353,7 @@ func DownloadTools(config *configs.Config) error {
 				config.LocalArchitecture,
 			)
 			log.Info().Msgf("Downloading kubectl from: %s", kubectlDownloadUrl)
-			err = downloadFile(config.KubectlClientPath, kubectlDownloadUrl)
+			err = DownloadFile(config.KubectlClientPath, kubectlDownloadUrl)
 			if err != nil {
 				errorChannel <- err
 				return
@@ -340,7 +389,7 @@ func DownloadTools(config *configs.Config) error {
 		)
 		log.Info().Msgf("Downloading terraform from %s", terraformDownloadURL)
 		terraformDownloadZipPath := fmt.Sprintf("%s/tools/terraform.zip", config.K1FolderPath)
-		err = downloadFile(terraformDownloadZipPath, terraformDownloadURL)
+		err = DownloadFile(terraformDownloadZipPath, terraformDownloadURL)
 		if err != nil {
 			errorChannel <- fmt.Errorf("error reading terraform file, %v", err)
 			return
@@ -372,7 +421,7 @@ func DownloadTools(config *configs.Config) error {
 			)
 			log.Info().Msgf("Downloading terraform from %s", terraformDownloadUrl)
 			terraformDownloadZipPath := fmt.Sprintf("%s/terraform.zip", config.K1ToolsPath)
-			err = downloadFile(terraformDownloadZipPath, terraformDownloadUrl)
+			err = DownloadFile(terraformDownloadZipPath, terraformDownloadUrl)
 			if err != nil {
 				errorChannel <- fmt.Errorf("error reading terraform file, %v", err)
 				return
@@ -412,85 +461,25 @@ func DownloadTools(config *configs.Config) error {
 		log.Info().Msgf("Downloading terraform from %s", helmDownloadURL)
 		helmDownloadTarGzPath := fmt.Sprintf("%s/tools/helm.tar.gz", config.K1FolderPath)
 
-		err = downloadFile(helmDownloadTarGzPath, helmDownloadURL)
+		err = DownloadFile(helmDownloadTarGzPath, helmDownloadURL)
 		if err != nil {
-			errorChannel <- err
-			return
-		}
-		if FileExists(config.HelmClientPath) && VerifyCacheHelm(config) {
-			log.Info().Msg("Helm exists and cache validated - skipping download")
-			wg.Done()
 			return
 		}
 
-		if FileExists(config.HelmClientPath) && !VerifyCacheHelm(config) {
-			log.Info().Msg("Helm exists and cache version is invalid - continuing...")
-			log.Info().Msg("divergent versions may not work well, we recommend running `kubefirst clean` command and try again")
-			wg.Done()
+		os.Remove(helmDownloadTarGzPath)
+		helmTarDownload, err := os.Open(helmDownloadTarGzPath)
+		if err != nil {
 			return
 		}
 
-		if !FileExists(config.HelmClientPath) {
-			log.Info().Msg("Helm not found - starting download")
-
-			os.Remove(helmDownloadTarGzPath)
-			// currently argocd init values is generated by kubefirst ssh
-			// todo helm install argocd --create-namespace --wait --values ~/.kubefirst/argocd-init-values.yaml argo/argo-cd
-			_, helmStdErr, err := pkg.ExecShellReturnStrings(
-				config.HelmClientPath,
-				"version",
-				"--client",
-				"--short",
-			)
-			if err != nil {
-				log.Info().Msg(helmStdErr)
-				errorChannel <- fmt.Errorf("error executing helm version command: %v", err)
-				return
-			}
-			os.Remove(helmDownloadTarGzPath)
-			helmVersion := config.HelmVersion
-			helmDownloadUrl := fmt.Sprintf(
-				"https://get.helm.sh/helm-%s-%s-%s.tar.gz",
-				helmVersion,
-				config.LocalOs,
-				config.LocalArchitecture,
-			)
-			log.Info().Msgf("Downloading terraform from %s", helmDownloadUrl)
-			helmDownloadTarGzPath := fmt.Sprintf("%s/helm.tar.gz", config.K1ToolsPath)
-
-			err = downloadFile(helmDownloadTarGzPath, helmDownloadUrl)
-			if err != nil {
-				errorChannel <- err
-				return
-			}
-
-			helmTarDownload, err := os.Open(helmDownloadTarGzPath)
-			if err != nil {
-				errorChannel <- fmt.Errorf("could not read helm download content")
-				return
-			}
-
-			extractFileFromTarGz(
-				helmTarDownload,
-				fmt.Sprintf("%s-%s/helm", config.LocalOs, config.LocalArchitecture),
-				config.HelmClientPath,
-			)
-			err = os.Chmod(config.HelmClientPath, 0755)
-			if err != nil {
-				errorChannel <- err
-				return
-			}
-			verifyHelm := VerifyCacheHelm(config)
-			if !verifyHelm {
-				log.Info().Msg("Error verifying Helm after downloading")
-				errorChannel <- fmt.Errorf("error executing helm version command: %v", err)
-				return
-			}
-			os.Remove(helmDownloadTarGzPath)
-
-			wg.Done()
-
-			log.Info().Msg("Helm download finished")
+		extractFileFromTarGz(
+			helmTarDownload,
+			fmt.Sprintf("%s-%s/helm", config.LocalOs, config.LocalArchitecture),
+			config.HelmClientPath,
+		)
+		err = os.Chmod(config.HelmClientPath, 0755)
+		if err != nil {
+			return
 		}
 	}()
 
@@ -536,7 +525,7 @@ func CivoDownloadTools(helmClientPath, helmClientVersion, kubectlClientPath, kub
 			localArchitecture,
 		)
 		log.Info().Msgf("Downloading kubectl from: %s", kubectlDownloadURL)
-		err = downloadFile(kubectlClientPath, kubectlDownloadURL)
+		err = DownloadFile(kubectlClientPath, kubectlDownloadURL)
 		if err != nil {
 			errorChannel <- err
 			return
@@ -571,9 +560,9 @@ func CivoDownloadTools(helmClientPath, helmClientVersion, kubectlClientPath, kub
 		)
 		log.Info().Msgf("Downloading terraform from %s", terraformDownloadURL)
 		terraformDownloadZipPath := fmt.Sprintf("%s/terraform.zip", toolsDirPath)
-		err = downloadFile(terraformDownloadZipPath, terraformDownloadURL)
+		err = DownloadFile(terraformDownloadZipPath, terraformDownloadURL)
 		if err != nil {
-			errorChannel <- fmt.Errorf("error reading terraform file, %v", err)
+			errorChannel <- fmt.Errorf("error downloading terraform file, %v", err)
 			return
 		}
 
@@ -607,10 +596,10 @@ func CivoDownloadTools(helmClientPath, helmClientVersion, kubectlClientPath, kub
 			localOs,
 			localArchitecture,
 		)
-		log.Info().Msgf("Downloading terraform from %s", helmDownloadURL)
+		log.Info().Msgf("Downloading helm from %s", helmDownloadURL)
 		helmDownloadTarGzPath := fmt.Sprintf("%s/helm.tar.gz", toolsDirPath)
 
-		err = downloadFile(helmDownloadTarGzPath, helmDownloadURL)
+		err = DownloadFile(helmDownloadTarGzPath, helmDownloadURL)
 		if err != nil {
 			errorChannel <- err
 			return
@@ -671,8 +660,8 @@ func CivoDownloadTools(helmClientPath, helmClientVersion, kubectlClientPath, kub
 	}
 }
 
-// downloadFile Downloads a file from the "url" parameter, localFilename is the file destination in the local machine.
-func downloadFile(localFilename string, url string) error {
+// DownloadFile Downloads a file from the "url" parameter, localFilename is the file destination in the local machine.
+func DownloadFile(localFilename string, url string) error {
 	// create local file
 	out, err := os.Create(localFilename)
 	if err != nil {
@@ -689,7 +678,7 @@ func downloadFile(localFilename string, url string) error {
 
 	// check server response
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unable to download the required filed, the HTTP return status is: %s", resp.Status)
+		return fmt.Errorf("unable to download the required file, the HTTP return status is: %s", resp.Status)
 	}
 
 	// writer the body to the file

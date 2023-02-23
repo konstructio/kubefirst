@@ -17,7 +17,7 @@ For your AWS cloud resources to provision we have just a couple prerequisites:
 
 1. An AWS account with billing enabled.
 
-2. an established publicly routable hosted zone with dns ([docs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zones-working-with.html))
+2. an established publicly routable hosted zone with DNS ([docs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/AboutHZWorkingWith.html))
 
 3. you'll need [AdministratorAccess](https://console.aws.amazon.com/iam/home?#/policies/arn:aws:iam::aws:policy/AdministratorAccessserviceLevelSummary) to your aws account ([docs](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys))
 

@@ -192,7 +192,7 @@ func PushChanges(repo *git.Repository, remoteName string, gitHubToken string) er
 		},
 	})
 	if err != nil {
-		log.Info().Msgf("Error creating remote %s at: %s - %s", remoteName, err)
+		log.Info().Msgf("Error creating remote %s at: %s", remoteName, err)
 		return err
 	}
 	return nil
@@ -206,7 +206,7 @@ func AddRemote(newGitRemoteURL, remoteName string, repo *git.Repository) error {
 		URLs: []string{newGitRemoteURL},
 	})
 	if err != nil {
-		log.Info().Msgf("Error creating remote %s at: %s - %s", remoteName, newGitRemoteURL)
+		log.Info().Msgf("Error creating remote %s at: %s", remoteName, newGitRemoteURL)
 		return err
 	}
 	return nil
@@ -360,14 +360,14 @@ func Commit(repo *git.Repository, commitMsg string) error {
 	log.Printf(commitMsg)
 	status, err := w.Status()
 	if err != nil {
-		log.Info().Msgf("error getting worktree status", err)
+		log.Info().Msgf("error getting worktree status: %s", err)
 		return err
 	}
 
 	for file, _ := range status {
 		_, err = w.Add(file)
 		if err != nil {
-			log.Info().Msgf("error getting worktree status", err)
+			log.Info().Msgf("error getting worktree status: %s", err)
 			return err
 		}
 	}

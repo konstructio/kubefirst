@@ -116,6 +116,8 @@ var createGithubCmd = &cobra.Command{
 			log.Warn().Msg("Error installing argocd")
 			return err
 		}
+		viper.Set("argocd.helm.install.complete", true)
+		viper.WriteConfig()
 
 		informUser("Install ArgoCD", globalFlags.SilentMode)
 		progressPrinter.IncrementTracker("step-apps", 1)

@@ -37,21 +37,23 @@ const (
 
 // Vault
 const (
-	VaultPodName      = "vault-0"
-	VaultNamespace    = "vault"
-	VaultPodPort      = 8200
-	VaultPodLocalPort = 8200
-	VaultLocalURL     = "http://vault.localdev.me"
-	VaultLocalURLTLS  = "https://vault.localdev.me"
+	VaultPodName        = "vault-0"
+	VaultNamespace      = "vault"
+	VaultPodPort        = 8200
+	VaultPodLocalPort   = 8200
+	VaultLocalURL       = "http://vault.localdev.me"
+	VaultLocalURLTLS    = "https://vault.localdev.me"
+	VaultPortForwardURL = "http://localhost:8200"
 )
 
 // Argo
 const (
-	ArgoPodName      = "argo-server"
-	ArgoNamespace    = "argo"
-	ArgoPodPort      = 2746
-	ArgoPodLocalPort = 2746
-	ArgoLocalURLTLS  = "https://argo.localdev.me"
+	ArgoPodName          = "argo-server"
+	ArgoNamespace        = "argo"
+	ArgoPodPort          = 2746
+	ArgoPodLocalPort     = 2746
+	ArgoLocalURLTLS      = "https://argo.localdev.me"
+	ArgocdPortForwardURL = "http://localhost:8080"
 )
 
 // ArgoCD

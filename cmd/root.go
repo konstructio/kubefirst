@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/kubefirst/kubefirst/cmd/civo"
+	"github.com/kubefirst/kubefirst/cmd/k3d"
 	"github.com/kubefirst/kubefirst/cmd/local"
 	"github.com/kubefirst/kubefirst/configs"
 
@@ -44,6 +45,5 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize()
-	rootCmd.AddCommand(local.NewCommand())
-	rootCmd.AddCommand(civo.NewCommand())
+	rootCmd.AddCommand(local.NewCommand(), civo.NewCommand(), k3d.NewCommand())
 }
