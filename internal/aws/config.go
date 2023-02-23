@@ -15,12 +15,11 @@ const (
 	ArgoWorkflowsURL       = "https://argo.localdev.me"
 	AtlantisURL            = "https://atlantis.localdev.me"
 	ChartMuseumURL         = "https://chartmuseum.localdev.me"
-	CloudProvider          = "k3d"
+	CloudProvider          = "aws"
 	DomainName             = "localdev.me"
 	HelmVersion            = "v3.6.1"
 	GithubHost             = "github.com"
 	GitProvider            = "github"
-	K3dVersion             = "v5.4.6"
 	KubectlVersion         = "v1.22.0"
 	KubefirstConsoleURL    = "https://kubefirst.localdev.me"
 	MetaphorDevelopmentURL = "https://metaphor-devlopment.localdev.me"
@@ -32,7 +31,49 @@ const (
 	VaultURL               = "https://vault.localdev.me"
 )
 
-type GitopsTokenValues struct {
+// todo standardize on field names
+type GitOpsDirectoryValues struct {
+	AlertsEmail                    string
+	ArgoCDIngressURL               string
+	ArgoCDIngressNoHTTPSURL        string
+	ArgoWorkflowsIngressNoHTTPSURL string
+	ArgoWorkflowsIngressURL        string
+	AtlantisIngressURL             string
+	AtlantisIngressNoHTTPSURL      string
+	AtlantisAllowList              string
+	AtlantisWebhookURL             string
+	ChartMuseumIngressURL          string
+	ClusterName                    string
+	ClusterType                    string
+	CloudProvider                  string
+	CloudRegion                    string
+	DomainName                     string
+	GithubHost                     string
+	GithubOwner                    string
+	GithubUser                     string
+	GitDescription                 string
+	GitNamespace                   string
+	GitProvider                    string
+	GitRunner                      string
+	GitRunnerDescription           string
+	GitRunnerNS                    string
+	GitopsRepoGitURL               string
+	Kubeconfig                     string
+	GitHubHost                     string
+	GitHubOwner                    string
+	GitHubUser                     string
+	GitOpsRepoAtlantisWebhookURL   string
+	GitOpsRepoGitURL               string
+	GitOpsRepoNoHTTPSURL           string
+	KubefirstStateStoreBucket      string
+	KubefirstTeam                  string
+	KubefirstVersion               string
+	MetaphorDevelopmentIngressURL  string
+	MetaphorStagingIngressURL      string
+	MetaphorProductionIngressURL   string
+	VaultIngressURL                string
+	VaultIngressNoHTTPSURL         string
+	VouchIngressURL                string
 }
 
 type MetaphorTokenValues struct {
@@ -44,12 +85,10 @@ type AwsConfig struct {
 	GitopsDir                     string
 	HelmClient                    string
 	K1Dir                         string
-	K3dClient                     string
 	KubectlClient                 string
 	Kubeconfig                    string
 	KubefirstConfig               string
 	MetaphorDir                   string
-	MkCertClient                  string
 	TerraformClient               string
 	ToolsDir                      string
 }
@@ -74,12 +113,10 @@ func GetConfig(githubOwner string) *AwsConfig {
 	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
 	config.HelmClient = fmt.Sprintf("%s/.k1/tools/helm", homeDir)
 	config.K1Dir = fmt.Sprintf("%s/.k1", homeDir)
-	config.K3dClient = fmt.Sprintf("%s/.k1/tools/k3d", homeDir)
 	config.KubectlClient = fmt.Sprintf("%s/.k1/tools/kubectl", homeDir)
 	config.Kubeconfig = fmt.Sprintf("%s/.k1/kubeconfig", homeDir)
 	config.KubefirstConfig = fmt.Sprintf("%s/.kubefirst", homeDir)
 	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor-frontend", homeDir)
-	config.MkCertClient = fmt.Sprintf("%s/.k1/tools/mkcert", homeDir)
 	config.TerraformClient = fmt.Sprintf("%s/.k1/tools/terraform", homeDir)
 	config.ToolsDir = fmt.Sprintf("%s/.k1/tools", homeDir)
 

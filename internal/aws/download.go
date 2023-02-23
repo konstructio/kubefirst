@@ -11,11 +11,7 @@ import (
 )
 
 func DownloadTools(awsConfig *AwsConfig) error {
-	// awsConfig.HelmClient, HelmVersion, awsConfig.KubectlClient, awsConfig.KubectlConfig, pkg.LocalhostOS, pkg.LocalhostARCH, awsConfig.TerraformClient, awsConfig.ToolsDir string
 
-	// kubectl
-	// terraform
-	// helm
 	log.Info().Msg("starting downloads...")
 
 	// create folder if it doesn't exist
@@ -107,7 +103,7 @@ func DownloadTools(awsConfig *AwsConfig) error {
 	go func() {
 		helmDownloadURL := fmt.Sprintf(
 			"https://get.helm.sh/helm-%s-%s-%s.tar.gz",
-			awsConfig.HelmClient,
+			HelmVersion,
 			pkg.LocalhostOS,
 			pkg.LocalhostARCH,
 		)

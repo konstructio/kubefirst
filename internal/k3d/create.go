@@ -55,7 +55,6 @@ func ClusterCreate(clusterName string, k1Dir string, k3dClient string, kubeconfi
 	return nil
 }
 
-//  should tokens be a *GitopsTokenValues? does it matter
 func PrepareGitopsRepository(clusterName string,
 	clusterType string,
 	destinationGitopsRepoGitURL string,

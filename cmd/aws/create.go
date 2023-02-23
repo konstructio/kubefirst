@@ -13,6 +13,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/civo"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/services"
@@ -114,8 +115,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	config := aws.GetConfig(githubOwnerFlag)
 	fmt.Println(config)
 
-	// gitopsTemplateTokens := aws.GitopsTokenValues{}
-
 	var sshPrivateKey, sshPublicKey string
 
 	// todo placed in configmap in kubefirst namespace, included in telemetry
@@ -125,6 +124,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst.cluster-id", clusterId)
 		viper.WriteConfig()
 	}
+	kubefirstStateStoreBucketName := fmt.Sprintf("k1-state-store-%s-%s", clusterNameFlag, clusterId)
 
 	if useTelemetryFlag {
 		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitStarted, aws.CloudProvider, aws.GitProvider); err != nil {
@@ -289,7 +289,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		errors.New("END OF THE ROAD")
+		return errors.New("END OF THE ROAD")
 
 		log.Info().Msg("download dependencies `$HOME/.k1/tools` complete")
 		viper.Set("kubefirst-checks.tools-downloaded", true)
@@ -298,54 +298,75 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed download of dependencies to `$HOME/.k1/tools` - continuing")
 	}
 
-	// // not sure if there is a better way to do this
-	// gitopsTemplateTokens.GithubOwner = githubOwnerFlag
-	// gitopsTemplateTokens.GithubUser = githubOwnerFlag
-	// gitopsTemplateTokens.GitopsRepoGitURL = config.DestinationGitopsRepoGitURL
-	// gitopsTemplateTokens.DomainName = domainNameFlag
-	// gitopsTemplateTokens.AtlantisAllowList = fmt.Sprintf("github.com/%s/gitops", githubOwnerFlag)
-	// gitopsTemplateTokens.NgrokHost = ngrokHost
-	// gitopsTemplateTokens.AlertsEmail = "REMOVE_THIS_VALUE"
-	// gitopsTemplateTokens.ClusterName = clusterNameFlag
-	// gitopsTemplateTokens.ClusterType = clusterTypeFlag
-	// gitopsTemplateTokens.GithubHost = aws.GithubHost
-	// gitopsTemplateTokens.ArgoWorkflowsIngressURL = fmt.Sprintf("https://argo.%s", domainNameFlag)
-	// gitopsTemplateTokens.VaultIngressURL = fmt.Sprintf("https://vault.%s", domainNameFlag)
-	// gitopsTemplateTokens.ArgocdIngressURL = fmt.Sprintf("https://argocd.%s", domainNameFlag)
-	// gitopsTemplateTokens.AtlantisIngressURL = fmt.Sprintf("https://atlantis.%s", domainNameFlag)
-	// gitopsTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("metaphor-development.%s", domainNameFlag)
-	// gitopsTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("metaphor-staging.%s", domainNameFlag)
-	// gitopsTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("metaphor-production.%s", domainNameFlag)
-	// gitopsTemplateTokens.KubefirstVersion = configs.K1Version
+	gitopsTemplateTokens := aws.GitOpsDirectoryValues{
+		AlertsEmail:                    alertsEmailFlag,
+		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
+		ArgoCDIngressNoHTTPSURL:        fmt.Sprintf("argocd.%s", domainNameFlag),
+		ArgoWorkflowsIngressURL:        fmt.Sprintf("https://argo.%s", domainNameFlag),
+		ArgoWorkflowsIngressNoHTTPSURL: fmt.Sprintf("argo.%s", domainNameFlag),
+		AtlantisIngressURL:             fmt.Sprintf("https://atlantis.%s", domainNameFlag),
+		AtlantisIngressNoHTTPSURL:      fmt.Sprintf("atlantis.%s", domainNameFlag),
+		AtlantisAllowList:              fmt.Sprintf("github.com/%s/gitops", githubOwnerFlag),
+		AtlantisWebhookURL:             fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
+		GithubOwner:                    githubOwnerFlag,
+		GithubUser:                     githubOwnerFlag,
+		GitopsRepoGitURL:               config.DestinationGitopsRepoGitURL,
+		DomainName:                     domainNameFlag,
+		ChartMuseumIngressURL:          fmt.Sprintf("https://chartmuseum.%s", domainNameFlag),
+		CloudProvider:                  aws.CloudProvider,
+		CloudRegion:                    cloudRegionFlag,
+		ClusterName:                    clusterNameFlag,
+		ClusterType:                    clusterTypeFlag,
+		GithubHost:                     aws.GithubHost,
+		GitDescription:                 "GitHub hosted git",
+		GitNamespace:                   "N/A",
+		GitProvider:                    civo.GitProvider,
+		GitRunner:                      "GitHub Action Runner",
+		GitRunnerDescription:           "Self Hosted GitHub Action Runner",
+		GitRunnerNS:                    "github-runner",
+		GitHubHost:                     "github.com",
+		GitHubOwner:                    githubOwnerFlag,
+		GitHubUser:                     githubOwnerFlag,
+		GitOpsRepoAtlantisWebhookURL:   fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
+		GitOpsRepoGitURL:               config.DestinationGitopsRepoGitURL,
+		Kubeconfig:                     config.Kubeconfig,
+		KubefirstStateStoreBucket:      kubefirstStateStoreBucketName,
+		KubefirstTeam:                  os.Getenv("KUBEFIRST_TEAM"),
+		VaultIngressURL:                fmt.Sprintf("https://vault.%s", domainNameFlag),
+		MetaphorDevelopmentIngressURL:  fmt.Sprintf("metaphor-development.%s", domainNameFlag),
+		MetaphorStagingIngressURL:      fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
+		MetaphorProductionIngressURL:   fmt.Sprintf("metaphor-production.%s", domainNameFlag),
+		KubefirstVersion:               configs.K1Version,
+		VaultIngressNoHTTPSURL:         fmt.Sprintf("metaphor-production.%s", domainNameFlag),
+		VouchIngressURL:                fmt.Sprintf("vouch.%s", domainNameFlag),
+	}
 
-	// //* git clone and detokenize the gitops repository
-	// // todo improve this logic for removing `kubefirst clean`
-	// // if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
-	// if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
+	//* git clone and detokenize the gitops repository
+	// todo improve this logic for removing `kubefirst clean`
+	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
+	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 
-	// 	log.Info().Msg("generating your new gitops repository")
+		log.Info().Msg("generating your new gitops repository")
 
-	// 	err := aws.PrepareGitopsRepository(clusterNameFlag,
-	// 		clusterTypeFlag,
-	// 		config.DestinationGitopsRepoGitURL,
-	// 		config.GitopsDir,
-	// 		gitopsTemplateBranchFlag,
-	// 		gitopsTemplateURLFlag,
-	// 		config.K1Dir,
-	// 		&gitopsTemplateTokens,
-	// 	)
-	// 	if err != nil {
-	// 		return err
-	// 	}
+		err := aws.PrepareGitopsRepository(clusterNameFlag,
+			clusterTypeFlag,
+			config.DestinationGitopsRepoGitURL,
+			config.GitopsDir,
+			gitopsTemplateBranchFlag,
+			gitopsTemplateURLFlag,
+			config.K1Dir,
+			&gitopsTemplateTokens,
+		)
+		if err != nil {
+			return err
+		}
 
-	// 	// todo emit init telemetry end
-	// 	viper.Set("kubefirst-checks.gitops-ready-to-push", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already completed gitops repo generation - continuing")
-	// }
-
-	// atlantisWebhookURL := fmt.Sprintf("%s/events", viper.GetString("ngrok.host"))
+		// todo emit init telemetry end
+		viper.Set("kubefirst-checks.gitops-ready-to-push", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already completed gitops repo generation - continuing")
+	}
 
 	// // //* create teams and repositories in github
 	// executionControl = viper.GetBool("kubefirst-checks.terraform-apply-github")
