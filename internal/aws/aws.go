@@ -67,15 +67,9 @@ var backupResolver = &net.Resolver{
 // and AWSStruct will be used as instanceOfAws.DestroyBucketsInUse(param type)
 func NewAws() (aws.Config, error) {
 
-	// tests doesnt have access to viper, for tests we get these values from the environment
-	region := viper.GetString("aws.region")
-	if len(region) == 0 {
-		region = os.Getenv("AWS_REGION")
-	}
-	profile := viper.GetString("aws.profile")
-	if len(profile) == 0 {
-		profile = os.Getenv("AWS_PROFILE")
-	}
+	// todo these should also be supported flags
+	region := os.Getenv("AWS_REGION")
+	profile := os.Getenv("AWS_PROFILE")
 
 	awsClient, err := config.LoadDefaultConfig(
 		context.Background(),
