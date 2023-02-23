@@ -5,10 +5,10 @@ Kubefirst collects data around users in order to optimize future releases. By co
 ## What Metrics are collected?
 
 - CLIVersion:      The version of CLI being used
-- ClusterType:     The version of cluster being created
+- ClusterType:     The type of cluster being created (local, AWS, etc.)
 - ClusterId:       The ID of the cluster being created
 - Domain:          The domain of the cluster being created
-- KubeFirstTeam:   Whether you are a Kubefirst teammate
+- KubeFirstTeam:   Whether or not you are a Kubefirst teammate
 
 ## How to Opt Out
 
