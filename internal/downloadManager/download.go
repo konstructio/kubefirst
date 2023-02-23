@@ -61,7 +61,7 @@ func DownloadFile(localFilename string, url string) error {
 	return nil
 }
 
-func extractFileFromTarGz(gzipStream io.Reader, tarAddress string, targetFilePath string) {
+func ExtractFileFromTarGz(gzipStream io.Reader, tarAddress string, targetFilePath string) {
 	uncompressedStream, err := gzip.NewReader(gzipStream)
 	if err != nil {
 		log.Panic().Msg("extractTarGz: NewReader failed")
@@ -101,7 +101,7 @@ func extractFileFromTarGz(gzipStream io.Reader, tarAddress string, targetFilePat
 	}
 }
 
-func unzip(zipFilepath string, unzipDirectory string) error {
+func Unzip(zipFilepath string, unzipDirectory string) error {
 	dst := unzipDirectory
 	archive, err := zip.OpenReader(zipFilepath)
 	if err != nil {
@@ -173,7 +173,7 @@ func DownloadTarGz(binaryPath string, tarAddress string, targzPath string, URL s
 		return err
 	}
 
-	extractFileFromTarGz(
+	ExtractFileFromTarGz(
 		tarContent,
 		tarAddress,
 		binaryPath,
@@ -195,7 +195,7 @@ func DownloadZip(toolsDir string, URL string, zipPath string) error {
 		return err
 	}
 
-	err = unzip(zipPath, toolsDir)
+	err = Unzip(zipPath, toolsDir)
 	if err != nil {
 		return err
 	}
@@ -555,7 +555,7 @@ func DownloadTools(config *configs.Config) error {
 				return
 			}
 
-			unzip(terraformDownloadZipPath, config.K1ToolsPath)
+			Unzip(terraformDownloadZipPath, config.K1ToolsPath)
 
 			err = os.Chmod(config.K1ToolsPath, 0777)
 			if err != nil {
@@ -600,7 +600,7 @@ func DownloadTools(config *configs.Config) error {
 			return
 		}
 
-		extractFileFromTarGz(
+		ExtractFileFromTarGz(
 			helmTarDownload,
 			fmt.Sprintf("%s-%s/helm", config.LocalOs, config.LocalArchitecture),
 			config.HelmClientPath,

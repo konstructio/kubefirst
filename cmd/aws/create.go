@@ -281,21 +281,22 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// //* download dependencies to `$HOME/.k1/tools`
-	// if !viper.GetBool("kubefirst-checks.tools-downloaded") {
-	// 	log.Info().Msg("installing kubefirst dependencies")
+	//* download dependencies to `$HOME/.k1/tools`
+	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
+		log.Info().Msg("installing kubefirst dependencies")
 
-	// 	err := aws.DownloadTools()
-	// 	if err != nil {
-	// 		return err
-	// 	}
+		err := aws.DownloadTools(config)
+		if err != nil {
+			return err
+		}
+		errors.New("END OF THE ROAD")
 
-	// 	log.Info().Msg("download dependencies `$HOME/.k1/tools` complete")
-	// 	viper.Set("kubefirst-checks.tools-downloaded", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already completed download of dependencies to `$HOME/.k1/tools` - continuing")
-	// }
+		log.Info().Msg("download dependencies `$HOME/.k1/tools` complete")
+		viper.Set("kubefirst-checks.tools-downloaded", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already completed download of dependencies to `$HOME/.k1/tools` - continuing")
+	}
 
 	// // not sure if there is a better way to do this
 	// gitopsTemplateTokens.GithubOwner = githubOwnerFlag
