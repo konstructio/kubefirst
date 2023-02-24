@@ -937,7 +937,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
 	}
 	err = gitopsRepo.Push(&git.PushOptions{
-		RemoteName: k3d.GitProvider,
+		RemoteName: config.GitProvider,
 		Auth:       publicKeys,
 	})
 	if err != nil {
