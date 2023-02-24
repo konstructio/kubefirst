@@ -321,7 +321,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	gitopsTemplateTokens.GithubUser = githubOwnerFlag
 	gitopsTemplateTokens.GitopsRepoGitURL = config.DestinationGitopsRepoGitURL
 	gitopsTemplateTokens.DomainName = k3d.DomainName
-	gitopsTemplateTokens.AtlantisAllowList = fmt.Sprintf("github.com/%s/gitops", githubOwnerFlag)
+	gitopsTemplateTokens.AtlantisAllowList = fmt.Sprintf("github.com/%s/*", githubOwnerFlag)
 	gitopsTemplateTokens.NgrokHost = ngrokHost
 	gitopsTemplateTokens.AlertsEmail = "REMOVE_THIS_VALUE"
 	gitopsTemplateTokens.ClusterName = clusterNameFlag
