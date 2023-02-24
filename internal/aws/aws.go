@@ -49,6 +49,10 @@ type ARecord struct {
 	AliasTarget *route53Types.AliasTarget
 }
 
+var Conf AWSConfiguration = AWSConfiguration{
+	Config: NewAwsV2(),
+}
+
 // Some systems fail to resolve TXT records, so try to use Google as a backup
 var backupResolver = &net.Resolver{
 	PreferGo: true,
@@ -58,6 +62,24 @@ var backupResolver = &net.Resolver{
 		}
 		return d.DialContext(ctx, network, "8.8.8.8:53")
 	},
+}
+
+func NewAwsV2() aws.Config {
+
+	// todo these should also be supported flags
+	region := os.Getenv("AWS_REGION")
+	profile := os.Getenv("AWS_PROFILE")
+
+	awsClient, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithRegion(region),
+		config.WithSharedConfigProfile(profile),
+	)
+	if err != nil {
+		log.Panic().Msg("unable to create aws client")
+	}
+
+	return awsClient
 }
 
 // NewAws instantiate a new AWS configuration. This function is used to provide initial connection to AWS services.

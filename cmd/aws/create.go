@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -34,7 +35,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(cloudRegionFlag)
 
 	clusterNameFlag, err := cmd.Flags().GetString("cluster-name")
 	if err != nil {
@@ -45,7 +45,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(clusterTypeFlag)
 
 	domainNameFlag, err := cmd.Flags().GetString("domain-name")
 	if err != nil {
@@ -113,7 +112,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	config := aws.GetConfig(githubOwnerFlag)
-	fmt.Println(config)
+	awsClient := &aws.Conf
+
+	iamCaller, err := awsClient.GetCallerIdentity()
+	if err != nil {
+		return err
+	}
 
 	var sshPrivateKey, sshPublicKey string
 
@@ -125,6 +129,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 	kubefirstStateStoreBucketName := fmt.Sprintf("k1-state-store-%s-%s", clusterNameFlag, clusterId)
+	kubefirstArtifactsBucketName := fmt.Sprintf("k1-artifacts-%s-%s", clusterNameFlag, clusterId)
 
 	if useTelemetryFlag {
 		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitStarted, aws.CloudProvider, aws.GitProvider); err != nil {
@@ -227,6 +232,54 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed github checks - continuing")
 	}
 
+	executionControl = viper.GetBool("kubefirst-checks.cloud-credentials")
+	if !executionControl {
+
+		// todo need to verify aws connectivity / credentials have juice
+		// also check if creds will expire before the 45 min provision?
+		viper.Set("kubefirst-checks.cloud-credentials", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already completed cloud credentials check - continuing")
+	}
+
+	executionControl = viper.GetBool("kubefirst-checks.state-store-create")
+	if !executionControl {
+
+		// todo need to create an s3 bucket
+		// kubefirst-artifacts-$randomid
+		kubefirstStateStoreBucket, err := awsClient.CreateBucket(kubefirstStateStoreBucketName)
+		if err != nil {
+			return err
+		}
+
+		kubefirstArtifactsBucket, err := awsClient.CreateBucket(kubefirstArtifactsBucketName)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("state store bucket is", strings.ReplaceAll(*kubefirstStateStoreBucket.Location, "/", ""))
+		fmt.Println("artifacts bucket is", strings.ReplaceAll(*kubefirstArtifactsBucket.Location, "/", ""))
+		// should have argo artifcats and chartmuseum charts
+		viper.Set("kubefirst.state-store-bucket", strings.ReplaceAll(*kubefirstStateStoreBucket.Location, "/", ""))
+		viper.Set("kubefirst.artifacts-bucket", strings.ReplaceAll(*kubefirstArtifactsBucket.Location, "/", ""))
+		viper.Set("kubefirst-checks.state-store-creds", true)
+		viper.WriteConfig()
+		log.Info().Msg("civo object storage credentials created and set")
+	} else {
+		log.Info().Msg("already created civo object storage credentials - continuing")
+	}
+	os.Exit(1)
+
+	skipDomainCheck := viper.GetBool("kubefirst-checks.domain-liveness")
+	if !skipDomainCheck {
+		// todo check aws domain liveness
+		viper.Set("kubefirst-checks.domain-liveness", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("domain check already complete - continuing")
+	}
+
 	executionControl = viper.GetBool("kubefirst-checks.kbot-setup")
 	if !executionControl {
 
@@ -289,7 +342,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		return errors.New("END OF THE ROAD")
 
 		log.Info().Msg("download dependencies `$HOME/.k1/tools` complete")
 		viper.Set("kubefirst-checks.tools-downloaded", true)
@@ -298,8 +350,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed download of dependencies to `$HOME/.k1/tools` - continuing")
 	}
 
+	atlantisWebhookURL := fmt.Sprintf("https://atlantis.%s/events", domainNameFlag)
+
 	gitopsTemplateTokens := aws.GitOpsDirectoryValues{
 		AlertsEmail:                    alertsEmailFlag,
+		AwsIamArnAccountRoot:           fmt.Sprintf("arn:aws:iam::%s:root", *iamCaller.Account),
+		AwsNodeCapacityType:            "SPOT", // todo adopt cli flag
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
 		ArgoCDIngressNoHTTPSURL:        fmt.Sprintf("argocd.%s", domainNameFlag),
 		ArgoWorkflowsIngressURL:        fmt.Sprintf("https://argo.%s", domainNameFlag),
@@ -307,7 +363,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		AtlantisIngressURL:             fmt.Sprintf("https://atlantis.%s", domainNameFlag),
 		AtlantisIngressNoHTTPSURL:      fmt.Sprintf("atlantis.%s", domainNameFlag),
 		AtlantisAllowList:              fmt.Sprintf("github.com/%s/gitops", githubOwnerFlag),
-		AtlantisWebhookURL:             fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
+		AtlantisWebhookURL:             atlantisWebhookURL,
 		GithubOwner:                    githubOwnerFlag,
 		GithubUser:                     githubOwnerFlag,
 		GitopsRepoGitURL:               config.DestinationGitopsRepoGitURL,
@@ -341,9 +397,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 		VouchIngressURL:                fmt.Sprintf("vouch.%s", domainNameFlag),
 	}
 
+	fmt.Println("bucket name is ", gitopsTemplateTokens.KubefirstStateStoreBucket)
+
 	//* git clone and detokenize the gitops repository
-	// todo improve this logic for removing `kubefirst clean`
-	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 
 		log.Info().Msg("generating your new gitops repository")
@@ -368,7 +424,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
-	// // //* create teams and repositories in github
+	//* create teams and repositories in github
 	// executionControl = viper.GetBool("kubefirst-checks.terraform-apply-github")
 	// if !executionControl {
 	// 	log.Info().Msg("Creating github resources with terraform")
@@ -381,10 +437,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// 	tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 	// 	tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 	// 	tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-	// 	tfEnvs["AWS_ACCESS_KEY_ID"] = "kray"
-	// 	tfEnvs["AWS_SECRET_ACCESS_KEY"] = "feedkraystars"
-	// 	tfEnvs["TF_VAR_aws_access_key_id"] = "kray"
-	// 	tfEnvs["TF_VAR_aws_secret_access_key"] = "feedkraystars"
 	// 	err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 	// 	if err != nil {
 	// 		return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))

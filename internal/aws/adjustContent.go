@@ -12,18 +12,19 @@ import (
 
 func adjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1Dir, gitopsRepoDir string) error {
 
-	// remove the unstructured driver content
-	os.RemoveAll(gitopsRepoDir + "/atlantis.yaml")
-	os.RemoveAll(gitopsRepoDir + "/.gitignore")
-	os.RemoveAll(gitopsRepoDir + "/components")
-	os.RemoveAll(gitopsRepoDir + "/registry")
-	os.RemoveAll(gitopsRepoDir + "/terraform")
-	os.RemoveAll(gitopsRepoDir + "/validation")
-	os.RemoveAll(gitopsRepoDir + "/LICENSE")
-	os.RemoveAll(gitopsRepoDir + "/README.md")
-	os.RemoveAll(gitopsRepoDir + "/logo.png")
+	var otherGitProvider string
+	if gitProvider == "github" {
+		otherGitProvider = "gitlab"
+	} else if gitProvider == "gitlab" {
+		otherGitProvider = "github"
+	}
+
+	// remove the other platforms driver content
+	os.RemoveAll(gitopsRepoDir + fmt.Sprintf("/aws-%s", otherGitProvider))
 	os.RemoveAll(gitopsRepoDir + "/civo-github")
+	os.RemoveAll(gitopsRepoDir + "/civo-gitlab")
 	os.RemoveAll(gitopsRepoDir + "/k3d-github")
+	os.RemoveAll(gitopsRepoDir + "/k3d-gitlab")
 
 	//* copy options
 	opt := cp.Options{

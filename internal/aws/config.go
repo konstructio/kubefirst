@@ -15,6 +15,7 @@ const (
 	ArgoWorkflowsURL       = "https://argo.localdev.me"
 	AtlantisURL            = "https://atlantis.localdev.me"
 	ChartMuseumURL         = "https://chartmuseum.localdev.me"
+	RegionUsEast1          = "us-east-1"
 	CloudProvider          = "aws"
 	DomainName             = "localdev.me"
 	HelmVersion            = "v3.6.1"
@@ -42,6 +43,8 @@ type GitOpsDirectoryValues struct {
 	AtlantisIngressNoHTTPSURL      string
 	AtlantisAllowList              string
 	AtlantisWebhookURL             string
+	AwsIamArnAccountRoot           string
+	AwsNodeCapacityType            string
 	ChartMuseumIngressURL          string
 	ClusterName                    string
 	ClusterType                    string

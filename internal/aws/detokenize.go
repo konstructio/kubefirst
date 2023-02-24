@@ -6,10 +6,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/kubefirst/kubefirst/configs"
 )
 
-// detokenizeGithubGitops - Translate tokens by values on a given path
-func detokenizeGithubGitops(path string, tokens *GitOpsDirectoryValues) error {
+// detokenizeDirectoryRecursively - Translate tokens by values on a given path
+func detokenizeDirectoryRecursively(path string, tokens *GitOpsDirectoryValues) error {
 	err := filepath.Walk(path, detokenizeAwsGitops(path, tokens))
 	if err != nil {
 		return err
@@ -60,7 +62,11 @@ func detokenizeAwsGitops(path string, tokens *GitOpsDirectoryValues) filepath.Wa
 			}
 
 			newContents := string(read)
-			newContents = strings.Replace(newContents, "<ADMIN_EMAIL_ADDRESS>", tokens.AlertsEmail, -1)
+			// aws specific tokens
+			newContents = strings.Replace(newContents, "<AWS_IAM_ARN_ACCOUNT_ROOT>", tokens.AwsIamArnAccountRoot, -1)
+			newContents = strings.Replace(newContents, "<AWS_NODE_CAPACITY_TYPE>", tokens.AwsNodeCapacityType, -1)
+			// end aws specific
+			newContents = strings.Replace(newContents, "<ALERTS_EMAIL>", tokens.AlertsEmail, -1)
 			newContents = strings.Replace(newContents, "<ATLANTIS_ALLOW_LIST>", tokens.AtlantisAllowList, -1)
 			newContents = strings.Replace(newContents, "<CLUSTER_NAME>", tokens.ClusterName, -1)
 			newContents = strings.Replace(newContents, "<CLOUD_PROVIDER>", tokens.CloudProvider, -1)
@@ -71,7 +77,7 @@ func detokenizeAwsGitops(path string, tokens *GitOpsDirectoryValues) filepath.Wa
 			newContents = strings.Replace(newContents, "<KUBE_CONFIG_PATH>", tokens.Kubeconfig, -1)
 			newContents = strings.Replace(newContents, "<KUBEFIRST_STATE_STORE_BUCKET>", tokens.KubefirstStateStoreBucket, -1)
 			newContents = strings.Replace(newContents, "<KUBEFIRST_TEAM>", tokens.KubefirstTeam, -1)
-			newContents = strings.Replace(newContents, "<KUBEFIRST_VERSION>", "0.0.0", -1) // TODO NEED TO REVIEW THIS
+			newContents = strings.Replace(newContents, "<KUBEFIRST_VERSION>", configs.K1Version, -1)
 
 			newContents = strings.Replace(newContents, "<ARGOCD_INGRESS_URL>", tokens.ArgoCDIngressURL, -1)
 			newContents = strings.Replace(newContents, "<ARGOCD_INGRESS_NO_HTTP_URL>", tokens.ArgoCDIngressNoHTTPSURL, -1)

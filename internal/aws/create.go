@@ -25,8 +25,11 @@ func PrepareGitopsRepository(clusterName string,
 	if err != nil {
 		return err
 	}
-
-	detokenizeGithubGitops(gitopsDir, tokens)
+	detokenizeDirectoryRecursively(gitopsDir+"/registry", tokens)
+	if err != nil {
+		return err
+	}
+	detokenizeDirectoryRecursively(gitopsDir+"/terraform", tokens)
 	if err != nil {
 		return err
 	}
@@ -39,5 +42,6 @@ func PrepareGitopsRepository(clusterName string,
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
