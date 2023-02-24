@@ -791,6 +791,23 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created users with terraform")
 	}
 
+	err = k3d.PostRunPrepareGitopsRepository(clusterNameFlag,
+		config.GitopsDir,
+		&gitopsTemplateTokens,
+	)
+	if err != nil {
+		return err
+	}
+	gitopsRepo, err := git.PlainOpen(config.GitopsDir)
+	if err != nil {
+		log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
+	}
+
+	err = gitopsRepo.Push(&git.PushOptions{
+		RemoteName: k3d.GitProvider,
+		Auth:       publicKeys,
+	})
+
 	// Wait for console Deployment Pods to transition to Running
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
 		config.Kubeconfig,

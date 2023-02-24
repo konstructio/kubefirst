@@ -6,8 +6,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-git/go-git"
 	"github.com/rs/zerolog/log"
 
+	"github.com/kubefirst/kubefirst/internal/civo"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/pkg"
 )
@@ -55,7 +57,7 @@ func ClusterCreate(clusterName string, k1Dir string, k3dClient string, kubeconfi
 	return nil
 }
 
-//  should tokens be a *GitopsTokenValues? does it matter
+// should tokens be a *GitopsTokenValues? does it matter
 func PrepareGitopsRepository(clusterName string,
 	clusterType string,
 	destinationGitopsRepoGitURL string,
@@ -90,6 +92,29 @@ func PrepareGitopsRepository(clusterName string,
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func PostRunPrepareGitopsRepository(clusterName string,
+	//destinationGitopsRepoGitURL string,
+	gitopsDir string,
+	//gitopsRepo *git.Repository,
+	tokens *GitopsTokenValues,
+) error {
+
+	err := postRunDetokenizeGithubGitops(gitopsDir, tokens)
+	if err != nil {
+		return err
+	}
+	gitopsRepo, err := git.PlainOpen(config.GitopsDir)
+	if err != nil {
+		log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
+	}
+
+	err = gitopsRepo.Push(&git.PushOptions{
+		RemoteName: civo.GitProvider,
+		Auth:       publicKeys,
+	})
 	return nil
 }
 
