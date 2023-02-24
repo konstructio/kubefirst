@@ -134,3 +134,51 @@ func detokenizeAwsGitops(path string, tokens *GitOpsDirectoryValues) filepath.Wa
 		return nil
 	})
 }
+
+// detokenizeGithubMetaphor - Translate tokens by values on a given path
+func detokenizeMetaphor(path string, tokens *MetaphorTokenValues) error {
+
+	err := filepath.Walk(path, detokenize(path, tokens))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func detokenize(metaphorDir string, tokens *MetaphorTokenValues) filepath.WalkFunc {
+	return filepath.WalkFunc(func(path string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !!fi.IsDir() {
+			return nil
+		}
+
+		// var matched bool
+		matched, err := filepath.Match("*", fi.Name())
+		if matched {
+			read, err := ioutil.ReadFile(path)
+			if err != nil {
+				return err
+			}
+
+			// todo reduce to terraform tokens by moving to helm chart?
+			newContents := string(read)
+			newContents = strings.Replace(newContents, "<METAPHOR_DEVELOPMENT_INGRESS_URL>", tokens.MetaphorDevelopmentIngressURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_STAGING_INGRESS_URL>", tokens.MetaphorStagingIngressURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_PRODUCTION_INGRESS_URL>", tokens.MetaphorProductionIngressURL, -1)
+			newContents = strings.Replace(newContents, "<CONTAINER_REGISTRY_URL>", tokens.ContainerRegistryURL, -1) // todo need to fix metaphor repo names
+			newContents = strings.Replace(newContents, "<DOMAIN_NAME>", tokens.DomainName, -1)
+			newContents = strings.Replace(newContents, "<CLOUD_REGION>", tokens.CloudRegion, -1)
+			newContents = strings.Replace(newContents, "<CLUSTER_NAME>", tokens.ClusterName, -1)
+
+			err = ioutil.WriteFile(path, []byte(newContents), 0)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}

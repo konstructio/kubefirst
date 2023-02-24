@@ -59,3 +59,47 @@ func adjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitPro
 
 	return nil
 }
+
+// todo better name here
+func adjustMetaphorTemplateContent(k1Dir, metaphorRepoPath string) error {
+
+	log.Info().Msg("removing old metaphor ci content")
+	// remove the unstructured driver content
+	os.RemoveAll(metaphorRepoPath + "/.argo")
+	os.RemoveAll(metaphorRepoPath + "/.github")
+	os.RemoveAll(metaphorRepoPath + "/.gitlab-ci.yml")
+
+	//* copy options
+	opt := cp.Options{
+		Skip: func(src string) (bool, error) {
+			if strings.HasSuffix(src, ".git") {
+				return true, nil
+			} else if strings.Index(src, "/.terraform") > 0 {
+				return true, nil
+			}
+			//Add more stuff to be ignored here
+			return false, nil
+
+		},
+	}
+
+	//* copy $HOME/.k1/gitops/.kubefirst/ci/.github/* $HOME/.k1/metaphor-frontend/.github
+	githubActionsFolderContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.github", k1Dir)
+	log.Info().Msgf("copying ci content: %s", githubActionsFolderContent)
+	err := cp.Copy(githubActionsFolderContent, fmt.Sprintf("%s/.github", metaphorRepoPath), opt)
+	if err != nil {
+		log.Info().Msgf("error populating metaphor repository with %s: %s", githubActionsFolderContent, err)
+		return err
+	}
+
+	//* copy $HOME/.k1/gitops/.kubefirst/ci/.argo/* $HOME/.k1/metaphor-frontend/.argo
+	argoWorkflowsFolderContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.argo", k1Dir)
+	log.Info().Msgf("copying ci content: %s", argoWorkflowsFolderContent)
+	err = cp.Copy(argoWorkflowsFolderContent, fmt.Sprintf("%s/.argo", metaphorRepoPath), opt)
+	if err != nil {
+		log.Info().Msgf("error populating metaphor repository with %s: %s", argoWorkflowsFolderContent, err)
+		return err
+	}
+
+	return nil
+}
