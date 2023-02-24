@@ -15,6 +15,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/helm"
@@ -796,17 +797,23 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		&gitopsTemplateTokens,
 	)
 	if err != nil {
-		return err
+		log.Info().Msgf("Error detokenize post run: %s", err)
 	}
 	gitopsRepo, err := git.PlainOpen(config.GitopsDir)
 	if err != nil {
 		log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
 	}
-
 	err = gitopsRepo.Push(&git.PushOptions{
 		RemoteName: k3d.GitProvider,
 		Auth:       publicKeys,
 	})
+	if err != nil {
+		log.Info().Msgf("Error pushing repo: %s", err)
+	}
+	err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
+	if err != nil {
+		return err
+	}
 
 	// Wait for console Deployment Pods to transition to Running
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
