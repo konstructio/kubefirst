@@ -33,6 +33,7 @@ require (
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.11.0
+	github.com/xanzy/go-gitlab v0.80.2
 	golang.ngrok.com/ngrok v1.0.0
 	golang.org/x/crypto v0.5.0
 	golang.org/x/exp v0.0.0-20221012211006-4de253d81b95

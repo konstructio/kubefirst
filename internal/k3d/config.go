@@ -19,7 +19,7 @@ const (
 	DomainName             = "localdev.me"
 	HelmVersion            = "v3.6.1"
 	GithubHost             = "github.com"
-	GitProvider            = "github"
+	GitlabHost             = "gitlab.com"
 	K3dVersion             = "v5.4.6"
 	KubectlVersion         = "v1.22.0"
 	KubefirstConsoleURL    = "https://kubefirst.localdev.me"
@@ -41,6 +41,7 @@ type K3dConfig struct {
 	DestinationGitopsRepoGitURL   string
 	DestinationMetaphorRepoGitURL string
 	GitopsDir                     string
+	GitProvider                   string
 	HelmClient                    string
 	K1Dir                         string
 	K3dClient                     string
@@ -54,7 +55,7 @@ type K3dConfig struct {
 }
 
 // GetConfig - load default values from kubefirst installer
-func GetConfig(githubOwner string) *K3dConfig {
+func GetConfig(gitProvider string, gitOwner string) *K3dConfig {
 	config := K3dConfig{}
 
 	if err := env.Parse(&config); err != nil {
@@ -67,9 +68,18 @@ func GetConfig(githubOwner string) *K3dConfig {
 		log.Panic(err)
 	}
 
-	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@github.com:%s/gitops.git", githubOwner)
-	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@github.com:%s/metaphor-frontend.git", githubOwner)
+	// cGitHost describes which git host to use depending on gitProvider
+	var cGitHost string
+	switch gitProvider {
+	case "github":
+		cGitHost = GithubHost
+	case "gitlab":
+		cGitHost = GitlabHost
+	}
+	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@%s:%s/gitops.git", cGitHost, gitOwner)
+	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@%s:%s/metaphor-frontend.git", cGitHost, gitOwner)
 	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
+	config.GitProvider = cGitHost
 	config.HelmClient = fmt.Sprintf("%s/.k1/tools/helm", homeDir)
 	config.K1Dir = fmt.Sprintf("%s/.k1", homeDir)
 	config.K3dClient = fmt.Sprintf("%s/.k1/tools/k3d", homeDir)
@@ -87,6 +97,8 @@ func GetConfig(githubOwner string) *K3dConfig {
 type GitopsTokenValues struct {
 	GithubOwner                   string
 	GithubUser                    string
+	GitlabOwner                   string
+	GitlabUser                    string
 	GitopsRepoGitURL              string
 	DomainName                    string
 	AtlantisAllowList             string
@@ -95,6 +107,7 @@ type GitopsTokenValues struct {
 	ClusterName                   string
 	ClusterType                   string
 	GithubHost                    string
+	GitlabHost                    string
 	ArgoWorkflowsIngressURL       string
 	VaultIngressURL               string
 	ArgocdIngressURL              string

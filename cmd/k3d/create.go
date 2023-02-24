@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -16,6 +18,7 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
+	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k3d"
@@ -35,7 +38,6 @@ var (
 )
 
 func runK3d(cmd *cobra.Command, args []string) error {
-
 	clusterNameFlag, err := cmd.Flags().GetString("cluster-name")
 	if err != nil {
 		return err
@@ -52,6 +54,16 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	githubOwnerFlag, err := cmd.Flags().GetString("github-owner")
+	if err != nil {
+		return err
+	}
+
+	gitlabOwnerFlag, err := cmd.Flags().GetString("gitlab-owner")
+	if err != nil {
+		return err
+	}
+
+	gitProviderFlag, err := cmd.Flags().GetString("git-provider")
 	if err != nil {
 		return err
 	}
@@ -87,23 +99,31 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	httpClient := http.DefaultClient
-	gitHubService := services.NewGitHubService(httpClient)
-	gitHubHandler := handlers.NewGitHubHandler(gitHubService)
 
-	// get github data to set user based on the provided token
-	log.Info().Msg("verifying github authentication")
-	githubUser, err := gitHubHandler.GetGitHubUser(os.Getenv("GITHUB_TOKEN"))
-	if err != nil {
-		return err
+	// Set git handlers
+	switch gitProviderFlag {
+	case "github":
+		gitHubService := services.NewGitHubService(httpClient)
+		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
+
+		// get github data to set user based on the provided token
+		log.Info().Msg("verifying github authentication")
+		githubUser, err := gitHubHandler.GetGitHubUser(os.Getenv("GITHUB_TOKEN"))
+		if err != nil {
+			return err
+		}
+		// today we override the owner to be the user's token by default
+		githubOwnerFlag = githubUser
+		viper.Set("flags.github-owner", githubOwnerFlag)
+	case "gitlab":
+		viper.Set("flags.gitlab-owner", gitlabOwnerFlag)
 	}
-	// today we override the owner to be the user's token by default
-	githubOwnerFlag = githubUser
 
 	// required for destroy command
 	viper.Set("flags.cluster-name", clusterNameFlag)
 	viper.Set("flags.domain-name", k3d.DomainName)
 	viper.Set("flags.dry-run", dryRunFlag)
-	viper.Set("flags.github-owner", githubOwnerFlag)
+	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.WriteConfig()
 
 	// creates a new context, and a cancel function that allows canceling the context. The context is passed as an
@@ -116,10 +136,26 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 	ngrokHost := viper.GetString("ngrok.host")
 
-	config := k3d.GetConfig(githubOwnerFlag)
+	// Switch based on git provider, set params
+	var cGitHost, cGitOwner, cGitUser, cGitToken string
+	switch gitProviderFlag {
+	case "github":
+		cGitHost = k3d.GithubHost
+		cGitOwner = githubOwnerFlag
+		cGitUser = githubOwnerFlag
+		cGitToken = os.Getenv("GITHUB_TOKEN")
+	case "gitlab":
+		cGitHost = k3d.GitlabHost
+		cGitOwner = gitlabOwnerFlag
+		cGitUser = gitlabOwnerFlag
+		cGitToken = os.Getenv("GITLAB_TOKEN")
+	default:
+		log.Error().Msgf("invalid git provider option")
+	}
 
+	// Instantiate K3d config
+	config := k3d.GetConfig(gitProviderFlag, cGitOwner)
 	gitopsTemplateTokens := k3d.GitopsTokenValues{}
-
 	var sshPrivateKey, sshPublicKey string
 
 	// todo placed in configmap in kubefirst namespace, included in telemetry
@@ -131,7 +167,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitStarted, k3d.CloudProvider, k3d.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitStarted, k3d.CloudProvider, config.GitProvider); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
@@ -178,78 +214,120 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		)
 	}
 
-	executionControl := viper.GetBool("kubefirst-checks.github-credentials")
+	// Check git credentials
+	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", gitProviderFlag))
 	if !executionControl {
-
-		githubToken := os.Getenv("GITHUB_TOKEN")
-		if len(githubToken) == 0 {
-			return errors.New("please set a GITHUB_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init")
+		if len(cGitToken) == 0 {
+			return errors.New(
+				fmt.Sprintf(
+					"please set a %s_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init",
+					strings.ToUpper(gitProviderFlag),
+				),
+			)
 		}
 
-		githubWrapper := githubWrapper.New()
-		// todo this block need to be pulled into githubHandler. -- begin
-		newRepositoryExists := false
-		// todo hoist to globals
+		// Objects to check for
 		newRepositoryNames := []string{"gitops", "metaphor-frontend"}
-		errorMsg := "the following repositories must be removed before continuing with your kubefirst installation.\n\t"
-
-		for _, repositoryName := range newRepositoryNames {
-			responseStatusCode := githubWrapper.CheckRepoExists(githubOwnerFlag, repositoryName)
-
-			// https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
-			repositoryExistsStatusCode := 200
-			repositoryDoesNotExistStatusCode := 404
-
-			if responseStatusCode == repositoryExistsStatusCode {
-				log.Info().Msgf("repository https://github.com/%s/%s exists", githubOwnerFlag, repositoryName)
-				errorMsg = errorMsg + fmt.Sprintf("https://github.com/%s/%s\n\t", githubOwnerFlag, repositoryName)
-				newRepositoryExists = true
-			} else if responseStatusCode == repositoryDoesNotExistStatusCode {
-				log.Info().Msgf("repository https://github.com/%s/%s does not exist, continuing", githubOwnerFlag, repositoryName)
-			}
-		}
-		if newRepositoryExists {
-			return errors.New(errorMsg)
-		}
-		// todo this block need to be pulled into githubHandler. -- end
-
-		// todo this block need to be pulled into githubHandler. -- begin
-		newTeamExists := false
 		newTeamNames := []string{"admins", "developers"}
-		errorMsg = "the following teams must be removed before continuing with your kubefirst installation.\n\t"
 
-		for _, teamName := range newTeamNames {
-			responseStatusCode := githubWrapper.CheckTeamExists(githubOwnerFlag, teamName)
+		switch gitProviderFlag {
+		case "github":
+			githubWrapper := githubWrapper.New()
+			newRepositoryExists := false
+			// todo hoist to globals
+			errorMsg := "the following repositories must be removed before continuing with your kubefirst installation.\n\t"
 
-			// https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#get-a-team-by-name
-			teamExistsStatusCode := 200
-			teamDoesNotExistStatusCode := 404
+			for _, repositoryName := range newRepositoryNames {
+				responseStatusCode := githubWrapper.CheckRepoExists(githubOwnerFlag, repositoryName)
 
-			if responseStatusCode == teamExistsStatusCode {
-				log.Info().Msgf("team https://github.com/%s/%s exists", githubOwnerFlag, teamName)
-				errorMsg = errorMsg + fmt.Sprintf("https://github.com/orgs/%s/teams/%s\n\t", githubOwnerFlag, teamName)
-				newTeamExists = true
-			} else if responseStatusCode == teamDoesNotExistStatusCode {
-				log.Info().Msgf("https://github.com/orgs/%s/teams/%s does not exist, continuing", githubOwnerFlag, teamName)
+				// https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
+				repositoryExistsStatusCode := 200
+				repositoryDoesNotExistStatusCode := 404
+
+				if responseStatusCode == repositoryExistsStatusCode {
+					log.Info().Msgf("repository https://github.com/%s/%s exists", githubOwnerFlag, repositoryName)
+					errorMsg = errorMsg + fmt.Sprintf("https://github.com/%s/%s\n\t", githubOwnerFlag, repositoryName)
+					newRepositoryExists = true
+				} else if responseStatusCode == repositoryDoesNotExistStatusCode {
+					log.Info().Msgf("repository https://github.com/%s/%s does not exist, continuing", githubOwnerFlag, repositoryName)
+				}
+			}
+			if newRepositoryExists {
+				return errors.New(errorMsg)
+			}
+
+			newTeamExists := false
+			errorMsg = "the following teams must be removed before continuing with your kubefirst installation.\n\t"
+
+			for _, teamName := range newTeamNames {
+				responseStatusCode := githubWrapper.CheckTeamExists(githubOwnerFlag, teamName)
+
+				// https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#get-a-team-by-name
+				teamExistsStatusCode := 200
+				teamDoesNotExistStatusCode := 404
+
+				if responseStatusCode == teamExistsStatusCode {
+					log.Info().Msgf("team https://github.com/%s/%s exists", githubOwnerFlag, teamName)
+					errorMsg = errorMsg + fmt.Sprintf("https://github.com/orgs/%s/teams/%s\n\t", githubOwnerFlag, teamName)
+					newTeamExists = true
+				} else if responseStatusCode == teamDoesNotExistStatusCode {
+					log.Info().Msgf("https://github.com/orgs/%s/teams/%s does not exist, continuing", githubOwnerFlag, teamName)
+				}
+			}
+			if newTeamExists {
+				return errors.New(errorMsg)
+			}
+		case "gitlab":
+			gl := gitlab.GitLabWrapper{
+				Client: gitlab.NewGitLabClient(cGitToken),
+			}
+
+			// Check for existing base projects
+			projects, err := gl.GetProjects()
+			if err != nil {
+				log.Fatal().Msgf("couldn't get gitlab projects: %s", err)
+			}
+			for _, repositoryName := range newRepositoryNames {
+				found, err := gl.FindProjectInGroup(projects, repositoryName)
+				if err != nil {
+					log.Info().Msg(err.Error())
+				}
+				if found {
+					return errors.New(fmt.Sprintf("project %s already exists and will need to be deleted before continuing", repositoryName))
+				}
+			}
+
+			// Check for existing base projects
+			allgroups, err := gl.GetGroups()
+			if err != nil {
+				log.Fatal().Msgf("could not read gitlab groups: %s", err)
+			}
+			gid, err := gl.GetGroupID(allgroups, gitlabOwnerFlag)
+			if err != nil {
+				log.Fatal().Msgf("could not get group id for primary group: %s", err)
+			}
+			subgroups, err := gl.GetSubGroups(gid)
+			if err != nil {
+				log.Fatal().Msgf("couldn't get gitlab projects: %s", err)
+			}
+			for _, teamName := range newRepositoryNames {
+				for _, sg := range subgroups {
+					if sg.Name == teamName {
+						return errors.New(fmt.Sprintf("subgroup %s already exists and will need to be deleted before continuing", teamName))
+					}
+				}
 			}
 		}
-		if newTeamExists {
-			return errors.New(errorMsg)
-		}
-		// todo this block need to be pulled into githubHandler. -- end
-		// todo this should have a collective message of issues for the user
-		// todo to clean up with relevant commands
 
-		viper.Set("kubefirst-checks.github-credentials", true)
+		viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", gitProviderFlag), true)
 		viper.WriteConfig()
 	} else {
-		log.Info().Msg("already completed github checks - continuing")
+		log.Info().Msg(fmt.Sprintf("already completed %s checks - continuing", gitProviderFlag))
 	}
 
 	// todo this is actually your personal account
 	executionControl = viper.GetBool("kubefirst-checks.kbot-setup")
 	if !executionControl {
-
 		log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
 		sshPrivateKey, sshPublicKey, err = internalssh.CreateSshKeyPair()
 		if err != nil {
@@ -270,18 +348,17 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already setup kbot user - continuing")
 	}
-
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitCompleted, k3d.CloudProvider, k3d.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitCompleted, k3d.CloudProvider, config.GitProvider); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
 	}
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, k3d.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, config.GitProvider); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
@@ -295,7 +372,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	//* emit cluster install started
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, k3d.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, config.GitProvider); err != nil {
 			log.Info().Msg(err.Error())
 		}
 	}
@@ -304,7 +381,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
 
-		err := k3d.DownloadTools(githubOwnerFlag, config.ToolsDir)
+		err := k3d.DownloadTools(gitProviderFlag, cGitOwner, config.ToolsDir)
 		if err != nil {
 			return err
 		}
@@ -318,15 +395,18 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// not sure if there is a better way to do this
 	gitopsTemplateTokens.GithubOwner = githubOwnerFlag
-	gitopsTemplateTokens.GithubUser = githubOwnerFlag
+	gitopsTemplateTokens.GithubUser = cGitUser
+	gitopsTemplateTokens.GitlabOwner = gitlabOwnerFlag
+	gitopsTemplateTokens.GitlabUser = cGitUser
 	gitopsTemplateTokens.GitopsRepoGitURL = config.DestinationGitopsRepoGitURL
 	gitopsTemplateTokens.DomainName = k3d.DomainName
-	gitopsTemplateTokens.AtlantisAllowList = fmt.Sprintf("github.com/%s/gitops", githubOwnerFlag)
+	gitopsTemplateTokens.AtlantisAllowList = fmt.Sprintf("%s/%s/gitops", cGitHost, cGitOwner)
 	gitopsTemplateTokens.NgrokHost = ngrokHost
 	gitopsTemplateTokens.AlertsEmail = "REMOVE_THIS_VALUE"
 	gitopsTemplateTokens.ClusterName = clusterNameFlag
 	gitopsTemplateTokens.ClusterType = clusterTypeFlag
 	gitopsTemplateTokens.GithubHost = k3d.GithubHost
+	gitopsTemplateTokens.GitlabHost = k3d.GitlabHost
 	gitopsTemplateTokens.ArgoWorkflowsIngressURL = fmt.Sprintf("https://argo.%s", k3d.DomainName)
 	gitopsTemplateTokens.VaultIngressURL = fmt.Sprintf("https://vault.%s", k3d.DomainName)
 	gitopsTemplateTokens.ArgocdIngressURL = fmt.Sprintf("https://argocd.%s", k3d.DomainName)
@@ -340,10 +420,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
-
 		log.Info().Msg("generating your new gitops repository")
 
-		err := k3d.PrepareGitopsRepository(clusterNameFlag,
+		err := k3d.PrepareGitopsRepository(
+			config.GitProvider,
+			clusterNameFlag,
 			clusterTypeFlag,
 			config.DestinationGitopsRepoGitURL,
 			config.GitopsDir,
@@ -365,33 +446,76 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	atlantisWebhookURL := fmt.Sprintf("%s/events", viper.GetString("ngrok.host"))
 
-	// //* create teams and repositories in github
-	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-github")
-	if !executionControl {
-		log.Info().Msg("Creating github resources with terraform")
+	switch gitProviderFlag {
+	case "github":
+		// //* create teams and repositories in github
+		executionControl = viper.GetBool("kubefirst-checks.terraform-apply-github")
+		if !executionControl {
+			log.Info().Msg("Creating github resources with terraform")
 
-		tfEntrypoint := config.GitopsDir + "/terraform/github"
-		tfEnvs := map[string]string{}
-		// tfEnvs = k3d.GetGithubTerraformEnvs(tfEnvs)
-		tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
-		tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
-		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
-		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-		tfEnvs["AWS_ACCESS_KEY_ID"] = "kray"
-		tfEnvs["AWS_SECRET_ACCESS_KEY"] = "feedkraystars"
-		tfEnvs["TF_VAR_aws_access_key_id"] = "kray"
-		tfEnvs["TF_VAR_aws_secret_access_key"] = "feedkraystars"
-		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
-		if err != nil {
-			return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
+			tfEntrypoint := config.GitopsDir + "/terraform/github"
+			tfEnvs := map[string]string{}
+			// tfEnvs = k3d.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+			tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
+			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
+			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
+			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+			tfEnvs["AWS_ACCESS_KEY_ID"] = "kray"
+			tfEnvs["AWS_SECRET_ACCESS_KEY"] = "feedkraystars"
+			tfEnvs["TF_VAR_aws_access_key_id"] = "kray"
+			tfEnvs["TF_VAR_aws_secret_access_key"] = "feedkraystars"
+			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+			if err != nil {
+				return errors.New(fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err))
+			}
+
+			log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
+			viper.Set("kubefirst-checks.terraform-apply-github", true)
+			viper.WriteConfig()
+		} else {
+			log.Info().Msg("already created github terraform resources")
 		}
+	case "gitlab":
+		// //* create teams and repositories in gitlab
+		gl := gitlab.GitLabWrapper{
+			Client: gitlab.NewGitLabClient(cGitToken),
+		}
+		allgroups, err := gl.GetGroups()
+		if err != nil {
+			log.Fatal().Msgf("could not read gitlab groups: %s", err)
+		}
+		gid, err := gl.GetGroupID(allgroups, gitlabOwnerFlag)
+		if err != nil {
+			log.Fatal().Msgf("could not get group id for primary group: %s", err)
+		}
+		executionControl = viper.GetBool("kubefirst-checks.terraform-apply-gitlab")
+		if !executionControl {
+			log.Info().Msg("Creating gitlab resources with terraform")
 
-		log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
-		viper.Set("kubefirst-checks.terraform-apply-github", true)
-		viper.WriteConfig()
-	} else {
-		log.Info().Msg("already created github terraform resources")
+			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
+			tfEnvs := map[string]string{}
+			tfEnvs["GITLAB_TOKEN"] = os.Getenv("GITLAB_TOKEN")
+			tfEnvs["GITLAB_OWNER"] = gitlabOwnerFlag
+			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
+			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
+			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+			tfEnvs["AWS_ACCESS_KEY_ID"] = "kray"
+			tfEnvs["AWS_SECRET_ACCESS_KEY"] = "feedkraystars"
+			tfEnvs["TF_VAR_aws_access_key_id"] = "kray"
+			tfEnvs["TF_VAR_aws_secret_access_key"] = "feedkraystars"
+			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gid)
+			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+			if err != nil {
+				return errors.New(fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err))
+			}
+
+			log.Info().Msgf("Created git repositories and teams in gitlab.com/%s", gitlabOwnerFlag)
+			viper.Set("kubefirst-checks.terraform-apply-gitlab", true)
+			viper.WriteConfig()
+		} else {
+			log.Info().Msg("already created gitlab terraform resources")
+		}
 	}
 
 	//* push detokenized gitops-template repository content to new remote
@@ -402,18 +526,20 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
 		}
 
-		err = gitopsRepo.Push(&git.PushOptions{
-			RemoteName: k3d.GitProvider,
-			Auth:       publicKeys,
-		})
+		err = gitopsRepo.Push(
+			&git.PushOptions{
+				RemoteName: config.DestinationGitopsRepoGitURL,
+				Auth:       publicKeys,
+			},
+		)
 		if err != nil {
-			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", config.DestinationGitopsRepoGitURL)
+			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoGitURL, err)
 		}
 
-		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/gitops", githubOwnerFlag)
+		log.Info().Msgf("successfully pushed gitops to git@g%s/%s/gitops", cGitHost, cGitOwner)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
-		log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
+		log.Info().Msgf("Created git repositories and teams in %s/%s", cGitHost, cGitOwner)
 		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
 		viper.WriteConfig()
 	} else {
@@ -432,7 +558,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	//* git clone and detokenize the metaphor-frontend-template repository
 	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
 
-		err := k3d.PrepareMetaphorRepository(config.DestinationMetaphorRepoGitURL, config.K1Dir, config.MetaphorDir, metaphorTemplateBranchFlag, metaphorTemplateURLFlag, &metaphorTemplateTokens)
+		err := k3d.PrepareMetaphorRepository(
+			config.GitProvider,
+			config.DestinationMetaphorRepoGitURL,
+			config.K1Dir,
+			config.MetaphorDir,
+			metaphorTemplateBranchFlag,
+			metaphorTemplateURLFlag,
+			&metaphorTemplateTokens,
+		)
 		if err != nil {
 			return err
 		}
@@ -443,17 +577,17 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 
 		err = metaphorRepo.Push(&git.PushOptions{
-			RemoteName: k3d.GitProvider,
+			RemoteName: config.GitProvider,
 			Auth:       publicKeys,
 		})
 		if err != nil {
 			return err
 		}
 
-		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwnerFlag)
+		log.Info().Msgf("successfully pushed gitops to git@%s/%s/metaphor-frontend", cGitHost, cGitOwner)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
-		log.Info().Msgf("pushed detokenized metaphor-frontend repository to github.com/%s", githubOwnerFlag)
+		log.Info().Msgf("pushed detokenized metaphor-frontend repository to %s/%s", cGitHost, cGitOwner)
 
 		viper.Set("kubefirst-checks.metaphor-repo-pushed", true)
 		viper.WriteConfig()
@@ -495,7 +629,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			config.DestinationGitopsRepoGitURL,
 			viper.GetString("kbot.private-key"),
 			false,
-			githubOwnerFlag,
+			gitProviderFlag,
+			cGitUser,
 			config.Kubeconfig,
 		)
 		if err != nil {
@@ -686,7 +821,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs := map[string]string{}
 
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
-		tfEnvs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
+		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", strings.ToUpper(gitProviderFlag))] = cGitToken
 		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
 		tfEnvs["TF_VAR_vault_token"] = "k1_local_vault_token"
 		tfEnvs["VAULT_ADDR"] = k3d.VaultPortForwardURL
@@ -718,7 +853,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
-		tfEnvs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
+		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", strings.ToUpper(gitProviderFlag))] = cGitToken
 		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
 		tfEnvs["TF_VAR_vault_token"] = "k1_local_vault_token"
 		tfEnvs["VAULT_ADDR"] = k3d.VaultPortForwardURL
@@ -726,8 +861,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-		tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
-		tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
+		tfEnvs[fmt.Sprintf("%s_TOKEN", strings.ToUpper(gitProviderFlag))] = cGitToken
+		tfEnvs[fmt.Sprintf("%s_TOKEN", strings.ToUpper(gitProviderFlag))] = cGitOwner
 
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
@@ -788,7 +923,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	reports.LocalHandoffScreenV2(argocdPassword, clusterNameFlag, githubOwnerFlag, config, dryRunFlag, false)
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallCompleted, k3d.CloudProvider, k3d.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallCompleted, k3d.CloudProvider, config.GitProvider); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}

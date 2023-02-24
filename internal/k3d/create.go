@@ -55,8 +55,10 @@ func ClusterCreate(clusterName string, k1Dir string, k3dClient string, kubeconfi
 	return nil
 }
 
-//  should tokens be a *GitopsTokenValues? does it matter
-func PrepareGitopsRepository(clusterName string,
+// should tokens be a *GitopsTokenValues? does it matter
+func PrepareGitopsRepository(
+	gitProvider string,
+	clusterName string,
 	clusterType string,
 	destinationGitopsRepoGitURL string,
 	gitopsDir string,
@@ -72,7 +74,7 @@ func PrepareGitopsRepository(clusterName string,
 	}
 	log.Info().Msg("gitops repository clone complete")
 
-	err = k3dGithubAdjustGitopsTemplateContent(CloudProvider, clusterName, clusterType, GitProvider, k1Dir, gitopsDir)
+	err = k3dGithubAdjustGitopsTemplateContent(CloudProvider, clusterName, clusterType, gitProvider, k1Dir, gitopsDir)
 	if err != nil {
 		return err
 	}
@@ -81,7 +83,7 @@ func PrepareGitopsRepository(clusterName string,
 	if err != nil {
 		return err
 	}
-	err = gitClient.AddRemote(destinationGitopsRepoGitURL, GitProvider, gitopsRepo)
+	err = gitClient.AddRemote(destinationGitopsRepoGitURL, gitProvider, gitopsRepo)
 	if err != nil {
 		return err
 	}
@@ -94,6 +96,7 @@ func PrepareGitopsRepository(clusterName string,
 }
 
 func PrepareMetaphorRepository(
+	gitProvider string,
 	destinationMetaphorRepoGitURL string,
 	k1Dir string,
 	metaphorDir string,
@@ -110,14 +113,14 @@ func PrepareMetaphorRepository(
 
 	log.Info().Msg("metaphor repository clone complete")
 
-	err = k3dGithubAdjustMetaphorTemplateContent(GitProvider, k1Dir, metaphorDir)
+	err = k3dGithubAdjustMetaphorTemplateContent(gitProvider, k1Dir, metaphorDir)
 	if err != nil {
 		return err
 	}
 
 	detokenizeGithubMetaphor(metaphorDir, tokens)
 
-	err = gitClient.AddRemote(destinationMetaphorRepoGitURL, GitProvider, metaphorRepo)
+	err = gitClient.AddRemote(destinationMetaphorRepoGitURL, gitProvider, metaphorRepo)
 	if err != nil {
 		return err
 	}

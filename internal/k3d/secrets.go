@@ -14,14 +14,32 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func AddK3DSecrets(atlantisWebhookSecret string, atlantisWebhookURL string, kbotPublicKey string, destinationGitopsRepoGitURL string, kbotPrivateKey string, dryRun bool, githubUser string, kubeconfigPath string) error {
-
+func AddK3DSecrets(
+	atlantisWebhookSecret string,
+	atlantisWebhookURL string,
+	kbotPublicKey string,
+	destinationGitopsRepoGitURL string,
+	kbotPrivateKey string,
+	dryRun bool,
+	gitProvider string,
+	gitUser string,
+	kubeconfigPath string,
+) error {
 	clientset, err := k8s.GetClientSet(dryRun, kubeconfigPath)
 	if err != nil {
 		log.Info().Msg("error getting kubernetes clientset")
 	}
 
-	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "external-dns", "github-runner", "vault", "development", "staging", "production"}
+	// Set git provider token value
+	var tokenValue string
+	switch gitProvider {
+	case "github":
+		tokenValue = os.Getenv("GITHUB_TOKEN")
+	case "gitlab":
+		tokenValue = os.Getenv("GITLAB_TOKEN")
+	}
+
+	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "external-dns", fmt.Sprintf("%s-runner", gitProvider), "vault", "development", "staging", "production"}
 	for i, s := range newNamespaces {
 		namespace := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s}}
 		_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
@@ -50,10 +68,10 @@ func AddK3DSecrets(atlantisWebhookSecret string, atlantisWebhookURL string, kbot
 	dataArgoCiSecrets := map[string][]byte{
 		"BASIC_AUTH_USER":       []byte("k-ray"),
 		"BASIC_AUTH_PASS":       []byte("feedkraystars"),
-		"USERNAME":              []byte(githubUser),
-		"PERSONAL_ACCESS_TOKEN": []byte(os.Getenv("GITHUB_TOKEN")),
-		"username":              []byte(githubUser),
-		"password":              []byte(os.Getenv("GITHUB_TOKEN")),
+		"USERNAME":              []byte(gitUser),
+		"PERSONAL_ACCESS_TOKEN": []byte(tokenValue),
+		"username":              []byte(gitUser),
+		"password":              []byte(tokenValue),
 	}
 
 	//*
@@ -67,7 +85,7 @@ func AddK3DSecrets(atlantisWebhookSecret string, atlantisWebhookURL string, kbot
 		return errors.New("error creating kubernetes secret: argo/ci-secrets")
 	}
 
-	usernamePasswordString := fmt.Sprintf("%s:%s", githubUser, os.Getenv("GITHUB_TOKEN"))
+	usernamePasswordString := fmt.Sprintf("%s:%s", gitUser, tokenValue)
 	usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
 
 	dockerConfigString := fmt.Sprintf(`{"auths": {"https://ghcr.io/": {"auth": "%s"}}}`, usernamePasswordStringB64)
@@ -116,7 +134,7 @@ func AddK3DSecrets(atlantisWebhookSecret string, atlantisWebhookURL string, kbot
 
 	dataArgoCd := map[string][]byte{
 		"type":          []byte("git"),
-		"name":          []byte(fmt.Sprintf("%s-gitops", githubUser)),
+		"name":          []byte(fmt.Sprintf("%s-gitops", gitUser)),
 		"url":           []byte(destinationGitopsRepoGitURL),
 		"sshPrivateKey": []byte(kbotPrivateKey),
 	}
@@ -136,20 +154,20 @@ func AddK3DSecrets(atlantisWebhookSecret string, atlantisWebhookURL string, kbot
 	}
 
 	dataAtlantis := map[string][]byte{
-		"ATLANTIS_GH_TOKEN":                   []byte(os.Getenv("GITHUB_TOKEN")),
-		"ATLANTIS_GH_USER":                    []byte(githubUser),
+		"ATLANTIS_GH_TOKEN":                   []byte(tokenValue),
+		"ATLANTIS_GH_USER":                    []byte(gitUser),
 		"ATLANTIS_GH_HOSTNAME":                []byte("github.com"),
 		"ATLANTIS_GH_WEBHOOK_SECRET":          []byte(atlantisWebhookSecret),
 		"ARGOCD_AUTH_USERNAME":                []byte("admin"),
 		"ARGOCD_INSECURE":                     []byte("true"),
 		"ARGOCD_SERVER":                       []byte("http://localhost:8080"),
 		"ARGO_SERVER_URL":                     []byte("argo.argo.svc.cluster.local:443"),
-		"GITHUB_OWNER":                        []byte(githubUser),
-		"GITHUB_TOKEN":                        []byte(os.Getenv("GITHUB_TOKEN")),
+		"GITHUB_OWNER":                        []byte(gitUser),
+		"GITHUB_TOKEN":                        []byte(tokenValue),
 		"TF_VAR_atlantis_repo_webhook_secret": []byte(atlantisWebhookSecret),
 		"TF_VAR_atlantis_repo_webhook_url":    []byte(atlantisWebhookURL),
 		"TF_VAR_email_address":                []byte("your@email.com"),
-		"TF_VAR_github_token":                 []byte(os.Getenv("GITHUB_TOKEN")),
+		"TF_VAR_github_token":                 []byte(tokenValue),
 		"TF_VAR_kubefirst_bot_ssh_public_key": []byte(kbotPublicKey),
 		"TF_VAR_vault_addr":                   []byte("http://vault.vault.svc.cluster.local:8200"),
 		"TF_VAR_vault_token":                  []byte("k1_local_vault_token"),
@@ -182,7 +200,7 @@ func AddK3DSecrets(atlantisWebhookSecret string, atlantisWebhookURL string, kbot
 	}
 
 	dataGh := map[string][]byte{
-		"github_token": []byte(os.Getenv("GITHUB_TOKEN")),
+		"github_token": []byte(tokenValue),
 	}
 	ghRunnerSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "controller-manager", Namespace: "github-runner"},

@@ -20,9 +20,20 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	clusterName := viper.GetString("flags.cluster-name")
 	atlantisWebhookURL := fmt.Sprintf("%s/events", viper.GetString("ngrok.host"))
 	dryRun := viper.GetBool("flags.dry-run")
-	githubOwner := viper.GetString("flags.github-owner")
+	gitProvider := viper.GetString("flags.git-provider")
 
-	config := k3d.GetConfig(githubOwner)
+	// Switch based on git provider, set params
+	var cGitOwner string
+	switch gitProvider {
+	case "github":
+		cGitOwner = viper.GetString("flags.github-owner")
+	case "gitlab":
+		cGitOwner = viper.GetString("flags.gitlab-owner")
+	default:
+		log.Panic().Msgf("invalid git provider option")
+	}
+
+	config := k3d.GetConfig(gitProvider, cGitOwner)
 
 	// todo improve these checks, make them standard for
 	// both create and destroy
