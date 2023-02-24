@@ -55,7 +55,7 @@ func ClusterCreate(clusterName string, k1Dir string, k3dClient string, kubeconfi
 	return nil
 }
 
-//  should tokens be a *GitopsTokenValues? does it matter
+// should tokens be a *GitopsTokenValues? does it matter
 func PrepareGitopsRepository(clusterName string,
 	clusterType string,
 	destinationGitopsRepoGitURL string,
@@ -87,6 +87,20 @@ func PrepareGitopsRepository(clusterName string,
 	}
 
 	err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func PostRunPrepareGitopsRepository(clusterName string,
+	//destinationGitopsRepoGitURL string,
+	gitopsDir string,
+	//gitopsRepo *git.Repository,
+	tokens *GitopsTokenValues,
+) error {
+
+	err := postRunDetokenizeGithubGitops(gitopsDir, tokens)
 	if err != nil {
 		return err
 	}

@@ -67,6 +67,49 @@ func detokenizeGitops(path string, tokens *GitopsTokenValues) filepath.WalkFunc 
 	})
 }
 
+// detokenizeGithubGitops - Translate tokens by values on a given path
+func postRunDetokenizeGithubGitops(path string, tokens *GitopsTokenValues) error {
+
+	err := filepath.Walk(path, postRunDetokenizeGitops(path, tokens))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func postRunDetokenizeGitops(path string, tokens *GitopsTokenValues) filepath.WalkFunc {
+	return filepath.WalkFunc(func(path string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !!fi.IsDir() {
+			return nil
+		}
+
+		// var matched bool
+		matched, err := filepath.Match("*", fi.Name())
+		if matched {
+			read, err := ioutil.ReadFile(path)
+			if err != nil {
+				return err
+			}
+
+			//change Minio post cluster launch to cluster svc address
+			newContents := string(read)
+			newContents = strings.Replace(newContents, "http://minio.localdev.me", "http://minio.minio.svc.cluster.local:9000", -1)
+			newContents = strings.Replace(newContents, "tfstate.tf", "terraform.tfstate", -1)
+
+			err = ioutil.WriteFile(path, []byte(newContents), 0)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 // detokenizeGithubMetaphor - Translate tokens by values on a given path
 func detokenizeGithubMetaphor(path string, tokens *MetaphorTokenValues) error {
 
