@@ -36,7 +36,7 @@ nav:
           - Kubefirst Console: 'kubefirst/local/explore/console.md'
           - Atlantis User Creation: 'kubefirst/local/explore/user-creation.md'
           - Metaphor: 'kubefirst/local/explore/metaphor.md'
-          - GitHub Repositories: 'kubefirst/local/explore/github-repositories.md'        
+          - GitHub Repositories: 'kubefirst/local/explore/github-repositories.md'  
         - Limitations: 'kubefirst/local/limitations.md'
         - Destroy: 'kubefirst/local/destroy.md'
       - Civo Platform:
@@ -84,8 +84,11 @@ nav:
           - Certificates: 'explore/certificates.md'
           - Metaphor: 'explore/metaphor.md'
         - Destroy: 'kubefirst/gitlab/destroy.md'
+      - Installer Options:
+        - Config: 'kubefirst/installer/config-file.md'
+        - OpenTelemetry: 'explore/open-telemetry.md'
       - FAQ: 'kubefirst/FAQ.md'
-      - Credit: 'kubefirst/credit.md'  
+      - Credit: 'kubefirst/credit.md'
   - Community:
     - Community: 'community/index.md'
   - Roadmap:
