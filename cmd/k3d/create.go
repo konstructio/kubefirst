@@ -662,7 +662,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
 
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 45)
 
 	minioStopChannel := make(chan struct{}, 1)
 	defer func() {
@@ -678,7 +678,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	)
 
 	//copy files to Minio
-
 	endpoint := "localhost:9000"
 	accessKeyID := "k-ray"
 	secretAccessKey := "feedkraystars"
@@ -694,12 +693,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("Error creating Minio client: %s", err)
 	}
 
-	log.Info().Msgf("%#v\n", minioClient) // minioClient is now set up
-
+	//define upload object
 	objectName := "terraform/github/terraform.tfstate"
 	filePath := config.K1Dir + "/gitops/terraform/github/terraform.tfstate"
 	contentType := "xl.meta"
-
 	bucketName := "kubefirst-state-store"
 	log.Info().Msgf("BucketName: %s", bucketName)
 
@@ -792,6 +789,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created users with terraform")
 	}
 
+	//PostRun string replacement
 	err = k3d.PostRunPrepareGitopsRepository(clusterNameFlag,
 		config.GitopsDir,
 		&gitopsTemplateTokens,
@@ -810,7 +808,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error pushing repo: %s", err)
 	}
-	err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
+	err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content post run")
 	if err != nil {
 		return err
 	}
