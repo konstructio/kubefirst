@@ -6,10 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-git/go-git"
 	"github.com/rs/zerolog/log"
 
-	"github.com/kubefirst/kubefirst/internal/civo"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/pkg"
 )
@@ -106,15 +104,6 @@ func PostRunPrepareGitopsRepository(clusterName string,
 	if err != nil {
 		return err
 	}
-	gitopsRepo, err := git.PlainOpen(config.GitopsDir)
-	if err != nil {
-		log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
-	}
-
-	err = gitopsRepo.Push(&git.PushOptions{
-		RemoteName: civo.GitProvider,
-		Auth:       publicKeys,
-	})
 	return nil
 }
 
