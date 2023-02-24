@@ -3,9 +3,10 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"runtime"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/reports"
@@ -29,7 +30,7 @@ var infoCmd = &cobra.Command{
 
 		infoSummary.WriteString(fmt.Sprintf("\n\nOperational System: %s\n", config.LocalOs))
 		infoSummary.WriteString(fmt.Sprintf("Architecture: %s\n", config.LocalArchitecture))
-		infoSummary.WriteString(fmt.Sprintf("Go Lang version: v%s \n", runtime.Version()))
+		infoSummary.WriteString(fmt.Sprintf("Go Lang version: %s \n", runtime.Version()))
 		infoSummary.WriteString(fmt.Sprintf("Kubefirst config file: %s\n", config.KubefirstConfigFilePath))
 		infoSummary.WriteString(fmt.Sprintf("Kubefirst config folder: %s\n", config.K1FolderPath))
 		infoSummary.WriteString(fmt.Sprintf("Kubectl path: %s\n", config.KubectlClientPath))

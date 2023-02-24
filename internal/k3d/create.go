@@ -95,6 +95,20 @@ func PrepareGitopsRepository(
 	return nil
 }
 
+func PostRunPrepareGitopsRepository(clusterName string,
+	//destinationGitopsRepoGitURL string,
+	gitopsDir string,
+	//gitopsRepo *git.Repository,
+	tokens *GitopsTokenValues,
+) error {
+
+	err := postRunDetokenizeGithubGitops(gitopsDir, tokens)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func PrepareMetaphorRepository(
 	gitProvider string,
 	destinationMetaphorRepoGitURL string,

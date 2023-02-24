@@ -49,7 +49,7 @@ func main() {
 	var excludeLogHelperFrom []string = []string{"version"}
 	if len(os.Args) > 1 && !pkg.FindStringInSlice(excludeLogHelperFrom, os.Args[1]) {
 		fmt.Printf("\n-----------\n")
-		fmt.Printf("Follow your logs with: \n   tail -f  %s \n", logfile)
+		fmt.Printf("Follow your logs with: \n   tail -f -n +1 %s \n", logfile)
 		fmt.Printf("\n-----------\n")
 	}
 
