@@ -80,19 +80,31 @@ func k3dGithubAdjustMetaphorTemplateContent(gitProvider, k1Dir, metaphorRepoPath
 		},
 	}
 
-	//* copy $HOME/.k1/gitops/.kubefirst/ci/.github/* $HOME/.k1/metaphor-frontend/.github
-	githubActionsFolderContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.github", k1Dir)
-	log.Info().Msgf("copying ci content: %s", githubActionsFolderContent)
-	err := cp.Copy(githubActionsFolderContent, fmt.Sprintf("%s/.github", metaphorRepoPath), opt)
-	if err != nil {
-		log.Info().Msgf("error populating metaphor repository with %s: %s", githubActionsFolderContent, err)
-		return err
+	switch gitProvider {
+	case "github":
+		//* copy $HOME/.k1/gitops/.kubefirst/ci/.github/* $HOME/.k1/metaphor-frontend/.github
+		githubActionsFolderContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.github", k1Dir)
+		log.Info().Msgf("copying ci content: %s", githubActionsFolderContent)
+		err := cp.Copy(githubActionsFolderContent, fmt.Sprintf("%s/.github", metaphorRepoPath), opt)
+		if err != nil {
+			log.Info().Msgf("error populating metaphor repository with %s: %s", githubActionsFolderContent, err)
+			return err
+		}
+	case "gitlab":
+		//* copy $HOME/.k1/gitops/.kubefirst/ci/.github/* $HOME/.k1/metaphor-frontend/.github
+		gitlabCIContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.gitlab-ci.yml", k1Dir)
+		log.Info().Msgf("copying ci content: %s", gitlabCIContent)
+		err := cp.Copy(gitlabCIContent, fmt.Sprintf("%s/.gitlab-ci.yml", metaphorRepoPath), opt)
+		if err != nil {
+			log.Info().Msgf("error populating metaphor repository with %s: %s", gitlabCIContent, err)
+			return err
+		}
 	}
 
 	//* copy $HOME/.k1/gitops/.kubefirst/ci/.argo/* $HOME/.k1/metaphor-frontend/.argo
 	argoWorkflowsFolderContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.argo", k1Dir)
 	log.Info().Msgf("copying ci content: %s", argoWorkflowsFolderContent)
-	err = cp.Copy(argoWorkflowsFolderContent, fmt.Sprintf("%s/.argo", metaphorRepoPath), opt)
+	err := cp.Copy(argoWorkflowsFolderContent, fmt.Sprintf("%s/.argo", metaphorRepoPath), opt)
 	if err != nil {
 		log.Info().Msgf("error populating metaphor repository with %s: %s", argoWorkflowsFolderContent, err)
 		return err

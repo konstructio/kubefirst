@@ -9,7 +9,6 @@ import (
 
 var (
 	// Create
-	alertsEmailFlag            string
 	cloudRegionFlag            string
 	clusterNameFlag            string
 	clusterTypeFlag            string

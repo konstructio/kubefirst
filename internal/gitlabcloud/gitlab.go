@@ -167,3 +167,26 @@ func (gl *GitLabWrapper) FindProjectInGroup(projects []gitlab.Project, projectNa
 	}
 	return false, errors.New(fmt.Sprintf("project %s not found", projectName))
 }
+
+// Users
+
+// AddUserSSHKey
+func (gl *GitLabWrapper) AddUserSSHKey(keyTitle string, keyValue string) error {
+	_, _, err := gl.Client.Users.AddSSHKey(&gitlab.AddSSHKeyOptions{
+		Title: &keyTitle,
+		Key:   &keyValue,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetUserSSHKeys
+func (gl *GitLabWrapper) GetUserSSHKeys() ([]*gitlab.SSHKey, error) {
+	keys, _, err := gl.Client.Users.ListSSHKeys()
+	if err != nil {
+		return []*gitlab.SSHKey{}, err
+	}
+	return keys, nil
+}

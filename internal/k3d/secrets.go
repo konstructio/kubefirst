@@ -156,7 +156,7 @@ func AddK3DSecrets(
 	dataAtlantis := map[string][]byte{
 		"ATLANTIS_GH_TOKEN":                   []byte(tokenValue),
 		"ATLANTIS_GH_USER":                    []byte(gitUser),
-		"ATLANTIS_GH_HOSTNAME":                []byte("github.com"),
+		"ATLANTIS_GH_HOSTNAME":                []byte(fmt.Sprintf("%s.com", gitProvider)),
 		"ATLANTIS_GH_WEBHOOK_SECRET":          []byte(atlantisWebhookSecret),
 		"ARGOCD_AUTH_USERNAME":                []byte("admin"),
 		"ARGOCD_INSECURE":                     []byte("true"),
@@ -199,17 +199,18 @@ func AddK3DSecrets(
 		return errors.New("error creating kubernetes secret: chartmuseum/chartmuseum")
 	}
 
-	dataGh := map[string][]byte{
-		"github_token": []byte(tokenValue),
+	dataRunner := map[string][]byte{
+		fmt.Sprintf("%s_token", gitProvider): []byte(tokenValue),
 	}
-	ghRunnerSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "controller-manager", Namespace: "github-runner"},
-		Data:       dataGh,
+
+	runnerSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "controller-manager", Namespace: fmt.Sprintf("%s-runner", gitProvider)},
+		Data:       dataRunner,
 	}
-	_, err = clientset.CoreV1().Secrets("github-runner").Create(context.TODO(), ghRunnerSecret, metav1.CreateOptions{})
+	_, err = clientset.CoreV1().Secrets(fmt.Sprintf("%s-runner", gitProvider)).Create(context.TODO(), runnerSecret, metav1.CreateOptions{})
 	if err != nil {
 		log.Error().Err(err).Msg("")
-		return errors.New("error creating kubernetes secret: github-runner/controller-manager")
+		return errors.New(fmt.Sprintf("error creating kubernetes secret: %s-runner/controller-manager", gitProvider))
 	}
 
 	vaultData := map[string][]byte{

@@ -14,7 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
@@ -218,13 +218,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check git credentials
-	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", gitProviderFlag))
+	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider))
 	if !executionControl {
 		if len(cGitToken) == 0 {
 			return errors.New(
 				fmt.Sprintf(
 					"please set a %s_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init",
-					strings.ToUpper(gitProviderFlag),
+					strings.ToUpper(config.GitProvider),
 				),
 			)
 		}
@@ -233,7 +233,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		newRepositoryNames := []string{"gitops", "metaphor-frontend"}
 		newTeamNames := []string{"admins", "developers"}
 
-		switch gitProviderFlag {
+		switch config.GitProvider {
 		case "github":
 			githubWrapper := githubWrapper.New()
 			newRepositoryExists := false
@@ -322,10 +322,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", gitProviderFlag), true)
+		viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider), true)
 		viper.WriteConfig()
 	} else {
-		log.Info().Msg(fmt.Sprintf("already completed %s checks - continuing", gitProviderFlag))
+		log.Info().Msg(fmt.Sprintf("already completed %s checks - continuing", config.GitProvider))
 	}
 
 	// todo this is actually your personal account
@@ -368,7 +368,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	//* generate public keys for ssh
-	publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
+	publicKeys, err := gitssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
 	if err != nil {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
 	}
@@ -384,7 +384,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
 
-		err := k3d.DownloadTools(gitProviderFlag, cGitOwner, config.ToolsDir)
+		err := k3d.DownloadTools(config.GitProvider, cGitOwner, config.ToolsDir)
 		if err != nil {
 			return err
 		}
@@ -449,7 +449,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	atlantisWebhookURL := fmt.Sprintf("%s/events", viper.GetString("ngrok.host"))
 
-	switch gitProviderFlag {
+	switch config.GitProvider {
 	case "github":
 		// //* create teams and repositories in github
 		executionControl = viper.GetBool("kubefirst-checks.terraform-apply-github")
@@ -473,7 +473,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				return errors.New(fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err))
 			}
 
-			log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
+			log.Info().Msgf("created git repositories and teams for github.com/%s", githubOwnerFlag)
 			viper.Set("kubefirst-checks.terraform-apply-github", true)
 			viper.WriteConfig()
 		} else {
@@ -502,18 +502,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["GITLAB_OWNER"] = gitlabOwnerFlag
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-			tfEnvs["AWS_ACCESS_KEY_ID"] = "kray"
-			tfEnvs["AWS_SECRET_ACCESS_KEY"] = "feedkraystars"
-			tfEnvs["TF_VAR_aws_access_key_id"] = "kray"
-			tfEnvs["TF_VAR_aws_secret_access_key"] = "feedkraystars"
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gid)
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
 				return errors.New(fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err))
 			}
 
-			log.Info().Msgf("Created git repositories and teams in gitlab.com/%s", gitlabOwnerFlag)
+			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabOwnerFlag)
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", true)
 			viper.WriteConfig()
 		} else {
@@ -529,9 +524,41 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
 		}
 
+		// For GitLab, we currently need to add an ssh key to the authenticating user
+		if config.GitProvider == "gitlab" {
+			gl := gitlab.GitLabWrapper{
+				Client: gitlab.NewGitLabClient(cGitToken),
+			}
+			keys, err := gl.GetUserSSHKeys()
+			if err != nil {
+				log.Fatal().Msgf("unable to check for ssh keys in gitlab: %s", err.Error())
+			}
+
+			var keyName = "kubefirst-k3d-ssh-key"
+			var keyFound bool = false
+			for _, key := range keys {
+				if key.Title == keyName {
+					if strings.Contains(key.Key, strings.TrimSuffix(viper.GetString("kbot.public-key"), "\n")) {
+						log.Info().Msgf("ssh key %s already exists and key is up to date, continuing", keyName)
+						keyFound = true
+					} else {
+						log.Fatal().Msgf("ssh key %s already exists and key data has drifted - please remove before continuing", keyName)
+					}
+				}
+			}
+			if !keyFound {
+				log.Info().Msgf("creating ssh key %s...", keyName)
+				err := gl.AddUserSSHKey(keyName, viper.GetString("kbot.public-key"))
+				if err != nil {
+					log.Fatal().Msgf("error adding ssh key %s: %s", keyName, err.Error())
+				}
+			}
+		}
+
+		// Push gitops repo to remote
 		err = gitopsRepo.Push(
 			&git.PushOptions{
-				RemoteName: config.DestinationGitopsRepoGitURL,
+				RemoteName: config.GitProvider,
 				Auth:       publicKeys,
 			},
 		)
@@ -542,7 +569,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("successfully pushed gitops to git@g%s/%s/gitops", cGitHost, cGitOwner)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
-		log.Info().Msgf("Created git repositories and teams in %s/%s", cGitHost, cGitOwner)
 		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
 		viper.WriteConfig()
 	} else {
@@ -632,7 +658,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			config.DestinationGitopsRepoGitURL,
 			viper.GetString("kbot.private-key"),
 			false,
-			gitProviderFlag,
+			config.GitProvider,
 			cGitUser,
 			config.Kubeconfig,
 		)
@@ -797,6 +823,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
 
+	log.Info().Msg("pausing for vault to become ready...")
 	time.Sleep(time.Second * 45)
 
 	minioStopChannel := make(chan struct{}, 1)
@@ -829,8 +856,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	//define upload object
-	objectName := "terraform/github/terraform.tfstate"
-	filePath := config.K1Dir + "/gitops/terraform/github/terraform.tfstate"
+	objectName := fmt.Sprintf("terraform/%s/terraform.tfstate", config.GitProvider)
+	filePath := config.K1Dir + fmt.Sprintf("/gitops/%s", objectName)
 	contentType := "xl.meta"
 	bucketName := "kubefirst-state-store"
 	log.Info().Msgf("BucketName: %s", bucketName)
@@ -868,7 +895,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs := map[string]string{}
 
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
-		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", strings.ToUpper(gitProviderFlag))] = cGitToken
+		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", config.GitProvider)] = cGitToken
 		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
 		tfEnvs["TF_VAR_vault_token"] = "k1_local_vault_token"
 		tfEnvs["VAULT_ADDR"] = k3d.VaultPortForwardURL
@@ -900,16 +927,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
-		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", strings.ToUpper(gitProviderFlag))] = cGitToken
+		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", strings.ToUpper(config.GitProvider))] = cGitToken
 		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
 		tfEnvs["TF_VAR_vault_token"] = "k1_local_vault_token"
 		tfEnvs["VAULT_ADDR"] = k3d.VaultPortForwardURL
 		tfEnvs["VAULT_TOKEN"] = "k1_local_vault_token"
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-		tfEnvs[fmt.Sprintf("%s_TOKEN", strings.ToUpper(gitProviderFlag))] = cGitToken
-		tfEnvs[fmt.Sprintf("%s_TOKEN", strings.ToUpper(gitProviderFlag))] = cGitOwner
+		tfEnvs[fmt.Sprintf("%s_TOKEN", strings.ToUpper(config.GitProvider))] = cGitToken
+		tfEnvs[fmt.Sprintf("%s_TOKEN", strings.ToUpper(config.GitProvider))] = cGitOwner
 
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
