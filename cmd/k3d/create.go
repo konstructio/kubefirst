@@ -907,6 +907,21 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_aws_access_key_id"] = "kray"
 		tfEnvs["TF_VAR_aws_secret_access_key"] = "feedkraystars"
 
+		if config.GitProvider == "gitlab" {
+			gl := gitlab.GitLabWrapper{
+				Client: gitlab.NewGitLabClient(cGitToken),
+			}
+			allgroups, err := gl.GetGroups()
+			if err != nil {
+				log.Fatal().Msgf("could not read gitlab groups: %s", err)
+			}
+			gid, err := gl.GetGroupID(allgroups, gitlabOwnerFlag)
+			if err != nil {
+				log.Fatal().Msgf("could not get group id for primary group: %s", err)
+			}
+			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gid)
+		}
+
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -1017,7 +1032,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Error().Err(err).Msg("")
 	}
 
-	reports.LocalHandoffScreenV2(argocdPassword, clusterNameFlag, githubOwnerFlag, config, dryRunFlag, false)
+	reports.LocalHandoffScreenV2(argocdPassword, clusterNameFlag, cGitOwner, config, dryRunFlag, false)
 
 	if useTelemetryFlag {
 		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallCompleted, k3d.CloudProvider, config.GitProvider); err != nil {

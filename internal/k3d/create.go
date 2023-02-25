@@ -79,7 +79,7 @@ func PrepareGitopsRepository(
 		return err
 	}
 
-	detokenizeGithubGitops(gitopsDir, tokens)
+	detokenizeGitGitops(gitopsDir, tokens)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func PostRunPrepareGitopsRepository(clusterName string,
 	tokens *GitopsTokenValues,
 ) error {
 
-	err := postRunDetokenizeGithubGitops(gitopsDir, tokens)
+	err := postRunDetokenizeGitGitops(gitopsDir, tokens)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func PrepareMetaphorRepository(
 		return err
 	}
 
-	detokenizeGithubMetaphor(metaphorDir, tokens)
+	detokenizeGitMetaphor(metaphorDir, tokens)
 
 	err = gitClient.AddRemote(destinationMetaphorRepoGitURL, gitProvider, metaphorRepo)
 	if err != nil {

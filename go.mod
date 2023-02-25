@@ -179,7 +179,7 @@ require (
 	golang.org/x/oauth2 v0.4.0
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/term v0.5.0
-	golang.org/x/text v0.7.0 // indirect
+	golang.org/x/text v0.7.0
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221205194025-8222ab48f5fc // indirect
