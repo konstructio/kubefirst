@@ -4,7 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
+	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -23,49 +26,93 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	gitProvider := viper.GetString("flags.git-provider")
 
 	// Switch based on git provider, set params
-	var cGitOwner string
+	var cGitOwner, cGitToken string
 	switch gitProvider {
 	case "github":
 		cGitOwner = viper.GetString("flags.github-owner")
+		cGitToken = os.Getenv("GITHUB_TOKEN")
 	case "gitlab":
 		cGitOwner = viper.GetString("flags.gitlab-owner")
+		cGitToken = os.Getenv("GITLAB_TOKEN")
 	default:
 		log.Panic().Msgf("invalid git provider option")
 	}
 
+	// Instantiate K3d config
 	config := k3d.GetConfig(gitProvider, cGitOwner)
 
 	// todo improve these checks, make them standard for
 	// both create and destroy
-	githubToken := os.Getenv("GITHUB_TOKEN")
-	if len(githubToken) == 0 {
-		return errors.New("please set a GITHUB_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init")
+	if len(cGitToken) == 0 {
+		return errors.New(
+			fmt.Sprintf(
+				"please set a %s_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/%s/install.html#step-3-kubefirst-init",
+				strings.ToUpper(gitProvider), gitProvider,
+			),
+		)
 	}
 
-	if viper.GetBool("kubefirst-checks.terraform-apply-github") {
-		log.Info().Msg("destroying github resources with terraform")
+	switch gitProvider {
+	case "github":
+		if viper.GetBool("kubefirst-checks.terraform-apply-github") {
+			log.Info().Msg("destroying github resources with terraform")
 
-		tfEntrypoint := config.GitopsDir + "/terraform/github"
-		tfEnvs := map[string]string{}
+			tfEntrypoint := config.GitopsDir + "/terraform/github"
+			tfEnvs := map[string]string{}
 
-		tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
-		tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
-		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
-		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-		tfEnvs["AWS_ACCESS_KEY_ID"] = "kray"
-		tfEnvs["AWS_SECRET_ACCESS_KEY"] = "feedkraystars"
-		tfEnvs["TF_VAR_aws_access_key_id"] = "kray"
-		tfEnvs["TF_VAR_aws_secret_access_key"] = "feedkraystars"
+			tfEnvs["GITHUB_TOKEN"] = cGitToken
+			tfEnvs["GITHUB_OWNER"] = cGitOwner
+			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
+			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
+			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+			tfEnvs["AWS_ACCESS_KEY_ID"] = "kray"
+			tfEnvs["AWS_SECRET_ACCESS_KEY"] = "feedkraystars"
+			tfEnvs["TF_VAR_aws_access_key_id"] = "kray"
+			tfEnvs["TF_VAR_aws_secret_access_key"] = "feedkraystars"
 
-		err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
-		if err != nil {
-			log.Printf("error executing terraform destroy %s", tfEntrypoint)
-			return err
+			err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+			if err != nil {
+				log.Printf("error executing terraform destroy %s", tfEntrypoint)
+				return err
+			}
+			viper.Set("kubefirst-checks.terraform-apply-github", false)
+			viper.WriteConfig()
+			log.Info().Msg("github resources terraform destroyed")
 		}
-		viper.Set("kubefirst-checks.terraform-apply-github", false)
-		viper.WriteConfig()
-		log.Info().Msg("github resources terraform destroyed")
+	case "gitlab":
+		if viper.GetBool("kubefirst-checks.terraform-apply-gitlab") {
+			log.Info().Msg("destroying gitlab resources with terraform")
+
+			gl := gitlab.GitLabWrapper{
+				Client: gitlab.NewGitLabClient(cGitToken),
+			}
+			allgroups, err := gl.GetGroups()
+			if err != nil {
+				log.Fatal().Msgf("could not read gitlab groups: %s", err)
+			}
+			gid, err := gl.GetGroupID(allgroups, cGitOwner)
+			if err != nil {
+				log.Fatal().Msgf("could not get group id for primary group: %s", err)
+			}
+
+			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
+			tfEnvs := map[string]string{}
+
+			tfEnvs["GITLAB_TOKEN"] = cGitToken
+			tfEnvs["GITLAB_OWNER"] = cGitOwner
+			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
+			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
+			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gid)
+
+			err = terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+			if err != nil {
+				log.Printf("error executing terraform destroy %s", tfEntrypoint)
+				return err
+			}
+			viper.Set("kubefirst-checks.terraform-apply-gitlab", false)
+			viper.WriteConfig()
+			log.Info().Msg("gitlab resources terraform destroyed")
+		}
 	}
 
 	if viper.GetBool("kubefirst-checks.terraform-apply-k3d") {
@@ -82,7 +129,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	//* remove local content and kubefirst config file for re-execution
-	if !viper.GetBool("kubefirst-checks.terraform-apply-github") && !viper.GetBool("kubefirst-checks.terraform-apply-k3d") {
+	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.terraform-apply-k3d") {
 		log.Info().Msg("removing previous platform content")
 
 		err := pkg.ResetK1Dir(config.K1Dir, config.KubefirstConfig)
@@ -93,7 +140,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 		log.Info().Msg("resetting `$HOME/.kubefirst` config")
 		viper.Set("argocd", "")
-		viper.Set("github", "")
+		viper.Set(gitProvider, "")
 		viper.Set("components", "")
 		viper.Set("kbot", "")
 		viper.Set("kubefirst-checks", "")
