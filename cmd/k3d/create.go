@@ -140,18 +140,20 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	ngrokHost := viper.GetString("ngrok.host")
 
 	// Switch based on git provider, set params
-	var cGitHost, cGitOwner, cGitUser, cGitToken string
+	var cGitHost, cGitOwner, cGitUser, cGitToken, containerRegistryHost string
 	switch gitProviderFlag {
 	case "github":
 		cGitHost = k3d.GithubHost
 		cGitOwner = githubOwnerFlag
 		cGitUser = githubOwnerFlag
 		cGitToken = os.Getenv("GITHUB_TOKEN")
+		containerRegistryHost = "ghcr.io"
 	case "gitlab":
 		cGitHost = k3d.GitlabHost
 		cGitOwner = gitlabOwnerFlag
 		cGitUser = gitlabOwnerFlag
 		cGitToken = os.Getenv("GITLAB_TOKEN")
+		containerRegistryHost = "registry.gitlab.com"
 	default:
 		log.Error().Msgf("invalid git provider option")
 	}
@@ -578,7 +580,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	metaphorTemplateTokens := k3d.MetaphorTokenValues{}
 	metaphorTemplateTokens.ClusterName = clusterNameFlag
 	metaphorTemplateTokens.CloudRegion = cloudRegionFlag
-	metaphorTemplateTokens.ContainerRegistryURL = fmt.Sprintf("ghcr.io/%s/metaphor-frontend", githubOwnerFlag)
+	metaphorTemplateTokens.ContainerRegistryURL = fmt.Sprintf("%s/%s/metaphor-frontend", containerRegistryHost, githubOwnerFlag)
 	metaphorTemplateTokens.DomainName = k3d.DomainName
 	metaphorTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("metaphor-development.%s", k3d.DomainName)
 	metaphorTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("metaphor-staging.%s", k3d.DomainName)
