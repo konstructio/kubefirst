@@ -45,3 +45,26 @@ func PrepareGitopsRepository(clusterName string,
 
 	return nil
 }
+
+func CheckForIamRoles(roles []string) error {
+	awsClient := &Conf
+
+	msg := "\n\nerror: the following role(s) exist and will create a collision\nwith the current terraform configuration.\n\n\t"
+
+	// var rolesExist []string
+
+	for _, roleName := range roles {
+
+		role, err := awsClient.GetIamRole(roleName)
+		if err != nil {
+			return err
+		}
+
+		// rolesExist = append(rolesExist, *role.Role.RoleName)
+		msg = msg + *role.Role.Arn + "\n\t"
+	}
+	msg = msg + "\nrun `kubefirst reset` with a unique `--cluster-name` to avoid collision or\n"
+	msg = msg + "\n`kubefirst aws rm-roles --confirm`\nto remove them from AWS\n\n"
+
+	return nil
+}

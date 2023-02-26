@@ -11,6 +11,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
@@ -19,6 +20,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/services"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
+	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
@@ -263,13 +265,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 		// should have argo artifcats and chartmuseum charts
 		viper.Set("kubefirst.state-store-bucket", strings.ReplaceAll(*kubefirstStateStoreBucket.Location, "/", ""))
 		viper.Set("kubefirst.artifacts-bucket", strings.ReplaceAll(*kubefirstArtifactsBucket.Location, "/", ""))
-		viper.Set("kubefirst-checks.state-store-creds", true)
+		viper.Set("kubefirst-checks.state-store-create", true)
 		viper.WriteConfig()
-		log.Info().Msg("civo object storage credentials created and set")
+		log.Info().Msg("aws s3 buckets created")
 	} else {
-		log.Info().Msg("already created civo object storage credentials - continuing")
+		log.Info().Msg("already created s3 buckets - continuing")
 	}
-	os.Exit(1)
 
 	skipDomainCheck := viper.GetBool("kubefirst-checks.domain-liveness")
 	if !skipDomainCheck {
@@ -424,126 +425,147 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
-	//* create teams and repositories in github
-	// executionControl = viper.GetBool("kubefirst-checks.terraform-apply-github")
-	// if !executionControl {
-	// 	log.Info().Msg("Creating github resources with terraform")
+	// * create teams and repositories in github
+	// todo should terraform-apply-github --> terraform-apply-git-provider
+	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-github")
+	if !executionControl {
+		log.Info().Msg("Creating github resources with terraform")
 
-	// 	tfEntrypoint := config.GitopsDir + "/terraform/github"
-	// 	tfEnvs := map[string]string{}
-	// 	// tfEnvs = aws.GetGithubTerraformEnvs(tfEnvs)
-	// 	tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
-	// 	tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
-	// 	tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
-	// 	tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-	// 	tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-	// 	err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
-	// 	if err != nil {
-	// 		return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
-	// 	}
+		tfEntrypoint := config.GitopsDir + "/terraform/github"
+		tfEnvs := map[string]string{}
+		// tfEnvs = aws.GetGithubTerraformEnvs(tfEnvs)
+		tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+		tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
+		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
+		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
+		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		if err != nil {
+			return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
+		}
 
-	// 	log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
-	// 	viper.Set("kubefirst-checks.terraform-apply-github", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already created github terraform resources")
-	// }
+		log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
+		viper.Set("kubefirst-checks.terraform-apply-github", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already created github terraform resources")
+	}
 
-	// //* push detokenized gitops-template repository content to new remote
-	// executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
-	// if !executionControl {
-	// 	gitopsRepo, err := git.PlainOpen(config.GitopsDir)
-	// 	if err != nil {
-	// 		log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
-	// 	}
+	//* push detokenized gitops-template repository content to new remote
+	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
+	if !executionControl {
+		gitopsRepo, err := git.PlainOpen(config.GitopsDir)
+		if err != nil {
+			log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
+		}
 
-	// 	err = gitopsRepo.Push(&git.PushOptions{
-	// 		RemoteName: aws.GitProvider,
-	// 		Auth:       publicKeys,
-	// 	})
-	// 	if err != nil {
-	// 		log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", config.DestinationGitopsRepoGitURL)
-	// 	}
+		err = gitopsRepo.Push(&git.PushOptions{
+			RemoteName: aws.GitProvider,
+			Auth:       publicKeys,
+		})
+		if err != nil {
+			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", config.DestinationGitopsRepoGitURL)
+		}
 
-	// 	log.Info().Msgf("successfully pushed gitops to git@github.com/%s/gitops", githubOwnerFlag)
-	// 	// todo delete the local gitops repo and re-clone it
-	// 	// todo that way we can stop worrying about which origin we're going to push to
-	// 	log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
-	// 	viper.Set("kubefirst-checks.gitops-repo-pushed", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already pushed detokenized gitops repository content")
-	// }
+		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/gitops", githubOwnerFlag)
+		// todo delete the local gitops repo and re-clone it
+		// todo that way we can stop worrying about which origin we're going to push to
+		log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
+		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already pushed detokenized gitops repository content")
+	}
 
-	// metaphorTemplateTokens := aws.MetaphorTokenValues{}
-	// metaphorTemplateTokens.ClusterName = clusterNameFlag
-	// metaphorTemplateTokens.CloudRegion = cloudRegionFlag
-	// metaphorTemplateTokens.ContainerRegistryURL = fmt.Sprintf("ghcr.io/%s/metaphor-frontend", githubOwnerFlag)
-	// metaphorTemplateTokens.DomainName = domainNameFlag
-	// metaphorTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("metaphor-development.%s", domainNameFlag)
-	// metaphorTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("metaphor-staging.%s", domainNameFlag)
-	// metaphorTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("metaphor-production.%s", domainNameFlag)
+	// todo adopt ecr
+	metaphorTemplateTokens := aws.MetaphorTokenValues{}
+	metaphorTemplateTokens.ClusterName = clusterNameFlag
+	metaphorTemplateTokens.CloudRegion = cloudRegionFlag
+	metaphorTemplateTokens.ContainerRegistryURL = fmt.Sprintf("ghcr.io/%s/metaphor-frontend", githubOwnerFlag)
+	metaphorTemplateTokens.DomainName = domainNameFlag
+	metaphorTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("metaphor-development.%s", domainNameFlag)
+	metaphorTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("metaphor-staging.%s", domainNameFlag)
+	metaphorTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("metaphor-production.%s", domainNameFlag)
 
-	// //* git clone and detokenize the metaphor-frontend-template repository
-	// if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
+	//* git clone and detokenize the metaphor-frontend-template repository
+	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
 
-	// 	err := aws.PrepareMetaphorRepository(config.DestinationMetaphorRepoGitURL, config.K1Dir, config.MetaphorDir, metaphorTemplateBranchFlag, metaphorTemplateURLFlag, &metaphorTemplateTokens)
-	// 	if err != nil {
-	// 		return err
-	// 	}
+		err := aws.PrepareMetaphorRepository(
+			config.DestinationMetaphorRepoGitURL,
+			config.K1Dir,
+			config.MetaphorDir,
+			metaphorTemplateBranchFlag,
+			metaphorTemplateURLFlag,
+			&metaphorTemplateTokens)
+		if err != nil {
+			return err
+		}
 
-	// 	metaphorRepo, err := git.PlainOpen(config.MetaphorDir)
-	// 	if err != nil {
-	// 		log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
-	// 	}
+		metaphorRepo, err := git.PlainOpen(config.MetaphorDir)
+		if err != nil {
+			log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
+		}
 
-	// 	err = metaphorRepo.Push(&git.PushOptions{
-	// 		RemoteName: aws.GitProvider,
-	// 		Auth:       publicKeys,
-	// 	})
-	// 	if err != nil {
-	// 		return err
-	// 	}
+		err = metaphorRepo.Push(&git.PushOptions{
+			RemoteName: aws.GitProvider,
+			Auth:       publicKeys,
+		})
+		if err != nil {
+			return err
+		}
 
-	// 	log.Info().Msgf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwnerFlag)
-	// 	// todo delete the local gitops repo and re-clone it
-	// 	// todo that way we can stop worrying about which origin we're going to push to
-	// 	log.Info().Msgf("pushed detokenized metaphor-frontend repository to github.com/%s", githubOwnerFlag)
+		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwnerFlag)
+		// todo delete the local gitops repo and re-clone it
+		// todo that way we can stop worrying about which origin we're going to push to
+		log.Info().Msgf("pushed detokenized metaphor-frontend repository to github.com/%s", githubOwnerFlag)
 
-	// 	viper.Set("kubefirst-checks.metaphor-repo-pushed", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already completed gitops repo generation - continuing")
-	// }
+		viper.Set("kubefirst-checks.metaphor-repo-pushed", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already completed gitops repo generation - continuing")
+	}
 
-	// //* create aws resources
-	// if !viper.GetBool("kubefirst-checks.terraform-apply-aws") {
-	// 	log.Info().Msg("Creating aws cluster")
+	//* create aws resources
+	if !viper.GetBool("kubefirst-checks.terraform-apply-aws") {
+		log.Info().Msg("Creating aws cloud resources with terraform")
 
-	// 	err := aws.ClusterCreate(clusterNameFlag, config.K1Dir, config.awsClient, config.Kubeconfig)
-	// 	if err != nil {
-	// 		return err
-	// 	}
+		tfEntrypoint := config.GitopsDir + "/terraform/aws"
+		tfEnvs := map[string]string{}
+		tfEnvs["TF_VAR_aws_account_id"] = *iamCaller.Account
+		tfEnvs["TF_VAR_hosted_zone_name"] = domainNameFlag
+		// nodes_graviton := viper.GetBool("aws.nodes_graviton")
+		// if nodes_graviton {
+		// 	tfEnvs["TF_VAR_ami_type"] = "AL2_ARM_64"
+		// 	tfEnvs["TF_VAR_instance_type"] = "t4g.medium"
+		// }
+		tfEnvs["AWS_SDK_LOAD_CONFIG"] = "1"
+		tfEnvs["TF_VAR_aws_region"] = os.Getenv("AWS_REGION")
+		tfEnvs["AWS_REGION"] = os.Getenv("AWS_REGION")
 
-	// 	log.Info().Msg("successfully created aws cluster")
-	// 	viper.Set("kubefirst-checks.terraform-apply-aws", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already created aws cluster resources")
-	// }
+		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		if err != nil {
+			return errors.New(fmt.Sprintf("error creating aws resources with terraform %s : %s", tfEntrypoint, err))
+		}
+
+		log.Info().Msg("Created aws cloud resources")
+		viper.Set("kubefirst-checks.terraform-apply-aws", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already created aws cluster resources")
+	}
 
 	// clientset, err := k8s.GetClientSet(dryRunFlag, config.Kubeconfig)
 	// if err != nil {
 	// 	return err
 	// }
 
-	// // kubernetes.BootstrapSecrets
-	// // todo there is a secret condition in AddawsSecrets to this not checked
-	// // todo deconstruct CreateNamespaces / CreateSecret
-	// // todo move secret structs to constants to be leveraged by either local or civo
+	// kubernetes.BootstrapSecrets
+	// todo there is a secret condition in AddawsSecrets to this not checked
+	// todo deconstruct CreateNamespaces / CreateSecret
+	// todo move secret structs to constants to be leveraged by either local or civo
 	// executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	// if !executionControl {
-	// 	err := aws.AddawsSecrets(
+	// 	err := aws.AddAwsSecrets(
 	// 		atlantisWebhookSecret,
 	// 		atlantisWebhookURL,
 	// 		viper.GetString("kbot.public-key"),
