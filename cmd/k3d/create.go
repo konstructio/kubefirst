@@ -954,7 +954,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 		tfEnvs[fmt.Sprintf("%s_TOKEN", strings.ToUpper(config.GitProvider))] = cGitToken
-		tfEnvs[fmt.Sprintf("%s_TOKEN", strings.ToUpper(config.GitProvider))] = cGitOwner
+		tfEnvs[fmt.Sprintf("%s_OWNER", strings.ToUpper(config.GitProvider))] = cGitOwner
 
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)

@@ -55,7 +55,8 @@ func detokenizeGitops(path string, tokens *GitopsTokenValues) filepath.WalkFunc 
 			newContents = strings.Replace(newContents, "<GITHUB_OWNER>", tokens.GithubOwner, -1)
 			newContents = strings.Replace(newContents, "<GITHUB_USER>", tokens.GithubUser, -1)
 			newContents = strings.Replace(newContents, "<GITOPS_REPO_GIT_URL>", tokens.GitopsRepoGitURL, -1)
-			newContents = strings.Replace(newContents, "<GITLAB_GROUP_NAME>", tokens.GitlabOwner, -1)
+			newContents = strings.Replace(newContents, "<GITLAB_HOST>", tokens.GitlabHost, -1)
+			newContents = strings.Replace(newContents, "<GITLAB_OWNER>", tokens.GitlabOwner, -1)
 			newContents = strings.Replace(newContents, "<NGROK_HOST>", tokens.NgrokHost, -1)
 			newContents = strings.Replace(newContents, "<VAULT_INGRESS_URL>", tokens.VaultIngressURL, -1)
 
