@@ -732,6 +732,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 
+		tfEnvs = k3d.GetVaultTerraformEnvs(config, tfEnvs)
+		tfEnvs = k3d.GetGithubTerraformEnvs(tfEnvs)
+
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
 		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
