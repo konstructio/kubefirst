@@ -2,21 +2,7 @@ package k3d
 
 import (
 	"os"
-
-	"github.com/kubefirst/kubefirst/internal/k8s"
-	"github.com/kubefirst/kubefirst/internal/vault"
-	"github.com/rs/zerolog/log"
 )
-
-func readVaultTokenFromSecret(config *K3dConfig) string {
-	existingKubernetesSecret, err := k8s.ReadSecretV2(config.Kubeconfig, vault.VaultNamespace, vault.VaultSecretName)
-	if err != nil || existingKubernetesSecret == nil {
-		log.Printf("Error reading existing Secret data: %s", err)
-		return ""
-	}
-
-	return existingKubernetesSecret["root-token"]
-}
 
 func GetGithubTerraformEnvs(envs map[string]string) map[string]string {
 
