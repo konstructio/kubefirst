@@ -90,6 +90,7 @@ type GitOpsDirectoryValues struct {
 	AtlantisAllowList         string
 	CloudProvider             string
 	CloudRegion               string
+	ClusterId									string
 	ClusterName               string
 	ClusterType               string
 	DomainName                string
@@ -124,6 +125,8 @@ type GitOpsDirectoryValues struct {
 	GitOpsRepoAtlantisWebhookURL string
 	GitOpsRepoGitURL             string
 	GitOpsRepoNoHTTPSURL         string
+
+	UseTelemetry									string
 
 	// MetaphorDevelopmentIngressURL                string
 	// MetaphorDevelopmentIngressNoHTTPSURL         string
