@@ -828,7 +828,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	log.Info().Msg("pausing for vault to become ready...")
-	time.Sleep(time.Second * 45)
+	time.Sleep(time.Second * 15)
 
 	minioStopChannel := make(chan struct{}, 1)
 	defer func() {
