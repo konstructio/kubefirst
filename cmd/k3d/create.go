@@ -376,16 +376,12 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEntrypoint := config.GitopsDir + "/terraform/github"
 		tfEnvs := map[string]string{}
 		tfEnvs = k3d.GetGithubTerraformEnvs(tfEnvs)
-		// tfEnvs = k3d.GetGithubTerraformEnvs(tfEnvs)
-		tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+
 		tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-		tfEnvs["AWS_ACCESS_KEY_ID"] = "kray"
-		tfEnvs["AWS_SECRET_ACCESS_KEY"] = "feedkraystars"
-		tfEnvs["TF_VAR_aws_access_key_id"] = "kray"
-		tfEnvs["TF_VAR_aws_secret_access_key"] = "feedkraystars"
+
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
 			return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
@@ -735,6 +731,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs = k3d.GetVaultTerraformEnvs(config, tfEnvs)
 
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
+		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 		tfEnvs["TF_VAR_kubefirst_bot_ssh_private_key"] = viper.GetString("kbot.private-key")
 		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
 		tfEnvs["GITHUB_OWNER"] = viper.GetString("flags.github-owner")
