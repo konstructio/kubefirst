@@ -31,6 +31,22 @@ func (gl *GitLabWrapper) AddSubGroupToGroup(subGroupID int, groupID int) error {
 	return nil
 }
 
+// CheckProjectExists
+func (gl *GitLabWrapper) CheckProjectExists(projectName string) (bool, error) {
+	allprojects, err := gl.GetProjects()
+	if err != nil {
+		return false, err
+	}
+
+	var exists bool = false
+	for _, project := range allprojects {
+		if project.Name == projectName {
+			exists = true
+		}
+	}
+	return exists, nil
+}
+
 // CreateSubGroup
 func (gl *GitLabWrapper) CreateSubGroup(groupID int, groupName string) error {
 	path := fmt.Sprintf("group-%s", groupName)
@@ -78,6 +94,37 @@ func (gl *GitLabWrapper) GetGroups() ([]gitlab.Group, error) {
 		nextPage = resp.NextPage
 	}
 	return container, nil
+}
+
+// GetProjectID
+func (gl *GitLabWrapper) GetProjectID(projectName string) (int, error) {
+	owned := true
+
+	container := make([]gitlab.Project, 0)
+	for nextPage := 1; nextPage > 0; {
+		projects, resp, err := gl.Client.Projects.ListProjects(&gitlab.ListProjectsOptions{
+			ListOptions: gitlab.ListOptions{
+				Page:    nextPage,
+				PerPage: 10,
+			},
+			Owned: &owned,
+		})
+		if err != nil {
+			return 0, err
+		}
+		for _, project := range projects {
+			container = append(container, *project)
+		}
+		nextPage = resp.NextPage
+	}
+
+	for _, project := range container {
+		if project.Name == projectName {
+			return project.ID, nil
+		}
+	}
+
+	return 0, errors.New(fmt.Sprintf("could not get project ID for project %s", projectName))
 }
 
 // GetProjects
@@ -168,7 +215,7 @@ func (gl *GitLabWrapper) FindProjectInGroup(projects []gitlab.Project, projectNa
 	return false, errors.New(fmt.Sprintf("project %s not found", projectName))
 }
 
-// Users
+// User Management
 
 // AddUserSSHKey
 func (gl *GitLabWrapper) AddUserSSHKey(keyTitle string, keyValue string) error {
@@ -182,6 +229,32 @@ func (gl *GitLabWrapper) AddUserSSHKey(keyTitle string, keyValue string) error {
 	return nil
 }
 
+// DeleteUserSSHKey
+func (gl *GitLabWrapper) DeleteUserSSHKey(keyTitle string) error {
+	allkeys, err := gl.GetUserSSHKeys()
+	if err != nil {
+		return err
+	}
+
+	var keyID int = 0
+	for _, key := range allkeys {
+		if key.Title == keyTitle {
+			keyID = key.ID
+		}
+	}
+
+	if keyID == 0 {
+		return errors.New("could not find ssh key %s so it will not be deleted - you may need to delete it manually")
+	}
+	_, err = gl.Client.Users.DeleteSSHKey(keyID)
+	if err != nil {
+		return err
+	}
+	log.Info().Msgf("deleted gitlab ssh key %s", keyTitle)
+
+	return nil
+}
+
 // GetUserSSHKeys
 func (gl *GitLabWrapper) GetUserSSHKeys() ([]*gitlab.SSHKey, error) {
 	keys, _, err := gl.Client.Users.ListSSHKeys()
@@ -189,4 +262,59 @@ func (gl *GitLabWrapper) GetUserSSHKeys() ([]*gitlab.SSHKey, error) {
 		return []*gitlab.SSHKey{}, err
 	}
 	return keys, nil
+}
+
+// Container Registry
+
+// GetProjectContainerRegistryRepositories
+func (gl *GitLabWrapper) GetProjectContainerRegistryRepositories(projectName string) ([]gitlab.RegistryRepository, error) {
+	projectID, err := gl.GetProjectID(projectName)
+	if err != nil {
+		return []gitlab.RegistryRepository{}, err
+	}
+
+	container := make([]gitlab.RegistryRepository, 0)
+	for nextPage := 1; nextPage > 0; {
+		repositories, resp, err := gl.Client.ContainerRegistry.ListProjectRegistryRepositories(projectID, &gitlab.ListRegistryRepositoriesOptions{
+			ListOptions: gitlab.ListOptions{
+				Page:    nextPage,
+				PerPage: 10,
+			},
+		})
+		if err != nil {
+			return []gitlab.RegistryRepository{}, err
+		}
+		for _, subgroup := range repositories {
+			container = append(container, *subgroup)
+		}
+		nextPage = resp.NextPage
+	}
+	return container, nil
+}
+
+// DeleteProjectContainerRegistryRepository
+func (gl *GitLabWrapper) DeleteContainerRegistryRepository(projectName string, repositoryID int) error {
+	projectID, err := gl.GetProjectID(projectName)
+	if err != nil {
+		return err
+	}
+
+	// Delete any tags
+	nameRegEx := ".*"
+	_, err = gl.Client.ContainerRegistry.DeleteRegistryRepositoryTags(projectID, repositoryID, &gitlab.DeleteRegistryRepositoryTagsOptions{
+		NameRegexpDelete: &nameRegEx,
+	})
+	if err != nil {
+		return err
+	}
+	log.Info().Msgf("removed all tags from container registry for project %s", projectName)
+
+	// Delete repository
+	_, err = gl.Client.ContainerRegistry.DeleteRegistryRepository(projectID, repositoryID)
+	if err != nil {
+		return err
+	}
+	log.Info().Msgf("deleted container registry for project %s", projectName)
+
+	return nil
 }

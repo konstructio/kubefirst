@@ -95,6 +95,35 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 				log.Fatal().Msgf("could not get group id for primary group: %s", err)
 			}
 
+			// Before removing Terraform resources, remove any container registry repositories
+			// since failing to remove them beforehand will result in an apply failure
+			var projectsForDeletion = []string{"gitops", "metaphor-frontend"}
+			for _, project := range projectsForDeletion {
+				projectExists, err := gl.CheckProjectExists(project)
+				if err != nil {
+					log.Fatal().Msgf("could not check for existence of project %s: %s", project, err)
+				}
+				if projectExists {
+					log.Info().Msgf("checking project %s for container registries...", project)
+					crr, err := gl.GetProjectContainerRegistryRepositories(project)
+					if err != nil {
+						log.Fatal().Msgf("could not retrieve container registry repositories: %s", err)
+					}
+					if len(crr) > 0 {
+						for _, cr := range crr {
+							err := gl.DeleteContainerRegistryRepository(project, cr.ID)
+							if err != nil {
+								log.Fatal().Msgf("error deleting container registry repository: %s", err)
+							}
+						}
+					} else {
+						log.Info().Msgf("project %s does not have any container registries, skipping", project)
+					}
+				} else {
+					log.Info().Msgf("project %s does not exist, skipping", project)
+				}
+			}
+
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
 
@@ -126,6 +155,18 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst-checks.terraform-apply-k3d", false)
 		viper.WriteConfig()
 		log.Info().Msg("k3d resources terraform destroyed")
+	}
+
+	// remove ssh key provided one was created
+	if viper.GetString("kbot.gitlab-user-based-ssh-key-title") != "" {
+		gl := gitlab.GitLabWrapper{
+			Client: gitlab.NewGitLabClient(cGitToken),
+		}
+		log.Info().Msg("attempting to delete managed ssh key...")
+		err := gl.DeleteUserSSHKey(viper.GetString("kbot.gitlab-user-based-ssh-key-title"))
+		if err != nil {
+			log.Warn().Msg(err.Error())
+		}
 	}
 
 	//* remove local content and kubefirst config file for re-execution

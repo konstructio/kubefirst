@@ -35,7 +35,7 @@ func AddK3DSecrets(
 	switch gitProvider {
 	case "github":
 		tokenValue = os.Getenv("GITHUB_TOKEN")
-		containerRegistryHost = "ghcr.io"
+		containerRegistryHost = "https://ghcr.io/"
 	case "gitlab":
 		tokenValue = os.Getenv("GITLAB_TOKEN")
 		containerRegistryHost = "registry.gitlab.io"
@@ -90,10 +90,11 @@ func AddK3DSecrets(
 	usernamePasswordString := fmt.Sprintf("%s:%s", gitUser, tokenValue)
 	usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
 
-	dockerConfigString := fmt.Sprintf(`{"auths": {"https://%s/": {"auth": "%s"}}}`, containerRegistryHost, usernamePasswordStringB64)
+	dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"auth": "%s"}}}`, containerRegistryHost, usernamePasswordStringB64)
 	argoDockerSecrets := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "argo"},
-		Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
+		Type:       "kubernetes.io/dockerconfigjson",
+		Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
 	}
 	_, err = clientset.CoreV1().Secrets("argo").Create(context.TODO(), argoDockerSecrets, metav1.CreateOptions{})
 	if err != nil {

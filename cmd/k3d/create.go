@@ -554,6 +554,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				if err != nil {
 					log.Fatal().Msgf("error adding ssh key %s: %s", keyName, err.Error())
 				}
+				viper.Set("kbot.gitlab-user-based-ssh-key-title", "kubefirst-k3d-ssh-key")
+				viper.WriteConfig()
 			}
 		}
 
