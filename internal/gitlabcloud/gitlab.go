@@ -13,6 +13,7 @@ func NewGitLabClient(token string) *gitlab.Client {
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	return git
 }
 
@@ -28,6 +29,7 @@ func (gl *GitLabWrapper) AddSubGroupToGroup(subGroupID int, groupID int) error {
 		return err
 	}
 	log.Info().Msgf("subgroup %s added to group %s", subGroupID, group.Name)
+
 	return nil
 }
 
@@ -44,6 +46,7 @@ func (gl *GitLabWrapper) CheckProjectExists(projectName string) (bool, error) {
 			exists = true
 		}
 	}
+
 	return exists, nil
 }
 
@@ -59,6 +62,7 @@ func (gl *GitLabWrapper) CreateSubGroup(groupID int, groupName string) error {
 		return err
 	}
 	log.Info().Msgf("group %s created: %s", group.Name, group.WebURL)
+
 	return nil
 }
 
@@ -93,6 +97,7 @@ func (gl *GitLabWrapper) GetGroups() ([]gitlab.Group, error) {
 		}
 		nextPage = resp.NextPage
 	}
+
 	return container, nil
 }
 
@@ -148,6 +153,7 @@ func (gl *GitLabWrapper) GetProjects() ([]gitlab.Project, error) {
 		}
 		nextPage = resp.NextPage
 	}
+
 	return container, nil
 }
 
@@ -178,6 +184,7 @@ func (gl *GitLabWrapper) GetSubGroupID(groupID int, subGroupName string) (int, e
 			return g.ID, nil
 		}
 	}
+
 	return 0, errors.New(fmt.Sprintf("subgroup %s not found", subGroupName))
 }
 
@@ -202,6 +209,7 @@ func (gl *GitLabWrapper) GetSubGroups(groupID int) ([]gitlab.Group, error) {
 		}
 		nextPage = resp.NextPage
 	}
+
 	return container, nil
 }
 
@@ -212,6 +220,7 @@ func (gl *GitLabWrapper) FindProjectInGroup(projects []gitlab.Project, projectNa
 			return true, nil
 		}
 	}
+
 	return false, errors.New(fmt.Sprintf("project %s not found", projectName))
 }
 
@@ -226,6 +235,7 @@ func (gl *GitLabWrapper) AddUserSSHKey(keyTitle string, keyValue string) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -261,6 +271,7 @@ func (gl *GitLabWrapper) GetUserSSHKeys() ([]*gitlab.SSHKey, error) {
 	if err != nil {
 		return []*gitlab.SSHKey{}, err
 	}
+
 	return keys, nil
 }
 
@@ -289,6 +300,7 @@ func (gl *GitLabWrapper) GetProjectContainerRegistryRepositories(projectName str
 		}
 		nextPage = resp.NextPage
 	}
+
 	return container, nil
 }
 
@@ -317,4 +329,85 @@ func (gl *GitLabWrapper) DeleteContainerRegistryRepository(projectName string, r
 	log.Info().Msgf("deleted container registry for project %s", projectName)
 
 	return nil
+}
+
+// Token & Key Management
+
+// CreateProjectDeployToken
+func (gl *GitLabWrapper) CreateProjectDeployToken(projectName string, p *DeployTokenCreateParameters) (string, error) {
+	projectID, err := gl.GetProjectID(projectName)
+	if err != nil {
+		return "", err
+	}
+
+	token, _, err := gl.Client.DeployTokens.CreateProjectDeployToken(projectID, &gitlab.CreateProjectDeployTokenOptions{
+		Name:     &p.Name,
+		Username: &p.Username,
+		Scopes:   &p.Scopes,
+	})
+	if err != nil {
+		return "", err
+	}
+	log.Info().Msgf("created deploy token %s", token.Name)
+
+	return token.Token, nil
+
+}
+
+// DeleteProjectDeployToken
+func (gl *GitLabWrapper) DeleteProjectDeployToken(projectName string, tokenName string) error {
+	projectID, err := gl.GetProjectID(projectName)
+	if err != nil {
+		return err
+	}
+
+	allTokens, err := gl.ListProjectDeployTokens(projectName)
+	if err != nil {
+		return err
+	}
+
+	var exists bool = false
+	var tokenID int
+	for _, token := range allTokens {
+		if token.Name == tokenName {
+			exists = true
+			tokenID = token.ID
+		}
+	}
+
+	if exists {
+		_, err = gl.Client.DeployTokens.DeleteProjectDeployToken(projectID, tokenID)
+		if err != nil {
+			return err
+		}
+		log.Info().Msgf("deleted deploy token %s", tokenName)
+	}
+
+	return nil
+
+}
+
+// ListProjectDeployTokens
+func (gl *GitLabWrapper) ListProjectDeployTokens(projectName string) ([]gitlab.DeployToken, error) {
+	projectID, err := gl.GetProjectID(projectName)
+	if err != nil {
+		return []gitlab.DeployToken{}, err
+	}
+
+	container := make([]gitlab.DeployToken, 0)
+	for nextPage := 1; nextPage > 0; {
+		tokens, resp, err := gl.Client.DeployTokens.ListProjectDeployTokens(projectID, &gitlab.ListProjectDeployTokensOptions{
+			Page:    nextPage,
+			PerPage: 10,
+		})
+		if err != nil {
+			return []gitlab.DeployToken{}, err
+		}
+		for _, token := range tokens {
+			container = append(container, *token)
+		}
+		nextPage = resp.NextPage
+	}
+
+	return container, nil
 }

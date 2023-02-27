@@ -2,6 +2,7 @@ package k3d
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/rs/zerolog/log"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/go-git/go-git/v5"
 	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
@@ -34,6 +36,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -694,6 +697,60 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// 	log.Info().Msg("no files found in secrets directory, continuing")
 	// }
 
+	// GitLab Deploy Tokens
+	switch config.GitProvider {
+	case "gitlab":
+		createTokensForProjects := []string{"metaphor-frontend"}
+
+		gl := gitlab.GitLabWrapper{
+			Client: gitlab.NewGitLabClient(cGitToken),
+		}
+
+		for _, project := range createTokensForProjects {
+			var p = gitlab.DeployTokenCreateParameters{
+				Name:     fmt.Sprintf("%s-deploy", project),
+				Username: fmt.Sprintf("%s-deploy", project),
+				Scopes:   []string{"read_registry", "write_registry"},
+			}
+
+			log.Info().Msgf("creating project deploy token for project %s...", project)
+			token, err := gl.CreateProjectDeployToken(project, &p)
+			if err != nil {
+				log.Fatal().Msgf("error creating project deploy token for project %s: %s", project, err)
+			}
+
+			log.Info().Msgf("creating secret for project deploy token for project %s...", project)
+			usernamePasswordString := fmt.Sprintf("%s:%s", p.Username, token)
+			usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+			dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"username": "%s", "password": "%s", "email": "%s", "auth": "%s"}}}`, "registry.gitlab.com", p.Username, token, "k-bot@example.com", usernamePasswordStringB64)
+
+			createInNamespace := []string{"development", "staging", "production"}
+			for _, namespace := range createInNamespace {
+				deployTokenSecret := &v1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy", project), Namespace: namespace},
+					Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
+					Type:       "kubernetes.io/dockerconfigjson",
+				}
+				err = k8s.CreateSecretV2(config.Kubeconfig, deployTokenSecret)
+				if err != nil {
+					log.Error().Msgf("error while creating secret for project deploy token: %s", err)
+				}
+			}
+
+			// Create argo workflows pull secret
+			// This is formatted to work with buildkit
+			argoDeployTokenSecret := &v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy", project), Namespace: "argo"},
+				Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
+				Type:       "Opaque",
+			}
+			err = k8s.CreateSecretV2(config.Kubeconfig, argoDeployTokenSecret)
+			if err != nil {
+				log.Error().Msgf("error while creating secret for project deploy token: %s", err)
+			}
+		}
+	}
+
 	//* helm add argo repository && update
 	helmRepo := helm.HelmRepo{
 		RepoName:     "argo",
@@ -981,16 +1038,19 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
 	}
+
+	err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content post run")
+	if err != nil {
+		return err
+	}
+
+	// Final gitops repo push
 	err = gitopsRepo.Push(&git.PushOptions{
 		RemoteName: config.GitProvider,
 		Auth:       publicKeys,
 	})
 	if err != nil {
 		log.Info().Msgf("Error pushing repo: %s", err)
-	}
-	err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content post run")
-	if err != nil {
-		return err
 	}
 
 	// Wait for console Deployment Pods to transition to Running

@@ -7,3 +7,11 @@ import "github.com/xanzy/go-gitlab"
 type GitLabWrapper struct {
 	Client *gitlab.Client
 }
+
+// DeployTokenCreateParameters holds values to be passed to a function to create
+// deploy tokens
+type DeployTokenCreateParameters struct {
+	Name     string
+	Username string
+	Scopes   []string
+}
