@@ -99,6 +99,12 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	isKubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
+
+	if isKubefirstTeam == "" {
+		isKubefirstTeam = "false"
+	}
 	// today we override the owner to be the user's token by default
 	githubOwnerFlag = githubUser
 
@@ -134,7 +140,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitStarted, k3d.CloudProvider, k3d.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitStarted, k3d.CloudProvider, k3d.GitProvider, clusterId); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
@@ -277,14 +283,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitCompleted, k3d.CloudProvider, k3d.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitCompleted, k3d.CloudProvider, k3d.GitProvider, clusterId); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
 	}
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, k3d.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, k3d.GitProvider, clusterId); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
@@ -298,7 +304,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	//* emit cluster install started
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, k3d.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, k3d.GitProvider, clusterId); err != nil {
 			log.Info().Msg(err.Error())
 		}
 	}
@@ -334,10 +340,20 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	gitopsTemplateTokens.VaultIngressURL = fmt.Sprintf("https://vault.%s", k3d.DomainName)
 	gitopsTemplateTokens.ArgocdIngressURL = fmt.Sprintf("https://argocd.%s", k3d.DomainName)
 	gitopsTemplateTokens.AtlantisIngressURL = fmt.Sprintf("https://atlantis.%s", k3d.DomainName)
-	gitopsTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("metaphor-development.%s", k3d.DomainName)
-	gitopsTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("metaphor-staging.%s", k3d.DomainName)
-	gitopsTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("metaphor-production.%s", k3d.DomainName)
+	gitopsTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("https://metaphor-development.%s", k3d.DomainName)
+	gitopsTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("https://metaphor-staging.%s", k3d.DomainName)
+	gitopsTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("https://metaphor-production.%s", k3d.DomainName)
 	gitopsTemplateTokens.KubefirstVersion = configs.K1Version
+	gitopsTemplateTokens.KubefirstTeam = isKubefirstTeam
+	gitopsTemplateTokens.GitProvider = k3d.GitProvider
+	gitopsTemplateTokens.ClusterId = clusterId
+	gitopsTemplateTokens.CloudProvider = k3d.CloudProvider
+	
+	if useTelemetryFlag {
+		gitopsTemplateTokens.UseTelemetry = "true"
+	} else {
+		gitopsTemplateTokens.UseTelemetry = "false"
+	}
 
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
@@ -845,7 +861,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	reports.LocalHandoffScreenV2(argocdPassword, clusterNameFlag, githubOwnerFlag, config, dryRunFlag, false)
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallCompleted, k3d.CloudProvider, k3d.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallCompleted, k3d.CloudProvider, k3d.GitProvider, clusterId); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}

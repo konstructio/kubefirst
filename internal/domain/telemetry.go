@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 
-	"github.com/google/uuid"
 	"github.com/kubefirst/kubefirst/pkg"
 )
 
@@ -42,7 +41,7 @@ func WithKubeFirstTeam(kubeFirstTeam string) Option {
 
 // NewTelemetry is the Telemetry domain. When instantiating new Telemetries, we're able to validate domain specific
 // values. In this way, domain, handlers and services can work in isolation, and Domain host business logic.
-func NewTelemetry(metricName string, domain string, CLIVersion string, cloudProvider string, gitProvider string, opts ...Option) (Telemetry, error) {
+func NewTelemetry(metricName string, domain string, CLIVersion string, cloudProvider string, gitProvider string, clusterId string, opts ...Option) (Telemetry, error) {
 
 	if len(metricName) == 0 {
 		return Telemetry{}, errors.New("unable to create metric, missing metric name")
@@ -55,7 +54,6 @@ func NewTelemetry(metricName string, domain string, CLIVersion string, cloudProv
 	}
 
 	//initialize cluster type and id
-	clusterId := uuid.New().String()
 	clusterType := "mgmt"
 
 	// localhost installation doesn't provide hostedzone that are mainly used as domain in this context. In case a

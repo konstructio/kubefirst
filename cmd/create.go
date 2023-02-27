@@ -68,6 +68,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		hostedZoneName := viper.GetString("aws.hostedzonename")
 		providerValue := viper.GetString("git-provider")
 		cloud := viper.GetString("cloud")
+		clusterId := viper.GetString("cluster-id")
 
 		if !globalFlags.UseTelemetry {
 			informUser("Telemetry Disabled", globalFlags.SilentMode)
@@ -76,7 +77,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		}
 
 		if globalFlags.UseTelemetry {
-			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallStarted, cloud, providerValue); err != nil {
+			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallStarted, cloud, providerValue, clusterId); err != nil {
 				log.Warn().Msgf("%s", err)
 			}
 		}
@@ -195,7 +196,7 @@ cluster provisioning process spinning up the services, and validates the livenes
 		log.Debug().Msg("sending mgmt cluster install completed metric")
 
 		if globalFlags.UseTelemetry {
-			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallCompleted, cloud, providerValue); err != nil {
+			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallCompleted, cloud, providerValue, clusterId); err != nil {
 				log.Warn().Msgf("%s", err)
 			}
 		}

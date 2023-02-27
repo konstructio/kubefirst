@@ -137,6 +137,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if isKubefirstTeam == "" {
 		isKubefirstTeam = "false"
 	}
+
 	gitopsDirectoryTokens := civo.GitOpsDirectoryValues{
 		AlertsEmail:                    alertsEmailFlag,
 		AtlantisAllowList:              fmt.Sprintf("github.com/%s/gitops", githubOwnerFlag),
@@ -148,7 +149,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		KubeconfigPath:                 config.Kubeconfig,
 		KubefirstStateStoreBucket:      kubefirstStateStoreBucketName,
 		KubefirstTeam:                  isKubefirstTeam,
-		KubefirstVersion:               "0.0.0",
+		KubefirstVersion:               configs.K1Version,
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
 		ArgoCDIngressNoHTTPSURL:        fmt.Sprintf("argocd.%s", domainNameFlag),
 		ArgoWorkflowsIngressURL:        fmt.Sprintf("https://argo.%s", domainNameFlag),
@@ -171,12 +172,20 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		GitOpsRepoAtlantisWebhookURL:   fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
 		GitOpsRepoGitURL:               config.DestinationGitopsRepoGitURL,
 		GitOpsRepoNoHTTPSURL:           fmt.Sprintf("github.com/%s/gitops.git", githubOwnerFlag),
+		ClusterId:											clusterId,
 	}
+
+	if useTelemetryFlag {
+		gitopsDirectoryTokens.UseTelemetry = "true"
+	} else {
+		gitopsDirectoryTokens.UseTelemetry = "false"
+	}
+
 	viper.Set("github.atlantis.webhook.url", fmt.Sprintf("https://atlantis.%s/events", domainNameFlag))
 	viper.WriteConfig()
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitStarted, civo.CloudProvider, civo.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitStarted, civo.CloudProvider, civo.GitProvider, clusterId); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
@@ -439,7 +448,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitCompleted, civo.CloudProvider, civo.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitCompleted, civo.CloudProvider, civo.GitProvider, clusterId); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
@@ -447,7 +456,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	//* generate public keys for ssh
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, civo.CloudProvider, civo.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, civo.CloudProvider, civo.GitProvider, clusterId); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
@@ -460,7 +469,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	//* emit cluster install started
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, civo.CloudProvider, civo.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, civo.CloudProvider, civo.GitProvider, clusterId); err != nil {
 			log.Info().Msg(err.Error())
 		}
 	}
@@ -983,7 +992,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	reports.LocalHandoffScreen(dryRunFlag, false)
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallCompleted, civo.CloudProvider, civo.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallCompleted, civo.CloudProvider, civo.GitProvider, clusterId); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
