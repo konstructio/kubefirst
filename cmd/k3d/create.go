@@ -375,6 +375,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := config.GitopsDir + "/terraform/github"
 		tfEnvs := map[string]string{}
+		tfEnvs = k3d.GetGithubTerraformEnvs(tfEnvs)
 		// tfEnvs = k3d.GetGithubTerraformEnvs(tfEnvs)
 		tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
 		tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
@@ -731,16 +732,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("configuring vault with terraform")
 
 		tfEnvs := map[string]string{}
-
 		tfEnvs = k3d.GetVaultTerraformEnvs(config, tfEnvs)
-		tfEnvs = k3d.GetGithubTerraformEnvs(tfEnvs)
 
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
-		tfEnvs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
 		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
-		tfEnvs["TF_VAR_vault_token"] = "k1_local_vault_token"
-		tfEnvs["VAULT_ADDR"] = k3d.VaultPortForwardURL
-		tfEnvs["VAULT_TOKEN"] = "k1_local_vault_token"
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
@@ -767,17 +762,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("applying users terraform")
 
 		tfEnvs := map[string]string{}
+
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
 		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
 		tfEnvs["TF_VAR_vault_token"] = "k1_local_vault_token"
 		tfEnvs["VAULT_ADDR"] = k3d.VaultPortForwardURL
 		tfEnvs["VAULT_TOKEN"] = "k1_local_vault_token"
-		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-		tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
-		tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
 
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
