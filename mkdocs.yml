@@ -85,7 +85,6 @@ nav:
           - Metaphor: 'explore/metaphor.md'
         - Destroy: 'kubefirst/gitlab/destroy.md'
       - Installer Options:
-        - Config: 'kubefirst/installer/config-file.md'
         - OpenTelemetry: 'explore/open-telemetry.md'
       - FAQ: 'kubefirst/FAQ.md'
       - Credit: 'kubefirst/credit.md'
