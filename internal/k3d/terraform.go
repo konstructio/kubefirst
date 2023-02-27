@@ -31,9 +31,12 @@ func GetGithubTerraformEnvs(envs map[string]string) map[string]string {
 
 func GetUsersTerraformEnvs(config *K3dConfig, envs map[string]string) map[string]string {
 
-	envs["VAULT_TOKEN"] = "k1_local_vault_token"
+	envs["TF_VAR_email_address"] = "your@email.com"
+	envs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
+	envs["TF_VAR_vault_addr"] = VaultPortForwardURL
+	envs["TF_VAR_vault_token"] = "k1_local_vault_token"
 	envs["VAULT_ADDR"] = VaultPortForwardURL
-	envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+	envs["VAULT_TOKEN"] = "k1_local_vault_token"
 
 	return envs
 }

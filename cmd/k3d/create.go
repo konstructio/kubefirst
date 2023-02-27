@@ -755,13 +755,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("applying users terraform")
 
 		tfEnvs := map[string]string{}
+		tfEnvs = k3d.GetUsersTerraformEnvs(config, tfEnvs)
 
-		tfEnvs["TF_VAR_email_address"] = "your@email.com"
-		tfEnvs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
-		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
-		tfEnvs["TF_VAR_vault_token"] = "k1_local_vault_token"
-		tfEnvs["VAULT_ADDR"] = k3d.VaultPortForwardURL
-		tfEnvs["VAULT_TOKEN"] = "k1_local_vault_token"
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
