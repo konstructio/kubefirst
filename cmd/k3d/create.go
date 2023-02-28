@@ -129,8 +129,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if isKubefirstTeam == "" {
 		isKubefirstTeam = "false"
 	}
-	// today we override the owner to be the user's token by default
-	githubOwnerFlag = githubUser
 
 	// required for destroy command
 	viper.Set("flags.cluster-name", clusterNameFlag)
@@ -183,7 +181,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitStarted, k3d.CloudProvider, config.GitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitStarted, k3d.CloudProvider, config.GitProvider, clusterId); err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
@@ -435,10 +433,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	gitopsTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("https://metaphor-production.%s", k3d.DomainName)
 	gitopsTemplateTokens.KubefirstVersion = configs.K1Version
 	gitopsTemplateTokens.KubefirstTeam = isKubefirstTeam
-	gitopsTemplateTokens.GitProvider = k3d.GitProvider
+	gitopsTemplateTokens.GitProvider = config.GitProvider
 	gitopsTemplateTokens.ClusterId = clusterId
 	gitopsTemplateTokens.CloudProvider = k3d.CloudProvider
-	
+
 	if useTelemetryFlag {
 		gitopsTemplateTokens.UseTelemetry = "true"
 	} else {
