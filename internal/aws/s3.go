@@ -28,9 +28,6 @@ func (conf *AWSConfiguration) CreateBucket(bucketName string) (*s3.CreateBucketO
 	if err != nil {
 		return &s3.CreateBucketOutput{}, err
 	}
-	fmt.Println("bucket.Location")
-	fmt.Println(bucket.Location)
-	fmt.Println(bucket.ResultMetadata.Get("Name"))
 
 	versionConfigInput := &s3.PutBucketVersioningInput{
 		Bucket: aws.String(bucketName),

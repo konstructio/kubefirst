@@ -425,6 +425,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
+	return errors.New("STOP = checkout the gitops repo locally and see kms key")
 	// * create teams and repositories in github
 	// todo should terraform-apply-github --> terraform-apply-git-provider
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-github")
