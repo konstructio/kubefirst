@@ -326,7 +326,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
 	}
-	fmt.Println(publicKeys)
 
 	//* emit cluster install started
 	if useTelemetryFlag {
@@ -398,8 +397,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		VouchIngressURL:                fmt.Sprintf("vouch.%s", domainNameFlag),
 	}
 
-	fmt.Println("bucket name is ", gitopsTemplateTokens.KubefirstStateStoreBucket)
-
 	//* git clone and detokenize the gitops repository
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 
@@ -425,7 +422,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
 
-	return errors.New("STOP = checkout the gitops repo locally and see kms key")
 	// * create teams and repositories in github
 	// todo should terraform-apply-github --> terraform-apply-git-provider
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-github")

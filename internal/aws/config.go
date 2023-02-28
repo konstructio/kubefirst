@@ -1,7 +1,6 @@
 package aws
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
@@ -168,8 +167,6 @@ func PrepareMetaphorRepository(
 	if err != nil {
 		return err
 	}
-
-	return errors.New("END OF THE ROAD -- INSPECT REPO < <")
 
 	if err != nil {
 		log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationMetaphorRepoGitURL)

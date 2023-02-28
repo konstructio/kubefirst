@@ -11,8 +11,6 @@ import (
 
 func (conf *AWSConfiguration) CreateBucket(bucketName string) (*s3.CreateBucketOutput, error) {
 
-	fmt.Println("creating bucket ", bucketName)
-
 	s3Client := s3.NewFromConfig(conf.Config)
 
 	s3CreateBucketInput := &s3.CreateBucketInput{}
