@@ -726,8 +726,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("argocd registry create already done, continuing")
 	}
 
-	initResponse, err := vaultClient.AutoUnseal()
-
 	// Wait for Vault StatefulSet Pods to transition to Running
 	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
 		config.Kubeconfig,
@@ -744,7 +742,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
 
-	time.Sleep(time.Second * 45)
+	time.Sleep(time.Second * 20) // todo remove this? might not be needed anymore
 
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
@@ -759,6 +757,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 		8200,
 		vaultStopChannel,
 	)
+
+	initResponse, err := vaultClient.AutoUnseal()
+	if err != nil {
+		return err
+	}
+
 	fmt.Println(initResponse)
 	fmt.Println("\n\n" + initResponse.RootToken)
 
@@ -780,7 +784,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return errors.New("\nvault should be in a running 0/1 state and sealed, try to unseal with vault client")
+	return errors.New("\nTime to inspect vault, make sure its unsealed and the secret exists in a namespace")
 	// //* configure vault with terraform
 	// executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
 	// if !executionControl {

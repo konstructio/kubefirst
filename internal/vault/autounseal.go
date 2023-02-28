@@ -11,11 +11,16 @@ func (conf *VaultConfiguration) AutoUnseal() (*vaultapi.InitResponse, error) {
 	if err != nil {
 		return &vaultapi.InitResponse{}, err
 	}
+	vaultClient.CloneConfig().ConfigureTLS(&vaultapi.TLSConfig{
+		Insecure: true,
+	})
 	log.Info().Msg("created vault client, initializing vault with auto unseal")
 
 	initResponse, err := vaultClient.Sys().Init(&vaultapi.InitRequest{
 		RecoveryShares:    RecoveryShares,
 		RecoveryThreshold: RecoveryThreshold,
+		SecretShares:      SecretShares,
+		SecretThreshold:   SecretThreshold,
 	})
 	log.Info().Msg("vault initialization complete")
 

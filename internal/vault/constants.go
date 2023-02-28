@@ -18,4 +18,8 @@ const (
 	RecoveryShares int = 5
 	// number of recovery keys for Vault
 	RecoveryThreshold int = 3
+	// number of secret shares for Vault unseal
+	SecretShares = 5
+	// number of secret threshold Vault unseal
+	SecretThreshold = 3
 )
