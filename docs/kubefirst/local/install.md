@@ -24,6 +24,8 @@ To create a new Kubefirst cluster locally, run
 kubefirst local
 ```
 
+More information on `kubefirst local`, including optional flags, can be found [in the CLI Documentation](../../tooling/kubefirst-cli.md)
+
 If your run is not successful, errors and troubleshooting information will be stored in a local log file specified during the installation run.
 
 This will be followed by the instructions prompt to populate the `KUBEFIRST_GITHUB_AUTH_TOKEN` env variable for your [github token](../../explore/github-token.md). Press `ENTER` and follow the prompt to continue.

@@ -28,6 +28,41 @@ Kubefirst has a known bug downloading Terraform providers. This is a [known issu
 
 Kubefirst wasn't correctly installed on your system. Please follow the [installation instructions](./local/install.md) again.
 
+## I'm stuck with artifacts after a failed local installation and can't continue
+
+If you still cannot complete the installation due to artifacts after completing a local destroy, you may have to reset your state manually.
+
+## Manual Teardown
+
+If the above command fails to complete due to unforeseen circumstances, you can then manually delete the git repositories named:
+
+- gitops
+- metaphor-frontend (only exists if you complete Kubefirst local provisioning)
+
+You can then manually delete the k3d cluster with the command `k3d cluster delete kubefirst` or `~/.k1/tools/k3d cluster delete kubefirst` if you don't have k3d installed.
+
+To delete your github assets that we created, log into your personal github and remove the following:
+
+- gitops repo
+- metaphor-frontend repo
+
+Manual Destroy CLI Example:
+```
+gh repo delete <GITHUB_USERNAME>/metaphor-go --confirm
+gh repo delete <GITHUB_USERNAME>/metaphor-frontend --confirm
+gh repo delete <GITHUB_USERNAME>/metaphor --confirm
+gh repo delete <GITHUB_USERNAME>/gitops --confirm
+
+---
+$HOME/.k1/tools/k3d cluster delete kubefirst
+---
+kubefirst clean
+```
+
+## I'm experiencing timeouts when Kubefirst deploys ArgoCD / Vault through helm installation
+
+You may need a more stable connection / higher download speed. Check with your internet provider or use an online speed test to confirm you have at least 100mbps download speed, or else you may experience timeouts.
+
 <sub>_[Do you want help to improve this answer?](https://github.com/kubefirst/kubefirst/discussions/1188)_</sub>
 
 ## Where can I have the services passwords?
