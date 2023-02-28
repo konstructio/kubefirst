@@ -97,7 +97,7 @@ func TestNewTelemetry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewTelemetry(tt.args.metricName, tt.args.domain, tt.args.cliVersion, tt.args.cloudProvider, tt.args.gitProvider, WithClusterId("894b39b0-1df7-44b3-a418-a36e298b55a6"))
+			got, err := NewTelemetry(tt.args.metricName, tt.args.domain, tt.args.cliVersion, tt.args.cloudProvider, tt.args.gitProvider, "894b39b0-1df7-44b3-a418-a36e298b55a6")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewTelemetry() error = %v, wantErr %v", err, tt.wantErr)
 				return

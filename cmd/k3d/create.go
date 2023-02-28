@@ -1059,9 +1059,12 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
 	}
 
-	err = os.Rename(fmt.Sprintf("%s/terraform/gitlab/remote-backend.md", config.GitopsDir), fmt.Sprintf("%s/terraform/gitlab/remote-backend.tf", config.GitopsDir))
-	if err != nil {
-		return err
+	switch config.GitProvider {
+	case "gitlab":
+		err := os.Rename(fmt.Sprintf("%s/terraform/gitlab/remote-backend.md", config.GitopsDir), fmt.Sprintf("%s/terraform/gitlab/remote-backend.tf", config.GitopsDir))
+		if err != nil {
+			return err
+		}
 	}
 
 	// Final gitops repo commit and push
