@@ -28,7 +28,7 @@ func (gl *GitLabWrapper) AddSubGroupToGroup(subGroupID int, groupID int) error {
 		}
 		return err
 	}
-	log.Info().Msgf("subgroup %s added to group %s", subGroupID, group.Name)
+	log.Info().Msgf("subgroup %d added to group %s", subGroupID, group.Name)
 
 	return nil
 }
