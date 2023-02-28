@@ -9,6 +9,7 @@ import (
 
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
 	"github.com/kubefirst/kubefirst/internal/k3d"
+	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
@@ -51,6 +52,19 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			),
 		)
 	}
+
+	minioStopChannel := make(chan struct{}, 1)
+	defer func() {
+		close(minioStopChannel)
+	}()
+	k8s.OpenPortForwardPodWrapper(
+		config.Kubeconfig,
+		"minio",
+		"minio",
+		9000,
+		9000,
+		minioStopChannel,
+	)
 
 	switch gitProvider {
 	case "github":
