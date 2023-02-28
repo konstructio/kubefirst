@@ -144,6 +144,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// Switch based on git provider, set params
 	var cGitHost, cGitOwner, cGitUser, cGitToken, containerRegistryHost string
+	var cGitlabOwnerGroupID int
 	switch gitProviderFlag {
 	case "github":
 		cGitHost = k3d.GithubHost
@@ -314,6 +315,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				log.Fatal().Msgf("could not get group id for primary group: %s", err)
 			}
+			// Save for detokenize
+			cGitlabOwnerGroupID = gid
 			subgroups, err := gl.GetSubGroups(gid)
 			if err != nil {
 				log.Fatal().Msgf("couldn't get gitlab projects: %s", err)
@@ -405,6 +408,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	gitopsTemplateTokens.GithubOwner = githubOwnerFlag
 	gitopsTemplateTokens.GithubUser = cGitUser
 	gitopsTemplateTokens.GitlabOwner = gitlabOwnerFlag
+	gitopsTemplateTokens.GitlabOwnerGroupID = cGitlabOwnerGroupID
 	gitopsTemplateTokens.GitlabUser = cGitUser
 	gitopsTemplateTokens.GitopsRepoGitURL = config.DestinationGitopsRepoGitURL
 	gitopsTemplateTokens.DomainName = k3d.DomainName

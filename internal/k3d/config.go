@@ -99,6 +99,7 @@ type GitopsTokenValues struct {
 	GithubOwner                   string
 	GithubUser                    string
 	GitlabOwner                   string
+	GitlabOwnerGroupID            int
 	GitlabUser                    string
 	GitopsRepoGitURL              string
 	DomainName                    string
