@@ -248,9 +248,9 @@ func CreateSecretsFromCertificatesForLocalWrapper(config *configs.Config) error 
 		data["tls.key"] = keyContent
 
 		// save content into secret
-		err = CreateSecret("kubeconfig", app.Namespace, app.AppName+"-tls", data) // todo argument 1 needs to be real
+		err = CreateSecret(config.KubeConfigPath, app.Namespace, app.AppName+"-tls", data) // todo argument 1 needs to be real
 		if err != nil {
-			log.Error().Err(err).Msg("")
+			log.Error().Err(err).Msgf("Error creating TLS k8s secret")
 		}
 
 		log.Info().Msgf("creating TLS k8s secret for %s done", app.AppName)

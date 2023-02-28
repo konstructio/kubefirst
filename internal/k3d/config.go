@@ -118,6 +118,11 @@ type GitopsTokenValues struct {
 	MetaphorStagingIngressURL     string
 	MetaphorProductionIngressURL  string
 	KubefirstVersion              string
+	KubefirstTeam									string
+	UseTelemetry									string
+	GitProvider										string
+	CloudProvider									string
+	ClusterId											string
 }
 
 type MetaphorTokenValues struct {

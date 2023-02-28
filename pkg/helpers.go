@@ -799,15 +799,15 @@ func GetCertificateAppList() []CertificateAppList {
 		},
 		{
 			Namespace: "development",
-			AppName:   "metaphor-frontend-development",
+			AppName:   "metaphor-development",
 		},
 		{
 			Namespace: "staging",
-			AppName:   "metaphor-frontend-staging",
+			AppName:   "metaphor-staging",
 		},
 		{
 			Namespace: "production",
-			AppName:   "metaphor-frontend-production",
+			AppName:   "metaphor-production",
 		},
 	}
 
