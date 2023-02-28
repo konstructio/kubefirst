@@ -1,5 +1,7 @@
 package vault
 
+import vaultapi "github.com/hashicorp/vault/api"
+
 // HealthResponse specifies the content of a health response from a vault API
 // https://developer.hashicorp.com/vault/api-docs/system/health#sample-response
 type HealthResponse struct {
@@ -64,4 +66,8 @@ type VaultUnsealOptions struct {
 	RaftFollower         bool
 	UseAPI               bool
 	VaultAPIAddress      string
+}
+
+type VaultConfiguration struct {
+	Config vaultapi.Config
 }

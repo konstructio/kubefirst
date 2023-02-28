@@ -27,7 +27,7 @@ require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-github/v45 v45.0.0
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/vault/api v1.8.2
+	github.com/hashicorp/vault/api v1.9.0
 	github.com/itchyny/gojq v0.12.8
 	github.com/jedib0t/go-pretty/v6 v6.3.1
 	github.com/otiai10/copy v1.7.0
