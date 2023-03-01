@@ -948,7 +948,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("Error uploading to Minio bucket: %s", err)
 	}
 
-	log.Printf("Successfully uploaded %s to bucket %d\n", objectName, info.Bucket)
+	log.Printf("Successfully uploaded %s to bucket %s\n", objectName, info.Bucket)
 
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
