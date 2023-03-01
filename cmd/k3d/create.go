@@ -29,6 +29,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/services"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
+	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -715,6 +716,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// } else {
 	// 	log.Info().Msg("no files found in secrets directory, continuing")
 	// }
+
+	ssl.CreateCertificatesForK3dWrapper(*config)
+	log.Info().Msg("MkCerts generated")
 
 	// GitLab Deploy Tokens
 	switch config.GitProvider {
