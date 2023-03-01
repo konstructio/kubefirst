@@ -123,6 +123,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 	awsClient := &aws.Conf
 	vaultClient := &vault.Conf
 
+	var (
+		kubefirstStateStoreBucketName string
+		kubefirstArtifactsBucketName  string
+		vaultRootToken                string
+	)
+
 	iamCaller, err := awsClient.GetCallerIdentity()
 	if err != nil {
 		return err
@@ -137,8 +143,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst.cluster-id", clusterId)
 		viper.WriteConfig()
 	}
-	kubefirstStateStoreBucketName := fmt.Sprintf("k1-state-store-%s-%s", clusterNameFlag, clusterId)
-	kubefirstArtifactsBucketName := fmt.Sprintf("k1-artifacts-%s-%s", clusterNameFlag, clusterId)
+	kubefirstStateStoreBucketName = fmt.Sprintf("k1-state-store-%s-%s", clusterNameFlag, clusterId)
+	kubefirstArtifactsBucketName = fmt.Sprintf("k1-artifacts-%s-%s", clusterNameFlag, clusterId)
 
 	if useTelemetryFlag {
 		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitStarted, aws.CloudProvider, aws.GitProvider); err != nil {
@@ -393,6 +399,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		GitOpsRepoAtlantisWebhookURL:   fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
 		GitOpsRepoGitURL:               config.DestinationGitopsRepoGitURL,
 		Kubeconfig:                     config.Kubeconfig,
+		KubefirstArtifactsBucket:       kubefirstArtifactsBucketName,
 		KubefirstStateStoreBucket:      kubefirstStateStoreBucketName,
 		KubefirstTeam:                  os.Getenv("KUBEFIRST_TEAM"),
 		VaultIngressURL:                fmt.Sprintf("https://vault.%s", domainNameFlag),
@@ -726,23 +733,32 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("argocd registry create already done, continuing")
 	}
 
-	// Wait for Vault StatefulSet Pods to transition to Running
-	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
-		config.Kubeconfig,
-		"app.kubernetes.io/instance",
-		"vault",
-		"vault",
-		60,
-	)
-	if err != nil {
-		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
-	}
-	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, vaultStatefulSet, 60, false)
-	if err != nil {
-		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
-	}
+	//* helm install argocd
+	executionControl = viper.GetBool("kubefirst-checks.vault-ready")
+	if !executionControl {
+		log.Info().Msg("waiting for vault pods to be ready ")
+		// Wait for Vault StatefulSet Pods to transition to Running
+		vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
+			config.Kubeconfig,
+			"app.kubernetes.io/instance",
+			"vault",
+			"vault",
+			60,
+		)
+		if err != nil {
+			log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
+		}
+		_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, vaultStatefulSet, 60, false)
+		if err != nil {
+			log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
+		}
 
-	time.Sleep(time.Second * 20) // todo remove this? might not be needed anymore
+		time.Sleep(time.Second * 20) // todo remove this? might not be needed anymore
+		viper.Set("kubefirst-checks.vault-ready", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("vault is ready, continuing")
+	}
 
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
@@ -758,151 +774,162 @@ func createAws(cmd *cobra.Command, args []string) error {
 		vaultStopChannel,
 	)
 
-	initResponse, err := vaultClient.AutoUnseal()
+	//* argocd sync registry and start sync waves
+	executionControl = viper.GetBool("kubefirst-checks.vault-unseal")
+	if !executionControl {
+		log.Info().Msg("insealing vault unseal")
+
+		initResponse, err := vaultClient.AutoUnseal()
+		if err != nil {
+			return err
+		}
+
+		vaultRootToken = initResponse.RootToken
+
+		dataToWrite := make(map[string][]byte)
+		dataToWrite["root-token"] = []byte(initResponse.RootToken)
+		for i, value := range initResponse.Keys {
+			dataToWrite[fmt.Sprintf("root-unseal-key-%v", i+1)] = []byte(value)
+		}
+		secret := v1.Secret{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name:      vault.VaultSecretName,
+				Namespace: vault.VaultNamespace,
+			},
+			Data: dataToWrite,
+		}
+
+		err = k8s.CreateSecretV2(config.Kubeconfig, &secret)
+		if err != nil {
+			return err
+		}
+
+		viper.Set("kubefirst-checks.vault-unseal", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("vault unseal already done, continuing")
+	}
+
+	secData, err := k8s.ReadSecretV2(config.Kubeconfig, "vault", "vault-unseal-secret")
+
+	vaultRootToken = secData["root-token"]
+
+	//* configure vault with terraform
+	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
+	if !executionControl {
+		// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
+
+		//* run vault terraform
+		log.Info().Msg("configuring vault with terraform")
+
+		tfEnvs := map[string]string{}
+
+		tfEnvs["TF_VAR_email_address"] = "your@email.com"
+		tfEnvs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
+		tfEnvs["TF_VAR_vault_addr"] = aws.VaultPortForwardURL
+		tfEnvs["TF_VAR_vault_token"] = vaultRootToken
+		tfEnvs["VAULT_ADDR"] = aws.VaultPortForwardURL
+		tfEnvs["VAULT_TOKEN"] = vaultRootToken
+		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = atlantisWebhookSecret
+		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
+		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+		tfEnvs["TF_VAR_kubefirst_bot_ssh_private_key"] = viper.GetString("kbot.private-key")
+
+		tfEntrypoint := config.GitopsDir + "/terraform/vault"
+		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		if err != nil {
+			return err
+		}
+
+		log.Info().Msg("vault terraform executed successfully")
+		viper.Set("kubefirst-checks.terraform-apply-vault", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already executed vault terraform")
+	}
+
+	//* create users
+	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-users")
+	if !executionControl {
+		log.Info().Msg("applying users terraform")
+
+		tfEnvs := map[string]string{}
+		tfEnvs["TF_VAR_email_address"] = "your@email.com"
+		tfEnvs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
+		tfEnvs["TF_VAR_vault_addr"] = aws.VaultPortForwardURL
+		tfEnvs["TF_VAR_vault_token"] = vaultRootToken
+		tfEnvs["VAULT_ADDR"] = aws.VaultPortForwardURL
+		tfEnvs["VAULT_TOKEN"] = vaultRootToken
+		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
+		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
+		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+		tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+		tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
+
+		tfEntrypoint := config.GitopsDir + "/terraform/users"
+		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		if err != nil {
+			return err
+		}
+		log.Info().Msg("executed users terraform successfully")
+		// progressPrinter.IncrementTracker("step-users", 1)
+		viper.Set("kubefirst-checks.terraform-apply-users", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already created users with terraform")
+	}
+
+	// Wait for console Deployment Pods to transition to Running
+	consoleDeployment, err := k8s.ReturnDeploymentObject(
+		config.Kubeconfig,
+		"app.kubernetes.io/instance",
+		"kubefirst-console",
+		"kubefirst",
+		60,
+	)
 	if err != nil {
-		return err
+		log.Info().Msgf("Error finding console Deployment: %s", err)
 	}
-
-	fmt.Println(initResponse)
-	fmt.Println("\n\n" + initResponse.RootToken)
-
-	dataToWrite := make(map[string][]byte)
-	dataToWrite["root-token"] = []byte(initResponse.RootToken)
-	for i, value := range initResponse.Keys {
-		dataToWrite[fmt.Sprintf("root-unseal-key-%v", i+1)] = []byte(value)
-	}
-	secret := v1.Secret{
-		ObjectMeta: metaV1.ObjectMeta{
-			Name:      vault.VaultSecretName,
-			Namespace: vault.VaultNamespace,
-		},
-		Data: dataToWrite,
-	}
-
-	err = k8s.CreateSecretV2(config.Kubeconfig, &secret)
+	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, consoleDeployment, 120)
 	if err != nil {
-		return err
+		log.Info().Msgf("Error waiting for console Deployment ready state: %s", err)
 	}
 
-	return errors.New("\nTime to inspect vault, make sure its unsealed and the secret exists in a namespace")
-	// //* configure vault with terraform
-	// executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
-	// if !executionControl {
-	// 	// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
+	//* console port-forward
+	consoleStopChannel := make(chan struct{}, 1)
+	defer func() {
+		close(consoleStopChannel)
+	}()
+	k8s.OpenPortForwardPodWrapper(
+		config.Kubeconfig,
+		"kubefirst-console",
+		"kubefirst",
+		8080,
+		9094,
+		consoleStopChannel,
+	)
 
-	// 	//* run vault terraform
-	// 	log.Info().Msg("configuring vault with terraform")
+	log.Info().Msg("kubefirst installation complete")
+	log.Info().Msg("welcome to your new kubefirst platform running in aws")
 
-	// 	tfEnvs := map[string]string{}
+	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+	}
 
-	// 	tfEnvs["TF_VAR_email_address"] = "your@email.com"
-	// 	tfEnvs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
-	// 	tfEnvs["TF_VAR_vault_addr"] = aws.VaultPortForwardURL
-	// 	tfEnvs["TF_VAR_vault_token"] = "k1_local_vault_token"
-	// 	tfEnvs["VAULT_ADDR"] = aws.VaultPortForwardURL
-	// 	tfEnvs["VAULT_TOKEN"] = "k1_local_vault_token"
-	// 	tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
-	// 	tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-	// 	tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-	// 	tfEnvs["TF_VAR_kubefirst_bot_ssh_private_key"] = viper.GetString("kbot.private-key")
-	// 	tfEnvs["TF_VAR_aws_access_key_id"] = "kray"
-	// 	tfEnvs["TF_VAR_aws_secret_access_key"] = "feedkraystars"
+	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+	}
 
-	// 	tfEntrypoint := config.GitopsDir + "/terraform/vault"
-	// 	err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
-	// 	if err != nil {
-	// 		return err
-	// 	}
+	//! reports.LocalHandoffScreenV2(argocdPassword, clusterNameFlag, githubOwnerFlag, config, dryRunFlag, false)
 
-	// 	log.Info().Msg("vault terraform executed successfully")
-	// 	viper.Set("kubefirst-checks.terraform-apply-vault", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already executed vault terraform")
-	// }
-
-	// //* create users
-	// executionControl = viper.GetBool("kubefirst-checks.terraform-apply-users")
-	// if !executionControl {
-	// 	log.Info().Msg("applying users terraform")
-
-	// 	tfEnvs := map[string]string{}
-	// 	tfEnvs["TF_VAR_email_address"] = "your@email.com"
-	// 	tfEnvs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
-	// 	tfEnvs["TF_VAR_vault_addr"] = aws.VaultPortForwardURL
-	// 	tfEnvs["TF_VAR_vault_token"] = "k1_local_vault_token"
-	// 	tfEnvs["VAULT_ADDR"] = aws.VaultPortForwardURL
-	// 	tfEnvs["VAULT_TOKEN"] = "k1_local_vault_token"
-	// 	tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
-	// 	tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-	// 	tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-	// 	tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
-	// 	tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
-
-	// 	tfEntrypoint := config.GitopsDir + "/terraform/users"
-	// 	err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	log.Info().Msg("executed users terraform successfully")
-	// 	// progressPrinter.IncrementTracker("step-users", 1)
-	// 	viper.Set("kubefirst-checks.terraform-apply-users", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already created users with terraform")
-	// }
-
-	// // Wait for console Deployment Pods to transition to Running
-	// consoleDeployment, err := k8s.ReturnDeploymentObject(
-	// 	config.Kubeconfig,
-	// 	"app.kubernetes.io/instance",
-	// 	"kubefirst-console",
-	// 	"kubefirst",
-	// 	60,
-	// )
-	// if err != nil {
-	// 	log.Info().Msgf("Error finding console Deployment: %s", err)
-	// }
-	// _, err = k8s.WaitForDeploymentReady(config.Kubeconfig, consoleDeployment, 120)
-	// if err != nil {
-	// 	log.Info().Msgf("Error waiting for console Deployment ready state: %s", err)
-	// }
-
-	// //* console port-forward
-	// consoleStopChannel := make(chan struct{}, 1)
-	// defer func() {
-	// 	close(consoleStopChannel)
-	// }()
-	// k8s.OpenPortForwardPodWrapper(
-	// 	config.Kubeconfig,
-	// 	"kubefirst-console",
-	// 	"kubefirst",
-	// 	8080,
-	// 	9094,
-	// 	consoleStopChannel,
-	// )
-
-	// log.Info().Msg("kubefirst installation complete")
-	// log.Info().Msg("welcome to your new kubefirst platform running in aws")
-
-	// err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
-	// if err != nil {
-	// 	log.Error().Err(err).Msg("")
-	// }
-
-	// err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
-	// if err != nil {
-	// 	log.Error().Err(err).Msg("")
-	// }
-
-	// reports.LocalHandoffScreenV2(argocdPassword, clusterNameFlag, githubOwnerFlag, config, dryRunFlag, false)
-
-	// if useTelemetryFlag {
-	// 	if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallCompleted, aws.CloudProvider, aws.GitProvider); err != nil {
-	// 		log.Info().Msg(err.Error())
-	// 		return err
-	// 	}
-	// }
+	if useTelemetryFlag {
+		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallCompleted, aws.CloudProvider, aws.GitProvider); err != nil {
+			log.Info().Msg(err.Error())
+			return err
+		}
+	}
 
 	time.Sleep(time.Millisecond * 100) // allows progress bars to finish
 

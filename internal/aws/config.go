@@ -69,6 +69,7 @@ type GitOpsDirectoryValues struct {
 	GitOpsRepoAtlantisWebhookURL   string
 	GitOpsRepoGitURL               string
 	GitOpsRepoNoHTTPSURL           string
+	KubefirstArtifactsBucket       string
 	KubefirstStateStoreBucket      string
 	KubefirstTeam                  string
 	KubefirstVersion               string
