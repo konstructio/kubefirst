@@ -254,7 +254,7 @@ func (gl *GitLabWrapper) DeleteUserSSHKey(keyTitle string) error {
 	}
 
 	if keyID == 0 {
-		return errors.New("could not find ssh key %s so it will not be deleted - you may need to delete it manually")
+		return errors.New(fmt.Sprintf("could not find ssh key %s so it will not be deleted - you may need to delete it manually", keyTitle))
 	}
 	_, err = gl.Client.Users.DeleteSSHKey(keyID)
 	if err != nil {
@@ -340,18 +340,35 @@ func (gl *GitLabWrapper) CreateProjectDeployToken(projectName string, p *DeployT
 		return "", err
 	}
 
-	token, _, err := gl.Client.DeployTokens.CreateProjectDeployToken(projectID, &gitlab.CreateProjectDeployTokenOptions{
-		Name:     &p.Name,
-		Username: &p.Username,
-		Scopes:   &p.Scopes,
-	})
+	// Check to see if the token already exists
+	allTokens, err := gl.ListProjectDeployTokens(projectName)
 	if err != nil {
 		return "", err
 	}
-	log.Info().Msgf("created deploy token %s", token.Name)
 
-	return token.Token, nil
+	var exists bool = false
+	for _, token := range allTokens {
+		if token.Name == p.Name {
+			exists = true
+		}
+	}
 
+	if !exists {
+		token, _, err := gl.Client.DeployTokens.CreateProjectDeployToken(projectID, &gitlab.CreateProjectDeployTokenOptions{
+			Name:     &p.Name,
+			Username: &p.Username,
+			Scopes:   &p.Scopes,
+		})
+		if err != nil {
+			return "", err
+		}
+		log.Info().Msgf("created deploy token %s", token.Name)
+
+		return token.Token, nil
+	} else {
+		log.Info().Msgf("deploy token %s already exists - skipping", p.Name)
+		return "", nil
+	}
 }
 
 // DeleteProjectDeployToken
