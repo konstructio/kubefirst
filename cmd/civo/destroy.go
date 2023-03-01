@@ -3,12 +3,16 @@ package civo
 import (
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/civo/civogo"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/civo"
+	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/pkg"
@@ -24,36 +28,116 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
 	dryRun := viper.GetBool("flags.dry-run")
-	githubOwner := viper.GetString("flags.github-owner")
+	gitProvider := viper.GetString("flags.git-provider")
 
-	config := civo.GetConfig(clusterName, domainName, githubOwner)
+	// Switch based on git provider, set params
+	var cGitOwner, cGitToken string
+	switch gitProvider {
+	case "github":
+		cGitOwner = viper.GetString("flags.github-owner")
+		cGitToken = os.Getenv("GITHUB_TOKEN")
+	case "gitlab":
+		cGitOwner = viper.GetString("flags.gitlab-owner")
+		cGitToken = os.Getenv("GITLAB_TOKEN")
+	default:
+		log.Panic().Msgf("invalid git provider option")
+	}
+
+	// Instantiate civo config
+	config := civo.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
 
 	// todo improve these checks, make them standard for
 	// both create and destroy
-	githubToken := os.Getenv("GITHUB_TOKEN")
 	civoToken := os.Getenv("CIVO_TOKEN")
-	if len(githubToken) == 0 {
-		return errors.New("ephemeral tokens not supported for cloud installations, please set a GITHUB_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init")
+
+	if len(cGitToken) == 0 {
+		return errors.New(
+			fmt.Sprintf(
+				"please set a %s_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/%s/install.html#step-3-kubefirst-init",
+				strings.ToUpper(gitProvider), gitProvider,
+			),
+		)
 	}
 	if len(civoToken) == 0 {
 		return errors.New("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set the environment variable")
 	}
 
-	if viper.GetBool("kubefirst-checks.terraform-apply-github") {
-		log.Info().Msg("destroying github resources with terraform")
+	switch gitProvider {
+	case "github":
+		if viper.GetBool("kubefirst-checks.terraform-apply-github") {
+			log.Info().Msg("destroying github resources with terraform")
 
-		tfEntrypoint := config.GitopsDir + "/terraform/github"
-		tfEnvs := map[string]string{}
-		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-		tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
-		err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
-		if err != nil {
-			log.Printf("error executing terraform destroy %s", tfEntrypoint)
-			return err
+			tfEntrypoint := config.GitopsDir + "/terraform/github"
+			tfEnvs := map[string]string{}
+			tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
+			tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
+			err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+			if err != nil {
+				log.Printf("error executing terraform destroy %s", tfEntrypoint)
+				return err
+			}
+			viper.Set("kubefirst-checks.terraform-apply-github", false)
+			viper.WriteConfig()
+			log.Info().Msg("github resources terraform destroyed")
 		}
-		viper.Set("kubefirst-checks.terraform-apply-github", false)
-		viper.WriteConfig()
-		log.Info().Msg("github resources terraform destroyed")
+	case "gitlab":
+		if viper.GetBool("kubefirst-checks.terraform-apply-gitlab") {
+			log.Info().Msg("destroying gitlab resources with terraform")
+
+			gl := gitlab.GitLabWrapper{
+				Client: gitlab.NewGitLabClient(cGitToken),
+			}
+			allgroups, err := gl.GetGroups()
+			if err != nil {
+				log.Fatal().Msgf("could not read gitlab groups: %s", err)
+			}
+			gid, err := gl.GetGroupID(allgroups, cGitOwner)
+			if err != nil {
+				log.Fatal().Msgf("could not get group id for primary group: %s", err)
+			}
+
+			// Before removing Terraform resources, remove any container registry repositories
+			// since failing to remove them beforehand will result in an apply failure
+			var projectsForDeletion = []string{"gitops", "metaphor-frontend"}
+			for _, project := range projectsForDeletion {
+				projectExists, err := gl.CheckProjectExists(project)
+				if err != nil {
+					log.Fatal().Msgf("could not check for existence of project %s: %s", project, err)
+				}
+				if projectExists {
+					log.Info().Msgf("checking project %s for container registries...", project)
+					crr, err := gl.GetProjectContainerRegistryRepositories(project)
+					if err != nil {
+						log.Fatal().Msgf("could not retrieve container registry repositories: %s", err)
+					}
+					if len(crr) > 0 {
+						for _, cr := range crr {
+							err := gl.DeleteContainerRegistryRepository(project, cr.ID)
+							if err != nil {
+								log.Fatal().Msgf("error deleting container registry repository: %s", err)
+							}
+						}
+					} else {
+						log.Info().Msgf("project %s does not have any container registries, skipping", project)
+					}
+				} else {
+					log.Info().Msgf("project %s does not exist, skipping", project)
+				}
+			}
+
+			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
+			tfEnvs := map[string]string{}
+			tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
+			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, gid)
+			err = terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+			if err != nil {
+				log.Printf("error executing terraform destroy %s", tfEntrypoint)
+				return err
+			}
+			viper.Set("kubefirst-checks.terraform-apply-gitlab", false)
+			viper.WriteConfig()
+			log.Info().Msg("github resources terraform destroyed")
+		}
 	}
 
 	if viper.GetBool("kubefirst-checks.terraform-apply-civo") {
@@ -80,38 +164,41 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log.Info().Msg("opening argocd port forward")
-		//* ArgoCD port-forward
-		argoCDStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(argoCDStopChannel)
-		}()
-		k8s.OpenPortForwardPodWrapper(
-			kubeconfigPath,
-			"argocd-server",
-			"argocd",
-			8080,
-			8080,
-			argoCDStopChannel,
-		)
+		if viper.GetBool("kubefirst-checks.argocd-helm-install") {
+			log.Info().Msg("opening argocd port forward")
+			//* ArgoCD port-forward
+			argoCDStopChannel := make(chan struct{}, 1)
+			defer func() {
+				close(argoCDStopChannel)
+			}()
+			k8s.OpenPortForwardPodWrapper(
+				kubeconfigPath,
+				"argocd-server",
+				"argocd",
+				8080,
+				8080,
+				argoCDStopChannel,
+			)
 
-		log.Info().Msg("getting new auth token for argocd")
-		argocdAuthToken, err := argocd.GetArgoCDToken(viper.GetString("components.argocd.username"), viper.GetString("components.argocd.password"))
-		if err != nil {
-			return err
+			log.Info().Msg("getting new auth token for argocd")
+			argocdAuthToken, err := argocd.GetArgoCDToken(viper.GetString("components.argocd.username"), viper.GetString("components.argocd.password"))
+			if err != nil {
+				return err
+			}
+
+			log.Info().Msgf("port-forward to argocd is available at %s", civo.ArgocdPortForwardURL)
+
+			customTransport := http.DefaultTransport.(*http.Transport).Clone()
+			customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+			argocdHttpClient := http.Client{Transport: customTransport}
+			log.Info().Msg("deleting the registry application")
+			httpCode, _, err := argocd.DeleteApplication(&argocdHttpClient, config.RegistryAppName, argocdAuthToken, "true")
+			if err != nil {
+				return err
+			}
+			log.Info().Msgf("http status code %d", httpCode)
+
 		}
-
-		log.Info().Msgf("port-forward to argocd is available at %s", civo.ArgocdPortForwardURL)
-
-		customTransport := http.DefaultTransport.(*http.Transport).Clone()
-		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-		argocdHttpClient := http.Client{Transport: customTransport}
-		log.Info().Msg("deleting the registry application")
-		httpCode, _, err := argocd.DeleteApplication(&argocdHttpClient, config.RegistryAppName, argocdAuthToken, "true")
-		if err != nil {
-			return err
-		}
-		log.Info().Msgf("http status code %d", httpCode)
 
 		for _, vol := range clusterVolumes {
 			log.Info().Msg("removing volume with name: " + vol.Name)
@@ -126,7 +213,17 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		tfEntrypoint := config.GitopsDir + "/terraform/civo"
 		tfEnvs := map[string]string{}
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-		tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
+
+		switch gitProvider {
+		case "github":
+			tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
+		case "gitlab":
+			gid, err := strconv.Atoi(viper.GetString("flags.gitlab-owner-group-id"))
+			if err != nil {
+				return errors.New(fmt.Sprintf("couldn't convert gitlab group id to int: %s", err))
+			}
+			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, gid)
+		}
 		err = terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -137,8 +234,20 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("civo resources terraform destroyed")
 	}
 
+	// remove ssh key provided one was created
+	if viper.GetString("kbot.gitlab-user-based-ssh-key-title") != "" {
+		gl := gitlab.GitLabWrapper{
+			Client: gitlab.NewGitLabClient(cGitToken),
+		}
+		log.Info().Msg("attempting to delete managed ssh key...")
+		err := gl.DeleteUserSSHKey(viper.GetString("kbot.gitlab-user-based-ssh-key-title"))
+		if err != nil {
+			log.Warn().Msg(err.Error())
+		}
+	}
+
 	//* remove local content and kubefirst config file for re-execution
-	if !viper.GetBool("kubefirst-checks.terraform-apply-github") && !viper.GetBool("kubefirst-checks.terraform-apply-civo") {
+	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.terraform-apply-civo") {
 		log.Info().Msg("removing previous platform content")
 
 		err := pkg.ResetK1Dir(config.K1Dir, config.KubefirstConfig)

@@ -12,8 +12,8 @@ import (
 
 const (
 	CloudProvider          = "civo"
-	GitProvider            = "github"
 	GithubHost             = "github.com"
+	GitlabHost             = "gitlab.com"
 	HelmClientVersion      = "v3.11.1"
 	KubectlClientVersion   = "v1.23.15"
 	LocalhostOS            = runtime.GOOS
@@ -28,12 +28,15 @@ const (
 type CivoConfig struct {
 	CivoToken   string `env:"CIVO_TOKEN"`
 	GithubToken string `env:"GITHUB_TOKEN"`
+	GitlabToken string `env:"GITLAB_TOKEN"`
 
+	ArgoWorkflowsDir                string
 	DestinationGitopsRepoHttpsURL   string
 	DestinationGitopsRepoGitURL     string
 	DestinationMetaphorRepoHttpsURL string
 	DestinationMetaphorRepoGitURL   string
 	GitopsDir                       string
+	GitProvider                     string
 	HelmClient                      string
 	K1Dir                           string
 	Kubeconfig                      string
@@ -50,7 +53,7 @@ type CivoConfig struct {
 }
 
 // GetConfig - load default values from kubefirst installer
-func GetConfig(clusterName string, domainName string, githubOwner string) *CivoConfig {
+func GetConfig(clusterName string, domainName string, gitProvider string, gitOwner string) *CivoConfig {
 	config := CivoConfig{}
 
 	// todo do we want these from envs?
@@ -63,12 +66,23 @@ func GetConfig(clusterName string, domainName string, githubOwner string) *CivoC
 		log.Panic(err.Error())
 	}
 
-	config.DestinationGitopsRepoHttpsURL = fmt.Sprintf("https://github.com/%s/gitops.git", githubOwner)
-	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@github.com:%s/gitops.git", githubOwner)
-	config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("https://github.com/%s/metaphor-frontend.git", githubOwner)
-	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@github.com:%s/metaphor-frontend.git", githubOwner)
+	// cGitHost describes which git host to use depending on gitProvider
+	var cGitHost string
+	switch gitProvider {
+	case "github":
+		cGitHost = GithubHost
+	case "gitlab":
+		cGitHost = GitlabHost
+	}
 
+	config.DestinationGitopsRepoHttpsURL = fmt.Sprintf("https://%s/%s/gitops.git", cGitHost, gitOwner)
+	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@%s:%s/gitops.git", cGitHost, gitOwner)
+	config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("https://%s/%s/metaphor-frontend.git", cGitHost, gitOwner)
+	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@%s:%s/metaphor-frontend.git", cGitHost, gitOwner)
+
+	config.ArgoWorkflowsDir = fmt.Sprintf("%s/.k1/argo-workflows", homeDir)
 	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
+	config.GitProvider = gitProvider
 	config.HelmClient = fmt.Sprintf("%s/.k1/tools/helm", homeDir)
 	config.Kubeconfig = fmt.Sprintf("%s/.k1/kubeconfig", homeDir)
 	config.K1Dir = fmt.Sprintf("%s/.k1", homeDir)
@@ -90,7 +104,7 @@ type GitOpsDirectoryValues struct {
 	AtlantisAllowList         string
 	CloudProvider             string
 	CloudRegion               string
-	ClusterId									string
+	ClusterId                 string
 	ClusterName               string
 	ClusterType               string
 	DomainName                string
@@ -103,6 +117,7 @@ type GitOpsDirectoryValues struct {
 	ArgoCDIngressNoHTTPSURL        string
 	ArgoWorkflowsIngressURL        string
 	ArgoWorkflowsIngressNoHTTPSURL string
+	ArgoWorkflowsDir               string
 	AtlantisIngressURL             string
 	AtlantisIngressNoHTTPSURL      string
 	ChartMuseumIngressURL          string
@@ -122,11 +137,15 @@ type GitOpsDirectoryValues struct {
 	GitHubOwner string
 	GitHubUser  string
 
+	GitlabHost         string
+	GitlabOwner        string
+	GitlabOwnerGroupID int
+
 	GitOpsRepoAtlantisWebhookURL string
 	GitOpsRepoGitURL             string
 	GitOpsRepoNoHTTPSURL         string
 
-	UseTelemetry									string
+	UseTelemetry string
 
 	// MetaphorDevelopmentIngressURL                string
 	// MetaphorDevelopmentIngressNoHTTPSURL         string

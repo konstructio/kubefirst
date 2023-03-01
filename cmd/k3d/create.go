@@ -604,7 +604,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	metaphorTemplateTokens := k3d.MetaphorTokenValues{}
 	metaphorTemplateTokens.ClusterName = clusterNameFlag
 	metaphorTemplateTokens.CloudRegion = cloudRegionFlag
-	metaphorTemplateTokens.ContainerRegistryURL = fmt.Sprintf("%s/%s/metaphor-frontend", containerRegistryHost, githubOwnerFlag)
+	metaphorTemplateTokens.ContainerRegistryURL = fmt.Sprintf("%s/%s/metaphor-frontend", containerRegistryHost, cGitOwner)
 	metaphorTemplateTokens.DomainName = k3d.DomainName
 	metaphorTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("metaphor-development.%s", k3d.DomainName)
 	metaphorTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("metaphor-staging.%s", k3d.DomainName)

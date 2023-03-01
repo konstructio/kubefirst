@@ -410,6 +410,8 @@ func WaitForStatefulSetReady(kubeConfigPath string, statefulset *appsv1.Stateful
 					Object.(*appsv1.StatefulSet).
 					Status.CurrentReplicas == configuredReplicas {
 					log.Info().Msgf("All Pods in StatefulSet %s have been created.", statefulset.Name)
+					// Without a pause, this sometimes causes failures
+					time.Sleep(time.Second * 15)
 					return true, nil
 				}
 			} else {

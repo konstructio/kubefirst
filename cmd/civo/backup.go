@@ -13,9 +13,20 @@ import (
 func backupCivoSSL(cmd *cobra.Command, args []string) error {
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
-	githubOwner := viper.GetString("flags.github-owner")
+	gitProvider := viper.GetString("flags.git-provider")
 
-	config := civo.GetConfig(clusterName, domainName, githubOwner)
+	// Switch based on git provider, set params
+	var cGitOwner string
+	switch gitProvider {
+	case "github":
+		cGitOwner = viper.GetString("flags.github-owner")
+	case "gitlab":
+		cGitOwner = viper.GetString("flags.gitlab-owner")
+	default:
+		log.Panic().Msgf("invalid git provider option")
+	}
+
+	config := civo.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
 
 	if _, err := os.Stat(config.SSLBackupDir + "/certificates"); os.IsNotExist(err) {
 		// path/to/whatever does not exist

@@ -1,6 +1,8 @@
 package civo
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -12,6 +14,8 @@ var (
 	clusterTypeFlag            string
 	dryRun                     bool
 	githubOwnerFlag            string
+	gitlabOwnerFlag            string
+	gitProviderFlag            string
 	gitopsTemplateURLFlag      string
 	gitopsTemplateBranchFlag   string
 	metaphorTemplateBranchFlag string
@@ -19,6 +23,9 @@ var (
 	domainNameFlag             string
 	kbotPasswordFlag           string
 	useTelemetryFlag           bool
+
+	// Supported git providers
+	supportedGitProviders = []string{"github", "gitlab"}
 
 	// Quota
 	quotaShowAllFlag bool
@@ -69,8 +76,9 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the Civo DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
 	createCmd.Flags().BoolVar(&dryRun, "dry-run", false, "don't execute the installation")
-	createCmd.Flags().StringVar(&githubOwnerFlag, "github-owner", "", "the GitHub owner of the new gitops and metaphor repositories (required)")
-	createCmd.MarkFlagRequired("github-owner")
+	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
+	createCmd.Flags().StringVar(&githubOwnerFlag, "github-owner", "", "the GitHub owner of the new gitops and metaphor repositories - required if using github")
+	createCmd.Flags().StringVar(&gitlabOwnerFlag, "gitlab-owner", "", "the GitLab owner (group) of the new gitops and metaphor projects - required if using gitlab")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "main", "the branch to clone for the gitops-template repository")
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
 	createCmd.Flags().StringVar(&kbotPasswordFlag, "kbot-password", "", "the default password to use for the kbot user")
