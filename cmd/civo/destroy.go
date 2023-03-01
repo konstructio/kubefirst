@@ -8,12 +8,14 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/civo/civogo"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/civo"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
 	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
@@ -22,6 +24,9 @@ import (
 )
 
 func destroyCivo(cmd *cobra.Command, args []string) error {
+	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
+	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 4)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	log.Info().Msg("destroying kubefirst platform in civo")
 
@@ -62,6 +67,8 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		return errors.New("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set the environment variable")
 	}
 
+	progressPrinter.IncrementTracker("preflight-checks", 1)
+
 	switch gitProvider {
 	case "github":
 		if viper.GetBool("kubefirst-checks.terraform-apply-github") {
@@ -79,6 +86,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			viper.Set("kubefirst-checks.terraform-apply-github", false)
 			viper.WriteConfig()
 			log.Info().Msg("github resources terraform destroyed")
+			progressPrinter.IncrementTracker("platform-destroy", 1)
 		}
 	case "gitlab":
 		if viper.GetBool("kubefirst-checks.terraform-apply-gitlab") {
@@ -137,6 +145,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", false)
 			viper.WriteConfig()
 			log.Info().Msg("github resources terraform destroyed")
+			progressPrinter.IncrementTracker("platform-destroy", 1)
 		}
 	}
 
@@ -209,6 +218,10 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			log.Info().Msg("volume " + vol.ID + " deleted")
 		}
 
+		// Pause before cluster destroy to prevent a race condition
+		log.Info().Msg("waiting for Civo Kubernetes cluster resource removal to finish...")
+		time.Sleep(time.Second * 10)
+
 		log.Info().Msg("destroying civo cloud resources")
 		tfEntrypoint := config.GitopsDir + "/terraform/civo"
 		tfEnvs := map[string]string{}
@@ -232,6 +245,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst-checks.terraform-apply-civo", false)
 		viper.WriteConfig()
 		log.Info().Msg("civo resources terraform destroyed")
+		progressPrinter.IncrementTracker("platform-destroy", 1)
 	}
 
 	// remove ssh key provided one was created
@@ -266,6 +280,11 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst", "")
 		viper.WriteConfig()
 	}
+
+	progressPrinter.IncrementTracker("platform-destroy", 1)
+	fmt.Println("your kubefirst platform running in Civo Cloud has been destroyed")
+
+	time.Sleep(time.Millisecond * 200) // allows progress bars to finish
 
 	return nil
 }

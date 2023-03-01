@@ -361,13 +361,13 @@ func vaulUnsealTransaction(o *VaultUnsealOptions, key string) (bool, error) {
 
 	// When unsealed, indicate to user and exit
 	if !unsealResponse.Sealed {
-		log.Print("Vault has been unsealed.")
+		log.Info().Msg("Vault has been unsealed.")
 		secretWarning := fmt.Sprintf(`
 WARNING: The root token and root unseal keys have been 
 written to a Kubernetes Secret called %s - please copy these to a secure 
 location outside of the cluster and delete this Secret once cluster setup
 is complete.`, VaultSecretName)
-		log.Print(secretWarning)
+		log.Info().Msg(secretWarning)
 		return true, nil
 	}
 

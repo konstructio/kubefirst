@@ -43,7 +43,7 @@ import (
 func createCivo(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 6)
-	progressPrinter.AddTracker("platform-create", "Creating your kubefirst platform", 13)
+	progressPrinter.AddTracker("platform-create", "Creating your kubefirst platform", 11)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	alertsEmailFlag, err := cmd.Flags().GetString("alerts-email")
@@ -896,16 +896,39 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("no files found in secrets directory, continuing")
 	}
 
-	// GitLab Deploy Tokens
+	// Handle secret creation for buildkit
+	createTokensFor := []string{"metaphor-frontend"}
 	switch config.GitProvider {
-	case "gitlab":
-		createTokensForProjects := []string{"metaphor-frontend"}
+	// GitHub docker auth secret
+	// Buildkit requires a specific format for Docker auth created as a secret
+	// For GitHub, this becomes the provided token (pat)
+	case "github":
+		usernamePasswordString := fmt.Sprintf("%s:%s", cGitUser, cGitToken)
+		usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+		dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"username": "%s", "password": "%s", "email": "%s", "auth": "%s"}}}`, containerRegistryHost, cGitUser, cGitToken, "k-bot@example.com", usernamePasswordStringB64)
 
+		for _, repository := range createTokensFor {
+			// Create argo workflows pull secret
+			// This is formatted to work with buildkit
+			argoDeployTokenSecret := &v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy", repository), Namespace: "argo"},
+				Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
+				Type:       "Opaque",
+			}
+			err = k8s.CreateSecretV2(config.Kubeconfig, argoDeployTokenSecret)
+			if err != nil {
+				log.Error().Msgf("error while creating secret for repository deploy token: %s", err)
+			}
+		}
+	// GitLab Deploy Tokens
+	// Project deploy tokens are generated for each member of createTokensForProjects
+	// These deploy tokens are used to authorize against the GitLab container registry
+	case "gitlab":
 		gl := gitlab.GitLabWrapper{
 			Client: gitlab.NewGitLabClient(cGitToken),
 		}
 
-		for _, project := range createTokensForProjects {
+		for _, project := range createTokensFor {
 			var p = gitlab.DeployTokenCreateParameters{
 				Name:     fmt.Sprintf("%s-deploy", project),
 				Username: fmt.Sprintf("%s-deploy", project),
@@ -1091,6 +1114,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
+	progressPrinter.IncrementTracker("platform-create", 1)
 
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
@@ -1107,6 +1131,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	)
 
 	// Init and unseal vault
+	fmt.Println("Initializing and unsealing Vault...")
 	executionControl = viper.GetBool("kubefirst-checks.vault-initialized")
 	if !executionControl {
 		// Initialize and unseal Vault
@@ -1137,8 +1162,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("vault is already initialized - skipping")
-		progressPrinter.IncrementTracker("platform-create", 1)
 	}
+
+	// Final progress printer
+	progressPrinter.AddTracker("finalizing", "Verifying and wrapping up", 2)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	//* configure vault with terraform
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
@@ -1161,10 +1189,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("vault terraform executed successfully")
 		viper.Set("kubefirst-checks.terraform-apply-vault", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("finalizing", 1)
 	} else {
 		log.Info().Msg("already executed vault terraform")
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("finalizing", 1)
 	}
 
 	//* create users
@@ -1184,10 +1212,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		// progressPrinter.IncrementTracker("step-users", 1)
 		viper.Set("kubefirst-checks.terraform-apply-users", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("finalizing", 1)
 	} else {
 		log.Info().Msg("already created users with terraform")
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("finalizing", 1)
 	}
 
 	// Wait for console Deployment Pods to transition to Running
@@ -1235,7 +1263,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	// todo: fix argo pw
 	// this is probably going to get streamlined later, but this is necessary now
-	reports.CivoHandoffScreen("", clusterNameFlag, domainNameFlag, cGitOwner, config, dryRunFlag, false)
+	reports.CivoHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, dryRunFlag, false)
 
 	if useTelemetryFlag {
 		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallCompleted, civo.CloudProvider, config.GitProvider, clusterId); err != nil {
@@ -1244,7 +1272,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	time.Sleep(time.Millisecond * 100) // allows progress bars to finish
+	time.Sleep(time.Millisecond * 200) // allows progress bars to finish
 
 	return nil
 }

@@ -11,6 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kms v1.18.6
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.20.5
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.13
+	github.com/briandowns/spinner v1.22.0
 	github.com/caarlos0/env/v6 v6.9.3
 	github.com/caarlos0/sshmarshal v0.1.0
 	github.com/cert-manager/cert-manager v1.11.0

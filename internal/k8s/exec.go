@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh/terminal"
 	appsv1 "k8s.io/api/apps/v1"
@@ -411,7 +412,11 @@ func WaitForStatefulSetReady(kubeConfigPath string, statefulset *appsv1.Stateful
 					Status.CurrentReplicas == configuredReplicas {
 					log.Info().Msgf("All Pods in StatefulSet %s have been created.", statefulset.Name)
 					// Without a pause, this sometimes causes failures
+					s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
+					s.FinalMSG = "Done!\n"
+					fmt.Printf("Pausing for Pods in StatefulSet %s to become ready...", statefulset.Name)
 					time.Sleep(time.Second * 15)
+					s.Stop()
 					return true, nil
 				}
 			} else {
