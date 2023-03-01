@@ -50,6 +50,7 @@ type K3dConfig struct {
 	KubefirstConfig               string
 	MetaphorDir                   string
 	MkCertClient                  string
+	MkCertPemPath                 string
 	TerraformClient               string
 	ToolsDir                      string
 }
@@ -89,6 +90,7 @@ func GetConfig(gitProvider string, gitOwner string) *K3dConfig {
 	config.KubefirstConfig = fmt.Sprintf("%s/.kubefirst", homeDir)
 	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor-frontend", homeDir)
 	config.MkCertClient = fmt.Sprintf("%s/.k1/tools/mkcert", homeDir)
+	config.MkCertClient = fmt.Sprintf("%s/.k1/tools/certs", homeDir)
 	config.TerraformClient = fmt.Sprintf("%s/.k1/tools/terraform", homeDir)
 	config.ToolsDir = fmt.Sprintf("%s/.k1/tools", homeDir)
 
@@ -118,11 +120,11 @@ type GitopsTokenValues struct {
 	MetaphorStagingIngressURL     string
 	MetaphorProductionIngressURL  string
 	KubefirstVersion              string
-	KubefirstTeam									string
-	UseTelemetry									string
-	GitProvider										string
-	CloudProvider									string
-	ClusterId											string
+	KubefirstTeam                 string
+	UseTelemetry                  string
+	GitProvider                   string
+	CloudProvider                 string
+	ClusterId                     string
 }
 
 type MetaphorTokenValues struct {
