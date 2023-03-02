@@ -37,7 +37,6 @@ func UnsealVault(kubeConfigPath string, o *VaultUnsealOptions) error {
 			if err != nil {
 				panic(err.Error())
 			}
-
 			// Join Vault nodes to raft cluster and unseal
 			for i := 1; i < o.Nodes; i++ {
 				// Join nodes to cluster
@@ -56,9 +55,6 @@ func UnsealVault(kubeConfigPath string, o *VaultUnsealOptions) error {
 					log.Info().Msgf("Error running command on Vault Pod: %s", err)
 					return err
 				}
-
-				fmt.Println()
-
 				// Unseal
 				for keyNum, rk := range initResponse.Keys {
 					if keyNum < 3 {
@@ -77,7 +73,6 @@ func UnsealVault(kubeConfigPath string, o *VaultUnsealOptions) error {
 							log.Info().Msgf("Error running command on Vault Pod: %s", err)
 							return err
 						}
-						fmt.Println()
 					} else {
 						break
 					}

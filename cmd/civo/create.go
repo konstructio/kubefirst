@@ -42,7 +42,6 @@ import (
 func createCivo(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 6)
-	progressPrinter.AddTracker("platform-create", "Creating your kubefirst platform", 11)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	alertsEmailFlag, err := cmd.Flags().GetString("alerts-email")
@@ -570,6 +569,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	//* download dependencies to `$HOME/.k1/tools`
+	progressPrinter.AddTracker("downloading-tools", "Downloading tools", 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
 
@@ -590,15 +591,17 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("download dependencies `$HOME/.k1/tools` complete")
 		viper.Set("kubefirst-checks.tools-downloaded", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("downloading-tools", 1)
 	} else {
 		log.Info().Msg("already completed download of dependencies to `$HOME/.k1/tools` - continuing")
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("downloading-tools", 1)
 	}
 
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
+	progressPrinter.AddTracker("cloning-and-formatting-git-repositories", "Cloning and formatting git repositories", 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 
 		log.Info().Msg("generating your new gitops repository")
@@ -641,12 +644,15 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		// todo emit init telemetry end
 		viper.Set("kubefirst-checks.gitops-ready-to-push", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("cloning-and-formatting-git-repositories", 1)
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("cloning-and-formatting-git-repositories", 1)
 	}
 
+	//* handle git terraform apply
+	progressPrinter.AddTracker("applying-git-terraform", fmt.Sprintf("Applying %s Terraform", config.GitProvider), 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	switch config.GitProvider {
 	case "github":
 		// //* create teams and repositories in github
@@ -665,9 +671,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			log.Info().Msgf("Created git repositories and teams for github.com/%s", cGitOwner)
 			viper.Set("kubefirst-checks.terraform-apply-github", true)
 			viper.WriteConfig()
+			progressPrinter.IncrementTracker("applying-git-terraform", 1)
 		} else {
 			log.Info().Msg("already created github terraform resources")
-			progressPrinter.IncrementTracker("platform-create", 1)
+			progressPrinter.IncrementTracker("applying-git-terraform", 1)
 		}
 	case "gitlab":
 		// //* create teams and repositories in gitlab
@@ -699,11 +706,13 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			viper.WriteConfig()
 		} else {
 			log.Info().Msg("already created gitlab terraform resources")
-			progressPrinter.IncrementTracker("platform-create", 1)
+			progressPrinter.IncrementTracker("applying-git-terraform", 1)
 		}
 	}
 
 	//* push detokenized gitops-template repository content to new remote
+	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 2)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
 	if !executionControl {
 		gitopsRepo, err := git.PlainOpen(config.GitopsDir)
@@ -759,10 +768,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("successfully pushed gitops to git@g%s/%s/gitops", cGitHost, cGitOwner)
 		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
 	} else {
 		log.Info().Msg("already pushed detokenized gitops repository content")
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
 	}
 
 	metaphorTemplateTokens := civo.MetaphorTokenValues{
@@ -826,13 +835,15 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		viper.Set("kubefirst-checks.metaphor-repo-pushed", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
 	}
 
 	//* create civo cloud resources
+	progressPrinter.AddTracker("applying-civo-terraform", "Applying Civo Terraform", 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.terraform-apply-civo") {
 		log.Info().Msg("Creating civo cloud resources with terraform")
 
@@ -847,10 +858,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("Created civo cloud resources")
 		viper.Set("kubefirst-checks.terraform-apply-civo", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("applying-civo-terraform", 1)
 	} else {
 		log.Info().Msg("already created github terraform resources")
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("applying-civo-terraform", 1)
 	}
 
 	clientset, err := k8s.GetClientSet(dryRunFlag, config.Kubeconfig)
@@ -862,6 +873,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	// todo deconstruct CreateNamespaces / CreateSecret
 	// todo move secret structs to constants to be leveraged by either local or civo
+	progressPrinter.AddTracker("bootstrapping-kubernetes-resources", "Bootstrapping Kubernetes resources", 3)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
 		err := civo.BootstrapCivoMgmtCluster(dryRunFlag, config.Kubeconfig, config.GitProvider, cGitUser)
@@ -871,10 +884,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 		viper.Set("kubefirst-checks.k8s-secrets-created", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
 	} else {
 		log.Info().Msg("already added secrets to civo cluster")
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
 	}
 
 	//* check for ssl restore
@@ -891,8 +904,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		// add certificates, and clusterissuers
 		log.Info().Msgf("found %d tls secrets to restore", len(secretsFilesToRestore))
 		ssl.Restore(config.SSLBackupDir, domainNameFlag, config.Kubeconfig)
+		progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
 	} else {
 		log.Info().Msg("no files found in secrets directory, continuing")
+		progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
 	}
 
 	// Handle secret creation for buildkit
@@ -973,8 +988,12 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
+	progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
 
 	//* helm add argo repository && update
+	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 4)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 	helmRepo := helm.HelmRepo{
 		RepoName:     "argo",
 		RepoURL:      "https://argoproj.github.io/argo-helm",
@@ -991,10 +1010,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("helm repo added")
 		viper.Set("kubefirst-checks.argocd-helm-repo-added", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	} else {
 		log.Info().Msg("argo helm repository already added, continuing")
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	}
 	//* helm install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-install")
@@ -1007,10 +1026,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 		viper.Set("kubefirst-checks.argocd-helm-install", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	} else {
 		log.Info().Msg("argo helm already installed, continuing")
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	}
 
 	// Wait for ArgoCD StatefulSet Pods to transition to Running
@@ -1074,10 +1093,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("components.argocd.auth-token", token)
 		viper.Set("kubefirst-checks.argocd-credentials-set", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	} else {
 		log.Info().Msg("argo credentials already set, continuing")
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	}
 
 	//* argocd sync registry and start sync waves
@@ -1092,13 +1111,16 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	} else {
 		log.Info().Msg("argocd registry create already done, continuing")
-		progressPrinter.IncrementTracker("platform-create", 1)
+		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	}
 
 	// Wait for Vault StatefulSet Pods to transition to Running
+	progressPrinter.AddTracker("configuring-vault", "Configuring Vault", 3)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
 		config.Kubeconfig,
 		"app.kubernetes.io/instance",
@@ -1109,11 +1131,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, vaultStatefulSet, 60, true)
+	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, vaultStatefulSet, 120, true)
 	if err != nil {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
-	progressPrinter.IncrementTracker("platform-create", 1)
+	progressPrinter.IncrementTracker("configuring-vault", 1)
 
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
@@ -1130,7 +1152,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	)
 
 	// Init and unseal vault
-	fmt.Println("Initializing and unsealing Vault...")
 	executionControl = viper.GetBool("kubefirst-checks.vault-initialized")
 	if !executionControl {
 		// Initialize and unseal Vault
@@ -1159,13 +1180,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 		viper.Set("kubefirst-checks.vault-initialized", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("configuring-vault", 1)
 	} else {
 		log.Info().Msg("vault is already initialized - skipping")
+		progressPrinter.IncrementTracker("configuring-vault", 1)
 	}
-
-	// Final progress printer
-	progressPrinter.AddTracker("finalizing", "Verifying and wrapping up", 2)
-	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	//* configure vault with terraform
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
@@ -1188,13 +1207,16 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("vault terraform executed successfully")
 		viper.Set("kubefirst-checks.terraform-apply-vault", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("finalizing", 1)
+		progressPrinter.IncrementTracker("configuring-vault", 1)
 	} else {
 		log.Info().Msg("already executed vault terraform")
-		progressPrinter.IncrementTracker("finalizing", 1)
+		progressPrinter.IncrementTracker("configuring-vault", 1)
 	}
 
 	//* create users
+	progressPrinter.AddTracker("creating-users", "Creating users", 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-users")
 	if !executionControl {
 		log.Info().Msg("applying users terraform")
@@ -1211,13 +1233,16 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		// progressPrinter.IncrementTracker("step-users", 1)
 		viper.Set("kubefirst-checks.terraform-apply-users", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("finalizing", 1)
+		progressPrinter.IncrementTracker("creating-users", 1)
 	} else {
 		log.Info().Msg("already created users with terraform")
-		progressPrinter.IncrementTracker("finalizing", 1)
+		progressPrinter.IncrementTracker("creating-users", 1)
 	}
 
 	// Wait for console Deployment Pods to transition to Running
+	progressPrinter.AddTracker("deploying-kubefirst-console", "Creating users", 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
 		config.Kubeconfig,
 		"app.kubernetes.io/instance",
@@ -1234,6 +1259,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	//* console port-forward
+	progressPrinter.IncrementTracker("deploying-kubefirst-console", 1)
 	consoleStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(consoleStopChannel)
