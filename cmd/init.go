@@ -14,6 +14,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/ssh"
 
+	"github.com/google/uuid"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
@@ -137,12 +138,15 @@ validated and configured.`,
 
 		gitProvider := viper.GetString("git-provider")
 		cloud := viper.GetString("cloud")
+		clusterId := uuid.New().String()
+
+		viper.Set("cluster-id", clusterId)
 
 		if !globalFlags.UseTelemetry {
 			informUser("Telemetry Disabled", globalFlags.SilentMode)
 		} else {
 			pkg.InformUser("Sending installation telemetry", globalFlags.SilentMode)
-			if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitStarted, cloud, gitProvider); err != nil {
+			if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitStarted, cloud, gitProvider, clusterId); err != nil {
 				log.Warn().Msgf("%s", err)
 			}
 		}
@@ -253,7 +257,7 @@ validated and configured.`,
 		log.Info().Msg("sending init completed metric")
 
 		if globalFlags.UseTelemetry {
-			if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitCompleted, "aws", "github"); err != nil {
+			if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitCompleted, "aws", "github", clusterId); err != nil {
 				log.Warn().Msgf("%s", err)
 			}
 		}

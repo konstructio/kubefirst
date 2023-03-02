@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 
@@ -15,259 +16,213 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string) error {
+func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string, gitProvider string, gitUser string) error {
 	clientset, err := k8s.GetClientSet(dryRun, kubeconfigPath)
 	if err != nil {
 		log.Info().Msg("error getting kubernetes clientset")
 	}
 
-	newNamespaces := []string{"argo", "argocd", "atlantis", "chartmuseum", "external-dns", "external-secrets-operator", "github-runner", "vault", "development", "staging", "production"}
+	// Set git provider token value
+	var containerRegistryHost, gitRunnerSecretName, tokenValue string
+	switch gitProvider {
+	case "github":
+		containerRegistryHost = "https://ghcr.io/"
+		gitRunnerSecretName = "controller-manager"
+		tokenValue = os.Getenv("GITHUB_TOKEN")
+	case "gitlab":
+		containerRegistryHost = "registry.gitlab.io"
+		gitRunnerSecretName = "gitlab-runner"
+		tokenValue = os.Getenv("GITLAB_TOKEN")
+	}
+
+	// Create namespace
+	// Skip if it already exists
+	newNamespaces := []string{
+		"argo",
+		"argocd",
+		"atlantis",
+		"chartmuseum",
+		"external-dns",
+		"external-secrets-operator",
+		fmt.Sprintf("%s-runner", gitProvider),
+		"vault",
+		"development",
+		"staging",
+		"production",
+	}
 	for i, s := range newNamespaces {
 		namespace := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s}}
-		_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
+		_, err := clientset.CoreV1().Namespaces().Get(context.TODO(), s, metav1.GetOptions{})
 		if err != nil {
-			log.Error().Err(err).Msg("")
-			return errors.New("error creating namespace")
+			_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
+			if err != nil {
+				log.Error().Err(err).Msg("")
+				return errors.New("error creating namespace")
+			}
+			log.Info().Msgf("%d, %s", i, s)
+			log.Info().Msgf("namespace created: %s", s)
+		} else {
+			log.Warn().Msgf("namespace %s already exists - skipping", s)
 		}
-		log.Info().Msgf("%d, %s", i, s)
-		log.Info().Msgf("namespace created: %s", s)
 	}
 
-	dataCivoCreds := map[string][]byte{
-		"civo-token": []byte(os.Getenv("CIVO_TOKEN")),
-	}
-	civoSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "civo-creds", Namespace: "external-dns"},
-		Data:       dataCivoCreds,
-	}
-	_, err = clientset.CoreV1().Secrets("external-dns").Create(context.TODO(), civoSecret, metav1.CreateOptions{})
-	if err != nil {
-		log.Info().Msgf("Error: %s", err)
-		return errors.New("error creating kubernetes secret: external-dns/civo-creds")
-	}
-
-	// vault access
-	// todo: this won't be necessary after the current fixes are implemented
-	// dataExternalSecretsOperator := map[string][]byte{
-	// 	"vault-token": []byte("k1_local_vault_token"),
-	// }
-	// externalSecretOperatorSecret := &v1.Secret{
-	// 	ObjectMeta: metav1.ObjectMeta{Name: "vault-token", Namespace: "external-secrets-operator"},
-	// 	Data:       dataExternalSecretsOperator,
-	// }
-	// _, err = clientset.CoreV1().Secrets("external-secrets-operator").Create(context.TODO(), externalSecretOperatorSecret, metav1.CreateOptions{})
-	// if err != nil {
-	// 	log.Info().Msgf("Error: %s", err)
-	// 	return errors.New("error creating kubernetes secret: external-secrets-operator/vault-token")
-	// }
-	// log.Info().Msg("created secret: external-secrets-operator/vault-token")
-
-	// This is necessary since it's required to be present when configuring the Vault auth
-	// for Kubernetes so that permissions can be associated with the ServiceAccount
-
-	// atlantis
-	var automountServiceAccountToken bool = true
-	atlantisServiceAccount := &v1.ServiceAccount{
-		ObjectMeta:                   metav1.ObjectMeta{Name: "atlantis", Namespace: "atlantis"},
-		AutomountServiceAccountToken: &automountServiceAccountToken,
-	}
-	_, err = clientset.CoreV1().ServiceAccounts(
-		"atlantis").Create(
-		context.TODO(), atlantisServiceAccount, metav1.CreateOptions{},
-	)
-	if err != nil {
-		log.Info().Msgf("Error: %s", err)
-		return errors.New("error creating kubernetes service account: atlantis/atlantis")
-	}
-	log.Info().Msg("created service account: atlantis/atlantis")
-
-	// external-secrets-operator
-	externalSecretsOperatorServiceAccount := &v1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{Name: "external-secrets", Namespace: "external-secrets-operator"},
-	}
-	_, err = clientset.CoreV1().ServiceAccounts(
-		"external-secrets-operator").Create(
-		context.TODO(), externalSecretsOperatorServiceAccount, metav1.CreateOptions{},
-	)
-	if err != nil {
-		log.Info().Msgf("Error: %s", err)
-		return errors.New("error creating kubernetes service account: external-secrets-operator/external-secrets")
-	}
-	log.Info().Msg("created service account: external-secrets-operator/external-secrets")
-
-	minioCreds := map[string][]byte{
-		"accesskey": []byte("k-ray"),
-		"secretkey": []byte("feedkraystars"),
-	}
-	minioSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "minio-creds", Namespace: "argo"},
-		Data:       minioCreds,
-	}
-	_, err = clientset.CoreV1().Secrets("argo").Create(context.TODO(), minioSecret, metav1.CreateOptions{})
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		return errors.New("error creating kubernetes secret: argo/minio-creds")
-	}
-
-	dataArgoCiSecrets := map[string][]byte{
-		"accesskey":       []byte(viper.GetString("kubefirst.state-store-creds.access-key-id")),
-		"secretkey":       []byte(viper.GetString("kubefirst.state-store-creds.secret-access-key-id")),
-		"BASIC_AUTH_USER": []byte("k-ray"),
-		"BASIC_AUTH_PASS": []byte("feedkraystars"),
-		"SSH_PRIVATE_KEY": []byte(viper.GetString("kbot.private-key")),
-	}
-
-	//*
-	argoCiSecrets := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "ci-secrets", Namespace: "argo"},
-		Data:       dataArgoCiSecrets,
-	}
-	_, err = clientset.CoreV1().Secrets("argo").Create(context.TODO(), argoCiSecrets, metav1.CreateOptions{})
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		return errors.New("error creating kubernetes secret: argo/ci-secrets")
-	}
-
-	usernamePasswordString := fmt.Sprintf("%s:%s", viper.GetString("github.user"), os.Getenv("GITHUB_TOKEN"))
+	// Data used for secret creation
+	// docker auth
+	usernamePasswordString := fmt.Sprintf("%s:%s", gitUser, tokenValue)
 	usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+	dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"auth": "%s"}}}`, containerRegistryHost, usernamePasswordStringB64)
 
-	dockerConfigString := fmt.Sprintf(`{"auths": {"https://ghcr.io/": {"auth": "%s"}}}`, usernamePasswordStringB64)
-	argoDockerSecrets := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "argo"},
-		Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
-	}
-	_, err = clientset.CoreV1().Secrets("argo").Create(context.TODO(), argoDockerSecrets, metav1.CreateOptions{})
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		return errors.New("error creating kubernetes secret: argo/docker-config")
-	}
-
-	developmentDockerSecrets := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "development"},
-		Type:       "kubernetes.io/dockerconfigjson",
-		Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
-	}
-	_, err = clientset.CoreV1().Secrets("development").Create(context.TODO(), developmentDockerSecrets, metav1.CreateOptions{})
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		return errors.New("error creating kubernetes secret: development/docker-config")
-	}
-
-	stagingDockerSecrets := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "staging"},
-		Type:       "kubernetes.io/dockerconfigjson",
-		Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
-	}
-	_, err = clientset.CoreV1().Secrets("staging").Create(context.TODO(), stagingDockerSecrets, metav1.CreateOptions{})
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		return errors.New("error creating kubernetes secret: staging/docker-config")
-	}
-
-	productionDockerSecrets := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "production"},
-		Type:       "kubernetes.io/dockerconfigjson",
-		Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
-	}
-	_, err = clientset.CoreV1().Secrets("production").Create(context.TODO(), productionDockerSecrets, metav1.CreateOptions{})
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		return errors.New("error creating kubernetes secret: production/docker-config")
-	}
-
-	dataArgoCd := map[string][]byte{
-		"type":          []byte("git"),
-		"name":          []byte(fmt.Sprintf("%s-gitops", viper.GetString("flags.github-owner"))),
-		"url":           []byte(viper.GetString("github.repos.gitops.git-url")),
-		"sshPrivateKey": []byte(viper.GetString("kbot.private-key")),
-	}
-
-	argoCdSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "repo-credentials-template",
-			Namespace:   "argocd",
-			Annotations: map[string]string{"managed-by": "argocd.argoproj.io"},
-			Labels:      map[string]string{"argocd.argoproj.io/secret-type": "repository"},
+	// Create secrets
+	createSecrets := []*v1.Secret{
+		// argo
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "ci-secrets", Namespace: "argo"},
+			Data: map[string][]byte{
+				"accesskey":             []byte(viper.GetString("kubefirst.state-store-creds.access-key-id")),
+				"secretkey":             []byte(viper.GetString("kubefirst.state-store-creds.secret-access-key-id")),
+				"BASIC_AUTH_USER":       []byte("k-ray"),
+				"BASIC_AUTH_PASS":       []byte("feedkraystars"),
+				"SSH_PRIVATE_KEY":       []byte(viper.GetString("kbot.private-key")),
+				"PERSONAL_ACCESS_TOKEN": []byte(tokenValue),
+			},
 		},
-		Data: dataArgoCd,
+		// argocd
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "repo-credentials-template",
+				Namespace:   "argocd",
+				Annotations: map[string]string{"managed-by": "argocd.argoproj.io"},
+				Labels:      map[string]string{"argocd.argoproj.io/secret-type": "repository"},
+			},
+			Data: map[string][]byte{
+				"type":          []byte("git"),
+				"name":          []byte(fmt.Sprintf("%s-gitops", viper.GetString(fmt.Sprintf("flags.%s-owner", gitProvider)))),
+				"url":           []byte(viper.GetString(fmt.Sprintf("%s.repos.gitops.git-url", gitProvider))),
+				"sshPrivateKey": []byte(viper.GetString("kbot.private-key")),
+			},
+		},
+		// atlantis
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "atlantis-secrets", Namespace: "atlantis"},
+			Data: map[string][]byte{
+				"ATLANTIS_GH_TOKEN":                   []byte(tokenValue),
+				"ATLANTIS_GH_USER":                    []byte(gitUser),
+				"ATLANTIS_GH_HOSTNAME":                []byte(viper.GetString(fmt.Sprintf("%s.com", gitProvider))),
+				"ATLANTIS_GH_WEBHOOK_SECRET":          []byte(viper.GetString("secrets.atlantis-webhook")),
+				"ARGOCD_AUTH_USERNAME":                []byte("admin"),
+				"ARGOCD_INSECURE":                     []byte("true"),
+				"ARGOCD_SERVER":                       []byte("http://localhost:8080"),
+				"ARGO_SERVER_URL":                     []byte("argo.argo.svc.cluster.local:443"),
+				"GITHUB_OWNER":                        []byte(viper.GetString(fmt.Sprintf("flags.%s-owner", gitProvider))),
+				"GITHUB_TOKEN":                        []byte(tokenValue),
+				"TF_VAR_atlantis_repo_webhook_secret": []byte(viper.GetString("secrets.atlantis-webhook")),
+				"TF_VAR_atlantis_repo_webhook_url":    []byte(viper.GetString(fmt.Sprintf("%s.atlantis.webhook.url", gitProvider))),
+				"TF_VAR_email_address":                []byte(viper.GetString("flags.alerts-email")),
+				"TF_VAR_github_token":                 []byte(tokenValue),
+				"TF_VAR_kubefirst_bot_ssh_public_key": []byte(viper.GetString("kbot.public-key")),
+				"TF_VAR_vault_addr":                   []byte("http://vault.vault.svc.cluster.local:8200"),
+				"TF_VAR_vault_token":                  []byte("k1_local_vault_token"),
+				"VAULT_ADDR":                          []byte("http://vault.vault.svc.cluster.local:8200"),
+				"VAULT_TOKEN":                         []byte("k1_local_vault_token"),
+			},
+		},
+		// chartmuseum
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "chartmuseum-secrets", Namespace: "chartmuseum"},
+			Data: map[string][]byte{
+				"BASIC_AUTH_USER":       []byte("k-ray"),
+				"BASIC_AUTH_PASS":       []byte("feedkraystars"),
+				"AWS_ACCESS_KEY_ID":     []byte(viper.GetString("kubefirst.state-store-creds.access-key-id")),
+				"AWS_SECRET_ACCESS_KEY": []byte(viper.GetString("kubefirst.state-store-creds.secret-access-key-id")),
+			},
+		},
+		// civo
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "civo-creds", Namespace: "external-dns"},
+			Data: map[string][]byte{
+				"civo-token": []byte(os.Getenv("CIVO_TOKEN")),
+			},
+		},
+		// git runner
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: gitRunnerSecretName, Namespace: fmt.Sprintf("%s-runner", gitProvider)},
+			Data: map[string][]byte{
+				fmt.Sprintf("%s_token", gitProvider): []byte(tokenValue),
+			},
+		},
+		// minio
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "minio-creds", Namespace: "argo"},
+			Data: map[string][]byte{
+				"accesskey": []byte("k-ray"),
+				"secretkey": []byte("feedkraystars"),
+			},
+		},
+		// argo docker config
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "argo"},
+			Type:       "kubernetes.io/dockerconfigjson",
+			Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
+		},
+		// development docker config
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "development"},
+			Type:       "kubernetes.io/dockerconfigjson",
+			Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
+		},
+		// production docker config
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "production"},
+			Type:       "kubernetes.io/dockerconfigjson",
+			Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
+		},
+		// staging docker config
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "staging"},
+			Type:       "kubernetes.io/dockerconfigjson",
+			Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
+		},
 	}
-	_, err = clientset.CoreV1().Secrets("argocd").Create(context.TODO(), argoCdSecret, metav1.CreateOptions{})
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		return errors.New("error creating kubernetes secret: argo/minio-creds")
+	for _, secret := range createSecrets {
+		_, err := clientset.CoreV1().Secrets(secret.ObjectMeta.Namespace).Get(context.TODO(), secret.ObjectMeta.Name, metav1.GetOptions{})
+		if err == nil {
+			log.Info().Msgf("kubernetes secret %s/%s already created - skipping", secret.Namespace, secret.Name)
+		} else if strings.Contains(err.Error(), "not found") {
+			_, err = clientset.CoreV1().Secrets(secret.ObjectMeta.Namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
+			if err != nil {
+				log.Fatal().Msgf("error creating kubernetes secret %s/%s: %s", secret.Namespace, secret.Name, err)
+			}
+			log.Info().Msgf("created kubernetes secret: %s/%s", secret.Namespace, secret.Name)
+		}
 	}
 
-	dataAtlantis := map[string][]byte{
-		"ATLANTIS_GH_TOKEN":                   []byte(os.Getenv("GITHUB_TOKEN")),
-		"ATLANTIS_GH_USER":                    []byte(viper.GetString("github.user")),
-		"ATLANTIS_GH_HOSTNAME":                []byte(viper.GetString("github.host")),
-		"ATLANTIS_GH_WEBHOOK_SECRET":          []byte(viper.GetString("secrets.atlantis-webhook")),
-		"ARGOCD_AUTH_USERNAME":                []byte("admin"),
-		"ARGOCD_INSECURE":                     []byte("true"),
-		"ARGOCD_SERVER":                       []byte("http://localhost:8080"),
-		"ARGO_SERVER_URL":                     []byte("argo.argo.svc.cluster.local:443"),
-		"GITHUB_OWNER":                        []byte(viper.GetString("flags.github-owner")),
-		"GITHUB_TOKEN":                        []byte(os.Getenv("GITHUB_TOKEN")),
-		"TF_VAR_atlantis_repo_webhook_secret": []byte(viper.GetString("secrets.atlantis-webhook")),
-		"TF_VAR_atlantis_repo_webhook_url":    []byte(viper.GetString("github.atlantis.webhook.url")),
-		"TF_VAR_email_address":                []byte(viper.GetString("flags.alerts-email")),
-		"TF_VAR_github_token":                 []byte(os.Getenv("GITHUB_TOKEN")),
-		"TF_VAR_kubefirst_bot_ssh_public_key": []byte(viper.GetString("kbot.public-key")),
-		"TF_VAR_vault_addr":                   []byte("http://vault.vault.svc.cluster.local:8200"),
-		"TF_VAR_vault_token":                  []byte("k1_local_vault_token"),
-		"VAULT_ADDR":                          []byte("http://vault.vault.svc.cluster.local:8200"),
-		"VAULT_TOKEN":                         []byte("k1_local_vault_token"),
+	// Data used for service account creation
+	var automountServiceAccountToken bool = true
+
+	// Create service accounts
+	createServiceAccounts := []*v1.ServiceAccount{
+		// atlantis
+		{
+			ObjectMeta:                   metav1.ObjectMeta{Name: "atlantis", Namespace: "atlantis"},
+			AutomountServiceAccountToken: &automountServiceAccountToken,
+		},
+		// external-secrets-operator
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "external-secrets", Namespace: "external-secrets-operator"},
+		},
 	}
-	atlantisSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "atlantis-secrets", Namespace: "atlantis"},
-		Data:       dataAtlantis,
-	}
-	_, err = clientset.CoreV1().Secrets("atlantis").Create(context.TODO(), atlantisSecret, metav1.CreateOptions{})
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		return errors.New("error creating kubernetes secret: atlantis/atlantis-secrets")
+	for _, serviceAccount := range createServiceAccounts {
+		_, err := clientset.CoreV1().ServiceAccounts(serviceAccount.ObjectMeta.Namespace).Get(context.TODO(), serviceAccount.ObjectMeta.Name, metav1.GetOptions{})
+		if err == nil {
+			log.Info().Msgf("kubernetes service account %s/%s already created - skipping", serviceAccount.Namespace, serviceAccount.Name)
+		} else if strings.Contains(err.Error(), "not found") {
+			_, err = clientset.CoreV1().ServiceAccounts(serviceAccount.ObjectMeta.Namespace).Create(context.TODO(), serviceAccount, metav1.CreateOptions{})
+			if err != nil {
+				log.Fatal().Msgf("error creating kubernetes service account %s/%s: %s", serviceAccount.Namespace, serviceAccount.Name, err)
+			}
+			log.Info().Msgf("created kubernetes service account: %s/%s", serviceAccount.Namespace, serviceAccount.Name)
+		}
 	}
 
-	dataChartmuseum := map[string][]byte{
-		"BASIC_AUTH_USER":       []byte("k-ray"),
-		"BASIC_AUTH_PASS":       []byte("feedkraystars"),
-		"AWS_ACCESS_KEY_ID":     []byte(viper.GetString("kubefirst.state-store-creds.access-key-id")),
-		"AWS_SECRET_ACCESS_KEY": []byte(viper.GetString("kubefirst.state-store-creds.secret-access-key-id")),
-	}
-	chartmuseumSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "chartmuseum-secrets", Namespace: "chartmuseum"},
-		Data:       dataChartmuseum,
-	}
-	_, err = clientset.CoreV1().Secrets("chartmuseum").Create(context.TODO(), chartmuseumSecret, metav1.CreateOptions{})
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		return errors.New("error creating kubernetes secret: chartmuseum/chartmuseum")
-	}
-
-	dataGh := map[string][]byte{
-		"github_token": []byte(os.Getenv("GITHUB_TOKEN")),
-	}
-	ghRunnerSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "controller-manager", Namespace: "github-runner"},
-		Data:       dataGh,
-	}
-	_, err = clientset.CoreV1().Secrets("github-runner").Create(context.TODO(), ghRunnerSecret, metav1.CreateOptions{})
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		return errors.New("error creating kubernetes secret: github-runner/controller-manager")
-	}
-
-	// vaultData := map[string][]byte{
-	// 	"token": []byte("k1_local_vault_token"),
-	// }
-	// vaultSecret := &v1.Secret{
-	// 	ObjectMeta: metav1.ObjectMeta{Name: "vault-token", Namespace: "vault"},
-	// 	Data:       vaultData,
-	// }
-	// _, err = clientset.CoreV1().Secrets("vault").Create(context.TODO(), vaultSecret, metav1.CreateOptions{})
-	// if err != nil {
-	// 	log.Error().Err(err).Msg("")
-	// 	return errors.New("error creating kubernetes secret: github-runner/controller-manager")
-	// }
 	return nil
 }

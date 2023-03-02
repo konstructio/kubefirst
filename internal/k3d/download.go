@@ -8,9 +8,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func DownloadTools(githubOwner string, toolsDir string) error {
+func DownloadTools(gitProvider, gitOwner string, toolsDir string) error {
 
-	config := GetConfig(githubOwner)
+	config := GetConfig(gitProvider, gitOwner)
 
 	if _, err := os.Stat(toolsDir); os.IsNotExist(err) {
 		err := os.MkdirAll(toolsDir, os.ModePerm)

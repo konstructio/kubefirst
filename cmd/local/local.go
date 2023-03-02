@@ -92,12 +92,13 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	gitProvider := "github"
 	cloud := "k3d"
+	clusterId := viper.GetString("cluster-id")
 
 	progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 	progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
 	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 4)
 	if useTelemetry {
-		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallStarted, cloud, gitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallStarted, cloud, gitProvider, clusterId); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 		log.Info().Msg("Telemetry info sent")
@@ -459,7 +460,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("sending mgmt cluster install completed metric")
 	if useTelemetry {
-		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted, cloud, gitProvider); err != nil {
+		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted, cloud, gitProvider, clusterId); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 		log.Info().Msg("Telemetry info sent")

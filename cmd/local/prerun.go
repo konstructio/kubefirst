@@ -8,6 +8,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/ssh"
 
+	"github.com/google/uuid"
 	"github.com/dustin/go-humanize"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/addon"
@@ -36,10 +37,11 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	gitProvider := viper.GetString("git-provider")
 	cloud := viper.GetString("cloud")
+	clusterId := uuid.New().String()
 
 	if useTelemetry {
 		pkg.InformUser("Sending installation telemetry", silentMode)
-		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted, cloud, gitProvider); err != nil {
+		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted, cloud, gitProvider, clusterId); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 	}
@@ -78,6 +80,8 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	viper.Set("argocd.local.service", pkg.ArgoCDLocalURL)
 	viper.Set("vault.local.service", pkg.VaultLocalURLTLS)
 	viper.Set("use-telemetry", useTelemetry)
+	viper.Set("cluster-id", clusterId)
+
 	err = viper.WriteConfig()
 	if err != nil {
 		return err
@@ -249,7 +253,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	pkg.InformUser("initialization step is done!", silentMode)
 
 	if useTelemetry {
-		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted, cloud, gitProvider); err != nil {
+		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted, cloud, gitProvider, clusterId); err != nil {
 			log.Error().Err(err).Msg("")
 		}
 	}

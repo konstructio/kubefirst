@@ -15,6 +15,7 @@ import (
 	ghoddsYaml "github.com/ghodss/yaml"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
@@ -306,6 +307,88 @@ func createCertificateForLocal(config *configs.Config, app pkg.CertificateAppLis
 	)
 	if err != nil {
 		return fmt.Errorf("failed to generate %s SSL certificate using MkCert: %v", app.AppName, err)
+	}
+
+	return nil
+}
+
+// CreateCertificatesForLocalWrapper groups a certification creation call into a wrapper. The provided application
+// list is used to create SSL certificates for each of the provided application.
+func CreateCertificatesForK3dWrapper(config k3d.K3dConfig) error {
+
+	// create folder
+	// todo: check permission
+	err := os.Mkdir(config.MkCertPemPath, 0755)
+	if err != nil && os.IsNotExist(err) {
+		return err
+	}
+
+	for _, cert := range pkg.GetCertificateAppList() {
+		if err := createCertificateForK3d(config, cert); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// createCertificateForLocal issue certificates for a specific application. MkCert is the tool who is going to create
+// the certificates, store them in files, and store the certificates in the host trusted store.
+func createCertificateForK3d(config k3d.K3dConfig, app pkg.CertificateAppList) error {
+
+	fullAppAddress := app.AppName + "." + pkg.LocalDNS                     // example: app-name.localdev.me
+	certFileName := config.MkCertPemPath + "/" + app.AppName + "-cert.pem" // example: app-name-cert.pem
+	keyFileName := config.MkCertPemPath + "/" + app.AppName + "-key.pem"   // example: app-name-key.pem
+
+	log.Info().Msgf("generating certificate %s.localdev.me on %s", app.AppName, config.MkCertClient)
+
+	_, _, err := pkg.ExecShellReturnStrings(
+		config.MkCertClient,
+		"-cert-file",
+		certFileName,
+		"-key-file",
+		keyFileName,
+		pkg.LocalDNS,
+		fullAppAddress,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to generate %s SSL certificate using MkCert: %v", app.AppName, err)
+	}
+
+	return nil
+}
+
+func CreateSecretsFromCertificatesForK3dWrapper(config *k3d.K3dConfig) error {
+
+	for _, app := range pkg.GetCertificateAppList() {
+
+		certFileName := config.MkCertPemPath + "/" + app.AppName + "-cert.pem" // example: app-name-cert.pem
+		keyFileName := config.MkCertPemPath + "/" + app.AppName + "-key.pem"   // example: app-name-key.pem
+
+		log.Info().Msgf("creating TLS k8s secret for %s...", app.AppName)
+
+		// open file content
+		certContent, err := pkg.GetFileContent(certFileName)
+		if err != nil {
+			return err
+		}
+
+		keyContent, err := pkg.GetFileContent(keyFileName)
+		if err != nil {
+			return err
+		}
+
+		data := make(map[string][]byte)
+		data["tls.crt"] = certContent
+		data["tls.key"] = keyContent
+
+		// save content into secret
+		err = k8s.CreateSecret(config.Kubeconfig, app.Namespace, app.AppName+"-tls", data) // todo argument 1 needs to be real
+		if err != nil {
+			log.Error().Err(err).Msgf("Error creating TLS k8s secret")
+		}
+
+		log.Info().Msgf("creating TLS k8s secret for %s done", app.AppName)
 	}
 
 	return nil

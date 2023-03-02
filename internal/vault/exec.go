@@ -24,7 +24,7 @@ var (
 )
 
 // UnsealVault attempts to initialize and unseal a Vault server
-func UnsealVault(kubeConfigPath string, o *VaultUnsealOptions) {
+func UnsealVault(kubeConfigPath string, o *VaultUnsealOptions) error {
 	switch {
 	case o.HighAvailability && o.HighAvailabilityType == "raft":
 		switch {
@@ -41,7 +41,7 @@ func UnsealVault(kubeConfigPath string, o *VaultUnsealOptions) {
 			// Join Vault nodes to raft cluster and unseal
 			for i := 1; i < o.Nodes; i++ {
 				// Join nodes to cluster
-				log.Printf("Joining vault-%d to raft cluster...", i)
+				log.Info().Msgf("Joining vault-%d to raft cluster...", i)
 				podSessionOpts := k8s.PodSessionOptions{
 					Command:    []string{"/bin/sh", "-c", fmt.Sprintf("vault operator raft join %s:8200", vaultRaftPrimaryAddress)},
 					Namespace:  VaultNamespace,
@@ -53,14 +53,16 @@ func UnsealVault(kubeConfigPath string, o *VaultUnsealOptions) {
 				}
 				err = k8s.PodExecSession(kubeConfigPath, &podSessionOpts, true)
 				if err != nil {
-					log.Printf("Error running command on Vault Pod: %s", err)
+					log.Info().Msgf("Error running command on Vault Pod: %s", err)
+					return err
 				}
+
 				fmt.Println()
 
 				// Unseal
 				for keyNum, rk := range initResponse.Keys {
 					if keyNum < 3 {
-						log.Printf("Passing key %d...", keyNum+1)
+						log.Info().Msgf("Passing key %d...", keyNum+1)
 						podSessionOpts := k8s.PodSessionOptions{
 							Command:    []string{"/bin/sh", "-c", fmt.Sprintf("vault operator unseal %s", rk)},
 							Namespace:  VaultNamespace,
@@ -72,7 +74,8 @@ func UnsealVault(kubeConfigPath string, o *VaultUnsealOptions) {
 						}
 						err = k8s.PodExecSession(kubeConfigPath, &podSessionOpts, true)
 						if err != nil {
-							log.Printf("Error running command on Vault Pod: %s", err)
+							log.Info().Msgf("Error running command on Vault Pod: %s", err)
+							return err
 						}
 						fmt.Println()
 					} else {
@@ -81,11 +84,12 @@ func UnsealVault(kubeConfigPath string, o *VaultUnsealOptions) {
 
 				}
 			}
-			log.Print("All Vault Pods initialized and unsealed.")
+			log.Info().Msg("All Vault Pods initialized and unsealed.")
 		}
 	case o.HighAvailability && o.HighAvailabilityType != "raft":
 		log.Fatal().Msgf("Unsupported high-availability setting: %s", o.HighAvailabilityType)
 	}
+	return nil
 }
 
 // fetchVaultExistingSecretData looks for an existing vault-unseal Secret and returns its
@@ -93,7 +97,7 @@ func UnsealVault(kubeConfigPath string, o *VaultUnsealOptions) {
 func fetchVaultExistingSecretData(kubeConfigPath string) (InitResponse, error) {
 	existingKubernetesSecret, err := k8s.ReadSecretV2(kubeConfigPath, "vault", VaultSecretName)
 	if err != nil {
-		log.Printf("Error reading existing Secret data: %s", err)
+		log.Info().Msgf("Error reading existing Secret data: %s", err)
 		return InitResponse{}, nil
 	}
 
@@ -137,7 +141,7 @@ func runUnseal(kubeConfigPath string, o VaultUnsealOptions) {
 			select {
 			// Exit if instructed to by os
 			case <-sigChan:
-				log.Printf("Shutting down")
+				log.Info().Msgf("Shutting down")
 				os.Exit(0)
 			default:
 			}
@@ -147,8 +151,8 @@ func runUnseal(kubeConfigPath string, o VaultUnsealOptions) {
 
 			// Wait until a healthy response is received
 			if err != nil {
-				log.Printf("Error connecting to Vault: %s", err)
-				log.Printf("Next check in %s", checkIntervalDuration)
+				log.Info().Msgf("Error connecting to Vault: %s", err)
+				log.Info().Msgf("Next check in %s", checkIntervalDuration)
 				time.Sleep(checkIntervalDuration)
 				continue
 			}
@@ -176,7 +180,7 @@ func runUnseal(kubeConfigPath string, o VaultUnsealOptions) {
 				log.Info().Msg("Vault is not initialized and sealed. Initializing and unsealing...")
 				initResponse, err := vaultInit(kubeConfigPath, &o)
 				if err != nil {
-					log.Printf("Unable to init or unseal vault: %s", err)
+					log.Info().Msgf("Unable to init or unseal vault: %s", err)
 					os.Exit(1)
 				}
 
@@ -195,13 +199,13 @@ func runUnseal(kubeConfigPath string, o VaultUnsealOptions) {
 				// Unseal
 				vaultUnseal(&o, initResponse)
 			default:
-				log.Printf("Vault is in an unknown state. Status code: %d", response.StatusCode)
+				log.Info().Msgf("Vault is in an unknown state. Status code: %d", response.StatusCode)
 			}
 
 			select {
 			// Exit if instructed to by os
 			case <-sigChan:
-				log.Printf("Shutting down")
+				log.Info().Msgf("Shutting down")
 				os.Exit(0)
 			// Retry if nothing above worked
 			case <-time.After(checkIntervalDuration):
@@ -249,7 +253,7 @@ func vaultInit(kubeConfigPath string, o *VaultUnsealOptions) (InitResponse, erro
 	}
 
 	if response.StatusCode != 200 {
-		log.Printf(
+		log.Info().Msgf(
 			"Encountered non %d status code during Vault init: %s",
 			response.StatusCode,
 			string(initRequestResponseBody),
@@ -289,7 +293,7 @@ func vaultInit(kubeConfigPath string, o *VaultUnsealOptions) (InitResponse, erro
 // vaultUnseal attempts to unseal a Vault server
 func vaultUnseal(o *VaultUnsealOptions, initResponse InitResponse) error {
 	for i, key := range initResponse.Keys {
-		log.Printf("Providing key %d to Vault API for unseal...", i+1)
+		log.Info().Msgf("Providing key %d to Vault API for unseal...", i+1)
 		done, err := vaulUnsealTransaction(o, key)
 		if done {
 			return err
@@ -341,13 +345,13 @@ func vaulUnsealTransaction(o *VaultUnsealOptions, key string) (bool, error) {
 
 	// When unsealed, indicate to user and exit
 	if !unsealResponse.Sealed {
-		log.Print("Vault has been unsealed.")
+		log.Info().Msg("Vault has been unsealed.")
 		secretWarning := fmt.Sprintf(`
 WARNING: The root token and root unseal keys have been 
 written to a Kubernetes Secret called %s - please copy these to a secure 
 location outside of the cluster and delete this Secret once cluster setup
 is complete.`, VaultSecretName)
-		log.Print(secretWarning)
+		log.Info().Msg(secretWarning)
 		return true, nil
 	}
 
