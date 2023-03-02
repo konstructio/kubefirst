@@ -10,6 +10,7 @@ import (
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
@@ -18,6 +19,10 @@ import (
 )
 
 func destroyK3d(cmd *cobra.Command, args []string) error {
+
+	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
+	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 2)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	log.Info().Msg("destroying kubefirst platform running in k3d")
 
@@ -53,6 +58,11 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 		)
 	}
 
+	// Temporary func to allow destroy
+	err := k3d.ResolveMinioLocal(fmt.Sprintf("%s/terraform", config.GitopsDir))
+	if err != nil {
+		log.Fatal().Msgf("error preloading files for terraform destroy: %s", err)
+	}
 	minioStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(minioStopChannel)
@@ -65,6 +75,8 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 		9000,
 		minioStopChannel,
 	)
+
+	progressPrinter.IncrementTracker("preflight-checks", 1)
 
 	switch gitProvider {
 	case "github":
@@ -92,6 +104,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			viper.Set("kubefirst-checks.terraform-apply-github", false)
 			viper.WriteConfig()
 			log.Info().Msg("github resources terraform destroyed")
+			progressPrinter.IncrementTracker("platform-destroy", 1)
 		}
 	case "gitlab":
 		if viper.GetBool("kubefirst-checks.terraform-apply-gitlab") {
@@ -155,6 +168,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", false)
 			viper.WriteConfig()
 			log.Info().Msg("gitlab resources terraform destroyed")
+			progressPrinter.IncrementTracker("platform-destroy", 1)
 		}
 	}
 
@@ -169,6 +183,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst-checks.terraform-apply-k3d", false)
 		viper.WriteConfig()
 		log.Info().Msg("k3d resources terraform destroyed")
+		progressPrinter.IncrementTracker("platform-destroy", 1)
 	}
 
 	// remove ssh key provided one was created

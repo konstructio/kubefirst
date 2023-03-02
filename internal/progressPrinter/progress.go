@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/rs/zerolog/log"
 )
 
@@ -56,14 +57,22 @@ func SetupProgress(numTrackers int, silentMode bool) {
 	}
 
 	instance.pw.SetAutoStop(false)
-	instance.pw.SetTrackerLength(30)
-	instance.pw.SetMessageWidth(29)
+	instance.pw.SetTrackerLength(40)
+	instance.pw.SetMessageWidth(39)
 	instance.pw.SetNumTrackersExpected(numTrackers)
 	instance.pw.SetSortBy(progress.SortByPercentDsc)
 	instance.pw.SetStyle(progress.StyleDefault)
 	instance.pw.SetTrackerPosition(progress.PositionRight)
 	instance.pw.SetUpdateFrequency(time.Millisecond * 100)
-	instance.pw.Style().Colors = progress.StyleColorsExample
+	instance.pw.Style().Colors = progress.StyleColors{
+		Message: text.Colors{text.FgWhite},
+		Error:   text.Colors{text.FgRed},
+		Percent: text.Colors{text.FgCyan},
+		Stats:   text.Colors{text.FgHiBlack},
+		Time:    text.Colors{text.FgGreen},
+		Tracker: text.Colors{text.FgYellow},
+		Value:   text.Colors{text.FgCyan},
+	}
 	instance.pw.Style().Options.PercentFormat = "%4.1f%%"
 	instance.pw.Style().Visibility.ETA = false
 	instance.pw.Style().Visibility.ETAOverall = false
