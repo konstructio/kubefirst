@@ -24,6 +24,7 @@ import (
 )
 
 func destroyCivo(cmd *cobra.Command, args []string) error {
+
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
 	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 4)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
