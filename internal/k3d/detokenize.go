@@ -57,7 +57,7 @@ func detokenizeGitops(path string, tokens *GitopsTokenValues) filepath.WalkFunc 
 			newContents = strings.Replace(newContents, "<METAPHOR_STAGING_INGRESS_URL>", tokens.MetaphorStagingIngressURL, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_PRODUCTION_INGRESS_URL>", tokens.MetaphorProductionIngressURL, -1)
 			newContents = strings.Replace(newContents, "<GITHUB_HOST>", tokens.GithubHost, -1)
-			newContents = strings.Replace(newContents, "<GITHUB_OWNER>", tokens.GithubOwner, -1)
+			newContents = strings.Replace(newContents, "<GITHUB_OWNER>", strings.ToLower(tokens.GithubOwner), -1)
 			newContents = strings.Replace(newContents, "<GITHUB_USER>", tokens.GithubUser, -1)
 			newContents = strings.Replace(newContents, "<GIT_PROVIDER>", tokens.GitProvider, -1)
 			newContents = strings.Replace(newContents, "<GITOPS_REPO_GIT_URL>", tokens.GitopsRepoGitURL, -1)

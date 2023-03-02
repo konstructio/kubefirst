@@ -76,7 +76,7 @@ func detokenizeCivoGitops(path string, tokens *GitOpsDirectoryValues) filepath.W
 			newContents = strings.Replace(newContents, "<GIT_URL>", tokens.GitURL, -1)
 
 			newContents = strings.Replace(newContents, "<GITHUB_HOST>", tokens.GitHubHost, -1)
-			newContents = strings.Replace(newContents, "<GITHUB_OWNER>", tokens.GitHubOwner, -1)
+			newContents = strings.Replace(newContents, "<GITHUB_OWNER>", strings.ToLower(tokens.GitHubOwner), -1)
 			newContents = strings.Replace(newContents, "<GITHUB_USER>", tokens.GitHubUser, -1)
 
 			newContents = strings.Replace(newContents, "<GITLAB_HOST>", tokens.GitlabHost, -1)
