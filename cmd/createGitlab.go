@@ -19,7 +19,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/softserve"
 	"github.com/kubefirst/kubefirst/internal/terraform"
-	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -230,12 +229,12 @@ var createGitlabCmd = &cobra.Command{
 			progressPrinter.AddTracker("step-vault", "Configure Vault", 2)
 			informUser("waiting for vault unseal", globalFlags.SilentMode)
 
-			log.Info().Msg("configuring vault")
-			vault.ConfigureVault(globalFlags.DryRun)
-			informUser("Vault configured", globalFlags.SilentMode)
-			progressPrinter.IncrementTracker("step-vault", 1)
+			// log.Info().Msg("configuring vault")
+			// vault.ConfigureVault(globalFlags.DryRun)
+			// informUser("Vault configured", globalFlags.SilentMode)
+			// progressPrinter.IncrementTracker("step-vault", 1)
 
-			vault.GetOidcClientCredentials(globalFlags.DryRun)
+			// vault.GetOidcClientCredentials(globalFlags.DryRun)
 
 			repoDir := fmt.Sprintf("%s/%s", config.K1FolderPath, "gitops")
 			pkg.Detokenize(repoDir)
@@ -360,7 +359,7 @@ var createGitlabCmd = &cobra.Command{
 		if !skipVault {
 			progressPrinter.AddTracker("step-vault-be", "Configure Vault Backend", 1)
 			log.Info().Msg("configuring vault backend")
-			vault.ConfigureVault(globalFlags.DryRun)
+			// vault.ConfigureVault(globalFlags.DryRun)
 			informUser("Vault backend configured", globalFlags.SilentMode)
 			progressPrinter.IncrementTracker("step-vault-be", 1)
 		}

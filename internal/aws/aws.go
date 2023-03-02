@@ -49,6 +49,10 @@ type ARecord struct {
 	AliasTarget *route53Types.AliasTarget
 }
 
+var Conf AWSConfiguration = AWSConfiguration{
+	Config: NewAwsV2(),
+}
+
 // Some systems fail to resolve TXT records, so try to use Google as a backup
 var backupResolver = &net.Resolver{
 	PreferGo: true,
@@ -60,6 +64,24 @@ var backupResolver = &net.Resolver{
 	},
 }
 
+func NewAwsV2() aws.Config {
+
+	// todo these should also be supported flags
+	region := os.Getenv("AWS_REGION")
+	profile := os.Getenv("AWS_PROFILE")
+
+	awsClient, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithRegion(region),
+		config.WithSharedConfigProfile(profile),
+	)
+	if err != nil {
+		log.Panic().Msg("unable to create aws client")
+	}
+
+	return awsClient
+}
+
 // NewAws instantiate a new AWS configuration. This function is used to provide initial connection to AWS services.
 // todo: update AWS functions in this file to work as methods of AWS struct
 // example:
@@ -67,15 +89,9 @@ var backupResolver = &net.Resolver{
 // and AWSStruct will be used as instanceOfAws.DestroyBucketsInUse(param type)
 func NewAws() (aws.Config, error) {
 
-	// tests doesnt have access to viper, for tests we get these values from the environment
-	region := viper.GetString("aws.region")
-	if len(region) == 0 {
-		region = os.Getenv("AWS_REGION")
-	}
-	profile := viper.GetString("aws.profile")
-	if len(profile) == 0 {
-		profile = os.Getenv("AWS_PROFILE")
-	}
+	// todo these should also be supported flags
+	region := os.Getenv("AWS_REGION")
+	profile := os.Getenv("AWS_PROFILE")
 
 	awsClient, err := config.LoadDefaultConfig(
 		context.Background(),

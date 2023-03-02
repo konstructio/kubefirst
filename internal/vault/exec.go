@@ -23,22 +23,6 @@ var (
 	httpClient http.Client
 )
 
-const (
-	// Rate at which to check for Vault health
-	checkInterval int = 10
-	// Vault API endpoints
-	vaultHealthEndpoint string = "/v1/sys/health"
-	vaultInitEndpoint   string = "/v1/sys/init"
-	vaultRaftEndpoint   string = "/sys/storage/raft"
-	vaultUnsealEndpoint string = "/v1/sys/unseal"
-	// For raft, vault-0 will always be primary referenced by its endpoint
-	vaultRaftPrimaryAddress string = "http://vault-0.vault-internal"
-	// Name for the Secret that gets created that contains root auth data
-	VaultSecretName string = "vault-unseal-secret"
-	// Namespace that Vault runs in
-	VaultNamespace string = "vault"
-)
-
 // UnsealVault attempts to initialize and unseal a Vault server
 func UnsealVault(kubeConfigPath string, o *VaultUnsealOptions) error {
 	switch {

@@ -1,5 +1,7 @@
 package pkg
 
+import "runtime"
+
 const (
 	JSONContentType              = "application/json"
 	SoftServerURI                = "ssh://127.0.0.1:8022/config"
@@ -13,6 +15,8 @@ const (
 	KubefirstGitOpsRepository    = "gitops"
 	KubefirstGitOpsRepositoryURL = "https://github.com/kubefirst/gitops-template"
 	LocalDNS                     = "localdev.me"
+	LocalhostARCH                = runtime.GOARCH
+	LocalhostOS                  = runtime.GOOS
 )
 
 // SegmentIO constants

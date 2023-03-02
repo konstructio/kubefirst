@@ -19,7 +19,6 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/civo"
-	"github.com/kubefirst/kubefirst/internal/downloadManager"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
@@ -574,7 +573,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
 
-		err := downloadManager.CivoDownloadTools(
+		err := civo.DownloadTools(
 			config.HelmClient,
 			civo.HelmClientVersion,
 			config.KubectlClient,

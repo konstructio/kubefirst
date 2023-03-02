@@ -3,6 +3,7 @@ package pkg
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -31,6 +32,16 @@ type RegistryAddon struct {
 			AddonsKubefirstIoName string `yaml:"addons.kubefirst.io/name"`
 		} `yaml:"annotations"`
 	} `yaml:"metadata"`
+}
+
+func CreateDirIfNotExist(dir string) error {
+	if _, err := os.Stat(dir); errors.Is(err, fs.ErrNotExist) {
+		err = os.Mkdir(dir, 0777)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Detokenize - Translate tokens by values on a given path

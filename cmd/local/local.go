@@ -21,7 +21,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/kubefirst/kubefirst/internal/terraform"
-	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -300,7 +299,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("vault.status.running")
 	if !executionControl {
 		pkg.InformUser("waiting for Vault to be ready...", silentMode)
-		vault.WaitVaultToBeRunning(dryRun, config.KubeConfigPath, config.KubectlClientPath)
+		// vault.WaitVaultToBeRunning(dryRun, config.KubeConfigPath, config.KubectlClientPath)
 	}
 
 	k8s.LoopUntilPodIsReady(dryRun, config.KubeConfigPath, config.KubectlClientPath)

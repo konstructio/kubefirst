@@ -21,7 +21,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
-	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -174,10 +173,10 @@ var createGithubCmd = &cobra.Command{
 		if !viper.GetBool("vault.configuredsecret") { //skipVault
 			informUser("waiting for vault unseal", globalFlags.SilentMode)
 			log.Info().Msg("configuring vault")
-			vault.ConfigureVault(globalFlags.DryRun)
+			// vault.ConfigureVault(globalFlags.DryRun)
 			informUser("Vault configured", globalFlags.SilentMode)
 
-			vault.GetOidcClientCredentials(globalFlags.DryRun)
+			// vault.GetOidcClientCredentials(globalFlags.DryRun)
 			log.Info().Msg("vault oidc clients created")
 
 			log.Info().Msg("creating vault configured secret")

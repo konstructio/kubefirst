@@ -152,7 +152,7 @@ func detokenize(metaphorDir string, tokens *MetaphorTokenValues) filepath.WalkFu
 			newContents = strings.Replace(newContents, "<METAPHOR_DEVELOPMENT_INGRESS_URL>", tokens.MetaphorDevelopmentIngressURL, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_STAGING_INGRESS_URL>", tokens.MetaphorStagingIngressURL, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_PRODUCTION_INGRESS_URL>", tokens.MetaphorProductionIngressURL, -1)
-			newContents = strings.Replace(newContents, "<CONTAINER_REGISTRY>", tokens.ContainerRegistryURL, -1) // todo need to fix metaphor repo names
+			newContents = strings.Replace(newContents, "<CONTAINER_REGISTRY_URL>", tokens.ContainerRegistryURL, -1) // todo need to fix metaphor repo names
 			newContents = strings.Replace(newContents, "<DOMAIN_NAME>", tokens.DomainName, -1)
 			newContents = strings.Replace(newContents, "<CLOUD_REGION>", tokens.CloudRegion, -1)
 			newContents = strings.Replace(newContents, "<CLUSTER_NAME>", tokens.ClusterName, -1)
