@@ -5,11 +5,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
-// detokenizeGithubGitops - Translate tokens by values on a given path
-func DetokenizeCivoGithubGitops(path string, tokens *GitOpsDirectoryValues) error {
+// DetokenizeCivoGitGitops - Translate tokens by values on a given path
+func DetokenizeCivoGitGitops(path string, tokens *GitOpsDirectoryValues) error {
 	err := filepath.Walk(path, detokenizeCivoGitops(path, tokens))
 	if err != nil {
 		return err
@@ -31,7 +32,7 @@ func detokenizeCivoGitops(path string, tokens *GitOpsDirectoryValues) filepath.W
 		metaphorDevelopmentIngressURL := fmt.Sprintf("https://metaphor-development.%s", tokens.DomainName)
 		metaphorStagingIngressURL := fmt.Sprintf("https://metaphor-staging.%s", tokens.DomainName)
 		metaphorProductionIngressURL := fmt.Sprintf("https://metaphor-production.%s", tokens.DomainName)
-		
+
 		// var matched bool
 		matched, err := filepath.Match("*", fi.Name())
 		if matched {
@@ -78,6 +79,10 @@ func detokenizeCivoGitops(path string, tokens *GitOpsDirectoryValues) filepath.W
 			newContents = strings.Replace(newContents, "<GITHUB_OWNER>", tokens.GitHubOwner, -1)
 			newContents = strings.Replace(newContents, "<GITHUB_USER>", tokens.GitHubUser, -1)
 
+			newContents = strings.Replace(newContents, "<GITLAB_HOST>", tokens.GitlabHost, -1)
+			newContents = strings.Replace(newContents, "<GITLAB_OWNER>", tokens.GitlabOwner, -1)
+			newContents = strings.Replace(newContents, "<GITLAB_OWNER_GROUP_ID>", strconv.Itoa(tokens.GitlabOwnerGroupID), -1)
+
 			newContents = strings.Replace(newContents, "<GITOPS_REPO_ATLANTIS_WEBHOOK_URL>", tokens.GitOpsRepoAtlantisWebhookURL, -1)
 			newContents = strings.Replace(newContents, "<GITOPS_REPO_GIT_URL>", tokens.GitOpsRepoGitURL, -1)
 			newContents = strings.Replace(newContents, "<GITOPS_REPO_NO_HTTPS_URL>", tokens.GitOpsRepoNoHTTPSURL, -1)
@@ -97,8 +102,49 @@ func detokenizeCivoGitops(path string, tokens *GitOpsDirectoryValues) filepath.W
 	})
 }
 
+// DetokenizeCivoAdditionalPath - Translate tokens by values on a given path
+func DetokenizeCivoAdditionalPath(path string, tokens *GitOpsDirectoryValues) error {
+	err := filepath.Walk(path, detokenizeCivoAdditionalPath(path, tokens))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// detokenizeCivoAdditionalPath temporary addition to handle detokenizing additional files
+func detokenizeCivoAdditionalPath(path string, tokens *GitOpsDirectoryValues) filepath.WalkFunc {
+	return filepath.WalkFunc(func(path string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !!fi.IsDir() {
+			return nil
+		}
+
+		// var matched bool
+		matched, err := filepath.Match("*", fi.Name())
+		if matched {
+			read, err := ioutil.ReadFile(path)
+			if err != nil {
+				return err
+			}
+
+			newContents := string(read)
+			newContents = strings.Replace(newContents, "<GITLAB_OWNER>", tokens.GitlabOwner, -1)
+
+			err = ioutil.WriteFile(path, []byte(newContents), 0)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 // DetokenizeCivoGithubMetaphor - Translate tokens by values on a given path
-func DetokenizeCivoGithubMetaphor(path string, tokens *MetaphorTokenValues) error {
+func DetokenizeCivoGitMetaphor(path string, tokens *MetaphorTokenValues) error {
 	err := filepath.Walk(path, detokenizeCivoGitopsMetaphor(path, tokens))
 	if err != nil {
 		return err
