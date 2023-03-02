@@ -336,9 +336,9 @@ func CreateCertificatesForK3dWrapper(config k3d.K3dConfig) error {
 // the certificates, store them in files, and store the certificates in the host trusted store.
 func createCertificateForK3d(config k3d.K3dConfig, app pkg.CertificateAppList) error {
 
-	fullAppAddress := app.AppName + "." + pkg.LocalDNS               // example: app-name.localdev.me
-	certFileName := config.MkCertPemPath + app.AppName + "-cert.pem" // example: app-name-cert.pem
-	keyFileName := config.MkCertPemPath + app.AppName + "-key.pem"   // example: app-name-key.pem
+	fullAppAddress := app.AppName + "." + pkg.LocalDNS                     // example: app-name.localdev.me
+	certFileName := config.MkCertPemPath + "/" + app.AppName + "-cert.pem" // example: app-name-cert.pem
+	keyFileName := config.MkCertPemPath + "/" + app.AppName + "-key.pem"   // example: app-name-key.pem
 
 	log.Info().Msgf("generating certificate %s.localdev.me on %s", app.AppName, config.MkCertClient)
 
@@ -353,6 +353,42 @@ func createCertificateForK3d(config k3d.K3dConfig, app pkg.CertificateAppList) e
 	)
 	if err != nil {
 		return fmt.Errorf("failed to generate %s SSL certificate using MkCert: %v", app.AppName, err)
+	}
+
+	return nil
+}
+
+func CreateSecretsFromCertificatesForK3dWrapper(config *k3d.K3dConfig) error {
+
+	for _, app := range pkg.GetCertificateAppList() {
+
+		certFileName := config.MkCertPemPath + "/" + app.AppName + "-cert.pem" // example: app-name-cert.pem
+		keyFileName := config.MkCertPemPath + "/" + app.AppName + "-key.pem"   // example: app-name-key.pem
+
+		log.Info().Msgf("creating TLS k8s secret for %s...", app.AppName)
+
+		// open file content
+		certContent, err := pkg.GetFileContent(certFileName)
+		if err != nil {
+			return err
+		}
+
+		keyContent, err := pkg.GetFileContent(keyFileName)
+		if err != nil {
+			return err
+		}
+
+		data := make(map[string][]byte)
+		data["tls.crt"] = certContent
+		data["tls.key"] = keyContent
+
+		// save content into secret
+		err = k8s.CreateSecret(config.Kubeconfig, app.Namespace, app.AppName+"-tls", data) // todo argument 1 needs to be real
+		if err != nil {
+			log.Error().Err(err).Msgf("Error creating TLS k8s secret")
+		}
+
+		log.Info().Msgf("creating TLS k8s secret for %s done", app.AppName)
 	}
 
 	return nil

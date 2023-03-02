@@ -717,7 +717,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// 	log.Info().Msg("no files found in secrets directory, continuing")
 	// }
 
-	ssl.CreateCertificatesForK3dWrapper(*config)
+	if err := ssl.CreateCertificatesForK3dWrapper(*config); err != nil {
+		log.Error().Err(err).Msg("")
+	}
 	log.Info().Msg("MkCerts generated")
 
 	// GitLab Deploy Tokens
@@ -909,6 +911,12 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("pausing for vault to become ready...")
 	time.Sleep(time.Second * 15)
+
+	log.Info().Msg("storing certificates into application secrets namespace")
+	if err := ssl.CreateSecretsFromCertificatesForK3dWrapper(config); err != nil {
+		log.Error().Err(err).Msg("")
+	}
+	log.Info().Msg("storing certificates into application secrets namespace done")
 
 	minioStopChannel := make(chan struct{}, 1)
 	defer func() {
