@@ -720,7 +720,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err := ssl.CreateCertificatesForK3dWrapper(*config); err != nil {
 		log.Error().Err(err).Msg("")
 	}
-	log.Info().Msg("MkCerts generated")
+	log.Info().Msg("MkCerts generated in /.k1/tools/certs directory")
 
 	// GitLab Deploy Tokens
 	switch config.GitProvider {
