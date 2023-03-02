@@ -23,14 +23,16 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string, gitProvider st
 	}
 
 	// Set git provider token value
-	var tokenValue, containerRegistryHost string
+	var containerRegistryHost, gitRunnerSecretName, tokenValue string
 	switch gitProvider {
 	case "github":
-		tokenValue = os.Getenv("GITHUB_TOKEN")
 		containerRegistryHost = "https://ghcr.io/"
+		gitRunnerSecretName = "controller-manager"
+		tokenValue = os.Getenv("GITHUB_TOKEN")
 	case "gitlab":
-		tokenValue = os.Getenv("GITLAB_TOKEN")
 		containerRegistryHost = "registry.gitlab.io"
+		gitRunnerSecretName = "gitlab-runner"
+		tokenValue = os.Getenv("GITLAB_TOKEN")
 	}
 
 	// Create namespace
@@ -143,7 +145,7 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string, gitProvider st
 		},
 		// git runner
 		{
-			ObjectMeta: metav1.ObjectMeta{Name: "controller-manager", Namespace: fmt.Sprintf("%s-runner", gitProvider)},
+			ObjectMeta: metav1.ObjectMeta{Name: gitRunnerSecretName, Namespace: fmt.Sprintf("%s-runner", gitProvider)},
 			Data: map[string][]byte{
 				fmt.Sprintf("%s_token", gitProvider): []byte(tokenValue),
 			},

@@ -32,12 +32,17 @@ const (
 // All values used here must be of type int, excluding the string fields
 var checkFields map[string]string = map[string]string{
 	"cpu_core_limit":            "cpu_core_usage",
+	"database_count_limit":      "database_count_usage",
+	"database_cpu_core_limit":   "database_cpu_core_usage",
+	"database_ram_mb_limit":     "database_ram_mb_usage",
+	"database_disk_gb_limit":    "database_disk_gb_usage",
 	"disk_gb_limit":             "disk_gb_usage",
 	"disk_volume_count_limit":   "disk_volume_count_usage",
 	"instance_count_limit":      "instance_count_usage",
 	"loadbalancer_count_limit":  "loadbalancer_count_usage",
 	"network_count_limit":       "network_count_usage",
 	"objectstore_gb_limit":      "objectstore_gb_usage",
+	"port_count_limit":          "port_count_usage",
 	"public_ip_address_limit":   "public_ip_address_usage",
 	"ram_mb_limit":              "ram_mb_usage",
 	"security_group_limit":      "security_group_usage",

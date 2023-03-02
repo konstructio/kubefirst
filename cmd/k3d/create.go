@@ -26,6 +26,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/services"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
@@ -45,6 +46,11 @@ var (
 )
 
 func runK3d(cmd *cobra.Command, args []string) error {
+
+	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 5)
+	progressPrinter.AddTracker("platform-create", "Creating your kubefirst platform", 16)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 	clusterNameFlag, err := cmd.Flags().GetString("cluster-name")
 	if err != nil {
 		return err
@@ -187,6 +193,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	}
+	progressPrinter.IncrementTracker("preflight-checks", 1)
 
 	// this branch flag value is overridden with a tag when running from a
 	// kubefirst binary for version compatibility
@@ -228,6 +235,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			pkg.MinimumAvailableDiskSize,
 		)
 	}
+	progressPrinter.IncrementTracker("preflight-checks", 1)
 
 	// Check git credentials
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider))
@@ -338,8 +346,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider), true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("preflight-checks", 1)
 	} else {
 		log.Info().Msg(fmt.Sprintf("already completed %s checks - continuing", config.GitProvider))
+		progressPrinter.IncrementTracker("preflight-checks", 1)
 	}
 
 	// todo this is actually your personal account
@@ -362,8 +372,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst-checks.kbot-setup", true)
 		viper.WriteConfig()
 		log.Info().Msg("kbot-setup complete")
+		progressPrinter.IncrementTracker("preflight-checks", 1)
 	} else {
 		log.Info().Msg("already setup kbot user - continuing")
+		progressPrinter.IncrementTracker("preflight-checks", 1)
 	}
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
@@ -409,6 +421,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already completed download of dependencies to `$HOME/.k1/tools` - continuing")
 	}
+
+	progressPrinter.IncrementTracker("preflight-checks", 1)
 
 	// not sure if there is a better way to do this
 	gitopsTemplateTokens.GithubOwner = githubOwnerFlag
@@ -501,8 +515,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			log.Info().Msgf("created git repositories and teams for github.com/%s", githubOwnerFlag)
 			viper.Set("kubefirst-checks.terraform-apply-github", true)
 			viper.WriteConfig()
+			progressPrinter.IncrementTracker("platform-create", 1)
 		} else {
 			log.Info().Msg("already created github terraform resources")
+			progressPrinter.IncrementTracker("platform-create", 1)
 		}
 	case "gitlab":
 		// //* create teams and repositories in gitlab
@@ -536,8 +552,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabOwnerFlag)
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", true)
 			viper.WriteConfig()
+			progressPrinter.IncrementTracker("platform-create", 1)
 		} else {
 			log.Info().Msg("already created gitlab terraform resources")
+			progressPrinter.IncrementTracker("platform-create", 1)
 		}
 	}
 
@@ -598,8 +616,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		// todo that way we can stop worrying about which origin we're going to push to
 		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("platform-create", 1)
 	} else {
 		log.Info().Msg("already pushed detokenized gitops repository content")
+		progressPrinter.IncrementTracker("platform-create", 1)
 	}
 
 	metaphorTemplateTokens := k3d.MetaphorTokenValues{}
@@ -647,8 +667,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		viper.Set("kubefirst-checks.metaphor-repo-pushed", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("platform-create", 1)
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
+		progressPrinter.IncrementTracker("platform-create", 1)
 	}
 
 	//* create k3d resources
@@ -657,14 +679,19 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		err := k3d.ClusterCreate(clusterNameFlag, config.K1Dir, config.K3dClient, config.Kubeconfig)
 		if err != nil {
+			msg := "Error attempting to create K3D cluster - is Docker running?"
+			fmt.Println(msg)
+			log.Fatal().Msg(msg)
 			return err
 		}
 
 		log.Info().Msg("successfully created k3d cluster")
 		viper.Set("kubefirst-checks.terraform-apply-k3d", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("platform-create", 1)
 	} else {
 		log.Info().Msg("already created k3d cluster resources")
+		progressPrinter.IncrementTracker("platform-create", 1)
 	}
 
 	clientset, err := k8s.GetClientSet(dryRunFlag, config.Kubeconfig)
@@ -695,8 +722,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 		viper.Set("kubefirst-checks.k8s-secrets-created", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("platform-create", 1)
 	} else {
 		log.Info().Msg("already added secrets to k3d cluster")
+		progressPrinter.IncrementTracker("platform-create", 1)
 	}
 
 	// //* check for ssl restore
@@ -723,15 +752,39 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("MkCerts generated in /.k1/tools/certs directory")
 
 	// GitLab Deploy Tokens
+	// Handle secret creation for buildkit
+	createTokensFor := []string{"metaphor-frontend"}
 	switch config.GitProvider {
-	case "gitlab":
-		createTokensForProjects := []string{"metaphor-frontend"}
+	// GitHub docker auth secret
+	// Buildkit requires a specific format for Docker auth created as a secret
+	// For GitHub, this becomes the provided token (pat)
+	case "github":
+		usernamePasswordString := fmt.Sprintf("%s:%s", cGitUser, cGitToken)
+		usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+		dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"username": "%s", "password": "%s", "email": "%s", "auth": "%s"}}}`, containerRegistryHost, cGitUser, cGitToken, "k-bot@example.com", usernamePasswordStringB64)
 
+		for _, repository := range createTokensFor {
+			// Create argo workflows pull secret
+			// This is formatted to work with buildkit
+			argoDeployTokenSecret := &v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy", repository), Namespace: "argo"},
+				Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
+				Type:       "Opaque",
+			}
+			err = k8s.CreateSecretV2(config.Kubeconfig, argoDeployTokenSecret)
+			if err != nil {
+				log.Error().Msgf("error while creating secret for repository deploy token: %s", err)
+			}
+		}
+	// GitLab Deploy Tokens
+	// Project deploy tokens are generated for each member of createTokensForProjects
+	// These deploy tokens are used to authorize against the GitLab container registry
+	case "gitlab":
 		gl := gitlab.GitLabWrapper{
 			Client: gitlab.NewGitLabClient(cGitToken),
 		}
 
-		for _, project := range createTokensForProjects {
+		for _, project := range createTokensFor {
 			var p = gitlab.DeployTokenCreateParameters{
 				Name:     fmt.Sprintf("%s-deploy", project),
 				Username: fmt.Sprintf("%s-deploy", project),
@@ -744,37 +797,41 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				log.Fatal().Msgf("error creating project deploy token for project %s: %s", project, err)
 			}
 
-			log.Info().Msgf("creating secret for project deploy token for project %s...", project)
-			usernamePasswordString := fmt.Sprintf("%s:%s", p.Username, token)
-			usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
-			dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"username": "%s", "password": "%s", "email": "%s", "auth": "%s"}}}`, "registry.gitlab.com", p.Username, token, "k-bot@example.com", usernamePasswordStringB64)
+			if token != "" {
+				log.Info().Msgf("creating secret for project deploy token for project %s...", project)
+				usernamePasswordString := fmt.Sprintf("%s:%s", p.Username, token)
+				usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+				dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"username": "%s", "password": "%s", "email": "%s", "auth": "%s"}}}`, containerRegistryHost, p.Username, token, "k-bot@example.com", usernamePasswordStringB64)
 
-			createInNamespace := []string{"development", "staging", "production"}
-			for _, namespace := range createInNamespace {
-				deployTokenSecret := &v1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy", project), Namespace: namespace},
-					Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
-					Type:       "kubernetes.io/dockerconfigjson",
+				createInNamespace := []string{"development", "staging", "production"}
+				for _, namespace := range createInNamespace {
+					deployTokenSecret := &v1.Secret{
+						ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy", project), Namespace: namespace},
+						Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
+						Type:       "kubernetes.io/dockerconfigjson",
+					}
+					err = k8s.CreateSecretV2(config.Kubeconfig, deployTokenSecret)
+					if err != nil {
+						log.Error().Msgf("error while creating secret for project deploy token: %s", err)
+					}
 				}
-				err = k8s.CreateSecretV2(config.Kubeconfig, deployTokenSecret)
+
+				// Create argo workflows pull secret
+				// This is formatted to work with buildkit
+				argoDeployTokenSecret := &v1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy", project), Namespace: "argo"},
+					Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
+					Type:       "Opaque",
+				}
+				err = k8s.CreateSecretV2(config.Kubeconfig, argoDeployTokenSecret)
 				if err != nil {
 					log.Error().Msgf("error while creating secret for project deploy token: %s", err)
 				}
 			}
-
-			// Create argo workflows pull secret
-			// This is formatted to work with buildkit
-			argoDeployTokenSecret := &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy", project), Namespace: "argo"},
-				Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
-				Type:       "Opaque",
-			}
-			err = k8s.CreateSecretV2(config.Kubeconfig, argoDeployTokenSecret)
-			if err != nil {
-				log.Error().Msgf("error while creating secret for project deploy token: %s", err)
-			}
 		}
 	}
+
+	progressPrinter.IncrementTracker("platform-create", 1)
 
 	//* helm add argo repository && update
 	helmRepo := helm.HelmRepo{
@@ -793,8 +850,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("helm repo added")
 		viper.Set("kubefirst-checks.argocd-helm-repo-added", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("platform-create", 1)
 	} else {
 		log.Info().Msg("argo helm repository already added, continuing")
+		progressPrinter.IncrementTracker("platform-create", 1)
 	}
 	//* helm install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-install")
@@ -807,8 +866,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 		viper.Set("kubefirst-checks.argocd-helm-install", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("platform-create", 1)
 	} else {
 		log.Info().Msg("argo helm already installed, continuing")
+		progressPrinter.IncrementTracker("platform-create", 1)
 	}
 
 	// Wait for ArgoCD StatefulSet Pods to transition to Running
@@ -873,8 +934,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("components.argocd.auth-token", token)
 		viper.Set("kubefirst-checks.argocd-credentials-set", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("platform-create", 1)
 	} else {
 		log.Info().Msg("argo credentials already set, continuing")
+		progressPrinter.IncrementTracker("platform-create", 1)
 	}
 
 	//* argocd sync registry and start sync waves
@@ -889,8 +952,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("platform-create", 1)
 	} else {
 		log.Info().Msg("argocd registry create already done, continuing")
+		progressPrinter.IncrementTracker("platform-create", 1)
 	}
 
 	// Wait for Vault StatefulSet Pods to transition to Running
@@ -910,7 +975,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	log.Info().Msg("pausing for vault to become ready...")
-	time.Sleep(time.Second * 15)
+	time.Sleep(time.Second * 30)
+
+	progressPrinter.IncrementTracker("platform-create", 1)
 
 	log.Info().Msg("storing certificates into application secrets namespace")
 	if err := ssl.CreateSecretsFromCertificatesForK3dWrapper(config); err != nil {
@@ -961,6 +1028,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	log.Printf("Successfully uploaded %s to bucket %s\n", objectName, info.Bucket)
+
+	progressPrinter.IncrementTracker("platform-create", 1)
 
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
@@ -1024,8 +1093,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("vault terraform executed successfully")
 		viper.Set("kubefirst-checks.terraform-apply-vault", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("platform-create", 1)
 	} else {
 		log.Info().Msg("already executed vault terraform")
+		progressPrinter.IncrementTracker("platform-create", 1)
 	}
 
 	//* create users
@@ -1054,8 +1125,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		// progressPrinter.IncrementTracker("step-users", 1)
 		viper.Set("kubefirst-checks.terraform-apply-users", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("platform-create", 1)
 	} else {
 		log.Info().Msg("already created users with terraform")
+		progressPrinter.IncrementTracker("platform-create", 1)
 	}
 
 	//PostRun string replacement
@@ -1088,6 +1161,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("Error pushing repo: %s", err)
 	}
 
+	progressPrinter.IncrementTracker("platform-create", 1)
+
 	// Wait for console Deployment Pods to transition to Running
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
 		config.Kubeconfig,
@@ -1117,6 +1192,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		9094,
 		consoleStopChannel,
 	)
+
+	progressPrinter.IncrementTracker("platform-create", 1)
 
 	log.Info().Msg("kubefirst installation complete")
 	log.Info().Msg("welcome to your new kubefirst platform running in K3d")
