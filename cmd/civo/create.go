@@ -358,7 +358,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check quotas
-	quotaMessage, quotaFailures, quotaWarnings, err := returnCivoQuotaEvaluation(cloudRegionFlag, false)
+	quotaMessage, quotaFailures, quotaWarnings, err := returnCivoQuotaEvaluation(cloudRegionFlag)
 	if err != nil {
 		return err
 	}
