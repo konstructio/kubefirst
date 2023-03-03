@@ -8,13 +8,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh/terminal"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
 )
@@ -28,7 +28,7 @@ func CreateSecretV2(kubeConfigPath string, secret *v1.Secret) error {
 	_, err = clientset.CoreV1().Secrets(secret.Namespace).Create(
 		context.Background(),
 		secret,
-		metaV1.CreateOptions{},
+		metav1.CreateOptions{},
 	)
 	if err != nil {
 		return err
@@ -43,7 +43,7 @@ func ReadSecretV2(kubeConfigPath string, namespace string, secretName string) (m
 		return map[string]string{}, err
 	}
 
-	secret, err := clientset.CoreV1().Secrets(namespace).Get(context.Background(), secretName, metaV1.GetOptions{})
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(context.Background(), secretName, metav1.GetOptions{})
 	if err != nil {
 		log.Error().Msgf("Error getting secret: %s\n", err)
 		return map[string]string{}, nil
@@ -382,16 +382,12 @@ func WaitForStatefulSetReady(kubeConfigPath string, statefulset *appsv1.Stateful
 
 	// Format list for metav1.ListOptions for watch
 	configuredReplicas := statefulset.Status.Replicas
-	watchOptions := metav1.ListOptions{
-		FieldSelector: fmt.Sprintf(
-			"metadata.name=%s", statefulset.Name),
-	}
 
 	// Create watch operation
-	objWatch, err := clientset.
-		AppsV1().
-		StatefulSets(statefulset.ObjectMeta.Namespace).
-		Watch(context.Background(), watchOptions)
+	objWatch, err := clientset.AppsV1().StatefulSets(statefulset.ObjectMeta.Namespace).Watch(context.Background(), metav1.ListOptions{
+		FieldSelector: fmt.Sprintf(
+			"metadata.name=%s", statefulset.Name),
+	})
 	if err != nil {
 		log.Fatal().Msgf("Error when attempting to wait for StatefulSet: %s", err)
 	}
@@ -407,30 +403,73 @@ func WaitForStatefulSetReady(kubeConfigPath string, statefulset *appsv1.Stateful
 				log.Fatal().Msgf("Error waiting for StatefulSet: %s", err)
 			}
 			if ignoreReady {
-				if event.
-					Object.(*appsv1.StatefulSet).
-					Status.CurrentReplicas == configuredReplicas {
-					log.Info().Msgf("All Pods in StatefulSet %s have been created.", statefulset.Name)
-					// Without a pause, this sometimes causes failures
-					s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
-					s.FinalMSG = "Done!\n"
-					fmt.Printf("Pausing for Pods in StatefulSet %s to become ready...", statefulset.Name)
-					time.Sleep(time.Second * 15)
-					s.Stop()
+				// Under circumstances where Pods may be running but not ready
+				// These may require additional setup before use, etc.
+				currentRevision := event.Object.(*appsv1.StatefulSet).Status.CurrentRevision
+				if event.Object.(*appsv1.StatefulSet).Status.CurrentReplicas == configuredReplicas {
+					// Get Pods owned by the StatefulSet
+					pods, err := clientset.CoreV1().Pods(statefulset.ObjectMeta.Namespace).List(context.Background(), metav1.ListOptions{
+						LabelSelector: fmt.Sprintf("controller-revision-hash=%s", currentRevision),
+					})
+					if err != nil {
+						log.Fatal().Msgf("could not find Pods owned by StatefulSet")
+					}
+
+					// Determine when the Pods are running
+					for _, pod := range pods.Items {
+						err := watchForStatefulSetPodReady(clientset, statefulset.Namespace, statefulset.Name, pod.Name, timeoutSeconds)
+						if err != nil {
+							log.Fatal().Msgf(err.Error())
+						}
+						log.Info().Msgf("pod %s in statefulset %s is running", pod.Name, statefulset.Name)
+					}
+					objWatch.Stop()
 					return true, nil
 				}
 			} else {
-				if event.
-					Object.(*appsv1.StatefulSet).
-					Status.ReadyReplicas == configuredReplicas {
+				// Under normal circumstances, once all Pods are ready
+				// return success
+				if event.Object.(*appsv1.StatefulSet).Status.AvailableReplicas == configuredReplicas {
 					log.Info().Msgf("All Pods in StatefulSet %s are ready.", statefulset.Name)
+					objWatch.Stop()
 					return true, nil
 				}
 			}
-
 		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
 			log.Error().Msg("The StatefulSet was not ready within the timeout period.")
 			return false, errors.New("The StatefulSet was not ready within the timeout period.")
+		}
+	}
+}
+
+// watchForStatefulSetPodReady inspects a Pod associated with a StatefulSet and
+// uses a channel to determine when it's ready
+// The channel will timeout if the Pod isn't ready by timeoutSeconds
+func watchForStatefulSetPodReady(clientset *kubernetes.Clientset, namespace string, statefulSetName string, podName string, timeoutSeconds int64) error {
+	podObjWatch, err := clientset.CoreV1().Pods(namespace).Watch(context.Background(), metav1.ListOptions{
+		FieldSelector: fmt.Sprintf(
+			"metadata.name=%s", podName),
+	})
+	if err != nil {
+		log.Fatal().Msgf("Error when attempting to wait for Pod: %s", err)
+	}
+
+	podObjChan := podObjWatch.ResultChan()
+	for {
+		select {
+		case podEvent, ok := <-podObjChan:
+			time.Sleep(time.Second * 1)
+			if !ok {
+				// Error if the channel closes
+				log.Fatal().Msgf("Error waiting for Pod: %s", err)
+			}
+			if podEvent.Object.(*corev1.Pod).Status.Phase == "Running" {
+				podObjWatch.Stop()
+				return nil
+			}
+		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
+			log.Error().Msg("The StatefulSet Pod was not ready within the timeout period.")
+			return errors.New("The StatefulSet Pod was not ready within the timeout period.")
 		}
 	}
 }
