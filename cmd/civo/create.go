@@ -1137,6 +1137,31 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 	progressPrinter.IncrementTracker("configuring-vault", 1)
 
+	// Init and unseal vault
+	executionControl = viper.GetBool("kubefirst-checks.vault-initialized")
+	if !executionControl {
+		vaultClient := &vault.Conf
+
+		// Initialize and unseal Vault
+		err := vaultClient.UnsealRaftLeader(config.Kubeconfig)
+		if err != nil {
+			return err
+		}
+
+		err = vaultClient.UnsealRaftFollowers(config.Kubeconfig)
+		if err != nil {
+			return err
+		}
+
+		viper.Set("kubefirst-checks.vault-initialized", true)
+		viper.WriteConfig()
+		progressPrinter.IncrementTracker("configuring-vault", 1)
+	} else {
+		log.Info().Msg("vault is already initialized - skipping")
+		progressPrinter.IncrementTracker("configuring-vault", 1)
+	}
+
+	//* configure vault with terraform
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
 	defer func() {
@@ -1151,42 +1176,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		vaultStopChannel,
 	)
 
-	// Init and unseal vault
-	executionControl = viper.GetBool("kubefirst-checks.vault-initialized")
-	if !executionControl {
-		// Initialize and unseal Vault
-		err = vault.UnsealVault(config.Kubeconfig, &vault.VaultUnsealOptions{
-			VaultAPIAddress:      "http://localhost:8200",
-			HighAvailability:     true,
-			HighAvailabilityType: "raft",
-			RaftLeader:           true,
-			RaftFollower:         false,
-			UseAPI:               true,
-		})
-		if err != nil {
-			log.Fatal().Msgf("could not initialize vault: %s", err)
-		}
-
-		err = vault.UnsealVault(config.Kubeconfig, &vault.VaultUnsealOptions{
-			HighAvailability:     true,
-			HighAvailabilityType: "raft",
-			Nodes:                3,
-			RaftLeader:           false,
-			RaftFollower:         true,
-			UseAPI:               false,
-		})
-		if err != nil {
-			log.Fatal().Msgf("could not initialize vault: %s", err)
-		}
-		viper.Set("kubefirst-checks.vault-initialized", true)
-		viper.WriteConfig()
-		progressPrinter.IncrementTracker("configuring-vault", 1)
-	} else {
-		log.Info().Msg("vault is already initialized - skipping")
-		progressPrinter.IncrementTracker("configuring-vault", 1)
-	}
-
-	//* configure vault with terraform
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
 	if !executionControl {
 		// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
