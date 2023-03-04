@@ -44,6 +44,19 @@ func CreateDirIfNotExist(dir string) error {
 	return nil
 }
 
+func RemoveSubdomainV2(domainName string) (string, error) {
+
+	log.Info().Msgf("original domain name:", domainName)
+
+	domainName = strings.TrimRight(domainName, ".")
+	domainSlice := strings.Split(domainName, ".")
+	domainName = strings.Join([]string{domainSlice[len(domainSlice)-2], domainSlice[len(domainSlice)-1]}, ".")
+
+	log.Info().Msgf("adjusted domain name: ", domainName)
+
+	return domainName, nil
+}
+
 // Detokenize - Translate tokens by values on a given path
 func Detokenize(path string) {
 

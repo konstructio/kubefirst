@@ -57,6 +57,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	if strings.Contains(domainNameFlag, "://") {
+		return errors.New("--domain-name should not have a protocol, please provide it in the form of \n\tdomain.com or my.domain.com")
+	}
 
 	dryRunFlag, err := cmd.Flags().GetBool("dry-run")
 	if err != nil {

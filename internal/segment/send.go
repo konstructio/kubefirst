@@ -26,7 +26,7 @@ func (c *SegmentClient) SendCountMetric(
 		}
 	}(c)
 
-	strippedDomainName, err := pkg.RemoveSubDomain(domainName)
+	strippedDomainName, err := pkg.RemoveSubdomainV2(domainName)
 	if err != nil {
 		return "error stripping domain name from value"
 	}
