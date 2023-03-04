@@ -230,7 +230,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		gitopsDirectoryTokens.UseTelemetry = "true"
 
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
-		if segmentMsg == "" {
+		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 	} else {
@@ -543,11 +543,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
-		if segmentMsg == "" {
+		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
-		if segmentMsg == "" {
+		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 	}
@@ -1269,7 +1269,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
-		if segmentMsg == "" {
+		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 	}

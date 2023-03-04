@@ -190,7 +190,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
-		if segmentMsg == "" {
+		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 	}
@@ -414,11 +414,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		gitopsTemplateTokens.UseTelemetry = "true"
 
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
-		if segmentMsg == "" {
+		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
-		if segmentMsg == "" {
+		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 	} else {
@@ -1207,7 +1207,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
-		if segmentMsg == "" {
+		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 	}

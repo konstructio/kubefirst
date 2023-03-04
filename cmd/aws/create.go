@@ -157,7 +157,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, aws.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
-		if segmentMsg == "" {
+		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 	}
@@ -330,11 +330,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, aws.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
-		if segmentMsg == "" {
+		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, aws.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
-		if segmentMsg == "" {
+		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 	}
@@ -923,7 +923,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, aws.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
-		if segmentMsg == "" {
+		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 	}
