@@ -223,20 +223,18 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		ClusterId:                    clusterId,
 	}
 
-	if useTelemetryFlag {
-		gitopsDirectoryTokens.UseTelemetry = "true"
-	} else {
-		gitopsDirectoryTokens.UseTelemetry = "false"
-	}
-
 	viper.Set(fmt.Sprintf("%s.atlantis.webhook.url", config.GitProvider), fmt.Sprintf("https://atlantis.%s/events", domainNameFlag))
 	viper.WriteConfig()
 
 	if useTelemetryFlag {
+		gitopsDirectoryTokens.UseTelemetry = "true"
+
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
 		if segmentMsg == "" {
 			log.Info().Msg(segmentMsg)
 		}
+	} else {
+		gitopsDirectoryTokens.UseTelemetry = "false"
 	}
 
 	// this branch flag value is overridden with a tag when running from a

@@ -339,26 +339,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// if useTelemetryFlag {
-	// 	if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, aws.CloudProvider, aws.GitProvider, clusterId); err != nil {
-	// 		log.Info().Msg(err.Error())
-	// 		return err
-	// 	}
-	// }
-
 	//* generate public keys for ssh
 	publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
 	if err != nil {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
 	}
-
-	//* emit cluster install started
-	// if useTelemetryFlag {
-	// 	if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, aws.CloudProvider, aws.GitProvider, clusterId); err != nil {
-	// 		log.Info().Msg(err.Error())
-	// 	}
-	// }
-
 	//* download dependencies to `$HOME/.k1/tools`
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")

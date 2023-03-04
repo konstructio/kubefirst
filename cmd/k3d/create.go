@@ -177,7 +177,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// Instantiate K3d config
 	config := k3d.GetConfig(gitProviderFlag, cGitOwner)
-	gitopsTemplateTokens := k3d.GitopsTokenValues{}
+
 	var sshPrivateKey, sshPublicKey string
 
 	// todo placed in configmap in kubefirst namespace, included in telemetry
@@ -380,18 +380,49 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
+	// not sure if there is a better way to do this
+	gitopsTemplateTokens := k3d.GitopsTokenValues{
+		GithubOwner:                   githubOwnerFlag,
+		GithubUser:                    cGitUser,
+		GitlabOwner:                   gitlabOwnerFlag,
+		GitlabOwnerGroupID:            cGitlabOwnerGroupID,
+		GitlabUser:                    cGitUser,
+		GitopsRepoGitURL:              config.DestinationGitopsRepoGitURL,
+		DomainName:                    k3d.DomainName,
+		AtlantisAllowList:             fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
+		NgrokHost:                     ngrokHost,
+		AlertsEmail:                   "REMOVE_THIS_VALUE",
+		ClusterName:                   clusterNameFlag,
+		ClusterType:                   clusterTypeFlag,
+		GithubHost:                    k3d.GithubHost,
+		GitlabHost:                    k3d.GitlabHost,
+		ArgoWorkflowsIngressURL:       fmt.Sprintf("https://argo.%s", k3d.DomainName),
+		VaultIngressURL:               fmt.Sprintf("https://vault.%s", k3d.DomainName),
+		ArgocdIngressURL:              fmt.Sprintf("https://argocd.%s", k3d.DomainName),
+		AtlantisIngressURL:            fmt.Sprintf("https://atlantis.%s", k3d.DomainName),
+		MetaphorDevelopmentIngressURL: fmt.Sprintf("https://metaphor-development.%s", k3d.DomainName),
+		MetaphorStagingIngressURL:     fmt.Sprintf("https://metaphor-staging.%s", k3d.DomainName),
+		MetaphorProductionIngressURL:  fmt.Sprintf("https://metaphor-production.%s", k3d.DomainName),
+		KubefirstVersion:              configs.K1Version,
+		KubefirstTeam:                 kubefirstTeam,
+		GitProvider:                   config.GitProvider,
+		ClusterId:                     clusterId,
+		CloudProvider:                 k3d.CloudProvider,
+	}
+
 	if useTelemetryFlag {
+		gitopsTemplateTokens.UseTelemetry = "true"
+
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
 		if segmentMsg == "" {
 			log.Info().Msg(segmentMsg)
 		}
-	}
-
-	if useTelemetryFlag {
-		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
+		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
 		if segmentMsg == "" {
 			log.Info().Msg(segmentMsg)
 		}
+	} else {
+		gitopsTemplateTokens.UseTelemetry = "false"
 	}
 
 	//* generate public keys for ssh
@@ -399,13 +430,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
 	}
-
-	//* emit cluster install started
-	// if useTelemetryFlag {
-	// 	if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, config.GitProvider, clusterId); err != nil {
-	// 		log.Info().Msg(err.Error())
-	// 	}
-	// }
 
 	//* download dependencies to `$HOME/.k1/tools`
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
@@ -424,40 +448,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	progressPrinter.IncrementTracker("preflight-checks", 1)
-
-	// not sure if there is a better way to do this
-	gitopsTemplateTokens.GithubOwner = githubOwnerFlag
-	gitopsTemplateTokens.GithubUser = cGitUser
-	gitopsTemplateTokens.GitlabOwner = gitlabOwnerFlag
-	gitopsTemplateTokens.GitlabOwnerGroupID = cGitlabOwnerGroupID
-	gitopsTemplateTokens.GitlabUser = cGitUser
-	gitopsTemplateTokens.GitopsRepoGitURL = config.DestinationGitopsRepoGitURL
-	gitopsTemplateTokens.DomainName = k3d.DomainName
-	gitopsTemplateTokens.AtlantisAllowList = fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner)
-	gitopsTemplateTokens.NgrokHost = ngrokHost
-	gitopsTemplateTokens.AlertsEmail = "REMOVE_THIS_VALUE"
-	gitopsTemplateTokens.ClusterName = clusterNameFlag
-	gitopsTemplateTokens.ClusterType = clusterTypeFlag
-	gitopsTemplateTokens.GithubHost = k3d.GithubHost
-	gitopsTemplateTokens.GitlabHost = k3d.GitlabHost
-	gitopsTemplateTokens.ArgoWorkflowsIngressURL = fmt.Sprintf("https://argo.%s", k3d.DomainName)
-	gitopsTemplateTokens.VaultIngressURL = fmt.Sprintf("https://vault.%s", k3d.DomainName)
-	gitopsTemplateTokens.ArgocdIngressURL = fmt.Sprintf("https://argocd.%s", k3d.DomainName)
-	gitopsTemplateTokens.AtlantisIngressURL = fmt.Sprintf("https://atlantis.%s", k3d.DomainName)
-	gitopsTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("https://metaphor-development.%s", k3d.DomainName)
-	gitopsTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("https://metaphor-staging.%s", k3d.DomainName)
-	gitopsTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("https://metaphor-production.%s", k3d.DomainName)
-	gitopsTemplateTokens.KubefirstVersion = configs.K1Version
-	gitopsTemplateTokens.KubefirstTeam = kubefirstTeam
-	gitopsTemplateTokens.GitProvider = config.GitProvider
-	gitopsTemplateTokens.ClusterId = clusterId
-	gitopsTemplateTokens.CloudProvider = k3d.CloudProvider
-
-	if useTelemetryFlag {
-		gitopsTemplateTokens.UseTelemetry = "true"
-	} else {
-		gitopsTemplateTokens.UseTelemetry = "false"
-	}
 
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
