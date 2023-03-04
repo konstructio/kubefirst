@@ -9,7 +9,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/wrappers"
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/kubefirst/kubefirst/internal/argocd"
@@ -91,20 +90,20 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	config := configs.ReadConfig()
 
 	gitProvider := "github"
-	cloud := "k3d"
-	clusterId := viper.GetString("cluster-id")
+	// cloud := "k3d"
+	// clusterId := viper.GetString("cluster-id")
 
 	progressPrinter.AddTracker("step-github", "Setup gitops on github", 3)
 	progressPrinter.AddTracker("step-base", "Setup base cluster", 2)
 	progressPrinter.AddTracker("step-apps", "Install apps to cluster", 4)
-	if useTelemetry {
-		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallStarted, cloud, gitProvider, clusterId); err != nil {
-			log.Error().Err(err).Msg("")
-		}
-		log.Info().Msg("Telemetry info sent")
-	} else {
-		pkg.InformUser("Telemetry skipped by user request", silentMode)
-	}
+	// if useTelemetry {
+	// 	if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallStarted, cloud, gitProvider, clusterId); err != nil {
+	// 		log.Error().Err(err).Msg("")
+	// 	}
+	// 	log.Info().Msg("Telemetry info sent")
+	// } else {
+	// 	pkg.InformUser("Telemetry skipped by user request", silentMode)
+	// }
 
 	// todo need to add go channel to control when ngrok should close
 	// and use context to handle closing the open goroutine/connection
@@ -459,14 +458,14 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	wg.Wait()
 
 	log.Info().Msg("sending mgmt cluster install completed metric")
-	if useTelemetry {
-		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted, cloud, gitProvider, clusterId); err != nil {
-			log.Error().Err(err).Msg("")
-		}
-		log.Info().Msg("Telemetry info sent")
-	} else {
-		pkg.InformUser("Telemetry skipped by user request", silentMode)
-	}
+	// if useTelemetry {
+	// 	if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricMgmtClusterInstallCompleted, cloud, gitProvider, clusterId); err != nil {
+	// 		log.Error().Err(err).Msg("")
+	// 	}
+	// 	log.Info().Msg("Telemetry info sent")
+	// } else {
+	// 	pkg.InformUser("Telemetry skipped by user request", silentMode)
+	// }
 
 	pkg.InformUser("Kubefirst installation finished successfully", silentMode)
 	return nil

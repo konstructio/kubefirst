@@ -27,12 +27,12 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/kubefirst/kubefirst/internal/segment"
 	"github.com/kubefirst/kubefirst/internal/services"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
-	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -127,6 +127,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.WriteConfig()
 
+	segmentClient := &segment.Client
+
 	// Set git handlers
 	switch gitProviderFlag {
 	case "github":
@@ -172,9 +174,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	kubefirstStateStoreBucketName := fmt.Sprintf("k1-state-store-%s-%s", clusterNameFlag, clusterId)
 
 	// Detokenize
-	isKubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
-	if isKubefirstTeam == "" {
-		isKubefirstTeam = "false"
+	kubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
+	if kubefirstTeam == "" {
+		kubefirstTeam = "false"
 	}
 
 	gitopsDirectoryTokens := civo.GitOpsDirectoryValues{
@@ -187,7 +189,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		DomainName:                     domainNameFlag,
 		KubeconfigPath:                 config.Kubeconfig,
 		KubefirstStateStoreBucket:      kubefirstStateStoreBucketName,
-		KubefirstTeam:                  isKubefirstTeam,
+		KubefirstTeam:                  kubefirstTeam,
 		KubefirstVersion:               configs.K1Version,
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
 		ArgoCDIngressNoHTTPSURL:        fmt.Sprintf("argocd.%s", domainNameFlag),
@@ -231,9 +233,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitStarted, civo.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-			return err
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
+		if segmentMsg == "" {
+			log.Info().Msg(segmentMsg)
 		}
 	}
 
@@ -542,30 +544,18 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitCompleted, civo.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-			return err
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
+		if segmentMsg == "" {
+			log.Info().Msg(segmentMsg)
+		}
+		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
+		if segmentMsg == "" {
+			log.Info().Msg(segmentMsg)
 		}
 	}
-
-	//* generate public keys for ssh
-	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, civo.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-			return err
-		}
-	}
-
 	publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
 	if err != nil {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
-	}
-
-	//* emit cluster install started
-	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, civo.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-		}
 	}
 
 	//* download dependencies to `$HOME/.k1/tools`
@@ -1280,9 +1270,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	reports.CivoHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, dryRunFlag, false)
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallCompleted, civo.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-			return err
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
+		if segmentMsg == "" {
+			log.Info().Msg(segmentMsg)
 		}
 	}
 

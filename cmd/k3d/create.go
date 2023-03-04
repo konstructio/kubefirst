@@ -28,11 +28,11 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/kubefirst/kubefirst/internal/segment"
 	"github.com/kubefirst/kubefirst/internal/services"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/kubefirst/kubefirst/internal/terraform"
-	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -112,6 +112,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	httpClient := http.DefaultClient
+	segmentClient := &segment.Client
 
 	// Set git handlers
 	switch gitProviderFlag {
@@ -132,9 +133,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("flags.gitlab-owner", gitlabOwnerFlag)
 	}
 
-	isKubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
-	if isKubefirstTeam == "" {
-		isKubefirstTeam = "false"
+	kubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
+	if kubefirstTeam == "" {
+		kubefirstTeam = "false"
 	}
 
 	// required for destroy command
@@ -188,9 +189,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitStarted, k3d.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-			return err
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
+		if segmentMsg == "" {
+			log.Info().Msg(segmentMsg)
 		}
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
@@ -380,16 +381,16 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitCompleted, k3d.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-			return err
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
+		if segmentMsg == "" {
+			log.Info().Msg(segmentMsg)
 		}
 	}
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-			return err
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
+		if segmentMsg == "" {
+			log.Info().Msg(segmentMsg)
 		}
 	}
 
@@ -400,11 +401,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	//* emit cluster install started
-	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-		}
-	}
+	// if useTelemetryFlag {
+	// 	if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, config.GitProvider, clusterId); err != nil {
+	// 		log.Info().Msg(err.Error())
+	// 	}
+	// }
 
 	//* download dependencies to `$HOME/.k1/tools`
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
@@ -447,7 +448,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	gitopsTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("https://metaphor-staging.%s", k3d.DomainName)
 	gitopsTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("https://metaphor-production.%s", k3d.DomainName)
 	gitopsTemplateTokens.KubefirstVersion = configs.K1Version
-	gitopsTemplateTokens.KubefirstTeam = isKubefirstTeam
+	gitopsTemplateTokens.KubefirstTeam = kubefirstTeam
 	gitopsTemplateTokens.GitProvider = config.GitProvider
 	gitopsTemplateTokens.ClusterId = clusterId
 	gitopsTemplateTokens.CloudProvider = k3d.CloudProvider
@@ -1215,9 +1216,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	reports.LocalHandoffScreenV2(argocdPassword, clusterNameFlag, cGitOwner, config, dryRunFlag, false)
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallCompleted, k3d.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-			return err
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
+		if segmentMsg == "" {
+			log.Info().Msg(segmentMsg)
 		}
 	}
 
