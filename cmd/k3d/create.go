@@ -380,7 +380,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
-	// not sure if there is a better way to do this
 	gitopsTemplateTokens := k3d.GitopsTokenValues{
 		GithubOwner:                   githubOwnerFlag,
 		GithubUser:                    cGitUser,
