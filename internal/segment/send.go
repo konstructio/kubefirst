@@ -26,6 +26,11 @@ func (c *SegmentClient) SendCountMetric(
 		}
 	}(c)
 
+	strippedDomainName, err := pkg.RemoveSubDomain(domainName)
+	if err != nil {
+		return "error stripping domain name from value"
+	}
+
 	if metricName == pkg.MetricInitStarted {
 		err := c.Client.Enqueue(analytics.Identify{
 			UserId: domainName,
@@ -36,7 +41,7 @@ func (c *SegmentClient) SendCountMetric(
 		}
 	}
 
-	err := c.Client.Enqueue(analytics.Track{
+	err = c.Client.Enqueue(analytics.Track{
 		UserId: domainName,
 		Event:  metricName,
 		Properties: analytics.NewProperties().
@@ -44,7 +49,7 @@ func (c *SegmentClient) SendCountMetric(
 			Set("cloud_provider", cloudProvider).
 			Set("cluster_id", clusterId).
 			Set("cluster_type", clusterType).
-			Set("domain", domainName).
+			Set("domain", strippedDomainName).
 			Set("git_provider", gitProvider).
 			Set("kubefirst_team", kubefirstTeam),
 	})
