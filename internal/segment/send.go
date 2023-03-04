@@ -33,7 +33,7 @@ func (c *SegmentClient) SendCountMetric(
 
 	if metricName == pkg.MetricInitStarted {
 		err := c.Client.Enqueue(analytics.Identify{
-			UserId: domainName,
+			UserId: strippedDomainName,
 			Type:   "identify",
 		})
 		if err != nil {
