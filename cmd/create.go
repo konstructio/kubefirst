@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/kubefirst/kubefirst/internal/wrappers"
-
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -65,10 +63,10 @@ cluster provisioning process spinning up the services, and validates the livenes
 		}
 
 		// todo remove this dependency from create.go
-		hostedZoneName := viper.GetString("aws.hostedzonename")
 		providerValue := viper.GetString("git-provider")
-		cloud := viper.GetString("cloud")
-		clusterId := viper.GetString("cluster-id")
+		// hostedZoneName := viper.GetString("aws.hostedzonename")
+		// cloud := viper.GetString("cloud")
+		// clusterId := viper.GetString("cluster-id")
 
 		if !globalFlags.UseTelemetry {
 			informUser("Telemetry Disabled", globalFlags.SilentMode)
@@ -76,11 +74,11 @@ cluster provisioning process spinning up the services, and validates the livenes
 			pkg.InformUser("Sending installation telemetry", globalFlags.SilentMode)
 		}
 
-		if globalFlags.UseTelemetry {
-			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallStarted, cloud, providerValue, clusterId); err != nil {
-				log.Warn().Msgf("%s", err)
-			}
-		}
+		// if globalFlags.UseTelemetry {
+		// 	if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallStarted, cloud, providerValue, clusterId); err != nil {
+		// 		log.Warn().Msgf("%s", err)
+		// 	}
+		// }
 
 		httpClient := http.DefaultClient
 		gitHubService := services.NewGitHubService(httpClient)
@@ -195,11 +193,11 @@ cluster provisioning process spinning up the services, and validates the livenes
 
 		log.Debug().Msg("sending mgmt cluster install completed metric")
 
-		if globalFlags.UseTelemetry {
-			if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallCompleted, cloud, providerValue, clusterId); err != nil {
-				log.Warn().Msgf("%s", err)
-			}
-		}
+		// if globalFlags.UseTelemetry {
+		// 	if err := wrappers.SendSegmentIoTelemetry(hostedZoneName, pkg.MetricMgmtClusterInstallCompleted, cloud, providerValue, clusterId); err != nil {
+		// 		log.Warn().Msgf("%s", err)
+		// 	}
+		// }
 
 		log.Debug().Msg("Kubefirst installation finished successfully")
 		informUser("Kubefirst installation finished successfully", globalFlags.SilentMode)
