@@ -251,7 +251,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 
 		// Objects to check for
-		newRepositoryNames := []string{"gitops", "metaphor-frontend"}
+		newRepositoryNames := []string{"gitops", "metaphor"}
 		newTeamNames := []string{"admins", "developers"}
 
 		switch config.GitProvider {
@@ -462,12 +462,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
+			config.DestinationMetaphorRepoGitURL,
 			config.K1Dir,
 			&gitopsTemplateTokens,
 		)
 		if err != nil {
 			return err
 		}
+
+		return errors.New("check the gitops repo content")
 
 		// todo emit init telemetry end
 		viper.Set("kubefirst-checks.gitops-ready-to-push", true)
@@ -615,13 +618,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	metaphorTemplateTokens := k3d.MetaphorTokenValues{}
 	metaphorTemplateTokens.ClusterName = clusterNameFlag
 	metaphorTemplateTokens.CloudRegion = cloudRegionFlag
-	metaphorTemplateTokens.ContainerRegistryURL = fmt.Sprintf("%s/%s/metaphor-frontend", containerRegistryHost, cGitOwner)
+	metaphorTemplateTokens.ContainerRegistryURL = fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner)
 	metaphorTemplateTokens.DomainName = k3d.DomainName
 	metaphorTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("metaphor-development.%s", k3d.DomainName)
 	metaphorTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("metaphor-staging.%s", k3d.DomainName)
 	metaphorTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("metaphor-production.%s", k3d.DomainName)
 
-	//* git clone and detokenize the metaphor-frontend-template repository
+	//* git clone and detokenize the metaphor-template repository
 	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
 
 		err := k3d.PrepareMetaphorRepository(
@@ -650,10 +653,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log.Info().Msgf("successfully pushed gitops to git@%s/%s/metaphor-frontend", cGitHost, cGitOwner)
+		log.Info().Msgf("successfully pushed gitops to git@%s/%s/metaphor", cGitHost, cGitOwner)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
-		log.Info().Msgf("pushed detokenized metaphor-frontend repository to %s/%s", cGitHost, cGitOwner)
+		log.Info().Msgf("pushed detokenized metaphor repository to %s/%s", cGitHost, cGitOwner)
 
 		viper.Set("kubefirst-checks.metaphor-repo-pushed", true)
 		viper.WriteConfig()
@@ -743,7 +746,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// GitLab Deploy Tokens
 	// Handle secret creation for buildkit
-	createTokensFor := []string{"metaphor-frontend"}
+	createTokensFor := []string{"metaphor"}
 	switch config.GitProvider {
 	// GitHub docker auth secret
 	// Buildkit requires a specific format for Docker auth created as a secret

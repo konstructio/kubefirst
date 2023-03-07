@@ -64,6 +64,7 @@ func PrepareGitopsRepository(
 	gitopsDir string,
 	gitopsTemplateBranch string,
 	gitopsTemplateURL string,
+	destinationMetaphorRepoGitURL string,
 	k1Dir string,
 	tokens *GitopsTokenValues,
 ) error {
@@ -74,7 +75,7 @@ func PrepareGitopsRepository(
 	}
 	log.Info().Msg("gitops repository clone complete")
 
-	err = k3dGithubAdjustGitopsTemplateContent(CloudProvider, clusterName, clusterType, gitProvider, k1Dir, gitopsDir)
+	err = k3dGithubAdjustGitopsTemplateContent(CloudProvider, clusterName, clusterType, gitProvider, k1Dir, gitopsDir, destinationMetaphorRepoGitURL)
 	if err != nil {
 		return err
 	}

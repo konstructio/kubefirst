@@ -383,7 +383,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		// Objects to check for
-		newRepositoryNames := []string{"gitops", "metaphor-frontend"}
+		newRepositoryNames := []string{"gitops", "metaphor"}
 		newTeamNames := []string{"admins", "developers"}
 
 		switch config.GitProvider {
@@ -767,21 +767,21 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		CloudRegion:                           cloudRegionFlag,
 		ClusterName:                           clusterNameFlag,
 		CommitCWFTTemplate:                    "git-commit-ssh",
-		ContainerRegistryURL:                  fmt.Sprintf("%s/%s/metaphor-frontend", containerRegistryHost, cGitOwner),
+		ContainerRegistryURL:                  fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
 		DomainName:                            domainNameFlag,
 		MetaphorFrontendDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", domainNameFlag),
 		MetaphorFrontendProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
 		MetaphorFrontendStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
 	}
 
-	//* git clone and detokenize the metaphor-frontend-template repository
+	//* git clone and detokenize the metaphor-template repository
 	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
 
 		if configs.K1Version != "" {
 			gitopsTemplateBranchFlag = configs.K1Version
 		}
 
-		log.Info().Msg("generating your new metaphor-frontend repository")
+		log.Info().Msg("generating your new metaphor repository")
 		metaphorRepo, err := gitClient.CloneRefSetMain(metaphorTemplateBranchFlag, config.MetaphorDir, metaphorTemplateURLFlag)
 		if err != nil {
 			log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
@@ -803,7 +803,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		err = gitClient.Commit(metaphorRepo, "committing detokenized metaphor-frontend-template repo content")
+		err = gitClient.Commit(metaphorRepo, "committing detokenized metaphor-template repo content")
 		if err != nil {
 			return err
 		}
@@ -816,10 +816,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", config.DestinationMetaphorRepoGitURL)
 		}
 
-		log.Info().Msgf("successfully pushed gitops to git@%s/%s/metaphor-frontend", cGitHost, cGitOwner)
+		log.Info().Msgf("successfully pushed gitops to git@%s/%s/metaphor", cGitHost, cGitOwner)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
-		log.Info().Msgf("pushed detokenized metaphor-frontend repository to %s/%s", cGitHost, cGitOwner)
+		log.Info().Msgf("pushed detokenized metaphor repository to %s/%s", cGitHost, cGitOwner)
 
 		viper.Set("kubefirst-checks.metaphor-repo-pushed", true)
 		viper.WriteConfig()
@@ -899,7 +899,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// Handle secret creation for buildkit
-	createTokensFor := []string{"metaphor-frontend"}
+	createTokensFor := []string{"metaphor"}
 	switch config.GitProvider {
 	// GitHub docker auth secret
 	// Buildkit requires a specific format for Docker auth created as a secret
