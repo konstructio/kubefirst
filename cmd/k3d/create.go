@@ -28,11 +28,11 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/kubefirst/kubefirst/internal/segment"
 	"github.com/kubefirst/kubefirst/internal/services"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/kubefirst/kubefirst/internal/terraform"
-	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -112,6 +112,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	httpClient := http.DefaultClient
+	segmentClient := &segment.Client
 
 	// Set git handlers
 	switch gitProviderFlag {
@@ -132,9 +133,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("flags.gitlab-owner", gitlabOwnerFlag)
 	}
 
-	isKubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
-	if isKubefirstTeam == "" {
-		isKubefirstTeam = "false"
+	kubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
+	if kubefirstTeam == "" {
+		kubefirstTeam = "false"
 	}
 
 	// required for destroy command
@@ -176,7 +177,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// Instantiate K3d config
 	config := k3d.GetConfig(gitProviderFlag, cGitOwner)
-	gitopsTemplateTokens := k3d.GitopsTokenValues{}
+
 	var sshPrivateKey, sshPublicKey string
 
 	// todo placed in configmap in kubefirst namespace, included in telemetry
@@ -188,9 +189,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitStarted, k3d.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-			return err
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
+		if segmentMsg != "" {
+			log.Info().Msg(segmentMsg)
 		}
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
@@ -379,31 +380,54 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
-	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricInitCompleted, k3d.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-			return err
-		}
+	gitopsTemplateTokens := k3d.GitopsTokenValues{
+		GithubOwner:                   githubOwnerFlag,
+		GithubUser:                    cGitUser,
+		GitlabOwner:                   gitlabOwnerFlag,
+		GitlabOwnerGroupID:            cGitlabOwnerGroupID,
+		GitlabUser:                    cGitUser,
+		GitopsRepoGitURL:              config.DestinationGitopsRepoGitURL,
+		DomainName:                    k3d.DomainName,
+		AtlantisAllowList:             fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
+		NgrokHost:                     ngrokHost,
+		AlertsEmail:                   "REMOVE_THIS_VALUE",
+		ClusterName:                   clusterNameFlag,
+		ClusterType:                   clusterTypeFlag,
+		GithubHost:                    k3d.GithubHost,
+		GitlabHost:                    k3d.GitlabHost,
+		ArgoWorkflowsIngressURL:       fmt.Sprintf("https://argo.%s", k3d.DomainName),
+		VaultIngressURL:               fmt.Sprintf("https://vault.%s", k3d.DomainName),
+		ArgocdIngressURL:              fmt.Sprintf("https://argocd.%s", k3d.DomainName),
+		AtlantisIngressURL:            fmt.Sprintf("https://atlantis.%s", k3d.DomainName),
+		MetaphorDevelopmentIngressURL: fmt.Sprintf("https://metaphor-development.%s", k3d.DomainName),
+		MetaphorStagingIngressURL:     fmt.Sprintf("https://metaphor-staging.%s", k3d.DomainName),
+		MetaphorProductionIngressURL:  fmt.Sprintf("https://metaphor-production.%s", k3d.DomainName),
+		KubefirstVersion:              configs.K1Version,
+		KubefirstTeam:                 kubefirstTeam,
+		GitProvider:                   config.GitProvider,
+		ClusterId:                     clusterId,
+		CloudProvider:                 k3d.CloudProvider,
 	}
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-			return err
+		gitopsTemplateTokens.UseTelemetry = "true"
+
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
+		if segmentMsg != "" {
+			log.Info().Msg(segmentMsg)
 		}
+		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
+		if segmentMsg != "" {
+			log.Info().Msg(segmentMsg)
+		}
+	} else {
+		gitopsTemplateTokens.UseTelemetry = "false"
 	}
 
 	//* generate public keys for ssh
 	publicKeys, err := gitssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
 	if err != nil {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
-	}
-
-	//* emit cluster install started
-	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallStarted, k3d.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-		}
 	}
 
 	//* download dependencies to `$HOME/.k1/tools`
@@ -423,40 +447,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	progressPrinter.IncrementTracker("preflight-checks", 1)
-
-	// not sure if there is a better way to do this
-	gitopsTemplateTokens.GithubOwner = githubOwnerFlag
-	gitopsTemplateTokens.GithubUser = cGitUser
-	gitopsTemplateTokens.GitlabOwner = gitlabOwnerFlag
-	gitopsTemplateTokens.GitlabOwnerGroupID = cGitlabOwnerGroupID
-	gitopsTemplateTokens.GitlabUser = cGitUser
-	gitopsTemplateTokens.GitopsRepoGitURL = config.DestinationGitopsRepoGitURL
-	gitopsTemplateTokens.DomainName = k3d.DomainName
-	gitopsTemplateTokens.AtlantisAllowList = fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner)
-	gitopsTemplateTokens.NgrokHost = ngrokHost
-	gitopsTemplateTokens.AlertsEmail = "REMOVE_THIS_VALUE"
-	gitopsTemplateTokens.ClusterName = clusterNameFlag
-	gitopsTemplateTokens.ClusterType = clusterTypeFlag
-	gitopsTemplateTokens.GithubHost = k3d.GithubHost
-	gitopsTemplateTokens.GitlabHost = k3d.GitlabHost
-	gitopsTemplateTokens.ArgoWorkflowsIngressURL = fmt.Sprintf("https://argo.%s", k3d.DomainName)
-	gitopsTemplateTokens.VaultIngressURL = fmt.Sprintf("https://vault.%s", k3d.DomainName)
-	gitopsTemplateTokens.ArgocdIngressURL = fmt.Sprintf("https://argocd.%s", k3d.DomainName)
-	gitopsTemplateTokens.AtlantisIngressURL = fmt.Sprintf("https://atlantis.%s", k3d.DomainName)
-	gitopsTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("https://metaphor-development.%s", k3d.DomainName)
-	gitopsTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("https://metaphor-staging.%s", k3d.DomainName)
-	gitopsTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("https://metaphor-production.%s", k3d.DomainName)
-	gitopsTemplateTokens.KubefirstVersion = configs.K1Version
-	gitopsTemplateTokens.KubefirstTeam = isKubefirstTeam
-	gitopsTemplateTokens.GitProvider = config.GitProvider
-	gitopsTemplateTokens.ClusterId = clusterId
-	gitopsTemplateTokens.CloudProvider = k3d.CloudProvider
-
-	if useTelemetryFlag {
-		gitopsTemplateTokens.UseTelemetry = "true"
-	} else {
-		gitopsTemplateTokens.UseTelemetry = "false"
-	}
 
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
@@ -969,7 +959,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, vaultStatefulSet, 60, false)
+	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, vaultStatefulSet, 90, false)
 	if err != nil {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
@@ -1143,9 +1133,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
 	}
-	err = os.Rename(fmt.Sprintf("%s/terraform/%s/remote-backend.md", config.GitopsDir, config.GitProvider), fmt.Sprintf("%s/terraform/%s/remote-backend.tf", config.GitopsDir, config.GitProvider))
-	if err != nil {
-		return err
+	//check if file exists before rename
+	_, err = os.Stat(fmt.Sprintf("%s/terraform/%s/remote-backend.md", config.GitopsDir, config.GitProvider))
+	if err == nil {
+		err = os.Rename(fmt.Sprintf("%s/terraform/%s/remote-backend.md", config.GitopsDir, config.GitProvider), fmt.Sprintf("%s/terraform/%s/remote-backend.tf", config.GitopsDir, config.GitProvider))
+		if err != nil {
+			return err
+		}
 	}
 
 	// Final gitops repo commit and push
@@ -1211,9 +1205,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	reports.LocalHandoffScreenV2(argocdPassword, clusterNameFlag, cGitOwner, config, dryRunFlag, false)
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(k3d.DomainName, pkg.MetricMgmtClusterInstallCompleted, k3d.CloudProvider, config.GitProvider, clusterId); err != nil {
-			log.Info().Msg(err.Error())
-			return err
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
+		if segmentMsg != "" {
+			log.Info().Msg(segmentMsg)
 		}
 	}
 

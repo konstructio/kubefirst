@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubefirst/kubefirst/internal/wrappers"
-
 	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/internal/ssh"
@@ -136,20 +134,20 @@ validated and configured.`,
 
 		viper.Set("use-telemetry", globalFlags.UseTelemetry)
 
-		gitProvider := viper.GetString("git-provider")
-		cloud := viper.GetString("cloud")
+		// gitProvider := viper.GetString("git-provider")
+		// cloud := viper.GetString("cloud")
 		clusterId := uuid.New().String()
 
 		viper.Set("cluster-id", clusterId)
 
-		if !globalFlags.UseTelemetry {
-			informUser("Telemetry Disabled", globalFlags.SilentMode)
-		} else {
-			pkg.InformUser("Sending installation telemetry", globalFlags.SilentMode)
-			if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitStarted, cloud, gitProvider, clusterId); err != nil {
-				log.Warn().Msgf("%s", err)
-			}
-		}
+		// if !globalFlags.UseTelemetry {
+		// 	informUser("Telemetry Disabled", globalFlags.SilentMode)
+		// } else {
+		// 	pkg.InformUser("Sending installation telemetry", globalFlags.SilentMode)
+		// 	if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitStarted, cloud, gitProvider, clusterId); err != nil {
+		// 		log.Warn().Msgf("%s", err)
+		// 	}
+		// }
 
 		// todo need to check flags and create config
 
@@ -256,11 +254,11 @@ validated and configured.`,
 
 		log.Info().Msg("sending init completed metric")
 
-		if globalFlags.UseTelemetry {
-			if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitCompleted, "aws", "github", clusterId); err != nil {
-				log.Warn().Msgf("%s", err)
-			}
-		}
+		// if globalFlags.UseTelemetry {
+		// 	if err := wrappers.SendSegmentIoTelemetry(awsFlags.HostedZoneName, pkg.MetricInitCompleted, "aws", "github", clusterId); err != nil {
+		// 		log.Warn().Msgf("%s", err)
+		// 	}
+		// }
 
 		viper.WriteConfig()
 

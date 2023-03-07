@@ -64,7 +64,7 @@ type quotaFormattedOutput struct {
 }
 
 // returnCivoQuotaEvaluation fetches quota from civo and compares limits to usage
-func returnCivoQuotaEvaluation(cloudRegion string, showAll bool) (string, int, int, error) {
+func returnCivoQuotaEvaluation(cloudRegion string) (string, int, int, error) {
 	// Fetch quota from civo
 	client, err := civogo.NewClient(os.Getenv("CIVO_TOKEN"), cloudRegion)
 	if err != nil {
@@ -121,10 +121,8 @@ func returnCivoQuotaEvaluation(cloudRegion string, showAll bool) (string, int, i
 			outputFormat := checkObj.formatQuotaOutput(red(percentExpr))
 			output = append(output, outputFormat)
 		default:
-			if showAll {
-				outputFormat := checkObj.formatQuotaOutput(green(percentExpr))
-				output = append(output, outputFormat)
-			}
+			outputFormat := checkObj.formatQuotaOutput(green(percentExpr))
+			output = append(output, outputFormat)
 		}
 	}
 
@@ -179,12 +177,7 @@ func evalCivoQuota(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	quotaShowAllFlag, err := cmd.Flags().GetBool("show-all")
-	if err != nil {
-		return err
-	}
-
-	message, _, _, err := returnCivoQuotaEvaluation(cloudRegionFlag, quotaShowAllFlag)
+	message, _, _, err := returnCivoQuotaEvaluation(cloudRegionFlag)
 	if err != nil {
 		return err
 	}

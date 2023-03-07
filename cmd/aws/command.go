@@ -1,6 +1,8 @@
 package aws
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -15,10 +17,14 @@ var (
 	githubOwnerFlag            string
 	gitopsTemplateBranchFlag   string
 	gitopsTemplateURLFlag      string
+	gitProviderFlag            string
 	kbotPasswordFlag           string
 	metaphorTemplateBranchFlag string
 	metaphorTemplateURLFlag    string
 	useTelemetryFlag           bool
+
+	// Supported git providers
+	supportedGitProviders = []string{"github", "gitlab"}
 
 	// Quota
 	quotaShowAllFlag bool
@@ -32,7 +38,7 @@ func NewCommand() *cobra.Command {
 		Long:  "kubefirst aws",
 	}
 
-	// on error, doesnt show helper/usage
+	// on error, doesn't show helper/usage
 	awsCmd.SilenceUsage = true
 
 	// wire up new commands
@@ -62,6 +68,7 @@ func Create() *cobra.Command {
 	createCmd.MarkFlagRequired("github-owner")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "aws-domain-refactor-5", "the branch to clone for the gitops-template repository")
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
+	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
 	createCmd.Flags().StringVar(&kbotPasswordFlag, "kbot-password", "", "the default password to use for the kbot user")
 	createCmd.Flags().StringVar(&metaphorTemplateBranchFlag, "metaphor-template-branch", "main", "the branch to clone for the metaphor-template repository")
 	createCmd.Flags().StringVar(&metaphorTemplateURLFlag, "metaphor-template-url", "https://github.com/kubefirst/metaphor-frontend-template.git", "the fully qualified url to the metaphor-template repository to clone")

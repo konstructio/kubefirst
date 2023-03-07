@@ -18,16 +18,15 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/aws"
-	"github.com/kubefirst/kubefirst/internal/civo"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/internal/segment"
 	"github.com/kubefirst/kubefirst/internal/services"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
-	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -58,6 +57,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	if strings.Contains(domainNameFlag, "://") {
+		return errors.New("--domain-name should not have a protocol, please provide it in the form of \n\tdomain.com or my.domain.com")
+	}
 
 	dryRunFlag, err := cmd.Flags().GetBool("dry-run")
 	if err != nil {
@@ -75,6 +77,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	gitopsTemplateBranchFlag, err := cmd.Flags().GetString("gitops-template-branch")
+	if err != nil {
+		return err
+	}
+
+	gitProviderFlag, err := cmd.Flags().GetString("git-provider")
 	if err != nil {
 		return err
 	}
@@ -121,6 +128,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	config := aws.GetConfig(githubOwnerFlag)
 	awsClient := &aws.Conf
+	segmentClient := &segment.Client
 	vaultClient := &vault.Conf
 
 	var (
@@ -132,6 +140,10 @@ func createAws(cmd *cobra.Command, args []string) error {
 	iamCaller, err := awsClient.GetCallerIdentity()
 	if err != nil {
 		return err
+	}
+	kubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
+	if kubefirstTeam == "" {
+		kubefirstTeam = "false"
 	}
 
 	var sshPrivateKey, sshPublicKey string
@@ -147,12 +159,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 	kubefirstArtifactsBucketName = fmt.Sprintf("k1-artifacts-%s-%s", clusterNameFlag, clusterId)
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitStarted, aws.CloudProvider, aws.GitProvider); err != nil {
-			log.Info().Msg(err.Error())
-			return err
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, aws.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
+		if segmentMsg != "" {
+			log.Info().Msg(segmentMsg)
 		}
 	}
-
 	// this branch flag value is overridden with a tag when running from a
 	// kubefirst binary for version compatibility
 	if gitopsTemplateBranchFlag == "main" && configs.K1Version != "development" {
@@ -321,16 +332,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricInitCompleted, aws.CloudProvider, aws.GitProvider); err != nil {
-			log.Info().Msg(err.Error())
-			return err
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, aws.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
+		if segmentMsg != "" {
+			log.Info().Msg(segmentMsg)
 		}
-	}
-
-	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, aws.CloudProvider, aws.GitProvider); err != nil {
-			log.Info().Msg(err.Error())
-			return err
+		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, aws.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
+		if segmentMsg != "" {
+			log.Info().Msg(segmentMsg)
 		}
 	}
 
@@ -339,14 +347,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
 	}
-
-	//* emit cluster install started
-	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallStarted, aws.CloudProvider, aws.GitProvider); err != nil {
-			log.Info().Msg(err.Error())
-		}
-	}
-
 	//* download dependencies to `$HOME/.k1/tools`
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
@@ -389,7 +389,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		GithubHost:                     aws.GithubHost,
 		GitDescription:                 "GitHub hosted git",
 		GitNamespace:                   "N/A",
-		GitProvider:                    civo.GitProvider,
+		GitProvider:                    aws.GitProvider,
 		GitRunner:                      "GitHub Action Runner",
 		GitRunnerDescription:           "Self Hosted GitHub Action Runner",
 		GitRunnerNS:                    "github-runner",
@@ -575,7 +575,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// kubernetes.BootstrapSecrets
 	// todo there is a secret condition in AddawsSecrets to this not checked
 	// todo deconstruct CreateNamespaces / CreateSecret
-	// todo move secret structs to constants to be leveraged by either local or civo
+	// todo move secret structs to constants to be leveraged by either local or aws
 	// executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	// if !executionControl {
 	// 	err := aws.AddAwsSecrets(
@@ -925,9 +925,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 	//! reports.LocalHandoffScreenV2(argocdPassword, clusterNameFlag, githubOwnerFlag, config, dryRunFlag, false)
 
 	if useTelemetryFlag {
-		if err := wrappers.SendSegmentIoTelemetry(domainNameFlag, pkg.MetricMgmtClusterInstallCompleted, aws.CloudProvider, aws.GitProvider); err != nil {
-			log.Info().Msg(err.Error())
-			return err
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, aws.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
+		if segmentMsg != "" {
+			log.Info().Msg(segmentMsg)
 		}
 	}
 

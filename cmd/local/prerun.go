@@ -8,8 +8,8 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/ssh"
 
-	"github.com/google/uuid"
 	"github.com/dustin/go-humanize"
+	"github.com/google/uuid"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/addon"
 	"github.com/kubefirst/kubefirst/internal/downloadManager"
@@ -35,16 +35,16 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	config := configs.ReadConfig()
 
-	gitProvider := viper.GetString("git-provider")
-	cloud := viper.GetString("cloud")
+	// gitProvider := viper.GetString("git-provider")
+	// cloud := viper.GetString("cloud")
 	clusterId := uuid.New().String()
 
-	if useTelemetry {
-		pkg.InformUser("Sending installation telemetry", silentMode)
-		if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted, cloud, gitProvider, clusterId); err != nil {
-			log.Error().Err(err).Msg("")
-		}
-	}
+	// if useTelemetry {
+	// 	pkg.InformUser("Sending installation telemetry", silentMode)
+	// 	if err := wrappers.SendSegmentIoTelemetry("", pkg.MetricInitStarted, cloud, gitProvider, clusterId); err != nil {
+	// 		log.Error().Err(err).Msg("")
+	// 	}
+	// }
 
 	if err := pkg.ValidateK1Folder(config.K1FolderPath); err != nil {
 		return err
@@ -252,11 +252,11 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 
 	pkg.InformUser("initialization step is done!", silentMode)
 
-	if useTelemetry {
-		if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted, cloud, gitProvider, clusterId); err != nil {
-			log.Error().Err(err).Msg("")
-		}
-	}
+	// if useTelemetry {
+	// 	if err = wrappers.SendSegmentIoTelemetry("", pkg.MetricInitCompleted, cloud, gitProvider, clusterId); err != nil {
+	// 		log.Error().Err(err).Msg("")
+	// 	}
+	// }
 
 	progressPrinter.IncrementTracker("step-0", 1)
 	time.Sleep(100 * time.Millisecond) // necessary to wait progress bar to finish
