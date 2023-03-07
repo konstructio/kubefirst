@@ -79,7 +79,7 @@ func GetConfig(gitProvider string, gitOwner string) *K3dConfig {
 	}
 
 	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@%s:%s/gitops.git", cGitHost, gitOwner)
-	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@%s:%s/metaphor-frontend.git", cGitHost, gitOwner)
+	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@%s:%s/metaphor.git", cGitHost, gitOwner)
 	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
 	config.GitProvider = gitProvider
 	config.HelmClient = fmt.Sprintf("%s/.k1/tools/helm", homeDir)

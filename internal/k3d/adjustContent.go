@@ -53,6 +53,7 @@ func k3dGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterTyp
 		return err
 	}
 	os.RemoveAll(fmt.Sprintf("%s/cluster-types", gitopsRepoDir))
+	os.RemoveAll(fmt.Sprintf("%s/services", gitopsRepoDir))
 
 	// todo need to move metaphor into its own function
 	// create ~/.k1/metaphor
@@ -102,7 +103,7 @@ func k3dGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterTyp
 		return err
 	}
 
-	//* copy $HOME/.k1/gitops/ci/.argo/* $HOME/.k1/metaphor-frontend/.argo
+	//* copy $HOME/.k1/gitops/metaphor/Dockerfile $HOME/.k1/metaphor/build/Dockerfile
 	dockerfileContent := fmt.Sprintf("%s/Dockerfile", metaphorDir)
 	os.Mkdir(metaphorDir+"/build", 0700)
 	log.Info().Msgf("copying ci content: %s", argoWorkflowsFolderContent)
@@ -111,6 +112,7 @@ func k3dGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterTyp
 		log.Info().Msgf("error populating metaphor repository with %s: %s", argoWorkflowsFolderContent, err)
 		return err
 	}
+	os.RemoveAll(fmt.Sprintf("%s/metaphor", gitopsRepoDir))
 
 	//  add
 	// commit
@@ -119,9 +121,14 @@ func k3dGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterTyp
 		return err
 	}
 
+	metaphorRepo, err = gitClient.SetRefToMainBranch(metaphorRepo)
+	if err != nil {
+		return err
+	}
+
 	// create remote
 	_, err = metaphorRepo.CreateRemote(&config.RemoteConfig{
-		Name: "github",
+		Name: "origin",
 		URLs: []string{destinationMetaphorRepoGitURL},
 	})
 
