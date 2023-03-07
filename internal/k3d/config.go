@@ -106,7 +106,6 @@ type GitopsTokenValues struct {
 	GitopsRepoGitURL              string
 	DomainName                    string
 	AtlantisAllowList             string
-	NgrokHost                     string
 	AlertsEmail                   string
 	ClusterName                   string
 	ClusterType                   string

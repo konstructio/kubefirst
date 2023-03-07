@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
+// CreateSecretV2 creates a Kubernetes Secret
 func CreateSecretV2(kubeConfigPath string, secret *v1.Secret) error {
 	clientset, err := GetClientSet(false, kubeConfigPath)
 	if err != nil {
@@ -37,6 +38,26 @@ func CreateSecretV2(kubeConfigPath string, secret *v1.Secret) error {
 	return nil
 }
 
+// ReadConfigMapV2 reads the content of a Kubernetes ConfigMap
+func ReadConfigMapV2(kubeConfigPath string, namespace string, configMapName string) (map[string]string, error) {
+	clientset, err := GetClientSet(false, kubeConfigPath)
+	if err != nil {
+		return map[string]string{}, err
+	}
+	configMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(context.Background(), configMapName, metav1.GetOptions{})
+	if err != nil {
+		return map[string]string{}, errors.New(fmt.Sprintf("error getting ConfigMap: %s\n", err))
+	}
+
+	parsedSecretData := make(map[string]string)
+	for key, value := range configMap.Data {
+		parsedSecretData[key] = string(value)
+	}
+
+	return parsedSecretData, nil
+}
+
+// ReadSecretV2 reads the content of a Kubernetes Secret
 func ReadSecretV2(kubeConfigPath string, namespace string, secretName string) (map[string]string, error) {
 	clientset, err := GetClientSet(false, kubeConfigPath)
 	if err != nil {
@@ -251,7 +272,7 @@ func ReturnStatefulSetObject(kubeConfigPath string, matchLabel string, matchLabe
 	if err != nil {
 		log.Fatal().Msgf("Error when attempting to search for StatefulSet: %s", err)
 	}
-	log.Info().Msgf("Waiting for %s StatefulSet to be created.", matchLabelValue)
+	log.Info().Msgf("Waiting for %s StatefulSet to be created using label %s=%s", matchLabelValue, matchLabel, matchLabelValue)
 
 	objChan := objWatch.ResultChan()
 	for {
