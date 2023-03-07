@@ -8,20 +8,18 @@ import (
 
 var (
 	// Create
-	alertsEmailFlag            string
-	cloudRegionFlag            string
-	clusterNameFlag            string
-	clusterTypeFlag            string
-	domainNameFlag             string
-	dryRun                     bool
-	githubOwnerFlag            string
-	gitopsTemplateBranchFlag   string
-	gitopsTemplateURLFlag      string
-	gitProviderFlag            string
-	kbotPasswordFlag           string
-	metaphorTemplateBranchFlag string
-	metaphorTemplateURLFlag    string
-	useTelemetryFlag           bool
+	alertsEmailFlag          string
+	cloudRegionFlag          string
+	clusterNameFlag          string
+	clusterTypeFlag          string
+	domainNameFlag           string
+	dryRun                   bool
+	githubOwnerFlag          string
+	gitopsTemplateBranchFlag string
+	gitopsTemplateURLFlag    string
+	gitProviderFlag          string
+	kbotPasswordFlag         string
+	useTelemetryFlag         bool
 
 	// Supported git providers
 	supportedGitProviders = []string{"github", "gitlab"}

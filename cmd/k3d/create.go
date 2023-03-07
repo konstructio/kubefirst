@@ -96,16 +96,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	metaphorTemplateURLFlag, err := cmd.Flags().GetString("metaphor-template-url")
-	if err != nil {
-		return err
-	}
-
-	metaphorTemplateBranchFlag, err := cmd.Flags().GetString("metaphor-template-branch")
-	if err != nil {
-		return err
-	}
-
 	useTelemetryFlag, err := cmd.Flags().GetBool("use-telemetry")
 	if err != nil {
 		return err
@@ -206,12 +196,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	log.Info().Msgf("cloning gitops-template repo branch: %s ", gitopsTemplateBranchFlag)
 	// this branch flag value is overridden with a tag when running from a
 	// kubefirst binary for version compatibility
-	if metaphorTemplateBranchFlag == "main" && configs.K1Version != "development" {
-		metaphorTemplateBranchFlag = configs.K1Version
-	}
-
-	log.Info().Msgf("cloning metaphor template url: %s ", metaphorTemplateURLFlag)
-	log.Info().Msgf("cloning metaphor template branch: %s ", metaphorTemplateBranchFlag)
 
 	atlantisWebhookSecret := viper.GetString("secrets.atlantis-webhook")
 	if atlantisWebhookSecret == "" {
@@ -627,18 +611,17 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	//* git clone and detokenize the metaphor-template repository
 	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
 
-		err := k3d.PrepareMetaphorRepository(
-			config.GitProvider,
-			config.DestinationMetaphorRepoGitURL,
-			config.K1Dir,
-			config.MetaphorDir,
-			metaphorTemplateBranchFlag,
-			metaphorTemplateURLFlag,
-			&metaphorTemplateTokens,
-		)
-		if err != nil {
-			return err
-		}
+		// todo need to remove this
+		// err := k3d.PrepareMetaphorRepository(
+		// 	config.GitProvider,
+		// 	config.DestinationMetaphorRepoGitURL,
+		// 	config.K1Dir,
+		// 	config.MetaphorDir,
+		// 	&metaphorTemplateTokens,
+		// )
+		// if err != nil {
+		// 	return err
+		// }
 
 		metaphorRepo, err := git.PlainOpen(config.MetaphorDir)
 		if err != nil {

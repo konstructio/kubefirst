@@ -104,16 +104,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	metaphorTemplateURLFlag, err := cmd.Flags().GetString("metaphor-template-url")
-	if err != nil {
-		return err
-	}
-
-	metaphorTemplateBranchFlag, err := cmd.Flags().GetString("metaphor-template-branch")
-	if err != nil {
-		return err
-	}
-
 	useTelemetryFlag, err := cmd.Flags().GetBool("use-telemetry")
 	if err != nil {
 		return err
@@ -245,14 +235,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	log.Info().Msgf("kubefirst version configs.K1Version: %s ", configs.K1Version)
 	log.Info().Msgf("cloning gitops-template repo url: %s ", gitopsTemplateURLFlag)
 	log.Info().Msgf("cloning gitops-template repo branch: %s ", gitopsTemplateBranchFlag)
-	// this branch flag value is overridden with a tag when running from a
-	// kubefirst binary for version compatibility
-	if metaphorTemplateBranchFlag == "main" && configs.K1Version != "development" {
-		metaphorTemplateBranchFlag = configs.K1Version
-	}
-
-	log.Info().Msgf("cloning metaphor template url: %s ", metaphorTemplateURLFlag)
-	log.Info().Msgf("cloning metaphor template branch: %s ", metaphorTemplateBranchFlag)
 
 	atlantisWebhookSecret := viper.GetString("secrets.atlantis-webhook")
 	if atlantisWebhookSecret == "" {
@@ -781,11 +763,12 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			gitopsTemplateBranchFlag = configs.K1Version
 		}
 
-		log.Info().Msg("generating your new metaphor repository")
-		metaphorRepo, err := gitClient.CloneRefSetMain(metaphorTemplateBranchFlag, config.MetaphorDir, metaphorTemplateURLFlag)
-		if err != nil {
-			log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
-		}
+		// todo need to remove this
+		// log.Info().Msg("generating your new metaphor repository")
+		// metaphorRepo, err := gitClient.CloneRefSetMain(metaphorTemplateBranchFlag, config.MetaphorDir, metaphorTemplateURLFlag)
+		// if err != nil {
+		// 	log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
+		// }
 
 		log.Info().Msg("metaphor repository clone complete")
 
