@@ -444,6 +444,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
+	progressPrinter.AddTracker("cloning-and-formatting-git-repositories", "Cloning and formatting git repositories", 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 		log.Info().Msg("generating your new gitops repository")
 
