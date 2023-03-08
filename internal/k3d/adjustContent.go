@@ -14,6 +14,7 @@ import (
 
 func k3dGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1Dir, gitopsRepoDir, destinationMetaphorRepoGitURL string) error {
 
+	//* clean up all other platforms
 	supportedPlatforms := []string{"aws-github", "aws-gitlab", "civo-github", "civo-gitlab", "k3d-github", "k3d-gitlab"}
 
 	for _, platform := range supportedPlatforms {
@@ -75,18 +76,18 @@ func k3dGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterTyp
 
 	switch gitProvider {
 	case "github":
-		//* copy $HOME/.k1/gitops/ci/.github/* $HOME/.k1/metaphor-frontend/.github
+		//* copy $HOME/.k1/gitops/ci/.github/* $HOME/.k1/metaphor/.github
 		githubActionsFolderContent := fmt.Sprintf("%s/gitops/ci/.github", k1Dir)
-		log.Info().Msgf("copying ci content: %s", githubActionsFolderContent)
+		log.Info().Msgf("copying github content: %s", githubActionsFolderContent)
 		err := cp.Copy(githubActionsFolderContent, fmt.Sprintf("%s/.github", metaphorDir), opt)
 		if err != nil {
 			log.Info().Msgf("error populating metaphor repository with %s: %s", githubActionsFolderContent, err)
 			return err
 		}
 	case "gitlab":
-		//* copy $HOME/.k1/gitops/ci/.github/* $HOME/.k1/metaphor-frontend/.github
+		//* copy $HOME/.k1/gitops/ci/.github/* $HOME/.k1/metaphor/.github
 		gitlabCIContent := fmt.Sprintf("%s/gitops/ci/.gitlab-ci.yml", k1Dir)
-		log.Info().Msgf("copying ci content: %s", gitlabCIContent)
+		log.Info().Msgf("copying gitlab content: %s", gitlabCIContent)
 		err := cp.Copy(gitlabCIContent, fmt.Sprintf("%s/.gitlab-ci.yml", metaphorDir), opt)
 		if err != nil {
 			log.Info().Msgf("error populating metaphor repository with %s: %s", gitlabCIContent, err)
@@ -94,9 +95,9 @@ func k3dGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterTyp
 		}
 	}
 
-	//* copy $HOME/.k1/gitops/ci/.argo/* $HOME/.k1/metaphor-frontend/.argo
+	//* copy $HOME/.k1/gitops/ci/.argo/* $HOME/.k1/metaphor/.argo
 	argoWorkflowsFolderContent := fmt.Sprintf("%s/gitops/ci/.argo", k1Dir)
-	log.Info().Msgf("copying ci content: %s", argoWorkflowsFolderContent)
+	log.Info().Msgf("copying argo workflows content: %s", argoWorkflowsFolderContent)
 	err = cp.Copy(argoWorkflowsFolderContent, fmt.Sprintf("%s/.argo", metaphorDir), opt)
 	if err != nil {
 		log.Info().Msgf("error populating metaphor repository with %s: %s", argoWorkflowsFolderContent, err)
@@ -106,7 +107,7 @@ func k3dGithubAdjustGitopsTemplateContent(cloudProvider, clusterName, clusterTyp
 	//* copy $HOME/.k1/gitops/metaphor/Dockerfile $HOME/.k1/metaphor/build/Dockerfile
 	dockerfileContent := fmt.Sprintf("%s/Dockerfile", metaphorDir)
 	os.Mkdir(metaphorDir+"/build", 0700)
-	log.Info().Msgf("copying ci content: %s", argoWorkflowsFolderContent)
+	log.Info().Msgf("copying dockerfile content: %s", argoWorkflowsFolderContent)
 	err = cp.Copy(dockerfileContent, fmt.Sprintf("%s/build/Dockerfile", metaphorDir), opt)
 	if err != nil {
 		log.Info().Msgf("error populating metaphor repository with %s: %s", argoWorkflowsFolderContent, err)
@@ -160,7 +161,7 @@ func k3dGithubAdjustMetaphorTemplateContent(gitProvider, k1Dir, metaphorRepoPath
 
 	switch gitProvider {
 	case "github":
-		//* copy $HOME/.k1/gitops/.kubefirst/ci/.github/* $HOME/.k1/metaphor-frontend/.github
+		//* copy $HOME/.k1/gitops/.kubefirst/ci/.github/* $HOME/.k1/metaphor/.github
 		githubActionsFolderContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.github", k1Dir)
 		log.Info().Msgf("copying ci content: %s", githubActionsFolderContent)
 		err := cp.Copy(githubActionsFolderContent, fmt.Sprintf("%s/.github", metaphorRepoPath), opt)
@@ -169,7 +170,7 @@ func k3dGithubAdjustMetaphorTemplateContent(gitProvider, k1Dir, metaphorRepoPath
 			return err
 		}
 	case "gitlab":
-		//* copy $HOME/.k1/gitops/.kubefirst/ci/.github/* $HOME/.k1/metaphor-frontend/.github
+		//* copy $HOME/.k1/gitops/.kubefirst/ci/.github/* $HOME/.k1/metaphor/.github
 		gitlabCIContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.gitlab-ci.yml", k1Dir)
 		log.Info().Msgf("copying ci content: %s", gitlabCIContent)
 		err := cp.Copy(gitlabCIContent, fmt.Sprintf("%s/.gitlab-ci.yml", metaphorRepoPath), opt)
@@ -179,7 +180,7 @@ func k3dGithubAdjustMetaphorTemplateContent(gitProvider, k1Dir, metaphorRepoPath
 		}
 	}
 
-	//* copy $HOME/.k1/gitops/.kubefirst/ci/.argo/* $HOME/.k1/metaphor-frontend/.argo
+	//* copy $HOME/.k1/gitops/.kubefirst/ci/.argo/* $HOME/.k1/metaphor/.argo
 	argoWorkflowsFolderContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.argo", k1Dir)
 	log.Info().Msgf("copying ci content: %s", argoWorkflowsFolderContent)
 	err := cp.Copy(argoWorkflowsFolderContent, fmt.Sprintf("%s/.argo", metaphorRepoPath), opt)

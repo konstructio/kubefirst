@@ -126,7 +126,7 @@ const (
 
 // MetaphorFrontendDevelopment
 const (
-	MetaphorFrontendDevelopmentServiceName      = "metaphor-frontend-development"
+	MetaphorFrontendDevelopmentServiceName      = "metaphor-development"
 	MetaphorFrontendDevelopmentNamespace        = "development"
 	MetaphorFrontendDevelopmentServicePort      = 443
 	MetaphorFrontendDevelopmentServiceLocalPort = 4000
@@ -152,7 +152,7 @@ const (
 )
 
 const (
-	MetaphorFrontendSlimTLSDev     = "https://metaphor-frontend-development.localdev.me"
-	MetaphorFrontendSlimTLSStaging = "https://metaphor-frontend-staging.localdev.me"
-	MetaphorFrontendSlimTLSProd    = "https://metaphor-frontend-production.localdev.me"
+	MetaphorFrontendSlimTLSDev     = "https://metaphor-development.localdev.me"
+	MetaphorFrontendSlimTLSStaging = "https://metaphor-staging.localdev.me"
+	MetaphorFrontendSlimTLSProd    = "https://metaphor-production.localdev.me"
 )

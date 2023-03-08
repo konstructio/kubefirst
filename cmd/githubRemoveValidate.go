@@ -37,7 +37,7 @@ var githubRemoveValidateCmd = &cobra.Command{
 		if err == nil {
 			fmt.Println("gitops not found as expected")
 		}
-		repoMetaphorFrontend, err := gitWrapper.GetRepo(owner, "metaphor-frontend")
+		repoMetaphorFrontend, err := gitWrapper.GetRepo(owner, "metaphor")
 		if err == nil {
 			fmt.Println("gitops not found as expected")
 		}
@@ -57,7 +57,7 @@ var githubRemoveValidateCmd = &cobra.Command{
 			return fmt.Errorf("error validating repo: %s ", repoMetaphorGo.GetName())
 		}
 
-		if repoMetaphorFrontend.GetName() == "metaphor-frontend" {
+		if repoMetaphorFrontend.GetName() == "metaphor" {
 			fmt.Println("metaphor should be not present")
 			return fmt.Errorf("error validating repo: %s ", repoMetaphorFrontend.GetName())
 		}

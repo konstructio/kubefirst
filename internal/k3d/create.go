@@ -120,7 +120,7 @@ func PrepareMetaphorRepository(
 	tokens *MetaphorTokenValues,
 ) error {
 
-	log.Info().Msg("generating your new metaphor-frontend repository")
+	log.Info().Msg("generating your new metaphor repository")
 	metaphorRepo, err := gitClient.CloneRefSetMain(metaphorTemplateBranch, metaphorDir, metaphorTemplateURL)
 	if err != nil {
 		log.Info().Msgf("error opening repo at: %s", metaphorDir)
@@ -140,7 +140,7 @@ func PrepareMetaphorRepository(
 		return err
 	}
 
-	err = gitClient.Commit(metaphorRepo, "committing detokenized metaphor-frontend-template repo content")
+	err = gitClient.Commit(metaphorRepo, "committing detokenized metaphor-template repo content")
 	if err != nil {
 		return err
 	}

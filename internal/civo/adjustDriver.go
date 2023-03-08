@@ -93,7 +93,7 @@ func CivoAdjustMetaphorTemplateContent(gitProvider, k1Dir, metaphorRepoPath stri
 
 	switch gitProvider {
 	case "github":
-		//* copy $HOME/.k1/argo-workflows/.github/* $HOME/.k1/metaphor-frontend/.github
+		//* copy $HOME/.k1/argo-workflows/.github/* $HOME/.k1/metaphor/.github
 		githubActionsFolderContent := fmt.Sprintf("%s/argo-workflows/.github", k1Dir)
 		log.Info().Msgf("copying ci content: %s", githubActionsFolderContent)
 		err := cp.Copy(githubActionsFolderContent, fmt.Sprintf("%s/.github", metaphorRepoPath), opt)
@@ -102,7 +102,7 @@ func CivoAdjustMetaphorTemplateContent(gitProvider, k1Dir, metaphorRepoPath stri
 			return err
 		}
 	case "gitlab":
-		//* copy $HOME/.k1/argo-workflows/.gitlab-ci.yml/* $HOME/.k1/metaphor-frontend/.github
+		//* copy $HOME/.k1/argo-workflows/.gitlab-ci.yml/* $HOME/.k1/metaphor/.github
 		gitlabCIContent := fmt.Sprintf("%s/argo-workflows/.gitlab-ci.yml", k1Dir)
 		log.Info().Msgf("copying ci content: %s", gitlabCIContent)
 		err := cp.Copy(gitlabCIContent, fmt.Sprintf("%s/.gitlab-ci.yml", metaphorRepoPath), opt)
@@ -112,7 +112,7 @@ func CivoAdjustMetaphorTemplateContent(gitProvider, k1Dir, metaphorRepoPath stri
 		}
 	}
 
-	//* copy $HOME/.k1/argo-workflows/.argo/* $HOME/.k1/metaphor-frontend/.argo
+	//* copy $HOME/.k1/argo-workflows/.argo/* $HOME/.k1/metaphor/.argo
 	argoWorkflowsFolderContent := fmt.Sprintf("%s/argo-workflows/.argo", k1Dir)
 	err := cp.Copy(argoWorkflowsFolderContent, fmt.Sprintf("%s/.argo", metaphorRepoPath), opt)
 	if err != nil {

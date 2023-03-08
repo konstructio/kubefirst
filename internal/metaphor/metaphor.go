@@ -3,17 +3,17 @@ package metaphor
 import (
 	"fmt"
 	"os"
-	
+
 	"github.com/kubefirst/kubefirst/pkg"
-	
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/repo"
 	"github.com/kubefirst/kubefirst/internal/terraform"
-	"github.com/spf13/viper"
 	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
 )
 
 // DeployMetaphorGitlab - Deploy metaphor applications on gitlab install
@@ -26,21 +26,21 @@ func DeployMetaphorGitlab(globalFlags flagset.GlobalFlags) error {
 	log.Info().Msgf("cloning and detokenizing the metaphor-template repository")
 	repo.PrepareKubefirstTemplateRepo(globalFlags.DryRun, config, viper.GetString("gitops.owner"), "metaphor", viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
 	log.Info().Msgf("clone and detokenization of metaphor-template repository complete")
-	
+
 	log.Info().Msgf("cloning and detokenizing the metaphor-go-template repository")
 	repo.PrepareKubefirstTemplateRepo(globalFlags.DryRun, config, viper.GetString("gitops.owner"), "metaphor-go", viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
 	log.Info().Msgf("clone and detokenization of metaphor-go-template repository complete")
 
-	log.Info().Msgf("cloning and detokenizing the metaphor-frontend-template repository")
-	repo.PrepareKubefirstTemplateRepo(globalFlags.DryRun, config, viper.GetString("gitops.owner"), "metaphor-frontend", viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
-	log.Info().Msgf("clone and detokenization of metaphor-frontend-template repository complete")
+	log.Info().Msgf("cloning and detokenizing the metaphor-template repository")
+	repo.PrepareKubefirstTemplateRepo(globalFlags.DryRun, config, viper.GetString("gitops.owner"), "metaphor", viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
+	log.Info().Msgf("clone and detokenization of metaphor-template repository complete")
 
 	if !viper.GetBool("gitlab.metaphor-pushed") {
 		log.Info().Msgf("Pushing metaphor repo to origin gitlab")
 		gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "metaphor")
 		viper.Set("gitlab.metaphor-pushed", true)
 		viper.WriteConfig()
-		log.Info().Msgf("clone and detokenization of metaphor-frontend-template repository complete")
+		log.Info().Msgf("clone and detokenization of metaphor-template repository complete")
 	}
 
 	// Go template
@@ -52,10 +52,10 @@ func DeployMetaphorGitlab(globalFlags flagset.GlobalFlags) error {
 	}
 
 	// Frontend template
-	if !viper.GetBool("gitlab.metaphor-frontend-pushed") {
-		log.Info().Msgf("Pushing metaphor-frontend repo to origin gitlab")
-		gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "metaphor-frontend")
-		viper.Set("gitlab.metaphor-frontend-pushed", true)
+	if !viper.GetBool("gitlab.metaphor-pushed") {
+		log.Info().Msgf("Pushing metaphor repo to origin gitlab")
+		gitlab.PushGitRepo(globalFlags.DryRun, config, "gitlab", "metaphor")
+		viper.Set("gitlab.metaphor-pushed", true)
 		viper.WriteConfig()
 	}
 	return nil
@@ -83,7 +83,7 @@ func DeployMetaphorGithub(globalFlags flagset.GlobalFlags) error {
 	gitClient.PushLocalRepoUpdates(githubHost, githubOwner, "gitops", "github")
 	terraform.InitApplyAutoApprove(globalFlags.DryRun, tfEntrypoint, map[string]string{})
 
-	repos := [3]string{"metaphor", "metaphor-go", "metaphor-frontend"}
+	repos := [3]string{"metaphor", "metaphor-go", "metaphor"}
 	for _, element := range repos {
 		log.Info().Msgf("Processing Repo: %s", element)
 		repo.PrepareKubefirstTemplateRepo(globalFlags.DryRun, config, viper.GetString("gitops.owner"), element, viper.GetString("metaphor.branch"), viper.GetString("template.tag"))
@@ -131,18 +131,18 @@ func DeployMetaphorGithubLocal(dryRun bool, skipMetaphor bool, gitHubOwner strin
 	gitClient.PushLocalRepoUpdates(pkg.GitHubHost, gitHubOwner, "gitops", "github")
 	terraform.InitMigrateApplyAutoApprove(dryRun, tfEntrypoint)
 	if !skipMetaphor {
-		log.Info().Msgf("Processing Repo: metaphor-frontend")
+		log.Info().Msgf("Processing Repo: metaphor")
 		repo.PrepareKubefirstTemplateRepo(
 			dryRun,
 			config,
 			gitHubOwner,
-			"metaphor-frontend",
+			"metaphor",
 			metaphorBranch,
 			templateTag,
 		)
-		log.Info().Msgf("clone and detokenization of metaphor-frontend-template repository complete")
+		log.Info().Msgf("clone and detokenization of metaphor-template repository complete")
 
-		gitClient.PushLocalRepoToEmptyRemote(pkg.GitHubHost, gitHubOwner, "metaphor-frontend", "github")
+		gitClient.PushLocalRepoToEmptyRemote(pkg.GitHubHost, gitHubOwner, "metaphor", "github")
 	}
 
 	viper.Set("github.metaphor-pushed", true)
