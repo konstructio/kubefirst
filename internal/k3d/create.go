@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/internal/gitClient"
@@ -56,7 +57,7 @@ func ClusterCreate(clusterName string, k1Dir string, k3dClient string, kubeconfi
 }
 
 // should tokens be a *GitopsTokenValues? does it matter
-func PrepareGitopsRepository(
+func PrepareGitRepositories(
 	gitProvider string,
 	clusterName string,
 	clusterType string,
@@ -66,33 +67,75 @@ func PrepareGitopsRepository(
 	gitopsTemplateURL string,
 	destinationMetaphorRepoGitURL string,
 	k1Dir string,
-	tokens *GitopsTokenValues,
+	gitopsTokens *GitopsTokenValues,
+	metaphorDir string,
+	metaphorTokens *MetaphorTokenValues,
 ) error {
 
+	//* create a git repository for metaphor
+	//* copy all the content for metaphor
+	//* detokenize the metaphor repo
+	//* git commit x 2
+	//* git commit x 2
+
+	//* clone the gitops-template repo
 	gitopsRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranch, gitopsDir, gitopsTemplateURL)
 	if err != nil {
 		log.Info().Msgf("error opening repo at: %s", gitopsDir)
 	}
 	log.Info().Msg("gitops repository clone complete")
 
-	err = k3dGithubAdjustGitopsTemplateContent(CloudProvider, clusterName, clusterType, gitProvider, k1Dir, gitopsDir, destinationMetaphorRepoGitURL)
+	//* adjust the content for the gitops repo
+	err = adjustGitopsRepo(clusterName, clusterType, gitopsDir, gitProvider, k1Dir)
 	if err != nil {
 		return err
 	}
 
-	detokenizeGitGitops(gitopsDir, tokens)
+	//* detokenize the gitops repo
+	detokenizeGitGitops(gitopsDir, gitopsTokens)
 	if err != nil {
 		return err
 	}
+
+	//* commit initial gitops-template content
+	err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
+	if err != nil {
+		return err
+	}
+
+	//* add new remote
 	err = gitClient.AddRemote(destinationGitopsRepoGitURL, gitProvider, gitopsRepo)
 	if err != nil {
 		return err
 	}
 
-	err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
+	//! metaphor
+	//* adjust the content for the gitops repo
+	err = adjustMetaphorRepo(destinationMetaphorRepoGitURL, gitopsDir, gitProvider, k1Dir)
 	if err != nil {
 		return err
 	}
+
+	//* detokenize the gitops repo
+	detokenizeGitMetaphor(metaphorDir, metaphorTokens)
+	if err != nil {
+		return err
+	}
+
+	metaphorRepo, err := git.PlainOpen(metaphorDir)
+
+	//* commit initial gitops-template content
+	err = gitClient.Commit(metaphorRepo, "committing initial detokenized metaphor repo content")
+	if err != nil {
+		return err
+	}
+
+	//* add new remote
+	err = gitClient.AddRemote(destinationMetaphorRepoGitURL, gitProvider, metaphorRepo)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -107,47 +150,5 @@ func PostRunPrepareGitopsRepository(clusterName string,
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func PrepareMetaphorRepository(
-	gitProvider string,
-	destinationMetaphorRepoGitURL string,
-	k1Dir string,
-	metaphorDir string,
-	metaphorTemplateBranch string,
-	metaphorTemplateURL string,
-	tokens *MetaphorTokenValues,
-) error {
-
-	log.Info().Msg("generating your new metaphor repository")
-	metaphorRepo, err := gitClient.CloneRefSetMain(metaphorTemplateBranch, metaphorDir, metaphorTemplateURL)
-	if err != nil {
-		log.Info().Msgf("error opening repo at: %s", metaphorDir)
-	}
-
-	log.Info().Msg("metaphor repository clone complete")
-
-	err = k3dGithubAdjustMetaphorTemplateContent(gitProvider, k1Dir, metaphorDir)
-	if err != nil {
-		return err
-	}
-
-	detokenizeGitMetaphor(metaphorDir, tokens)
-
-	err = gitClient.AddRemote(destinationMetaphorRepoGitURL, gitProvider, metaphorRepo)
-	if err != nil {
-		return err
-	}
-
-	err = gitClient.Commit(metaphorRepo, "committing detokenized metaphor-template repo content")
-	if err != nil {
-		return err
-	}
-
-	if err != nil {
-		log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationMetaphorRepoGitURL)
-	}
-
 	return nil
 }

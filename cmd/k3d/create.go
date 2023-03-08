@@ -423,6 +423,16 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
+	metaphorTemplateTokens := k3d.MetaphorTokenValues{
+		ClusterName:                   clusterNameFlag,
+		CloudRegion:                   cloudRegionFlag,
+		ContainerRegistryURL:          fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
+		DomainName:                    k3d.DomainName,
+		MetaphorDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", k3d.DomainName),
+		MetaphorStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", k3d.DomainName),
+		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", k3d.DomainName),
+	}
+
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
@@ -431,7 +441,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 		log.Info().Msg("generating your new gitops repository")
 
-		err := k3d.PrepareGitopsRepository(
+		err := k3d.PrepareGitRepositories(
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
@@ -442,6 +452,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			config.DestinationMetaphorRepoGitURL,
 			config.K1Dir,
 			&gitopsTemplateTokens,
+			config.MetaphorDir,
+			&metaphorTemplateTokens,
 		)
 		if err != nil {
 			return err
@@ -608,15 +620,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
 	}
 	return errors.New("check the gitops repo content")
-
-	// metaphorTemplateTokens := k3d.MetaphorTokenValues{}
-	// metaphorTemplateTokens.ClusterName = clusterNameFlag
-	// metaphorTemplateTokens.CloudRegion = cloudRegionFlag
-	// metaphorTemplateTokens.ContainerRegistryURL = fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner)
-	// metaphorTemplateTokens.DomainName = k3d.DomainName
-	// metaphorTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("metaphor-development.%s", k3d.DomainName)
-	// metaphorTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("metaphor-staging.%s", k3d.DomainName)
-	// metaphorTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("metaphor-production.%s", k3d.DomainName)
 
 	//* git clone and detokenize the metaphor-template repository
 	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
