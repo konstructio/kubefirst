@@ -2,7 +2,6 @@ package k3d
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 )
@@ -52,10 +51,6 @@ func Create() *cobra.Command {
 
 	// todo review defaults and update descriptions
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
-	err := createCmd.MarkFlagRequired("cluster-name")
-	if err != nil {
-		log.Fatalf("error marking flag required: %s", err)
-	}
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
 	createCmd.Flags().BoolVar(&dryRun, "dry-run", false, "don't execute the installation")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
