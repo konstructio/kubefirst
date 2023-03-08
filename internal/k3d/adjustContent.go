@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/pkg"
 	cp "github.com/otiai10/copy"
@@ -146,6 +147,11 @@ func adjustMetaphorRepo(destinationMetaphorRepoGitURL, gitopsRepoDir, gitProvide
 		return err
 	}
 
+	// remove old git ref
+	err = metaphorRepo.Storer.RemoveReference(plumbing.NewBranchReferenceName("master"))
+	if err != nil {
+		return fmt.Errorf("error removing previous git ref: %s", err)
+	}
 	// create remote
 	_, err = metaphorRepo.CreateRemote(&config.RemoteConfig{
 		Name: "origin",

@@ -102,6 +102,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	httpClient := http.DefaultClient
 	segmentClient := &segment.Client
+	var segmentMsg string
 
 	// Set git handlers
 	switch gitProviderFlag {
@@ -171,7 +172,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	if useTelemetryFlag {
-		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
+		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
@@ -614,51 +615,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		// todo that way we can stop worrying about which origin we're going to push to
 		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
+		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1) // todo verify this tracker didnt lose one
 	} else {
 		log.Info().Msg("already pushed detokenized gitops repository content")
-		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
-	}
-	return errors.New("check the gitops repo content")
-
-	//* git clone and detokenize the metaphor-template repository
-	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
-
-		// todo need to remove this
-		// err := k3d.PrepareMetaphorRepository(
-		// 	config.GitProvider,
-		// 	config.DestinationMetaphorRepoGitURL,
-		// 	config.K1Dir,
-		// 	config.MetaphorDir,
-		// 	&metaphorTemplateTokens,
-		// )
-		// if err != nil {
-		// 	return err
-		// }
-
-		metaphorRepo, err := git.PlainOpen(config.MetaphorDir)
-		if err != nil {
-			log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
-		}
-
-		err = metaphorRepo.Push(&git.PushOptions{
-			RemoteName: config.GitProvider,
-			Auth:       publicKeys,
-		})
-		if err != nil {
-			return err
-		}
-
-		log.Info().Msgf("successfully pushed gitops to git@%s/%s/metaphor", cGitHost, cGitOwner)
-		// todo delete the local gitops repo and re-clone it
-		// todo that way we can stop worrying about which origin we're going to push to
-		log.Info().Msgf("pushed detokenized metaphor repository to %s/%s", cGitHost, cGitOwner)
-
-		viper.Set("kubefirst-checks.metaphor-repo-pushed", true)
-		viper.WriteConfig()
-		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
-	} else {
-		log.Info().Msg("already completed gitops repo generation - continuing")
 		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
 	}
 
