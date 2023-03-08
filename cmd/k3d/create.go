@@ -487,7 +487,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				return errors.New(fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err))
 			}
 
-			log.Info().Msgf("created git repositories and teams for github.com/%s", githubOwnerFlag)
+			log.Info().Msgf("created git repositories for github.com/%s", githubOwnerFlag)
 			viper.Set("kubefirst-checks.terraform-apply-github", true)
 			viper.WriteConfig()
 			progressPrinter.IncrementTracker("platform-create", 1)
