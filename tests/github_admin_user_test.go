@@ -2,15 +2,16 @@ package tests
 
 import (
 	"errors"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
-	"os"
-	"strings"
-	"testing"
 )
 
 // TestGitHubUserCreationEndToEnd is an end-to-end test that creates a new branch, modifies a file, commits the changes,
@@ -129,7 +130,7 @@ func TestGitHubUserCreationEndToEnd(t *testing.T) {
 
 	gitHubOwner := viper.GetString("github.owner")
 
-	gitHubClient := githubWrapper.New()
+	gitHubClient := githubWrapper.New(os.Getenv("GITHUB_TOKEN"))
 	pullRequest, err := gitHubClient.CreatePR(
 		branchName,
 		viper.GetString("gitops.repo"),

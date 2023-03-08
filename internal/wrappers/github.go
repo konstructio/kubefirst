@@ -2,18 +2,13 @@ package wrappers
 
 import (
 	"errors"
-	"log"
-	"os"
 
-	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 )
 
 // AuthenticateGitHubUserWrapper receives a handler that was previously instantiated, and communicate with GitHub.
 // This wrapper is necessary to avoid code repetition when requesting GitHub PAT or Access token.
-func AuthenticateGitHubUserWrapper(config *configs.Config, gitHubHandler *handlers.GitHubHandler) (string, error) {
-
-	gitHubAccessToken := config.GithubToken
+func AuthenticateGitHubUserWrapper(gitHubAccessToken string, gitHubHandler *handlers.GitHubHandler) (string, error) {
 	if gitHubAccessToken != "" {
 		return gitHubAccessToken, nil
 	}
@@ -26,11 +21,6 @@ func AuthenticateGitHubUserWrapper(config *configs.Config, gitHubHandler *handle
 	if gitHubAccessToken == "" {
 		return "", errors.New("unable to retrieve a GitHub token for the user")
 	}
-
-	if err := os.Setenv("KUBEFIRST_GITHUB_AUTH_TOKEN", gitHubAccessToken); err != nil {
-		return "", err
-	}
-	log.Println("\nKUBEFIRST_GITHUB_AUTH_TOKEN set via OAuth")
 
 	return gitHubAccessToken, nil
 }

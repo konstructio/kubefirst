@@ -1,11 +1,11 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/spf13/cobra"
@@ -23,7 +23,7 @@ var githubRemoveValidateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		gitWrapper := githubWrapper.New()
+		gitWrapper := githubWrapper.New(os.Getenv("GITHUB_TOKEN"))
 		repoGitops, err := gitWrapper.GetRepo(owner, "gitops")
 		//TODO: Improve logic
 		if err == nil {

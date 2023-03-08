@@ -2,6 +2,7 @@ package local
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/kubefirst/kubefirst/internal/reports"
@@ -58,7 +59,7 @@ func destroy(cmd *cobra.Command, args []string) error {
 
 		if forceDestroy {
 			log.Info().Msg("running force destroy...")
-			gitHubClient := githubWrapper.New()
+			gitHubClient := githubWrapper.New(os.Getenv("GITHUB_TOKEN"))
 			err = pkg.ForceLocalDestroy(gitHubClient)
 			if err != nil {
 				return err
