@@ -916,5 +916,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	time.Sleep(time.Millisecond * 100) // allows progress bars to finish
 
+	defer func(c segment.SegmentClient) {
+		err := c.Client.Close()
+		if err != nil {
+			log.Info().Msgf("error closing segment client %s", err.Error())
+		}
+	}(*segmentClient)
+
 	return nil
 }

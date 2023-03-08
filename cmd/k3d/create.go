@@ -795,7 +795,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
-		argoCDYamlPath := fmt.Sprintf("%s/argocd", config.GitopsDir)
+		argoCDYamlPath := fmt.Sprintf("%s/registry/%s/components/argocd", config.GitopsDir, clusterNameFlag)
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", argoCDYamlPath, "--wait")
 		if err != nil {
 			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", argoCDYamlPath, err.Error())
@@ -1188,6 +1188,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	time.Sleep(time.Millisecond * 100) // allows progress bars to finish
+
+	defer func(c segment.SegmentClient) {
+		err := c.Client.Close()
+		if err != nil {
+			log.Info().Msgf("error closing segment client %s", err.Error())
+		}
+	}(*segmentClient)
 
 	return nil
 }
