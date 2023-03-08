@@ -140,7 +140,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		cGitHost = civo.GitlabHost
 		cGitOwner = gitlabOwnerFlag
 		cGitToken = os.Getenv("GITLAB_TOKEN")
-		cGitUser = githubOwnerFlag
+		cGitUser = gitlabOwnerFlag
 		containerRegistryHost = "registry.gitlab.com"
 	default:
 		log.Error().Msgf("invalid git provider option")
@@ -890,7 +890,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	case "github":
 		usernamePasswordString := fmt.Sprintf("%s:%s", cGitUser, cGitToken)
 		usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
-		dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"username": "%s", "password": "%s", "email": "%s", "auth": "%s"}}}`, containerRegistryHost, cGitUser, cGitToken, "k-bot@example.com", usernamePasswordStringB64)
+		dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"username": "%s", "password": "%s", "email": "%s", "auth": "%s"}}}`, containerRegistryHost, viper.GetString("flags.github-owner"), cGitToken, "k-bot@example.com", usernamePasswordStringB64)
 
 		for _, repository := range createTokensFor {
 			// Create argo workflows pull secret

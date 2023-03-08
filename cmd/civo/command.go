@@ -86,7 +86,7 @@ func Destroy() *cobra.Command {
 	destroyCmd := &cobra.Command{
 		Use:   "destroy",
 		Short: "destroy the kubefirst platform",
-		Long:  "todo",
+		Long:  "destroy the kubefirst platform running in civo and remove all resources",
 		RunE:  destroyCivo,
 	}
 

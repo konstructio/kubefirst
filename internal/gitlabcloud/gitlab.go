@@ -428,3 +428,52 @@ func (gl *GitLabWrapper) ListProjectDeployTokens(projectName string) ([]gitlab.D
 
 	return container, nil
 }
+
+// DeleteProjectWebhook
+func (gl *GitLabWrapper) DeleteProjectWebhook(projectName string, url string) error {
+	projectID, err := gl.GetProjectID(projectName)
+	if err != nil {
+		return err
+	}
+
+	webhooks, err := gl.ListProjectWebhooks(projectID)
+	if err != nil {
+		return err
+	}
+
+	var hookID int = 0
+	for _, hook := range webhooks {
+		if hook.ProjectID == projectID && hook.URL == url {
+			hookID = hook.ID
+		}
+	}
+	if hookID == 0 {
+		return errors.New(fmt.Sprintf("no webhooks were found for project %s given search parameters", projectName))
+	}
+	_, err = gl.Client.Projects.DeleteProjectHook(projectID, hookID)
+	if err != nil {
+		return err
+	}
+	log.Info().Msgf("deleted hook %s/%s", projectName, url)
+
+	return nil
+}
+
+// ListProjectWebhooks returns all webhooks for a project
+func (gl *GitLabWrapper) ListProjectWebhooks(projectID int) ([]gitlab.ProjectHook, error) {
+	container := make([]gitlab.ProjectHook, 0)
+	for nextPage := 1; nextPage > 0; {
+		hooks, resp, err := gl.Client.Projects.ListProjectHooks(projectID, &gitlab.ListProjectHooksOptions{
+			Page:    nextPage,
+			PerPage: 10,
+		})
+		if err != nil {
+			return []gitlab.ProjectHook{}, err
+		}
+		for _, hook := range hooks {
+			container = append(container, *hook)
+		}
+		nextPage = resp.NextPage
+	}
+	return container, nil
+}
