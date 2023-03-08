@@ -42,7 +42,7 @@ func (c *SegmentClient) SendCountMetric(
 	}
 
 	err = c.Client.Enqueue(analytics.Track{
-		UserId: domainName,
+		UserId: strippedDomainName,
 		Event:  metricName,
 		Properties: analytics.NewProperties().
 			Set("cli_version", cliVersion).
