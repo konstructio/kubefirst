@@ -122,9 +122,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("flags.gitlab-owner", gitlabOwnerFlag)
 	}
 
-	// Repositories that will be created throughout this initialization process
-	newRepositoryNames := []string{"gitops", "metaphor-frontend"}
-
 	kubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
 	if kubefirstTeam == "" {
 		kubefirstTeam = "false"
