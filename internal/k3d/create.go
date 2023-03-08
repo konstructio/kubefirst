@@ -72,12 +72,6 @@ func PrepareGitRepositories(
 	metaphorTokens *MetaphorTokenValues,
 ) error {
 
-	//* create a git repository for metaphor
-	//* copy all the content for metaphor
-	//* detokenize the metaphor repo
-	//* git commit x 2
-	//* git commit x 2
-
 	//* clone the gitops-template repo
 	gitopsRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranch, gitopsDir, gitopsTemplateURL)
 	if err != nil {
@@ -123,7 +117,6 @@ func PrepareGitRepositories(
 	}
 
 	metaphorRepo, err := git.PlainOpen(metaphorDir)
-
 	//* commit initial gitops-template content
 	err = gitClient.Commit(metaphorRepo, "committing initial detokenized metaphor repo content")
 	if err != nil {
