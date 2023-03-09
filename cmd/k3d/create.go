@@ -1227,6 +1227,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	time.Sleep(time.Millisecond * 100) // allows progress bars to finish
+	
+	defer func(c segment.SegmentClient) {
+		time.Sleep(time.Second * 21) // allows 20 second event buffer to exhaust
+		err := c.Client.Close()
+		if err != nil {
+			log.Info().Msgf("error closing segment client %s", err.Error())
+		}
+	}(*segmentClient)
 
 	return nil
 }
