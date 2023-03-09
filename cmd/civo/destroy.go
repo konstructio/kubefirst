@@ -26,7 +26,6 @@ import (
 func destroyCivo(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
-	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	log.Info().Msg("destroying kubefirst platform in civo")
@@ -67,8 +66,10 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	if len(civoToken) == 0 {
 		return errors.New("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set the environment variable")
 	}
-
 	progressPrinter.IncrementTracker("preflight-checks", 1)
+
+	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 3)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	switch gitProvider {
 	case "github":
@@ -107,7 +108,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 
 			// Before removing Terraform resources, remove any container registry repositories
 			// since failing to remove them beforehand will result in an apply failure
-			var projectsForDeletion = []string{"gitops", "metaphor-frontend"}
+			var projectsForDeletion = []string{"gitops", "metaphor"}
 			for _, project := range projectsForDeletion {
 				projectExists, err := gl.CheckProjectExists(project)
 				if err != nil {
@@ -272,9 +273,8 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("previous platform content removed")
 
 		log.Info().Msg("resetting `$HOME/.kubefirst` config")
-		// todo re-evaluate
 		viper.Set("argocd", "")
-		viper.Set("github", "")
+		viper.Set(gitProvider, "")
 		viper.Set("components", "")
 		viper.Set("kbot", "")
 		viper.Set("kubefirst-checks", "")
@@ -282,10 +282,14 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 
-	progressPrinter.IncrementTracker("platform-destroy", 1)
-	fmt.Println("your kubefirst platform running in Civo Cloud has been destroyed")
-
+	if _, err := os.Stat(config.K1Dir + "/kubeconfig"); !os.IsNotExist(err) {
+		err = os.Remove(config.K1Dir + "/kubeconfig")
+		if err != nil {
+			return fmt.Errorf("unable to delete %q folder, error: %s", config.K1Dir+"/kubeconfig", err)
+		}
+	}
 	time.Sleep(time.Millisecond * 200) // allows progress bars to finish
+	fmt.Println("your kubefirst platform running in k3d has been destroyed")
 
 	return nil
 }

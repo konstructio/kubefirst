@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -24,6 +23,7 @@ func AddK3DSecrets(
 	gitProvider string,
 	gitUser string,
 	kubeconfigPath string,
+	tokenValue string,
 ) error {
 	clientset, err := k8s.GetClientSet(dryRun, kubeconfigPath)
 	if err != nil {
@@ -31,13 +31,11 @@ func AddK3DSecrets(
 	}
 
 	// Set git provider token value
-	var tokenValue, containerRegistryHost string
+	var containerRegistryHost string
 	switch gitProvider {
 	case "github":
-		tokenValue = os.Getenv("GITHUB_TOKEN")
 		containerRegistryHost = "https://ghcr.io/"
 	case "gitlab":
-		tokenValue = os.Getenv("GITLAB_TOKEN")
 		containerRegistryHost = "registry.gitlab.io"
 	}
 

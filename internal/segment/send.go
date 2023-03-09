@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/kubefirst/kubefirst/pkg"
-	"github.com/rs/zerolog/log"
 	"github.com/segmentio/analytics-go"
 )
 
@@ -36,7 +35,7 @@ func (c *SegmentClient) SendCountMetric(
 
 	log.Info().Msg(fmt.Sprintf("enquing telemetry metric %s", metricName))
 	err = c.Client.Enqueue(analytics.Track{
-		UserId: domainName,
+		UserId: strippedDomainName,
 		Event:  metricName,
 		Properties: analytics.NewProperties().
 			Set("cli_version", cliVersion).

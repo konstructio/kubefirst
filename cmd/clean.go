@@ -84,7 +84,7 @@ To preserve the tools downloaded you need to specify additional flag (--preserve
 				log.Debug().Msgf("unable to delete %q file, error is: ", err)
 			}
 
-			var metaphorFolders = []string{"metaphor", "metaphor-frontend", "metaphor-go"}
+			var metaphorFolders = []string{"metaphor", "metaphor", "metaphor-go"}
 			for _, f := range metaphorFolders {
 				log.Debug().Msgf("Removing metaphors folders: %s", f)
 				err = os.RemoveAll(fmt.Sprintf("%s/%s", config.K1FolderPath, f))

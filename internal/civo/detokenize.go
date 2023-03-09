@@ -9,9 +9,9 @@ import (
 	"strings"
 )
 
-// DetokenizeCivoGitGitops - Translate tokens by values on a given path
-func DetokenizeCivoGitGitops(path string, tokens *GitOpsDirectoryValues) error {
-	err := filepath.Walk(path, detokenizeCivoGitops(path, tokens))
+// DetokenizeGitGitops - Translate tokens by values on a given path
+func DetokenizeGitGitops(path string, tokens *GitOpsDirectoryValues) error {
+	err := filepath.Walk(path, detokenizeGitops(path, tokens))
 	if err != nil {
 		return err
 	}
@@ -19,7 +19,7 @@ func DetokenizeCivoGitGitops(path string, tokens *GitOpsDirectoryValues) error {
 	return nil
 }
 
-func detokenizeCivoGitops(path string, tokens *GitOpsDirectoryValues) filepath.WalkFunc {
+func detokenizeGitops(path string, tokens *GitOpsDirectoryValues) filepath.WalkFunc {
 	return filepath.WalkFunc(func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -103,8 +103,8 @@ func detokenizeCivoGitops(path string, tokens *GitOpsDirectoryValues) filepath.W
 }
 
 // DetokenizeCivoAdditionalPath - Translate tokens by values on a given path
-func DetokenizeCivoAdditionalPath(path string, tokens *GitOpsDirectoryValues) error {
-	err := filepath.Walk(path, detokenizeCivoAdditionalPath(path, tokens))
+func DetokenizeAdditionalPath(path string, tokens *GitOpsDirectoryValues) error {
+	err := filepath.Walk(path, detokenizeAdditionalPath(path, tokens))
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func DetokenizeCivoAdditionalPath(path string, tokens *GitOpsDirectoryValues) er
 }
 
 // detokenizeCivoAdditionalPath temporary addition to handle detokenizing additional files
-func detokenizeCivoAdditionalPath(path string, tokens *GitOpsDirectoryValues) filepath.WalkFunc {
+func detokenizeAdditionalPath(path string, tokens *GitOpsDirectoryValues) filepath.WalkFunc {
 	return filepath.WalkFunc(func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -143,17 +143,17 @@ func detokenizeCivoAdditionalPath(path string, tokens *GitOpsDirectoryValues) fi
 	})
 }
 
-// DetokenizeCivoGithubMetaphor - Translate tokens by values on a given path
-func DetokenizeCivoGitMetaphor(path string, tokens *MetaphorTokenValues) error {
-	err := filepath.Walk(path, detokenizeCivoGitopsMetaphor(path, tokens))
+// DetokenizeGithubMetaphor - Translate tokens by values on a given path
+func DetokenizeGitMetaphor(path string, tokens *MetaphorTokenValues) error {
+	err := filepath.Walk(path, detokenizeGitopsMetaphor(path, tokens))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// DetokenizeDirectoryCivoGithubMetaphor - Translate tokens by values on a directory level.
-func detokenizeCivoGitopsMetaphor(path string, tokens *MetaphorTokenValues) filepath.WalkFunc {
+// DetokenizeDirectoryGithubMetaphor - Translate tokens by values on a directory level.
+func detokenizeGitopsMetaphor(path string, tokens *MetaphorTokenValues) filepath.WalkFunc {
 	return filepath.WalkFunc(func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -173,15 +173,13 @@ func detokenizeCivoGitopsMetaphor(path string, tokens *MetaphorTokenValues) file
 
 			// todo reduce to terraform tokens by moving to helm chart?
 			newContents := string(read)
-			newContents = strings.Replace(newContents, "<CHECKOUT_CWFT_TEMPLATE>", tokens.CheckoutCWFTTemplate, -1)
 			newContents = strings.Replace(newContents, "<CLOUD_REGION>", tokens.CloudRegion, -1)
 			newContents = strings.Replace(newContents, "<CLUSTER_NAME>", tokens.ClusterName, -1)
-			newContents = strings.Replace(newContents, "<COMMIT_CWFT_TEMPLATE>", tokens.CommitCWFTTemplate, -1)
 			newContents = strings.Replace(newContents, "<CONTAINER_REGISTRY_URL>", tokens.ContainerRegistryURL, -1) // todo need to fix metaphor repo names
 			newContents = strings.Replace(newContents, "<DOMAIN_NAME>", tokens.DomainName, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEVELOPMENT_INGRESS_URL>", tokens.MetaphorFrontendDevelopmentIngressURL, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PRODUCTION_INGRESS_URL>", tokens.MetaphorFrontendProductionIngressURL, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING_INGRESS_URL>", tokens.MetaphorFrontendStagingIngressURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_DEVELOPMENT_INGRESS_URL>", tokens.MetaphorDevelopmentIngressURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_PRODUCTION_INGRESS_URL>", tokens.MetaphorProductionIngressURL, -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_STAGING_INGRESS_URL>", tokens.MetaphorStagingIngressURL, -1)
 
 			err = ioutil.WriteFile(path, []byte(newContents), 0)
 			if err != nil {

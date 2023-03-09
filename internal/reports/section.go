@@ -22,11 +22,11 @@ func PrintSectionRepoGithub() []byte {
 	handOffData.WriteString("\n Repos: ")
 	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/gitops", viper.GetString("github.host"), viper.GetString("github.owner"))))
 	if viper.GetString("cloud") == pkg.CloudK3d {
-		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor-frontend", viper.GetString("github.host"), viper.GetString("github.owner"))))
+		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor", viper.GetString("github.host"), viper.GetString("github.owner"))))
 	} else {
 		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor", viper.GetString("github.host"), viper.GetString("github.owner"))))
 		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor-go", viper.GetString("github.host"), viper.GetString("github.owner"))))
-		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor-frontend", viper.GetString("github.host"), viper.GetString("github.owner"))))
+		handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://%s/%s/metaphor", viper.GetString("github.host"), viper.GetString("github.owner"))))
 
 	}
 
@@ -45,7 +45,7 @@ func PrintSectionRepoGitlab() []byte {
 
 	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor", viper.GetString("aws.hostedzonename"))))
 	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor-go", viper.GetString("aws.hostedzonename"))))
-	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor-frontend", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n  %s", fmt.Sprintf("https://gitlab.%s/kubefirst/metaphor", viper.GetString("aws.hostedzonename"))))
 
 	return handOffData.Bytes()
 }
@@ -226,9 +226,9 @@ func PrintSectionMetaphorFrontend() []byte {
 
 	handOffData.WriteString("\n--- Metaphor Frontend")
 	handOffData.WriteString(strings.Repeat("-", 57))
-	handOffData.WriteString(fmt.Sprintf("\n Development: %s", fmt.Sprintf("https://metaphor-frontend-development.%s", viper.GetString("aws.hostedzonename"))))
-	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", fmt.Sprintf("https://metaphor-frontend-staging.%s", viper.GetString("aws.hostedzonename"))))
-	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", fmt.Sprintf("https://metaphor-frontend-production.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Development: %s", fmt.Sprintf("https://metaphor-development.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Staging: %s", fmt.Sprintf("https://metaphor-staging.%s", viper.GetString("aws.hostedzonename"))))
+	handOffData.WriteString(fmt.Sprintf("\n Production:  %s\n", fmt.Sprintf("https://metaphor-production.%s", viper.GetString("aws.hostedzonename"))))
 	handOffData.WriteString(strings.Repeat("-", 70))
 
 	return handOffData.Bytes()
@@ -329,12 +329,12 @@ func CivoHandoff(clusterName string, domainName string) {
 func GitHubAuthToken(userCode, verificationUri string) string {
 	var gitHubTokenReport bytes.Buffer
 	gitHubTokenReport.WriteString(strings.Repeat("-", 69))
-	gitHubTokenReport.WriteString("\nNo KUBEFIRST_GITHUB_AUTH_TOKEN env variable found!\nUse the code below to get a temporary GitHub Access Token and continue\n")
+	gitHubTokenReport.WriteString("\nNo GITHUB_TOKEN env variable found!\nUse the code below to get a temporary GitHub Access Token\nThis token will be used by Kubefirst to create your environment\n")
+	gitHubTokenReport.WriteString("\n\nA GitHub Access Token is required to provision GitHub repositories and run workflows in GitHub.\n")
 	gitHubTokenReport.WriteString(strings.Repeat("-", 69) + "\n")
-	gitHubTokenReport.WriteString("1. copy the code: 📋 " + userCode + " 📋\n\n")
-	gitHubTokenReport.WriteString("2. paste the code at the GitHub page: " + verificationUri + "\n")
-	gitHubTokenReport.WriteString("3. authorize your organization")
-	gitHubTokenReport.WriteString("\n\nA GitHub Access Token is required to provision GitHub repositories and run workflows in GitHub.")
+	gitHubTokenReport.WriteString("1. Copy this code: 📋 " + userCode + " 📋\n\n")
+	gitHubTokenReport.WriteString(fmt.Sprintf("2. When ready, press <enter> to open the page at %s\n\n", verificationUri))
+	gitHubTokenReport.WriteString("3. Authorize the organization you'll be using Kubefirst with - this may also be your personal account")
 
 	return gitHubTokenReport.String()
 }

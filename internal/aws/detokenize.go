@@ -39,12 +39,12 @@ func detokenizeAwsGitops(path string, tokens *GitOpsDirectoryValues) filepath.Wa
 		metaphorStagingIngressURL := fmt.Sprintf("https://metaphor-staging.%s", tokens.DomainName)
 		metaphorProductionIngressURL := fmt.Sprintf("https://metaphor-production.%s", tokens.DomainName)
 		// todo consolidate
-		metaphorFrontendDevelopmentIngressNoHttpsURL := fmt.Sprintf("metaphor-frontend-development.%s", tokens.DomainName)
-		metaphorFrontendStagingIngressNoHttpsURL := fmt.Sprintf("metaphor-frontend-staging.%s", tokens.DomainName)
-		metaphorFrontendProductionIngressNoHttpsURL := fmt.Sprintf("metaphor-frontend-production.%s", tokens.DomainName)
-		metaphorFrontendDevelopmentIngressURL := fmt.Sprintf("https://metaphor-frontend-development.%s", tokens.DomainName)
-		metaphorFrontendStagingIngressURL := fmt.Sprintf("https://metaphor-frontend-staging.%s", tokens.DomainName)
-		metaphorFrontendProductionIngressURL := fmt.Sprintf("https://metaphor-frontend-production.%s", tokens.DomainName)
+		metaphorFrontendDevelopmentIngressNoHttpsURL := fmt.Sprintf("metaphor-development.%s", tokens.DomainName)
+		metaphorFrontendStagingIngressNoHttpsURL := fmt.Sprintf("metaphor-staging.%s", tokens.DomainName)
+		metaphorFrontendProductionIngressNoHttpsURL := fmt.Sprintf("metaphor-production.%s", tokens.DomainName)
+		metaphorFrontendDevelopmentIngressURL := fmt.Sprintf("https://metaphor-development.%s", tokens.DomainName)
+		metaphorFrontendStagingIngressURL := fmt.Sprintf("https://metaphor-staging.%s", tokens.DomainName)
+		metaphorFrontendProductionIngressURL := fmt.Sprintf("https://metaphor-production.%s", tokens.DomainName)
 		// todo consolidate
 		metaphorGoDevelopmentIngressNoHttpsURL := fmt.Sprintf("metaphor-go-development.%s", tokens.DomainName)
 		metaphorGoStagingIngressNoHttpsURL := fmt.Sprintf("metaphor-go-staging.%s", tokens.DomainName)

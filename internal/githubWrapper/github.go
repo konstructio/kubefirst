@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -23,8 +22,7 @@ type GithubSession struct {
 }
 
 // New - Create a new client for github wrapper
-func New() GithubSession {
-	token := os.Getenv("GITHUB_TOKEN")
+func New(token string) GithubSession {
 	if token == "" {
 		log.Fatal().Msg("Unauthorized: No token present")
 	}

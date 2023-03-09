@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
@@ -37,7 +38,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	switch gitProvider {
 	case "github":
 		cGitOwner = viper.GetString("flags.github-owner")
-		cGitToken = os.Getenv("GITHUB_TOKEN")
+		cGitToken = viper.GetString("github.session_token")
 	case "gitlab":
 		cGitOwner = viper.GetString("flags.gitlab-owner")
 		cGitToken = os.Getenv("GITLAB_TOKEN")
@@ -69,7 +70,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 		switch config.GitProvider {
 		case "github":
-			githubWrapper := githubWrapper.New()
+			githubWrapper := githubWrapper.New(cGitToken)
 			err = githubWrapper.DeleteRepositoryWebhook(cGitOwner, "gitops", webhookURL)
 			if err != nil {
 				log.Error().Msgf("error removing webhook: %s - you may need to manually remove it", err)
@@ -151,7 +152,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 			// Before removing Terraform resources, remove any container registry repositories
 			// since failing to remove them beforehand will result in an apply failure
-			var projectsForDeletion = []string{"gitops", "metaphor-frontend"}
+			var projectsForDeletion = []string{"gitops", "metaphor"}
 			for _, project := range projectsForDeletion {
 				projectExists, err := gl.CheckProjectExists(project)
 				if err != nil {
@@ -251,6 +252,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("unable to delete %q folder, error: %s", config.K1Dir+"/kubeconfig", err)
 		}
 	}
+	time.Sleep(time.Millisecond * 200) // allows progress bars to finish
 	fmt.Println("your kubefirst platform running in k3d has been destroyed")
 
 	return nil

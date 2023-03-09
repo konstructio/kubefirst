@@ -40,7 +40,7 @@ var deployMetaphorCmd = &cobra.Command{
 		}
 		/*
 			config := configs.ReadConfig()
-			repos := [3]string{"metaphor", "metaphor-go", "metaphor-frontend"}
+			repos := [3]string{"metaphor", "metaphor-go", "metaphor"}
 			for _, repoName := range repos {
 				directory := fmt.Sprintf("%s/%s", config.K1FolderPath, repoName)
 				_ = os.RemoveAll(directory)

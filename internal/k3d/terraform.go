@@ -4,7 +4,7 @@ import (
 	"os"
 )
 
-func GetGithubTerraformEnvs(envs map[string]string) map[string]string {
+func GetGithubTerraformEnvs(envs map[string]string, githubToken string) map[string]string {
 
 	envs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
 	envs["AWS_ACCESS_KEY_ID"] = "kray"

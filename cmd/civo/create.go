@@ -20,11 +20,10 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/civo"
-	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
 	"github.com/kubefirst/kubefirst/internal/handlers"
-	"github.com/kubefirst/kubefirst/internal/helm"
+	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/reports"
@@ -101,16 +100,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	kbotPasswordFlag, err := cmd.Flags().GetString("kbot-password")
-	if err != nil {
-		return err
-	}
-
-	metaphorTemplateURLFlag, err := cmd.Flags().GetString("metaphor-template-url")
-	if err != nil {
-		return err
-	}
-
-	metaphorTemplateBranchFlag, err := cmd.Flags().GetString("metaphor-template-branch")
 	if err != nil {
 		return err
 	}
@@ -253,14 +242,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	log.Info().Msgf("kubefirst version configs.K1Version: %s ", configs.K1Version)
 	log.Info().Msgf("cloning gitops-template repo url: %s ", gitopsTemplateURLFlag)
 	log.Info().Msgf("cloning gitops-template repo branch: %s ", gitopsTemplateBranchFlag)
-	// this branch flag value is overridden with a tag when running from a
-	// kubefirst binary for version compatibility
-	if metaphorTemplateBranchFlag == "main" && configs.K1Version != "development" {
-		metaphorTemplateBranchFlag = configs.K1Version
-	}
-
-	log.Info().Msgf("cloning metaphor template url: %s ", metaphorTemplateURLFlag)
-	log.Info().Msgf("cloning metaphor template branch: %s ", metaphorTemplateBranchFlag)
 
 	atlantisWebhookSecret := viper.GetString("secrets.atlantis-webhook")
 	if atlantisWebhookSecret == "" {
@@ -391,7 +372,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		// Objects to check for
-		newRepositoryNames := []string{"gitops", "metaphor-frontend"}
+		newRepositoryNames := []string{"gitops", "metaphor"}
 		newTeamNames := []string{"admins", "developers"}
 
 		switch config.GitProvider {
@@ -422,7 +403,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 				return err
 			}
 
-			githubWrapper := githubWrapper.New()
+			githubWrapper := githubWrapper.New(cGitToken)
 			newRepositoryExists := false
 			// todo hoist to globals
 			errorMsg := "the following repositories must be removed before continuing with your kubefirst installation.\n\t"
@@ -593,6 +574,16 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("downloading-tools", 1)
 	}
 
+	// todo should metaphor tokens be global?
+	metaphorDirectoryTokens := civo.MetaphorTokenValues{
+		ClusterName:                   clusterNameFlag,
+		CloudRegion:                   cloudRegionFlag,
+		ContainerRegistryURL:          fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
+		DomainName:                    k3d.DomainName,
+		MetaphorDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", k3d.DomainName),
+		MetaphorStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", k3d.DomainName),
+		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", k3d.DomainName),
+	}
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
@@ -601,38 +592,20 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 
 		log.Info().Msg("generating your new gitops repository")
-		gitopsRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranchFlag, config.GitopsDir, gitopsTemplateURLFlag)
-		if err != nil {
-			log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
-		}
-		log.Info().Msg("gitops repository clone complete")
-
-		err = civo.CivoAdjustGitopsTemplateContent(civo.CloudProvider, clusterNameFlag, clusterTypeFlag, config.GitProvider, config.K1Dir, config.GitopsDir)
-		if err != nil {
-			return err
-		}
-
-		err = civo.DetokenizeCivoGitGitops(config.GitopsDir, &gitopsDirectoryTokens)
-		if err != nil {
-			return err
-		}
-
-		// Shim to adjust provider-specific files
-		switch config.GitProvider {
-		case "gitlab":
-			err = civo.DetokenizeCivoAdditionalPath(config.ArgoWorkflowsDir, &civo.GitOpsDirectoryValues{GitlabOwner: cGitOwner})
-			if err != nil {
-				return err
-			}
-
-		}
-
-		err = gitClient.AddRemote(config.DestinationGitopsRepoGitURL, config.GitProvider, gitopsRepo)
-		if err != nil {
-			return err
-		}
-
-		err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
+		err := civo.PrepareGitRepositories(
+			config.GitProvider,
+			clusterNameFlag,
+			clusterTypeFlag,
+			config.DestinationGitopsRepoGitURL,
+			config.GitopsDir,
+			gitopsTemplateBranchFlag,
+			gitopsTemplateURLFlag,
+			config.DestinationMetaphorRepoGitURL,
+			config.K1Dir,
+			&gitopsDirectoryTokens,
+			config.MetaphorDir,
+			&metaphorDirectoryTokens,
+		)
 		if err != nil {
 			return err
 		}
@@ -698,6 +671,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			}
 
 			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabOwnerFlag)
+			progressPrinter.IncrementTracker("applying-git-terraform", 1)
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", true)
 			viper.WriteConfig()
 		} else {
@@ -707,13 +681,18 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	//* push detokenized gitops-template repository content to new remote
-	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 2)
+	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
 	if !executionControl {
 		gitopsRepo, err := git.PlainOpen(config.GitopsDir)
 		if err != nil {
 			log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
+		}
+
+		metaphorRepo, err := git.PlainOpen(config.MetaphorDir)
+		if err != nil {
+			log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
 		}
 
 		// For GitLab, we currently need to add an ssh key to the authenticating user
@@ -758,6 +737,17 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoGitURL, err)
 		}
 
+		// push metaphor repo to remote
+		err = metaphorRepo.Push(
+			&git.PushOptions{
+				RemoteName: "origin",
+				Auth:       publicKeys,
+			},
+		)
+		if err != nil {
+			log.Panic().Msgf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoGitURL, err)
+		}
+
 		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/gitops", cGitOwner)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
@@ -767,73 +757,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
 	} else {
 		log.Info().Msg("already pushed detokenized gitops repository content")
-		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
-	}
-
-	metaphorTemplateTokens := civo.MetaphorTokenValues{
-		CheckoutCWFTTemplate:                  "git-checkout-with-gitops-ssh",
-		CloudRegion:                           cloudRegionFlag,
-		ClusterName:                           clusterNameFlag,
-		CommitCWFTTemplate:                    "git-commit-ssh",
-		ContainerRegistryURL:                  fmt.Sprintf("%s/%s/metaphor-frontend", containerRegistryHost, cGitOwner),
-		DomainName:                            domainNameFlag,
-		MetaphorFrontendDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", domainNameFlag),
-		MetaphorFrontendProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
-		MetaphorFrontendStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
-	}
-
-	//* git clone and detokenize the metaphor-frontend-template repository
-	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
-
-		if configs.K1Version != "" {
-			gitopsTemplateBranchFlag = configs.K1Version
-		}
-
-		log.Info().Msg("generating your new metaphor-frontend repository")
-		metaphorRepo, err := gitClient.CloneRefSetMain(metaphorTemplateBranchFlag, config.MetaphorDir, metaphorTemplateURLFlag)
-		if err != nil {
-			log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
-		}
-
-		log.Info().Msg("metaphor repository clone complete")
-
-		err = civo.CivoAdjustMetaphorTemplateContent(config.GitProvider, config.K1Dir, config.MetaphorDir)
-		if err != nil {
-			return err
-		}
-
-		err = civo.DetokenizeCivoGitMetaphor(config.MetaphorDir, &metaphorTemplateTokens)
-		if err != nil {
-			return err
-		}
-		err = gitClient.AddRemote(config.DestinationMetaphorRepoGitURL, config.GitProvider, metaphorRepo)
-		if err != nil {
-			return err
-		}
-
-		err = gitClient.Commit(metaphorRepo, "committing detokenized metaphor-frontend-template repo content")
-		if err != nil {
-			return err
-		}
-
-		err = metaphorRepo.Push(&git.PushOptions{
-			RemoteName: config.GitProvider,
-			Auth:       publicKeys,
-		})
-		if err != nil {
-			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", config.DestinationMetaphorRepoGitURL)
-		}
-
-		log.Info().Msgf("successfully pushed gitops to git@%s/%s/metaphor-frontend", cGitHost, cGitOwner)
-		// todo delete the local gitops repo and re-clone it
-		// todo that way we can stop worrying about which origin we're going to push to
-		log.Info().Msgf("pushed detokenized metaphor-frontend repository to %s/%s", cGitHost, cGitOwner)
-
-		viper.Set("kubefirst-checks.metaphor-repo-pushed", true)
-		viper.WriteConfig()
-		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
-	} else {
-		log.Info().Msg("already completed gitops repo generation - continuing")
 		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
 	}
 
@@ -907,7 +830,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// Handle secret creation for buildkit
-	createTokensFor := []string{"metaphor-frontend"}
+	createTokensFor := []string{"metaphor"}
 	switch config.GitProvider {
 	// GitHub docker auth secret
 	// Buildkit requires a specific format for Docker auth created as a secret
@@ -986,45 +909,24 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 	progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
 
-	//* helm add argo repository && update
-	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 4)
+	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	helmRepo := helm.HelmRepo{
-		RepoName:     "argo",
-		RepoURL:      "https://argoproj.github.io/argo-helm",
-		ChartName:    "argo-cd",
-		Namespace:    "argocd",
-		ChartVersion: "4.10.5",
-	}
-
-	//* helm add repo and update
-	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-repo-added")
+	//* install argocd
+	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
-		log.Info().Msgf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL)
-		helm.AddRepoAndUpdateRepo(dryRunFlag, config.HelmClient, helmRepo, config.Kubeconfig)
-		log.Info().Msg("helm repo added")
-		viper.Set("kubefirst-checks.argocd-helm-repo-added", true)
-		viper.WriteConfig()
-		progressPrinter.IncrementTracker("installing-argo-cd", 1)
-	} else {
-		log.Info().Msg("argo helm repository already added, continuing")
-		progressPrinter.IncrementTracker("installing-argo-cd", 1)
-	}
-	//* helm install argocd
-	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-install")
-	if !executionControl {
-		log.Info().Msgf("helm install %s and wait", helmRepo.RepoName)
-		// todo adopt golang helm client for helm install
-		err := helm.Install(dryRunFlag, config.HelmClient, helmRepo, config.Kubeconfig)
+		log.Info().Msgf("installing argocd")
+		argoCDYamlPath := fmt.Sprintf("%s/registry/%s/components/argocd", config.GitopsDir, clusterNameFlag)
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", argoCDYamlPath, "--wait")
 		if err != nil {
+			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", argoCDYamlPath, err.Error())
 			return err
 		}
-		viper.Set("kubefirst-checks.argocd-helm-install", true)
+		viper.Set("kubefirst-checks.argocd-install", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	} else {
-		log.Info().Msg("argo helm already installed, continuing")
+		log.Info().Msg("argo cd already installed, continuing")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	}
 
@@ -1042,6 +944,27 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, argoCDStatefulSet, 90, false)
 	if err != nil {
 		log.Info().Msgf("Error waiting for ArgoCD StatefulSet ready state: %s", err)
+	}
+
+	// Wait for ArgoCD repo server Pods to transition to Running
+	// This is related to a condition where apps attempt to deploy before
+	// the repo server health check passes
+	//
+	// This can cause future steps to break since the registry app
+	// may never apply
+	argoCDRepoDeployment, err := k8s.ReturnDeploymentObject(
+		config.Kubeconfig,
+		"app.kubernetes.io/name",
+		"argocd-repo-server",
+		"argocd",
+		60,
+	)
+	if err != nil {
+		log.Info().Msgf("Error finding ArgoCD repo deployment: %s", err)
+	}
+	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, argoCDRepoDeployment, 90)
+	if err != nil {
+		log.Info().Msgf("Error waiting for ArgoCD repo deployment ready state: %s", err)
 	}
 
 	//* ArgoCD port-forward
@@ -1283,6 +1206,13 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	reports.CivoHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, dryRunFlag, false)
 
 	time.Sleep(time.Second * 1) // allows progress bars to finish
+
+	defer func(c segment.SegmentClient) {
+		err := c.Client.Close()
+		if err != nil {
+			log.Info().Msgf("error closing segment client %s", err.Error())
+		}
+	}(*segmentClient)
 
 	return nil
 }

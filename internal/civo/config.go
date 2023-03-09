@@ -77,8 +77,8 @@ func GetConfig(clusterName string, domainName string, gitProvider string, gitOwn
 
 	config.DestinationGitopsRepoHttpsURL = fmt.Sprintf("https://%s/%s/gitops.git", cGitHost, gitOwner)
 	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@%s:%s/gitops.git", cGitHost, gitOwner)
-	config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("https://%s/%s/metaphor-frontend.git", cGitHost, gitOwner)
-	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@%s:%s/metaphor-frontend.git", cGitHost, gitOwner)
+	config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("https://%s/%s/metaphor.git", cGitHost, gitOwner)
+	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@%s:%s/metaphor.git", cGitHost, gitOwner)
 
 	config.ArgoWorkflowsDir = fmt.Sprintf("%s/.k1/argo-workflows", homeDir)
 	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
@@ -89,7 +89,7 @@ func GetConfig(clusterName string, domainName string, gitProvider string, gitOwn
 	config.KubectlClient = fmt.Sprintf("%s/.k1/tools/kubectl", homeDir)
 	config.KubefirstConfig = fmt.Sprintf("%s/.k1/%s", homeDir, ".kubefirst")
 	config.LogsDir = fmt.Sprintf("%s/.k1/logs", homeDir)
-	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor-frontend", homeDir)
+	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor", homeDir)
 	config.RegistryAppName = "registry"
 	config.RegistryYaml = fmt.Sprintf("%s/.k1/gitops/registry/%s/registry.yaml", homeDir, clusterName)
 	config.SSLBackupDir = fmt.Sprintf("%s/.k1/ssl/%s", homeDir, domainName)
@@ -153,12 +153,12 @@ type GitOpsDirectoryValues struct {
 	// MetaphorProductionIngressNoHTTPSURL          string
 	// MetaphorStagingIngressURL                    string
 	// MetaphorStagingIngressNoHTTPSURL             string
-	// MetaphorFrontendDevelopmentIngressURL        string
-	// MetaphorFrontendDevelopmentIngressNoHTTPSURL string
-	// MetaphorFrontendProductionIngressURL         string
-	// MetaphorFrontendProductionIngressNoHTTPSURL  string
-	// MetaphorFrontendStagingIngressURL            string
-	// MetaphorFrontendStagingIngressNoHTTPSURL     string
+	// MetaphorDevelopmentIngressURL                string
+	// MetaphorDevelopmentIngressNoHTTPSURL         string
+	// MetaphorProductionIngressURL                 string
+	// MetaphorProductionIngressNoHTTPSURL          string
+	// MetaphorStagingIngressURL                    string
+	// MetaphorStagingIngressNoHTTPSURL             string
 	// MetaphorGoDevelopmentIngressURL              string
 	// MetaphorGoDevelopmentIngressNoHTTPSURL       string
 	// MetaphorGoProductionIngressURL               string
@@ -168,13 +168,13 @@ type GitOpsDirectoryValues struct {
 }
 
 type MetaphorTokenValues struct {
-	CheckoutCWFTTemplate                  string
-	CloudRegion                           string
-	ClusterName                           string
-	CommitCWFTTemplate                    string
-	ContainerRegistryURL                  string
-	DomainName                            string
-	MetaphorFrontendDevelopmentIngressURL string
-	MetaphorFrontendProductionIngressURL  string
-	MetaphorFrontendStagingIngressURL     string
+	CheckoutCWFTTemplate          string
+	CloudRegion                   string
+	ClusterName                   string
+	CommitCWFTTemplate            string
+	ContainerRegistryURL          string
+	DomainName                    string
+	MetaphorDevelopmentIngressURL string
+	MetaphorProductionIngressURL  string
+	MetaphorStagingIngressURL     string
 }
