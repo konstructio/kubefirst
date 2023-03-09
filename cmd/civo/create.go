@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -118,6 +119,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	log.Info().Msg(fmt.Sprintf("useTelemetryFlag is set to %s", strconv.FormatBool(useTelemetryFlag)))
 
 	// required for destroy command
 	viper.Set("flags.alerts-email", alertsEmailFlag)
@@ -128,6 +130,14 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	segmentClient := &segment.Client
+
+	defer func(c segment.SegmentClient) {
+		time.Sleep(time.Second * 21) // allows 20 second event buffer to exhaust
+		err := c.Client.Close()
+		if err != nil {
+			log.Info().Msgf("error closing segment client %s", err.Error())
+		}
+	}(*segmentClient)
 
 	// Set git handlers
 	switch gitProviderFlag {
@@ -1274,15 +1284,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	time.Sleep(time.Millisecond * 200) // allows progress bars to finish
-
-	defer func(c segment.SegmentClient) {
-		time.Sleep(time.Second * 21) // allows 20 second event buffer to exhaust
-		err := c.Client.Close()
-		if err != nil {
-			log.Info().Msgf("error closing segment client %s", err.Error())
-		}
-	}(*segmentClient)
+	time.Sleep(time.Second * 21) // allows progress bars to finish
 
 	return nil
 }
