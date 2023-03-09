@@ -8,19 +8,17 @@ import (
 
 var (
 	// Create
-	cloudRegionFlag            string
-	clusterNameFlag            string
-	clusterTypeFlag            string
-	dryRun                     bool
-	githubOwnerFlag            string
-	gitlabOwnerFlag            string
-	gitProviderFlag            string
-	gitopsTemplateURLFlag      string
-	gitopsTemplateBranchFlag   string
-	metaphorTemplateBranchFlag string
-	metaphorTemplateURLFlag    string
-	kbotPasswordFlag           string
-	useTelemetryFlag           bool
+	cloudRegionFlag          string
+	clusterNameFlag          string
+	clusterTypeFlag          string
+	dryRun                   bool
+	githubOwnerFlag          string
+	gitlabOwnerFlag          string
+	gitProviderFlag          string
+	gitopsTemplateURLFlag    string
+	gitopsTemplateBranchFlag string
+	kbotPasswordFlag         string
+	useTelemetryFlag         bool
 
 	// Supported git providers
 	supportedGitProviders = []string{"github", "gitlab"}
@@ -61,8 +59,6 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "main", "the branch to clone for the gitops-template repository")
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
 	createCmd.Flags().StringVar(&kbotPasswordFlag, "kbot-password", "", "the default password to use for the kbot user")
-	createCmd.Flags().StringVar(&metaphorTemplateBranchFlag, "metaphor-template-branch", "main", "the branch to clone for the metaphor-template repository")
-	createCmd.Flags().StringVar(&metaphorTemplateURLFlag, "metaphor-template-url", "https://github.com/kubefirst/metaphor-frontend-template.git", "the fully qualified url to the metaphor-template repository to clone")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
 	return createCmd
 }

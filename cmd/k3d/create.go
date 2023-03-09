@@ -92,16 +92,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	metaphorTemplateURLFlag, err := cmd.Flags().GetString("metaphor-template-url")
-	if err != nil {
-		return err
-	}
-
-	metaphorTemplateBranchFlag, err := cmd.Flags().GetString("metaphor-template-branch")
-	if err != nil {
-		return err
-	}
-
 	useTelemetryFlag, err := cmd.Flags().GetBool("use-telemetry")
 	if err != nil {
 		return err
@@ -114,8 +104,27 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// Clients
 	httpClient := http.DefaultClient
 	segmentClient := &segment.Client
+	var segmentMsg string
 
-	// Kubefirst team
+	// Set git handlers
+	switch gitProviderFlag {
+	case "github":
+		gitHubService := services.NewGitHubService(httpClient)
+		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
+
+		// get github data to set user based on the provided token
+		log.Info().Msg("verifying github authentication")
+		githubUser, err := gitHubHandler.GetGitHubUser(os.Getenv("GITHUB_TOKEN"))
+		if err != nil {
+			return err
+		}
+		// today we override the owner to be the user's token by default
+		githubOwnerFlag = githubUser
+		viper.Set("flags.github-owner", githubOwnerFlag)
+	case "gitlab":
+		viper.Set("flags.gitlab-owner", gitlabOwnerFlag)
+	}
+
 	kubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
 	if kubefirstTeam == "" {
 		kubefirstTeam = "false"
@@ -197,7 +206,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	if useTelemetryFlag {
-		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
+		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
@@ -218,12 +227,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	log.Info().Msgf("cloning gitops-template repo branch: %s ", gitopsTemplateBranchFlag)
 	// this branch flag value is overridden with a tag when running from a
 	// kubefirst binary for version compatibility
-	if metaphorTemplateBranchFlag == "main" && configs.K1Version != "development" {
-		metaphorTemplateBranchFlag = configs.K1Version
-	}
-
-	log.Info().Msgf("cloning metaphor template url: %s ", metaphorTemplateURLFlag)
-	log.Info().Msgf("cloning metaphor template branch: %s ", metaphorTemplateBranchFlag)
 
 	atlantisWebhookSecret := viper.GetString("secrets.atlantis-webhook")
 	if atlantisWebhookSecret == "" {
@@ -263,10 +266,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 
 		// Objects to check for
-		newTeamNames := []string{"admins", "developers"}
-
 		// Repositories that will be created throughout the initialization process
-		newRepositoryNames := []string{"gitops", "metaphor-frontend"}
+		newRepositoryNames := []string{"gitops", "metaphor"}
+		newTeamNames := []string{"admins", "developers"}
 
 		switch config.GitProvider {
 		case "github":
@@ -461,6 +463,16 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
+	metaphorTemplateTokens := k3d.MetaphorTokenValues{
+		ClusterName:                   clusterNameFlag,
+		CloudRegion:                   cloudRegionFlag,
+		ContainerRegistryURL:          fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
+		DomainName:                    k3d.DomainName,
+		MetaphorDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", k3d.DomainName),
+		MetaphorStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", k3d.DomainName),
+		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", k3d.DomainName),
+	}
+
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
@@ -469,7 +481,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 		log.Info().Msg("generating your new gitops repository")
 
-		err := k3d.PrepareGitopsRepository(
+		err := k3d.PrepareGitRepositories(
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
@@ -477,8 +489,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
+			config.DestinationMetaphorRepoGitURL,
 			config.K1Dir,
 			&gitopsTemplateTokens,
+			config.MetaphorDir,
+			&metaphorTemplateTokens,
 		)
 		if err != nil {
 			return err
@@ -518,7 +533,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				return errors.New(fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err))
 			}
 
-			log.Info().Msgf("created git repositories and teams for github.com/%s", cGitOwner)
+			log.Info().Msgf("created git repositories for github.com/%s", githubOwnerFlag)
 			viper.Set("kubefirst-checks.terraform-apply-github", true)
 			viper.WriteConfig()
 			progressPrinter.IncrementTracker("applying-git-terraform", 1)
@@ -574,6 +589,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
 		}
 
+		metaphorRepo, err := git.PlainOpen(config.MetaphorDir)
+		if err != nil {
+			log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
+		}
+
 		// For GitLab, we currently need to add an ssh key to the authenticating user
 		if config.GitProvider == "gitlab" {
 			gl := gitlab.GitLabWrapper{
@@ -618,65 +638,25 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoGitURL, err)
 		}
 
-		log.Info().Msgf("successfully pushed gitops to git@g%s/%s/gitops", cGitHost, cGitOwner)
+		// push metaphor repo to remote
+		err = metaphorRepo.Push(
+			&git.PushOptions{
+				RemoteName: "origin",
+				Auth:       publicKeys,
+			},
+		)
+		if err != nil {
+			log.Panic().Msgf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoGitURL, err)
+		}
+
+		log.Info().Msgf("successfully pushed gitops and metaphor repositories to git@g%s/%s", cGitHost, cGitOwner)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
 		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
+		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1) // todo verify this tracker didnt lose one
 	} else {
 		log.Info().Msg("already pushed detokenized gitops repository content")
-		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
-	}
-
-	metaphorTemplateTokens := k3d.MetaphorTokenValues{}
-	metaphorTemplateTokens.ClusterName = clusterNameFlag
-	metaphorTemplateTokens.CloudRegion = cloudRegionFlag
-	metaphorTemplateTokens.ContainerRegistryURL = fmt.Sprintf("%s/%s/metaphor-frontend", containerRegistryHost, cGitOwner)
-	metaphorTemplateTokens.DomainName = k3d.DomainName
-	metaphorTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("metaphor-development.%s", k3d.DomainName)
-	metaphorTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("metaphor-staging.%s", k3d.DomainName)
-	metaphorTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("metaphor-production.%s", k3d.DomainName)
-
-	//* git clone and detokenize the metaphor-frontend-template repository
-	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
-
-		err := k3d.PrepareMetaphorRepository(
-			config.GitProvider,
-			config.DestinationMetaphorRepoGitURL,
-			config.K1Dir,
-			config.MetaphorDir,
-			metaphorTemplateBranchFlag,
-			metaphorTemplateURLFlag,
-			&metaphorTemplateTokens,
-		)
-		if err != nil {
-			return err
-		}
-
-		metaphorRepo, err := git.PlainOpen(config.MetaphorDir)
-		if err != nil {
-			log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
-		}
-
-		err = metaphorRepo.Push(&git.PushOptions{
-			RemoteName: config.GitProvider,
-			Auth:       publicKeys,
-		})
-		if err != nil {
-			return err
-		}
-
-		log.Info().Msgf("successfully pushed gitops to git@%s/%s/metaphor-frontend", cGitHost, cGitOwner)
-		// todo delete the local gitops repo and re-clone it
-		// todo that way we can stop worrying about which origin we're going to push to
-		log.Info().Msgf("pushed detokenized metaphor-frontend repository to %s/%s", cGitHost, cGitOwner)
-
-		viper.Set("kubefirst-checks.metaphor-repo-pushed", true)
-		viper.WriteConfig()
-		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
-	} else {
-		log.Info().Msg("already completed gitops repo generation - continuing")
 		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
 	}
 
@@ -768,7 +748,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// GitLab Deploy Tokens
 	// Handle secret creation for buildkit
-	createTokensFor := []string{"metaphor-frontend"}
+	createTokensFor := []string{"metaphor"}
 	switch config.GitProvider {
 	// GitHub docker auth secret
 	// Buildkit requires a specific format for Docker auth created as a secret
@@ -856,7 +836,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
-		argoCDYamlPath := fmt.Sprintf("%s/argocd", config.GitopsDir)
+		argoCDYamlPath := fmt.Sprintf("%s/registry/%s/components/argocd", config.GitopsDir, clusterNameFlag)
 		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", argoCDYamlPath, "--wait")
 		if err != nil {
 			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", argoCDYamlPath, err.Error())
@@ -1248,6 +1228,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	time.Sleep(time.Millisecond * 100) // allows progress bars to finish
+
+	defer func(c segment.SegmentClient) {
+		err := c.Client.Close()
+		if err != nil {
+			log.Info().Msgf("error closing segment client %s", err.Error())
+		}
+	}(*segmentClient)
 
 	return nil
 }

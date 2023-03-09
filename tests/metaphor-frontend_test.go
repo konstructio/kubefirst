@@ -2,11 +2,12 @@ package tests
 
 import (
 	"fmt"
+	"net/http"
+	"testing"
+
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
-	"net/http"
-	"testing"
 )
 
 // TestLocalMetaphorFrontendEndToEnd tests the Metaphor frontend (dev, staging, prod), and look for a http response code of 200
@@ -63,9 +64,9 @@ func TestCloudMetaphorsEndToEnd(t *testing.T) {
 		url      string
 		expected int
 	}{
-		{name: "metaphor frontend development", url: "https://metaphor-frontend-development." + viper.GetString("aws.hostedzonename"), expected: http.StatusOK},
-		{name: "metaphor frontend staging", url: "https://metaphor-frontend-staging." + viper.GetString("aws.hostedzonename"), expected: http.StatusOK},
-		{name: "metaphor frontend production", url: "https://metaphor-frontend-production." + viper.GetString("aws.hostedzonename"), expected: http.StatusOK},
+		{name: "metaphor frontend development", url: "https://metaphor-development." + viper.GetString("aws.hostedzonename"), expected: http.StatusOK},
+		{name: "metaphor frontend staging", url: "https://metaphor-staging." + viper.GetString("aws.hostedzonename"), expected: http.StatusOK},
+		{name: "metaphor frontend production", url: "https://metaphor-production." + viper.GetString("aws.hostedzonename"), expected: http.StatusOK},
 		{name: "metaphor NodeJs development", url: "https://metaphor-development." + viper.GetString("aws.hostedzonename") + "/app", expected: http.StatusOK},
 		{name: "metaphor NodeJs staging", url: "https://metaphor-staging." + viper.GetString("aws.hostedzonename") + "/app", expected: http.StatusOK},
 		{name: "metaphor NodeJs production", url: "https://metaphor-production." + viper.GetString("aws.hostedzonename") + "/app", expected: http.StatusOK},

@@ -107,7 +107,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 
 			// Before removing Terraform resources, remove any container registry repositories
 			// since failing to remove them beforehand will result in an apply failure
-			var projectsForDeletion = []string{"gitops", "metaphor-frontend"}
+			var projectsForDeletion = []string{"gitops", "metaphor"}
 			for _, project := range projectsForDeletion {
 				projectExists, err := gl.CheckProjectExists(project)
 				if err != nil {
