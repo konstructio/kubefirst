@@ -1,11 +1,11 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/kubefirst/kubefirst/internal/flagset"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
@@ -26,7 +26,7 @@ var githubAddValidate = &cobra.Command{
 
 		fmt.Println("Owner used:", owner)
 
-		gitWrapper := githubWrapper.New()
+		gitWrapper := githubWrapper.New(os.Getenv("GITHUB_TOKEN"))
 		repoGitops, err := gitWrapper.GetRepo(owner, "gitops")
 		if err != nil {
 			return err

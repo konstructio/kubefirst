@@ -414,7 +414,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 				return err
 			}
 
-			githubWrapper := githubWrapper.New()
+			githubWrapper := githubWrapper.New(cGitToken)
 			newRepositoryExists := false
 			// todo hoist to globals
 			errorMsg := "the following repositories must be removed before continuing with your kubefirst installation.\n\t"

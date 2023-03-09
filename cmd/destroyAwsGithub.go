@@ -152,7 +152,7 @@ var destroyAwsGithubCmd = &cobra.Command{
 		progressPrinter.IncrementTracker("step-destroy", 1)
 
 		if !destroyFlags.SkipGithubTerraform {
-			gitHubClient := githubWrapper.New()
+			gitHubClient := githubWrapper.New(os.Getenv("GITHUB_TOKEN"))
 			githubTfApplied := viper.GetBool("terraform.github.apply.complete")
 			if githubTfApplied {
 				informUser("terraform destroying github resources", globalFlags.SilentMode)

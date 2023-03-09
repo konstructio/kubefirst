@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/kubefirst/kubefirst/internal/ssh"
@@ -98,7 +99,7 @@ func validateLocal(cmd *cobra.Command, args []string) error {
 	httpClient := http.DefaultClient
 	gitHubService := services.NewGitHubService(httpClient)
 	gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-	gitHubAccessToken, err := wrappers.AuthenticateGitHubUserWrapper(config, gitHubHandler)
+	gitHubAccessToken, err := wrappers.AuthenticateGitHubUserWrapper(os.Getenv("GITHUB_TOKEN"), gitHubHandler)
 	if err != nil {
 		return err
 	}
@@ -274,13 +275,13 @@ func validateDestroy(cmd *cobra.Command, args []string) error {
 		)
 	}
 
-	config := configs.ReadConfig()
-
 	log.Info().Msg("setting GitHub token...")
 	httpClient := http.DefaultClient
 	gitHubService := services.NewGitHubService(httpClient)
 	gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-	_, err := wrappers.AuthenticateGitHubUserWrapper(config, gitHubHandler)
+
+	// this may be temporarily broken while k3d changes are in flight
+	_, err := wrappers.AuthenticateGitHubUserWrapper(os.Getenv("GITHUB_TOKEN"), gitHubHandler)
 	if err != nil {
 		return err
 	}
