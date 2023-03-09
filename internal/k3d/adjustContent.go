@@ -10,11 +10,12 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/pkg"
+
 	cp "github.com/otiai10/copy"
 	"github.com/rs/zerolog/log"
 )
 
-func adjustGitopsRepo(clusterName, clusterType, gitopsRepoDir, gitProvider, k1Dir string) error {
+func AdjustGitopsRepo(cloudProvider, clusterName, clusterType, gitopsRepoDir, gitProvider, k1Dir string) error {
 
 	//* clean up all other platforms
 	for _, platform := range pkg.SupportedPlatforms {
@@ -59,7 +60,7 @@ func adjustGitopsRepo(clusterName, clusterType, gitopsRepoDir, gitProvider, k1Di
 	return nil
 }
 
-func adjustMetaphorRepo(destinationMetaphorRepoGitURL, gitopsRepoDir, gitProvider, k1Dir string) error {
+func AdjustMetaphorRepo(destinationMetaphorRepoGitURL, gitopsRepoDir, gitProvider, k1Dir string) error {
 
 	//* create ~/.k1/metaphor
 	metaphorDir := fmt.Sprintf("%s/metaphor", k1Dir)

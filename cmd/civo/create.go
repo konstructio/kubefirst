@@ -19,11 +19,11 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/civo"
-	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/helm"
+	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/reports"
@@ -567,6 +567,16 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("downloading-tools", 1)
 	}
 
+	// todo should metaphor tokens be global?
+	metaphorDirectoryTokens := civo.MetaphorTokenValues{
+		ClusterName:                   clusterNameFlag,
+		CloudRegion:                   cloudRegionFlag,
+		ContainerRegistryURL:          fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
+		DomainName:                    k3d.DomainName,
+		MetaphorDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", k3d.DomainName),
+		MetaphorStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", k3d.DomainName),
+		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", k3d.DomainName),
+	}
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
@@ -575,38 +585,20 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 
 		log.Info().Msg("generating your new gitops repository")
-		gitopsRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranchFlag, config.GitopsDir, gitopsTemplateURLFlag)
-		if err != nil {
-			log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
-		}
-		log.Info().Msg("gitops repository clone complete")
-
-		err = civo.CivoAdjustGitopsTemplateContent(civo.CloudProvider, clusterNameFlag, clusterTypeFlag, config.GitProvider, config.K1Dir, config.GitopsDir)
-		if err != nil {
-			return err
-		}
-
-		err = civo.DetokenizeCivoGitGitops(config.GitopsDir, &gitopsDirectoryTokens)
-		if err != nil {
-			return err
-		}
-
-		// Shim to adjust provider-specific files
-		switch config.GitProvider {
-		case "gitlab":
-			err = civo.DetokenizeCivoAdditionalPath(config.ArgoWorkflowsDir, &civo.GitOpsDirectoryValues{GitlabOwner: cGitOwner})
-			if err != nil {
-				return err
-			}
-
-		}
-
-		err = gitClient.AddRemote(config.DestinationGitopsRepoGitURL, config.GitProvider, gitopsRepo)
-		if err != nil {
-			return err
-		}
-
-		err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
+		err := civo.PrepareGitRepositories(
+			config.GitProvider,
+			clusterNameFlag,
+			clusterTypeFlag,
+			config.DestinationGitopsRepoGitURL,
+			config.GitopsDir,
+			gitopsTemplateBranchFlag,
+			gitopsTemplateURLFlag,
+			config.DestinationMetaphorRepoGitURL,
+			config.K1Dir,
+			&gitopsDirectoryTokens,
+			config.MetaphorDir,
+			&metaphorDirectoryTokens,
+		)
 		if err != nil {
 			return err
 		}
@@ -743,74 +735,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already pushed detokenized gitops repository content")
 		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
 	}
-
-	// metaphorTemplateTokens := civo.MetaphorTokenValues{
-	// 	CheckoutCWFTTemplate:                  "git-checkout-with-gitops-ssh",
-	// 	CloudRegion:                           cloudRegionFlag,
-	// 	ClusterName:                           clusterNameFlag,
-	// 	CommitCWFTTemplate:                    "git-commit-ssh",
-	// 	ContainerRegistryURL:                  fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
-	// 	DomainName:                            domainNameFlag,
-	// 	MetaphorFrontendDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", domainNameFlag),
-	// 	MetaphorFrontendProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
-	// 	MetaphorFrontendStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
-	// }
-
-	//* git clone and detokenize the metaphor-template repository
-	// if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
-
-	// 	if configs.K1Version != "" {
-	// 		gitopsTemplateBranchFlag = configs.K1Version
-	// 	}
-
-	// 	// todo need to remove this
-	// 	// log.Info().Msg("generating your new metaphor repository")
-	// 	metaphorRepo, err := gitClient.CloneRefSetMain(metaphorTemplateBranchFlag, config.MetaphorDir, gitopsTemplateURLFlag)
-	// 	if err != nil {
-	// 		log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
-	// 	}
-
-	// 	log.Info().Msg("metaphor repository clone complete")
-
-	// 	err = civo.CivoAdjustMetaphorTemplateContent(config.GitProvider, config.K1Dir, config.MetaphorDir)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	err = civo.DetokenizeCivoGitMetaphor(config.MetaphorDir, &metaphorTemplateTokens)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	err = gitClient.AddRemote(config.DestinationMetaphorRepoGitURL, config.GitProvider, metaphorRepo)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	err = gitClient.Commit(metaphorRepo, "committing detokenized metaphor-template repo content")
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	err = metaphorRepo.Push(&git.PushOptions{
-	// 		RemoteName: config.GitProvider,
-	// 		Auth:       publicKeys,
-	// 	})
-	// 	if err != nil {
-	// 		log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", config.DestinationMetaphorRepoGitURL)
-	// 	}
-
-	// 	log.Info().Msgf("successfully pushed gitops to git@%s/%s/metaphor", cGitHost, cGitOwner)
-	// 	// todo delete the local gitops repo and re-clone it
-	// 	// todo that way we can stop worrying about which origin we're going to push to
-	// 	log.Info().Msgf("pushed detokenized metaphor repository to %s/%s", cGitHost, cGitOwner)
-
-	// 	viper.Set("kubefirst-checks.metaphor-repo-pushed", true)
-	// 	viper.WriteConfig()
-	// 	progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
-	// } else {
-	// 	log.Info().Msg("already completed gitops repo generation - continuing")
-	// 	progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
-	// }
 
 	//* create civo cloud resources
 	progressPrinter.AddTracker("applying-civo-terraform", "Applying Civo Terraform", 1)

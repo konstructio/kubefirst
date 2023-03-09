@@ -80,7 +80,7 @@ func PrepareGitRepositories(
 	log.Info().Msg("gitops repository clone complete")
 
 	//* adjust the content for the gitops repo
-	err = adjustGitopsRepo(clusterName, clusterType, gitopsDir, gitProvider, k1Dir)
+	err = AdjustGitopsRepo(CloudProvider, clusterName, clusterType, gitopsDir, gitProvider, k1Dir)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func PrepareGitRepositories(
 
 	//! metaphor
 	//* adjust the content for the gitops repo
-	err = adjustMetaphorRepo(destinationMetaphorRepoGitURL, gitopsDir, gitProvider, k1Dir)
+	err = AdjustMetaphorRepo(destinationMetaphorRepoGitURL, gitopsDir, gitProvider, k1Dir)
 	if err != nil {
 		return err
 	}

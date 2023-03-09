@@ -153,12 +153,12 @@ type GitOpsDirectoryValues struct {
 	// MetaphorProductionIngressNoHTTPSURL          string
 	// MetaphorStagingIngressURL                    string
 	// MetaphorStagingIngressNoHTTPSURL             string
-	// MetaphorFrontendDevelopmentIngressURL        string
-	// MetaphorFrontendDevelopmentIngressNoHTTPSURL string
-	// MetaphorFrontendProductionIngressURL         string
-	// MetaphorFrontendProductionIngressNoHTTPSURL  string
-	// MetaphorFrontendStagingIngressURL            string
-	// MetaphorFrontendStagingIngressNoHTTPSURL     string
+	// MetaphorDevelopmentIngressURL                string
+	// MetaphorDevelopmentIngressNoHTTPSURL         string
+	// MetaphorProductionIngressURL                 string
+	// MetaphorProductionIngressNoHTTPSURL          string
+	// MetaphorStagingIngressURL                    string
+	// MetaphorStagingIngressNoHTTPSURL             string
 	// MetaphorGoDevelopmentIngressURL              string
 	// MetaphorGoDevelopmentIngressNoHTTPSURL       string
 	// MetaphorGoProductionIngressURL               string
@@ -168,13 +168,13 @@ type GitOpsDirectoryValues struct {
 }
 
 type MetaphorTokenValues struct {
-	CheckoutCWFTTemplate                  string
-	CloudRegion                           string
-	ClusterName                           string
-	CommitCWFTTemplate                    string
-	ContainerRegistryURL                  string
-	DomainName                            string
-	MetaphorFrontendDevelopmentIngressURL string
-	MetaphorFrontendProductionIngressURL  string
-	MetaphorFrontendStagingIngressURL     string
+	CheckoutCWFTTemplate          string
+	CloudRegion                   string
+	ClusterName                   string
+	CommitCWFTTemplate            string
+	ContainerRegistryURL          string
+	DomainName                    string
+	MetaphorDevelopmentIngressURL string
+	MetaphorProductionIngressURL  string
+	MetaphorStagingIngressURL     string
 }
