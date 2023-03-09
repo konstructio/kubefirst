@@ -106,25 +106,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	segmentClient := &segment.Client
 	var segmentMsg string
 
-	// Set git handlers
-	switch gitProviderFlag {
-	case "github":
-		gitHubService := services.NewGitHubService(httpClient)
-		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-
-		// get github data to set user based on the provided token
-		log.Info().Msg("verifying github authentication")
-		githubUser, err := gitHubHandler.GetGitHubUser(os.Getenv("GITHUB_TOKEN"))
-		if err != nil {
-			return err
-		}
-		// today we override the owner to be the user's token by default
-		githubOwnerFlag = githubUser
-		viper.Set("flags.github-owner", githubOwnerFlag)
-	case "gitlab":
-		viper.Set("flags.gitlab-owner", gitlabOwnerFlag)
-	}
-
 	kubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
 	if kubefirstTeam == "" {
 		kubefirstTeam = "false"
@@ -579,7 +560,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	//* push detokenized gitops-template repository content to new remote
-	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 2)
+	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
@@ -825,10 +806,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
-
 	progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
 
-	//* helm add argo repository && update
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 

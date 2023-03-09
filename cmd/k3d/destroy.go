@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
@@ -251,6 +252,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("unable to delete %q folder, error: %s", config.K1Dir+"/kubeconfig", err)
 		}
 	}
+	time.Sleep(time.Millisecond * 200) // allows progress bars to finish
 	fmt.Println("your kubefirst platform running in k3d has been destroyed")
 
 	return nil
