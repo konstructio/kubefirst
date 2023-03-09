@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -107,7 +108,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
+	
 	// required for destroy command
 	viper.Set("flags.alerts-email", alertsEmailFlag)
 	viper.Set("flags.cluster-name", clusterNameFlag)
@@ -117,6 +118,13 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	segmentClient := &segment.Client
+
+	defer func(c segment.SegmentClient) {
+		err := c.Client.Close()
+		if err != nil {
+			log.Info().Msgf("error closing segment client %s", err.Error())
+		}
+	}(*segmentClient)
 
 	// Set git handlers
 	switch gitProviderFlag {
@@ -1186,10 +1194,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Error().Err(err).Msg("")
 	}
 
-	// todo: fix argo pw
-	// this is probably going to get streamlined later, but this is necessary now
-	reports.CivoHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, dryRunFlag, false)
-
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
 		if segmentMsg != "" {
@@ -1197,7 +1201,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	time.Sleep(time.Millisecond * 200) // allows progress bars to finish
+	// todo: fix argo pw
+	// this is probably going to get streamlined later, but this is necessary now
+	reports.CivoHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, dryRunFlag, false)
+
+	time.Sleep(time.Second * 1) // allows progress bars to finish
 
 	defer func(c segment.SegmentClient) {
 		err := c.Client.Close()

@@ -105,6 +105,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	httpClient := http.DefaultClient
 	segmentClient := &segment.Client
 	var segmentMsg string
+	
+	defer func(c segment.SegmentClient) {
+		err := c.Client.Close()
+		if err != nil {
+			log.Info().Msgf("error closing segment client %s", err.Error())
+		}
+	}(*segmentClient)
 
 	kubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
 	if kubefirstTeam == "" {
