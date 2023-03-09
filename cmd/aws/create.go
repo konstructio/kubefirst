@@ -180,7 +180,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return errors.New("please set a GITHUB_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init")
 		}
 
-		githubWrapper := githubWrapper.New()
+		githubWrapper := githubWrapper.New(os.Getenv("GITHUB_TOKEN"))
 		// todo this block need to be pulled into githubHandler. -- begin
 		newRepositoryExists := false
 		// todo hoist to globals

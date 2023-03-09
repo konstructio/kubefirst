@@ -37,7 +37,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	switch gitProvider {
 	case "github":
 		cGitOwner = viper.GetString("flags.github-owner")
-		cGitToken = os.Getenv("GITHUB_TOKEN")
+		cGitToken = viper.GetString("github.session_token")
 	case "gitlab":
 		cGitOwner = viper.GetString("flags.gitlab-owner")
 		cGitToken = os.Getenv("GITLAB_TOKEN")
@@ -69,7 +69,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 		switch config.GitProvider {
 		case "github":
-			githubWrapper := githubWrapper.New()
+			githubWrapper := githubWrapper.New(cGitToken)
 			err = githubWrapper.DeleteRepositoryWebhook(cGitOwner, "gitops", webhookURL)
 			if err != nil {
 				log.Error().Msgf("error removing webhook: %s - you may need to manually remove it", err)

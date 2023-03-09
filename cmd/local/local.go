@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -403,7 +404,7 @@ func runLocal(cmd *cobra.Command, args []string) error {
 	wg.Add(1)
 	go func() {
 		pkg.InformUser(`waiting "atlantis plan" finish to proceed...`, silentMode)
-		gitHubClient := githubWrapper.New()
+		gitHubClient := githubWrapper.New(os.Getenv("GITHUB_TOKEN"))
 
 		base := "main"
 		title := "update S3 backend to minio / internal k8s dns"
