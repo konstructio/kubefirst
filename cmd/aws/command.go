@@ -64,7 +64,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().BoolVar(&dryRun, "dry-run", false, "don't execute the installation")
 	createCmd.Flags().StringVar(&githubOwnerFlag, "github-owner", "", "the github owner of the new gitops and metaphor repositories")
 	createCmd.MarkFlagRequired("github-owner")
-	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "v2-directory-shift", "the branch to clone for the gitops-template repository")
+	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "main", "the branch to clone for the gitops-template repository")
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
 	createCmd.Flags().StringVar(&kbotPasswordFlag, "kbot-password", "", "the default password to use for the kbot user")
