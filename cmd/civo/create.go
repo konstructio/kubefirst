@@ -22,7 +22,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
 	"github.com/kubefirst/kubefirst/internal/handlers"
-	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
@@ -664,6 +663,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			}
 
 			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabOwnerFlag)
+			progressPrinter.IncrementTracker("applying-git-terraform", 1)
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", true)
 			viper.WriteConfig()
 		} else {
@@ -673,7 +673,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	//* push detokenized gitops-template repository content to new remote
-	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 2)
+	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
 	if !executionControl {
@@ -901,45 +901,24 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 	progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
 
-	//* helm add argo repository && update
-	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 4)
+	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	helmRepo := helm.HelmRepo{
-		RepoName:     "argo",
-		RepoURL:      "https://argoproj.github.io/argo-helm",
-		ChartName:    "argo-cd",
-		Namespace:    "argocd",
-		ChartVersion: "4.10.5",
-	}
-
-	//* helm add repo and update
-	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-repo-added")
+	//* install argocd
+	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
-		log.Info().Msgf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL)
-		helm.AddRepoAndUpdateRepo(dryRunFlag, config.HelmClient, helmRepo, config.Kubeconfig)
-		log.Info().Msg("helm repo added")
-		viper.Set("kubefirst-checks.argocd-helm-repo-added", true)
-		viper.WriteConfig()
-		progressPrinter.IncrementTracker("installing-argo-cd", 1)
-	} else {
-		log.Info().Msg("argo helm repository already added, continuing")
-		progressPrinter.IncrementTracker("installing-argo-cd", 1)
-	}
-	//* helm install argocd
-	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-install")
-	if !executionControl {
-		log.Info().Msgf("helm install %s and wait", helmRepo.RepoName)
-		// todo adopt golang helm client for helm install
-		err := helm.Install(dryRunFlag, config.HelmClient, helmRepo, config.Kubeconfig)
+		log.Info().Msgf("installing argocd")
+		argoCDYamlPath := fmt.Sprintf("%s/registry/%s/components/argocd", config.GitopsDir, clusterNameFlag)
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", argoCDYamlPath, "--wait")
 		if err != nil {
+			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", argoCDYamlPath, err.Error())
 			return err
 		}
-		viper.Set("kubefirst-checks.argocd-helm-install", true)
+		viper.Set("kubefirst-checks.argocd-install", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	} else {
-		log.Info().Msg("argo helm already installed, continuing")
+		log.Info().Msg("argo cd already installed, continuing")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	}
 
@@ -957,6 +936,27 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, argoCDStatefulSet, 90, false)
 	if err != nil {
 		log.Info().Msgf("Error waiting for ArgoCD StatefulSet ready state: %s", err)
+	}
+
+	// Wait for ArgoCD repo server Pods to transition to Running
+	// This is related to a condition where apps attempt to deploy before
+	// the repo server health check passes
+	//
+	// This can cause future steps to break since the registry app
+	// may never apply
+	argoCDRepoDeployment, err := k8s.ReturnDeploymentObject(
+		config.Kubeconfig,
+		"app.kubernetes.io/name",
+		"argocd-repo-server",
+		"argocd",
+		60,
+	)
+	if err != nil {
+		log.Info().Msgf("Error finding ArgoCD repo deployment: %s", err)
+	}
+	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, argoCDRepoDeployment, 90)
+	if err != nil {
+		log.Info().Msgf("Error waiting for ArgoCD repo deployment ready state: %s", err)
 	}
 
 	//* ArgoCD port-forward
