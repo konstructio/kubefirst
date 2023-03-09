@@ -33,7 +33,6 @@ func (c *SegmentClient) SendCountMetric(
 		}
 	}
 
-	log.Info().Msg(fmt.Sprintf("enquing telemetry metric %s", metricName))
 	err = c.Client.Enqueue(analytics.Track{
 		UserId: strippedDomainName,
 		Event:  metricName,
