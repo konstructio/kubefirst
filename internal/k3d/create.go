@@ -91,12 +91,6 @@ func PrepareGitRepositories(
 		return err
 	}
 
-	//* commit initial gitops-template content
-	err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
-	if err != nil {
-		return err
-	}
-
 	//* add new remote
 	err = gitClient.AddRemote(destinationGitopsRepoGitURL, gitProvider, gitopsRepo)
 	if err != nil {
@@ -125,6 +119,13 @@ func PrepareGitRepositories(
 
 	//* add new remote
 	err = gitClient.AddRemote(destinationMetaphorRepoGitURL, gitProvider, metaphorRepo)
+	if err != nil {
+		return err
+	}
+
+	//* commit initial gitops-template content
+	// commit after metaphor content has been removed from gitops
+	err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
 	if err != nil {
 		return err
 	}

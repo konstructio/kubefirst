@@ -682,6 +682,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
 		}
 
+		metaphorRepo, err := git.PlainOpen(config.MetaphorDir)
+		if err != nil {
+			log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
+		}
+
 		// For GitLab, we currently need to add an ssh key to the authenticating user
 		if config.GitProvider == "gitlab" {
 			gl := gitlab.GitLabWrapper{
@@ -722,6 +727,17 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		})
 		if err != nil {
 			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoGitURL, err)
+		}
+
+		// push metaphor repo to remote
+		err = metaphorRepo.Push(
+			&git.PushOptions{
+				RemoteName: "origin",
+				Auth:       publicKeys,
+			},
+		)
+		if err != nil {
+			log.Panic().Msgf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoGitURL, err)
 		}
 
 		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/gitops", cGitOwner)
