@@ -41,6 +41,23 @@ func NewCommand() *cobra.Command {
 	return k3dCmd
 }
 
+func LocalCommandAlias() *cobra.Command {
+
+	localCmd := &cobra.Command{
+		Use:   "local",
+		Short: "kubefirst local installation with k3d",
+		Long:  "kubefirst local installation with k3d",
+	}
+
+	// on error, doesnt show helper/usage
+	localCmd.SilenceUsage = true
+
+	// wire up new commands
+	localCmd.AddCommand(Create(), Destroy())
+
+	return localCmd
+}
+
 func Create() *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:              "create",
