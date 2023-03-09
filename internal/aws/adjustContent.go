@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/kubefirst/kubefirst/internal/gitClient"
 	cp "github.com/otiai10/copy"
 
 	"github.com/rs/zerolog/log"
@@ -83,7 +85,7 @@ func adjustMetaphorTemplateContent(k1Dir, metaphorRepoPath string) error {
 		},
 	}
 
-	//* copy $HOME/.k1/gitops/.kubefirst/ci/.github/* $HOME/.k1/metaphor-frontend/.github
+	//* copy $HOME/.k1/gitops/.kubefirst/ci/.github/* $HOME/.k1/metaphor/.github
 	githubActionsFolderContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.github", k1Dir)
 	log.Info().Msgf("copying ci content: %s", githubActionsFolderContent)
 	err := cp.Copy(githubActionsFolderContent, fmt.Sprintf("%s/.github", metaphorRepoPath), opt)
@@ -92,7 +94,7 @@ func adjustMetaphorTemplateContent(k1Dir, metaphorRepoPath string) error {
 		return err
 	}
 
-	//* copy $HOME/.k1/gitops/.kubefirst/ci/.argo/* $HOME/.k1/metaphor-frontend/.argo
+	//* copy $HOME/.k1/gitops/.kubefirst/ci/.argo/* $HOME/.k1/metaphor/.argo
 	argoWorkflowsFolderContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.argo", k1Dir)
 	log.Info().Msgf("copying ci content: %s", argoWorkflowsFolderContent)
 	err = cp.Copy(argoWorkflowsFolderContent, fmt.Sprintf("%s/.argo", metaphorRepoPath), opt)
@@ -102,4 +104,45 @@ func adjustMetaphorTemplateContent(k1Dir, metaphorRepoPath string) error {
 	}
 
 	return nil
+}
+
+func PrepareMetaphorRepository(
+	destinationMetaphorRepoGitURL string,
+	k1Dir string,
+	metaphorDir string,
+	metaphorTemplateBranch string,
+	metaphorTemplateURL string,
+	tokens *MetaphorTokenValues,
+) (*git.Repository, error) {
+
+	log.Info().Msg("generating your new metaphor repository")
+	metaphorRepo, err := gitClient.CloneRefSetMain(metaphorTemplateBranch, metaphorDir, metaphorTemplateURL)
+	if err != nil {
+		log.Info().Msgf("error opening repo at: %s", metaphorDir)
+	}
+
+	log.Info().Msg("metaphor repository clone complete")
+
+	err = adjustMetaphorTemplateContent(k1Dir, metaphorDir)
+	if err != nil {
+		return &git.Repository{}, err
+	}
+
+	detokenizeMetaphor(metaphorDir, tokens)
+
+	err = gitClient.AddRemote(destinationMetaphorRepoGitURL, GitProvider, metaphorRepo)
+	if err != nil {
+		return &git.Repository{}, err
+	}
+
+	err = gitClient.Commit(metaphorRepo, "committing detokenized metaphor repo content")
+	if err != nil {
+		return &git.Repository{}, err
+	}
+
+	if err != nil {
+		log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationMetaphorRepoGitURL)
+	}
+
+	return metaphorRepo, nil
 }

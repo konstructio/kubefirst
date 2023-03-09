@@ -2,9 +2,10 @@ package metaphor_test
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
 	"net/http"
 	"testing"
+
+	"github.com/kubefirst/kubefirst/configs"
 )
 
 // this is called when we want to make sure Metaphor are up and running
@@ -24,8 +25,8 @@ func TestMetaphorsLivenessIntegration(t *testing.T) {
 
 	testCases := []conditions{
 		{
-			serviceName:    "metaphor-frontend",
-			serviceURL:     fmt.Sprintf("https://metaphor-frontend.%s", config.HostedZoneName),
+			serviceName:    "metaphor",
+			serviceURL:     fmt.Sprintf("https://metaphor.%s", config.HostedZoneName),
 			httpWantedCode: http.StatusOK,
 		},
 		{

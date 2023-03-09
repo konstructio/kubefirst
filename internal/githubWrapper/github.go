@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -23,8 +22,7 @@ type GithubSession struct {
 }
 
 // New - Create a new client for github wrapper
-func New() GithubSession {
-	token := os.Getenv("GITHUB_TOKEN")
+func New(token string) GithubSession {
 	if token == "" {
 		log.Fatal().Msg("Unauthorized: No token present")
 	}
@@ -293,4 +291,49 @@ func (g GithubSession) CheckRepoExists(owner string, name string) int {
 func (g GithubSession) CheckTeamExists(owner string, name string) int {
 	_, response, _ := g.gitClient.Teams.GetTeamBySlug(g.context, owner, name)
 	return response.StatusCode
+}
+
+// DeleteRepositoryWebhook
+func (g GithubSession) DeleteRepositoryWebhook(owner string, repository string, url string) error {
+	webhooks, err := g.ListRepoWebhooks(owner, repository)
+	if err != nil {
+		return err
+	}
+
+	var hookID int64 = 0
+	for _, hook := range webhooks {
+		if url == hook.Config["url"] {
+			hookID = hook.GetID()
+		}
+	}
+	if hookID != 0 {
+		_, err := g.gitClient.Repositories.DeleteHook(g.context, owner, repository, hookID)
+		if err != nil {
+			return err
+		}
+		log.Info().Msgf("deleted hook %s/%s/%s", owner, repository, url)
+	} else {
+		return errors.New(fmt.Sprintf("hook %s/%s/%s not found", owner, repository, url))
+	}
+
+	return nil
+}
+
+// ListRepoWebhooks returns all webhooks for a repository
+func (g GithubSession) ListRepoWebhooks(owner string, repo string) ([]*github.Hook, error) {
+	container := make([]*github.Hook, 0)
+	for nextPage := 1; nextPage > 0; {
+		hooks, resp, err := g.gitClient.Repositories.ListHooks(g.context, owner, repo, &github.ListOptions{
+			Page:    nextPage,
+			PerPage: 10,
+		})
+		if err != nil {
+			return []*github.Hook{}, err
+		}
+		for _, hook := range hooks {
+			container = append(container, hook)
+		}
+		nextPage = resp.NextPage
+	}
+	return container, nil
 }

@@ -87,7 +87,6 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 	gitHubTokenReport := reports.GitHubAuthToken(gitHubDeviceFlow.UserCode, gitHubDeviceFlow.VerificationUri)
 	fmt.Println(reports.StyleMessage(gitHubTokenReport))
 
-	fmt.Println(reports.StyleMessage("Please press <enter> to open the GitHub page:"))
 	// this blocks the progress until the user hits enter to open the browser
 	if _, err = fmt.Scanln(); err != nil {
 		return "", err
@@ -108,7 +107,7 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 		}
 
 		if len(gitHubAccessToken) > 0 {
-			fmt.Printf("\n\nGitHub token set!\n\n")
+			fmt.Printf("\n\nGitHub access token set!\n\n")
 			return gitHubAccessToken, nil
 		}
 

@@ -2,26 +2,23 @@ package k3d
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 )
 
 var (
 	// Create
-	cloudRegionFlag            string
-	clusterNameFlag            string
-	clusterTypeFlag            string
-	dryRun                     bool
-	githubOwnerFlag            string
-	gitlabOwnerFlag            string
-	gitProviderFlag            string
-	gitopsTemplateURLFlag      string
-	gitopsTemplateBranchFlag   string
-	metaphorTemplateBranchFlag string
-	metaphorTemplateURLFlag    string
-	kbotPasswordFlag           string
-	useTelemetryFlag           bool
+	cloudRegionFlag          string
+	clusterNameFlag          string
+	clusterTypeFlag          string
+	dryRun                   bool
+	githubOwnerFlag          string
+	gitlabOwnerFlag          string
+	gitProviderFlag          string
+	gitopsTemplateURLFlag    string
+	gitopsTemplateBranchFlag string
+	kbotPasswordFlag         string
+	useTelemetryFlag         bool
 
 	// Supported git providers
 	supportedGitProviders = []string{"github", "gitlab"}
@@ -44,6 +41,23 @@ func NewCommand() *cobra.Command {
 	return k3dCmd
 }
 
+func LocalCommandAlias() *cobra.Command {
+
+	localCmd := &cobra.Command{
+		Use:   "local",
+		Short: "kubefirst local installation with k3d",
+		Long:  "kubefirst local installation with k3d",
+	}
+
+	// on error, doesnt show helper/usage
+	localCmd.SilenceUsage = true
+
+	// wire up new commands
+	localCmd.AddCommand(Create(), Destroy())
+
+	return localCmd
+}
+
 func Create() *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:              "create",
@@ -54,10 +68,6 @@ func Create() *cobra.Command {
 
 	// todo review defaults and update descriptions
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
-	err := createCmd.MarkFlagRequired("cluster-name")
-	if err != nil {
-		log.Fatalf("error marking flag required: %s", err)
-	}
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
 	createCmd.Flags().BoolVar(&dryRun, "dry-run", false, "don't execute the installation")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
@@ -66,8 +76,6 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "main", "the branch to clone for the gitops-template repository")
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
 	createCmd.Flags().StringVar(&kbotPasswordFlag, "kbot-password", "", "the default password to use for the kbot user")
-	createCmd.Flags().StringVar(&metaphorTemplateBranchFlag, "metaphor-template-branch", "main", "the branch to clone for the metaphor-template repository")
-	createCmd.Flags().StringVar(&metaphorTemplateURLFlag, "metaphor-template-url", "https://github.com/kubefirst/metaphor-frontend-template.git", "the fully qualified url to the metaphor-template repository to clone")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
 	return createCmd
 }

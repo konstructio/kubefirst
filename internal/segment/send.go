@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/kubefirst/kubefirst/pkg"
-	"github.com/rs/zerolog/log"
 	"github.com/segmentio/analytics-go"
 )
 
@@ -18,13 +17,6 @@ func (c *SegmentClient) SendCountMetric(
 	kubefirstTeam string,
 	metricName string,
 ) string {
-
-	defer func(c *SegmentClient) {
-		err := c.Client.Close()
-		if err != nil {
-			log.Info().Msgf("error sending identify to segment %s", err.Error())
-		}
-	}(c)
 
 	strippedDomainName, err := pkg.RemoveSubdomainV2(domainName)
 	if err != nil {
@@ -42,7 +34,7 @@ func (c *SegmentClient) SendCountMetric(
 	}
 
 	err = c.Client.Enqueue(analytics.Track{
-		UserId: domainName,
+		UserId: strippedDomainName,
 		Event:  metricName,
 		Properties: analytics.NewProperties().
 			Set("cli_version", cliVersion).

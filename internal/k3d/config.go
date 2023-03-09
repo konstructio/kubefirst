@@ -79,7 +79,7 @@ func GetConfig(gitProvider string, gitOwner string) *K3dConfig {
 	}
 
 	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@%s:%s/gitops.git", cGitHost, gitOwner)
-	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@%s:%s/metaphor-frontend.git", cGitHost, gitOwner)
+	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@%s:%s/metaphor.git", cGitHost, gitOwner)
 	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
 	config.GitProvider = gitProvider
 	config.HelmClient = fmt.Sprintf("%s/.k1/tools/helm", homeDir)
@@ -88,7 +88,7 @@ func GetConfig(gitProvider string, gitOwner string) *K3dConfig {
 	config.KubectlClient = fmt.Sprintf("%s/.k1/tools/kubectl", homeDir)
 	config.Kubeconfig = fmt.Sprintf("%s/.k1/kubeconfig", homeDir)
 	config.KubefirstConfig = fmt.Sprintf("%s/.kubefirst", homeDir)
-	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor-frontend", homeDir)
+	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor", homeDir)
 	config.MkCertClient = fmt.Sprintf("%s/.k1/tools/mkcert", homeDir)
 	config.MkCertPemPath = fmt.Sprintf("%s/.k1/tools/certs", homeDir)
 	config.TerraformClient = fmt.Sprintf("%s/.k1/tools/terraform", homeDir)
@@ -106,7 +106,6 @@ type GitopsTokenValues struct {
 	GitopsRepoGitURL              string
 	DomainName                    string
 	AtlantisAllowList             string
-	NgrokHost                     string
 	AlertsEmail                   string
 	ClusterName                   string
 	ClusterType                   string

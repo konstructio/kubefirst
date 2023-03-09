@@ -20,7 +20,7 @@ func ForceLocalDestroy(gitHubClient githubWrapper.GithubSession) error {
 	if err != nil && resp.StatusCode != http.StatusNotFound {
 		return err
 	}
-	resp, err = gitHubClient.RemoveRepo(owner, "metaphor-frontend")
+	resp, err = gitHubClient.RemoveRepo(owner, "metaphor")
 	if err != nil && resp.StatusCode != http.StatusNotFound {
 		return err
 	}
@@ -52,7 +52,7 @@ func ForceGithubDestroyCloud(gitHubClient githubWrapper.GithubSession) error {
 	if err != nil && resp.StatusCode != http.StatusNotFound {
 		return err
 	}
-	resp, err = gitHubClient.RemoveRepo(owner, "metaphor-frontend")
+	resp, err = gitHubClient.RemoveRepo(owner, "metaphor")
 	if err != nil && resp.StatusCode != http.StatusNotFound {
 		return err
 	}

@@ -102,12 +102,13 @@ func (conf *VaultConfiguration) UnsealRaftLeader(kubeConfigPath string) error {
 
 		// Unseal raft leader
 		for i, shard := range initResponse.Keys {
-			log.Info().Msgf("passing unseal shard %v to %s", i, "vault-0")
-			unsealResponse, err := vaultClient.Sys().Unseal(shard)
-			if err != nil {
-				return err
-			}
-			if unsealResponse.Progress == SecretThreshold {
+			if i < 3 {
+				log.Info().Msgf("passing unseal shard %v to %s", i+1, "vault-0")
+				_, err := vaultClient.Sys().Unseal(shard)
+				if err != nil {
+					return err
+				}
+			} else {
 				break
 			}
 		}
@@ -226,7 +227,7 @@ func (conf *VaultConfiguration) UnsealRaftFollowers(kubeConfigPath string) error
 			// Unseal raft leader
 			for i, shard := range existingInitResponse.Keys {
 				if i < 3 {
-					log.Info().Msgf("passing unseal shard %v to %s", i, node)
+					log.Info().Msgf("passing unseal shard %v to %s", i+1, node)
 					_, err := vaultClient.Sys().Unseal(shard)
 					if err != nil {
 						return err

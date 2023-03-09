@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -17,7 +16,6 @@ import (
 
 func AddK3DSecrets(
 	atlantisWebhookSecret string,
-	atlantisWebhookURL string,
 	kbotPublicKey string,
 	destinationGitopsRepoGitURL string,
 	kbotPrivateKey string,
@@ -25,6 +23,7 @@ func AddK3DSecrets(
 	gitProvider string,
 	gitUser string,
 	kubeconfigPath string,
+	tokenValue string,
 ) error {
 	clientset, err := k8s.GetClientSet(dryRun, kubeconfigPath)
 	if err != nil {
@@ -32,13 +31,11 @@ func AddK3DSecrets(
 	}
 
 	// Set git provider token value
-	var tokenValue, containerRegistryHost string
+	var containerRegistryHost string
 	switch gitProvider {
 	case "github":
-		tokenValue = os.Getenv("GITHUB_TOKEN")
 		containerRegistryHost = "https://ghcr.io/"
 	case "gitlab":
-		tokenValue = os.Getenv("GITLAB_TOKEN")
 		containerRegistryHost = "registry.gitlab.io"
 	}
 
@@ -120,7 +117,6 @@ func AddK3DSecrets(
 				"GITHUB_OWNER":                        []byte(gitUser),
 				"GITHUB_TOKEN":                        []byte(tokenValue),
 				"TF_VAR_atlantis_repo_webhook_secret": []byte(atlantisWebhookSecret),
-				"TF_VAR_atlantis_repo_webhook_url":    []byte(atlantisWebhookURL),
 				"TF_VAR_email_address":                []byte("your@email.com"),
 				"TF_VAR_github_token":                 []byte(tokenValue),
 				"TF_VAR_kubefirst_bot_ssh_public_key": []byte(kbotPublicKey),
@@ -128,6 +124,17 @@ func AddK3DSecrets(
 				"TF_VAR_vault_token":                  []byte("k1_local_vault_token"),
 				"VAULT_ADDR":                          []byte("http://vault.vault.svc.cluster.local:8200"),
 				"VAULT_TOKEN":                         []byte("k1_local_vault_token"),
+			},
+		},
+		// atlantis ngrok (k3d-ngrok)
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "k3d-ngrok", Namespace: "atlantis"},
+			Data: map[string][]byte{
+				"GIT_PROVIDER": []byte(gitProvider),
+				"GIT_OWNER":    []byte(gitUser),
+				"GIT_TOKEN":    []byte(tokenValue),
+				// This is the only webhook we need for this step
+				"GIT_REPOSITORY": []byte("gitops"),
 			},
 		},
 		// chartmuseum

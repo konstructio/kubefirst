@@ -6,7 +6,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
@@ -36,7 +38,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	switch gitProvider {
 	case "github":
 		cGitOwner = viper.GetString("flags.github-owner")
-		cGitToken = os.Getenv("GITHUB_TOKEN")
+		cGitToken = viper.GetString("github.session_token")
 	case "gitlab":
 		cGitOwner = viper.GetString("flags.gitlab-owner")
 		cGitToken = os.Getenv("GITLAB_TOKEN")
@@ -58,23 +60,49 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 		)
 	}
 
-	// Temporary func to allow destroy
-	err := k3d.ResolveMinioLocal(fmt.Sprintf("%s/terraform", config.GitopsDir))
-	if err != nil {
-		log.Fatal().Msgf("error preloading files for terraform destroy: %s", err)
+	if viper.GetBool("kubefirst-checks.post-detokenize") {
+		// Remove remaining webhooks
+		configmap, err := k8s.ReadConfigMapV2(config.Kubeconfig, "atlantis", "ngrok")
+		if err != nil {
+			return err
+		}
+		webhookURL := configmap["active-ngrok-tunnel-url"]
+
+		switch config.GitProvider {
+		case "github":
+			githubWrapper := githubWrapper.New(cGitToken)
+			err = githubWrapper.DeleteRepositoryWebhook(cGitOwner, "gitops", webhookURL)
+			if err != nil {
+				log.Error().Msgf("error removing webhook: %s - you may need to manually remove it", err)
+			}
+		case "gitlab":
+			gl := gitlab.GitLabWrapper{
+				Client: gitlab.NewGitLabClient(cGitToken),
+			}
+			err = gl.DeleteProjectWebhook("gitops", webhookURL)
+			if err != nil {
+				log.Error().Msgf("error removing webhook: %s - you may need to manually remove it", err)
+			}
+		}
+
+		// Temporary func to allow destroy
+		err = k3d.ResolveMinioLocal(fmt.Sprintf("%s/terraform", config.GitopsDir))
+		if err != nil {
+			log.Fatal().Msgf("error preloading files for terraform destroy: %s", err)
+		}
+		minioStopChannel := make(chan struct{}, 1)
+		defer func() {
+			close(minioStopChannel)
+		}()
+		k8s.OpenPortForwardPodWrapper(
+			config.Kubeconfig,
+			"minio",
+			"minio",
+			9000,
+			9000,
+			minioStopChannel,
+		)
 	}
-	minioStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(minioStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
-		"minio",
-		"minio",
-		9000,
-		9000,
-		minioStopChannel,
-	)
 
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
@@ -124,7 +152,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 			// Before removing Terraform resources, remove any container registry repositories
 			// since failing to remove them beforehand will result in an apply failure
-			var projectsForDeletion = []string{"gitops", "metaphor-frontend"}
+			var projectsForDeletion = []string{"gitops", "metaphor"}
 			for _, project := range projectsForDeletion {
 				projectExists, err := gl.CheckProjectExists(project)
 				if err != nil {
@@ -172,7 +200,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if viper.GetBool("kubefirst-checks.terraform-apply-k3d") {
+	if viper.GetBool("kubefirst-checks.terraform-apply-k3d") || viper.GetBool("kubefirst-checks.terraform-apply-k3d-failed") {
 		log.Info().Msg("destroying k3d resources with terraform")
 
 		err := k3d.DeleteK3dCluster(clusterName, config.K1Dir, config.K3dClient)
@@ -224,6 +252,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("unable to delete %q folder, error: %s", config.K1Dir+"/kubeconfig", err)
 		}
 	}
+	time.Sleep(time.Millisecond * 200) // allows progress bars to finish
 	fmt.Println("your kubefirst platform running in k3d has been destroyed")
 
 	return nil

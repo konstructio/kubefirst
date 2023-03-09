@@ -337,14 +337,14 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 			newContents = strings.Replace(newContents, "<CHARTMUSEUM_URL>", ChartmuseumLocalURLTLS, -1)
 
 			// todo: use pkg.constants for metaphor's URLs
-			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", fmt.Sprintf("https://metaphor-frontend-development.%s/api", LocalDNS), -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEV>", fmt.Sprintf("https://metaphor-frontend-development.%s", LocalDNS), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", fmt.Sprintf("https://metaphor-development.%s/api", LocalDNS), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEV>", fmt.Sprintf("https://metaphor-development.%s", LocalDNS), -1)
 
-			newContents = strings.Replace(newContents, "<METAPHOR_STAGING>", fmt.Sprintf("https://metaphor-frontend-staging.%s/api", LocalDNS), -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING>", fmt.Sprintf("https://metaphor-frontend-staging.%s", LocalDNS), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_STAGING>", fmt.Sprintf("https://metaphor-staging.%s/api", LocalDNS), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING>", fmt.Sprintf("https://metaphor-staging.%s", LocalDNS), -1)
 
-			newContents = strings.Replace(newContents, "<METAPHOR_PROD>", fmt.Sprintf("https://metaphor-frontend-production.%s/api", LocalDNS), -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", fmt.Sprintf("https://metaphor-frontend-production.%s", LocalDNS), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_PROD>", fmt.Sprintf("https://metaphor-production.%s/api", LocalDNS), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", fmt.Sprintf("https://metaphor-production.%s", LocalDNS), -1)
 
 			newContents = strings.Replace(newContents, "<LOCAL_DNS>", LocalDNS, -1)
 			//!
@@ -360,15 +360,15 @@ func DetokenizeDirectory(path string, fi os.FileInfo, err error) error {
 
 			newContents = strings.Replace(newContents, "<METAPHOR_DEV>", fmt.Sprintf("https://metaphor-development.%s", hostedZoneName), -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_GO_DEV>", fmt.Sprintf("https://metaphor-go-development.%s", hostedZoneName), -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEV>", fmt.Sprintf("https://metaphor-frontend-development.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEV>", fmt.Sprintf("https://metaphor-development.%s", hostedZoneName), -1)
 
 			newContents = strings.Replace(newContents, "<METAPHOR_STAGING>", fmt.Sprintf("https://metaphor-staging.%s", hostedZoneName), -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_GO_STAGING>", fmt.Sprintf("https://metaphor-go-staging.%s", hostedZoneName), -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING>", fmt.Sprintf("https://metaphor-frontend-staging.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING>", fmt.Sprintf("https://metaphor-staging.%s", hostedZoneName), -1)
 
 			newContents = strings.Replace(newContents, "<METAPHOR_PROD>", fmt.Sprintf("https://metaphor-production.%s", hostedZoneName), -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_GO_PROD>", fmt.Sprintf("https://metaphor-go-production.%s", hostedZoneName), -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", fmt.Sprintf("https://metaphor-frontend-production.%s", hostedZoneName), -1)
+			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PROD>", fmt.Sprintf("https://metaphor-production.%s", hostedZoneName), -1)
 		}
 
 		if removeFile {
@@ -865,10 +865,10 @@ func ResetK1Dir(k1Dir, kubefirstFilePath string) error {
 			return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/gitops", err)
 		}
 	}
-	if _, err := os.Stat(k1Dir + "/metaphor-frontend"); !os.IsNotExist(err) {
-		err := os.RemoveAll(k1Dir + "/metaphor-frontend")
+	if _, err := os.Stat(k1Dir + "/metaphor"); !os.IsNotExist(err) {
+		err := os.RemoveAll(k1Dir + "/metaphor")
 		if err != nil {
-			return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/metaphor-frontend", err)
+			return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/metaphor", err)
 		}
 	}
 	// todo look at logic to not re-download

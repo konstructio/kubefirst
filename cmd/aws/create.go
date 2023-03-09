@@ -91,16 +91,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	metaphorTemplateURLFlag, err := cmd.Flags().GetString("metaphor-template-url")
-	if err != nil {
-		return err
-	}
-
-	metaphorTemplateBranchFlag, err := cmd.Flags().GetString("metaphor-template-branch")
-	if err != nil {
-		return err
-	}
-
 	useTelemetryFlag, err := cmd.Flags().GetBool("use-telemetry")
 	if err != nil {
 		return err
@@ -172,14 +162,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	log.Info().Msgf("kubefirst version configs.K1Version: %s ", configs.K1Version)
 	log.Info().Msgf("cloning gitops-template repo url: %s ", gitopsTemplateURLFlag)
 	log.Info().Msgf("cloning gitops-template repo branch: %s ", gitopsTemplateBranchFlag)
-	// this branch flag value is overridden with a tag when running from a
-	// kubefirst binary for version compatibility
-	if metaphorTemplateBranchFlag == "main" && configs.K1Version != "development" {
-		metaphorTemplateBranchFlag = configs.K1Version
-	}
-
-	log.Info().Msgf("cloning metaphor template url: %s ", metaphorTemplateURLFlag)
-	log.Info().Msgf("cloning metaphor template branch: %s ", metaphorTemplateBranchFlag)
 
 	atlantisWebhookSecret := viper.GetString("secrets.atlantis-webhook")
 	if atlantisWebhookSecret == "" {
@@ -198,11 +180,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return errors.New("please set a GITHUB_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init")
 		}
 
-		githubWrapper := githubWrapper.New()
+		githubWrapper := githubWrapper.New(os.Getenv("GITHUB_TOKEN"))
 		// todo this block need to be pulled into githubHandler. -- begin
 		newRepositoryExists := false
 		// todo hoist to globals
-		newRepositoryNames := []string{"gitops", "metaphor-frontend"}
+		newRepositoryNames := []string{"gitops", "metaphor"}
 		errorMsg := "the following repositories must be removed before continuing with your kubefirst installation.\n\t"
 
 		for _, repositoryName := range newRepositoryNames {
@@ -407,7 +389,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		MetaphorStagingIngressURL:      fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
 		MetaphorProductionIngressURL:   fmt.Sprintf("metaphor-production.%s", domainNameFlag),
 		KubefirstVersion:               configs.K1Version,
-		VaultIngressNoHTTPSURL:         fmt.Sprintf("metaphor-production.%s", domainNameFlag),
+		VaultIngressNoHTTPSURL:         fmt.Sprintf("vault.%s", domainNameFlag),
 		VouchIngressURL:                fmt.Sprintf("vouch.%s", domainNameFlag),
 	}
 
@@ -492,25 +474,26 @@ func createAws(cmd *cobra.Command, args []string) error {
 	metaphorTemplateTokens := aws.MetaphorTokenValues{}
 	metaphorTemplateTokens.ClusterName = clusterNameFlag
 	metaphorTemplateTokens.CloudRegion = cloudRegionFlag
-	metaphorTemplateTokens.ContainerRegistryURL = fmt.Sprintf("ghcr.io/%s/metaphor-frontend", githubOwnerFlag)
+	metaphorTemplateTokens.ContainerRegistryURL = fmt.Sprintf("ghcr.io/%s/metaphor", githubOwnerFlag)
 	metaphorTemplateTokens.DomainName = domainNameFlag
 	metaphorTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("metaphor-development.%s", domainNameFlag)
 	metaphorTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("metaphor-staging.%s", domainNameFlag)
 	metaphorTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("metaphor-production.%s", domainNameFlag)
 
-	//* git clone and detokenize the metaphor-frontend-template repository
+	//* git clone and detokenize the metaphor-template repository
 	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
 
-		err := aws.PrepareMetaphorRepository(
-			config.DestinationMetaphorRepoGitURL,
-			config.K1Dir,
-			config.MetaphorDir,
-			metaphorTemplateBranchFlag,
-			metaphorTemplateURLFlag,
-			&metaphorTemplateTokens)
-		if err != nil {
-			return err
-		}
+		// todo remove this
+		// err := aws.PrepareMetaphorRepository(
+		// 	config.DestinationMetaphorRepoGitURL,
+		// 	config.K1Dir,
+		// 	config.MetaphorDir,
+		// 	metaphorTemplateBranchFlag,
+		// 	metaphorTemplateURLFlag,
+		// 	&metaphorTemplateTokens)
+		// if err != nil {
+		// 	return err
+		// }
 
 		metaphorRepo, err := git.PlainOpen(config.MetaphorDir)
 		if err != nil {
@@ -525,10 +508,10 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/metaphor-frontend", githubOwnerFlag)
+		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/metaphor", githubOwnerFlag)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
-		log.Info().Msgf("pushed detokenized metaphor-frontend repository to github.com/%s", githubOwnerFlag)
+		log.Info().Msgf("pushed detokenized metaphor repository to github.com/%s", githubOwnerFlag)
 
 		viper.Set("kubefirst-checks.metaphor-repo-pushed", true)
 		viper.WriteConfig()
@@ -932,6 +915,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	time.Sleep(time.Millisecond * 100) // allows progress bars to finish
+
+	defer func(c segment.SegmentClient) {
+		err := c.Client.Close()
+		if err != nil {
+			log.Info().Msgf("error closing segment client %s", err.Error())
+		}
+	}(*segmentClient)
 
 	return nil
 }

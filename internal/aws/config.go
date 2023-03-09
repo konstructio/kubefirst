@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/caarlos0/env/v6"
-	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/rs/zerolog/log"
 )
 
@@ -121,57 +120,16 @@ func GetConfig(githubOwner string) *AwsConfig {
 	}
 
 	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@github.com:%s/gitops.git", githubOwner)
-	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@github.com:%s/metaphor-frontend.git", githubOwner)
+	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@github.com:%s/metaphor.git", githubOwner)
 	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
 	config.HelmClient = fmt.Sprintf("%s/.k1/tools/helm", homeDir)
 	config.K1Dir = fmt.Sprintf("%s/.k1", homeDir)
 	config.KubectlClient = fmt.Sprintf("%s/.k1/tools/kubectl", homeDir)
 	config.Kubeconfig = fmt.Sprintf("%s/.k1/kubeconfig", homeDir)
 	config.KubefirstConfig = fmt.Sprintf("%s/.kubefirst", homeDir)
-	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor-frontend", homeDir)
+	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor", homeDir)
 	config.TerraformClient = fmt.Sprintf("%s/.k1/tools/terraform", homeDir)
 	config.ToolsDir = fmt.Sprintf("%s/.k1/tools", homeDir)
 
 	return &config
-}
-
-func PrepareMetaphorRepository(
-	destinationMetaphorRepoGitURL string,
-	k1Dir string,
-	metaphorDir string,
-	metaphorTemplateBranch string,
-	metaphorTemplateURL string,
-	tokens *MetaphorTokenValues,
-) error {
-
-	log.Info().Msg("generating your new metaphor-frontend repository")
-	metaphorRepo, err := gitClient.CloneRefSetMain(metaphorTemplateBranch, metaphorDir, metaphorTemplateURL)
-	if err != nil {
-		log.Info().Msgf("error opening repo at: %s", metaphorDir)
-	}
-
-	log.Info().Msg("metaphor repository clone complete")
-
-	err = adjustMetaphorTemplateContent(k1Dir, metaphorDir)
-	if err != nil {
-		return err
-	}
-
-	detokenizeMetaphor(metaphorDir, tokens)
-
-	err = gitClient.AddRemote(destinationMetaphorRepoGitURL, GitProvider, metaphorRepo)
-	if err != nil {
-		return err
-	}
-
-	err = gitClient.Commit(metaphorRepo, "committing detokenized metaphor-frontend-template repo content")
-	if err != nil {
-		return err
-	}
-
-	if err != nil {
-		log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationMetaphorRepoGitURL)
-	}
-
-	return nil
 }
