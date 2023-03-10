@@ -73,12 +73,12 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	githubOwnerFlag, err := cmd.Flags().GetString("github-owner")
+	githubOrgFlag, err := cmd.Flags().GetString("github-org")
 	if err != nil {
 		return err
 	}
 
-	gitlabOwnerFlag, err := cmd.Flags().GetString("gitlab-owner")
+	gitlabGroupFlag, err := cmd.Flags().GetString("gitlab-group")
 	if err != nil {
 		return err
 	}
@@ -135,9 +135,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	// Set git handlers
 	switch gitProviderFlag {
 	case "github":
-		viper.Set("flags.github-owner", githubOwnerFlag)
+		viper.Set("flags.github-owner", githubOrgFlag)
 	case "gitlab":
-		viper.Set("flags.gitlab-owner", gitlabOwnerFlag)
+		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
 	}
 
 	// Switch based on git provider, set params
@@ -146,7 +146,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	switch gitProviderFlag {
 	case "github":
 		cGitHost = civo.GithubHost
-		cGitOwner = githubOwnerFlag
+		cGitOwner = githubOrgFlag
 		cGitToken = os.Getenv("GITHUB_TOKEN")
 		containerRegistryHost = "ghcr.io"
 
@@ -167,15 +167,15 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		err = gitHubHandler.CheckGithubOrganizationPermissions(cGitToken, githubOwnerFlag, githubUser)
+		err = gitHubHandler.CheckGithubOrganizationPermissions(cGitToken, githubOrgFlag, githubUser)
 		if err != nil {
 			return err
 		}
 	case "gitlab":
 		cGitHost = civo.GitlabHost
-		cGitOwner = gitlabOwnerFlag
+		cGitOwner = gitlabGroupFlag
 		cGitToken = os.Getenv("GITLAB_TOKEN")
-		cGitUser = gitlabOwnerFlag
+		cGitUser = gitlabGroupFlag
 		containerRegistryHost = "registry.gitlab.com"
 	default:
 		log.Error().Msgf("invalid git provider option")
@@ -412,18 +412,18 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			errorMsg := "the following repositories must be removed before continuing with your kubefirst installation.\n\t"
 
 			for _, repositoryName := range newRepositoryNames {
-				responseStatusCode := githubWrapper.CheckRepoExists(githubOwnerFlag, repositoryName)
+				responseStatusCode := githubWrapper.CheckRepoExists(githubOrgFlag, repositoryName)
 
 				// https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
 				repositoryExistsStatusCode := 200
 				repositoryDoesNotExistStatusCode := 404
 
 				if responseStatusCode == repositoryExistsStatusCode {
-					log.Info().Msgf("repository https://github.com/%s/%s exists", githubOwnerFlag, repositoryName)
-					errorMsg = errorMsg + fmt.Sprintf("https://github.com/%s/%s\n\t", githubOwnerFlag, repositoryName)
+					log.Info().Msgf("repository https://github.com/%s/%s exists", githubOrgFlag, repositoryName)
+					errorMsg = errorMsg + fmt.Sprintf("https://github.com/%s/%s\n\t", githubOrgFlag, repositoryName)
 					newRepositoryExists = true
 				} else if responseStatusCode == repositoryDoesNotExistStatusCode {
-					log.Info().Msgf("repository https://github.com/%s/%s does not exist, continuing", githubOwnerFlag, repositoryName)
+					log.Info().Msgf("repository https://github.com/%s/%s does not exist, continuing", githubOrgFlag, repositoryName)
 				}
 			}
 			if newRepositoryExists {
@@ -434,18 +434,18 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			errorMsg = "the following teams must be removed before continuing with your kubefirst installation.\n\t"
 
 			for _, teamName := range newTeamNames {
-				responseStatusCode := githubWrapper.CheckTeamExists(githubOwnerFlag, teamName)
+				responseStatusCode := githubWrapper.CheckTeamExists(githubOrgFlag, teamName)
 
 				// https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#get-a-team-by-name
 				teamExistsStatusCode := 200
 				teamDoesNotExistStatusCode := 404
 
 				if responseStatusCode == teamExistsStatusCode {
-					log.Info().Msgf("team https://github.com/%s/%s exists", githubOwnerFlag, teamName)
-					errorMsg = errorMsg + fmt.Sprintf("https://github.com/orgs/%s/teams/%s\n\t", githubOwnerFlag, teamName)
+					log.Info().Msgf("team https://github.com/%s/%s exists", githubOrgFlag, teamName)
+					errorMsg = errorMsg + fmt.Sprintf("https://github.com/orgs/%s/teams/%s\n\t", githubOrgFlag, teamName)
 					newTeamExists = true
 				} else if responseStatusCode == teamDoesNotExistStatusCode {
-					log.Info().Msgf("https://github.com/orgs/%s/teams/%s does not exist, continuing", githubOwnerFlag, teamName)
+					log.Info().Msgf("https://github.com/orgs/%s/teams/%s does not exist, continuing", githubOrgFlag, teamName)
 				}
 			}
 			if newTeamExists {
@@ -476,7 +476,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				log.Fatal().Msgf("could not read gitlab groups: %s", err)
 			}
-			gid, err := gl.GetGroupID(allgroups, gitlabOwnerFlag)
+			gid, err := gl.GetGroupID(allgroups, gitlabGroupFlag)
 			if err != nil {
 				log.Fatal().Msgf("could not get group id for primary group: %s", err)
 			}
@@ -655,7 +655,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			log.Fatal().Msgf("could not read gitlab groups: %s", err)
 		}
-		gid, err := gl.GetGroupID(allgroups, gitlabOwnerFlag)
+		gid, err := gl.GetGroupID(allgroups, gitlabGroupFlag)
 		if err != nil {
 			log.Fatal().Msgf("could not get group id for primary group: %s", err)
 		}
@@ -671,7 +671,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 				return errors.New(fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err))
 			}
 
-			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabOwnerFlag)
+			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabGroupFlag)
 			progressPrinter.IncrementTracker("applying-git-terraform", 1)
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", true)
 			viper.WriteConfig()
@@ -790,6 +790,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// Civo Readiness checks
+	progressPrinter.AddTracker("verifying-civo-cluster-readiness", "Verifying Kubernetes cluster is ready", 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 	// CoreDNS
 	coreDNSDeployment, err := k8s.ReturnDeploymentObject(
 		config.Kubeconfig,
@@ -801,10 +804,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding CoreDNS deployment: %s", err)
 	}
-	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, coreDNSDeployment, 90)
+	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, coreDNSDeployment, 120)
 	if err != nil {
 		log.Info().Msgf("Error waiting for CoreDNS deployment ready state: %s", err)
 	}
+	progressPrinter.IncrementTracker("verifying-civo-cluster-readiness", 1)
 
 	// kubernetes.BootstrapSecrets
 	// todo there is a secret condition in AddK3DSecrets to this not checked
@@ -1024,7 +1028,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// Wait for Vault StatefulSet Pods to transition to Running
-	progressPrinter.AddTracker("configuring-vault", "Configuring Vault", 3)
+	progressPrinter.AddTracker("configuring-vault", "Configuring Vault", 4)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
@@ -1044,6 +1048,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	progressPrinter.IncrementTracker("configuring-vault", 1)
 
 	// Init and unseal vault
+	// We need to wait before we try to run any of these commands or there may be
+	// unexpected timeouts
+	time.Sleep(time.Second * 10)
+	progressPrinter.IncrementTracker("configuring-vault", 1)
+
 	executionControl = viper.GetBool("kubefirst-checks.vault-initialized")
 	if !executionControl {
 		vaultClient := &vault.Conf
@@ -1054,6 +1063,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
+		time.Sleep(time.Second * 5)
 		err = vaultClient.UnsealRaftFollowers(config.Kubeconfig)
 		if err != nil {
 			return err

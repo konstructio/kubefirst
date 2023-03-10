@@ -270,7 +270,7 @@ func (conf *VaultConfiguration) UnsealRaftFollowers(kubeConfigPath string) error
 		close(vaultStopChannel)
 
 		// Allow time between operations
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Second * 5)
 	}
 
 	return nil
