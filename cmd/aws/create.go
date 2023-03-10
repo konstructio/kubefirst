@@ -20,7 +20,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/handlers"
-	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/segment"
 	"github.com/kubefirst/kubefirst/internal/services"
@@ -393,19 +392,34 @@ func createAws(cmd *cobra.Command, args []string) error {
 		VouchIngressURL:                fmt.Sprintf("vouch.%s", domainNameFlag),
 	}
 
+	metaphorTemplateTokens := aws.MetaphorTokenValues{
+		ClusterName:                   clusterNameFlag,
+		CloudRegion:                   cloudRegionFlag,
+		ContainerRegistryURL:          fmt.Sprintf("ghcr.io/%s/metaphor", githubOwnerFlag),
+		DomainName:                    domainNameFlag,
+		MetaphorDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", domainNameFlag),
+		MetaphorStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
+		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
+	}
+
 	//* git clone and detokenize the gitops repository
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 
 		log.Info().Msg("generating your new gitops repository")
 
-		err := aws.PrepareGitopsRepository(clusterNameFlag,
+		err := aws.PrepareGitRepositories(
+			gitProviderFlag,
+			clusterNameFlag,
 			clusterTypeFlag,
 			config.DestinationGitopsRepoGitURL,
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
+			config.DestinationMetaphorRepoGitURL,
 			config.K1Dir,
 			&gitopsTemplateTokens,
+			config.MetaphorDir,
+			&metaphorTemplateTokens,
 		)
 		if err != nil {
 			return err
@@ -417,6 +431,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
+	return errors.New("no error, just need to inspect the gitops repo")
 
 	// * create teams and repositories in github
 	// todo should terraform-apply-github --> terraform-apply-git-provider
@@ -471,14 +486,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	// todo adopt ecr
-	metaphorTemplateTokens := aws.MetaphorTokenValues{}
-	metaphorTemplateTokens.ClusterName = clusterNameFlag
-	metaphorTemplateTokens.CloudRegion = cloudRegionFlag
-	metaphorTemplateTokens.ContainerRegistryURL = fmt.Sprintf("ghcr.io/%s/metaphor", githubOwnerFlag)
-	metaphorTemplateTokens.DomainName = domainNameFlag
-	metaphorTemplateTokens.MetaphorDevelopmentIngressURL = fmt.Sprintf("metaphor-development.%s", domainNameFlag)
-	metaphorTemplateTokens.MetaphorStagingIngressURL = fmt.Sprintf("metaphor-staging.%s", domainNameFlag)
-	metaphorTemplateTokens.MetaphorProductionIngressURL = fmt.Sprintf("metaphor-production.%s", domainNameFlag)
 
 	//* git clone and detokenize the metaphor-template repository
 	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
@@ -599,41 +606,23 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// 	log.Info().Msg("no files found in secrets directory, continuing")
 	// }
 
-	//* helm add argo repository && update
-	helmRepo := helm.HelmRepo{
-		RepoName:     "argo",
-		RepoURL:      "https://argoproj.github.io/argo-helm",
-		ChartName:    "argo-cd",
-		Namespace:    "argocd",
-		ChartVersion: "4.10.5",
-	}
-
-	//* helm add repo and update
-	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-repo-added")
+	//* install argocd
+	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
-		log.Info().Msgf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL)
-		helm.AddRepoAndUpdateRepo(dryRunFlag, config.HelmClient, helmRepo, config.Kubeconfig)
-		log.Info().Msg("helm repo added")
-		viper.Set("kubefirst-checks.argocd-helm-repo-added", true)
-		viper.WriteConfig()
-	} else {
-		log.Info().Msg("argo helm repository already added, continuing")
-	}
-	//* helm install argocd
-	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-install")
-	if !executionControl {
-		log.Info().Msgf("helm install %s and wait", helmRepo.RepoName)
-		// todo adopt golang helm client for helm install
-		err := helm.Install(dryRunFlag, config.HelmClient, helmRepo, config.Kubeconfig)
+		log.Info().Msgf("installing argocd")
+		argoCDYamlPath := fmt.Sprintf("%s/registry/%s/components/argocd", config.GitopsDir, clusterNameFlag)
+		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", argoCDYamlPath, "--wait")
 		if err != nil {
+			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", argoCDYamlPath, err.Error())
 			return err
 		}
-		viper.Set("kubefirst-checks.argocd-helm-install", true)
+		viper.Set("kubefirst-checks.argocd-install", true)
 		viper.WriteConfig()
+		// progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	} else {
-		log.Info().Msg("argo helm already installed, continuing")
+		log.Info().Msg("argo cd already installed, continuing")
+		// progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	}
-
 	// Wait for ArgoCD StatefulSet Pods to transition to Running
 	argoCDStatefulSet, err := k8s.ReturnStatefulSetObject(
 		config.Kubeconfig,

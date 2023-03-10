@@ -1,43 +1,79 @@
 package aws
 
 import (
+	"github.com/go-git/go-git/v5"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/rs/zerolog/log"
 )
 
-func PrepareGitopsRepository(clusterName string,
+func PrepareGitRepositories(
+	gitProvider string,
+	clusterName string,
 	clusterType string,
 	destinationGitopsRepoGitURL string,
 	gitopsDir string,
 	gitopsTemplateBranch string,
 	gitopsTemplateURL string,
+	destinationMetaphorRepoGitURL string,
 	k1Dir string,
-	tokens *GitOpsDirectoryValues,
+	gitopsTokens *GitOpsDirectoryValues,
+	metaphorDir string,
+	metaphorTokens *MetaphorTokenValues,
 ) error {
 
+	//* clone the gitops-template repo
 	gitopsRepo, err := gitClient.CloneRefSetMain(gitopsTemplateBranch, gitopsDir, gitopsTemplateURL)
 	if err != nil {
 		log.Info().Msgf("error opening repo at: %s", gitopsDir)
 	}
 	log.Info().Msg("gitops repository clone complete")
 
-	err = adjustGitopsTemplateContent(CloudProvider, clusterName, clusterType, GitProvider, k1Dir, gitopsDir)
-	if err != nil {
-		return err
-	}
-	detokenizeDirectoryRecursively(gitopsDir+"/registry", tokens)
-	if err != nil {
-		return err
-	}
-	detokenizeDirectoryRecursively(gitopsDir+"/terraform", tokens)
-	if err != nil {
-		return err
-	}
-	err = gitClient.AddRemote(destinationGitopsRepoGitURL, GitProvider, gitopsRepo)
+	//* adjust the content for the gitops repo
+	err = AdjustGitopsRepo(CloudProvider, clusterName, clusterType, gitopsDir, gitProvider, k1Dir)
 	if err != nil {
 		return err
 	}
 
+	//* detokenize the gitops repo
+	DetokenizeGitGitops(gitopsDir, gitopsTokens)
+	if err != nil {
+		return err
+	}
+
+	//* add new remote
+	err = gitClient.AddRemote(destinationGitopsRepoGitURL, gitProvider, gitopsRepo)
+	if err != nil {
+		return err
+	}
+
+	//! metaphor
+	//* adjust the content for the gitops repo
+	err = AdjustMetaphorRepo(destinationMetaphorRepoGitURL, gitopsDir, gitProvider, k1Dir)
+	if err != nil {
+		return err
+	}
+
+	//* detokenize the gitops repo
+	DetokenizeGitMetaphor(metaphorDir, metaphorTokens)
+	if err != nil {
+		return err
+	}
+
+	metaphorRepo, err := git.PlainOpen(metaphorDir)
+	//* commit initial gitops-template content
+	err = gitClient.Commit(metaphorRepo, "committing initial detokenized metaphor repo content")
+	if err != nil {
+		return err
+	}
+
+	//* add new remote
+	err = gitClient.AddRemote(destinationMetaphorRepoGitURL, gitProvider, metaphorRepo)
+	if err != nil {
+		return err
+	}
+
+	//* commit initial gitops-template content
+	// need to wait for the metaphor content to be removed
 	err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content")
 	if err != nil {
 		return err

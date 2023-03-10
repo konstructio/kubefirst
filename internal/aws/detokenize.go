@@ -11,8 +11,8 @@ import (
 )
 
 // detokenizeDirectoryRecursively - Translate tokens by values on a given path
-func detokenizeDirectoryRecursively(path string, tokens *GitOpsDirectoryValues) error {
-	err := filepath.Walk(path, detokenizeAwsGitops(path, tokens))
+func DetokenizeGitGitops(path string, tokens *GitOpsDirectoryValues) error {
+	err := filepath.Walk(path, detokenizeGitops(path, tokens))
 	if err != nil {
 		return err
 	}
@@ -20,7 +20,7 @@ func detokenizeDirectoryRecursively(path string, tokens *GitOpsDirectoryValues) 
 	return nil
 }
 
-func detokenizeAwsGitops(path string, tokens *GitOpsDirectoryValues) filepath.WalkFunc {
+func detokenizeGitops(path string, tokens *GitOpsDirectoryValues) filepath.WalkFunc {
 	return filepath.WalkFunc(func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -38,20 +38,6 @@ func detokenizeAwsGitops(path string, tokens *GitOpsDirectoryValues) filepath.Wa
 		metaphorDevelopmentIngressURL := fmt.Sprintf("https://metaphor-development.%s", tokens.DomainName)
 		metaphorStagingIngressURL := fmt.Sprintf("https://metaphor-staging.%s", tokens.DomainName)
 		metaphorProductionIngressURL := fmt.Sprintf("https://metaphor-production.%s", tokens.DomainName)
-		// todo consolidate
-		metaphorFrontendDevelopmentIngressNoHttpsURL := fmt.Sprintf("metaphor-development.%s", tokens.DomainName)
-		metaphorFrontendStagingIngressNoHttpsURL := fmt.Sprintf("metaphor-staging.%s", tokens.DomainName)
-		metaphorFrontendProductionIngressNoHttpsURL := fmt.Sprintf("metaphor-production.%s", tokens.DomainName)
-		metaphorFrontendDevelopmentIngressURL := fmt.Sprintf("https://metaphor-development.%s", tokens.DomainName)
-		metaphorFrontendStagingIngressURL := fmt.Sprintf("https://metaphor-staging.%s", tokens.DomainName)
-		metaphorFrontendProductionIngressURL := fmt.Sprintf("https://metaphor-production.%s", tokens.DomainName)
-		// todo consolidate
-		metaphorGoDevelopmentIngressNoHttpsURL := fmt.Sprintf("metaphor-go-development.%s", tokens.DomainName)
-		metaphorGoStagingIngressNoHttpsURL := fmt.Sprintf("metaphor-go-staging.%s", tokens.DomainName)
-		metaphorGoProductionIngressNoHttpsURL := fmt.Sprintf("metaphor-go-production.%s", tokens.DomainName)
-		metaphorGoDevelopmentIngressURL := fmt.Sprintf("https://metaphor-go-development.%s", tokens.DomainName)
-		metaphorGoStagingIngressURL := fmt.Sprintf("https://metaphor-go-staging.%s", tokens.DomainName)
-		metaphorGoProductionIngressURL := fmt.Sprintf("https://metaphor-go-production.%s", tokens.DomainName)
 
 		// var matched bool
 		matched, err := filepath.Match("*", fi.Name())
@@ -113,19 +99,6 @@ func detokenizeAwsGitops(path string, tokens *GitOpsDirectoryValues) filepath.Wa
 			newContents = strings.Replace(newContents, "<METAPHOR_PRODUCTION_INGRESS_NO_HTTPS_URL>", metaphorProductionIngressNoHttpsURL, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_STAGING_INGRESS_URL>", metaphorStagingIngressURL, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_STAGING_INGRESS_NO_HTTPS_URL>", metaphorStagingIngressNoHttpsURL, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_DEVELOPMENT_INGRESS_URL>", metaphorFrontendDevelopmentIngressURL, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONTEND_DEVELOPMENT_INGRESS_NO_HTTPS_URL>", metaphorFrontendDevelopmentIngressNoHttpsURL, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_PRODUCTION_INGRESS_URL>", metaphorFrontendProductionIngressURL, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONTEND_PRODUCTION_INGRESS_NO_HTTPS_URL>", metaphorFrontendProductionIngressNoHttpsURL, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONT_STAGING_INGRESS_URL>", metaphorFrontendStagingIngressURL, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_FRONTEND_STAGING_INGRESS_NO_HTTPS_URL>", metaphorFrontendStagingIngressNoHttpsURL, -1)
-
-			newContents = strings.Replace(newContents, "<METAPHOR_GO_DEVELOPMENT_INGRESS_URL>", metaphorGoDevelopmentIngressURL, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_GO_DEVELOPMENT_INGRESS_NO_HTTPS_URL>", metaphorGoDevelopmentIngressNoHttpsURL, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_GO_PRODUCTION_INGRESS_URL>", metaphorGoProductionIngressURL, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_GO_PRODUCTION_INGRESS_NO_HTTPS_URL>", metaphorGoProductionIngressNoHttpsURL, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_GO_STAGING_INGRESS_URL>", metaphorGoStagingIngressURL, -1)
-			newContents = strings.Replace(newContents, "<METAPHOR_GO_STAGING_INGRESS_NO_HTTPS_URL>", metaphorGoStagingIngressNoHttpsURL, -1)
 
 			err = ioutil.WriteFile(path, []byte(newContents), 0)
 			if err != nil {
@@ -137,9 +110,9 @@ func detokenizeAwsGitops(path string, tokens *GitOpsDirectoryValues) filepath.Wa
 }
 
 // detokenizeGithubMetaphor - Translate tokens by values on a given path
-func detokenizeMetaphor(path string, tokens *MetaphorTokenValues) error {
+func DetokenizeGitMetaphor(path string, tokens *MetaphorTokenValues) error {
 
-	err := filepath.Walk(path, detokenize(path, tokens))
+	err := filepath.Walk(path, detokenizeGitopsMetaphor(path, tokens))
 	if err != nil {
 		return err
 	}
@@ -147,7 +120,7 @@ func detokenizeMetaphor(path string, tokens *MetaphorTokenValues) error {
 	return nil
 }
 
-func detokenize(metaphorDir string, tokens *MetaphorTokenValues) filepath.WalkFunc {
+func detokenizeGitopsMetaphor(metaphorDir string, tokens *MetaphorTokenValues) filepath.WalkFunc {
 	return filepath.WalkFunc(func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
