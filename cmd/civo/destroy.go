@@ -24,6 +24,12 @@ import (
 )
 
 func destroyCivo(cmd *cobra.Command, args []string) error {
+	// Check for existing port forwards before continuing
+	err := k8s.CheckForExistingPortForwards(8080)
+	if err != nil {
+		log.Fatal().Msgf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
+		return err
+	}
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
@@ -147,6 +153,21 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", false)
 			viper.WriteConfig()
 			log.Info().Msg("github resources terraform destroyed")
+
+			// Since groups are only marked for deletion, attempt to remove them permanently
+			// This only works on < premium tiers
+			groupsToDelete := []string{"admins", "developers"}
+			for _, group := range groupsToDelete {
+				gid, err := gl.GetGroupID(allgroups, group)
+				if err != nil {
+					log.Error().Msgf("could not get group id for group %s, skipping auto-remove: %s", group, err)
+				}
+				_, err = gl.Client.Groups.DeleteGroup(gid)
+				if err != nil {
+					log.Warn().Msgf("attempt to remove group %s (marked for deletion) failed - you will need to delete it manually: %s", group, err)
+				}
+			}
+
 			progressPrinter.IncrementTracker("platform-destroy", 1)
 		}
 	}

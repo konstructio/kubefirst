@@ -97,6 +97,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Check for existing port forwards before continuing
+	err = k8s.CheckForExistingPortForwards(8080, 8200, 9094)
+	if err != nil {
+		log.Fatal().Msgf("%s - this port is required to set up your kubefirst environment - please close any existing port forwards before continuing", err.Error())
+		return err
+	}
+
 	// Global context
 	var ctx context.Context
 	ctx, cancelContext = context.WithCancel(context.Background())
@@ -105,7 +112,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	httpClient := http.DefaultClient
 	segmentClient := &segment.Client
 	var segmentMsg string
-	
+
 	defer func(c segment.SegmentClient) {
 		err := c.Client.Close()
 		if err != nil {

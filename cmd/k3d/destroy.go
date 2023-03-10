@@ -22,6 +22,13 @@ import (
 
 func destroyK3d(cmd *cobra.Command, args []string) error {
 
+	// Check for existing port forwards before continuing
+	err := k8s.CheckForExistingPortForwards(9000)
+	if err != nil {
+		log.Fatal().Msgf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
+		return err
+	}
+
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
 	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 2)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)

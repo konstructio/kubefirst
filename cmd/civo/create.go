@@ -108,6 +108,13 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Check for existing port forwards before continuing
+	err = k8s.CheckForExistingPortForwards(8080, 8200, 9094)
+	if err != nil {
+		log.Fatal().Msgf("%s - this port is required to set up your kubefirst environment - please close any existing port forwards before continuing", err.Error())
+		return err
+	}
+
 	// required for destroy command
 	viper.Set("flags.alerts-email", alertsEmailFlag)
 	viper.Set("flags.cluster-name", clusterNameFlag)
