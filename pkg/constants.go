@@ -30,15 +30,6 @@ const (
 	MetricMgmtClusterInstallCompleted = "kubefirst.mgmt_cluster_install.completed"
 )
 
-// Helm
-const (
-	HelmRepoName         = "argo"
-	HelmRepoURL          = "https://argoproj.github.io/argo-helm"
-	HelmRepoChartName    = "argo-cd"
-	HelmRepoNamespace    = "argocd"
-	HelmRepoChartVersion = "4.10.5"
-)
-
 // Vault
 const (
 	VaultPodName        = "vault-0"

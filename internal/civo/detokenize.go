@@ -42,7 +42,7 @@ func detokenizeGitops(path string, tokens *GitOpsDirectoryValues) filepath.WalkF
 			}
 
 			newContents := string(read)
-			newContents = strings.Replace(newContents, "<ADMIN_EMAIL_ADDRESS>", tokens.AlertsEmail, -1)
+			newContents = strings.Replace(newContents, "<ALERTS_EMAIL>", tokens.AlertsEmail, -1)
 			newContents = strings.Replace(newContents, "<ATLANTIS_ALLOW_LIST>", tokens.AtlantisAllowList, -1)
 			newContents = strings.Replace(newContents, "<CLUSTER_NAME>", tokens.ClusterName, -1)
 			newContents = strings.Replace(newContents, "<CLOUD_PROVIDER>", tokens.CloudProvider, -1)
