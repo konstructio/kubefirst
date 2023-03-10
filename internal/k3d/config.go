@@ -50,7 +50,8 @@ type K3dConfig struct {
 	KubefirstConfig               string
 	MetaphorDir                   string
 	MkCertClient                  string
-	MkCertPemPath                 string
+	MkCertPemDir                  string
+	MkCertSSLSecretDir            string
 	TerraformClient               string
 	ToolsDir                      string
 }
@@ -90,7 +91,8 @@ func GetConfig(gitProvider string, gitOwner string) *K3dConfig {
 	config.KubefirstConfig = fmt.Sprintf("%s/.kubefirst", homeDir)
 	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor", homeDir)
 	config.MkCertClient = fmt.Sprintf("%s/.k1/tools/mkcert", homeDir)
-	config.MkCertPemPath = fmt.Sprintf("%s/.k1/tools/certs", homeDir)
+	config.MkCertPemDir = fmt.Sprintf("%s/.k1/ssl/%s/pem", homeDir, DomainName)
+	config.MkCertSSLSecretDir = fmt.Sprintf("%s/.k1/ssl/%s/secrets", homeDir, DomainName)
 	config.TerraformClient = fmt.Sprintf("%s/.k1/tools/terraform", homeDir)
 	config.ToolsDir = fmt.Sprintf("%s/.k1/tools", homeDir)
 

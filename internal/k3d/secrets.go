@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/rs/zerolog/log"
 
-	"github.com/kubefirst/kubefirst/internal/k8s"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -40,17 +40,10 @@ func AddK3DSecrets(
 	}
 
 	newNamespaces := []string{
-		"argo",
-		"argocd",
-		"atlantis",
-		"chartmuseum",
 		"external-dns",
 		fmt.Sprintf("%s-runner", gitProvider),
-		"vault",
-		"development",
-		"staging",
-		"production",
 	}
+
 	for i, s := range newNamespaces {
 		namespace := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s}}
 		_, err := clientset.CoreV1().Namespaces().Get(context.TODO(), s, metav1.GetOptions{})
