@@ -695,7 +695,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
-		err := k3d.AddK3DSecrets(
+
+		err := k3d.GenerateTLSSecrets(clientset, *config)
+
+		err = k3d.AddK3DSecrets(
 			atlantisWebhookSecret,
 			viper.GetString("kbot.public-key"),
 			config.DestinationGitopsRepoGitURL,
@@ -880,21 +883,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("Error waiting for ArgoCD repo deployment ready state: %s", err)
 	}
 
-	//* ArgoCD port-forward
-	argoCDStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(argoCDStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
-		"argocd-server",
-		"argocd",
-		8080,
-		8080,
-		argoCDStopChannel,
-	)
-	log.Info().Msgf("port-forward to argocd is available at %s", k3d.ArgocdPortForwardURL)
-
 	var argocdPassword string
 	//* argocd pods are ready, get and set credentials
 	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
@@ -916,7 +904,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		log.Info().Msg("Getting an argocd auth token")
 		// todo return in here and pass argocdAuthToken as a parameter
-		token, err := argocd.GetArgoCDToken("admin", argocdPassword)
+		token, err := argocd.GetArgocdTokenV2(httpClient, k3d.ArgocdURL, "admin", argocdPassword)
 		if err != nil {
 			return err
 		}

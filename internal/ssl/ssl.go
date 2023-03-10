@@ -318,7 +318,7 @@ func CreateCertificatesForK3dWrapper(config k3d.K3dConfig) error {
 
 	// create folder
 	// todo: check permission
-	err := os.Mkdir(config.MkCertPemPath, 0755)
+	err := os.Mkdir(config.MkCertPemDir, 0755)
 	if err != nil && os.IsNotExist(err) {
 		return err
 	}
@@ -336,9 +336,9 @@ func CreateCertificatesForK3dWrapper(config k3d.K3dConfig) error {
 // the certificates, store them in files, and store the certificates in the host trusted store.
 func createCertificateForK3d(config k3d.K3dConfig, app pkg.CertificateAppList) error {
 
-	fullAppAddress := app.AppName + "." + pkg.LocalDNS                     // example: app-name.localdev.me
-	certFileName := config.MkCertPemPath + "/" + app.AppName + "-cert.pem" // example: app-name-cert.pem
-	keyFileName := config.MkCertPemPath + "/" + app.AppName + "-key.pem"   // example: app-name-key.pem
+	fullAppAddress := app.AppName + "." + pkg.LocalDNS                    // example: app-name.localdev.me
+	certFileName := config.MkCertPemDir + "/" + app.AppName + "-cert.pem" // example: app-name-cert.pem
+	keyFileName := config.MkCertPemDir + "/" + app.AppName + "-key.pem"   // example: app-name-key.pem
 
 	log.Info().Msgf("generating certificate %s.localdev.me on %s", app.AppName, config.MkCertClient)
 
@@ -362,8 +362,8 @@ func CreateSecretsFromCertificatesForK3dWrapper(config *k3d.K3dConfig) error {
 
 	for _, app := range pkg.GetCertificateAppList() {
 
-		certFileName := config.MkCertPemPath + "/" + app.AppName + "-cert.pem" // example: app-name-cert.pem
-		keyFileName := config.MkCertPemPath + "/" + app.AppName + "-key.pem"   // example: app-name-key.pem
+		certFileName := config.MkCertPemDir + "/" + app.AppName + "-cert.pem" // example: app-name-cert.pem
+		keyFileName := config.MkCertPemDir + "/" + app.AppName + "-key.pem"   // example: app-name-key.pem
 
 		log.Info().Msgf("creating TLS k8s secret for %s...", app.AppName)
 
