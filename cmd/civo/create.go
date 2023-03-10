@@ -135,6 +135,28 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		cGitOwner = githubOwnerFlag
 		cGitToken = os.Getenv("GITHUB_TOKEN")
 		containerRegistryHost = "ghcr.io"
+
+		// Handle authorization checks
+		httpClient := http.DefaultClient
+		gitHubService := services.NewGitHubService(httpClient)
+		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
+
+		// get github data to set user based on the provided token
+		log.Info().Msg("verifying github authentication")
+		githubUser, err := gitHubHandler.GetGitHubUser(cGitToken)
+		if err != nil {
+			return err
+		}
+		cGitUser = githubUser
+		viper.Set("github.user", githubUser)
+		err = viper.WriteConfig()
+		if err != nil {
+			return err
+		}
+		err = gitHubHandler.CheckGithubOrganizationPermissions(cGitToken, githubOwnerFlag, githubUser)
+		if err != nil {
+			return err
+		}
 	case "gitlab":
 		cGitHost = civo.GitlabHost
 		cGitOwner = gitlabOwnerFlag
@@ -201,6 +223,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		GitHubHost:  fmt.Sprintf("https://github.com/%s/gitops.git", cGitOwner),
 		GitHubOwner: cGitOwner,
+		GitHubUser:  cGitUser,
 
 		GitlabHost:         civo.GitlabHost,
 		GitlabOwner:        cGitOwner,
@@ -369,32 +392,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		switch config.GitProvider {
 		case "github":
-			httpClient := http.DefaultClient
-			gitHubService := services.NewGitHubService(httpClient)
-			gitHubHandler := handlers.NewGitHubHandler(gitHubService)
-
-			// get github data to set user based on the provided token
-			log.Info().Msg("verifying github authentication")
-			githubUser, err := gitHubHandler.GetGitHubUser(cGitToken)
-			if err != nil {
-				return err
-			}
-
-			// Set in config and in viper
-			gitopsDirectoryTokens.GitHubUser = githubUser
-			viper.Set("github.user", githubUser)
-			cGitUser = githubUser
-
-			err = viper.WriteConfig()
-			if err != nil {
-				return err
-			}
-
-			err = gitHubHandler.CheckGithubOrganizationPermissions(cGitToken, githubOwnerFlag, githubUser)
-			if err != nil {
-				return err
-			}
-
 			githubWrapper := githubWrapper.New(cGitToken)
 			newRepositoryExists := false
 			// todo hoist to globals
@@ -544,8 +541,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("installing kubefirst dependencies")
 
 		err := civo.DownloadTools(
-			config.HelmClient,
-			civo.HelmClientVersion,
 			config.KubectlClient,
 			civo.KubectlClientVersion,
 			civo.LocalhostOS,
@@ -780,6 +775,23 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Civo Readiness checks
+	// CoreDNS
+	coreDNSDeployment, err := k8s.ReturnDeploymentObject(
+		config.Kubeconfig,
+		"kubernetes.io/name",
+		"CoreDNS",
+		"kube-system",
+		120,
+	)
+	if err != nil {
+		log.Info().Msgf("Error finding CoreDNS deployment: %s", err)
+	}
+	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, coreDNSDeployment, 90)
+	if err != nil {
+		log.Info().Msgf("Error waiting for CoreDNS deployment ready state: %s", err)
+	}
+
 	// kubernetes.BootstrapSecrets
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	// todo deconstruct CreateNamespaces / CreateSecret
@@ -922,41 +934,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	}
 
-	// Wait for ArgoCD StatefulSet Pods to transition to Running
-	argoCDStatefulSet, err := k8s.ReturnStatefulSetObject(
-		config.Kubeconfig,
-		"app.kubernetes.io/part-of",
-		"argocd",
-		"argocd",
-		60,
-	)
+	// Wait for ArgoCD to be ready
+	_, err = k8s.VerifyArgoCDReadiness(config.Kubeconfig, true)
 	if err != nil {
-		log.Info().Msgf("Error finding ArgoCD StatefulSet: %s", err)
-	}
-	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, argoCDStatefulSet, 90, false)
-	if err != nil {
-		log.Info().Msgf("Error waiting for ArgoCD StatefulSet ready state: %s", err)
-	}
-
-	// Wait for ArgoCD repo server Pods to transition to Running
-	// This is related to a condition where apps attempt to deploy before
-	// the repo server health check passes
-	//
-	// This can cause future steps to break since the registry app
-	// may never apply
-	argoCDRepoDeployment, err := k8s.ReturnDeploymentObject(
-		config.Kubeconfig,
-		"app.kubernetes.io/name",
-		"argocd-repo-server",
-		"argocd",
-		60,
-	)
-	if err != nil {
-		log.Info().Msgf("Error finding ArgoCD repo deployment: %s", err)
-	}
-	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, argoCDRepoDeployment, 90)
-	if err != nil {
-		log.Info().Msgf("Error waiting for ArgoCD repo deployment ready state: %s", err)
+		log.Fatal().Msgf("error waiting for ArgoCD to become ready: %s", err)
 	}
 
 	//* ArgoCD port-forward
@@ -1015,7 +996,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		log.Info().Msg("applying the registry application to argocd")
 		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", config.K1Dir, clusterNameFlag)
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
+		_, err := pkg.ExecShellReturnStringsV2(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
 		if err != nil {
 			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", registryYamlPath, err.Error())
 			return err
@@ -1037,7 +1018,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		"app.kubernetes.io/instance",
 		"vault",
 		"vault",
-		60,
+		120,
 	)
 	if err != nil {
 		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)

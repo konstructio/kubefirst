@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/k3d"
-	"github.com/kubefirst/kubefirst/internal/segment"
-	"github.com/kubefirst/kubefirst/pkg"
-	"github.com/rs/zerolog/log"
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -21,23 +18,37 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		segmentClient := &segment.Client
+		// segmentClient := &segment.Client
+		//
+		// segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, "defdef", "mgmt", k3d.DomainName, "bitbucket", "true", pkg.MetricInitStarted)
+		// if segmentMsg != "" {
+		// 	log.Info().Msg(segmentMsg)
+		// }
+		// segmentMsg = segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, "defdef", "mgmt", k3d.DomainName, "bitbucket", "true", pkg.MetricInitCompleted)
+		// if segmentMsg != "" {
+		// 	log.Info().Msg(segmentMsg)
+		// }
+		// segmentMsg = segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, "defdef", "mgmt", k3d.DomainName, "bitbucket", "true", pkg.MetricMgmtClusterInstallStarted)
+		// if segmentMsg != "" {
+		// 	log.Info().Msg(segmentMsg)
+		// }
+		// segmentMsg = segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, "defdef", "mgmt", k3d.DomainName, "bitbucket", "true", pkg.MetricMgmtClusterInstallCompleted)
+		// if segmentMsg != "" {
+		// 	log.Info().Msg(segmentMsg)
+		// }
 
-		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, "defdef", "mgmt", k3d.DomainName, "bitbucket", "true", pkg.MetricInitStarted)
-		if segmentMsg != "" {
-			log.Info().Msg(segmentMsg)
-		}
-		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, "defdef", "mgmt", k3d.DomainName, "bitbucket", "true", pkg.MetricInitCompleted)
-		if segmentMsg != "" {
-			log.Info().Msg(segmentMsg)
-		}
-		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, "defdef", "mgmt", k3d.DomainName, "bitbucket", "true", pkg.MetricMgmtClusterInstallStarted)
-		if segmentMsg != "" {
-			log.Info().Msg(segmentMsg)
-		}
-		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, "defdef", "mgmt", k3d.DomainName, "bitbucket", "true", pkg.MetricMgmtClusterInstallCompleted)
-		if segmentMsg != "" {
-			log.Info().Msg(segmentMsg)
+		attempts := 10
+		for i := 0; i < attempts; i++ {
+			if i > 0 {
+				fmt.Println("was greater so retrying")
+			}
+			fmt.Println("some logic")
+
+			if i == 5 {
+				fmt.Println("healthy")
+				continue
+			}
+
 		}
 
 		return nil

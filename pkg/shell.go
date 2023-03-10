@@ -3,6 +3,7 @@ package pkg
 import (
 	"bufio"
 	"bytes"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -30,6 +31,25 @@ func ExecShellReturnStrings(command string, args ...string) (string, string, err
 	log.Info().Msgf("Command: %s", command)
 
 	return outb.String(), errb.String(), err
+}
+
+// ExecShellReturnStringsV2 exec shell, discard stdout
+func ExecShellReturnStringsV2(command string, args ...string) (string, error) {
+	var errb bytes.Buffer
+	k := exec.Command(command, args...)
+	//  log.Info()().Msg()("Command:", k.String()) //Do not remove this line used for some debugging, will be wrapped by debug log some day.
+	k.Stdout = io.Discard
+	k.Stderr = &errb
+	err := k.Run()
+	if err != nil {
+		log.Error().Err(err).Msgf("error executing command")
+	}
+
+	if len(errb.String()) > 0 {
+		log.Error().Msgf("error executing command: %s", errb.String())
+	}
+
+	return errb.String(), err
 }
 
 // ExecShellWithVars Exec shell actions supporting:

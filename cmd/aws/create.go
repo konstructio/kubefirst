@@ -9,10 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rs/zerolog/log"
-	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
@@ -20,7 +16,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/handlers"
-	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/segment"
 	"github.com/kubefirst/kubefirst/internal/services"
@@ -28,8 +23,11 @@ import (
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	v1 "k8s.io/api/core/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -600,39 +598,39 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// }
 
 	//* helm add argo repository && update
-	helmRepo := helm.HelmRepo{
-		RepoName:     "argo",
-		RepoURL:      "https://argoproj.github.io/argo-helm",
-		ChartName:    "argo-cd",
-		Namespace:    "argocd",
-		ChartVersion: "4.10.5",
-	}
-
-	//* helm add repo and update
-	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-repo-added")
-	if !executionControl {
-		log.Info().Msgf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL)
-		helm.AddRepoAndUpdateRepo(dryRunFlag, config.HelmClient, helmRepo, config.Kubeconfig)
-		log.Info().Msg("helm repo added")
-		viper.Set("kubefirst-checks.argocd-helm-repo-added", true)
-		viper.WriteConfig()
-	} else {
-		log.Info().Msg("argo helm repository already added, continuing")
-	}
-	//* helm install argocd
-	executionControl = viper.GetBool("kubefirst-checks.argocd-helm-install")
-	if !executionControl {
-		log.Info().Msgf("helm install %s and wait", helmRepo.RepoName)
-		// todo adopt golang helm client for helm install
-		err := helm.Install(dryRunFlag, config.HelmClient, helmRepo, config.Kubeconfig)
-		if err != nil {
-			return err
-		}
-		viper.Set("kubefirst-checks.argocd-helm-install", true)
-		viper.WriteConfig()
-	} else {
-		log.Info().Msg("argo helm already installed, continuing")
-	}
+	// helmRepo := helm.HelmRepo{
+	// 	RepoName:     "argo",
+	// 	RepoURL:      "https://argoproj.github.io/argo-helm",
+	// 	ChartName:    "argo-cd",
+	// 	Namespace:    "argocd",
+	// 	ChartVersion: "4.10.5",
+	// }
+	//
+	// //* helm add repo and update
+	// executionControl = viper.GetBool("kubefirst-checks.argocd-helm-repo-added")
+	// if !executionControl {
+	// 	log.Info().Msgf("helm repo add %s %s and helm repo update", helmRepo.RepoName, helmRepo.RepoURL)
+	// 	helm.AddRepoAndUpdateRepo(dryRunFlag, config.HelmClient, helmRepo, config.Kubeconfig)
+	// 	log.Info().Msg("helm repo added")
+	// 	viper.Set("kubefirst-checks.argocd-helm-repo-added", true)
+	// 	viper.WriteConfig()
+	// } else {
+	// 	log.Info().Msg("argo helm repository already added, continuing")
+	// }
+	// //* helm install argocd
+	// executionControl = viper.GetBool("kubefirst-checks.argocd-helm-install")
+	// if !executionControl {
+	// 	log.Info().Msgf("helm install %s and wait", helmRepo.RepoName)
+	// 	// todo adopt golang helm client for helm install
+	// 	err := helm.Install(dryRunFlag, config.HelmClient, helmRepo, config.Kubeconfig)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	viper.Set("kubefirst-checks.argocd-helm-install", true)
+	// 	viper.WriteConfig()
+	// } else {
+	// 	log.Info().Msg("argo helm already installed, continuing")
+	// }
 
 	// Wait for ArgoCD StatefulSet Pods to transition to Running
 	argoCDStatefulSet, err := k8s.ReturnStatefulSetObject(

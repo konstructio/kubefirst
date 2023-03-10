@@ -50,6 +50,7 @@ func (conf *VaultConfiguration) UnsealRaftLeader(kubeConfigPath string) error {
 		8200,
 		vaultStopChannel,
 	)
+	time.Sleep(time.Second * 2)
 
 	// Vault api client
 	vaultClient, err := vaultapi.NewClient(&conf.Config)
@@ -100,6 +101,7 @@ func (conf *VaultConfiguration) UnsealRaftLeader(kubeConfigPath string) error {
 		if err != nil {
 			panic(err)
 		}
+		time.Sleep(time.Second * 3)
 
 		// Unseal raft leader
 		for i, shard := range initResponse.Keys {
@@ -132,17 +134,27 @@ func (conf *VaultConfiguration) UnsealRaftLeader(kubeConfigPath string) error {
 			// Unseal raft leader
 			for i, shard := range existingInitResponse.Keys {
 				if i < 3 {
-					log.Info().Msgf("passing unseal shard %v to %s", i+1, "vault-0")
-					_, err := vaultClient.Sys().Unseal(shard)
-					if err != nil {
-						return err
+					retries := 10
+					for r := 0; r < retries; r++ {
+						if r > 0 {
+							log.Warn().Msgf("encountered an error during unseal, retrying (%d/%d)", r+1, retries)
+						}
+						time.Sleep(5 * time.Second)
+
+						log.Info().Msgf("passing unseal shard %v to %s", i+1, "vault-0")
+						_, err := vaultClient.Sys().Unseal(shard)
+						if err != nil {
+							continue
+						} else {
+							break
+						}
 					}
+					time.Sleep(time.Second * 2)
 				} else {
 					break
 				}
 
 			}
-
 		case false:
 			log.Info().Msgf("%s is already unsealed", "vault-0")
 		}
@@ -176,6 +188,7 @@ func (conf *VaultConfiguration) UnsealRaftFollowers(kubeConfigPath string) error
 			8200,
 			vaultStopChannel,
 		)
+		time.Sleep(time.Second * 2)
 
 		// Instantiate vault client per node
 		vaultClient, err := vaultapi.NewClient(&conf.Config)
@@ -210,6 +223,7 @@ func (conf *VaultConfiguration) UnsealRaftFollowers(kubeConfigPath string) error
 			if err != nil {
 				return err
 			}
+			time.Sleep(time.Second * 1)
 		case true:
 			log.Info().Msgf("raft follower %s is already initialized", node)
 		}
@@ -228,11 +242,22 @@ func (conf *VaultConfiguration) UnsealRaftFollowers(kubeConfigPath string) error
 			// Unseal raft leader
 			for i, shard := range existingInitResponse.Keys {
 				if i < 3 {
-					log.Info().Msgf("passing unseal shard %v to %s", i+1, node)
-					_, err := vaultClient.Sys().Unseal(shard)
-					if err != nil {
-						return err
+					retries := 10
+					for r := 0; r < retries; r++ {
+						if r > 0 {
+							log.Warn().Msgf("encountered an error during unseal, retrying (%d/%d)", r+1, retries)
+						}
+						time.Sleep(5 * time.Second)
+
+						log.Info().Msgf("passing unseal shard %v to %s", i+1, node)
+						_, err := vaultClient.Sys().Unseal(shard)
+						if err != nil {
+							continue
+						} else {
+							break
+						}
 					}
+					time.Sleep(time.Second * 2)
 				} else {
 					break
 				}

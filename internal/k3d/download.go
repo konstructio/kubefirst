@@ -19,21 +19,6 @@ func DownloadTools(gitProvider, gitOwner string, toolsDir string) error {
 		}
 	}
 
-	// * helm
-	helmTarAddress := fmt.Sprintf("%s-%s/helm", LocalhostOS, LocalhostARCH)
-	helmTarGzPath := fmt.Sprintf("%s/tools/helm.tar.gz", config.K1Dir)
-	helmDownloadURL := fmt.Sprintf(
-		"https://get.helm.sh/helm-%s-%s-%s.tar.gz",
-		HelmVersion,
-		LocalhostOS,
-		LocalhostARCH,
-	)
-
-	err := downloadManager.DownloadTarGz(config.HelmClient, helmTarAddress, helmTarGzPath, helmDownloadURL)
-	if err != nil {
-		return err
-	}
-
 	//* k3d
 	k3dDownloadUrl := fmt.Sprintf(
 		"https://github.com/k3d-io/k3d/releases/download/%s/k3d-%s-%s",
@@ -41,7 +26,7 @@ func DownloadTools(gitProvider, gitOwner string, toolsDir string) error {
 		LocalhostOS,
 		LocalhostARCH,
 	)
-	err = downloadManager.DownloadFile(config.K3dClient, k3dDownloadUrl)
+	err := downloadManager.DownloadFile(config.K3dClient, k3dDownloadUrl)
 	if err != nil {
 		return err
 	}

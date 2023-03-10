@@ -24,14 +24,9 @@ var checktoolsCmd = &cobra.Command{
 		fmt.Printf("-> kubectl version:\n\t%s\n\t%s\n", kubectlVersion, kubectlStdErr)
 		terraformVersion, terraformStdErr, errTerraform := pkg.ExecShellReturnStrings(config.TerraformClientPath, "version")
 		fmt.Printf("-> terraform version:\n\t%s\n\t%s\n", terraformVersion, terraformStdErr)
-		helmVersion, helmStdErr, errHelm := pkg.ExecShellReturnStrings(config.HelmClientPath, "version", "--client", "--short")
-		fmt.Printf("-> helm version:\n\t%s\n\t%s\n", helmVersion, helmStdErr)
 
 		if errKubectl != nil {
 			fmt.Printf("failed to call kubectlVersionCmd.Run(): %v", errKubectl)
-		}
-		if errHelm != nil {
-			fmt.Printf("failed to call helmVersionCmd.Run(): %v", errHelm)
 		}
 		if errTerraform != nil {
 			fmt.Printf("failed to call terraformVersionCmd.Run(): %v", errTerraform)

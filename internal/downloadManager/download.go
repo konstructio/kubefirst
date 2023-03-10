@@ -388,19 +388,6 @@ func VerifyCacheTerraform(config *configs.Config) bool {
 	return false
 }
 
-func VerifyCacheHelm(config *configs.Config) bool {
-	log.Debug().Msg("Helm checking version")
-	out, _, _ := pkg.ExecShellReturnStrings(config.HelmClientPath, "version", "--template={{.Version}}")
-
-	if out == config.HelmVersion {
-		log.Debug().Msgf("Helm version matched (%s/%s), returning true", out, config.HelmVersion)
-		return true
-	}
-
-	log.Debug().Msgf("Helm version does not match (%s/%s), returning false", out, config.HelmVersion)
-	return false
-}
-
 func VerifyCacheKubectl(config *configs.Config) bool {
 	log.Debug().Msg("Kubectl checking version")
 	out, _, _ := pkg.ExecShellReturnStrings(config.KubectlClientPath, "version", "-o", "json")
@@ -505,7 +492,6 @@ func DownloadTools(config *configs.Config) error {
 
 	go func() {
 
-		// todo: adopt latest helmVersion := "v3.9.0"
 		terraformVersion := config.TerraformVersion
 
 		terraformDownloadURL := fmt.Sprintf(
@@ -575,39 +561,6 @@ func DownloadTools(config *configs.Config) error {
 			}
 			wg.Done()
 			log.Info().Msg("Terraform download finished")
-		}
-	}()
-
-	go func() {
-		helmVersion := config.HelmVersion
-		helmDownloadURL := fmt.Sprintf(
-			"https://get.helm.sh/helm-%s-%s-%s.tar.gz",
-			helmVersion,
-			config.LocalOs,
-			config.LocalArchitecture,
-		)
-		log.Info().Msgf("Downloading terraform from %s", helmDownloadURL)
-		helmDownloadTarGzPath := fmt.Sprintf("%s/tools/helm.tar.gz", config.K1FolderPath)
-
-		err = DownloadFile(helmDownloadTarGzPath, helmDownloadURL)
-		if err != nil {
-			return
-		}
-
-		os.Remove(helmDownloadTarGzPath)
-		helmTarDownload, err := os.Open(helmDownloadTarGzPath)
-		if err != nil {
-			return
-		}
-
-		ExtractFileFromTarGz(
-			helmTarDownload,
-			fmt.Sprintf("%s-%s/helm", config.LocalOs, config.LocalArchitecture),
-			config.HelmClientPath,
-		)
-		err = os.Chmod(config.HelmClientPath, 0755)
-		if err != nil {
-			return
 		}
 	}()
 

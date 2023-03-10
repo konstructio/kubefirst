@@ -17,7 +17,6 @@ const (
 	ChartMuseumURL         = "https://chartmuseum.localdev.me"
 	CloudProvider          = "k3d"
 	DomainName             = "localdev.me"
-	HelmVersion            = "v3.6.1"
 	GithubHost             = "github.com"
 	GitlabHost             = "gitlab.com"
 	K3dVersion             = "v5.4.6"
@@ -42,7 +41,6 @@ type K3dConfig struct {
 	DestinationMetaphorRepoGitURL string
 	GitopsDir                     string
 	GitProvider                   string
-	HelmClient                    string
 	K1Dir                         string
 	K3dClient                     string
 	Kubeconfig                    string
@@ -82,7 +80,6 @@ func GetConfig(gitProvider string, gitOwner string) *K3dConfig {
 	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@%s:%s/metaphor.git", cGitHost, gitOwner)
 	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
 	config.GitProvider = gitProvider
-	config.HelmClient = fmt.Sprintf("%s/.k1/tools/helm", homeDir)
 	config.K1Dir = fmt.Sprintf("%s/.k1", homeDir)
 	config.K3dClient = fmt.Sprintf("%s/.k1/tools/k3d", homeDir)
 	config.KubectlClient = fmt.Sprintf("%s/.k1/tools/kubectl", homeDir)
