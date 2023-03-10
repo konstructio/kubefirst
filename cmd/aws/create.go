@@ -9,10 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rs/zerolog/log"
-	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
@@ -27,8 +23,11 @@ import (
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	v1 "k8s.io/api/core/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (

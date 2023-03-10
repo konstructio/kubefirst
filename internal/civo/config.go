@@ -14,7 +14,6 @@ const (
 	CloudProvider          = "civo"
 	GithubHost             = "github.com"
 	GitlabHost             = "gitlab.com"
-	HelmClientVersion      = "v3.11.1"
 	KubectlClientVersion   = "v1.23.15"
 	LocalhostOS            = runtime.GOOS
 	LocalhostArch          = runtime.GOARCH
@@ -37,7 +36,6 @@ type CivoConfig struct {
 	DestinationMetaphorRepoGitURL   string
 	GitopsDir                       string
 	GitProvider                     string
-	HelmClient                      string
 	K1Dir                           string
 	Kubeconfig                      string
 	KubectlClient                   string
@@ -83,7 +81,6 @@ func GetConfig(clusterName string, domainName string, gitProvider string, gitOwn
 	config.ArgoWorkflowsDir = fmt.Sprintf("%s/.k1/argo-workflows", homeDir)
 	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
 	config.GitProvider = gitProvider
-	config.HelmClient = fmt.Sprintf("%s/.k1/tools/helm", homeDir)
 	config.Kubeconfig = fmt.Sprintf("%s/.k1/kubeconfig", homeDir)
 	config.K1Dir = fmt.Sprintf("%s/.k1", homeDir)
 	config.KubectlClient = fmt.Sprintf("%s/.k1/tools/kubectl", homeDir)

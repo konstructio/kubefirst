@@ -62,12 +62,12 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	githubOwnerFlag, err := cmd.Flags().GetString("github-owner")
+	githubUserFlag, err := cmd.Flags().GetString("github-user")
 	if err != nil {
 		return err
 	}
 
-	gitlabOwnerFlag, err := cmd.Flags().GetString("gitlab-owner")
+	gitlabGroupFlag, err := cmd.Flags().GetString("gitlab-group")
 	if err != nil {
 		return err
 	}
@@ -97,6 +97,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Check for existing port forwards before continuing
+	err = k8s.CheckForExistingPortForwards(8080, 8200, 9094)
+	if err != nil {
+		log.Fatal().Msgf("%s - this port is required to set up your kubefirst environment - please close any existing port forwards before continuing", err.Error())
+		return err
+	}
+
 	// Global context
 	var ctx context.Context
 	ctx, cancelContext = context.WithCancel(context.Background())
@@ -105,6 +112,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	httpClient := http.DefaultClient
 	segmentClient := &segment.Client
 	var segmentMsg string
+
+	defer func(c segment.SegmentClient) {
+		err := c.Client.Close()
+		if err != nil {
+			log.Info().Msgf("error closing segment client %s", err.Error())
+		}
+	}(*segmentClient)
 
 	kubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
 	if kubefirstTeam == "" {
@@ -161,14 +175,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("github.session_token", cGitToken)
 		viper.WriteConfig()
 
-		log.Info().Msgf("ignoring %s", githubOwnerFlag)
+		log.Info().Msgf("ignoring %s", githubUserFlag)
 	case "gitlab":
 		cGitHost = k3d.GitlabHost
-		cGitOwner = gitlabOwnerFlag
-		cGitUser = gitlabOwnerFlag
+		cGitOwner = gitlabGroupFlag
+		cGitUser = gitlabGroupFlag
 		cGitToken = os.Getenv("GITLAB_TOKEN")
 		containerRegistryHost = "registry.gitlab.com"
-		viper.Set("flags.gitlab-owner", gitlabOwnerFlag)
+		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
 	default:
 		log.Error().Msgf("invalid git provider option")
 	}
@@ -323,7 +337,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				log.Fatal().Msgf("could not read gitlab groups: %s", err)
 			}
-			gid, err := gl.GetGroupID(allgroups, gitlabOwnerFlag)
+			gid, err := gl.GetGroupID(allgroups, gitlabGroupFlag)
 			if err != nil {
 				log.Fatal().Msgf("could not get group id for primary group: %s", err)
 			}
@@ -380,7 +394,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	gitopsTemplateTokens := k3d.GitopsTokenValues{
 		GithubOwner:                   cGitOwner,
 		GithubUser:                    cGitUser,
-		GitlabOwner:                   gitlabOwnerFlag,
+		GitlabOwner:                   gitlabGroupFlag,
 		GitlabOwnerGroupID:            cGitlabOwnerGroupID,
 		GitlabUser:                    cGitUser,
 		GitopsRepoGitURL:              config.DestinationGitopsRepoGitURL,
@@ -514,7 +528,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				return errors.New(fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err))
 			}
 
-			log.Info().Msgf("created git repositories for github.com/%s", githubOwnerFlag)
+			log.Info().Msgf("created git repositories for github.com/%s", githubUserFlag)
 			viper.Set("kubefirst-checks.terraform-apply-github", true)
 			viper.WriteConfig()
 			progressPrinter.IncrementTracker("applying-git-terraform", 1)
@@ -531,7 +545,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			log.Fatal().Msgf("could not read gitlab groups: %s", err)
 		}
-		gid, err := gl.GetGroupID(allgroups, gitlabOwnerFlag)
+		gid, err := gl.GetGroupID(allgroups, gitlabGroupFlag)
 		if err != nil {
 			log.Fatal().Msgf("could not get group id for primary group: %s", err)
 		}
@@ -542,14 +556,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
 			tfEnvs["GITLAB_TOKEN"] = cGitToken
-			tfEnvs["GITLAB_OWNER"] = gitlabOwnerFlag
+			tfEnvs["GITLAB_OWNER"] = gitlabGroupFlag
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gid)
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
 				return errors.New(fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err))
 			}
 
-			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabOwnerFlag)
+			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabGroupFlag)
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", true)
 			viper.WriteConfig()
 			progressPrinter.IncrementTracker("applying-git-terraform", 1)
@@ -1044,6 +1058,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_kubefirst_bot_ssh_private_key"] = viper.GetString("kbot.private-key")
 		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
 		tfEnvs["GITHUB_OWNER"] = viper.GetString("flags.github-owner")
+		// tfEnvs["TF_LOG"] = "DEBUG"
 
 		if config.GitProvider == "gitlab" {
 			gl := gitlab.GitLabWrapper{
@@ -1053,7 +1068,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				log.Fatal().Msgf("could not read gitlab groups: %s", err)
 			}
-			gid, err := gl.GetGroupID(allgroups, gitlabOwnerFlag)
+			gid, err := gl.GetGroupID(allgroups, gitlabGroupFlag)
 			if err != nil {
 				log.Fatal().Msgf("could not get group id for primary group: %s", err)
 			}

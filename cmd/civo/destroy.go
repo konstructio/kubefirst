@@ -24,6 +24,12 @@ import (
 )
 
 func destroyCivo(cmd *cobra.Command, args []string) error {
+	// Check for existing port forwards before continuing
+	err := k8s.CheckForExistingPortForwards(8080)
+	if err != nil {
+		log.Fatal().Msgf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
+		return err
+	}
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
@@ -68,7 +74,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
-	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 3)
+	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 2)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	switch gitProvider {
@@ -147,6 +153,21 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", false)
 			viper.WriteConfig()
 			log.Info().Msg("github resources terraform destroyed")
+
+			// Since groups are only marked for deletion, attempt to remove them permanently
+			// This only works on < premium tiers
+			groupsToDelete := []string{"admins", "developers"}
+			for _, group := range groupsToDelete {
+				gid, err := gl.GetGroupID(allgroups, group)
+				if err != nil {
+					log.Error().Msgf("could not get group id for group %s, skipping auto-remove: %s", group, err)
+				}
+				_, err = gl.Client.Groups.DeleteGroup(gid)
+				if err != nil {
+					log.Warn().Msgf("attempt to remove group %s (marked for deletion) failed - you will need to delete it manually: %s", group, err)
+				}
+			}
+
 			progressPrinter.IncrementTracker("platform-destroy", 1)
 		}
 	}
@@ -175,41 +196,38 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		if viper.GetBool("kubefirst-checks.argocd-helm-install") {
-			log.Info().Msg("opening argocd port forward")
-			//* ArgoCD port-forward
-			argoCDStopChannel := make(chan struct{}, 1)
-			defer func() {
-				close(argoCDStopChannel)
-			}()
-			k8s.OpenPortForwardPodWrapper(
-				kubeconfigPath,
-				"argocd-server",
-				"argocd",
-				8080,
-				8080,
-				argoCDStopChannel,
-			)
+		log.Info().Msg("opening argocd port forward")
+		//* ArgoCD port-forward
+		argoCDStopChannel := make(chan struct{}, 1)
+		defer func() {
+			close(argoCDStopChannel)
+		}()
+		k8s.OpenPortForwardPodWrapper(
+			kubeconfigPath,
+			"argocd-server",
+			"argocd",
+			8080,
+			8080,
+			argoCDStopChannel,
+		)
 
-			log.Info().Msg("getting new auth token for argocd")
-			argocdAuthToken, err := argocd.GetArgoCDToken(viper.GetString("components.argocd.username"), viper.GetString("components.argocd.password"))
-			if err != nil {
-				return err
-			}
-
-			log.Info().Msgf("port-forward to argocd is available at %s", civo.ArgocdPortForwardURL)
-
-			customTransport := http.DefaultTransport.(*http.Transport).Clone()
-			customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-			argocdHttpClient := http.Client{Transport: customTransport}
-			log.Info().Msg("deleting the registry application")
-			httpCode, _, err := argocd.DeleteApplication(&argocdHttpClient, config.RegistryAppName, argocdAuthToken, "true")
-			if err != nil {
-				return err
-			}
-			log.Info().Msgf("http status code %d", httpCode)
-
+		log.Info().Msg("getting new auth token for argocd")
+		argocdAuthToken, err := argocd.GetArgoCDToken(viper.GetString("components.argocd.username"), viper.GetString("components.argocd.password"))
+		if err != nil {
+			return err
 		}
+
+		log.Info().Msgf("port-forward to argocd is available at %s", civo.ArgocdPortForwardURL)
+
+		customTransport := http.DefaultTransport.(*http.Transport).Clone()
+		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		argocdHttpClient := http.Client{Transport: customTransport}
+		log.Info().Msg("deleting the registry application")
+		httpCode, _, err := argocd.DeleteApplication(&argocdHttpClient, config.RegistryAppName, argocdAuthToken, "true")
+		if err != nil {
+			return err
+		}
+		log.Info().Msgf("http status code %d", httpCode)
 
 		for _, vol := range clusterVolumes {
 			log.Info().Msg("removing volume with name: " + vol.Name)
@@ -288,7 +306,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("unable to delete %q folder, error: %s", config.K1Dir+"/kubeconfig", err)
 		}
 	}
-	time.Sleep(time.Millisecond * 200) // allows progress bars to finish
+	time.Sleep(time.Second * 2) // allows progress bars to finish
 	fmt.Println("your kubefirst platform running in k3d has been destroyed")
 
 	return nil
