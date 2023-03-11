@@ -430,7 +430,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 	}
-	return errors.New("no error, just need to inspect the gitops repo")
 
 	// * create teams and repositories in github
 	// todo should terraform-apply-github --> terraform-apply-git-provider
