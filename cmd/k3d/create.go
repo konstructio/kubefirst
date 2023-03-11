@@ -747,11 +747,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// 	log.Info().Msg("no files found in secrets directory, continuing")
 	// }
 
-	if err := ssl.CreateCertificatesForK3dWrapper(*config); err != nil {
-		log.Error().Err(err).Msg("")
-	}
-	log.Info().Msg("MkCerts generated in /.k1/tools/certs directory")
-
 	// GitLab Deploy Tokens
 	// Handle secret creation for buildkit
 	createTokensFor := []string{"metaphor"}
