@@ -36,6 +36,12 @@ var (
 
 func createAws(cmd *cobra.Command, args []string) error {
 
+	//!
+	//! need to get kms key id and detokenize
+	//!
+	//!
+	return errors.New("need to look in gitops for the KMS_KEY_ID value to be detokenized")
+
 	cloudRegionFlag, err := cmd.Flags().GetString("cloud-region")
 	if err != nil {
 		return err
@@ -532,11 +538,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs := map[string]string{}
 		tfEnvs["TF_VAR_aws_account_id"] = *iamCaller.Account
 		tfEnvs["TF_VAR_hosted_zone_name"] = domainNameFlag
-		// nodes_graviton := viper.GetBool("aws.nodes_graviton")
-		// if nodes_graviton {
-		// 	tfEnvs["TF_VAR_ami_type"] = "AL2_ARM_64"
-		// 	tfEnvs["TF_VAR_instance_type"] = "t4g.medium"
-		// }
 		tfEnvs["AWS_SDK_LOAD_CONFIG"] = "1"
 		tfEnvs["TF_VAR_aws_region"] = os.Getenv("AWS_REGION")
 		tfEnvs["AWS_REGION"] = os.Getenv("AWS_REGION")
@@ -603,6 +604,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// } else {
 	// 	log.Info().Msg("no files found in secrets directory, continuing")
 	// }
+
+	//!
+	//! need to get kms key id and detokenize
+	//!
+	//!
+	return errors.New("need to look in gitops for the KMS_KEY_ID value to be detokenized")
 
 	//* install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
