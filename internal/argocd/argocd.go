@@ -328,6 +328,53 @@ func GetArgoCDToken(username string, password string) (string, error) {
 	return token, nil
 }
 
+// GetArgocdTokenV2
+func GetArgocdTokenV2(httpClient *http.Client, argocdBaseURL string, username string, password string) (string, error) {
+
+	url := argocdBaseURL + "/api/v1/session"
+
+	argoCDConfig := argocdModel.SessionSessionCreateRequest{
+		Username: username,
+		Password: password,
+	}
+
+	payload, err := json.Marshal(argoCDConfig)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
+	if err != nil {
+		return "", err
+	}
+
+	res, err := httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return "", errors.New("unable to retrieve argocd token")
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var jsonReturn map[string]interface{}
+	err = json.Unmarshal(body, &jsonReturn)
+	if err != nil {
+		return "", err
+	}
+	token := fmt.Sprintf("%v", jsonReturn["token"])
+	if len(token) == 0 {
+		return "", errors.New("unable to retrieve argocd token, make sure provided credentials are valid")
+	}
+
+	return token, nil
+}
+
 // GetArgocdAuthToken issue token and retry in case of failure.
 // todo: call the retry from outside of the function, and use GetArgoCDToken function to get token. At the moment there
 // are two functions issuing tokens.
