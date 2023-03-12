@@ -3,6 +3,7 @@ module github.com/kubefirst/kubefirst
 go 1.18
 
 require (
+	github.com/aws/aws-sdk-go v1.44.213
 	github.com/aws/aws-sdk-go-v2/config v1.17.1
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.27
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.54.1
@@ -44,6 +45,7 @@ require (
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v1.5.2
+	sigs.k8s.io/aws-iam-authenticator v0.6.6
 )
 
 require (
@@ -52,7 +54,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.12 // indirect
+	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chromedp/cdproto v0.0.0-20230109101555-6b041c6303cc // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.0 // indirect
@@ -64,6 +68,7 @@ require (
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.1.0 // indirect
+	github.com/gofrs/flock v0.7.0 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
 	github.com/inconshreveable/log15 v3.0.0-testing.3+incompatible // indirect
 	github.com/inconshreveable/log15/v3 v3.0.0-testing.5 // indirect
@@ -72,10 +77,15 @@ require (
 	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/prometheus/client_golang v1.14.0 // indirect
+	github.com/prometheus/client_model v0.3.0 // indirect
+	github.com/prometheus/common v0.37.0 // indirect
+	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/rs/xid v1.4.0 // indirect
 	github.com/segmentio/backo-go v1.0.1 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
@@ -94,8 +104,6 @@ require (
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20210428141323-04723f9f07d7 // indirect
 	github.com/acomagu/bufpipe v1.0.3 // indirect
-	github.com/armon/go-metrics v0.4.0 // indirect
-	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.17.5
 	github.com/aws/aws-sdk-go-v2/credentials v1.12.14
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.12 // indirect
