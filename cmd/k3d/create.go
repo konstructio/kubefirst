@@ -19,6 +19,7 @@ import (
 	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/docker"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
@@ -656,6 +657,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	//* create k3d resources
+	// Verify Docker is running
+	dcli := docker.DockerClientWrapper{
+		Client: docker.NewDockerClient(),
+	}
+	_, err = dcli.CheckDockerReady()
+	if err != nil {
+		return err
+	}
+
 	progressPrinter.AddTracker("applying-k3d-terraform", "Applying K3d Terraform", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
@@ -666,9 +676,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			viper.Set("kubefirst-checks.terraform-apply-k3d-failed", true)
 			viper.WriteConfig()
-			msg := "Error attempting to create K3D cluster - is Docker running?"
-			fmt.Println(msg)
-			log.Fatal().Msg(msg)
+
 			return err
 		}
 
@@ -738,11 +746,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// } else {
 	// 	log.Info().Msg("no files found in secrets directory, continuing")
 	// }
-
-	if err := ssl.CreateCertificatesForK3dWrapper(*config); err != nil {
-		log.Error().Err(err).Msg("")
-	}
-	log.Info().Msg("MkCerts generated in /.k1/tools/certs directory")
 
 	// GitLab Deploy Tokens
 	// Handle secret creation for buildkit
@@ -846,56 +849,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	}
 
-	// Wait for ArgoCD StatefulSet Pods to transition to Running
-	argoCDStatefulSet, err := k8s.ReturnStatefulSetObject(
-		config.Kubeconfig,
-		"app.kubernetes.io/part-of",
-		"argocd",
-		"argocd",
-		60,
-	)
+	// Wait for ArgoCD to be ready
+	_, err = k8s.VerifyArgoCDReadiness(config.Kubeconfig, false)
 	if err != nil {
-		log.Info().Msgf("Error finding ArgoCD StatefulSet: %s", err)
-	}
-	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, argoCDStatefulSet, 90, false)
-	if err != nil {
-		log.Info().Msgf("Error waiting for ArgoCD StatefulSet ready state: %s", err)
-	}
-
-	// Wait for ArgoCD repo server Pods to transition to Running
-	// This is related to a condition where apps attempt to deploy before
-	// the repo server health check passes
-	//
-	// This can cause future steps to break since the registry app
-	// may never apply
-	argoCDRepoDeployment, err := k8s.ReturnDeploymentObject(
-		config.Kubeconfig,
-		"app.kubernetes.io/name",
-		"argocd-repo-server",
-		"argocd",
-		60,
-	)
-	if err != nil {
-		log.Info().Msgf("Error finding ArgoCD repo deployment: %s", err)
-	}
-	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, argoCDRepoDeployment, 90)
-	if err != nil {
-		log.Info().Msgf("Error waiting for ArgoCD repo deployment ready state: %s", err)
-	}
-
-	argoCDServerDeployment, err := k8s.ReturnDeploymentObject(
-		config.Kubeconfig,
-		"app.kubernetes.io/name",
-		"argocd-server",
-		"argocd",
-		60,
-	)
-	if err != nil {
-		log.Info().Msgf("Error finding ArgoCD server deployment: %s", err)
-	}
-	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, argoCDServerDeployment, 90)
-	if err != nil {
-		log.Info().Msgf("Error waiting for ArgoCD server deployment ready state: %s", err)
+		log.Fatal().Msgf("error waiting for ArgoCD to become ready: %s", err)
 	}
 
 	var argocdPassword string

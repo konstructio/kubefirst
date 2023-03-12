@@ -16,6 +16,14 @@ import (
 
 func GenerateTLSSecrets(clientset *kubernetes.Clientset, config K3dConfig) error {
 
+	sslPemDir := config.MkCertPemDir
+	if _, err := os.Stat(sslPemDir); os.IsNotExist(err) {
+		err := os.MkdirAll(sslPemDir, os.ModePerm)
+		if err != nil {
+			log.Info().Msgf("%s directory already exists, continuing", sslPemDir)
+		}
+	}
+
 	for i, app := range pkg.GetCertificateAppList() {
 
 		namespace := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: app.Namespace}}

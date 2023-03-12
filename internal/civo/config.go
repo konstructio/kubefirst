@@ -14,7 +14,7 @@ const (
 	CloudProvider          = "civo"
 	GithubHost             = "github.com"
 	GitlabHost             = "gitlab.com"
-	KubectlClientVersion   = "v1.23.15"
+	KubectlClientVersion   = "v1.25.7"
 	LocalhostOS            = runtime.GOOS
 	LocalhostArch          = runtime.GOARCH
 	TerraformClientVersion = "1.3.8"

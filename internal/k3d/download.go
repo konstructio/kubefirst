@@ -1,6 +1,7 @@
 package k3d
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -28,7 +29,7 @@ func DownloadTools(gitProvider, gitOwner string, toolsDir string) error {
 	)
 	err := downloadManager.DownloadFile(config.K3dClient, k3dDownloadUrl)
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("error while trying to download k3d: %s", err))
 	}
 
 	err = os.Chmod(config.K3dClient, 0755)
@@ -46,7 +47,7 @@ func DownloadTools(gitProvider, gitOwner string, toolsDir string) error {
 
 	err = downloadManager.DownloadFile(config.KubectlClient, kubectlDownloadURL)
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("error while trying to download kubectl: %s", err))
 	}
 
 	err = os.Chmod(config.KubectlClient, 0755)
@@ -66,7 +67,7 @@ func DownloadTools(gitProvider, gitOwner string, toolsDir string) error {
 
 	err = downloadManager.DownloadFile(config.MkCertClient, mkCertDownloadURL)
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("error while trying to download mkcert: %s", err))
 	}
 	err = os.Chmod(config.MkCertClient, 0755)
 	if err != nil {
@@ -85,7 +86,7 @@ func DownloadTools(gitProvider, gitOwner string, toolsDir string) error {
 
 	err = downloadManager.DownloadZip(config.ToolsDir, terraformDownloadURL, zipPath)
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("error while trying to download terraform: %s", err))
 	}
 
 	return nil

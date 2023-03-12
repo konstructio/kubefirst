@@ -20,7 +20,7 @@ const (
 	GithubHost             = "github.com"
 	GitlabHost             = "gitlab.com"
 	K3dVersion             = "v5.4.6"
-	KubectlVersion         = "v1.22.0"
+	KubectlVersion         = "v1.25.7"
 	KubefirstConsoleURL    = "https://kubefirst.localdev.me"
 	LocalhostARCH          = runtime.GOARCH
 	LocalhostOS            = runtime.GOOS
