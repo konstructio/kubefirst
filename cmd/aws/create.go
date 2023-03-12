@@ -9,11 +9,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/eks"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
-	"github.com/kubefirst/kubefirst/internal/aws"
+	awsinternal "github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
@@ -120,8 +123,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.github-owner", githubOwnerFlag)
 	viper.WriteConfig()
 
-	config := aws.GetConfig(githubOwnerFlag)
-	awsClient := &aws.Conf
+	config := awsinternal.GetConfig(githubOwnerFlag)
+	awsClient := &awsinternal.Conf
 	segmentClient := &segment.Client
 	vaultClient := &vault.Conf
 
@@ -153,7 +156,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	kubefirstArtifactsBucketName = fmt.Sprintf("k1-artifacts-%s-%s", clusterNameFlag, clusterId)
 
 	if useTelemetryFlag {
-		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, aws.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, awsinternal.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
@@ -318,11 +321,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	if useTelemetryFlag {
-		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, aws.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, awsinternal.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
-		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, aws.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
+		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, awsinternal.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
@@ -337,7 +340,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
 
-		err := aws.DownloadTools(config)
+		err := awsinternal.DownloadTools(config)
 		if err != nil {
 			return err
 		}
@@ -351,7 +354,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	atlantisWebhookURL := fmt.Sprintf("https://atlantis.%s/events", domainNameFlag)
 
-	gitopsTemplateTokens := aws.GitOpsDirectoryValues{
+	gitopsTemplateTokens := awsinternal.GitOpsDirectoryValues{
 		AlertsEmail:                    alertsEmailFlag,
 		AwsIamArnAccountRoot:           fmt.Sprintf("arn:aws:iam::%s:root", *iamCaller.Account),
 		AwsNodeCapacityType:            "SPOT", // todo adopt cli flag
@@ -368,14 +371,14 @@ func createAws(cmd *cobra.Command, args []string) error {
 		GitopsRepoGitURL:               config.DestinationGitopsRepoGitURL,
 		DomainName:                     domainNameFlag,
 		ChartMuseumIngressURL:          fmt.Sprintf("https://chartmuseum.%s", domainNameFlag),
-		CloudProvider:                  aws.CloudProvider,
+		CloudProvider:                  awsinternal.CloudProvider,
 		CloudRegion:                    cloudRegionFlag,
 		ClusterName:                    clusterNameFlag,
 		ClusterType:                    clusterTypeFlag,
-		GithubHost:                     aws.GithubHost,
+		GithubHost:                     awsinternal.GithubHost,
 		GitDescription:                 "GitHub hosted git",
 		GitNamespace:                   "N/A",
-		GitProvider:                    aws.GitProvider,
+		GitProvider:                    awsinternal.GitProvider,
 		GitRunner:                      "GitHub Action Runner",
 		GitRunnerDescription:           "Self Hosted GitHub Action Runner",
 		GitRunnerNS:                    "github-runner",
@@ -397,7 +400,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		VouchIngressURL:                fmt.Sprintf("vouch.%s", domainNameFlag),
 	}
 
-	metaphorTemplateTokens := aws.MetaphorTokenValues{
+	metaphorTemplateTokens := awsinternal.MetaphorTokenValues{
 		ClusterName:                   clusterNameFlag,
 		CloudRegion:                   cloudRegionFlag,
 		ContainerRegistryURL:          fmt.Sprintf("ghcr.io/%s/metaphor", githubOwnerFlag),
@@ -412,7 +415,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		log.Info().Msg("generating your new gitops repository")
 
-		err := aws.PrepareGitRepositories(
+		err := awsinternal.PrepareGitRepositories(
 			gitProviderFlag,
 			clusterNameFlag,
 			clusterTypeFlag,
@@ -445,7 +448,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := config.GitopsDir + "/terraform/github"
 		tfEnvs := map[string]string{}
-		// tfEnvs = aws.GetGithubTerraformEnvs(tfEnvs)
+		// tfEnvs = awsinternal.GetGithubTerraformEnvs(tfEnvs)
 		tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
 		tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
@@ -472,7 +475,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 
 		err = gitopsRepo.Push(&git.PushOptions{
-			RemoteName: aws.GitProvider,
+			RemoteName: awsinternal.GitProvider,
 			Auth:       publicKeys,
 		})
 		if err != nil {
@@ -495,7 +498,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
 
 		// todo remove this
-		// err := aws.PrepareMetaphorRepository(
+		// err := awsinternal.PrepareMetaphorRepository(
 		// 	config.DestinationMetaphorRepoGitURL,
 		// 	config.K1Dir,
 		// 	config.MetaphorDir,
@@ -512,7 +515,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 
 		err = metaphorRepo.Push(&git.PushOptions{
-			RemoteName: aws.GitProvider,
+			RemoteName: awsinternal.GitProvider,
 			Auth:       publicKeys,
 		})
 		if err != nil {
@@ -554,10 +557,24 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created aws cluster resources")
 	}
 
-	clientset, err := k8s.GetClientSet(dryRunFlag, config.Kubeconfig)
-	if err != nil {
-		return err
+	// todo create a client from config!!
+	sess := session.Must(session.NewSession(&aws.Config{
+		Region: aws.String(cloudRegionFlag),
+	}))
+	eksSvc := eks.New(sess)
+
+	input := &eks.DescribeClusterInput{
+		Name: aws.String(clusterNameFlag),
 	}
+	eksClusterInfo, err := eksSvc.DescribeCluster(input)
+	if err != nil {
+		log.Fatal().Msgf("Error calling DescribeCluster: %v", err)
+	}
+	clientset, err := awsinternal.NewClientset(eksClusterInfo.Cluster)
+	if err != nil {
+		log.Fatal().Msgf("Error creating clientset: %v", err)
+	}
+
 	//!!vault needs to be initialized and unsealed right here first, and then hydrated
 	//!!vault needs to be initialized and unsealed right here first, and then hydrated
 
@@ -567,7 +584,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// todo move secret structs to constants to be leveraged by either local or aws
 	// executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	// if !executionControl {
-	// 	err := aws.AddAwsSecrets(
+	// 	err := awsinternal.AddAwsSecrets(
 	// 		atlantisWebhookSecret,
 	// 		atlantisWebhookURL,
 	// 		viper.GetString("kbot.public-key"),
@@ -630,7 +647,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 	// Wait for ArgoCD StatefulSet Pods to transition to Running
 	argoCDStatefulSet, err := k8s.ReturnStatefulSetObject(
-		config.Kubeconfig,
+		clientset,
 		"app.kubernetes.io/part-of",
 		"argocd",
 		"argocd",
@@ -639,7 +656,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding ArgoCD StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, argoCDStatefulSet, 90, false)
+	_, err = k8s.WaitForStatefulSetReady(clientset, argoCDStatefulSet, 90, false)
 	if err != nil {
 		log.Info().Msgf("Error waiting for ArgoCD StatefulSet ready state: %s", err)
 	}
@@ -657,7 +674,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		8080,
 		argoCDStopChannel,
 	)
-	log.Info().Msgf("port-forward to argocd is available at %s", aws.ArgocdPortForwardURL)
+	log.Info().Msgf("port-forward to argocd is available at %s", awsinternal.ArgocdPortForwardURL)
 
 	var argocdPassword string
 	//* argocd pods are ready, get and set credentials
@@ -665,7 +682,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		log.Info().Msg("Setting argocd username and password credentials")
 
-		argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+		// argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
 		argocdPassword = k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
 		if argocdPassword == "" {
@@ -716,7 +733,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("waiting for vault pods to be ready ")
 		// Wait for Vault StatefulSet Pods to transition to Running
 		vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
-			config.Kubeconfig,
+			clientset,
 			"app.kubernetes.io/instance",
 			"vault",
 			"vault",
@@ -725,7 +742,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
 		}
-		_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, vaultStatefulSet, 60, false)
+		_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 60, false)
 		if err != nil {
 			log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 		}
@@ -803,9 +820,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
-		tfEnvs["TF_VAR_vault_addr"] = aws.VaultPortForwardURL
+		tfEnvs["TF_VAR_vault_addr"] = awsinternal.VaultPortForwardURL
 		tfEnvs["TF_VAR_vault_token"] = vaultRootToken
-		tfEnvs["VAULT_ADDR"] = aws.VaultPortForwardURL
+		tfEnvs["VAULT_ADDR"] = awsinternal.VaultPortForwardURL
 		tfEnvs["VAULT_TOKEN"] = vaultRootToken
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = atlantisWebhookSecret
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
@@ -833,9 +850,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs := map[string]string{}
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
-		tfEnvs["TF_VAR_vault_addr"] = aws.VaultPortForwardURL
+		tfEnvs["TF_VAR_vault_addr"] = awsinternal.VaultPortForwardURL
 		tfEnvs["TF_VAR_vault_token"] = vaultRootToken
-		tfEnvs["VAULT_ADDR"] = aws.VaultPortForwardURL
+		tfEnvs["VAULT_ADDR"] = awsinternal.VaultPortForwardURL
 		tfEnvs["VAULT_TOKEN"] = vaultRootToken
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
@@ -858,7 +875,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	// Wait for console Deployment Pods to transition to Running
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
-		config.Kubeconfig,
+		clientset,
 		"app.kubernetes.io/instance",
 		"kubefirst-console",
 		"kubefirst",
@@ -867,7 +884,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding console Deployment: %s", err)
 	}
-	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, consoleDeployment, 120)
+	_, err = k8s.WaitForDeploymentReady(clientset, consoleDeployment, 120)
 	if err != nil {
 		log.Info().Msgf("Error waiting for console Deployment ready state: %s", err)
 	}
@@ -902,7 +919,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	//! reports.LocalHandoffScreenV2(argocdPassword, clusterNameFlag, githubOwnerFlag, config, dryRunFlag, false)
 
 	if useTelemetryFlag {
-		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, aws.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, awsinternal.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}

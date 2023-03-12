@@ -795,7 +795,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	// CoreDNS
 	coreDNSDeployment, err := k8s.ReturnDeploymentObject(
-		config.Kubeconfig,
+		clientset,
 		"kubernetes.io/name",
 		"CoreDNS",
 		"kube-system",
@@ -804,7 +804,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding CoreDNS deployment: %s", err)
 	}
-	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, coreDNSDeployment, 120)
+	_, err = k8s.WaitForDeploymentReady(clientset, coreDNSDeployment, 120)
 	if err != nil {
 		log.Info().Msgf("Error waiting for CoreDNS deployment ready state: %s", err)
 	}
@@ -953,7 +953,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// Wait for ArgoCD to be ready
-	_, err = k8s.VerifyArgoCDReadiness(config.Kubeconfig, true)
+	_, err = k8s.VerifyArgoCDReadiness(clientset, true)
 	if err != nil {
 		log.Fatal().Msgf("error waiting for ArgoCD to become ready: %s", err)
 	}
@@ -1032,7 +1032,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
-		config.Kubeconfig,
+		clientset,
 		"app.kubernetes.io/instance",
 		"vault",
 		"vault",
@@ -1041,7 +1041,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, vaultStatefulSet, 120, true)
+	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 120, true)
 	if err != nil {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
@@ -1149,7 +1149,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
-		config.Kubeconfig,
+		clientset,
 		"app.kubernetes.io/instance",
 		"kubefirst-console",
 		"kubefirst",
@@ -1158,7 +1158,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding console Deployment: %s", err)
 	}
-	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, consoleDeployment, 120)
+	_, err = k8s.WaitForDeploymentReady(clientset, consoleDeployment, 120)
 	if err != nil {
 		log.Info().Msgf("Error waiting for console Deployment ready state: %s", err)
 	}

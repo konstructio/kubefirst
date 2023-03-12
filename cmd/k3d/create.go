@@ -848,7 +848,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// Wait for ArgoCD StatefulSet Pods to transition to Running
 	argoCDStatefulSet, err := k8s.ReturnStatefulSetObject(
-		config.Kubeconfig,
+		clientset,
 		"app.kubernetes.io/part-of",
 		"argocd",
 		"argocd",
@@ -857,7 +857,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding ArgoCD StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, argoCDStatefulSet, 90, false)
+	_, err = k8s.WaitForStatefulSetReady(clientset, argoCDStatefulSet, 90, false)
 	if err != nil {
 		log.Info().Msgf("Error waiting for ArgoCD StatefulSet ready state: %s", err)
 	}
@@ -869,7 +869,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// This can cause future steps to break since the registry app
 	// may never apply
 	argoCDRepoDeployment, err := k8s.ReturnDeploymentObject(
-		config.Kubeconfig,
+		clientset,
 		"app.kubernetes.io/name",
 		"argocd-repo-server",
 		"argocd",
@@ -878,7 +878,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding ArgoCD repo deployment: %s", err)
 	}
-	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, argoCDRepoDeployment, 90)
+	_, err = k8s.WaitForDeploymentReady(clientset, argoCDRepoDeployment, 90)
 	if err != nil {
 		log.Info().Msgf("Error waiting for ArgoCD repo deployment ready state: %s", err)
 	}
@@ -958,7 +958,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
-		config.Kubeconfig,
+		clientset,
 		"app.kubernetes.io/instance",
 		"vault",
 		"vault",
@@ -967,7 +967,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, vaultStatefulSet, 90, false)
+	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 90, false)
 	if err != nil {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
@@ -1166,7 +1166,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// Wait for console Deployment Pods to transition to Running
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
-		config.Kubeconfig,
+		clientset,
 		"app.kubernetes.io/instance",
 		"kubefirst-console",
 		"kubefirst",
@@ -1175,7 +1175,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding console Deployment: %s", err)
 	}
-	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, consoleDeployment, 120)
+	_, err = k8s.WaitForDeploymentReady(clientset, consoleDeployment, 120)
 	if err != nil {
 		log.Info().Msgf("Error waiting for console Deployment ready state: %s", err)
 	}

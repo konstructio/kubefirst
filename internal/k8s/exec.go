@@ -150,11 +150,7 @@ func podExec(kubeConfigPath string, ps *PodSessionOptions, pe v1.PodExecOptions,
 }
 
 // ReturnDeploymentObject returns a matching appsv1.Deployment object based on the filters
-func ReturnDeploymentObject(kubeConfigPath string, matchLabel string, matchLabelValue string, namespace string, timeoutSeconds float64) (*appsv1.Deployment, error) {
-	clientset, err := GetClientSet(false, kubeConfigPath)
-	if err != nil {
-		return nil, err
-	}
+func ReturnDeploymentObject(clientset *kubernetes.Clientset, matchLabel string, matchLabelValue string, namespace string, timeoutSeconds float64) (*appsv1.Deployment, error) {
 
 	// Filter
 	deploymentListOptions := metav1.ListOptions{
@@ -253,12 +249,7 @@ func ReturnPodObject(kubeConfigPath string, matchLabel string, matchLabelValue s
 }
 
 // ReturnStatefulSetObject returns a matching appsv1.StatefulSet object based on the filters
-func ReturnStatefulSetObject(kubeConfigPath string, matchLabel string, matchLabelValue string, namespace string, timeoutSeconds float64) (*appsv1.StatefulSet, error) {
-	clientset, err := GetClientSet(false, kubeConfigPath)
-	if err != nil {
-		return nil, err
-	}
-
+func ReturnStatefulSetObject(clientset *kubernetes.Clientset, matchLabel string, matchLabelValue string, namespace string, timeoutSeconds float64) (*appsv1.StatefulSet, error) {
 	// Filter
 	statefulSetListOptions := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", matchLabel, matchLabelValue),
@@ -300,11 +291,7 @@ func ReturnStatefulSetObject(kubeConfigPath string, matchLabel string, matchLabe
 }
 
 // WaitForDeploymentReady waits for a target Deployment to become ready
-func WaitForDeploymentReady(kubeConfigPath string, deployment *appsv1.Deployment, timeoutSeconds int64) (bool, error) {
-	clientset, err := GetClientSet(false, kubeConfigPath)
-	if err != nil {
-		return false, err
-	}
+func WaitForDeploymentReady(clientset *kubernetes.Clientset, deployment *appsv1.Deployment, timeoutSeconds int64) (bool, error) {
 
 	// Format list for metav1.ListOptions for watch
 	configuredReplicas := deployment.Status.Replicas
@@ -346,12 +333,7 @@ func WaitForDeploymentReady(kubeConfigPath string, deployment *appsv1.Deployment
 }
 
 // WaitForPodReady waits for a target Pod to become ready
-func WaitForPodReady(kubeConfigPath string, pod *v1.Pod, timeoutSeconds int64) (bool, error) {
-	clientset, err := GetClientSet(false, kubeConfigPath)
-	if err != nil {
-		return false, err
-	}
-
+func WaitForPodReady(clientset *kubernetes.Clientset, pod *v1.Pod, timeoutSeconds int64) (bool, error) {
 	// Format list for metav1.ListOptions for watch
 	watchOptions := metav1.ListOptions{
 		FieldSelector: fmt.Sprintf(
@@ -395,11 +377,7 @@ func WaitForPodReady(kubeConfigPath string, pod *v1.Pod, timeoutSeconds int64) (
 }
 
 // WaitForStatefulSetReady waits for a target StatefulSet to become ready
-func WaitForStatefulSetReady(kubeConfigPath string, statefulset *appsv1.StatefulSet, timeoutSeconds int64, ignoreReady bool) (bool, error) {
-	clientset, err := GetClientSet(false, kubeConfigPath)
-	if err != nil {
-		return false, err
-	}
+func WaitForStatefulSetReady(clientset *kubernetes.Clientset, statefulset *appsv1.StatefulSet, timeoutSeconds int64, ignoreReady bool) (bool, error) {
 
 	// Format list for metav1.ListOptions for watch
 	configuredReplicas := statefulset.Status.Replicas

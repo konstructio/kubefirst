@@ -3,21 +3,11 @@ package aws
 import (
 	"encoding/base64"
 
-	"encoding/base64"
-	"log"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/eks"
 	"github.com/rs/zerolog/log"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	"github.com/aws/aws-sdk-go/aws"
-
-	"github.com/aws/aws-sdk-go/service/eks"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
 	"sigs.k8s.io/aws-iam-authenticator/pkg/token"
 )
 
