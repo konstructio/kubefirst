@@ -176,12 +176,27 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("github.session_token", cGitToken)
 		viper.WriteConfig()
 
-		log.Info().Msgf("ignoring %s", githubUserFlag)
+		log.Info().Msgf("ignoring %s", cGitOwner)
 	case "gitlab":
-		cGitHost = k3d.GitlabHost
-		cGitOwner = gitlabGroupFlag
-		cGitUser = gitlabGroupFlag
 		cGitToken = os.Getenv("GITLAB_TOKEN")
+		gl := gitlab.GitLabWrapper{
+			Client: gitlab.NewGitLabClient(cGitToken),
+		}
+		allGroups, err := gl.GetGroups()
+		if err != nil {
+			log.Fatal().Msgf("unable to get gitlab groups: %s", err)
+		}
+		// Format git url based on full path to group
+		var groupFullSlug string
+		for _, group := range allGroups {
+			if group.Name == gitlabGroupFlag {
+				groupFullSlug = strings.Split(group.WebURL, "/groups/")[1]
+			}
+		}
+		cGitHost = k3d.GitlabHost
+		cGitOwner = groupFullSlug
+		log.Info().Msgf("set gitlab owner to %s", groupFullSlug)
+		cGitUser = gitlabGroupFlag
 		containerRegistryHost = "registry.gitlab.com"
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
 	default:
@@ -249,6 +264,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
+	// Objects to check for
+	// Repositories that will be created throughout the initialization process
+	newRepositoryNames := []string{"gitops", "metaphor"}
+	newTeamNames := []string{"admins", "developers"}
+
 	// Check git credentials
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider))
 	if !executionControl {
@@ -260,11 +280,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				),
 			)
 		}
-
-		// Objects to check for
-		// Repositories that will be created throughout the initialization process
-		newRepositoryNames := []string{"gitops", "metaphor"}
-		newTeamNames := []string{"admins", "developers"}
 
 		switch config.GitProvider {
 		case "github":
@@ -395,10 +410,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	gitopsTemplateTokens := k3d.GitopsTokenValues{
 		GithubOwner:                   cGitOwner,
 		GithubUser:                    cGitUser,
-		GitlabOwner:                   gitlabGroupFlag,
+		GitlabOwner:                   cGitOwner,
 		GitlabOwnerGroupID:            cGitlabOwnerGroupID,
 		GitlabUser:                    cGitUser,
-		GitopsRepoGitURL:              config.DestinationGitopsRepoGitURL,
 		DomainName:                    k3d.DomainName,
 		AtlantisAllowList:             fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
 		AlertsEmail:                   "REMOVE_THIS_VALUE",
@@ -456,7 +470,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already completed download of dependencies to `$HOME/.k1/tools` - continuing")
 	}
-
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
 	metaphorTemplateTokens := k3d.MetaphorTokenValues{
@@ -472,20 +485,45 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
+	var destinationGitopsRepoGitURL, destinationMetaphorRepoGitURL string
+
 	progressPrinter.AddTracker("cloning-and-formatting-git-repositories", "Cloning and formatting git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 		log.Info().Msg("generating your new gitops repository")
 
+		// gitlab may have subgroups, so the destination gitops/metaphor repo git urls may be different
+		switch config.GitProvider {
+		case "github":
+			destinationGitopsRepoGitURL = config.DestinationGitopsRepoGitURL
+			destinationMetaphorRepoGitURL = config.DestinationMetaphorRepoGitURL
+		case "gitlab":
+			gl := gitlab.GitLabWrapper{
+				Client: gitlab.NewGitLabClient(cGitToken),
+			}
+			allGroups, err := gl.GetGroups()
+			if err != nil {
+				fmt.Println(err)
+			}
+			// Format git url based on full path to group
+			for _, group := range allGroups {
+				if group.Name == gitlabGroupFlag {
+					groupFullSlug := strings.Split(group.WebURL, "/groups/")[1]
+					destinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", groupFullSlug)
+					destinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", groupFullSlug)
+				}
+			}
+		}
+		gitopsTemplateTokens.GitopsRepoGitURL = destinationGitopsRepoGitURL
 		err := k3d.PrepareGitRepositories(
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
-			config.DestinationGitopsRepoGitURL,
+			destinationGitopsRepoGitURL,
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
-			config.DestinationMetaphorRepoGitURL,
+			destinationMetaphorRepoGitURL,
 			config.K1Dir,
 			&gitopsTemplateTokens,
 			config.MetaphorDir,
@@ -578,6 +616,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
+	log.Info().Msgf("referencing gitops repository: %s", destinationGitopsRepoGitURL)
+	log.Info().Msgf("referencing metaphor repository: %s", destinationMetaphorRepoGitURL)
+
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
 	if !executionControl {
 		gitopsRepo, err := git.PlainOpen(config.GitopsDir)
@@ -631,7 +672,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			},
 		)
 		if err != nil {
-			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoGitURL, err)
+			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s: %s", destinationGitopsRepoGitURL, err)
 		}
 
 		// push metaphor repo to remote
@@ -642,10 +683,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			},
 		)
 		if err != nil {
-			log.Panic().Msgf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoGitURL, err)
+			log.Panic().Msgf("error pushing detokenized metaphor repository to remote %s: %s", destinationMetaphorRepoGitURL, err)
 		}
 
-		log.Info().Msgf("successfully pushed gitops and metaphor repositories to git@g%s/%s", cGitHost, cGitOwner)
+		log.Info().Msgf("successfully pushed gitops and metaphor repositories to git@%s/%s", cGitHost, cGitOwner)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
 		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
@@ -709,7 +750,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		err = k3d.AddK3DSecrets(
 			atlantisWebhookSecret,
 			viper.GetString("kbot.public-key"),
-			config.DestinationGitopsRepoGitURL,
+			destinationGitopsRepoGitURL,
 			viper.GetString("kbot.private-key"),
 			false,
 			config.GitProvider,
