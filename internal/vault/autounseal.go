@@ -10,6 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 func (conf *VaultConfiguration) AutoUnseal() (*vaultapi.InitResponse, error) {
@@ -34,7 +35,7 @@ func (conf *VaultConfiguration) AutoUnseal() (*vaultapi.InitResponse, error) {
 }
 
 // UnsealRaftLeader initializes and unseals a vault leader when using raft for ha and storage
-func (conf *VaultConfiguration) UnsealRaftLeader(kubeConfigPath string) error {
+func (conf *VaultConfiguration) UnsealRaftLeader(clientset *kubernetes.Clientset, kubeConfigPath string) error {
 	//* vault port-forward
 	log.Info().Msgf("starting port-forward for vault-0")
 	vaultStopChannel := make(chan struct{}, 1)
@@ -96,7 +97,7 @@ func (conf *VaultConfiguration) UnsealRaftLeader(kubeConfigPath string) error {
 		}
 
 		log.Info().Msgf("creating secret %s containing vault initialization data", VaultSecretName)
-		err = k8s.CreateSecretV2(kubeConfigPath, &secret)
+		err = k8s.CreateSecretV2(clientset, &secret)
 		if err != nil {
 			panic(err)
 		}

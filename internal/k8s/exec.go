@@ -20,13 +20,9 @@ import (
 )
 
 // CreateSecretV2 creates a Kubernetes Secret
-func CreateSecretV2(kubeConfigPath string, secret *v1.Secret) error {
-	clientset, err := GetClientSet(false, kubeConfigPath)
-	if err != nil {
-		return err
-	}
+func CreateSecretV2(clientset *kubernetes.Clientset, secret *v1.Secret) error {
 
-	_, err = clientset.CoreV1().Secrets(secret.Namespace).Create(
+	_, err := clientset.CoreV1().Secrets(secret.Namespace).Create(
 		context.Background(),
 		secret,
 		metav1.CreateOptions{},

@@ -690,7 +690,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		log.Info().Msg("Setting argocd username and password credentials")
 
-		// argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+		argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
 		argocdPassword = k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
 		if argocdPassword == "" {
@@ -801,7 +801,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			Data: dataToWrite,
 		}
 
-		err = k8s.CreateSecretV2(config.Kubeconfig, &secret)
+		err = k8s.CreateSecretV2(clientset, &secret)
 		if err != nil {
 			return err
 		}

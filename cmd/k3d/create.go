@@ -764,7 +764,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
 				Type:       "Opaque",
 			}
-			err = k8s.CreateSecretV2(config.Kubeconfig, argoDeployTokenSecret)
+			err = k8s.CreateSecretV2(clientset, argoDeployTokenSecret)
 			if err != nil {
 				log.Error().Msgf("error while creating secret for repository deploy token: %s", err)
 			}
@@ -803,7 +803,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 						Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
 						Type:       "kubernetes.io/dockerconfigjson",
 					}
-					err = k8s.CreateSecretV2(config.Kubeconfig, deployTokenSecret)
+					err = k8s.CreateSecretV2(clientset, deployTokenSecret)
 					if err != nil {
 						log.Error().Msgf("error while creating secret for project deploy token: %s", err)
 					}
@@ -816,7 +816,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 					Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
 					Type:       "Opaque",
 				}
-				err = k8s.CreateSecretV2(config.Kubeconfig, argoDeployTokenSecret)
+				err = k8s.CreateSecretV2(clientset, argoDeployTokenSecret)
 				if err != nil {
 					log.Error().Msgf("error while creating secret for project deploy token: %s", err)
 				}
