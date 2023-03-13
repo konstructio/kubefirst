@@ -492,18 +492,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	//* git clone and detokenize the metaphor-template repository
 	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
 
-		// todo remove this
-		// err := awsinternal.PrepareMetaphorRepository(
-		// 	config.DestinationMetaphorRepoGitURL,
-		// 	config.K1Dir,
-		// 	config.MetaphorDir,
-		// 	metaphorTemplateBranchFlag,
-		// 	metaphorTemplateURLFlag,
-		// 	&metaphorTemplateTokens)
-		// if err != nil {
-		// 	return err
-		// }
-
 		metaphorRepo, err := git.PlainOpen(config.MetaphorDir)
 		if err != nil {
 			log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
@@ -584,15 +572,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already pushed kms key to gitops")
 	}
-
-	//!
-	//! need to get kms key id and detokenize
-	//!
-	//!
-	return errors.New("need to look in gitops for the KMS_KEY_ID value to be detokenized")
-
-	//!! need to get output (kms-key id)
-	//!!vault needs to be initialized and unsealed right here first, and then hydrated
 
 	// todo create a client from config!!
 	sess := session.Must(session.NewSession(&aws.Config{
