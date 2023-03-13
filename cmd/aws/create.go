@@ -17,6 +17,7 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	awsinternal "github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
@@ -38,12 +39,6 @@ var (
 )
 
 func createAws(cmd *cobra.Command, args []string) error {
-
-	//!
-	//! need to get kms key id and detokenize
-	//!
-	//!
-	return errors.New("need to look in gitops for the KMS_KEY_ID value to be detokenized")
 
 	cloudRegionFlag, err := cmd.Flags().GetString("cloud-region")
 	if err != nil {
@@ -557,6 +552,48 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already created aws cluster resources")
 	}
 
+	//* create aws resources
+	if !viper.GetBool("kubefirst-checks.detokenize-kms") {
+		gitopsRepo, err := git.PlainOpen(config.GitopsDir)
+		awsKmsKeyId, err := awsClient.GetKmsKeyID(fmt.Sprintf("alias/vault_%s", clusterNameFlag))
+		if err != nil {
+			return err
+		}
+		gitopsTemplateTokens.AwsKmsKeyId = awsKmsKeyId
+
+		if err := pkg.ReplaceFileContent(
+			fmt.Sprintf("%s/registry/%s/components/vault/application.yaml", config.GitopsDir, clusterNameFlag),
+			"<AWS_KMS_KEY_ID>",
+			gitopsTemplateTokens.AwsKmsKeyId,
+		); err != nil {
+			return err
+		}
+
+		err = gitClient.Commit(gitopsRepo, "committing detoknized kms key")
+		if err != nil {
+			return err
+		}
+
+		err = gitopsRepo.Push(&git.PushOptions{
+			RemoteName: awsinternal.GitProvider,
+			Auth:       publicKeys,
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		log.Info().Msg("already pushed kms key to gitops")
+	}
+
+	//!
+	//! need to get kms key id and detokenize
+	//!
+	//!
+	return errors.New("need to look in gitops for the KMS_KEY_ID value to be detokenized")
+
+	//!! need to get output (kms-key id)
+	//!!vault needs to be initialized and unsealed right here first, and then hydrated
+
 	// todo create a client from config!!
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region: aws.String(cloudRegionFlag),
@@ -574,9 +611,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Fatal().Msgf("Error creating clientset: %v", err)
 	}
-
-	//!!vault needs to be initialized and unsealed right here first, and then hydrated
-	//!!vault needs to be initialized and unsealed right here first, and then hydrated
 
 	// kubernetes.BootstrapSecrets
 	// todo there is a secret condition in AddawsSecrets to this not checked
@@ -622,12 +656,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// 	log.Info().Msg("no files found in secrets directory, continuing")
 	// }
 
-	//!
-	//! need to get kms key id and detokenize
-	//!
-	//!
-	return errors.New("need to look in gitops for the KMS_KEY_ID value to be detokenized")
-
 	//* install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
@@ -645,6 +673,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("argo cd already installed, continuing")
 		// progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	}
+
 	// Wait for ArgoCD StatefulSet Pods to transition to Running
 	argoCDStatefulSet, err := k8s.ReturnStatefulSetObject(
 		clientset,

@@ -51,6 +51,8 @@ func detokenizeGitops(path string, tokens *GitOpsDirectoryValues) filepath.WalkF
 			// aws specific tokens
 			newContents = strings.Replace(newContents, "<AWS_IAM_ARN_ACCOUNT_ROOT>", tokens.AwsIamArnAccountRoot, -1)
 			newContents = strings.Replace(newContents, "<AWS_NODE_CAPACITY_TYPE>", tokens.AwsNodeCapacityType, -1)
+			//* going to move <AWS_KMS_KEY_ID> token to a file string replace effort
+			// newContents = strings.Replace(newContents, "<AWS_KMS_KEY_ID>", tokens.AwsKmsKeyId, -1)
 			newContents = strings.Replace(newContents, "<KUBEFIRST_ARTIFACTS_BUCKET>", tokens.KubefirstArtifactsBucket, -1)
 			// end aws specific
 			newContents = strings.Replace(newContents, "<ALERTS_EMAIL>", tokens.AlertsEmail, -1)
