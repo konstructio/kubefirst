@@ -9,7 +9,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/rs/zerolog/log"
 	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -89,7 +89,7 @@ func (conf *VaultConfiguration) UnsealRaftLeader(clientset *kubernetes.Clientset
 			dataToWrite[fmt.Sprintf("root-unseal-key-%v", i+1)] = []byte(value)
 		}
 		secret := v1.Secret{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      VaultSecretName,
 				Namespace: VaultNamespace,
 			},
@@ -280,7 +280,7 @@ func (conf *VaultConfiguration) UnsealRaftFollowers(clientset *kubernetes.Client
 func parseExistingVaultInitSecret(clientset *kubernetes.Clientset, kubeConfigPath string) (*vaultapi.InitResponse, error) {
 	// If vault has already been initialized, the response is formatted to contain the value
 	// of the initialization secret
-	secret, err := k8s.ReadSecretV2(clientset, kubeConfigPath, VaultNamespace, VaultSecretName)
+	secret, err := k8s.ReadSecretV2(clientset, VaultNamespace, VaultSecretName)
 	if err != nil {
 		return &vaultapi.InitResponse{}, err
 	}

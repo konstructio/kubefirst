@@ -14,7 +14,7 @@ import (
 )
 
 func readVaultTokenFromSecret(clientset *kubernetes.Clientset, config *CivoConfig) string {
-	existingKubernetesSecret, err := k8s.ReadSecretV2(clientset, config.Kubeconfig, vault.VaultNamespace, vault.VaultSecretName)
+	existingKubernetesSecret, err := k8s.ReadSecretV2(clientset, vault.VaultNamespace, vault.VaultSecretName)
 	if err != nil || existingKubernetesSecret == nil {
 		log.Printf("Error reading existing Secret data: %s", err)
 		return ""

@@ -21,7 +21,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -54,7 +54,7 @@ func GetPodsByNamespace(namespace string) (*v1.PodList, error) {
 	if err != nil {
 		return nil, err
 	}
-	list, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metaV1.ListOptions{})
+	list, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func IsNamespaceCreated(namespace string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	get, err := clientset.CoreV1().Namespaces().Get(context.Background(), namespace, metaV1.GetOptions{})
+	get, err := clientset.CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -80,7 +80,7 @@ func IsNamespaceCreated(namespace string) (bool, error) {
 }
 
 func GetPodNameByLabel(podsClient coreV1Types.PodInterface, label string) string {
-	pods, err := podsClient.List(context.TODO(), metaV1.ListOptions{LabelSelector: label})
+	pods, err := podsClient.List(context.TODO(), metav1.ListOptions{LabelSelector: label})
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}
@@ -93,7 +93,7 @@ func GetPodNameByLabel(podsClient coreV1Types.PodInterface, label string) string
 }
 
 func DeletePodByLabel(podsClient coreV1Types.PodInterface, label string) {
-	err := podsClient.DeleteCollection(context.TODO(), metaV1.DeleteOptions{}, metaV1.ListOptions{LabelSelector: label})
+	err := podsClient.DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: label})
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	} else {
@@ -102,7 +102,7 @@ func DeletePodByLabel(podsClient coreV1Types.PodInterface, label string) {
 }
 
 func GetSecretValue(k8sClient coreV1Types.SecretInterface, secretName, key string) string {
-	secret, err := k8sClient.Get(context.TODO(), secretName, metaV1.GetOptions{})
+	secret, err := k8sClient.Get(context.TODO(), secretName, metav1.GetOptions{})
 	if err != nil {
 		log.Error().Err(err).Msgf("error getting key: %s from secret: %s", key, secretName)
 	}
@@ -142,7 +142,7 @@ func GetResourcesDynamically(dynamic dynamic.Interface,
 		Resource: resource,
 	}
 	list, err := dynamic.Resource(resourceId).Namespace(namespace).
-		List(ctx, metaV1.ListOptions{})
+		List(ctx, metav1.ListOptions{})
 
 	if err != nil {
 		return nil, err
@@ -312,12 +312,12 @@ func WaitForNamespaceandPods(dryRun bool, kubeconfigPath, kubectlClientPath, nam
 
 // todo: delete unused function
 func PatchSecret(k8sClient coreV1Types.SecretInterface, secretName, key, val string) {
-	secret, err := k8sClient.Get(context.TODO(), secretName, metaV1.GetOptions{})
+	secret, err := k8sClient.Get(context.TODO(), secretName, metav1.GetOptions{})
 	if err != nil {
 		log.Error().Err(err).Msgf("error getting key: %s from secret: %s", key, secretName)
 	}
 	secret.Data[key] = []byte(val)
-	k8sClient.Update(context.TODO(), secret, metaV1.UpdateOptions{})
+	k8sClient.Update(context.TODO(), secret, metav1.UpdateOptions{})
 }
 
 func CreateVaultConfiguredSecret(dryRun bool, kubeconfigPath, kubectlClientPath string) {
@@ -419,7 +419,7 @@ func (p *secret) patchSecret(k8sClient *kubernetes.Clientset, payload []PatchJso
 	payloadBytes, _ := json.Marshal(payload)
 
 	log.Info().Msg("Patching secret on K8S via SDK")
-	_, err := k8sClient.CoreV1().Secrets(p.namespace).Patch(context.TODO(), p.name, k8sTypes.JSONPatchType, payloadBytes, metaV1.PatchOptions{})
+	_, err := k8sClient.CoreV1().Secrets(p.namespace).Patch(context.TODO(), p.name, k8sTypes.JSONPatchType, payloadBytes, metav1.PatchOptions{})
 
 	if err != nil {
 		log.Error().Err(err).Msg("error patching secret ")
@@ -519,7 +519,7 @@ func SetArgocdCreds(dryRun bool, kubeconfigPath string) {
 
 func GetIngressHost(k8sClient *kubernetes.Clientset, namespace string, name string) string {
 
-	ingress, err := k8sClient.NetworkingV1().Ingresses(namespace).Get(context.TODO(), name, metaV1.GetOptions{})
+	ingress, err := k8sClient.NetworkingV1().Ingresses(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		log.Error().Err(err).Msgf("error getting key: %s from ingress: %s", namespace, name)
 	}
@@ -547,7 +547,7 @@ func CreateSecret(kubeconfigPath, namespace, secretName string, data map[string]
 	}
 
 	secret := v1.Secret{
-		ObjectMeta: metaV1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
 			Namespace: namespace,
 		},
@@ -557,7 +557,7 @@ func CreateSecret(kubeconfigPath, namespace, secretName string, data map[string]
 	_, err = clientset.CoreV1().Secrets(namespace).Create(
 		context.Background(),
 		&secret,
-		metaV1.CreateOptions{},
+		metav1.CreateOptions{},
 	)
 	if err != nil {
 		return err

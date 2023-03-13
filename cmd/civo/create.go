@@ -1064,7 +1064,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		time.Sleep(time.Second * 5)
-		err = vaultClient.UnsealRaftFollowers(config.Kubeconfig)
+		err = vaultClient.UnsealRaftFollowers(clientset, config.Kubeconfig)
 		if err != nil {
 			return err
 		}
@@ -1101,7 +1101,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 
-		tfEnvs = civo.GetVaultTerraformEnvs(config, tfEnvs)
+		tfEnvs = civo.GetVaultTerraformEnvs(clientset, config, tfEnvs)
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
@@ -1128,7 +1128,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-		tfEnvs = civo.GetUsersTerraformEnvs(config, tfEnvs)
+		tfEnvs = civo.GetUsersTerraformEnvs(clientset, config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {

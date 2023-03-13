@@ -2,6 +2,7 @@ package aws
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
@@ -31,7 +32,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -119,6 +120,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	config := awsinternal.GetConfig(githubOwnerFlag)
+	customTransport := http.DefaultTransport.(*http.Transport).Clone()
+	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	httpClientNoSSL := http.Client{Transport: customTransport}
 	awsClient := &awsinternal.Conf
 	segmentClient := &segment.Client
 	vaultClient := &vault.Conf
@@ -684,17 +688,29 @@ func createAws(cmd *cobra.Command, args []string) error {
 	)
 	log.Info().Msgf("port-forward to argocd is available at %s", awsinternal.ArgocdPortForwardURL)
 
-	var argocdPassword string
-	//* argocd pods are ready, get and set credentials
-	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
+	// todo need to create argocd repo secret in the cluster
+	//* create argocd kubernetes secret for connectivity to private gitops repo
+	executionControl = viper.GetBool("kubefirst-checks.argocd-repo-secret")
 	if !executionControl {
 		log.Info().Msg("Setting argocd username and password credentials")
 
-		argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+		secret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "repo-credentials-template",
+				Namespace:   "argocd",
+				Annotations: map[string]string{"managed-by": "argocd.argoproj.io"},
+				Labels:      map[string]string{"argocd.argoproj.io/secret-type": "repository"},
+			},
+			Data: map[string][]byte{
+				"type":          []byte("git"),
+				"name":          []byte(fmt.Sprintf("%s-gitops", gitUser)),
+				"url":           []byte(destinationGitopsRepoGitURL),
+				"sshPrivateKey": []byte(kbotPrivateKey),
+			},
+		}
 
-		argocdPassword = k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
-		if argocdPassword == "" {
-			log.Info().Msg("argocd password not found in secret")
+		err := k8s.CreateSecretV2(clientset, &secret)
+		if err != nil {
 			return err
 		}
 
@@ -705,7 +721,40 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		log.Info().Msg("Getting an argocd auth token")
 		// todo return in here and pass argocdAuthToken as a parameter
-		token, err := argocd.GetArgoCDToken("admin", argocdPassword)
+		token, err := argocd.GetArgocdTokenV2(&httpClientNoSSL, pkg.ArgocdPortForwardURL, "admin", argocdPassword)
+		if err != nil {
+			return err
+		}
+
+		log.Info().Msg("argocd admin auth token set")
+
+		viper.Set("components.argocd.auth-token", token)
+		viper.Set("kubefirst-checks.argocd-repo-secret", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("argo credentials already set, continuing")
+	}
+
+	var argocdPassword string
+	//* argocd pods are ready, get and set credentials
+	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
+	if !executionControl {
+		log.Info().Msg("Setting argocd username and password credentials")
+
+		secData, err := k8s.ReadSecretV2(clientset, "argocd", "argocd-initial-admin-secret")
+		if err != nil {
+			return err
+		}
+		argocdPassword = secData["password"]
+
+		viper.Set("components.argocd.password", argocdPassword)
+		viper.Set("components.argocd.username", "admin")
+		viper.WriteConfig()
+		log.Info().Msg("argocd username and password credentials set successfully")
+
+		log.Info().Msg("Getting an argocd auth token")
+		// todo return in here and pass argocdAuthToken as a parameter
+		token, err := argocd.GetArgocdTokenV2(&httpClientNoSSL, pkg.ArgocdPortForwardURL, "admin", argocdPassword)
 		if err != nil {
 			return err
 		}
@@ -794,7 +843,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			dataToWrite[fmt.Sprintf("root-unseal-key-%v", i+1)] = []byte(value)
 		}
 		secret := v1.Secret{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      vault.VaultSecretName,
 				Namespace: vault.VaultNamespace,
 			},
@@ -812,7 +861,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("vault unseal already done, continuing")
 	}
 
-	secData, err := k8s.ReadSecretV2(clientset, config.Kubeconfig, "vault", "vault-unseal-secret")
+	secData, err := k8s.ReadSecretV2(clientset, "vault", "vault-unseal-secret")
 
 	vaultRootToken = secData["root-token"]
 
