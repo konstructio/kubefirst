@@ -573,7 +573,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already pushed kms key to gitops")
 	}
 
-	// todo create a client from config!!
+	// todo create a client from config!! need to re-use AwsConfiguration or adopt session in the other direction
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region: aws.String(cloudRegionFlag),
 	}))
@@ -812,7 +812,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("vault unseal already done, continuing")
 	}
 
-	secData, err := k8s.ReadSecretV2(config.Kubeconfig, "vault", "vault-unseal-secret")
+	secData, err := k8s.ReadSecretV2(clientset, config.Kubeconfig, "vault", "vault-unseal-secret")
 
 	vaultRootToken = secData["root-token"]
 

@@ -126,7 +126,7 @@ func (conf *VaultConfiguration) UnsealRaftLeader(clientset *kubernetes.Clientset
 
 		switch health.Sealed {
 		case true:
-			existingInitResponse, err := parseExistingVaultInitSecret(kubeConfigPath)
+			existingInitResponse, err := parseExistingVaultInitSecret(clientset, kubeConfigPath)
 			if err != nil {
 				return err
 			}
@@ -167,11 +167,11 @@ func (conf *VaultConfiguration) UnsealRaftLeader(clientset *kubernetes.Clientset
 }
 
 // UnsealRaftFollowers initializes, unseals, and joins raft followers when using raft for ha and storage
-func (conf *VaultConfiguration) UnsealRaftFollowers(kubeConfigPath string) error {
+func (conf *VaultConfiguration) UnsealRaftFollowers(clientset *kubernetes.Clientset, kubeConfigPath string) error {
 	// With the current iteration of the Vault helm chart, we create 3 nodes
 	// vault-0 is unsealed as leader, vault-1 and vault-2 are unsealed here
 	raftNodes := []string{"vault-1", "vault-2"}
-	existingInitResponse, err := parseExistingVaultInitSecret(kubeConfigPath)
+	existingInitResponse, err := parseExistingVaultInitSecret(clientset, kubeConfigPath)
 	if err != nil {
 		return err
 	}
@@ -277,10 +277,10 @@ func (conf *VaultConfiguration) UnsealRaftFollowers(kubeConfigPath string) error
 }
 
 // parseExistingVaultInitSecret returns the value of a vault initialization secret if it exists
-func parseExistingVaultInitSecret(kubeConfigPath string) (*vaultapi.InitResponse, error) {
+func parseExistingVaultInitSecret(clientset *kubernetes.Clientset, kubeConfigPath string) (*vaultapi.InitResponse, error) {
 	// If vault has already been initialized, the response is formatted to contain the value
 	// of the initialization secret
-	secret, err := k8s.ReadSecretV2(kubeConfigPath, VaultNamespace, VaultSecretName)
+	secret, err := k8s.ReadSecretV2(clientset, kubeConfigPath, VaultNamespace, VaultSecretName)
 	if err != nil {
 		return &vaultapi.InitResponse{}, err
 	}

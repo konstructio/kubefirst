@@ -54,11 +54,7 @@ func ReadConfigMapV2(kubeConfigPath string, namespace string, configMapName stri
 }
 
 // ReadSecretV2 reads the content of a Kubernetes Secret
-func ReadSecretV2(kubeConfigPath string, namespace string, secretName string) (map[string]string, error) {
-	clientset, err := GetClientSet(false, kubeConfigPath)
-	if err != nil {
-		return map[string]string{}, err
-	}
+func ReadSecretV2(clientset *kubernetes.Clientset, kubeConfigPath string, namespace string, secretName string) (map[string]string, error) {
 
 	secret, err := clientset.CoreV1().Secrets(namespace).Get(context.Background(), secretName, metav1.GetOptions{})
 	if err != nil {
