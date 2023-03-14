@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	cmv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cm "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	//cmv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	//cm "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	"github.com/rs/zerolog/log"
 
 	ghoddsYaml "github.com/ghodss/yaml"
@@ -475,64 +475,64 @@ func Backup(backupDir, domainName, k1Dir, kubeconfigPath string) error {
 	}
 
 	//* cert manager certificate resources
-	k8sConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
-	if err != nil {
-		return err
-	}
-	cmClientSet, err := cm.NewForConfig(k8sConfig)
-	if err != nil {
-		return err
-	}
+	//k8sConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	//if err != nil {
+	//	return err
+	//}
+	//cmClientSet, err := cm.NewForConfig(k8sConfig)
+	//if err != nil {
+	//	return err
+	//}
 
-	clusterIssuers, err := cmClientSet.CertmanagerV1().ClusterIssuers().List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
+	//clusterIssuers, err := cmClientSet.CertmanagerV1().ClusterIssuers().List(context.Background(), metav1.ListOptions{})
+	//if err != nil {
+	//	return err
+	//}
 
-	for _, clusterissuer := range clusterIssuers.Items {
-		clusterissuer.SetManagedFields(nil)
-		clusterissuer.SetOwnerReferences(nil)
-		clusterissuer.SetAnnotations(nil)
-		clusterissuer.SetResourceVersion("")
-		clusterissuer.SetCreationTimestamp(metav1.Time{})
-		clusterissuer.SetUID("")
-		clusterissuer.Status = cmv1.IssuerStatus{}
+	//for _, clusterissuer := range clusterIssuers.Items {
+	//	clusterissuer.SetManagedFields(nil)
+	//	clusterissuer.SetOwnerReferences(nil)
+	//	clusterissuer.SetAnnotations(nil)
+	//	clusterissuer.SetResourceVersion("")
+	//	clusterissuer.SetCreationTimestamp(metav1.Time{})
+	//	clusterissuer.SetUID("")
+	//	//clusterissuer.Status = cmv1.IssuerStatus{}
+	//
+	//	fileName := fmt.Sprintf("%s/%s.yaml", backupDir+"/clusterissuers", clusterissuer.Name)
+	//	log.Info().Msgf("writing file: %s\n", fileName)
+	//	yamlContent, err := yaml.Marshal(clusterissuer)
+	//	if err != nil {
+	//		return fmt.Errorf("unable to marshal yaml: %s", err)
+	//	}
+	//	pkg.CreateFile(fileName, yamlContent)
+	//}
 
-		fileName := fmt.Sprintf("%s/%s.yaml", backupDir+"/clusterissuers", clusterissuer.Name)
-		log.Info().Msgf("writing file: %s\n", fileName)
-		yamlContent, err := yaml.Marshal(clusterissuer)
-		if err != nil {
-			return fmt.Errorf("unable to marshal yaml: %s", err)
-		}
-		pkg.CreateFile(fileName, yamlContent)
-	}
-
-	certs, err := cmClientSet.CertmanagerV1().Certificates("").List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		log.Info().Msg("error getting list of certificates")
-	}
-
-	for _, cert := range certs.Items {
-		if strings.Contains(cert.Name, "-tls") {
-			log.Info().Msg("backing up certificate (ns/resource): " + cert.Namespace + "/" + cert.Name)
-			cert.SetManagedFields(nil)
-			cert.SetOwnerReferences(nil)
-			cert.SetAnnotations(nil)
-			cert.SetResourceVersion("")
-			cert.Status = cmv1.CertificateStatus{}
-			cert.SetCreationTimestamp(metav1.Time{})
-			cert.SetUID("")
-
-			fileName := fmt.Sprintf("%s/%s-%s.yaml", backupDir+"/certificates", cert.Namespace, cert.Name)
-			log.Info().Msgf("writing file: %s\n", fileName)
-			yamlContent, err := yaml.Marshal(cert)
-			if err != nil {
-				return fmt.Errorf("unable to marshal yaml: %s", err)
-			}
-			pkg.CreateFile(fileName, yamlContent)
-		} else {
-			log.Info().Msg("skipping certficate (ns/resource): " + cert.Namespace + "/" + cert.Name)
-		}
-	}
+	//certs, err := cmClientSet.CertmanagerV1().Certificates("").List(context.Background(), metav1.ListOptions{})
+	//if err != nil {
+	//	log.Info().Msg("error getting list of certificates")
+	//}
+	//
+	//for _, cert := range certs.Items {
+	//	if strings.Contains(cert.Name, "-tls") {
+	//		log.Info().Msg("backing up certificate (ns/resource): " + cert.Namespace + "/" + cert.Name)
+	//		cert.SetManagedFields(nil)
+	//		cert.SetOwnerReferences(nil)
+	//		cert.SetAnnotations(nil)
+	//		cert.SetResourceVersion("")
+	//		cert.Status = cmv1.CertificateStatus{}
+	//		cert.SetCreationTimestamp(metav1.Time{})
+	//		cert.SetUID("")
+	//
+	//		fileName := fmt.Sprintf("%s/%s-%s.yaml", backupDir+"/certificates", cert.Namespace, cert.Name)
+	//		log.Info().Msgf("writing file: %s\n", fileName)
+	//		yamlContent, err := yaml.Marshal(cert)
+	//		if err != nil {
+	//			return fmt.Errorf("unable to marshal yaml: %s", err)
+	//		}
+	//		pkg.CreateFile(fileName, yamlContent)
+	//	} else {
+	//		log.Info().Msg("skipping certficate (ns/resource): " + cert.Namespace + "/" + cert.Name)
+	//	}
+	//}
 	return nil
 }
