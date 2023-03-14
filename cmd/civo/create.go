@@ -193,7 +193,14 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		cGitHost = civo.GitlabHost
 		cGitOwner = groupFullSlug
 		log.Info().Msgf("set gitlab owner to %s", groupFullSlug)
-		cGitUser = gitlabGroupFlag
+
+		// Get authenticated user's name
+		user, _, err := gl.Client.Users.CurrentUser()
+		if err != nil {
+			return errors.New("Unable to get authenticated user info.")
+		}
+		cGitUser = user.Username
+
 		containerRegistryHost = "registry.gitlab.com"
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
 		viper.WriteConfig()
