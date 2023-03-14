@@ -11,7 +11,7 @@ import (
 func NewGitLabClient(token string) *gitlab.Client {
 	git, err := gitlab.NewClient(token)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal().Msgf("error instantiating gitlab client: %s", err)
 	}
 
 	return git
@@ -273,6 +273,28 @@ func (gl *GitLabWrapper) GetUserSSHKeys() ([]*gitlab.SSHKey, error) {
 	}
 
 	return keys, nil
+}
+
+// ListUsers
+func (gl *GitLabWrapper) ListUsers() ([]gitlab.User, error) {
+	enabled := true
+	container := make([]gitlab.User, 0)
+	for nextPage := 1; nextPage > 0; {
+		users, resp, err := gl.Client.Users.ListUsers(&gitlab.ListUsersOptions{
+			ListOptions:     gitlab.ListOptions{Page: nextPage, PerPage: 10},
+			Active:          &enabled,
+			ExcludeExternal: &enabled,
+		})
+		if err != nil {
+			return []gitlab.User{}, err
+		}
+		for _, user := range users {
+			container = append(container, *user)
+		}
+		nextPage = resp.NextPage
+	}
+
+	return container, nil
 }
 
 // Container Registry

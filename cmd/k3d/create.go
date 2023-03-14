@@ -196,7 +196,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		cGitHost = k3d.GitlabHost
 		cGitOwner = groupFullSlug
 		log.Info().Msgf("set gitlab owner to %s", groupFullSlug)
-		cGitUser = gitlabGroupFlag
+
+		// Get authenticated user's name
+		user, _, err := gl.Client.Users.CurrentUser()
+		if err != nil {
+			return errors.New("Unable to get authenticated user info.")
+		}
+		cGitUser = user.Username
+
 		containerRegistryHost = "registry.gitlab.com"
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
 	default:
