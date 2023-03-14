@@ -137,6 +137,7 @@ type GitOpsDirectoryValues struct {
 	GitlabHost         string
 	GitlabOwner        string
 	GitlabOwnerGroupID int
+	GitlabUser         string
 
 	GitOpsRepoAtlantisWebhookURL string
 	GitOpsRepoGitURL             string

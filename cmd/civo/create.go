@@ -132,19 +132,15 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 	}(*segmentClient)
 
-	// Set git handlers
-	switch gitProviderFlag {
-	case "github":
-		viper.Set("flags.github-owner", githubOrgFlag)
-	case "gitlab":
-		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
-	}
-
 	// Switch based on git provider, set params
 	var cGitHost, cGitOwner, cGitToken, cGitUser, containerRegistryHost string
 	var cGitlabOwnerGroupID int
 	switch gitProviderFlag {
 	case "github":
+		if os.Getenv("GITHUB_TOKEN") == "" {
+			return errors.New("Your GITHUB_TOKEN is not set. Please set and try again.")
+		}
+
 		cGitHost = civo.GithubHost
 		cGitOwner = githubOrgFlag
 		cGitToken = os.Getenv("GITHUB_TOKEN")
@@ -171,21 +167,42 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+		viper.Set("flags.github-owner", githubOrgFlag)
+		viper.WriteConfig()
 	case "gitlab":
-		cGitHost = civo.GitlabHost
-		cGitOwner = gitlabGroupFlag
+		if os.Getenv("GITLAB_TOKEN") == "" {
+			return errors.New("Your GITLAB_TOKEN is not set. Please set and try again.")
+		}
+
 		cGitToken = os.Getenv("GITLAB_TOKEN")
+		gl := gitlab.GitLabWrapper{
+			Client: gitlab.NewGitLabClient(cGitToken),
+		}
+		allGroups, err := gl.GetGroups()
+		if err != nil {
+			log.Fatal().Msgf("unable to get gitlab groups: %s", err)
+		}
+		// Format git url based on full path to group
+		var groupFullSlug string
+		for _, group := range allGroups {
+			if group.Name == gitlabGroupFlag {
+				groupFullSlug = strings.Split(group.WebURL, "/groups/")[1]
+			}
+		}
+
+		cGitHost = civo.GitlabHost
+		cGitOwner = groupFullSlug
+		log.Info().Msgf("set gitlab owner to %s", groupFullSlug)
 		cGitUser = gitlabGroupFlag
 		containerRegistryHost = "registry.gitlab.com"
+		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
+		viper.WriteConfig()
 	default:
 		log.Error().Msgf("invalid git provider option")
 	}
 
 	// Instantiate config
 	config := civo.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
-	// These need to be set for reference elsewhere
-	viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoGitURL)
-	viper.WriteConfig()
 
 	var sshPrivateKey, sshPublicKey string
 
@@ -242,9 +259,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		GitlabHost:         civo.GitlabHost,
 		GitlabOwner:        cGitOwner,
 		GitlabOwnerGroupID: cGitlabOwnerGroupID,
+		GitlabUser:         cGitUser,
 
 		GitOpsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
-		GitOpsRepoGitURL:             config.DestinationGitopsRepoGitURL,
 		GitOpsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
 		ClusterId:                    clusterId,
 	}
@@ -283,7 +300,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	executionControl := viper.GetBool("kubefirst-checks.cloud-credentials")
 	if !executionControl {
-
 		if os.Getenv("CIVO_TOKEN") == "" {
 			fmt.Println("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security to retrieve your token\nand enter it here, then press Enter:")
 			civoToken, err := term.ReadPassword(0)
@@ -389,6 +405,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 	//* CIVO END
 
+	// Objects to check for
+	newRepositoryNames := []string{"gitops", "metaphor"}
+	newTeamNames := []string{"admins", "developers"}
+
 	executionControl = viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider))
 	if !executionControl {
 		if len(cGitToken) == 0 {
@@ -399,10 +419,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 				),
 			)
 		}
-
-		// Objects to check for
-		newRepositoryNames := []string{"gitops", "metaphor"}
-		newTeamNames := []string{"admins", "developers"}
 
 		switch config.GitProvider {
 		case "github":
@@ -588,20 +604,50 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
+	var destinationGitopsRepoGitURL, destinationMetaphorRepoGitURL string
+
 	progressPrinter.AddTracker("cloning-and-formatting-git-repositories", "Cloning and formatting git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 
 		log.Info().Msg("generating your new gitops repository")
+
+		// gitlab may have subgroups, so the destination gitops/metaphor repo git urls may be different
+		switch config.GitProvider {
+		case "github":
+			destinationGitopsRepoGitURL = config.DestinationGitopsRepoGitURL
+			destinationMetaphorRepoGitURL = config.DestinationMetaphorRepoGitURL
+		case "gitlab":
+			gl := gitlab.GitLabWrapper{
+				Client: gitlab.NewGitLabClient(cGitToken),
+			}
+			allGroups, err := gl.GetGroups()
+			if err != nil {
+				fmt.Println(err)
+			}
+			// Format git url based on full path to group
+			for _, group := range allGroups {
+				if group.Name == gitlabGroupFlag {
+					groupFullSlug := strings.Split(group.WebURL, "/groups/")[1]
+					destinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", groupFullSlug)
+					destinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", groupFullSlug)
+				}
+			}
+		}
+		// These need to be set for reference elsewhere
+		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), destinationGitopsRepoGitURL)
+		viper.WriteConfig()
+		gitopsDirectoryTokens.GitOpsRepoGitURL = destinationGitopsRepoGitURL
+
 		err := civo.PrepareGitRepositories(
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
-			config.DestinationGitopsRepoGitURL,
+			destinationGitopsRepoGitURL,
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
-			config.DestinationMetaphorRepoGitURL,
+			destinationMetaphorRepoGitURL,
 			config.K1Dir,
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
@@ -684,6 +730,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	//* push detokenized gitops-template repository content to new remote
 	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
+	log.Info().Msgf("referencing gitops repository: %s", destinationGitopsRepoGitURL)
+	log.Info().Msgf("referencing metaphor repository: %s", destinationMetaphorRepoGitURL)
+
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
 	if !executionControl {
 		gitopsRepo, err := git.PlainOpen(config.GitopsDir)
@@ -735,7 +785,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			Auth:       publicKeys,
 		})
 		if err != nil {
-			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoGitURL, err)
+			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s: %s", destinationGitopsRepoGitURL, err)
 		}
 
 		// push metaphor repo to remote
@@ -746,13 +796,12 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			},
 		)
 		if err != nil {
-			log.Panic().Msgf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoGitURL, err)
+			log.Panic().Msgf("error pushing detokenized metaphor repository to remote %s: %s", destinationMetaphorRepoGitURL, err)
 		}
 
-		log.Info().Msgf("successfully pushed gitops to git@github.com/%s/gitops", cGitOwner)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
-		log.Info().Msgf("successfully pushed gitops to git@g%s/%s/gitops", cGitHost, cGitOwner)
+		log.Info().Msgf("successfully pushed gitops to git@%s/%s/gitops", cGitHost, cGitOwner)
 		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
