@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	v1alpha1 "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
-	argo "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
+	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +30,7 @@ to quickly create a Cobra application.`,
 			return err
 		}
 
-		argoClient, err := argo.NewForConfig(kubeconfig)
+		argocdClient, err := argocdapi.NewForConfig(kubeconfig)
 		if err != nil {
 			fmt.Println(err)
 			return err
@@ -77,7 +77,7 @@ to quickly create a Cobra application.`,
 				},
 			},
 		}
-		_, err = argoClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), app, v1.CreateOptions{})
+		_, err = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), app, v1.CreateOptions{})
 		if err != nil {
 			fmt.Println(err)
 			return err

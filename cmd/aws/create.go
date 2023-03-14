@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/eks"
@@ -34,10 +35,6 @@ import (
 	"github.com/spf13/viper"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-var (
-	cancelContext context.CancelFunc
 )
 
 func createAws(cmd *cobra.Command, args []string) error {
@@ -597,6 +594,25 @@ func createAws(cmd *cobra.Command, args []string) error {
 	clientset, err := awsinternal.NewClientset(eksClusterInfo.Cluster)
 	if err != nil {
 		log.Fatal().Msgf("Error creating clientset: %v", err)
+	}
+
+	restConfig, err := awsinternal.NewRestConfig(eksClusterInfo.Cluster)
+
+	argocdClient, err := argocdapi.NewForConfig(restConfig)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	registryApplicationObject, err := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoGitURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+	if err != nil {
+		return err
+	}
+
+	_, err = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
+	if err != nil {
+		fmt.Println(err)
+		return err
 	}
 
 	// kubernetes.BootstrapSecrets

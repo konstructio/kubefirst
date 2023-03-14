@@ -13,7 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
+	v1alpha1ArgocdApplication "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/rs/zerolog/log"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocdModel"
@@ -66,6 +69,48 @@ type Config struct {
 type TLSConfig struct {
 	Hosts      []string `yaml:"hosts,omitempty"`
 	SecretName string   `yaml:"secretName,omitempty"`
+}
+
+func GetArgoCDApplicationObject(gitopsRepoURL, registryPath string) (*v1alpha1ArgocdApplication.Application, error) {
+	app := &v1alpha1ArgocdApplication.Application{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Application",
+			APIVersion: "argoproj.io/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "registry",
+			Namespace:   "argocd",
+			Annotations: map[string]string{"argocd.argoproj.io/sync-wave": "1"},
+		},
+		Spec: v1alpha1.ApplicationSpec{
+			Source: &v1alpha1.ApplicationSource{
+				RepoURL:        gitopsRepoURL,
+				Path:           registryPath,
+				TargetRevision: "HEAD",
+			},
+			Destination: v1alpha1.ApplicationDestination{
+				Server:    "https://kubernetes.default.svc",
+				Namespace: "argocd",
+			},
+			Project: "default",
+			SyncPolicy: &v1alpha1.SyncPolicy{
+				Automated: &v1alpha1.SyncPolicyAutomated{
+					Prune:    true,
+					SelfHeal: true,
+				},
+				SyncOptions: []string{"CreateNamespace=true"},
+				Retry: &v1alpha1.RetryStrategy{
+					Limit: 5,
+					Backoff: &v1alpha1.Backoff{
+						Duration:    "5s",
+						Factor:      new(int64),
+						MaxDuration: "5m0s",
+					},
+				},
+			},
+		},
+	}
+	return app, nil
 }
 
 // SyncRetry tries to Sync ArgoCD as many times as requested by the attempts' parameter. On successful request, returns
