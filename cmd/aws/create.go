@@ -573,6 +573,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+		log.Info().Msg("pushed detokenized kms key to gitops")
+		viper.Set("kubefirst-checks.detokenize-kms", true)
+		viper.WriteConfig()
 	} else {
 		log.Info().Msg("already pushed kms key to gitops")
 	}
@@ -674,6 +677,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	//* ArgoCD port-forward
+	// todo DO WE ACTUALLY USE THIS!?
 	argoCDStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(argoCDStopChannel)
@@ -703,32 +707,19 @@ func createAws(cmd *cobra.Command, args []string) error {
 			},
 			Data: map[string][]byte{
 				"type":          []byte("git"),
-				"name":          []byte(fmt.Sprintf("%s-gitops", gitUser)),
-				"url":           []byte(destinationGitopsRepoGitURL),
-				"sshPrivateKey": []byte(kbotPrivateKey),
+				"name":          []byte(fmt.Sprintf("%s-gitops", githubOwnerFlag)),
+				"url":           []byte(config.DestinationGitopsRepoGitURL),
+				"sshPrivateKey": []byte(viper.GetString("kbot.private-key")),
 			},
 		}
 
-		err := k8s.CreateSecretV2(clientset, &secret)
+		err := k8s.CreateSecretV2(clientset, secret)
 		if err != nil {
 			return err
 		}
 
-		viper.Set("components.argocd.password", argocdPassword)
-		viper.Set("components.argocd.username", "admin")
-		viper.WriteConfig()
-		log.Info().Msg("argocd username and password credentials set successfully")
+		log.Info().Msg("secret create for argocd to connect to gotops repo")
 
-		log.Info().Msg("Getting an argocd auth token")
-		// todo return in here and pass argocdAuthToken as a parameter
-		token, err := argocd.GetArgocdTokenV2(&httpClientNoSSL, pkg.ArgocdPortForwardURL, "admin", argocdPassword)
-		if err != nil {
-			return err
-		}
-
-		log.Info().Msg("argocd admin auth token set")
-
-		viper.Set("components.argocd.auth-token", token)
 		viper.Set("kubefirst-checks.argocd-repo-secret", true)
 		viper.WriteConfig()
 	} else {
@@ -884,7 +875,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = atlantisWebhookSecret
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-		tfEnvs["TF_VAR_kubefirst_bot_ssh_private_key"] = viper.GetString("kbot.private-key")
+		tfEnvs["TF_VAR_kubefirst_bot_ssh_private_key"] = viper.GetString("kbot.private-key") // todo hyrdate a variable up top with these so we dont ref viper.
 
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
