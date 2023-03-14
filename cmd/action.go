@@ -1,7 +1,9 @@
 package cmd
 
 import (
-	argocd "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
+	argo "github.com/argoproj/argo-cd/pkg/client/clientset/versioned"
+	"github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/spf13/cobra"
 )
 
@@ -16,8 +18,14 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		config := aws.GetConfig("kubefirst-tech")
 
-		argocd.NewFromConfig()
+		config, err := k8s.GetClientConfig(false, config.Kubeconfig)
+		if err != nil {
+			return err
+		}
+
+		argo.NewForConfig()
 
 		return nil
 	},
