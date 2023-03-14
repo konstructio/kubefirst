@@ -1,0 +1,58 @@
+name: Bug
+description: Report an issue with kubefirst
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this issue! If you need help, please ask your question in our [Slack community](http://kubefirst.io/slack).
+  - type: input
+    id: version
+    attributes:
+      label: Which version of kubefirst are you using?
+      description: Run `kubefirst version` to find the version number
+      placeholder: https://docs.kubefirst.io/
+    validations:
+      required: true
+  - type: dropdown
+    id: cloud
+    attributes:
+      label: Which installation type?
+      multiple: true
+      options:
+        - None specific
+        - AWS
+        - CIVO
+        - k3d (local)
+    validations:
+      required: true
+  - type: dropdown
+    id: git
+    attributes:
+      label: Which distributed Git provider?
+      multiple: true
+      options:
+        - None specific
+        - GitHub
+        - GitLab
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: What is the issue?
+      description: |
+        Give us as many details as possible.
+
+        Tip: You can attach images or log files by dragging files in this textbox.
+      placeholder: Tell us what can be improved!
+    validations:
+      required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/kubefirst/kubefirst/blob/main/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
