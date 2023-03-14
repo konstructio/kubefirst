@@ -18,6 +18,7 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	awsinternal "github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/bootstrap"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	"github.com/kubefirst/kubefirst/internal/handlers"
@@ -694,7 +695,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	// todo need to create argocd repo secret in the cluster
 	//* create argocd kubernetes secret for connectivity to private gitops repo
-	executionControl = viper.GetBool("kubefirst-checks.argocd-repo-secret")
+	executionControl = viper.GetBool("kubefirst-checks.bootstrap-cluster")
 	if !executionControl {
 		log.Info().Msg("Setting argocd username and password credentials")
 
@@ -718,9 +719,15 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log.Info().Msg("secret create for argocd to connect to gotops repo")
+		log.Info().Msg("secret create for argocd to connect to gitops repo")
 
-		viper.Set("kubefirst-checks.argocd-repo-secret", true)
+		log.Info().Msg("creating service accounts")
+		err = bootstrap.ServiceAccounts(clientset)
+		if err != nil {
+			return err
+		}
+
+		viper.Set("kubefirst-checks.bootstrap-cluster", true)
 		viper.WriteConfig()
 	} else {
 		log.Info().Msg("argo credentials already set, continuing")
@@ -853,6 +860,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	secData, err := k8s.ReadSecretV2(clientset, "vault", "vault-unseal-secret")
+	if err != nil {
+		return err
+	}
 
 	vaultRootToken = secData["root-token"]
 

@@ -25,6 +25,10 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("destroying kubefirst platform running in aws")
 
+	customTransport := http.DefaultTransport.(*http.Transport).Clone()
+	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	httpClientNoSSL := http.Client{Transport: customTransport}
+
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
@@ -137,10 +141,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	}
 
 	if viper.GetBool("kubefirst-checks.terraform-apply-aws") {
-		log.Info().Msg("destroying civo resources with terraform")
-
-		// clusterName := viper.GetString("flags.cluster-name")
-		// region := viper.GetString("flags.cloud-region")
+		log.Info().Msg("destroying aws resources with terraform")
 		kubeconfigPath := config.Kubeconfig
 
 		if viper.GetBool("kubefirst-checks.argocd-helm-install") {
@@ -167,11 +168,8 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 
 			log.Info().Msgf("port-forward to argocd is available at %s", civo.ArgocdPortForwardURL)
 
-			customTransport := http.DefaultTransport.(*http.Transport).Clone()
-			customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-			argocdHttpClient := http.Client{Transport: customTransport}
 			log.Info().Msg("deleting the registry application")
-			httpCode, _, err := argocd.DeleteApplication(&argocdHttpClient, config.RegistryAppName, argocdAuthToken, "true")
+			httpCode, _, err := argocd.DeleteApplication(&httpClientNoSSL, config.RegistryAppName, argocdAuthToken, "true")
 			if err != nil {
 				return err
 			}
@@ -182,8 +180,8 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("waiting for aws kubernetes cluster resource removal to finish...")
 		time.Sleep(time.Second * 10)
 
-		log.Info().Msg("destroying civo cloud resources")
-		tfEntrypoint := config.GitopsDir + "/terraform/civo"
+		log.Info().Msg("destroying aws cloud resources")
+		tfEntrypoint := config.GitopsDir + "/terraform/aws"
 		tfEnvs := map[string]string{}
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 
