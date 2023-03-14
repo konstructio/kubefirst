@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	v1alpha1ArgocdApplication "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/rs/zerolog/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,26 +81,26 @@ func GetArgoCDApplicationObject(gitopsRepoURL, registryPath string) (*v1alpha1Ar
 			Namespace:   "argocd",
 			Annotations: map[string]string{"argocd.argoproj.io/sync-wave": "1"},
 		},
-		Spec: v1alpha1.ApplicationSpec{
-			Source: &v1alpha1.ApplicationSource{
+		Spec: v1alpha1ArgocdApplication.ApplicationSpec{
+			Source: &v1alpha1ArgocdApplication.ApplicationSource{
 				RepoURL:        gitopsRepoURL,
 				Path:           registryPath,
 				TargetRevision: "HEAD",
 			},
-			Destination: v1alpha1.ApplicationDestination{
+			Destination: v1alpha1ArgocdApplication.ApplicationDestination{
 				Server:    "https://kubernetes.default.svc",
 				Namespace: "argocd",
 			},
 			Project: "default",
-			SyncPolicy: &v1alpha1.SyncPolicy{
-				Automated: &v1alpha1.SyncPolicyAutomated{
+			SyncPolicy: &v1alpha1ArgocdApplication.SyncPolicy{
+				Automated: &v1alpha1ArgocdApplication.SyncPolicyAutomated{
 					Prune:    true,
 					SelfHeal: true,
 				},
 				SyncOptions: []string{"CreateNamespace=true"},
-				Retry: &v1alpha1.RetryStrategy{
+				Retry: &v1alpha1ArgocdApplication.RetryStrategy{
 					Limit: 5,
-					Backoff: &v1alpha1.Backoff{
+					Backoff: &v1alpha1ArgocdApplication.Backoff{
 						Duration:    "5s",
 						Factor:      new(int64),
 						MaxDuration: "5m0s",
