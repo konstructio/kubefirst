@@ -124,6 +124,7 @@ type GitopsTokenValues struct {
 	GitProvider                   string
 	CloudProvider                 string
 	ClusterId                     string
+	KubeconfigPath                string
 }
 
 type MetaphorTokenValues struct {

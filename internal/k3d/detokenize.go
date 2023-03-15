@@ -53,6 +53,7 @@ func detokenizeGitops(path string, tokens *GitopsTokenValues) filepath.WalkFunc 
 			newContents = strings.Replace(newContents, "<DOMAIN_NAME>", DomainName, -1)
 			newContents = strings.Replace(newContents, "<KUBEFIRST_TEAM>", tokens.KubefirstTeam, -1)
 			newContents = strings.Replace(newContents, "<KUBEFIRST_VERSION>", configs.K1Version, -1)
+			newContents = strings.Replace(newContents, "<KUBE_CONFIG_PATH>", tokens.KubeconfigPath, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_DEVELOPMENT_INGRESS_URL>", tokens.MetaphorDevelopmentIngressURL, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_STAGING_INGRESS_URL>", tokens.MetaphorStagingIngressURL, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_PRODUCTION_INGRESS_URL>", tokens.MetaphorProductionIngressURL, -1)
