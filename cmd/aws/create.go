@@ -355,6 +355,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		AlertsEmail:                    alertsEmailFlag,
 		AwsIamArnAccountRoot:           fmt.Sprintf("arn:aws:iam::%s:root", *iamCaller.Account),
 		AwsNodeCapacityType:            "SPOT", // todo adopt cli flag
+		AwsAccountID:                   *iamCaller.Account,
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
 		ArgoCDIngressNoHTTPSURL:        fmt.Sprintf("argocd.%s", domainNameFlag),
 		ArgoWorkflowsIngressURL:        fmt.Sprintf("https://argo.%s", domainNameFlag),
@@ -592,7 +593,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Fatal().Msgf("Error calling DescribeCluster: %v", err)
 	}
-	fmt.Println("%+v", eksClusterInfo.Cluster)
 
 	clientset, err := awsinternal.NewClientset(eksClusterInfo.Cluster)
 	if err != nil {
@@ -707,9 +707,16 @@ func createAws(cmd *cobra.Command, args []string) error {
 			},
 		}
 
-		err := k8s.CreateSecretV2(clientset, secret)
-		if err != nil {
-			return err
+		_, err := clientset.CoreV1().Secrets(secret.ObjectMeta.Namespace).Get(context.TODO(), secret.ObjectMeta.Name, metav1.GetOptions{})
+		if err == nil {
+			log.Info().Msgf("kubernetes secret %s/%s already created - skipping", secret.Namespace, secret.Name)
+		} else if strings.Contains(err.Error(), "not found") {
+			err := k8s.CreateSecretV2(clientset, secret)
+			if err != nil {
+				log.Info().Msgf("error creating kubernetes secret %s/%s: %s", secret.Namespace, secret.Name, err)
+				return err
+			}
+			log.Info().Msgf("created kubernetes secret: %s/%s", secret.Namespace, secret.Name)
 		}
 
 		log.Info().Msg("secret create for argocd to connect to gitops repo")

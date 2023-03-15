@@ -46,6 +46,7 @@ type GitOpsDirectoryValues struct {
 	AwsIamArnAccountRoot           string
 	AwsKmsKeyId                    string
 	AwsNodeCapacityType            string
+	AwsAccountID                   string
 	ChartMuseumIngressURL          string
 	ClusterName                    string
 	ClusterType                    string

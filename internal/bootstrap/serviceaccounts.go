@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -12,6 +13,28 @@ import (
 
 func ServiceAccounts(clientset *kubernetes.Clientset) error {
 	var automountServiceAccountToken bool = true
+
+	// Create namespace
+	// Skip if it already exists
+	newNamespaces := []string{
+		"atlantis",
+		"external-secrets-operator",
+	}
+	for i, s := range newNamespaces {
+		namespace := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s}}
+		_, err := clientset.CoreV1().Namespaces().Get(context.TODO(), s, metav1.GetOptions{})
+		if err != nil {
+			_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
+			if err != nil {
+				log.Error().Err(err).Msg("")
+				return errors.New("error creating namespace")
+			}
+			log.Info().Msgf("%d, %s", i, s)
+			log.Info().Msgf("namespace created: %s", s)
+		} else {
+			log.Warn().Msgf("namespace %s already exists - skipping", s)
+		}
+	}
 
 	// Create service accounts
 	createServiceAccounts := []*v1.ServiceAccount{
