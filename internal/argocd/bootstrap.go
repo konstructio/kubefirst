@@ -12,6 +12,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+const (
+	argoCDInstallPath string = "github.com:argoproj/argo-cd.git/manifests/ha/cluster-install?ref=v2.6.4"
+)
+
 // ApplyArgoCDKustomize
 func ApplyArgoCDKustomize(clientset *kubernetes.Clientset) error {
 	enabled := true
@@ -34,7 +38,7 @@ func ApplyArgoCDKustomize(clientset *kubernetes.Clientset) error {
 	log.Info().Msg("created argocd bootstrap service account")
 
 	// Create ClusterRole
-	clusterRole, err := clientset.RbacV1().ClusterRoles().Create(context.Background(), &rbacv1.ClusterRole{
+	_, err = clientset.RbacV1().ClusterRoles().Create(context.Background(), &rbacv1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -55,7 +59,7 @@ func ApplyArgoCDKustomize(clientset *kubernetes.Clientset) error {
 	log.Info().Msg("created argocd bootstrap role")
 
 	// Create ClusterRoleBinding
-	clusterRoleBinding, err := clientset.RbacV1().ClusterRoleBindings().Create(context.Background(), &rbacv1.ClusterRoleBinding{
+	_, err = clientset.RbacV1().ClusterRoleBindings().Create(context.Background(), &rbacv1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -99,7 +103,7 @@ func ApplyArgoCDKustomize(clientset *kubernetes.Clientset) error {
 							Command: []string{
 								"/bin/sh",
 								"-c",
-								"kubectl apply -k 'github.com:argoproj/argo-cd.git/manifests/ha/cluster-install?ref=v2.6.4'",
+								fmt.Sprintf("kubectl apply -k '%s'", argoCDInstallPath),
 							},
 						},
 					},
@@ -136,6 +140,5 @@ func ApplyArgoCDKustomize(clientset *kubernetes.Clientset) error {
 		log.Error().Msgf("could not clean up argocd bootstrap cluster role binding %s - manual removal is required", serviceAccount.Name)
 	}
 
-	fmt.Printf("%s %s %s %s", serviceAccount.Name, clusterRole.Name, clusterRoleBinding.Name, job.Name)
 	return nil
 }
