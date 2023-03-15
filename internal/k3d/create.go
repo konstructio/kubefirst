@@ -13,6 +13,11 @@ import (
 	"github.com/kubefirst/kubefirst/pkg"
 )
 
+const (
+	// https://hub.docker.com/r/rancher/k3s/tags?page=1&name=v1.23
+	k3dImageTag string = "v1.23.17-k3s1"
+)
+
 // ClusterCreate create an k3d cluster
 func ClusterCreate(clusterName string, k1Dir string, k3dClient string, kubeconfig string) error {
 	log.Info().Msg("creating K3d cluster...")
@@ -26,6 +31,7 @@ func ClusterCreate(clusterName string, k1Dir string, k3dClient string, kubeconfi
 	}
 	_, _, err := pkg.ExecShellReturnStrings(k3dClient, "cluster", "create",
 		clusterName,
+		"--image", fmt.Sprintf("rancher/k3s:%s", k3dImageTag),
 		"--agents", "3",
 		"--agents-memory", "1024m",
 		"--registry-create", "k3d-"+clusterName+"-registry",
