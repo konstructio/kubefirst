@@ -139,10 +139,18 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 			progressPrinter.IncrementTracker("platform-destroy", 1)
 		}
 	}
+	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
+	if err != nil {
+		return err
+	}
+
+	clientset, err := k8s.GetClientSet(false, config.Kubeconfig)
+	if err != nil {
+		return err
+	}
 
 	if viper.GetBool("kubefirst-checks.terraform-apply-aws") {
 		log.Info().Msg("destroying aws resources with terraform")
-		kubeconfigPath := config.Kubeconfig
 
 		if viper.GetBool("kubefirst-checks.argocd-helm-install") {
 			log.Info().Msg("opening argocd port forward")
@@ -152,7 +160,8 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 				close(argoCDStopChannel)
 			}()
 			k8s.OpenPortForwardPodWrapper(
-				kubeconfigPath,
+				clientset,
+				restConfig,
 				"argocd-server",
 				"argocd",
 				8080,

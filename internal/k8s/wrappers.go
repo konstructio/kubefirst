@@ -9,6 +9,8 @@ import (
 	"github.com/kubefirst/kubefirst/pkg"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -21,6 +23,8 @@ import (
 func OpenPortForwardForLocal(
 	kubeconfigPath string,
 	kubectlClientPath string,
+	clientset *kubernetes.Clientset,
+	restConfig *rest.Config,
 	vaultStopChannel chan struct{},
 	argoStopChannel chan struct{},
 	argoCDStopChannel chan struct{},
@@ -39,49 +43,49 @@ func OpenPortForwardForLocal(
 
 	// Vault
 	go func() {
-		OpenPortForwardPodWrapper(kubeconfigPath, pkg.VaultPodName, pkg.VaultNamespace, pkg.VaultPodPort, pkg.VaultPodLocalPort, vaultStopChannel)
+		OpenPortForwardPodWrapper(clientset, restConfig, pkg.VaultPodName, pkg.VaultNamespace, pkg.VaultPodPort, pkg.VaultPodLocalPort, vaultStopChannel)
 		wg.Done()
 	}()
 
 	// Argo
 	go func() {
-		OpenPortForwardPodWrapper(kubeconfigPath, pkg.ArgoPodName, pkg.ArgoNamespace, pkg.ArgoPodPort, pkg.ArgoPodLocalPort, argoStopChannel)
+		OpenPortForwardPodWrapper(clientset, restConfig, pkg.ArgoPodName, pkg.ArgoNamespace, pkg.ArgoPodPort, pkg.ArgoPodLocalPort, argoStopChannel)
 		wg.Done()
 	}()
 
 	// ArgoCD
 	go func() {
-		OpenPortForwardPodWrapper(kubeconfigPath, pkg.ArgoCDPodName, pkg.ArgoCDNamespace, pkg.ArgoCDPodPort, pkg.ArgoCDPodLocalPort, argoCDStopChannel)
+		OpenPortForwardPodWrapper(clientset, restConfig, pkg.ArgoCDPodName, pkg.ArgoCDNamespace, pkg.ArgoCDPodPort, pkg.ArgoCDPodLocalPort, argoCDStopChannel)
 		wg.Done()
 	}()
 
 	// chartmuseum
 	go func() {
-		OpenPortForwardPodWrapper(kubeconfigPath, pkg.ChartmuseumPodName, pkg.ChartmuseumNamespace, pkg.ChartmuseumPodPort, pkg.ChartmuseumPodLocalPort, chartmuseumStopChannel)
+		OpenPortForwardPodWrapper(clientset, restConfig, pkg.ChartmuseumPodName, pkg.ChartmuseumNamespace, pkg.ChartmuseumPodPort, pkg.ChartmuseumPodLocalPort, chartmuseumStopChannel)
 		wg.Done()
 	}()
 
 	// Minio
 	go func() {
-		OpenPortForwardPodWrapper(kubeconfigPath, pkg.MinioPodName, pkg.MinioNamespace, pkg.MinioPodPort, pkg.MinioPodLocalPort, minioStopChannel)
+		OpenPortForwardPodWrapper(clientset, restConfig, pkg.MinioPodName, pkg.MinioNamespace, pkg.MinioPodPort, pkg.MinioPodLocalPort, minioStopChannel)
 		wg.Done()
 	}()
 
 	// Minio Console
 	go func() {
-		OpenPortForwardPodWrapper(kubeconfigPath, pkg.MinioConsolePodName, pkg.MinioConsoleNamespace, pkg.MinioConsolePodPort, pkg.MinioConsolePodLocalPort, minioConsoleStopChannel)
+		OpenPortForwardPodWrapper(clientset, restConfig, pkg.MinioConsolePodName, pkg.MinioConsoleNamespace, pkg.MinioConsolePodPort, pkg.MinioConsolePodLocalPort, minioConsoleStopChannel)
 		wg.Done()
 	}()
 
 	// Kubefirst console
 	go func() {
-		OpenPortForwardPodWrapper(kubeconfigPath, pkg.KubefirstConsolePodName, pkg.KubefirstConsoleNamespace, pkg.KubefirstConsolePodPort, pkg.KubefirstConsolePodLocalPort, kubefirstConsoleStopChannel)
+		OpenPortForwardPodWrapper(clientset, restConfig, pkg.KubefirstConsolePodName, pkg.KubefirstConsoleNamespace, pkg.KubefirstConsolePodPort, pkg.KubefirstConsolePodLocalPort, kubefirstConsoleStopChannel)
 		wg.Done()
 	}()
 
 	// Atlantis
 	go func() {
-		OpenPortForwardPodWrapper(kubeconfigPath, pkg.AtlantisPodName, pkg.AtlantisNamespace, pkg.AtlantisPodPort, pkg.AtlantisPodLocalPort, AtlantisStopChannel)
+		OpenPortForwardPodWrapper(clientset, restConfig, pkg.AtlantisPodName, pkg.AtlantisNamespace, pkg.AtlantisPodPort, pkg.AtlantisPodLocalPort, AtlantisStopChannel)
 		wg.Done()
 	}()
 
@@ -123,12 +127,7 @@ func OpenPortForwardForLocal(
 //			vaultStopChannel)
 //		wg.Done()
 //	}()
-func OpenPortForwardPodWrapper(kubeconfigPath, podName, namespace string, podPort int, podLocalPort int, stopChannel chan struct{}) {
-
-	kubeconfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
-	if err != nil {
-		log.Error().Err(err).Msg(err.Error())
-	}
+func OpenPortForwardPodWrapper(clientset *kubernetes.Clientset, restConfig *rest.Config, podName, namespace string, podPort int, podLocalPort int, stopChannel chan struct{}) {
 
 	// readyCh communicate when the port forward is ready to get traffic
 	readyCh := make(chan struct{})
@@ -136,7 +135,7 @@ func OpenPortForwardPodWrapper(kubeconfigPath, podName, namespace string, podPor
 	// todo: constants for podName, PodPort and localPort, namespace
 
 	portForwardRequest := PortForwardAPodRequest{
-		RestConfig: kubeconfig,
+		RestConfig: restConfig,
 		Pod: v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      podName,
@@ -149,11 +148,8 @@ func OpenPortForwardPodWrapper(kubeconfigPath, podName, namespace string, podPor
 		ReadyCh:   readyCh,
 	}
 
-	// is this necessary?
-	clientset, err := GetClientSet(false, kubeconfigPath)
-
 	go func() {
-		err = PortForwardPodWithRetry(clientset, portForwardRequest)
+		err := PortForwardPodWithRetry(clientset, portForwardRequest)
 		if err != nil {
 			log.Error().Err(err).Msg(err.Error())
 		}

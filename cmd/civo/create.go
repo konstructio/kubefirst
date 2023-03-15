@@ -958,13 +958,19 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Fatal().Msgf("error waiting for ArgoCD to become ready: %s", err)
 	}
 
+	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
+	if err != nil {
+		return err
+	}
+
 	//* ArgoCD port-forward
 	argoCDStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(argoCDStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"argocd-server", // todo fix this, it should `argocd
 		"argocd",
 		8080,
@@ -1058,13 +1064,13 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		vaultClient := &vault.Conf
 
 		// Initialize and unseal Vault
-		err := vaultClient.UnsealRaftLeader(clientset, config.Kubeconfig)
+		err := vaultClient.UnsealRaftLeader(clientset, restConfig, config.Kubeconfig)
 		if err != nil {
 			return err
 		}
 
 		time.Sleep(time.Second * 5)
-		err = vaultClient.UnsealRaftFollowers(clientset, config.Kubeconfig)
+		err = vaultClient.UnsealRaftFollowers(clientset, restConfig, config.Kubeconfig)
 		if err != nil {
 			return err
 		}
@@ -1084,7 +1090,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		close(vaultStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"vault-0",
 		"vault",
 		8200,
@@ -1170,7 +1177,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		close(consoleStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"kubefirst-console",
 		"kubefirst",
 		8080,

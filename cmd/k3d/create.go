@@ -883,19 +883,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("Error waiting for ArgoCD repo deployment ready state: %s", err)
 	}
 
-	// //* ArgoCD port-forward
-	// argoCDStopChannel := make(chan struct{}, 1)
-	// defer func() {
-	// 	close(argoCDStopChannel)
-	// }()
-	// k8s.OpenPortForwardPodWrapper(
-	// 	config.Kubeconfig,
-	// 	"argocd-server",
-	// 	"argocd",
-	// 	8080,
-	// 	8080,
-	// 	argoCDStopChannel,
-	// )
 	log.Info().Msgf("port-forward to argocd is available at %s", k3d.ArgocdURL)
 
 	var argocdPassword string
@@ -933,6 +920,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("argo credentials already set, continuing")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
+	}
+
+	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
+	if err != nil {
+		return err
 	}
 
 	//* argocd sync registry and start sync waves
@@ -983,7 +975,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		close(minioStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"minio",
 		"minio",
 		9000,
@@ -1030,7 +1023,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		close(vaultStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"vault-0",
 		"vault",
 		8200,
@@ -1186,7 +1180,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		close(consoleStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"kubefirst-console",
 		"kubefirst",
 		8080,

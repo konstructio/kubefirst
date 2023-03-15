@@ -582,15 +582,18 @@ func createAws(cmd *cobra.Command, args []string) error {
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region: aws.String(cloudRegionFlag),
 	}))
+
 	eksSvc := eks.New(sess)
 
-	input := &eks.DescribeClusterInput{
+	clusterInput := &eks.DescribeClusterInput{
 		Name: aws.String(clusterNameFlag),
 	}
-	eksClusterInfo, err := eksSvc.DescribeCluster(input)
+	eksClusterInfo, err := eksSvc.DescribeCluster(clusterInput)
 	if err != nil {
 		log.Fatal().Msgf("Error calling DescribeCluster: %v", err)
 	}
+	fmt.Println("%+v", eksClusterInfo.Cluster)
+
 	clientset, err := awsinternal.NewClientset(eksClusterInfo.Cluster)
 	if err != nil {
 		log.Fatal().Msgf("Error creating clientset: %v", err)
@@ -603,43 +606,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		fmt.Println(err)
 		return err
 	}
-
-	registryApplicationObject, err := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoGitURL, fmt.Sprintf("registry/%s", clusterNameFlag))
-	if err != nil {
-		return err
-	}
-
-	_, err = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	// kubernetes.BootstrapSecrets
-	// todo there is a secret condition in AddawsSecrets to this not checked
-	// todo deconstruct CreateNamespaces / CreateSecret
-	// todo move secret structs to constants to be leveraged by either local or aws
-	// executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
-	// if !executionControl {
-	// 	err := awsinternal.AddAwsSecrets(
-	// 		atlantisWebhookSecret,
-	// 		atlantisWebhookURL,
-	// 		viper.GetString("kbot.public-key"),
-	// 		config.DestinationGitopsRepoGitURL,
-	// 		viper.GetString("kbot.private-key"),
-	// 		false,
-	// 		githubOwnerFlag,
-	// 		config.Kubeconfig,
-	// 	)
-	// 	if err != nil {
-	// 		log.Info().Msg("Error adding kubernetes secrets for bootstrap")
-	// 		return err
-	// 	}
-	// 	viper.Set("kubefirst-checks.k8s-secrets-created", true)
-	// 	viper.WriteConfig()
-	// } else {
-	// 	log.Info().Msg("already added secrets to aws cluster")
-	// }
 
 	// //* check for ssl restore
 	// log.Info().Msg("checking for tls secrets to restore")
@@ -663,10 +629,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
-		argoCDYamlPath := fmt.Sprintf("%s/registry/%s/components/argocd", config.GitopsDir, clusterNameFlag)
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", argoCDYamlPath, "--wait")
+		err = argocd.ApplyArgoCDKustomize(clientset)
 		if err != nil {
-			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", argoCDYamlPath, err.Error())
 			return err
 		}
 		viper.Set("kubefirst-checks.argocd-install", true)
@@ -677,22 +641,34 @@ func createAws(cmd *cobra.Command, args []string) error {
 		// progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	}
 
-	// Wait for ArgoCD StatefulSet Pods to transition to Running
-	argoCDStatefulSet, err := k8s.ReturnStatefulSetObject(
-		clientset,
-		"app.kubernetes.io/part-of",
-		"argocd",
-		"argocd",
-		60,
-	)
+	// Wait for ArgoCD to be ready
+	_, err = k8s.VerifyArgoCDReadiness(clientset, true)
 	if err != nil {
-		log.Info().Msgf("Error finding ArgoCD StatefulSet: %s", err)
+		log.Fatal().Msgf("error waiting for ArgoCD to become ready: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(clientset, argoCDStatefulSet, 90, false)
-	if err != nil {
-		log.Info().Msgf("Error waiting for ArgoCD StatefulSet ready state: %s", err)
-	}
-
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
+	//!
 	//* ArgoCD port-forward
 	// todo DO WE ACTUALLY USE THIS!?
 	argoCDStopChannel := make(chan struct{}, 1)
@@ -700,7 +676,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 		close(argoCDStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"argocd-server",
 		"argocd",
 		8080,
@@ -786,10 +763,14 @@ func createAws(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
 	if !executionControl {
 		log.Info().Msg("applying the registry application to argocd")
-		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", config.K1Dir, clusterNameFlag)
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
+		registryApplicationObject, err := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoGitURL, fmt.Sprintf("registry/%s", clusterNameFlag))
 		if err != nil {
-			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", registryYamlPath, err.Error())
+			return err
+		}
+
+		_, err = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
+		if err != nil {
+			fmt.Println(err)
 			return err
 		}
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
@@ -831,7 +812,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 		close(vaultStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"vault-0",
 		"vault",
 		8200,
@@ -969,7 +951,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 		close(consoleStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"kubefirst-console",
 		"kubefirst",
 		8080,

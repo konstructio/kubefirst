@@ -11,6 +11,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 func (conf *VaultConfiguration) AutoUnseal() (*vaultapi.InitResponse, error) {
@@ -35,7 +36,7 @@ func (conf *VaultConfiguration) AutoUnseal() (*vaultapi.InitResponse, error) {
 }
 
 // UnsealRaftLeader initializes and unseals a vault leader when using raft for ha and storage
-func (conf *VaultConfiguration) UnsealRaftLeader(clientset *kubernetes.Clientset, kubeConfigPath string) error {
+func (conf *VaultConfiguration) UnsealRaftLeader(clientset *kubernetes.Clientset, restConfig *rest.Config, kubeConfigPath string) error {
 	//* vault port-forward
 	log.Info().Msgf("starting port-forward for vault-0")
 	vaultStopChannel := make(chan struct{}, 1)
@@ -43,7 +44,8 @@ func (conf *VaultConfiguration) UnsealRaftLeader(clientset *kubernetes.Clientset
 		close(vaultStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		kubeConfigPath,
+		clientset,
+		restConfig,
 		"vault-0",
 		"vault",
 		8200,
@@ -167,7 +169,7 @@ func (conf *VaultConfiguration) UnsealRaftLeader(clientset *kubernetes.Clientset
 }
 
 // UnsealRaftFollowers initializes, unseals, and joins raft followers when using raft for ha and storage
-func (conf *VaultConfiguration) UnsealRaftFollowers(clientset *kubernetes.Clientset, kubeConfigPath string) error {
+func (conf *VaultConfiguration) UnsealRaftFollowers(clientset *kubernetes.Clientset, restConfig *rest.Config, kubeConfigPath string) error {
 	// With the current iteration of the Vault helm chart, we create 3 nodes
 	// vault-0 is unsealed as leader, vault-1 and vault-2 are unsealed here
 	raftNodes := []string{"vault-1", "vault-2"}
@@ -181,7 +183,8 @@ func (conf *VaultConfiguration) UnsealRaftFollowers(clientset *kubernetes.Client
 		log.Info().Msgf("starting port-forward for %s", node)
 		vaultStopChannel := make(chan struct{}, 1)
 		k8s.OpenPortForwardPodWrapper(
-			kubeConfigPath,
+			clientset,
+			restConfig,
 			node,
 			"vault",
 			8200,

@@ -22,6 +22,12 @@ func ApplyArgoCDKustomize(clientset *kubernetes.Clientset) error {
 	name := "argocd-bootstrap"
 	namespace := "argocd"
 
+	_, err := clientset.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+		},
+	}, metav1.CreateOptions{})
+
 	// Create ServiceAccount
 	serviceAccount, err := clientset.CoreV1().ServiceAccounts(namespace).Create(context.Background(), &v1.ServiceAccount{
 		TypeMeta: metav1.TypeMeta{},
