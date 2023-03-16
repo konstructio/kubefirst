@@ -27,7 +27,7 @@ import (
 func destroyCivo(cmd *cobra.Command, args []string) error {
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
-	_, err := helpers.EvalDestroy("civo", gitProvider)
+	_, err := helpers.EvalDestroy(civo.CloudProvider, gitProvider)
 	if err != nil {
 		return err
 	}
