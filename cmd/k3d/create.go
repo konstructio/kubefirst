@@ -24,6 +24,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
 	"github.com/kubefirst/kubefirst/internal/handlers"
+	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
@@ -1235,6 +1236,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}
+
+	// Set flags used to track status of active options
+	helpers.SetCompletionFlags(k3d.CloudProvider, config.GitProvider)
 
 	reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, cGitOwner, config, dryRunFlag, false)
 

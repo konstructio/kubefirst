@@ -14,6 +14,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/civo"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
+	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
@@ -24,8 +25,15 @@ import (
 )
 
 func destroyCivo(cmd *cobra.Command, args []string) error {
+	// Determine if there are active installs
+	gitProvider := viper.GetString("flags.git-provider")
+	_, err := helpers.EvalDestroy(civo.CloudProvider, gitProvider)
+	if err != nil {
+		return err
+	}
+
 	// Check for existing port forwards before continuing
-	err := k8s.CheckForExistingPortForwards(8080)
+	err = k8s.CheckForExistingPortForwards(8080)
 	if err != nil {
 		log.Fatal().Msgf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
 		return err
@@ -39,7 +47,6 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
 	dryRun := viper.GetBool("flags.dry-run")
-	gitProvider := viper.GetString("flags.git-provider")
 
 	// Switch based on git provider, set params
 	var cGitOwner, cGitToken string
@@ -307,7 +314,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 	time.Sleep(time.Second * 2) // allows progress bars to finish
-	fmt.Println("your kubefirst platform running in k3d has been destroyed")
+	fmt.Printf("Your kubefirst platform running in %s has been destroyed.", civo.CloudProvider)
 
 	return nil
 }
