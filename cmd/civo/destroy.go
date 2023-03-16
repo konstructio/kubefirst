@@ -314,7 +314,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 	time.Sleep(time.Second * 2) // allows progress bars to finish
-	fmt.Printf("Your kubefirst platform running in %s has been destroyed.", civo.CloudProvider)
+	fmt.Println(fmt.Sprintf("Your kubefirst platform running in %s has been destroyed.", civo.CloudProvider))
 
 	return nil
 }
