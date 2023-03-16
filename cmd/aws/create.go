@@ -105,7 +105,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("verifying github authentication")
 	// todo is this the correct lookup in an org setting
 	// todo is this the correct lookup in an org setting
-	_, err = gitHubHandler.GetGitHubUser(os.Getenv("GITHUB_TOKEN"))
+	githubUser, err := gitHubHandler.GetGitHubUser(os.Getenv("GITHUB_TOKEN"))
 	if err != nil {
 		return err
 	}
@@ -382,7 +382,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		GitRunnerNS:                    "github-runner",
 		GitHubHost:                     "github.com",
 		GitHubOwner:                    githubOwnerFlag,
-		GitHubUser:                     githubOwnerFlag,
+		GitHubUser:                     githubUser,
 		GitOpsRepoAtlantisWebhookURL:   fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
 		GitOpsRepoGitURL:               config.DestinationGitopsRepoGitURL,
 		Kubeconfig:                     config.Kubeconfig,
