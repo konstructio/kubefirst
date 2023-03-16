@@ -902,6 +902,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		log.Info().Msg("Getting an argocd auth token")
 		// todo return in here and pass argocdAuthToken as a parameter
+
 		token, err := argocd.GetArgocdTokenV2(httpClient, k3d.ArgocdURL, "admin", argocdPassword)
 		if err != nil {
 			return err

@@ -266,7 +266,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 		}
 	}
 	time.Sleep(time.Millisecond * 200) // allows progress bars to finish
-	fmt.Printf("Your kubefirst platform running in %s has been destroyed.", k3d.CloudProvider)
+	fmt.Println(fmt.Sprintf("Your kubefirst platform running in %s has been destroyed.", k3d.CloudProvider))
 
 	return nil
 }
