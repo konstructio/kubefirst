@@ -36,7 +36,7 @@ func NewCommand() *cobra.Command {
 	k3dCmd.SilenceUsage = true
 
 	// wire up new commands
-	k3dCmd.AddCommand(Create(), Destroy())
+	k3dCmd.AddCommand(Create(), Destroy(), Auth())
 
 	return k3dCmd
 }
@@ -53,7 +53,7 @@ func LocalCommandAlias() *cobra.Command {
 	localCmd.SilenceUsage = true
 
 	// wire up new commands
-	localCmd.AddCommand(Create(), Destroy())
+	localCmd.AddCommand(Create(), Destroy(), Auth())
 
 	return localCmd
 }
@@ -89,4 +89,15 @@ func Destroy() *cobra.Command {
 	}
 
 	return destroyCmd
+}
+
+func Auth() *cobra.Command {
+	authCmd := &cobra.Command{
+		Use:   "auth",
+		Short: "retrieve authentication information for platform components",
+		Long:  "retrieve authentication information for platform components",
+		RunE:  getK3dAuth,
+	}
+
+	return authCmd
 }
