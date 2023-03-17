@@ -19,10 +19,12 @@ import (
 	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/docker"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/githubWrapper"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
 	"github.com/kubefirst/kubefirst/internal/handlers"
+	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
@@ -32,6 +34,7 @@ import (
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/kubefirst/kubefirst/internal/terraform"
+	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/minio/minio-go/v7"
@@ -175,12 +178,34 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("github.session_token", cGitToken)
 		viper.WriteConfig()
 
-		log.Info().Msgf("ignoring %s", githubUserFlag)
+		log.Info().Msgf("ignoring %s", cGitOwner)
 	case "gitlab":
-		cGitHost = k3d.GitlabHost
-		cGitOwner = gitlabGroupFlag
-		cGitUser = gitlabGroupFlag
 		cGitToken = os.Getenv("GITLAB_TOKEN")
+		gl := gitlab.GitLabWrapper{
+			Client: gitlab.NewGitLabClient(cGitToken),
+		}
+		allGroups, err := gl.GetGroups()
+		if err != nil {
+			log.Fatal().Msgf("unable to get gitlab groups: %s", err)
+		}
+		// Format git url based on full path to group
+		var groupFullSlug string
+		for _, group := range allGroups {
+			if group.Name == gitlabGroupFlag {
+				groupFullSlug = strings.Split(group.WebURL, "/groups/")[1]
+			}
+		}
+		cGitHost = k3d.GitlabHost
+		cGitOwner = groupFullSlug
+		log.Info().Msgf("set gitlab owner to %s", groupFullSlug)
+
+		// Get authenticated user's name
+		user, _, err := gl.Client.Users.CurrentUser()
+		if err != nil {
+			return errors.New("Unable to get authenticated user info.")
+		}
+		cGitUser = user.Username
+
 		containerRegistryHost = "registry.gitlab.com"
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
 	default:
@@ -248,6 +273,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
+	// Objects to check for
+	// Repositories that will be created throughout the initialization process
+	newRepositoryNames := []string{"gitops", "metaphor"}
+	newTeamNames := []string{"admins", "developers"}
+
 	// Check git credentials
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider))
 	if !executionControl {
@@ -259,11 +289,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				),
 			)
 		}
-
-		// Objects to check for
-		// Repositories that will be created throughout the initialization process
-		newRepositoryNames := []string{"gitops", "metaphor"}
-		newTeamNames := []string{"admins", "developers"}
 
 		switch config.GitProvider {
 		case "github":
@@ -394,10 +419,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	gitopsTemplateTokens := k3d.GitopsTokenValues{
 		GithubOwner:                   cGitOwner,
 		GithubUser:                    cGitUser,
-		GitlabOwner:                   gitlabGroupFlag,
+		GitlabOwner:                   cGitOwner,
 		GitlabOwnerGroupID:            cGitlabOwnerGroupID,
 		GitlabUser:                    cGitUser,
-		GitopsRepoGitURL:              config.DestinationGitopsRepoGitURL,
 		DomainName:                    k3d.DomainName,
 		AtlantisAllowList:             fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
 		AlertsEmail:                   "REMOVE_THIS_VALUE",
@@ -414,6 +438,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		MetaphorProductionIngressURL:  fmt.Sprintf("https://metaphor-production.%s", k3d.DomainName),
 		KubefirstVersion:              configs.K1Version,
 		KubefirstTeam:                 kubefirstTeam,
+		KubeconfigPath:                config.Kubeconfig,
+		GitopsRepoGitURL:              config.DestinationGitopsRepoGitURL,
 		GitProvider:                   config.GitProvider,
 		ClusterId:                     clusterId,
 		CloudProvider:                 k3d.CloudProvider,
@@ -455,7 +481,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already completed download of dependencies to `$HOME/.k1/tools` - continuing")
 	}
-
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
 	metaphorTemplateTokens := k3d.MetaphorTokenValues{
@@ -475,7 +500,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 		log.Info().Msg("generating your new gitops repository")
-
 		err := k3d.PrepareGitRepositories(
 			config.GitProvider,
 			clusterNameFlag,
@@ -577,6 +601,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
+	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoGitURL)
+	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoGitURL)
+
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
 	if !executionControl {
 		gitopsRepo, err := git.PlainOpen(config.GitopsDir)
@@ -644,7 +671,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			log.Panic().Msgf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoGitURL, err)
 		}
 
-		log.Info().Msgf("successfully pushed gitops and metaphor repositories to git@g%s/%s", cGitHost, cGitOwner)
+		log.Info().Msgf("successfully pushed gitops and metaphor repositories to git@%s/%s", cGitHost, cGitOwner)
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
 		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
@@ -656,6 +683,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	//* create k3d resources
+	// Verify Docker is running
+	dcli := docker.DockerClientWrapper{
+		Client: docker.NewDockerClient(),
+	}
+	_, err = dcli.CheckDockerReady()
+	if err != nil {
+		return err
+	}
+
 	progressPrinter.AddTracker("applying-k3d-terraform", "Applying K3d Terraform", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
@@ -666,9 +702,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			viper.Set("kubefirst-checks.terraform-apply-k3d-failed", true)
 			viper.WriteConfig()
-			msg := "Error attempting to create K3D cluster - is Docker running?"
-			fmt.Println(msg)
-			log.Fatal().Msg(msg)
+
 			return err
 		}
 
@@ -738,11 +772,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// } else {
 	// 	log.Info().Msg("no files found in secrets directory, continuing")
 	// }
-
-	if err := ssl.CreateCertificatesForK3dWrapper(*config); err != nil {
-		log.Error().Err(err).Msg("")
-	}
-	log.Info().Msg("MkCerts generated in /.k1/tools/certs directory")
 
 	// GitLab Deploy Tokens
 	// Handle secret creation for buildkit
@@ -846,41 +875,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	}
 
-	// Wait for ArgoCD StatefulSet Pods to transition to Running
-	argoCDStatefulSet, err := k8s.ReturnStatefulSetObject(
-		clientset,
-		"app.kubernetes.io/part-of",
-		"argocd",
-		"argocd",
-		60,
-	)
+	// Wait for ArgoCD to be ready
+	_, err = k8s.VerifyArgoCDReadiness(clientset, false)
 	if err != nil {
-		log.Info().Msgf("Error finding ArgoCD StatefulSet: %s", err)
-	}
-	_, err = k8s.WaitForStatefulSetReady(clientset, argoCDStatefulSet, 90, false)
-	if err != nil {
-		log.Info().Msgf("Error waiting for ArgoCD StatefulSet ready state: %s", err)
-	}
-
-	// Wait for ArgoCD repo server Pods to transition to Running
-	// This is related to a condition where apps attempt to deploy before
-	// the repo server health check passes
-	//
-	// This can cause future steps to break since the registry app
-	// may never apply
-	argoCDRepoDeployment, err := k8s.ReturnDeploymentObject(
-		clientset,
-		"app.kubernetes.io/name",
-		"argocd-repo-server",
-		"argocd",
-		60,
-	)
-	if err != nil {
-		log.Info().Msgf("Error finding ArgoCD repo deployment: %s", err)
-	}
-	_, err = k8s.WaitForDeploymentReady(clientset, argoCDRepoDeployment, 90)
-	if err != nil {
-		log.Info().Msgf("Error waiting for ArgoCD repo deployment ready state: %s", err)
+		log.Fatal().Msgf("error waiting for ArgoCD to become ready: %s", err)
 	}
 
 	log.Info().Msgf("port-forward to argocd is available at %s", k3d.ArgocdURL)
@@ -954,7 +952,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		"app.kubernetes.io/instance",
 		"vault",
 		"vault",
-		60,
+		120,
 	)
 	if err != nil {
 		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
@@ -965,10 +963,35 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 	progressPrinter.IncrementTracker("configuring-vault", 1)
 
-	log.Info().Msg("pausing for vault to become ready...")
-	time.Sleep(time.Second * 30)
-
+	// Init and unseal vault
+	// We need to wait before we try to run any of these commands or there may be
+	// unexpected timeouts
+	time.Sleep(time.Second * 10)
 	progressPrinter.IncrementTracker("configuring-vault", 1)
+
+	executionControl = viper.GetBool("kubefirst-checks.vault-initialized")
+	if !executionControl {
+		vaultClient := &vault.Conf
+
+		// Initialize and unseal Vault
+		err := vaultClient.UnsealRaftLeader(clientset, restConfig, config.Kubeconfig)
+		if err != nil {
+			return err
+		}
+
+		viper.Set("kubefirst-checks.vault-initialized", true)
+		viper.WriteConfig()
+		progressPrinter.IncrementTracker("configuring-vault", 1)
+	} else {
+		log.Info().Msg("vault is already initialized - skipping")
+		progressPrinter.IncrementTracker("configuring-vault", 1)
+	}
+
+	log.Info().Msg("storing certificates into application secrets namespace")
+	if err := ssl.CreateSecretsFromCertificatesForK3dWrapper(config); err != nil {
+		log.Error().Err(err).Msg("")
+	}
+	log.Info().Msg("storing certificates into application secrets namespace done")
 
 	minioStopChannel := make(chan struct{}, 1)
 	defer func() {
@@ -1017,6 +1040,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.IncrementTracker("configuring-vault", 1)
 
+	//* configure vault with terraform
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
 	defer func() {
@@ -1032,6 +1056,24 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		vaultStopChannel,
 	)
 
+	// Retrieve root token from init step
+	var vaultRootToken string
+	secData, err := k8s.ReadSecretV2(clientset, "vault", "vault-unseal-secret")
+	if err != nil {
+		return err
+	}
+
+	vaultRootToken = secData["root-token"]
+
+	// Parse k3d api endpoint from kubeconfig
+	// In this case, we need to get the IP of the in-cluster API server to provide to Vault
+	// to work with Kubernetes auth
+	kubernetesInClusterAPIService, err := k8s.ReadService(config.Kubeconfig, "default", "kubernetes")
+	if err != nil {
+		log.Error().Msgf("error looking up kubernetes api server service: %s")
+		return err
+	}
+
 	//* configure vault with terraform
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
 	if !executionControl {
@@ -1045,12 +1087,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", config.GitProvider)] = cGitToken
 		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
-		tfEnvs["TF_VAR_vault_token"] = "k1_local_vault_token"
+		tfEnvs["TF_VAR_vault_token"] = vaultRootToken
 		tfEnvs["VAULT_ADDR"] = k3d.VaultPortForwardURL
-		tfEnvs["VAULT_TOKEN"] = "k1_local_vault_token"
+		tfEnvs["VAULT_TOKEN"] = vaultRootToken
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 		tfEnvs["TF_VAR_kubefirst_bot_ssh_private_key"] = viper.GetString("kbot.private-key")
 		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+		tfEnvs["TF_VAR_kubernetes_api_endpoint"] = fmt.Sprintf("https://%s", kubernetesInClusterAPIService.Spec.ClusterIP)
 		tfEnvs["GITHUB_OWNER"] = viper.GetString("flags.github-owner")
 		// tfEnvs["TF_LOG"] = "DEBUG"
 
@@ -1096,9 +1139,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", strings.ToUpper(config.GitProvider))] = cGitToken
 		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
-		tfEnvs["TF_VAR_vault_token"] = "k1_local_vault_token"
+		tfEnvs["TF_VAR_vault_token"] = vaultRootToken
 		tfEnvs["VAULT_ADDR"] = k3d.VaultPortForwardURL
-		tfEnvs["VAULT_TOKEN"] = "k1_local_vault_token"
+		tfEnvs["VAULT_TOKEN"] = vaultRootToken
 		tfEnvs[fmt.Sprintf("%s_TOKEN", strings.ToUpper(config.GitProvider))] = cGitToken
 		tfEnvs[fmt.Sprintf("%s_OWNER", strings.ToUpper(config.GitProvider))] = cGitOwner
 
@@ -1204,7 +1247,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Error().Err(err).Msg("")
 	}
 
-	reports.LocalHandoffScreenV2(argocdPassword, clusterNameFlag, cGitOwner, config, dryRunFlag, false)
+	// Set flags used to track status of active options
+	helpers.SetCompletionFlags(k3d.CloudProvider, config.GitProvider)
+
+	reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, cGitOwner, config, dryRunFlag, false)
 
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)

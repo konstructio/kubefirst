@@ -23,6 +23,7 @@ require (
 	github.com/chromedp/chromedp v0.8.7
 	github.com/cip8/autoname v1.0.0
 	github.com/civo/civogo v0.3.23
+	github.com/docker/docker v20.10.17+incompatible
 	github.com/dustin/go-humanize v1.0.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
@@ -72,6 +73,9 @@ require (
 	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
+	github.com/docker/distribution v2.8.1+incompatible // indirect
+	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/go-units v0.4.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.0 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
@@ -124,6 +128,8 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
+	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/xid v1.4.0 // indirect
 	github.com/russross/blackfriday v1.5.2 // indirect
 	github.com/segmentio/backo-go v1.0.1 // indirect
@@ -137,6 +143,7 @@ require (
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef // indirect
 	google.golang.org/grpc v1.52.0 // indirect
+	gotest.tools/v3 v3.4.0 // indirect
 	k8s.io/apiextensions-apiserver v0.26.0 // indirect
 	k8s.io/apiserver v0.24.2 // indirect
 	k8s.io/cli-runtime v0.24.2 // indirect

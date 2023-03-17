@@ -20,7 +20,7 @@ const (
 	GithubHost             = "github.com"
 	GitlabHost             = "gitlab.com"
 	K3dVersion             = "v5.4.6"
-	KubectlVersion         = "v1.22.0"
+	KubectlVersion         = "v1.25.7"
 	KubefirstConsoleURL    = "https://kubefirst.localdev.me"
 	LocalhostARCH          = runtime.GOARCH
 	LocalhostOS            = runtime.GOOS
@@ -79,6 +79,7 @@ func GetConfig(gitProvider string, gitOwner string) *K3dConfig {
 
 	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@%s:%s/gitops.git", cGitHost, gitOwner)
 	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@%s:%s/metaphor.git", cGitHost, gitOwner)
+
 	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
 	config.GitProvider = gitProvider
 	config.K1Dir = fmt.Sprintf("%s/.k1", homeDir)
@@ -123,6 +124,7 @@ type GitopsTokenValues struct {
 	GitProvider                   string
 	CloudProvider                 string
 	ClusterId                     string
+	KubeconfigPath                string
 }
 
 type MetaphorTokenValues struct {

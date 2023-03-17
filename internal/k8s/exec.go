@@ -70,6 +70,22 @@ func ReadSecretV2(clientset *kubernetes.Clientset, namespace string, secretName 
 	return parsedSecretData, nil
 }
 
+// ReadService reads a Kubernetes Service object
+func ReadService(kubeConfigPath string, namespace string, serviceName string) (*v1.Service, error) {
+	clientset, err := GetClientSet(false, kubeConfigPath)
+	if err != nil {
+		return &v1.Service{}, err
+	}
+
+	service, err := clientset.CoreV1().Services(namespace).Get(context.Background(), serviceName, metav1.GetOptions{})
+	if err != nil {
+		log.Error().Msgf("Error getting Service: %s\n", err)
+		return &v1.Service{}, nil
+	}
+
+	return service, nil
+}
+
 // PodExecSession executes a command against a Pod
 func PodExecSession(kubeConfigPath string, p *PodSessionOptions, silent bool) error {
 	// v1.PodExecOptions is passed to the rest client to form the req URL

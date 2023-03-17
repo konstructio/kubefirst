@@ -1,0 +1,18 @@
+name: Check Commit Messages
+on: push
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 0
+      
+      - name: Lint the commits
+        uses: wagoid/commitlint-github-action@v5
+        with:
+          configFile: .commitlint.json
+          failOnWarnings: true

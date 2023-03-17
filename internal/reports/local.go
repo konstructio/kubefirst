@@ -87,7 +87,7 @@ func LocalHandoffScreenV2(argocdAdminPassword, clusterName, gitOwner string, con
 	handOffData.WriteString("\n--- Vault ")
 	handOffData.WriteString(strings.Repeat("-", 60))
 	handOffData.WriteString(fmt.Sprintf("\n URL: %s", k3d.VaultURL))
-	handOffData.WriteString(fmt.Sprintf("\n Root token: %s", "k1_local_vault_token"))
+	handOffData.WriteString("\n Root token: Check secret vault-unseal-secret in Namespace vault")
 	handOffData.WriteString("\n" + strings.Repeat("-", 70))
 
 	CommandSummary(handOffData)
