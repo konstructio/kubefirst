@@ -42,7 +42,7 @@ func ReadConfigMapV2(kubeConfigPath string, namespace string, configMapName stri
 	}
 	configMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(context.Background(), configMapName, metav1.GetOptions{})
 	if err != nil {
-		return map[string]string{}, fmt.Errorf("error getting ConfigMap: %s\n", err)
+		return map[string]string{}, fmt.Errorf("error getting ConfigMap: %s", err)
 	}
 
 	parsedSecretData := make(map[string]string)
@@ -194,8 +194,8 @@ func ReturnDeploymentObject(clientset *kubernetes.Clientset, matchLabel string, 
 				return &spec.Items[0], nil
 			}
 		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
-			log.Error().Msg("The Deployment was not created within the timeout period.")
-			return nil, errors.New("The Deployment was not created within the timeout period.")
+			log.Error().Msg("the Deployment was not created within the timeout period")
+			return nil, fmt.Errorf("the Deployment was not created within the timeout period")
 		}
 	}
 }
@@ -250,8 +250,8 @@ func ReturnPodObject(kubeConfigPath string, matchLabel string, matchLabelValue s
 				return &spec.Items[0], nil
 			}
 		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
-			log.Error().Msg("The Pod was not created within the timeout period.")
-			return nil, errors.New("The Pod was not created within the timeout period.")
+			log.Error().Msg("The Pod was not created within the timeout period")
+			return nil, fmt.Errorf("the Pod was not created within the timeout period")
 		}
 	}
 }
@@ -280,7 +280,7 @@ func ReturnStatefulSetObject(clientset *kubernetes.Clientset, matchLabel string,
 			time.Sleep(time.Second * 1)
 			if !ok {
 				// Error if the channel closes
-				log.Fatal().Msgf("Error waiting for %s StatefulSet to be created: %s", matchLabelValue, err)
+				log.Fatal().Msgf("error waiting for %s StatefulSet to be created: %s", matchLabelValue, err)
 			}
 			if event.
 				Object.(*appsv1.StatefulSet).Status.Replicas > 0 {
@@ -292,8 +292,8 @@ func ReturnStatefulSetObject(clientset *kubernetes.Clientset, matchLabel string,
 				return &spec.Items[0], nil
 			}
 		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
-			log.Error().Msg("The StatefulSet was not created within the timeout period.")
-			return nil, errors.New("The StatefulSet was not created within the timeout period.")
+			log.Error().Msg("The StatefulSet was not created within the timeout period")
+			return nil, fmt.Errorf("the StatefulSet was not created within the timeout period")
 		}
 	}
 }
@@ -334,8 +334,8 @@ func WaitForDeploymentReady(clientset *kubernetes.Clientset, deployment *appsv1.
 				return true, nil
 			}
 		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
-			log.Error().Msg("The Deployment was not ready within the timeout period.")
-			return false, errors.New("The Deployment was not ready within the timeout period.")
+			log.Error().Msg("The Deployment was not ready within the timeout period")
+			return false, errors.New("The Deployment was not ready within the timeout period")
 		}
 	}
 }
@@ -378,8 +378,8 @@ func WaitForPodReady(clientset *kubernetes.Clientset, pod *v1.Pod, timeoutSecond
 				return true, nil
 			}
 		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
-			log.Error().Msg("The operation timed out while waiting for the Pod to become ready.")
-			return false, errors.New("The operation timed out while waiting for the Pod to become ready.")
+			log.Error().Msg("The operation timed out while waiting for the Pod to become ready")
+			return false, errors.New("The operation timed out while waiting for the Pod to become ready")
 		}
 	}
 }
@@ -443,8 +443,8 @@ func WaitForStatefulSetReady(clientset *kubernetes.Clientset, statefulset *appsv
 				}
 			}
 		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
-			log.Error().Msg("The StatefulSet was not ready within the timeout period.")
-			return false, errors.New("The StatefulSet was not ready within the timeout period.")
+			log.Error().Msg("The StatefulSet was not ready within the timeout period")
+			return false, errors.New("The StatefulSet was not ready within the timeout period")
 		}
 	}
 }
@@ -475,8 +475,8 @@ func watchForStatefulSetPodReady(clientset *kubernetes.Clientset, namespace stri
 				return nil
 			}
 		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
-			log.Error().Msg("The StatefulSet Pod was not ready within the timeout period.")
-			return errors.New("The StatefulSet Pod was not ready within the timeout period.")
+			log.Error().Msg("The StatefulSet Pod was not ready within the timeout period")
+			return errors.New("The StatefulSet Pod was not ready within the timeout period")
 		}
 	}
 }
