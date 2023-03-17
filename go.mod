@@ -27,12 +27,9 @@ require (
 	github.com/civo/civogo v0.3.23
 	github.com/docker/docker v20.10.17+incompatible
 	github.com/dustin/go-humanize v1.0.1
-	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-github/v45 v45.2.0
-	github.com/google/uuid v1.3.0
 	github.com/hashicorp/vault/api v1.9.0
-	github.com/itchyny/gojq v0.12.9
 	github.com/jedib0t/go-pretty/v6 v6.3.1
 	github.com/otiai10/copy v1.7.0
 	github.com/rs/zerolog v1.28.0
@@ -40,11 +37,8 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
 	github.com/xanzy/go-gitlab v0.80.2
-	golang.ngrok.com/ngrok v1.0.0
 	golang.org/x/crypto v0.6.0
-	golang.org/x/exp v0.0.0-20221012211006-4de253d81b95
 	golang.org/x/mod v0.7.0
-	golang.org/x/sync v0.1.0
 	k8s.io/api v0.26.0
 	k8s.io/apimachinery v0.26.0
 	k8s.io/client-go v11.0.1-0.20190816222228-6d55c1b1f1ca+incompatible
@@ -85,13 +79,13 @@ require (
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/camelcase v1.0.0 // indirect
 	github.com/fvbommel/sortorder v1.0.1 // indirect
+	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/go-redis/cache/v8 v8.4.2 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
-	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/go-test/deep v1.0.4 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
@@ -102,13 +96,11 @@ require (
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
-	github.com/inconshreveable/log15 v3.0.0-testing.3+incompatible // indirect
-	github.com/inconshreveable/log15/v3 v3.0.0-testing.5 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
@@ -150,6 +142,8 @@ require (
 	github.com/yuin/goldmark v1.5.2 // indirect
 	github.com/yuin/goldmark-emoji v1.0.1 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
+	golang.org/x/exp v0.0.0-20221012211006-4de253d81b95 // indirect
+	golang.org/x/sync v0.1.0 // indirect
 	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef // indirect
 	google.golang.org/grpc v1.52.0 // indirect
 	gotest.tools/v3 v3.4.0 // indirect
@@ -207,7 +201,6 @@ require (
 	github.com/hashicorp/hcl v1.0.1-vault-3 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/itchyny/timefmt-go v0.1.4 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -248,7 +241,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448 // indirect
