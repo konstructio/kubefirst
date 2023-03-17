@@ -23,9 +23,6 @@ var (
 
 	// Supported git providers
 	supportedGitProviders = []string{"github", "gitlab"}
-
-	// Quota
-	quotaShowAllFlag bool
 )
 
 func NewCommand() *cobra.Command {

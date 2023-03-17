@@ -50,7 +50,7 @@ func WaitForJobComplete(clientset *kubernetes.Clientset, job *batchv1.Job, timeo
 			}
 		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
 			log.Error().Msg("The operation timed out while waiting for the Job to complete.")
-			return false, errors.New("The operation timed out while waiting for the Job to complete.")
+			return false, errors.New("the operation timed out while waiting for the Job to complete")
 		}
 	}
 }

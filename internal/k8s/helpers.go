@@ -1,7 +1,6 @@
 package k8s
 
 import (
-	"errors"
 	"fmt"
 	"net"
 )
@@ -12,7 +11,7 @@ func CheckForExistingPortForwards(ports ...int) error {
 	for _, port := range ports {
 		listen, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%v", port))
 		if err != nil {
-			return errors.New(fmt.Sprintf("port %v is in use", port))
+			return fmt.Errorf("port %v is in use", port)
 		}
 		_ = listen.Close()
 	}

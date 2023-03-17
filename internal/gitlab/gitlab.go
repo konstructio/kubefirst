@@ -73,7 +73,7 @@ func (gl *GitLabWrapper) GetGroupID(groups []gitlab.Group, groupName string) (in
 			return g.ID, nil
 		}
 	}
-	return 0, errors.New(fmt.Sprintf("group %s not found", groupName))
+	return 0, fmt.Errorf("group %s not found", groupName)
 }
 
 // GetGroups
@@ -129,7 +129,7 @@ func (gl *GitLabWrapper) GetProjectID(projectName string) (int, error) {
 		}
 	}
 
-	return 0, errors.New(fmt.Sprintf("could not get project ID for project %s", projectName))
+	return 0, fmt.Errorf("could not get project ID for project %s", projectName)
 }
 
 // GetProjects
@@ -185,7 +185,7 @@ func (gl *GitLabWrapper) GetSubGroupID(groupID int, subGroupName string) (int, e
 		}
 	}
 
-	return 0, errors.New(fmt.Sprintf("subgroup %s not found", subGroupName))
+	return 0, fmt.Errorf("subgroup %s not found", subGroupName)
 }
 
 // GetSubGroups
@@ -221,7 +221,7 @@ func (gl *GitLabWrapper) FindProjectInGroup(projects []gitlab.Project, projectNa
 		}
 	}
 
-	return false, errors.New(fmt.Sprintf("project %s not found", projectName))
+	return false, fmt.Errorf("project %s not found", projectName)
 }
 
 // User Management
@@ -254,7 +254,7 @@ func (gl *GitLabWrapper) DeleteUserSSHKey(keyTitle string) error {
 	}
 
 	if keyID == 0 {
-		return errors.New(fmt.Sprintf("could not find ssh key %s so it will not be deleted - you may need to delete it manually", keyTitle))
+		return fmt.Errorf("could not find ssh key %s so it will not be deleted - you may need to delete it manually", keyTitle)
 	}
 	_, err = gl.Client.Users.DeleteSSHKey(keyID)
 	if err != nil {
@@ -470,7 +470,7 @@ func (gl *GitLabWrapper) DeleteProjectWebhook(projectName string, url string) er
 		}
 	}
 	if hookID == 0 {
-		return errors.New(fmt.Sprintf("no webhooks were found for project %s given search parameters", projectName))
+		return fmt.Errorf("no webhooks were found for project %s given search parameters", projectName)
 	}
 	_, err = gl.Client.Projects.DeleteProjectHook(projectID, hookID)
 	if err != nil {

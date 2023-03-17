@@ -27,6 +27,9 @@ func ApplyArgoCDKustomize(clientset *kubernetes.Clientset) error {
 			Name: namespace,
 		},
 	}, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
 
 	// Create ServiceAccount
 	serviceAccount, err := clientset.CoreV1().ServiceAccounts(namespace).Create(context.Background(), &v1.ServiceAccount{

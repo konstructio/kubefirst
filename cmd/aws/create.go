@@ -457,7 +457,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
-			return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
+			return fmt.Errorf("error creating github resources with terraform %s : %s", tfEntrypoint, err)
 		}
 
 		log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
@@ -534,7 +534,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
-			return errors.New(fmt.Sprintf("error creating aws resources with terraform %s : %s", tfEntrypoint, err))
+			return fmt.Errorf("error creating aws resources with terraform %s : %s", tfEntrypoint, err)
 		}
 
 		log.Info().Msg("Created aws cloud resources")
@@ -547,6 +547,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 	//* create aws resources
 	if !viper.GetBool("kubefirst-checks.detokenize-kms") {
 		gitopsRepo, err := git.PlainOpen(config.GitopsDir)
+		if err != nil {
+			return err
+		}
 		awsKmsKeyId, err := awsClient.GetKmsKeyID(fmt.Sprintf("alias/vault_%s", clusterNameFlag))
 		if err != nil {
 			return err
@@ -845,7 +848,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		vaultRootToken = initResponse.RootToken
 
 		dataToWrite := make(map[string][]byte)
-		dataToWrite["root-token"] = []byte(initResponse.RootToken)
+		dataToWrite["root-token"] = []byte(vaultRootToken)
 		for i, value := range initResponse.Keys {
 			dataToWrite[fmt.Sprintf("root-unseal-key-%v", i+1)] = []byte(value)
 		}
@@ -867,13 +870,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("vault unseal already done, continuing")
 	}
-
-	secData, err := k8s.ReadSecretV2(clientset, "vault", "vault-unseal-secret")
-	if err != nil {
-		return err
-	}
-
-	vaultRootToken = secData["root-token"]
 
 	//* configure vault with terraform
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")

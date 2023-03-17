@@ -138,7 +138,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	switch gitProviderFlag {
 	case "github":
 		if os.Getenv("GITHUB_TOKEN") == "" {
-			return errors.New("Your GITHUB_TOKEN is not set. Please set and try again.")
+			return errors.New("your GITHUB_TOKEN is not set. Please set and try again")
 		}
 
 		cGitHost = civo.GithubHost
@@ -171,7 +171,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	case "gitlab":
 		if os.Getenv("GITLAB_TOKEN") == "" {
-			return errors.New("Your GITLAB_TOKEN is not set. Please set and try again.")
+			return errors.New("your GITLAB_TOKEN is not set. please set and try again")
 		}
 
 		cGitToken = os.Getenv("GITLAB_TOKEN")
@@ -197,7 +197,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		// Get authenticated user's name
 		user, _, err := gl.Client.Users.CurrentUser()
 		if err != nil {
-			return errors.New("Unable to get authenticated user info.")
+			return errors.New("unable to get authenticated user info")
 		}
 		cGitUser = user.Username
 
@@ -406,7 +406,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	switch {
 	case quotaFailures > 0:
 		fmt.Println(reports.StyleMessage(quotaMessage))
-		return errors.New("At least one of your Civo quotas is close to its limit. Please check the error message above for additional details.")
+		return errors.New("at least one of your Civo quotas is close to its limit. Please check the error message above for additional details")
 	case quotaWarnings > 0:
 		fmt.Println(reports.StyleMessage(quotaMessage))
 	}
@@ -419,11 +419,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider))
 	if !executionControl {
 		if len(cGitToken) == 0 {
-			return errors.New(
-				fmt.Sprintf(
-					"please set a %s_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init",
-					strings.ToUpper(config.GitProvider),
-				),
+			return fmt.Errorf(
+				"please set a %s_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init",
+				strings.ToUpper(config.GitProvider),
 			)
 		}
 
@@ -490,7 +488,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 					log.Info().Msg(err.Error())
 				}
 				if found {
-					return errors.New(fmt.Sprintf("project %s already exists and will need to be deleted before continuing", repositoryName))
+					return fmt.Errorf("project %s already exists and will need to be deleted before continuing", repositoryName)
 				}
 			}
 
@@ -514,7 +512,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			for _, teamName := range newTeamNames {
 				for _, sg := range subgroups {
 					if sg.Name == teamName {
-						return errors.New(fmt.Sprintf("subgroup %s already exists and will need to be deleted before continuing", teamName))
+						return fmt.Errorf("subgroup %s already exists and will need to be deleted before continuing", teamName)
 					}
 				}
 			}
@@ -688,7 +686,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
-				return errors.New(fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err))
+				return fmt.Errorf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 			}
 
 			log.Info().Msgf("Created git repositories and teams for github.com/%s", cGitOwner)
@@ -721,7 +719,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, gid)
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
-				return errors.New(fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err))
+				return fmt.Errorf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 			}
 
 			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabGroupFlag)
@@ -828,7 +826,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
-			return errors.New(fmt.Sprintf("error creating civo resources with terraform %s : %s", tfEntrypoint, err))
+			return fmt.Errorf("error creating civo resources with terraform %s : %s", tfEntrypoint, err)
 		}
 
 		log.Info().Msg("Created civo cloud resources")

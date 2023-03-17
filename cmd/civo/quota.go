@@ -3,7 +3,6 @@ package civo
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -169,7 +168,7 @@ func printCivoQuotaWarning(messageHeader string, output []string) string {
 func evalCivoQuota(cmd *cobra.Command, args []string) error {
 	civoToken := os.Getenv("CIVO_TOKEN")
 	if len(civoToken) == 0 {
-		return errors.New("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set CIVO_TOKEN.\n")
+		return fmt.Errorf("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set CIVO_TOKEN")
 	}
 
 	cloudRegionFlag, err := cmd.Flags().GetString("cloud-region")

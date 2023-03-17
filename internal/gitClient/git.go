@@ -68,7 +68,7 @@ func SetRefToMainBranch(repo *git.Repository) (*git.Repository, error) {
 	branchName := plumbing.NewBranchReferenceName("main")
 	headRef, err := repo.Head()
 	if err != nil {
-		return nil, fmt.Errorf("Error Setting reference: %s", err)
+		return nil, fmt.Errorf("error Setting reference: %s", err)
 	}
 
 	ref := plumbing.NewHashReference(branchName, headRef.Hash())

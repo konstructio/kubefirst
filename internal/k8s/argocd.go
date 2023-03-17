@@ -1,7 +1,6 @@
 package k8s
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/rs/zerolog/log"
@@ -22,11 +21,11 @@ func VerifyArgoCDReadiness(clientset *kubernetes.Clientset, highAvailabilityEnab
 		120,
 	)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Error finding ArgoCD Application Controller StatefulSet: %s", err))
+		return false, fmt.Errorf("error finding ArgoCD Application Controller StatefulSet: %s", err)
 	}
 	_, err = WaitForStatefulSetReady(clientset, argoCDStatefulSet, 120, false)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Error waiting for ArgoCD Application Controller StatefulSet ready state: %s", err))
+		return false, fmt.Errorf("error waiting for ArgoCD Application Controller StatefulSet ready state: %s", err)
 	}
 
 	// argocd-server Deployment
@@ -61,11 +60,11 @@ func VerifyArgoCDReadiness(clientset *kubernetes.Clientset, highAvailabilityEnab
 		120,
 	)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Error finding ArgoCD repo deployment: %s", err))
+		return false, fmt.Errorf("error finding ArgoCD repo deployment: %s", err.Error())
 	}
 	_, err = WaitForDeploymentReady(clientset, argoCDRepoDeployment, 120)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Error waiting for ArgoCD repo deployment ready state: %s", err))
+		return false, fmt.Errorf("error waiting for ArgoCD repo deployment ready state: %s", err.Error())
 	}
 
 	// high availability components
@@ -79,11 +78,11 @@ func VerifyArgoCDReadiness(clientset *kubernetes.Clientset, highAvailabilityEnab
 			120,
 		)
 		if err != nil {
-			return false, errors.New(fmt.Sprintf("Error finding ArgoCD argocd-redis-ha-haproxy Deployment: %s", err))
+			return false, fmt.Errorf("error finding ArgoCD argocd-redis-ha-haproxy Deployment: %s", err)
 		}
 		_, err = WaitForDeploymentReady(clientset, argoCDRedisHAhaproxyDeployment, 120)
 		if err != nil {
-			return false, errors.New(fmt.Sprintf("Error waiting for ArgoCD argocd-redis-ha-haproxy deployment ready state: %s", err))
+			return false, fmt.Errorf("error waiting for ArgoCD argocd-redis-ha-haproxy deployment ready state: %s", err.Error())
 		}
 
 		// argocd-redis-ha StatefulSet
@@ -95,11 +94,11 @@ func VerifyArgoCDReadiness(clientset *kubernetes.Clientset, highAvailabilityEnab
 			120,
 		)
 		if err != nil {
-			return false, errors.New(fmt.Sprintf("Error finding ArgoCD argocd-redis-ha StatefulSet: %s", err))
+			return false, fmt.Errorf("error finding ArgoCD argocd-redis-ha StatefulSet: %s", err.Error())
 		}
 		_, err = WaitForStatefulSetReady(clientset, argoCDRedisHAServerStatefulSet, 120, false)
 		if err != nil {
-			return false, errors.New(fmt.Sprintf("Error waiting for ArgoCD argocd-redis-ha StatefulSet ready state: %s", err))
+			return false, fmt.Errorf("error waiting for ArgoCD argocd-redis-ha StatefulSet ready state: %s", err.Error())
 		}
 	} else {
 		// non-high availability components
@@ -112,11 +111,11 @@ func VerifyArgoCDReadiness(clientset *kubernetes.Clientset, highAvailabilityEnab
 			120,
 		)
 		if err != nil {
-			return false, errors.New(fmt.Sprintf("Error finding ArgoCD argocd-redis Deployment: %s", err))
+			return false, fmt.Errorf("error finding ArgoCD argocd-redis Deployment: %s", err)
 		}
 		_, err = WaitForDeploymentReady(clientset, argoCDRedisDeployment, 120)
 		if err != nil {
-			return false, errors.New(fmt.Sprintf("Error waiting for ArgoCD argocd-redis Deployment ready state: %s", err))
+			return false, fmt.Errorf("error waiting for ArgoCD argocd-redis Deployment ready state: %s", err)
 		}
 	}
 

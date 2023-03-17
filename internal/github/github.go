@@ -313,7 +313,7 @@ func (g GithubSession) DeleteRepositoryWebhook(owner string, repository string, 
 		}
 		log.Info().Msgf("deleted hook %s/%s/%s", owner, repository, url)
 	} else {
-		return errors.New(fmt.Sprintf("hook %s/%s/%s not found", owner, repository, url))
+		return fmt.Errorf("hook %s/%s/%s not found", owner, repository, url)
 	}
 
 	return nil
