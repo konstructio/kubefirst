@@ -270,7 +270,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		case "gitlab":
 			gid, err := strconv.Atoi(viper.GetString("flags.gitlab-owner-group-id"))
 			if err != nil {
-				return errors.New(fmt.Sprintf("couldn't convert gitlab group id to int: %s", err))
+				return fmt.Errorf("couldn't convert gitlab group id to int: %s", err)
 			}
 			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, gid)
 		}

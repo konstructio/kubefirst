@@ -42,7 +42,7 @@ func ReadConfigMapV2(kubeConfigPath string, namespace string, configMapName stri
 	}
 	configMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(context.Background(), configMapName, metav1.GetOptions{})
 	if err != nil {
-		return map[string]string{}, errors.New(fmt.Sprintf("error getting ConfigMap: %s\n", err))
+		return map[string]string{}, fmt.Errorf("error getting ConfigMap: %s\n", err)
 	}
 
 	parsedSecretData := make(map[string]string)

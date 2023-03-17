@@ -457,7 +457,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
-			return errors.New(fmt.Sprintf("error creating github resources with terraform %s : %s", tfEntrypoint, err))
+			return fmt.Errorf("error creating github resources with terraform %s : %s", tfEntrypoint, err)
 		}
 
 		log.Info().Msgf("Created git repositories and teams in github.com/%s", githubOwnerFlag)
@@ -534,7 +534,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
-			return errors.New(fmt.Sprintf("error creating aws resources with terraform %s : %s", tfEntrypoint, err))
+			return fmt.Errorf("error creating aws resources with terraform %s : %s", tfEntrypoint, err)
 		}
 
 		log.Info().Msg("Created aws cloud resources")

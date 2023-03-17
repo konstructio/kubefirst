@@ -403,7 +403,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 					log.Info().Msg(err.Error())
 				}
 				if found {
-					return errors.New(fmt.Sprintf("project %s already exists and will need to be deleted before continuing", repositoryName))
+					return fmt.Errorf("project %s already exists and will need to be deleted before continuing", repositoryName)
 				}
 			}
 
@@ -425,7 +425,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			for _, teamName := range newRepositoryNames {
 				for _, sg := range subgroups {
 					if sg.Name == teamName {
-						return errors.New(fmt.Sprintf("subgroup %s already exists and will need to be deleted before continuing", teamName))
+						return fmt.Errorf("subgroup %s already exists and will need to be deleted before continuing", teamName)
 					}
 				}
 			}
@@ -599,7 +599,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_aws_secret_access_key"] = "feedkraystars"
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
-				return errors.New(fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err))
+				return fmt.Errorf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 			}
 
 			log.Info().Msgf("created git repositories for github.com/%s", cGitOwner)
@@ -634,7 +634,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gid)
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
-				return errors.New(fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err))
+				return fmt.Errorf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 			}
 
 			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabGroupFlag)
