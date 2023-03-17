@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dustin/go-humanize"
 	"github.com/rs/zerolog/log"
 	v1 "k8s.io/api/core/v1"
@@ -65,6 +66,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	githubOrgFlag, err := cmd.Flags().GetString("github-org")
+	if err != nil {
+		return err
+	}
+
 	githubUserFlag, err := cmd.Flags().GetString("github-user")
 	if err != nil {
 		return err
@@ -98,6 +104,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	useTelemetryFlag, err := cmd.Flags().GetBool("use-telemetry")
 	if err != nil {
 		return err
+	}
+
+	// Either user or org can be specified for github, not both
+	if githubOrgFlag != "" && githubUserFlag != "" {
+		return errors.New("only one of --github-user or --github-org can be supplied")
 	}
 
 	// Check for existing port forwards before continuing
@@ -168,13 +179,17 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		//* todo: clean these up once flag changes are implemented
 		// Owner is either an organization or a personal user's GitHub handle
-		// At this point, we set this to the user's GitHub handle regardless
-		// When support for orgs is introduced, this needs to switch
-		cGitOwner = githubUser
+		if githubOrgFlag != "" {
+			cGitOwner = githubOrgFlag
+		} else if githubUserFlag != "" {
+			cGitOwner = githubUser
+		} else if githubOrgFlag == "" && githubUserFlag == "" {
+			cGitOwner = githubUser
+		}
 		cGitUser = githubUser
-		viper.Set("flags.github-owner", githubUser)
+
+		viper.Set("flags.github-owner", cGitOwner)
 		viper.Set("github.session_token", cGitToken)
 		viper.WriteConfig()
 
@@ -202,7 +217,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		// Get authenticated user's name
 		user, _, err := gl.Client.Users.CurrentUser()
 		if err != nil {
-			return errors.New("Unable to get authenticated user info.")
+			return errors.New("Unable to get authenticated user info - please make sure GITLAB_TOKEN env var is set")
 		}
 		cGitUser = user.Username
 
@@ -210,6 +225,42 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
 	default:
 		log.Error().Msgf("invalid git provider option")
+	}
+
+	// Ask for confirmation
+	var gitDestDescriptor string
+	switch gitProviderFlag {
+	case "github":
+		if githubOrgFlag != "" {
+			gitDestDescriptor = "Organization"
+		}
+		if githubUserFlag != "" {
+			gitDestDescriptor = "User"
+		}
+		if githubUserFlag == "" && githubOrgFlag == "" {
+			gitDestDescriptor = "User"
+		}
+	case "gitlab":
+		gitDestDescriptor = "Group"
+	}
+
+	// Since it's possible to stop and restart, cGitOwner may need to be reset
+	if cGitOwner == "" {
+		switch gitProviderFlag {
+		case "github":
+			cGitOwner = viper.GetString("flags.github-owner")
+		case "gitlab":
+			cGitOwner = viper.GetString("flags.gitlab-owner")
+		}
+	}
+
+	model, err := presentRecap(gitProviderFlag, gitDestDescriptor, cGitOwner)
+	if err != nil {
+		return err
+	}
+	_, err = tea.NewProgram(model).Run()
+	if err != nil {
+		return err
 	}
 
 	// Instantiate K3d config
@@ -552,7 +603,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				return errors.New(fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err))
 			}
 
-			log.Info().Msgf("created git repositories for github.com/%s", githubUserFlag)
+			log.Info().Msgf("created git repositories for github.com/%s", cGitOwner)
 			viper.Set("kubefirst-checks.terraform-apply-github", true)
 			viper.WriteConfig()
 			progressPrinter.IncrementTracker("applying-git-terraform", 1)
@@ -1250,7 +1301,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// Set flags used to track status of active options
 	helpers.SetCompletionFlags(k3d.CloudProvider, config.GitProvider)
 
-	reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, cGitOwner, config, dryRunFlag, false)
+	reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, dryRunFlag, false)
 
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
