@@ -32,7 +32,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/segment"
 	"github.com/kubefirst/kubefirst/internal/services"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
-	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/kubefirst/kubefirst/internal/terraform"
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
@@ -986,12 +985,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("vault is already initialized - skipping")
 		progressPrinter.IncrementTracker("configuring-vault", 1)
 	}
-
-	log.Info().Msg("storing certificates into application secrets namespace")
-	if err := ssl.CreateSecretsFromCertificatesForK3dWrapper(config); err != nil {
-		log.Error().Err(err).Msg("")
-	}
-	log.Info().Msg("storing certificates into application secrets namespace done")
 
 	minioStopChannel := make(chan struct{}, 1)
 	defer func() {
