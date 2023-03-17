@@ -547,6 +547,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 	//* create aws resources
 	if !viper.GetBool("kubefirst-checks.detokenize-kms") {
 		gitopsRepo, err := git.PlainOpen(config.GitopsDir)
+		if err != nil {
+			return err
+		}
 		awsKmsKeyId, err := awsClient.GetKmsKeyID(fmt.Sprintf("alias/vault_%s", clusterNameFlag))
 		if err != nil {
 			return err
@@ -845,7 +848,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		vaultRootToken = initResponse.RootToken
 
 		dataToWrite := make(map[string][]byte)
-		dataToWrite["root-token"] = []byte(initResponse.RootToken)
+		dataToWrite["root-token"] = []byte(vaultRootToken)
 		for i, value := range initResponse.Keys {
 			dataToWrite[fmt.Sprintf("root-unseal-key-%v", i+1)] = []byte(value)
 		}
@@ -867,13 +870,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("vault unseal already done, continuing")
 	}
-
-	secData, err := k8s.ReadSecretV2(clientset, "vault", "vault-unseal-secret")
-	if err != nil {
-		return err
-	}
-
-	vaultRootToken = secData["root-token"]
 
 	//* configure vault with terraform
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
