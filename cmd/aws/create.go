@@ -3,6 +3,7 @@ package aws
 import (
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -350,6 +351,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	atlantisWebhookURL := fmt.Sprintf("https://atlantis.%s/events", domainNameFlag)
+	awsAccountID := *iamCaller.Account
 
 	gitopsTemplateTokens := awsinternal.GitOpsDirectoryValues{
 		AlertsEmail:                    alertsEmailFlag,
@@ -490,8 +492,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already pushed detokenized gitops repository content")
 	}
 
-	// todo adopt ecr
-
 	//* git clone and detokenize the metaphor-template repository
 	if !viper.GetBool("kubefirst-checks.metaphor-repo-pushed") {
 
@@ -525,7 +525,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := config.GitopsDir + "/terraform/aws"
 		tfEnvs := map[string]string{}
-		tfEnvs["TF_VAR_aws_account_id"] = *iamCaller.Account
+		tfEnvs["TF_VAR_aws_account_id"] = awsAccountID
 		tfEnvs["TF_VAR_hosted_zone_name"] = domainNameFlag
 		tfEnvs["AWS_SDK_LOAD_CONFIG"] = "1"
 		tfEnvs["TF_VAR_aws_region"] = os.Getenv("AWS_REGION")
@@ -646,29 +646,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Fatal().Msgf("error waiting for ArgoCD to become ready: %s", err)
 	}
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
-	//!
+
 	//* ArgoCD port-forward
 	// todo DO WE ACTUALLY USE THIS!?
 	argoCDStopChannel := make(chan struct{}, 1)
@@ -724,6 +702,28 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("creating service accounts")
 		err = bootstrap.ServiceAccounts(clientset)
 		if err != nil {
+			return err
+		}
+
+		ecrToken, err := awsClient.GetECRAuthToken()
+		if err != nil {
+			return err
+		}
+
+		usernamePasswordString := fmt.Sprintf("%s:%s", pkg.AwsECRUsername, ecrToken)
+		usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+		registryURL := fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", awsAccountID, cloudRegionFlag)
+
+		dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"auth": "%s"}}}`, registryURL, usernamePasswordStringB64)
+
+		dockerCfgSecret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "argo"},
+			Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
+			Type:       "Opaque",
+		}
+		_, err = clientset.CoreV1().Secrets(secret.ObjectMeta.Namespace).Create(context.TODO(), dockerCfgSecret, metav1.CreateOptions{})
+		if err != nil {
+			log.Info().Msgf("error creating kubernetes secret %s/%s: %s", secret.Namespace, secret.Name, err)
 			return err
 		}
 
