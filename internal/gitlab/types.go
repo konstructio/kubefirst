@@ -1,4 +1,4 @@
-package gitlabcloud
+package gitlab
 
 import "github.com/xanzy/go-gitlab"
 

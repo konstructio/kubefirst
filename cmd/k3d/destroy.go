@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubefirst/kubefirst/internal/githubWrapper"
-	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
+	"github.com/kubefirst/kubefirst/internal/github"
+	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
@@ -59,17 +59,6 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 		log.Panic().Msgf("invalid git provider option")
 	}
 
-	// Check for existing port forwards before continuing
-	err = k8s.CheckForExistingPortForwards(9000)
-	if err != nil {
-		log.Fatal().Msgf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
-		return err
-	}
-
-	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
-	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 2)
-	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
-
 	// Instantiate K3d config
 	config := k3d.GetConfig(gitProvider, cGitOwner)
 
@@ -105,8 +94,8 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 		switch config.GitProvider {
 		case "github":
-			githubWrapper := githubWrapper.New(cGitToken)
-			err = githubWrapper.DeleteRepositoryWebhook(cGitOwner, "gitops", webhookURL)
+			githubSession := github.New(cGitToken)
+			err = githubSession.DeleteRepositoryWebhook(cGitOwner, "gitops", webhookURL)
 			if err != nil {
 				log.Error().Msgf("error removing webhook: %s - you may need to manually remove it", err)
 			}
