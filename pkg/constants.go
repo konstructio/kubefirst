@@ -18,6 +18,7 @@ const (
 	LocalhostARCH                = runtime.GOARCH
 	LocalhostOS                  = runtime.GOOS
 	AwsECRUsername               = "AWS"
+	RegistryAppName              = "registry"
 )
 
 // SegmentIO constants

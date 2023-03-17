@@ -9,7 +9,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/eks"
 	"github.com/kubefirst/kubefirst/internal/argocd"
+	awsinternal "github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/civo"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
 	"github.com/kubefirst/kubefirst/internal/k8s"
@@ -32,10 +36,9 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	log.Info().Msg("destroying kubefirst platform in civo")
+	log.Info().Msg("destroying kubefirst platform in aws")
 
 	clusterName := viper.GetString("flags.cluster-name")
-	domainName := viper.GetString("flags.domain-name")
 	dryRun := viper.GetBool("flags.dry-run")
 	gitProvider := viper.GetString("flags.git-provider")
 
@@ -52,8 +55,8 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		log.Panic().Msgf("invalid git provider option")
 	}
 
-	// Instantiate civo config
-	config := civo.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
+	// Instantiate aws config
+	config := awsinternal.GetConfig(cGitOwner)
 
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
@@ -67,8 +70,11 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
-			tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-			tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+			tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
+			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
+			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = fmt.Sprintf("https://atlantis.%s/events", domainNameFlag)
+			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
 			err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -139,12 +145,26 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 			progressPrinter.IncrementTracker("platform-destroy", 1)
 		}
 	}
-	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
+	sess := session.Must(session.NewSession(&aws.Config{
+		Region: aws.String(cloudRegionFlag),
+	}))
+
+	eksSvc := eks.New(sess)
+
+	clusterInput := &eks.DescribeClusterInput{
+		Name: aws.String(clusterName),
+	}
+	eksClusterInfo, err := eksSvc.DescribeCluster(clusterInput)
 	if err != nil {
-		return err
+		log.Fatal().Msgf("Error calling DescribeCluster: %v", err)
 	}
 
-	clientset, err := k8s.GetClientSet(false, config.Kubeconfig)
+	clientset, err := awsinternal.NewClientset(eksClusterInfo.Cluster)
+	if err != nil {
+		log.Fatal().Msgf("Error creating clientset: %v", err)
+	}
+
+	restConfig, err := awsinternal.NewRestConfig(eksClusterInfo.Cluster)
 	if err != nil {
 		return err
 	}
@@ -175,10 +195,10 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 				return err
 			}
 
-			log.Info().Msgf("port-forward to argocd is available at %s", civo.ArgocdPortForwardURL)
+			log.Info().Msgf("port-forward to argocd is available at %s", pkg.ArgocdPortForwardURL)
 
 			log.Info().Msg("deleting the registry application")
-			httpCode, _, err := argocd.DeleteApplication(&httpClientNoSSL, config.RegistryAppName, argocdAuthToken, "true")
+			httpCode, _, err := argocd.DeleteApplication(&httpClientNoSSL, pkg.RegistryAppName, argocdAuthToken, "true")
 			if err != nil {
 				return err
 			}
@@ -192,11 +212,19 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("destroying aws cloud resources")
 		tfEntrypoint := config.GitopsDir + "/terraform/aws"
 		tfEnvs := map[string]string{}
-		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
+		tfEnvs["TF_VAR_aws_account_id"] = "awsAccountID"
+		tfEnvs["TF_VAR_hosted_zone_name"] = domainNameFlag
+		tfEnvs["AWS_SDK_LOAD_CONFIG"] = "1"
+		tfEnvs["TF_VAR_aws_region"] = os.Getenv("AWS_REGION")
+		tfEnvs["AWS_REGION"] = os.Getenv("AWS_REGION")
 
 		switch gitProvider {
 		case "github":
-			tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+			tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
+			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
+			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = "atlantisWebhookURL"
+			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
 		case "gitlab":
 			gid, err := strconv.Atoi(viper.GetString("flags.gitlab-owner-group-id"))
 			if err != nil {
@@ -209,9 +237,9 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)
 			return err
 		}
-		viper.Set("kubefirst-checks.terraform-apply-civo", false)
+		viper.Set("kubefirst-checks.terraform-apply-aws", false)
 		viper.WriteConfig()
-		log.Info().Msg("civo resources terraform destroyed")
+		log.Info().Msg("aws resources terraform destroyed")
 		progressPrinter.IncrementTracker("platform-destroy", 1)
 	}
 
@@ -228,7 +256,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	}
 
 	//* remove local content and kubefirst config file for re-execution
-	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.terraform-apply-civo") {
+	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.terraform-apply-aws") {
 		log.Info().Msg("removing previous platform content")
 
 		err := pkg.ResetK1Dir(config.K1Dir, config.KubefirstConfig)
