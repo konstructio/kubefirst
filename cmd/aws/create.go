@@ -22,7 +22,7 @@ import (
 	awsinternal "github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/bootstrap"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
-	"github.com/kubefirst/kubefirst/internal/githubWrapper"
+	"github.com/kubefirst/kubefirst/internal/github"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/segment"
@@ -186,7 +186,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return errors.New("please set a GITHUB_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init")
 		}
 
-		githubWrapper := githubWrapper.New(os.Getenv("GITHUB_TOKEN"))
+		githubSession := github.New(os.Getenv("GITHUB_TOKEN"))
 		// todo this block need to be pulled into githubHandler. -- begin
 		newRepositoryExists := false
 		// todo hoist to globals
@@ -194,7 +194,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		errorMsg := "the following repositories must be removed before continuing with your kubefirst installation.\n\t"
 
 		for _, repositoryName := range newRepositoryNames {
-			responseStatusCode := githubWrapper.CheckRepoExists(githubOwnerFlag, repositoryName)
+			responseStatusCode := githubSession.CheckRepoExists(githubOwnerFlag, repositoryName)
 
 			// https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
 			repositoryExistsStatusCode := 200
@@ -219,7 +219,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		errorMsg = "the following teams must be removed before continuing with your kubefirst installation.\n\t"
 
 		for _, teamName := range newTeamNames {
-			responseStatusCode := githubWrapper.CheckTeamExists(githubOwnerFlag, teamName)
+			responseStatusCode := githubSession.CheckTeamExists(githubOwnerFlag, teamName)
 
 			// https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#get-a-team-by-name
 			teamExistsStatusCode := 200
