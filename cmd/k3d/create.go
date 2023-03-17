@@ -65,6 +65,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	githubOrgFlag, err := cmd.Flags().GetString("github-org")
+	if err != nil {
+		return err
+	}
+
 	githubUserFlag, err := cmd.Flags().GetString("github-user")
 	if err != nil {
 		return err
@@ -98,6 +103,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	useTelemetryFlag, err := cmd.Flags().GetBool("use-telemetry")
 	if err != nil {
 		return err
+	}
+
+	// Either user or org can be specified for github, not both
+	if githubOrgFlag != "" && githubUserFlag != "" {
+		return errors.New("only one of --github-user or --github-org can be supplied")
 	}
 
 	// Check for existing port forwards before continuing
@@ -168,13 +178,17 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		//* todo: clean these up once flag changes are implemented
 		// Owner is either an organization or a personal user's GitHub handle
-		// At this point, we set this to the user's GitHub handle regardless
-		// When support for orgs is introduced, this needs to switch
-		cGitOwner = githubUser
+		if githubOrgFlag != "" {
+			cGitOwner = githubOrgFlag
+		} else if githubUserFlag != "" {
+			cGitOwner = githubUser
+		} else if githubOrgFlag == "" && githubUserFlag == "" {
+			cGitOwner = githubUser
+		}
 		cGitUser = githubUser
-		viper.Set("flags.github-owner", githubUser)
+
+		viper.Set("flags.github-owner", cGitOwner)
 		viper.Set("github.session_token", cGitToken)
 		viper.WriteConfig()
 
@@ -202,7 +216,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		// Get authenticated user's name
 		user, _, err := gl.Client.Users.CurrentUser()
 		if err != nil {
-			return errors.New("Unable to get authenticated user info.")
+			return errors.New("Unable to get authenticated user info - please make sure GITLAB_TOKEN env var is set")
 		}
 		cGitUser = user.Username
 
@@ -211,6 +225,43 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	default:
 		log.Error().Msgf("invalid git provider option")
 	}
+
+	// Ask for confirmation
+	var gitDestDescriptor string
+	switch gitProviderFlag {
+	case "github":
+		if githubOrgFlag != "" {
+			gitDestDescriptor = "Organization"
+		}
+		if githubUserFlag != "" {
+			gitDestDescriptor = "User"
+		}
+		if githubUserFlag == "" && githubOrgFlag == "" {
+			gitDestDescriptor = "User"
+		}
+	case "gitlab":
+		gitDestDescriptor = "Group"
+	}
+
+	// todo
+	// Since it's possible to stop and restart, cGitOwner may need to be reset
+	//if cGitOwner == "" {
+	//	switch gitProviderFlag {
+	//	case "github":
+	//		cGitOwner = viper.GetString("flags.github-owner")
+	//	case "gitlab":
+	//		cGitOwner = viper.GetString("flags.gitlab-owner")
+	//	}
+	//}
+	//
+	//model, err := presentRecap(gitProviderFlag, gitDestDescriptor, cGitOwner)
+	//if err != nil {
+	//	return err
+	//}
+	//_, err = tea.NewProgram(model).Run()
+	//if err != nil {
+	//	return err
+	//}
 
 	// Instantiate K3d config
 	config := k3d.GetConfig(gitProviderFlag, cGitOwner)
@@ -552,7 +603,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				return errors.New(fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err))
 			}
 
-			log.Info().Msgf("created git repositories for github.com/%s", githubUserFlag)
+			log.Info().Msgf("created git repositories for github.com/%s", cGitOwner)
 			viper.Set("kubefirst-checks.terraform-apply-github", true)
 			viper.WriteConfig()
 			progressPrinter.IncrementTracker("applying-git-terraform", 1)
@@ -881,7 +932,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Fatal().Msgf("error waiting for ArgoCD to become ready: %s", err)
 	}
 
-	log.Info().Msgf("port-forward to argocd is available at %s", k3d.ArgocdURL)
+	// Kubernetes client rest config
+	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
+	if err != nil {
+		return err
+	}
 
 	var argocdPassword string
 	//* argocd pods are ready, get and set credentials
@@ -901,28 +956,53 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("components.argocd.username", "admin")
 		viper.WriteConfig()
 		log.Info().Msg("argocd username and password credentials set successfully")
-
 		log.Info().Msg("Getting an argocd auth token")
-		// todo return in here and pass argocdAuthToken as a parameter
-		token, err := argocd.GetArgocdTokenV2(httpClient, k3d.ArgocdURL, "admin", argocdPassword)
+
+		// Test https to argocd
+		var argoCDToken string
+		// only the host, not the protocol
+		err := helpers.TestEndpointTLS(strings.Replace(k3d.ArgocdURL, "https://", "", 1))
 		if err != nil {
-			return err
+			argoCDStopChannel := make(chan struct{}, 1)
+			log.Info().Msgf("argocd not available via https, using http")
+			defer func() {
+				close(argoCDStopChannel)
+			}()
+			k8s.OpenPortForwardPodWrapper(
+				clientset,
+				restConfig,
+				"argocd-server",
+				"argocd",
+				8080,
+				8080,
+				argoCDStopChannel,
+			)
+			argoCDHTTPURL := strings.Replace(
+				k3d.ArgocdURL,
+				"https://",
+				"http://",
+				1,
+			) + ":8080"
+			argoCDToken, err = argocd.GetArgocdTokenV2(httpClient, argoCDHTTPURL, "admin", argocdPassword)
+			if err != nil {
+				return err
+			}
+		} else {
+			argoCDToken, err = argocd.GetArgocdTokenV2(httpClient, k3d.ArgocdURL, "admin", argocdPassword)
+			if err != nil {
+				return err
+			}
 		}
 
 		log.Info().Msg("argocd admin auth token set")
 
-		viper.Set("components.argocd.auth-token", token)
+		viper.Set("components.argocd.auth-token", argoCDToken)
 		viper.Set("kubefirst-checks.argocd-credentials-set", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	} else {
 		log.Info().Msg("argo credentials already set, continuing")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
-	}
-
-	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
-	if err != nil {
-		return err
 	}
 
 	//* argocd sync registry and start sync waves
@@ -957,7 +1037,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 90, false)
+	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 120, false)
 	if err != nil {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
@@ -1250,7 +1330,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// Set flags used to track status of active options
 	helpers.SetCompletionFlags(k3d.CloudProvider, config.GitProvider)
 
-	reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, cGitOwner, config, dryRunFlag, false)
+	reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, dryRunFlag, false)
 
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)

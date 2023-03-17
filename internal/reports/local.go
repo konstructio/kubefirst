@@ -14,7 +14,7 @@ import (
 var caser = cases.Title(language.AmericanEnglish)
 
 // LocalHandoffScreenV2 prints the handoff screen
-func LocalHandoffScreenV2(argocdAdminPassword, clusterName, gitOwner string, config *k3d.K3dConfig, dryRun bool, silentMode bool) {
+func LocalHandoffScreenV2(argocdAdminPassword, clusterName, gitDestDescriptor string, gitOwner string, config *k3d.K3dConfig, dryRun bool, silentMode bool) {
 	// prepare data for the handoff report
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, LocalHandoffScreen skipped.")
@@ -50,7 +50,7 @@ func LocalHandoffScreenV2(argocdAdminPassword, clusterName, gitOwner string, con
 
 	handOffData.WriteString(fmt.Sprintf("\n\n--- %s ", caser.String(config.GitProvider)))
 	handOffData.WriteString(strings.Repeat("-", 59))
-	handOffData.WriteString(fmt.Sprintf("\n Owner: %s", gitOwner))
+	handOffData.WriteString(fmt.Sprintf("\n %s: %s", strings.Title(gitDestDescriptor), gitOwner))
 	handOffData.WriteString("\n Repos: ")
 	handOffData.WriteString(fmt.Sprintf("\n  %s", config.DestinationGitopsRepoGitURL))
 	handOffData.WriteString(fmt.Sprintf("\n  %s", config.DestinationMetaphorRepoGitURL))
