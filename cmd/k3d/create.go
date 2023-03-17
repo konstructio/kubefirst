@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dustin/go-humanize"
 	"github.com/rs/zerolog/log"
 	v1 "k8s.io/api/core/v1"
@@ -244,24 +243,25 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		gitDestDescriptor = "Group"
 	}
 
+	// todo
 	// Since it's possible to stop and restart, cGitOwner may need to be reset
-	if cGitOwner == "" {
-		switch gitProviderFlag {
-		case "github":
-			cGitOwner = viper.GetString("flags.github-owner")
-		case "gitlab":
-			cGitOwner = viper.GetString("flags.gitlab-owner")
-		}
-	}
-
-	model, err := presentRecap(gitProviderFlag, gitDestDescriptor, cGitOwner)
-	if err != nil {
-		return err
-	}
-	_, err = tea.NewProgram(model).Run()
-	if err != nil {
-		return err
-	}
+	//if cGitOwner == "" {
+	//	switch gitProviderFlag {
+	//	case "github":
+	//		cGitOwner = viper.GetString("flags.github-owner")
+	//	case "gitlab":
+	//		cGitOwner = viper.GetString("flags.gitlab-owner")
+	//	}
+	//}
+	//
+	//model, err := presentRecap(gitProviderFlag, gitDestDescriptor, cGitOwner)
+	//if err != nil {
+	//	return err
+	//}
+	//_, err = tea.NewProgram(model).Run()
+	//if err != nil {
+	//	return err
+	//}
 
 	// Instantiate K3d config
 	config := k3d.GetConfig(gitProviderFlag, cGitOwner)
