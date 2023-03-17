@@ -35,8 +35,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	// Check for existing port forwards before continuing
 	err = k8s.CheckForExistingPortForwards(8080)
 	if err != nil {
-		log.Fatal().Msgf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
-		return err
+		return fmt.Errorf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
 	}
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
@@ -69,11 +68,9 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	civoToken := os.Getenv("CIVO_TOKEN")
 
 	if len(cGitToken) == 0 {
-		return errors.New(
-			fmt.Sprintf(
-				"please set a %s_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/%s/install.html#step-3-kubefirst-init",
-				strings.ToUpper(gitProvider), gitProvider,
-			),
+		return fmt.Errorf(
+			"please set a %s_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/%s/install.html#step-3-kubefirst-init",
+			strings.ToUpper(gitProvider), gitProvider,
 		)
 	}
 	if len(civoToken) == 0 {
@@ -197,8 +194,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 
 		client, err := civogo.NewClient(os.Getenv("CIVO_TOKEN"), region)
 		if err != nil {
-			log.Info().Msg(err.Error())
-			return err
+			return fmt.Errorf(err.Error())
 		}
 
 		cluster, err := client.FindKubernetesCluster(clusterName)
@@ -324,7 +320,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 	time.Sleep(time.Second * 2) // allows progress bars to finish
-	fmt.Println(fmt.Sprintf("Your kubefirst platform running in %s has been destroyed.", civo.CloudProvider))
+	fmt.Printf("your kubefirst platform running in %s has been destroyed", civo.CloudProvider)
 
 	return nil
 }

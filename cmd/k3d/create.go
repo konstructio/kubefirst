@@ -215,7 +215,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		// Get authenticated user's name
 		user, _, err := gl.Client.Users.CurrentUser()
 		if err != nil {
-			return errors.New("Unable to get authenticated user info - please make sure GITLAB_TOKEN env var is set")
+			return fmt.Errorf("unable to get authenticated user info - please make sure GITLAB_TOKEN env var is set %s", err.Error())
 		}
 		cGitUser = user.Username
 
@@ -332,11 +332,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider))
 	if !executionControl {
 		if len(cGitToken) == 0 {
-			return errors.New(
-				fmt.Sprintf(
-					"please set a %s_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init",
-					strings.ToUpper(config.GitProvider),
-				),
+			return fmt.Errorf(
+				"please set a %s_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init",
+				strings.ToUpper(config.GitProvider),
 			)
 		}
 
@@ -781,6 +779,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 
 		err := k3d.GenerateTLSSecrets(clientset, *config)
+		if err != nil {
+			return err
+		}
 
 		err = k3d.AddK3DSecrets(
 			atlantisWebhookSecret,
