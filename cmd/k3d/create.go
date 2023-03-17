@@ -793,7 +793,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
 				Type:       "Opaque",
 			}
-			err = k8s.CreateSecretV2(config.Kubeconfig, argoDeployTokenSecret)
+			err = k8s.CreateSecretV2(clientset, argoDeployTokenSecret)
 			if err != nil {
 				log.Error().Msgf("error while creating secret for repository deploy token: %s", err)
 			}
@@ -832,7 +832,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 						Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
 						Type:       "kubernetes.io/dockerconfigjson",
 					}
-					err = k8s.CreateSecretV2(config.Kubeconfig, deployTokenSecret)
+					err = k8s.CreateSecretV2(clientset, deployTokenSecret)
 					if err != nil {
 						log.Error().Msgf("error while creating secret for project deploy token: %s", err)
 					}
@@ -845,7 +845,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 					Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
 					Type:       "Opaque",
 				}
-				err = k8s.CreateSecretV2(config.Kubeconfig, argoDeployTokenSecret)
+				err = k8s.CreateSecretV2(clientset, argoDeployTokenSecret)
 				if err != nil {
 					log.Error().Msgf("error while creating secret for project deploy token: %s", err)
 				}
@@ -876,10 +876,12 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	// Wait for ArgoCD to be ready
-	_, err = k8s.VerifyArgoCDReadiness(config.Kubeconfig, false)
+	_, err = k8s.VerifyArgoCDReadiness(clientset, false)
 	if err != nil {
 		log.Fatal().Msgf("error waiting for ArgoCD to become ready: %s", err)
 	}
+
+	log.Info().Msgf("port-forward to argocd is available at %s", k3d.ArgocdURL)
 
 	var argocdPassword string
 	//* argocd pods are ready, get and set credentials
@@ -902,7 +904,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		log.Info().Msg("Getting an argocd auth token")
 		// todo return in here and pass argocdAuthToken as a parameter
-
 		token, err := argocd.GetArgocdTokenV2(httpClient, k3d.ArgocdURL, "admin", argocdPassword)
 		if err != nil {
 			return err
@@ -917,6 +918,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("argo credentials already set, continuing")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
+	}
+
+	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
+	if err != nil {
+		return err
 	}
 
 	//* argocd sync registry and start sync waves
@@ -942,7 +948,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
-		config.Kubeconfig,
+		clientset,
 		"app.kubernetes.io/instance",
 		"vault",
 		"vault",
@@ -951,7 +957,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, vaultStatefulSet, 120, true)
+	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 90, false)
 	if err != nil {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
@@ -968,7 +974,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		vaultClient := &vault.Conf
 
 		// Initialize and unseal Vault
-		err := vaultClient.UnsealRaftLeader(config.Kubeconfig)
+		err := vaultClient.UnsealRaftLeader(clientset, restConfig, config.Kubeconfig)
 		if err != nil {
 			return err
 		}
@@ -992,7 +998,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		close(minioStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"minio",
 		"minio",
 		9000,
@@ -1040,7 +1047,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		close(vaultStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"vault-0",
 		"vault",
 		8200,
@@ -1050,7 +1058,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// Retrieve root token from init step
 	var vaultRootToken string
-	secData, err := k8s.ReadSecretV2(config.Kubeconfig, "vault", "vault-unseal-secret")
+	secData, err := k8s.ReadSecretV2(clientset, "vault", "vault-unseal-secret")
 	if err != nil {
 		return err
 	}
@@ -1195,7 +1203,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// Wait for console Deployment Pods to transition to Running
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
-		config.Kubeconfig,
+		clientset,
 		"app.kubernetes.io/instance",
 		"kubefirst-console",
 		"kubefirst",
@@ -1204,7 +1212,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding console Deployment: %s", err)
 	}
-	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, consoleDeployment, 120)
+	_, err = k8s.WaitForDeploymentReady(clientset, consoleDeployment, 120)
 	if err != nil {
 		log.Info().Msgf("Error waiting for console Deployment ready state: %s", err)
 	}
@@ -1215,7 +1223,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		close(consoleStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"kubefirst-console",
 		"kubefirst",
 		8080,

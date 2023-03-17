@@ -17,6 +17,7 @@ const (
 	LocalDNS                     = "localdev.me"
 	LocalhostARCH                = runtime.GOARCH
 	LocalhostOS                  = runtime.GOOS
+	AwsECRUsername               = "AWS"
 )
 
 // SegmentIO constants

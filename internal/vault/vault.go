@@ -17,7 +17,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreV1Types "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
@@ -25,7 +25,7 @@ import (
 func GetVaultRootToken(vaultSecretClient coreV1Types.SecretInterface) (string, error) {
 	name := "vault-unseal-keys"
 	log.Printf("Reading secret %s\n", name)
-	secret, err := vaultSecretClient.Get(context.TODO(), name, metaV1.GetOptions{})
+	secret, err := vaultSecretClient.Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

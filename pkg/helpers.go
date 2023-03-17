@@ -582,13 +582,13 @@ func AwaitHostNTimes(url string, times int, gracePeriod time.Duration) {
 	}
 }
 
-// replaceFileContent receives a file path, oldContent and newContent. oldContent is the previous value that is in the
+// ReplaceFileContent receives a file path, oldContent and newContent. oldContent is the previous value that is in the
 // file, newContent is the new content you want to replace.
 //
 // Example:
 //
-//	err := replaceFileContent(vaultMainFile, "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000")
-func replaceFileContent(filPath string, oldContent string, newContent string) error {
+//	err := ReplaceFileContent(vaultMainFile, "http://127.0.0.1:9000", "http://minio.minio.svc.cluster.local:9000")
+func ReplaceFileContent(filPath string, oldContent string, newContent string) error {
 
 	file, err := os.ReadFile(filPath)
 	if err != nil {
@@ -611,7 +611,7 @@ func UpdateTerraformS3BackendForK8sAddress(k1Dir string) error {
 
 	// todo: create a function for file content replacement
 	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", k1Dir)
-	if err := replaceFileContent(
+	if err := ReplaceFileContent(
 		vaultMainFile,
 		MinioURL,
 		"http://minio.minio.svc.cluster.local:9000",
@@ -622,7 +622,7 @@ func UpdateTerraformS3BackendForK8sAddress(k1Dir string) error {
 	// update GitHub Terraform content
 	if viper.GetString("git-provider") == "github" {
 		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", k1Dir)
-		if err := replaceFileContent(
+		if err := ReplaceFileContent(
 			fullPathKubefirstGitHubFile,
 			MinioURL,
 			"http://minio.minio.svc.cluster.local:9000",
@@ -632,7 +632,7 @@ func UpdateTerraformS3BackendForK8sAddress(k1Dir string) error {
 
 		// change remote-backend.tf
 		fullPathRemoteBackendFile := fmt.Sprintf("%s/gitops/terraform/github/remote-backend.tf", k1Dir)
-		if err := replaceFileContent(
+		if err := ReplaceFileContent(
 			fullPathRemoteBackendFile,
 			MinioURL,
 			"http://minio.minio.svc.cluster.local:9000",
@@ -652,7 +652,7 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 
 	// todo: create a function for file content replacement
 	vaultMainFile := fmt.Sprintf("%s/gitops/terraform/vault/main.tf", config.K1FolderPath)
-	if err := replaceFileContent(
+	if err := ReplaceFileContent(
 		vaultMainFile,
 		"http://minio.minio.svc.cluster.local:9000",
 		MinioURL,
@@ -664,7 +664,7 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 	// update GitHub Terraform content
 	if gitProvider == "github" {
 		fullPathKubefirstGitHubFile := fmt.Sprintf("%s/gitops/terraform/users/kubefirst-github.tf", config.K1FolderPath)
-		if err := replaceFileContent(
+		if err := ReplaceFileContent(
 			fullPathKubefirstGitHubFile,
 			"http://minio.minio.svc.cluster.local:9000",
 			MinioURL,
@@ -674,7 +674,7 @@ func UpdateTerraformS3BackendForLocalhostAddress() error {
 
 		// change remote-backend.tf
 		fullPathRemoteBackendFile := fmt.Sprintf("%s/gitops/terraform/github/remote-backend.tf", config.K1FolderPath)
-		if err := replaceFileContent(
+		if err := ReplaceFileContent(
 			fullPathRemoteBackendFile,
 			"http://minio.minio.svc.cluster.local:9000",
 			MinioURL,

@@ -851,7 +851,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	// CoreDNS
 	coreDNSDeployment, err := k8s.ReturnDeploymentObject(
-		config.Kubeconfig,
+		clientset,
 		"kubernetes.io/name",
 		"CoreDNS",
 		"kube-system",
@@ -860,7 +860,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding CoreDNS deployment: %s", err)
 	}
-	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, coreDNSDeployment, 120)
+	_, err = k8s.WaitForDeploymentReady(clientset, coreDNSDeployment, 120)
 	if err != nil {
 		log.Info().Msgf("Error waiting for CoreDNS deployment ready state: %s", err)
 	}
@@ -926,7 +926,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 				Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
 				Type:       "Opaque",
 			}
-			err = k8s.CreateSecretV2(config.Kubeconfig, argoDeployTokenSecret)
+			err = k8s.CreateSecretV2(clientset, argoDeployTokenSecret)
 			if err != nil {
 				log.Error().Msgf("error while creating secret for repository deploy token: %s", err)
 			}
@@ -965,7 +965,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 						Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
 						Type:       "kubernetes.io/dockerconfigjson",
 					}
-					err = k8s.CreateSecretV2(config.Kubeconfig, deployTokenSecret)
+					err = k8s.CreateSecretV2(clientset, deployTokenSecret)
 					if err != nil {
 						log.Error().Msgf("error while creating secret for project deploy token: %s", err)
 					}
@@ -978,7 +978,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 					Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
 					Type:       "Opaque",
 				}
-				err = k8s.CreateSecretV2(config.Kubeconfig, argoDeployTokenSecret)
+				err = k8s.CreateSecretV2(clientset, argoDeployTokenSecret)
 				if err != nil {
 					log.Error().Msgf("error while creating secret for project deploy token: %s", err)
 				}
@@ -1009,9 +1009,14 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// Wait for ArgoCD to be ready
-	_, err = k8s.VerifyArgoCDReadiness(config.Kubeconfig, true)
+	_, err = k8s.VerifyArgoCDReadiness(clientset, true)
 	if err != nil {
 		log.Fatal().Msgf("error waiting for ArgoCD to become ready: %s", err)
+	}
+
+	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
+	if err != nil {
+		return err
 	}
 
 	//* ArgoCD port-forward
@@ -1020,7 +1025,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		close(argoCDStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"argocd-server", // todo fix this, it should `argocd
 		"argocd",
 		8080,
@@ -1088,7 +1094,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
-		config.Kubeconfig,
+		clientset,
 		"app.kubernetes.io/instance",
 		"vault",
 		"vault",
@@ -1097,7 +1103,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(config.Kubeconfig, vaultStatefulSet, 120, true)
+	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 120, true)
 	if err != nil {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}
@@ -1114,13 +1120,13 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		vaultClient := &vault.Conf
 
 		// Initialize and unseal Vault
-		err := vaultClient.UnsealRaftLeader(config.Kubeconfig)
+		err := vaultClient.UnsealRaftLeader(clientset, restConfig, config.Kubeconfig)
 		if err != nil {
 			return err
 		}
 
 		time.Sleep(time.Second * 5)
-		err = vaultClient.UnsealRaftFollowers(config.Kubeconfig)
+		err = vaultClient.UnsealRaftFollowers(clientset, restConfig, config.Kubeconfig)
 		if err != nil {
 			return err
 		}
@@ -1140,7 +1146,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		close(vaultStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"vault-0",
 		"vault",
 		8200,
@@ -1157,7 +1164,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 
-		tfEnvs = civo.GetVaultTerraformEnvs(config, tfEnvs)
+		tfEnvs = civo.GetVaultTerraformEnvs(clientset, config, tfEnvs)
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
@@ -1184,7 +1191,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-		tfEnvs = civo.GetUsersTerraformEnvs(config, tfEnvs)
+		tfEnvs = civo.GetUsersTerraformEnvs(clientset, config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -1205,7 +1212,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
-		config.Kubeconfig,
+		clientset,
 		"app.kubernetes.io/instance",
 		"kubefirst-console",
 		"kubefirst",
@@ -1214,7 +1221,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding console Deployment: %s", err)
 	}
-	_, err = k8s.WaitForDeploymentReady(config.Kubeconfig, consoleDeployment, 120)
+	_, err = k8s.WaitForDeploymentReady(clientset, consoleDeployment, 120)
 	if err != nil {
 		log.Info().Msgf("Error waiting for console Deployment ready state: %s", err)
 	}
@@ -1226,7 +1233,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		close(consoleStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		config.Kubeconfig,
+		clientset,
+		restConfig,
 		"kubefirst-console",
 		"kubefirst",
 		8080,

@@ -10,10 +10,11 @@ import (
 	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
+	"k8s.io/client-go/kubernetes"
 )
 
-func readVaultTokenFromSecret(config *CivoConfig) string {
-	existingKubernetesSecret, err := k8s.ReadSecretV2(config.Kubeconfig, vault.VaultNamespace, vault.VaultSecretName)
+func readVaultTokenFromSecret(clientset *kubernetes.Clientset, config *CivoConfig) string {
+	existingKubernetesSecret, err := k8s.ReadSecretV2(clientset, vault.VaultNamespace, vault.VaultSecretName)
 	if err != nil || existingKubernetesSecret == nil {
 		log.Printf("Error reading existing Secret data: %s", err)
 		return ""
@@ -67,7 +68,7 @@ func GetGitlabTerraformEnvs(envs map[string]string, gid int) map[string]string {
 	return envs
 }
 
-func GetUsersTerraformEnvs(config *CivoConfig, envs map[string]string) map[string]string {
+func GetUsersTerraformEnvs(clientset *kubernetes.Clientset, config *CivoConfig, envs map[string]string) map[string]string {
 	var tokenValue string
 	switch config.GitProvider {
 	case "github":
@@ -75,7 +76,7 @@ func GetUsersTerraformEnvs(config *CivoConfig, envs map[string]string) map[strin
 	case "gitlab":
 		tokenValue = config.GitlabToken
 	}
-	envs["VAULT_TOKEN"] = readVaultTokenFromSecret(config)
+	envs["VAULT_TOKEN"] = readVaultTokenFromSecret(clientset, config)
 	envs["VAULT_ADDR"] = VaultPortForwardURL
 	envs[fmt.Sprintf("%s_TOKEN", strings.ToUpper(config.GitProvider))] = tokenValue
 	envs[fmt.Sprintf("%s_OWNER", strings.ToUpper(config.GitProvider))] = viper.GetString(fmt.Sprintf("flags.%s-owner", config.GitProvider))
@@ -83,7 +84,7 @@ func GetUsersTerraformEnvs(config *CivoConfig, envs map[string]string) map[strin
 	return envs
 }
 
-func GetVaultTerraformEnvs(config *CivoConfig, envs map[string]string) map[string]string {
+func GetVaultTerraformEnvs(clientset *kubernetes.Clientset, config *CivoConfig, envs map[string]string) map[string]string {
 	var tokenValue string
 	switch config.GitProvider {
 	case "github":
@@ -95,10 +96,10 @@ func GetVaultTerraformEnvs(config *CivoConfig, envs map[string]string) map[strin
 	envs[fmt.Sprintf("%s_OWNER", strings.ToUpper(config.GitProvider))] = viper.GetString(fmt.Sprintf("flags.%s-owner", config.GitProvider))
 	envs["TF_VAR_email_address"] = viper.GetString("flags.alerts-email")
 	envs["TF_VAR_vault_addr"] = VaultPortForwardURL
-	envs["TF_VAR_vault_token"] = readVaultTokenFromSecret(config)
+	envs["TF_VAR_vault_token"] = readVaultTokenFromSecret(clientset, config)
 	envs[fmt.Sprintf("TF_VAR_%s_token", config.GitProvider)] = tokenValue
 	envs["VAULT_ADDR"] = VaultPortForwardURL
-	envs["VAULT_TOKEN"] = readVaultTokenFromSecret(config)
+	envs["VAULT_TOKEN"] = readVaultTokenFromSecret(clientset, config)
 	envs["TF_VAR_civo_token"] = os.Getenv("CIVO_TOKEN")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 	envs["TF_VAR_atlantis_repo_webhook_url"] = viper.GetString(fmt.Sprintf("%s.atlantis.webhook.url", config.GitProvider))

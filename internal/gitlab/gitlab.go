@@ -31,7 +31,7 @@ import (
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh"
@@ -217,7 +217,7 @@ func ProduceGitlabTokens(dryRun bool, kubeconfigPath string) {
 	gitlabPodName := k8s.GetPodNameByLabel(gitlabPodClient, "app=toolbox")
 
 	k8s.GitlabSecretClient = clientset.CoreV1().Secrets("gitlab")
-	secrets, err := k8s.GitlabSecretClient.List(context.TODO(), metaV1.ListOptions{})
+	secrets, err := k8s.GitlabSecretClient.List(context.TODO(), metav1.ListOptions{})
 
 	var gitlabRootPasswordSecretName string
 
@@ -413,7 +413,7 @@ func ChangeRegistryToGitLab(dryRun bool) {
 		argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
 
 		argocdRepositoryAccessTokenSecret := &v1.Secret{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "creds-gitlab",
 				Namespace: "argocd",
 				Labels: map[string]string{
@@ -431,14 +431,14 @@ func ChangeRegistryToGitLab(dryRun bool) {
 			Type: "Opaque",
 		}
 
-		_ = argocd.ArgocdSecretClient.Delete(context.TODO(), "creds-gitlab", metaV1.DeleteOptions{})
-		_, err = argocd.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metaV1.CreateOptions{})
+		_ = argocd.ArgocdSecretClient.Delete(context.TODO(), "creds-gitlab", metav1.DeleteOptions{})
+		_, err = argocd.ArgocdSecretClient.Create(context.TODO(), argocdRepositoryAccessTokenSecret, metav1.CreateOptions{})
 		if err != nil {
 			log.Panic().Msgf("error creating argocd repository credentials template %s", err)
 		}
 
 		argocdRepoSecret := &v1.Secret{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "repo-gitlab",
 				Namespace: "argocd",
 				Labels: map[string]string{
@@ -455,8 +455,8 @@ func ChangeRegistryToGitLab(dryRun bool) {
 			},
 			Type: "Opaque",
 		}
-		_ = argocd.ArgocdSecretClient.Delete(context.TODO(), "repo-gitlab", metaV1.DeleteOptions{})
-		_, err = argocd.ArgocdSecretClient.Create(context.TODO(), argocdRepoSecret, metaV1.CreateOptions{})
+		_ = argocd.ArgocdSecretClient.Delete(context.TODO(), "repo-gitlab", metav1.DeleteOptions{})
+		_, err = argocd.ArgocdSecretClient.Create(context.TODO(), argocdRepoSecret, metav1.CreateOptions{})
 		if err != nil {
 			log.Panic().Msgf("error creating argocd repository connection secret %s", err)
 		}

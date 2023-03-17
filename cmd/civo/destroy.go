@@ -179,11 +179,20 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
+	if err != nil {
+		return err
+	}
+
+	clientset, err := k8s.GetClientSet(false, config.Kubeconfig)
+	if err != nil {
+		return err
+	}
+
 	if viper.GetBool("kubefirst-checks.terraform-apply-civo") {
 		log.Info().Msg("destroying civo resources with terraform")
 
 		clusterName := viper.GetString("flags.cluster-name")
-		kubeconfigPath := config.Kubeconfig
 		region := viper.GetString("flags.cloud-region")
 
 		client, err := civogo.NewClient(os.Getenv("CIVO_TOKEN"), region)
@@ -210,7 +219,8 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			close(argoCDStopChannel)
 		}()
 		k8s.OpenPortForwardPodWrapper(
-			kubeconfigPath,
+			clientset,
+			restConfig,
 			"argocd-server",
 			"argocd",
 			8080,

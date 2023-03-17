@@ -36,7 +36,7 @@ func NewCommand() *cobra.Command {
 		Long:  "kubefirst aws",
 	}
 
-	// on error, doesnt show helper/usage
+	// on error, doesn't show helper/usage
 	awsCmd.SilenceUsage = true
 
 	// wire up new commands

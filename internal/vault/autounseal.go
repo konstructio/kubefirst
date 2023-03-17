@@ -9,7 +9,9 @@ import (
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/rs/zerolog/log"
 	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 func (conf *VaultConfiguration) AutoUnseal() (*vaultapi.InitResponse, error) {
@@ -17,7 +19,6 @@ func (conf *VaultConfiguration) AutoUnseal() (*vaultapi.InitResponse, error) {
 	if err != nil {
 		return &vaultapi.InitResponse{}, err
 	}
-
 	vaultClient.CloneConfig().ConfigureTLS(&vaultapi.TLSConfig{
 		Insecure: true,
 	})
@@ -35,7 +36,7 @@ func (conf *VaultConfiguration) AutoUnseal() (*vaultapi.InitResponse, error) {
 }
 
 // UnsealRaftLeader initializes and unseals a vault leader when using raft for ha and storage
-func (conf *VaultConfiguration) UnsealRaftLeader(kubeConfigPath string) error {
+func (conf *VaultConfiguration) UnsealRaftLeader(clientset *kubernetes.Clientset, restConfig *rest.Config, kubeConfigPath string) error {
 	//* vault port-forward
 	log.Info().Msgf("starting port-forward for vault-0")
 	vaultStopChannel := make(chan struct{}, 1)
@@ -43,7 +44,8 @@ func (conf *VaultConfiguration) UnsealRaftLeader(kubeConfigPath string) error {
 		close(vaultStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		kubeConfigPath,
+		clientset,
+		restConfig,
 		"vault-0",
 		"vault",
 		8200,
@@ -89,7 +91,7 @@ func (conf *VaultConfiguration) UnsealRaftLeader(kubeConfigPath string) error {
 			dataToWrite[fmt.Sprintf("root-unseal-key-%v", i+1)] = []byte(value)
 		}
 		secret := v1.Secret{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      VaultSecretName,
 				Namespace: VaultNamespace,
 			},
@@ -97,7 +99,7 @@ func (conf *VaultConfiguration) UnsealRaftLeader(kubeConfigPath string) error {
 		}
 
 		log.Info().Msgf("creating secret %s containing vault initialization data", VaultSecretName)
-		err = k8s.CreateSecretV2(kubeConfigPath, &secret)
+		err = k8s.CreateSecretV2(clientset, &secret)
 		if err != nil {
 			panic(err)
 		}
@@ -126,7 +128,7 @@ func (conf *VaultConfiguration) UnsealRaftLeader(kubeConfigPath string) error {
 
 		switch health.Sealed {
 		case true:
-			existingInitResponse, err := parseExistingVaultInitSecret(kubeConfigPath)
+			existingInitResponse, err := parseExistingVaultInitSecret(clientset, kubeConfigPath)
 			if err != nil {
 				return err
 			}
@@ -167,11 +169,11 @@ func (conf *VaultConfiguration) UnsealRaftLeader(kubeConfigPath string) error {
 }
 
 // UnsealRaftFollowers initializes, unseals, and joins raft followers when using raft for ha and storage
-func (conf *VaultConfiguration) UnsealRaftFollowers(kubeConfigPath string) error {
+func (conf *VaultConfiguration) UnsealRaftFollowers(clientset *kubernetes.Clientset, restConfig *rest.Config, kubeConfigPath string) error {
 	// With the current iteration of the Vault helm chart, we create 3 nodes
 	// vault-0 is unsealed as leader, vault-1 and vault-2 are unsealed here
 	raftNodes := []string{"vault-1", "vault-2"}
-	existingInitResponse, err := parseExistingVaultInitSecret(kubeConfigPath)
+	existingInitResponse, err := parseExistingVaultInitSecret(clientset, kubeConfigPath)
 	if err != nil {
 		return err
 	}
@@ -181,7 +183,8 @@ func (conf *VaultConfiguration) UnsealRaftFollowers(kubeConfigPath string) error
 		log.Info().Msgf("starting port-forward for %s", node)
 		vaultStopChannel := make(chan struct{}, 1)
 		k8s.OpenPortForwardPodWrapper(
-			kubeConfigPath,
+			clientset,
+			restConfig,
 			node,
 			"vault",
 			8200,
@@ -277,10 +280,10 @@ func (conf *VaultConfiguration) UnsealRaftFollowers(kubeConfigPath string) error
 }
 
 // parseExistingVaultInitSecret returns the value of a vault initialization secret if it exists
-func parseExistingVaultInitSecret(kubeConfigPath string) (*vaultapi.InitResponse, error) {
+func parseExistingVaultInitSecret(clientset *kubernetes.Clientset, kubeConfigPath string) (*vaultapi.InitResponse, error) {
 	// If vault has already been initialized, the response is formatted to contain the value
 	// of the initialization secret
-	secret, err := k8s.ReadSecretV2(kubeConfigPath, VaultNamespace, VaultSecretName)
+	secret, err := k8s.ReadSecretV2(clientset, VaultNamespace, VaultSecretName)
 	if err != nil {
 		return &vaultapi.InitResponse{}, err
 	}

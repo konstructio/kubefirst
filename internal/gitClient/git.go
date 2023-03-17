@@ -339,7 +339,7 @@ func CloneGitOpsRepo() {
 }
 
 func ClonePrivateRepo(gitRepoURL, gitRepoDestinationDir string) {
-	log.Printf("Trying to clone repo %s ", gitRepoURL)
+	log.Info().Msgf("Trying to clone repo %s ", gitRepoURL)
 
 	_, err := git.PlainClone(gitRepoDestinationDir, false, &git.CloneOptions{
 		Auth: &http.BasicAuth{
@@ -355,9 +355,13 @@ func ClonePrivateRepo(gitRepoURL, gitRepoDestinationDir string) {
 }
 
 func Commit(repo *git.Repository, commitMsg string) error {
-	w, _ := repo.Worktree()
+	w, err := repo.Worktree()
+	if err != nil {
+		log.Info().Msgf("error getting worktree: %s", err)
+		return err
+	}
 
-	log.Printf(commitMsg)
+	log.Info().Msg(commitMsg)
 	status, err := w.Status()
 	if err != nil {
 		log.Info().Msgf("error getting worktree status: %s", err)
@@ -371,7 +375,7 @@ func Commit(repo *git.Repository, commitMsg string) error {
 			return err
 		}
 	}
-	w.Commit(fmt.Sprintf(commitMsg), &git.CommitOptions{
+	w.Commit(commitMsg, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kubefirst-bot",
 			Email: "kubefirst-bot@kubefirst.com",

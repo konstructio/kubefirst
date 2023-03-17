@@ -44,7 +44,9 @@ type GitOpsDirectoryValues struct {
 	AtlantisAllowList              string
 	AtlantisWebhookURL             string
 	AwsIamArnAccountRoot           string
+	AwsKmsKeyId                    string
 	AwsNodeCapacityType            string
+	AwsAccountID                   string
 	ChartMuseumIngressURL          string
 	ClusterName                    string
 	ClusterType                    string

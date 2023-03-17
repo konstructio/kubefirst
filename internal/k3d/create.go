@@ -37,7 +37,6 @@ func ClusterCreate(clusterName string, k1Dir string, k3dClient string, kubeconfi
 		"--registry-create", "k3d-"+clusterName+"-registry",
 		"--k3s-arg", `--kubelet-arg=eviction-hard=imagefs.available<1%,nodefs.available<1%@agent:*`,
 		"--k3s-arg", `--kubelet-arg=eviction-minimum-reclaim=imagefs.available=1%,nodefs.available=1%@agent:*`,
-		"--port", "80:80@loadbalancer",
 		"--volume", volumeDir+":/tmp/minio-storage",
 		"--port", "443:443@loadbalancer")
 

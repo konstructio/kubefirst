@@ -6,27 +6,23 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
-	cp "github.com/otiai10/copy"
+	"github.com/kubefirst/kubefirst/pkg"
 
+	cp "github.com/otiai10/copy"
 	"github.com/rs/zerolog/log"
 )
 
-func adjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitProvider, k1Dir, gitopsRepoDir string) error {
+func AdjustGitopsRepo(cloudProvider, clusterName, clusterType, gitopsRepoDir, gitProvider, k1Dir string) error {
 
-	var otherGitProvider string
-	if gitProvider == "github" {
-		otherGitProvider = "gitlab"
-	} else if gitProvider == "gitlab" {
-		otherGitProvider = "github"
+	//* clean up all other platforms
+	for _, platform := range pkg.SupportedPlatforms {
+		if platform != fmt.Sprintf("%s-%s", CloudProvider, gitProvider) {
+			os.RemoveAll(gitopsRepoDir + "/" + platform)
+		}
 	}
-
-	// remove the other platforms driver content
-	os.RemoveAll(gitopsRepoDir + fmt.Sprintf("/aws-%s", otherGitProvider))
-	os.RemoveAll(gitopsRepoDir + "/civo-github")
-	os.RemoveAll(gitopsRepoDir + "/civo-gitlab")
-	os.RemoveAll(gitopsRepoDir + "/k3d-github")
-	os.RemoveAll(gitopsRepoDir + "/k3d-gitlab")
 
 	//* copy options
 	opt := cp.Options{
@@ -42,34 +38,39 @@ func adjustGitopsTemplateContent(cloudProvider, clusterName, clusterType, gitPro
 		},
 	}
 
-	//* copy aws-github/* $HOME/.k1/gitops/
-	driverContent := fmt.Sprintf("%s/%s-%s/", gitopsRepoDir, cloudProvider, gitProvider)
+	//* copy $cloudProvider-$gitProvider/* $HOME/.k1/gitops/
+	driverContent := fmt.Sprintf("%s/%s-%s/", gitopsRepoDir, CloudProvider, gitProvider)
 	err := cp.Copy(driverContent, gitopsRepoDir, opt)
 	if err != nil {
-		log.Info().Msgf("Error populating gitops repository with driver content: %s. error: %s", fmt.Sprintf("%s-%s", cloudProvider, gitProvider), err.Error())
+		log.Info().Msgf("Error populating gitops repository with driver content: %s. error: %s", fmt.Sprintf("%s-%s", CloudProvider, gitProvider), err.Error())
 		return err
 	}
 	os.RemoveAll(driverContent)
 
-	//* copy $HOME/.k1/gitops/.kubefirst/clusters/${clusterType}-template/* $HOME/.k1/gitops/registry/${clusterName}
-	clusterContent := fmt.Sprintf("%s/.kubefirst/clusters/%s-template", gitopsRepoDir, clusterType)
+	//* copy $HOME/.k1/gitops/cluster-types/${clusterType}/* $HOME/.k1/gitops/registry/${clusterName}
+	clusterContent := fmt.Sprintf("%s/cluster-types/%s", gitopsRepoDir, clusterType)
 	err = cp.Copy(clusterContent, fmt.Sprintf("%s/registry/%s", gitopsRepoDir, clusterName), opt)
 	if err != nil {
 		log.Info().Msgf("Error populating cluster content with %s. error: %s", clusterContent, err.Error())
 		return err
 	}
+	os.RemoveAll(fmt.Sprintf("%s/cluster-types", gitopsRepoDir))
+	os.RemoveAll(fmt.Sprintf("%s/services", gitopsRepoDir))
 
 	return nil
 }
 
-// todo better name here
-func adjustMetaphorTemplateContent(k1Dir, metaphorRepoPath string) error {
+func AdjustMetaphorRepo(destinationMetaphorRepoGitURL, gitopsRepoDir, gitProvider, k1Dir string) error {
 
-	log.Info().Msg("removing old metaphor ci content")
-	// remove the unstructured driver content
-	os.RemoveAll(metaphorRepoPath + "/.argo")
-	os.RemoveAll(metaphorRepoPath + "/.github")
-	os.RemoveAll(metaphorRepoPath + "/.gitlab-ci.yml")
+	//* create ~/.k1/metaphor
+	metaphorDir := fmt.Sprintf("%s/metaphor", k1Dir)
+	os.Mkdir(metaphorDir, 0700)
+
+	//* git init
+	metaphorRepo, err := git.PlainInit(metaphorDir, false)
+	if err != nil {
+		return err
+	}
 
 	//* copy options
 	opt := cp.Options{
@@ -85,64 +86,67 @@ func adjustMetaphorTemplateContent(k1Dir, metaphorRepoPath string) error {
 		},
 	}
 
-	//* copy $HOME/.k1/gitops/.kubefirst/ci/.github/* $HOME/.k1/metaphor/.github
-	githubActionsFolderContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.github", k1Dir)
-	log.Info().Msgf("copying ci content: %s", githubActionsFolderContent)
-	err := cp.Copy(githubActionsFolderContent, fmt.Sprintf("%s/.github", metaphorRepoPath), opt)
-	if err != nil {
-		log.Info().Msgf("error populating metaphor repository with %s: %s", githubActionsFolderContent, err)
-		return err
+	//* copy ci content
+	switch gitProvider {
+	case "github":
+		//* copy $HOME/.k1/gitops/ci/.github/* $HOME/.k1/metaphor/.github
+		githubActionsFolderContent := fmt.Sprintf("%s/gitops/ci/.github", k1Dir)
+		log.Info().Msgf("copying github content: %s", githubActionsFolderContent)
+		err := cp.Copy(githubActionsFolderContent, fmt.Sprintf("%s/.github", metaphorDir), opt)
+		if err != nil {
+			log.Info().Msgf("error populating metaphor repository with %s: %s", githubActionsFolderContent, err)
+			return err
+		}
+	case "gitlab":
+		//* copy $HOME/.k1/gitops/ci/.gitlab-ci.yml/* $HOME/.k1/metaphor/.github
+		gitlabCIContent := fmt.Sprintf("%s/gitops/ci/.gitlab-ci.yml", k1Dir)
+		log.Info().Msgf("copying gitlab content: %s", gitlabCIContent)
+		err := cp.Copy(gitlabCIContent, fmt.Sprintf("%s/.gitlab-ci.yml", metaphorDir), opt)
+		if err != nil {
+			log.Info().Msgf("error populating metaphor repository with %s: %s", gitlabCIContent, err)
+			return err
+		}
 	}
 
-	//* copy $HOME/.k1/gitops/.kubefirst/ci/.argo/* $HOME/.k1/metaphor/.argo
-	argoWorkflowsFolderContent := fmt.Sprintf("%s/gitops/.kubefirst/ci/.argo", k1Dir)
-	log.Info().Msgf("copying ci content: %s", argoWorkflowsFolderContent)
-	err = cp.Copy(argoWorkflowsFolderContent, fmt.Sprintf("%s/.argo", metaphorRepoPath), opt)
+	//* metaphor app source
+	metaphorContent := fmt.Sprintf("%s/metaphor", gitopsRepoDir)
+	err = cp.Copy(metaphorContent, metaphorDir, opt)
+	if err != nil {
+		log.Info().Msgf("Error populating metaphor content with %s. error: %s", metaphorContent, err.Error())
+		return err
+	}
+	os.RemoveAll(fmt.Sprintf("%s/metaphor", gitopsRepoDir))
+
+	//* copy $HOME/.k1/gitops/ci/.argo/* $HOME/.k1/metaphor/.argo
+	argoWorkflowsFolderContent := fmt.Sprintf("%s/gitops/ci/.argo", k1Dir)
+	log.Info().Msgf("copying argo workflows content: %s", argoWorkflowsFolderContent)
+	err = cp.Copy(argoWorkflowsFolderContent, fmt.Sprintf("%s/.argo", metaphorDir), opt)
 	if err != nil {
 		log.Info().Msgf("error populating metaphor repository with %s: %s", argoWorkflowsFolderContent, err)
 		return err
 	}
 
+	//  add
+	// commit
+	err = gitClient.Commit(metaphorRepo, "committing initial detokenized metaphor repo content")
+	if err != nil {
+		return err
+	}
+
+	metaphorRepo, err = gitClient.SetRefToMainBranch(metaphorRepo)
+	if err != nil {
+		return err
+	}
+
+	// remove old git ref
+	err = metaphorRepo.Storer.RemoveReference(plumbing.NewBranchReferenceName("master"))
+	if err != nil {
+		return fmt.Errorf("error removing previous git ref: %s", err)
+	}
+	// create remote
+	_, err = metaphorRepo.CreateRemote(&config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{destinationMetaphorRepoGitURL},
+	})
 	return nil
-}
-
-func PrepareMetaphorRepository(
-	destinationMetaphorRepoGitURL string,
-	k1Dir string,
-	metaphorDir string,
-	metaphorTemplateBranch string,
-	metaphorTemplateURL string,
-	tokens *MetaphorTokenValues,
-) (*git.Repository, error) {
-
-	log.Info().Msg("generating your new metaphor repository")
-	metaphorRepo, err := gitClient.CloneRefSetMain(metaphorTemplateBranch, metaphorDir, metaphorTemplateURL)
-	if err != nil {
-		log.Info().Msgf("error opening repo at: %s", metaphorDir)
-	}
-
-	log.Info().Msg("metaphor repository clone complete")
-
-	err = adjustMetaphorTemplateContent(k1Dir, metaphorDir)
-	if err != nil {
-		return &git.Repository{}, err
-	}
-
-	detokenizeMetaphor(metaphorDir, tokens)
-
-	err = gitClient.AddRemote(destinationMetaphorRepoGitURL, GitProvider, metaphorRepo)
-	if err != nil {
-		return &git.Repository{}, err
-	}
-
-	err = gitClient.Commit(metaphorRepo, "committing detokenized metaphor repo content")
-	if err != nil {
-		return &git.Repository{}, err
-	}
-
-	if err != nil {
-		log.Panic().Msgf("error pushing detokenized gitops repository to remote %s", destinationMetaphorRepoGitURL)
-	}
-
-	return metaphorRepo, nil
 }
