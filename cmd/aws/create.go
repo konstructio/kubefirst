@@ -116,6 +116,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.domain-name", domainNameFlag)
 	viper.Set("flags.dry-run", dryRunFlag)
 	viper.Set("flags.github-owner", githubOwnerFlag)
+	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.WriteConfig()
 
 	config := awsinternal.GetConfig(githubOwnerFlag)
@@ -600,6 +601,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	restConfig, err := awsinternal.NewRestConfig(eksClusterInfo.Cluster)
+	if err != nil {
+		return err
+	}
 
 	argocdClient, err := argocdapi.NewForConfig(restConfig)
 	if err != nil {
