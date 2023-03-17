@@ -49,15 +49,6 @@ func PublicKeyV2() (*goGitSsh.PublicKeys, error) {
 	return publicKey, err
 }
 
-func PublicKey() (*goGitSsh.PublicKeys, error) {
-	var publicKey *goGitSsh.PublicKeys
-	publicKey, err := goGitSsh.NewPublicKeys("gitClient", []byte(viper.GetString("botprivatekey")), "")
-	if err != nil {
-		return nil, err
-	}
-	return publicKey, err
-}
-
 // todo hack - need something more substantial and accommodating and not in ssh..
 func WriteGithubArgoCdInitValuesFile(githubGitopsSshURL, k1Dir, sshPrivateKey string) error {
 

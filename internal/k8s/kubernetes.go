@@ -109,25 +109,6 @@ func GetSecretValue(k8sClient coreV1Types.SecretInterface, secretName, key strin
 	return string(secret.Data[key])
 }
 
-func DeleteRegistryApplication(skipDeleteRegistryApplication bool) {
-
-	if !skipDeleteRegistryApplication {
-
-		log.Info().Msgf("refreshing argocd session token")
-		argocd.GetArgocdAuthToken(false)
-
-		url := "https://localhost:8080/api/v1/applications/registry"
-		_, _, err := pkg.ExecShellReturnStrings("curl", "-k", "-vL", "-X", "DELETE", url, "-H", fmt.Sprintf("Authorization: Bearer %s", viper.GetString("argocd.admin.apitoken")))
-		if err != nil {
-			log.Panic().Err(err).Msg("error: delete registry applicatoin from argocd failed")
-		}
-		log.Info().Msg("waiting for argocd deletion to complete")
-		time.Sleep(300 * time.Second)
-	} else {
-		log.Info().Msg("skip:  deleteRegistryApplication")
-	}
-}
-
 func GetResourcesDynamically(dynamic dynamic.Interface,
 	ctx context.Context,
 	group string,

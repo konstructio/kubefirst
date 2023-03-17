@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubefirst/kubefirst/internal/githubWrapper"
-	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
+	"github.com/kubefirst/kubefirst/internal/github"
+	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
@@ -105,8 +105,8 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 		switch config.GitProvider {
 		case "github":
-			githubWrapper := githubWrapper.New(cGitToken)
-			err = githubWrapper.DeleteRepositoryWebhook(cGitOwner, "gitops", webhookURL)
+			githubSession := github.New(cGitToken)
+			err = githubSession.DeleteRepositoryWebhook(cGitOwner, "gitops", webhookURL)
 			if err != nil {
 				log.Error().Msgf("error removing webhook: %s - you may need to manually remove it", err)
 			}

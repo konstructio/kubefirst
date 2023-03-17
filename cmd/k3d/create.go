@@ -21,8 +21,8 @@ import (
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/docker"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
-	"github.com/kubefirst/kubefirst/internal/githubWrapper"
-	gitlab "github.com/kubefirst/kubefirst/internal/gitlabcloud"
+	"github.com/kubefirst/kubefirst/internal/github"
+	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/handlers"
 	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k3d"
@@ -292,13 +292,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		switch config.GitProvider {
 		case "github":
-			githubWrapper := githubWrapper.New(cGitToken)
+			githubSession := github.New(cGitToken)
 			newRepositoryExists := false
 			// todo hoist to globals
 			errorMsg := "the following repositories must be removed before continuing with your kubefirst installation.\n\t"
 
 			for _, repositoryName := range newRepositoryNames {
-				responseStatusCode := githubWrapper.CheckRepoExists(cGitOwner, repositoryName)
+				responseStatusCode := githubSession.CheckRepoExists(cGitOwner, repositoryName)
 
 				// https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
 				repositoryExistsStatusCode := 200
@@ -320,7 +320,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			errorMsg = "the following teams must be removed before continuing with your kubefirst installation.\n\t"
 
 			for _, teamName := range newTeamNames {
-				responseStatusCode := githubWrapper.CheckTeamExists(cGitOwner, teamName)
+				responseStatusCode := githubSession.CheckTeamExists(cGitOwner, teamName)
 
 				// https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#get-a-team-by-name
 				teamExistsStatusCode := 200
