@@ -34,60 +34,6 @@ type PatchJson struct {
 	Path string `json:"path"`
 }
 
-// GetPodsByNamespace provide a namespace and returns a list v1.PodList containing the Pods data from that specific
-// namespace.
-func GetPodsByNamespace(namespace string) (*v1.PodList, error) {
-	clientset, err := GetClientSet(false, "config.KubeConfigPath")
-	if err != nil {
-		return nil, err
-	}
-	list, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
-// IsNamespaceCreated checks if a namespace exists in the cluster.
-func IsNamespaceCreated(namespace string) (bool, error) {
-	clientset, err := GetClientSet(false, "config.KubeConfigPath")
-	if err != nil {
-		return false, err
-	}
-	get, err := clientset.CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
-	if err != nil {
-		return false, err
-	}
-	if get.Name != namespace {
-		return false, fmt.Errorf("%q namespace is not created", namespace)
-	}
-
-	return true, nil
-}
-
-func GetPodNameByLabel(podsClient coreV1Types.PodInterface, label string) string {
-	pods, err := podsClient.List(context.TODO(), metav1.ListOptions{LabelSelector: label})
-	if err != nil {
-		log.Error().Err(err).Msg("")
-	}
-
-	if len(pods.Items) == 0 {
-		return ""
-	}
-
-	return pods.Items[0].Name
-}
-
-func DeletePodByLabel(podsClient coreV1Types.PodInterface, label string) {
-	err := podsClient.DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: label})
-	if err != nil {
-		log.Error().Err(err).Msg("")
-	} else {
-		log.Info().Msgf("Success delete of pods with label(%s).", label)
-	}
-}
-
 func GetSecretValue(k8sClient coreV1Types.SecretInterface, secretName, key string) string {
 	secret, err := k8sClient.Get(context.TODO(), secretName, metav1.GetOptions{})
 	if err != nil {
