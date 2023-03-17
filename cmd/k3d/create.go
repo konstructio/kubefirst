@@ -932,7 +932,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Fatal().Msgf("error waiting for ArgoCD to become ready: %s", err)
 	}
 
-	log.Info().Msgf("port-forward to argocd is available at %s", k3d.ArgocdURL)
+	// Kubernetes client rest config
+	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
+	if err != nil {
+		return err
+	}
 
 	var argocdPassword string
 	//* argocd pods are ready, get and set credentials
@@ -952,28 +956,53 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("components.argocd.username", "admin")
 		viper.WriteConfig()
 		log.Info().Msg("argocd username and password credentials set successfully")
-
 		log.Info().Msg("Getting an argocd auth token")
-		// todo return in here and pass argocdAuthToken as a parameter
-		token, err := argocd.GetArgocdTokenV2(httpClient, k3d.ArgocdURL, "admin", argocdPassword)
+
+		// Test https to argocd
+		var argoCDToken string
+		// only the host, not the protocol
+		err := helpers.TestEndpointTLS(strings.Replace(k3d.ArgocdURL, "https://", "", 1))
 		if err != nil {
-			return err
+			argoCDStopChannel := make(chan struct{}, 1)
+			log.Info().Msgf("argocd not available via https, using http")
+			defer func() {
+				close(argoCDStopChannel)
+			}()
+			k8s.OpenPortForwardPodWrapper(
+				clientset,
+				restConfig,
+				"argocd-server",
+				"argocd",
+				8080,
+				8080,
+				argoCDStopChannel,
+			)
+			argoCDHTTPURL := strings.Replace(
+				k3d.ArgocdURL,
+				"https://",
+				"http://",
+				1,
+			) + ":8080"
+			argoCDToken, err = argocd.GetArgocdTokenV2(httpClient, argoCDHTTPURL, "admin", argocdPassword)
+			if err != nil {
+				return err
+			}
+		} else {
+			argoCDToken, err = argocd.GetArgocdTokenV2(httpClient, k3d.ArgocdURL, "admin", argocdPassword)
+			if err != nil {
+				return err
+			}
 		}
 
 		log.Info().Msg("argocd admin auth token set")
 
-		viper.Set("components.argocd.auth-token", token)
+		viper.Set("components.argocd.auth-token", argoCDToken)
 		viper.Set("kubefirst-checks.argocd-credentials-set", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	} else {
 		log.Info().Msg("argo credentials already set, continuing")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
-	}
-
-	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
-	if err != nil {
-		return err
 	}
 
 	//* argocd sync registry and start sync waves
@@ -1008,7 +1037,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
 	}
-	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 90, false)
+	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 120, false)
 	if err != nil {
 		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 	}

@@ -19,7 +19,6 @@ import (
 
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocdModel"
-	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	yaml2 "gopkg.in/yaml.v2"
@@ -375,10 +374,6 @@ func GetArgoCDToken(username string, password string) (string, error) {
 
 // GetArgocdTokenV2
 func GetArgocdTokenV2(httpClient *http.Client, argocdBaseURL string, username string, password string) (string, error) {
-	err := helpers.TestEndpointTLS(argocdBaseURL)
-	if err != nil {
-		argocdBaseURL = strings.Replace(argocdBaseURL, "https://", "http://", 1)
-	}
 	log.Info().Msgf("using argocd url %s", argocdBaseURL)
 
 	url := argocdBaseURL + "/api/v1/session"
