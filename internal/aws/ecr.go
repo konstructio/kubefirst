@@ -18,3 +18,25 @@ func (conf *AWSConfiguration) GetECRAuthToken() (string, error) {
 
 	return *token.AuthorizationData[0].AuthorizationToken, nil
 }
+
+func (conf *AWSConfiguration) GetECRRepositoryURL(clusterID string, repoName string) (string, error) {
+	fmt.Printf("checking ecr repositories for existing repo %s", repoName)
+	ecrClient := ecr.NewFromConfig(conf.Config)
+
+	repos, err := ecrClient.DescribeRepositories(context.TODO(), &ecr.DescribeRepositoriesInput{
+		RepositoryNames: []string{repoName},
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	//*look up the /metaphor repository
+
+	//* if it exists, append the clusterID to the
+
+	for _, repo := range repos.Repositories {
+		fmt.Println("repo name is: ", *repo.CreatedAt)
+	}
+	return "", nil
+}
