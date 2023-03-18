@@ -871,6 +871,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("vault unseal already done, continuing")
 	}
 
+	vaultRootTokenLookup, err := k8s.ReadSecretV2(clientset, "vault", "vault-unseal-secret")
+	if err != nil {
+		return err
+	}
+
+	vaultRootToken = vaultRootTokenLookup["root-token"]
+
 	//* configure vault with terraform
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
 	if !executionControl {
