@@ -70,7 +70,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
 			tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
-			tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
+			tfEnvs["GITHUB_OWNER"] = cGitOwner
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = fmt.Sprintf("https://atlantis.%s/events", domainNameFlag)
 			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
