@@ -357,7 +357,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	gitopsTemplateTokens := awsinternal.GitOpsDirectoryValues{
 		AlertsEmail:                    alertsEmailFlag,
 		AwsIamArnAccountRoot:           fmt.Sprintf("arn:aws:iam::%s:root", *iamCaller.Account),
-		AwsNodeCapacityType:            "SPOT", // todo adopt cli flag
+		AwsNodeCapacityType:            "ON_DEMAND", // todo adopt cli flag
 		AwsAccountID:                   *iamCaller.Account,
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
 		ArgoCDIngressNoHTTPSURL:        fmt.Sprintf("argocd.%s", domainNameFlag),
