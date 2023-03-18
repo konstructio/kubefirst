@@ -12,12 +12,13 @@ var (
 	cloudRegionFlag          string
 	clusterNameFlag          string
 	clusterTypeFlag          string
-	domainNameFlag           string
 	dryRun                   bool
-	githubOwnerFlag          string
-	gitopsTemplateBranchFlag string
-	gitopsTemplateURLFlag    string
+	githubOrgFlag            string
+	gitlabGroupFlag          string
 	gitProviderFlag          string
+	gitopsTemplateURLFlag    string
+	gitopsTemplateBranchFlag string
+	domainNameFlag           string
 	kbotPasswordFlag         string
 	useTelemetryFlag         bool
 
@@ -59,11 +60,11 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the Route53 hosted zone name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
 	createCmd.Flags().BoolVar(&dryRun, "dry-run", false, "don't execute the installation")
-	createCmd.Flags().StringVar(&githubOwnerFlag, "github-owner", "", "the github owner of the new gitops and metaphor repositories")
-	createCmd.MarkFlagRequired("github-owner")
+	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
+	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - required if using github")
+	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "main", "the branch to clone for the gitops-template repository")
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
-	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
 	createCmd.Flags().StringVar(&kbotPasswordFlag, "kbot-password", "", "the default password to use for the kbot user")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
 
@@ -79,4 +80,18 @@ func Destroy() *cobra.Command {
 	}
 
 	return destroyCmd
+
 }
+
+// func Quota() *cobra.Command {
+// 	quotaCmd := &cobra.Command{
+// 		Use:   "quota",
+// 		Short: "Check aws quota status",
+// 		Long:  "Check aws quota status. By default, only ones close to limits will be shown.",
+// 		RunE:  evalAwsQuota,
+// 	}
+//
+// 	quotaCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "us-east-1", "the aws region to monitor quotas in")
+//
+// 	return quotaCmd
+// }

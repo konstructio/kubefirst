@@ -229,17 +229,18 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	gitopsDirectoryTokens := civo.GitOpsDirectoryValues{
-		AlertsEmail:                    alertsEmailFlag,
-		AtlantisAllowList:              fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
-		CloudProvider:                  civo.CloudProvider,
-		CloudRegion:                    cloudRegionFlag,
-		ClusterName:                    clusterNameFlag,
-		ClusterType:                    clusterTypeFlag,
-		DomainName:                     domainNameFlag,
-		KubeconfigPath:                 config.Kubeconfig,
-		KubefirstStateStoreBucket:      kubefirstStateStoreBucketName,
-		KubefirstTeam:                  kubefirstTeam,
-		KubefirstVersion:               configs.K1Version,
+		AlertsEmail:               alertsEmailFlag,
+		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
+		CloudProvider:             civo.CloudProvider,
+		CloudRegion:               cloudRegionFlag,
+		ClusterName:               clusterNameFlag,
+		ClusterType:               clusterTypeFlag,
+		DomainName:                domainNameFlag,
+		KubeconfigPath:            config.Kubeconfig,
+		KubefirstStateStoreBucket: kubefirstStateStoreBucketName,
+		KubefirstTeam:             kubefirstTeam,
+		KubefirstVersion:          configs.K1Version,
+
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
 		ArgoCDIngressNoHTTPSURL:        fmt.Sprintf("argocd.%s", domainNameFlag),
 		ArgoWorkflowsIngressURL:        fmt.Sprintf("https://argo.%s", domainNameFlag),
@@ -606,6 +607,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		MetaphorStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
 		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
 	}
+
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {

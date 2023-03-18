@@ -3,83 +3,152 @@ package aws
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/caarlos0/env/v6"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
 )
 
-// todo move shared constants to pkg.
 const (
-	ArgocdPortForwardURL   = "http://localhost:8080"
-	ArgocdURL              = "https://argocd.localdev.me"
-	ArgoWorkflowsURL       = "https://argo.localdev.me"
-	AtlantisURL            = "https://atlantis.localdev.me"
-	ChartMuseumURL         = "https://chartmuseum.localdev.me"
-	RegionUsEast1          = "us-east-1"
-	CloudProvider          = "aws"
-	DomainName             = "localdev.me"
-	HelmVersion            = "v3.6.1"
+	CloudProvider          = "civo"
 	GithubHost             = "github.com"
-	GitProvider            = "github"
-	KubectlVersion         = "v1.22.0"
-	KubefirstConsoleURL    = "https://kubefirst.localdev.me"
-	MetaphorDevelopmentURL = "https://metaphor-devlopment.localdev.me"
-	MetaphorStagingURL     = "https://metaphor-staging.localdev.me"
-	MetaphorProductionURL  = "https://metaphor-production.localdev.me"
-	MkCertVersion          = "v1.4.4"
-	TerraformVersion       = "1.3.8"
-	VaultPortForwardURL    = "http://localhost:8200"
-	VaultURL               = "https://vault.localdev.me"
+	GitlabHost             = "gitlab.com"
+	KubectlClientVersion   = "v1.25.7"
+	LocalhostOS            = runtime.GOOS
+	LocalhostArch          = runtime.GOARCH
+	RegionUsEast1          = "us-east-1"
+	TerraformClientVersion = "1.3.8"
+	ArgocdHelmChartVersion = "4.10.5"
+
+	ArgocdPortForwardURL = pkg.ArgocdPortForwardURL
+	VaultPortForwardURL  = pkg.VaultPortForwardURL
 )
+
+type AwsConfig struct {
+	ArgoWorkflowsDir                string
+	DestinationGitopsRepoHttpsURL   string
+	DestinationGitopsRepoGitURL     string
+	DestinationMetaphorRepoHttpsURL string
+	DestinationMetaphorRepoGitURL   string
+	GitopsDir                       string
+	GitProvider                     string
+	K1Dir                           string
+	Kubeconfig                      string
+	KubectlClient                   string
+	KubefirstBotSSHPrivateKey       string
+	KubefirstConfig                 string
+	LogsDir                         string
+	MetaphorDir                     string
+	RegistryAppName                 string
+	RegistryYaml                    string
+	SSLBackupDir                    string
+	TerraformClient                 string
+	ToolsDir                        string
+}
+
+// todo move shared values to pkg. or break into common shared configs across git
+// GetConfig - load default values from kubefirst installer
+func GetConfig(clusterName string, domainName string, gitProvider string, gitOwner string) *AwsConfig {
+	config := AwsConfig{}
+
+	// todo do we want these from envs?
+	if err := env.Parse(&config); err != nil {
+		log.Fatal().Msgf(fmt.Sprintf("error reading environment variables %s", err.Error()))
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal().Msg(err.Error())
+	}
+
+	// cGitHost describes which git host to use depending on gitProvider
+	var cGitHost string
+	switch gitProvider {
+	case "github":
+		cGitHost = GithubHost
+	case "gitlab":
+		cGitHost = GitlabHost
+	}
+
+	config.DestinationGitopsRepoHttpsURL = fmt.Sprintf("https://%s/%s/gitops.git", cGitHost, gitOwner)
+	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@%s:%s/gitops.git", cGitHost, gitOwner)
+	config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("https://%s/%s/metaphor.git", cGitHost, gitOwner)
+	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@%s:%s/metaphor.git", cGitHost, gitOwner)
+
+	config.ArgoWorkflowsDir = fmt.Sprintf("%s/.k1/argo-workflows", homeDir)
+	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
+	config.GitProvider = gitProvider
+	config.Kubeconfig = fmt.Sprintf("%s/.k1/kubeconfig", homeDir)
+	config.K1Dir = fmt.Sprintf("%s/.k1", homeDir)
+	config.KubectlClient = fmt.Sprintf("%s/.k1/tools/kubectl", homeDir)
+	config.KubefirstConfig = fmt.Sprintf("%s/.k1/%s", homeDir, ".kubefirst")
+	config.LogsDir = fmt.Sprintf("%s/.k1/logs", homeDir)
+	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor", homeDir)
+	config.RegistryAppName = "registry"
+	config.RegistryYaml = fmt.Sprintf("%s/.k1/gitops/registry/%s/registry.yaml", homeDir, clusterName)
+	config.SSLBackupDir = fmt.Sprintf("%s/.k1/ssl/%s", homeDir, domainName)
+	config.TerraformClient = fmt.Sprintf("%s/.k1/tools/terraform", homeDir)
+	config.ToolsDir = fmt.Sprintf("%s/.k1/tools", homeDir)
+
+	return &config
+}
 
 // todo standardize on field names
 type GitOpsDirectoryValues struct {
-	AlertsEmail                    string
+	AlertsEmail               string
+	AtlantisAllowList         string
+	CloudProvider             string
+	CloudRegion               string
+	ClusterId                 string
+	ClusterName               string
+	ClusterType               string
+	DomainName                string
+	Kubeconfig                string
+	KubefirstArtifactsBucket  string
+	KubefirstStateStoreBucket string
+	KubefirstTeam             string
+	KubefirstVersion          string
+
 	ArgoCDIngressURL               string
 	ArgoCDIngressNoHTTPSURL        string
-	ArgoWorkflowsIngressNoHTTPSURL string
 	ArgoWorkflowsIngressURL        string
+	ArgoWorkflowsIngressNoHTTPSURL string
 	AtlantisIngressURL             string
 	AtlantisIngressNoHTTPSURL      string
-	AtlantisAllowList              string
-	AtlantisWebhookURL             string
-	AwsIamArnAccountRoot           string
-	AwsKmsKeyId                    string
-	AwsNodeCapacityType            string
-	AwsAccountID                   string
 	ChartMuseumIngressURL          string
-	ClusterName                    string
-	ClusterType                    string
-	CloudProvider                  string
-	CloudRegion                    string
-	DomainName                     string
-	GithubHost                     string
-	GithubOwner                    string
-	GithubUser                     string
-	GitDescription                 string
-	GitNamespace                   string
-	GitProvider                    string
-	GitRunner                      string
-	GitRunnerDescription           string
-	GitRunnerNS                    string
-	GitopsRepoGitURL               string
-	Kubeconfig                     string
-	GitHubHost                     string
-	GitHubOwner                    string
-	GitHubUser                     string
-	GitOpsRepoAtlantisWebhookURL   string
-	GitOpsRepoGitURL               string
-	GitOpsRepoNoHTTPSURL           string
-	KubefirstArtifactsBucket       string
-	KubefirstStateStoreBucket      string
-	KubefirstTeam                  string
-	KubefirstVersion               string
-	MetaphorDevelopmentIngressURL  string
-	MetaphorStagingIngressURL      string
-	MetaphorProductionIngressURL   string
 	VaultIngressURL                string
 	VaultIngressNoHTTPSURL         string
 	VouchIngressURL                string
+
+	AtlantisWebhookURL   string
+	AwsIamArnAccountRoot string
+	AwsKmsKeyId          string
+	AwsNodeCapacityType  string
+	AwsAccountID         string
+
+	GitDescription       string
+	GitNamespace         string
+	GitProvider          string
+	GitRunner            string
+	GitRunnerDescription string
+	GitRunnerNS          string
+	GitURL               string
+
+	GitHubHost  string
+	GitHubOwner string
+	GitHubUser  string
+
+	GitlabHost         string
+	GitlabOwner        string
+	GitlabOwnerGroupID int
+	GitlabUser         string
+
+	GitOpsRepoAtlantisWebhookURL string
+	GitOpsRepoGitURL             string
+	GitOpsRepoNoHTTPSURL         string
+
+	UseTelemetry string
 }
 
 type MetaphorTokenValues struct {
@@ -90,48 +159,4 @@ type MetaphorTokenValues struct {
 	MetaphorDevelopmentIngressURL string
 	MetaphorStagingIngressURL     string
 	MetaphorProductionIngressURL  string
-}
-
-type AwsConfig struct {
-	DestinationGitopsRepoGitURL   string
-	DestinationMetaphorRepoGitURL string
-	GitopsDir                     string
-	HelmClient                    string
-	K1Dir                         string
-	KubectlClient                 string
-	Kubeconfig                    string
-	KubefirstConfig               string
-	MetaphorDir                   string
-	TerraformClient               string
-	ToolsDir                      string
-}
-
-// todo move shared values to pkg. or break into common shared configs across git
-// GetConfig - load default values from kubefirst installer
-func GetConfig(githubOwner string) *AwsConfig {
-	config := AwsConfig{}
-
-	if err := env.Parse(&config); err != nil {
-		log.Info().Msg("something went wrong loading the environment variables")
-		log.Panic().Msg(err.Error())
-	}
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Panic().Msg(err.Error())
-	}
-
-	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@github.com:%s/gitops.git", githubOwner)
-	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@github.com:%s/metaphor.git", githubOwner)
-	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
-	config.HelmClient = fmt.Sprintf("%s/.k1/tools/helm", homeDir)
-	config.K1Dir = fmt.Sprintf("%s/.k1", homeDir)
-	config.KubectlClient = fmt.Sprintf("%s/.k1/tools/kubectl", homeDir)
-	config.Kubeconfig = fmt.Sprintf("%s/.k1/kubeconfig", homeDir)
-	config.KubefirstConfig = fmt.Sprintf("%s/.kubefirst", homeDir)
-	config.MetaphorDir = fmt.Sprintf("%s/.k1/metaphor", homeDir)
-	config.TerraformClient = fmt.Sprintf("%s/.k1/tools/terraform", homeDir)
-	config.ToolsDir = fmt.Sprintf("%s/.k1/tools", homeDir)
-
-	return &config
 }

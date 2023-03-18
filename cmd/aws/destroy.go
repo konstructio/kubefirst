@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -15,6 +16,7 @@ import (
 	awsinternal "github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/civo"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
+	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
@@ -25,21 +27,31 @@ import (
 )
 
 func destroyAws(cmd *cobra.Command, args []string) error {
+	// Determine if there are active installs
+	gitProvider := viper.GetString("flags.git-provider")
+	_, err := helpers.EvalDestroy(awsinternal.CloudProvider, gitProvider)
+	if err != nil {
+		return err
+	}
 
-	log.Info().Msg("destroying kubefirst platform running in aws")
-
-	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	httpClientNoSSL := http.Client{Transport: customTransport}
+	// Check for existing port forwards before continuing
+	err = k8s.CheckForExistingPortForwards(8080)
+	if err != nil {
+		return fmt.Errorf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
+	}
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	log.Info().Msg("destroying kubefirst platform in aws")
 
+	customTransport := http.DefaultTransport.(*http.Transport).Clone()
+	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	httpClientNoSSL := http.Client{Transport: customTransport}
+
 	clusterName := viper.GetString("flags.cluster-name")
+	domainName := viper.GetString("flags.domain-name")
 	dryRun := viper.GetBool("flags.dry-run")
-	gitProvider := viper.GetString("flags.git-provider")
 
 	// Switch based on git provider, set params
 	var cGitOwner, cGitToken string
@@ -55,7 +67,14 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate aws config
-	config := awsinternal.GetConfig(cGitOwner)
+	config := awsinternal.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
+
+	if len(cGitToken) == 0 {
+		return fmt.Errorf(
+			"please set a %s_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/%s/install.html#step-3-kubefirst-init",
+			strings.ToUpper(gitProvider), gitProvider,
+		)
+	}
 
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
