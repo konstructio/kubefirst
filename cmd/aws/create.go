@@ -677,6 +677,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		log.Info().Msg("Setting argocd username and password credentials")
 
+		log.Info().Msg("creating service accounts and namespaces")
+		err = bootstrap.ServiceAccounts(clientset)
+		if err != nil {
+			return err
+		}
+
 		secret := &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        "repo-credentials-template",
@@ -706,12 +712,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		log.Info().Msg("secret create for argocd to connect to gitops repo")
 
-		log.Info().Msg("creating service accounts")
-		err = bootstrap.ServiceAccounts(clientset)
-		if err != nil {
-			return err
-		}
-
 		ecrToken, err := awsClient.GetECRAuthToken()
 		if err != nil {
 			return err
@@ -728,9 +728,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 			Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
 			Type:       "Opaque",
 		}
-		_, err = clientset.CoreV1().Secrets(secret.ObjectMeta.Namespace).Create(context.TODO(), dockerCfgSecret, metav1.CreateOptions{})
+		_, err = clientset.CoreV1().Secrets(dockerCfgSecret.ObjectMeta.Namespace).Create(context.TODO(), dockerCfgSecret, metav1.CreateOptions{})
 		if err != nil {
-			log.Info().Msgf("error creating kubernetes secret %s/%s: %s", secret.Namespace, secret.Name, err)
+			log.Info().Msgf("error creating kubernetes secret %s/%s: %s", dockerCfgSecret.Namespace, dockerCfgSecret.Name, err)
 			return err
 		}
 
@@ -870,6 +870,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("vault unseal already done, continuing")
 	}
+
+	vaultRootTokenLookup, err := k8s.ReadSecretV2(clientset, "vault", "vault-unseal-secret")
+	if err != nil {
+		return err
+	}
+
+	vaultRootToken = vaultRootTokenLookup["root-token"]
 
 	//* configure vault with terraform
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")

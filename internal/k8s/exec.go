@@ -173,7 +173,7 @@ func ReturnDeploymentObject(clientset *kubernetes.Clientset, matchLabel string, 
 	if err != nil {
 		log.Fatal().Msgf("Error when attempting to search for Deployment: %s", err)
 	}
-	log.Info().Msgf("Waiting for %s Deployment to be created.", matchLabelValue)
+	log.Info().Msgf("waiting for %s Deployment to be created.", matchLabelValue)
 
 	objChan := objWatch.ResultChan()
 	for {
@@ -220,7 +220,7 @@ func ReturnPodObject(kubeConfigPath string, matchLabel string, matchLabelValue s
 	if err != nil {
 		log.Fatal().Msgf("Error when attempting to search for Pod: %s", err)
 	}
-	log.Info().Msgf("Waiting for %s Pod to be created.", matchLabelValue)
+	log.Info().Msgf("waiting for %s Pod to be created.", matchLabelValue)
 
 	objChan := objWatch.ResultChan()
 	for {
@@ -271,7 +271,7 @@ func ReturnStatefulSetObject(clientset *kubernetes.Clientset, matchLabel string,
 	if err != nil {
 		log.Fatal().Msgf("Error when attempting to search for StatefulSet: %s", err)
 	}
-	log.Info().Msgf("Waiting for %s StatefulSet to be created using label %s=%s", matchLabelValue, matchLabel, matchLabelValue)
+	log.Info().Msgf("waiting for %s StatefulSet to be created using label %s=%s", matchLabelValue, matchLabel, matchLabelValue)
 
 	objChan := objWatch.ResultChan()
 	for {
@@ -316,7 +316,7 @@ func WaitForDeploymentReady(clientset *kubernetes.Clientset, deployment *appsv1.
 	if err != nil {
 		log.Fatal().Msgf("Error when attempting to wait for Deployment: %s", err)
 	}
-	log.Info().Msgf("Waiting for %s Deployment to be ready. This could take up to %v seconds.", deployment.Name, timeoutSeconds)
+	log.Info().Msgf("waiting for %s Deployment to be ready. This could take up to %v seconds.", deployment.Name, timeoutSeconds)
 
 	objChan := objWatch.ResultChan()
 	for {
@@ -356,7 +356,7 @@ func WaitForPodReady(clientset *kubernetes.Clientset, pod *v1.Pod, timeoutSecond
 	if err != nil {
 		log.Fatal().Msgf("Error when attempting to wait for Pod: %s", err)
 	}
-	log.Info().Msgf("Waiting for %s Pod to be ready. This could take up to %v seconds.", pod.Name, timeoutSeconds)
+	log.Info().Msgf("waiting for %s Pod to be ready. This could take up to %v seconds.", pod.Name, timeoutSeconds)
 
 	// Feed events using provided channel
 	objChan := objWatch.ResultChan()
@@ -398,7 +398,7 @@ func WaitForStatefulSetReady(clientset *kubernetes.Clientset, statefulset *appsv
 	if err != nil {
 		log.Fatal().Msgf("Error when attempting to wait for StatefulSet: %s", err)
 	}
-	log.Info().Msgf("Waiting for %s StatefulSet to be ready. This could take up to %v seconds.", statefulset.Name, timeoutSeconds)
+	log.Info().Msgf("waiting for %s StatefulSet to be ready. This could take up to %v seconds.", statefulset.Name, timeoutSeconds)
 
 	objChan := objWatch.ResultChan()
 	for {

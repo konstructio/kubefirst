@@ -17,6 +17,7 @@ func ServiceAccounts(clientset *kubernetes.Clientset) error {
 	// Create namespace
 	// Skip if it already exists
 	newNamespaces := []string{
+		"argo",
 		"atlantis",
 		"external-secrets-operator",
 	}
