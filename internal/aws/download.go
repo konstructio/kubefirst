@@ -25,7 +25,7 @@ func DownloadTools(awsConfig *AwsConfig, kubectlClientVersion string, terraformC
 	// create a waiting group (translating: create a queue of functions, and only pass the wg.Wait() function down
 	// bellow after all the wg.Add(3) functions are done (wg.Done)
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(2)
 
 	go func() {
 
@@ -50,7 +50,7 @@ func DownloadTools(awsConfig *AwsConfig, kubectlClientVersion string, terraformC
 
 		log.Info().Msgf("going to print the kubeconfig env in runtime: %s", os.Getenv("KUBECONFIG"))
 
-		kubectlStdOut, kubectlStdErr, err := pkg.ExecShellReturnStrings(awsConfig.KubectlClient, "version", "--client", "--short")
+		kubectlStdOut, kubectlStdErr, err := pkg.ExecShellReturnStrings(awsConfig.KubectlClient, "version", "-oyaml")
 		log.Info().Msgf("-> kubectl version:\n\t%s\n\t%s\n", kubectlStdOut, kubectlStdErr)
 		if err != nil {
 			errorChannel <- fmt.Errorf("failed to call kubectlVersionCmd.Run(): %v", err)

@@ -15,7 +15,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	awsinternal "github.com/kubefirst/kubefirst/internal/aws"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
-	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
@@ -28,13 +27,13 @@ import (
 func destroyAws(cmd *cobra.Command, args []string) error {
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
-	_, err := helpers.EvalDestroy(awsinternal.CloudProvider, gitProvider)
-	if err != nil {
-		return err
-	}
+	// _, err := helpers.EvalDestroy(awsinternal.CloudProvider, gitProvider)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Check for existing port forwards before continuing
-	err = k8s.CheckForExistingPortForwards(8080)
+	err := k8s.CheckForExistingPortForwards(8080)
 	if err != nil {
 		return fmt.Errorf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
 	}
@@ -76,6 +75,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		)
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
+
 	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 2)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
@@ -168,6 +168,8 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 			progressPrinter.IncrementTracker("platform-destroy", 1)
 		}
 	}
+
+	// this should only run if a cluster was created
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region: aws.String(cloudRegionFlag),
 	}))
@@ -177,6 +179,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	clusterInput := &eks.DescribeClusterInput{
 		Name: aws.String(clusterName),
 	}
+
 	eksClusterInfo, err := eksSvc.DescribeCluster(clusterInput)
 	if err != nil {
 		log.Fatal().Msgf("Error calling DescribeCluster: %v", err)
@@ -192,7 +195,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if viper.GetBool("kubefirst-checks.terraform-apply-aws") {
+	if viper.GetBool("kubefirst-checks.terraform-apply-aws") || viper.GetBool("kubefirst-checks.terraform-apply-aws-failed") {
 		log.Info().Msg("destroying aws resources with terraform")
 
 		if viper.GetBool("kubefirst-checks.argocd-helm-install") {
@@ -243,6 +246,8 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["AWS_REGION"] = os.Getenv("AWS_REGION")
 		err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
+			viper.Set("kubefirst-checks.terraform-apply-aws-failed", true)
+			viper.WriteConfig()
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)
 			return err
 		}
@@ -291,7 +296,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		}
 	}
 	time.Sleep(time.Second * 2) // allows progress bars to finish
-	fmt.Printf("your kubefirst platform running in %s has been destroyed", awsinternal.CloudProvider)
+	fmt.Printf("Your kubefirst platform running in %s has been destroyed.", awsinternal.CloudProvider)
 
 	return nil
 }

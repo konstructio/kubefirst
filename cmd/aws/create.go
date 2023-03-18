@@ -26,6 +26,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/github"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/handlers"
+	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/segment"
@@ -43,7 +44,7 @@ import (
 
 func createAws(cmd *cobra.Command, args []string) error {
 
-	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 6)
+	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	alertsEmailFlag, err := cmd.Flags().GetString("alerts-email")
@@ -136,7 +137,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}(*segmentClient)
 
 	// Switch based on git provider, set params
-	var cGitHost, cGitOwner, cGitToken, cGitUser, containerRegistryHost string
+	var cGitHost, cGitOwner, cGitToken, cGitUser string
 	var cGitlabOwnerGroupID int
 	switch gitProviderFlag {
 	case "github":
@@ -147,7 +148,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		cGitHost = awsinternal.GithubHost
 		cGitOwner = githubOrgFlag
 		cGitToken = os.Getenv("GITHUB_TOKEN")
-		containerRegistryHost = "ghcr.io"
 
 		// Handle authorization checks
 		httpClient := http.DefaultClient
@@ -204,7 +204,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 		cGitUser = user.Username
 
-		containerRegistryHost = "registry.gitlab.com"
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
 		viper.WriteConfig()
 	default:
@@ -499,12 +498,15 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("download dependencies `$HOME/.k1/tools` complete")
 		viper.Set("kubefirst-checks.tools-downloaded", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("preflight-checks", 1)
 	} else {
 		log.Info().Msg("already completed download of dependencies to `$HOME/.k1/tools` - continuing")
+		progressPrinter.IncrementTracker("preflight-checks", 1)
 	}
 
 	atlantisWebhookURL := fmt.Sprintf("https://atlantis.%s/events", domainNameFlag)
 	awsAccountID := *iamCaller.Account
+	registryURL := fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", awsAccountID, cloudRegionFlag)
 
 	gitopsTemplateTokens := awsinternal.GitOpsDirectoryValues{
 		AlertsEmail:               alertsEmailFlag,
@@ -561,7 +563,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	metaphorTemplateTokens := awsinternal.MetaphorTokenValues{
 		ClusterName:                   clusterNameFlag,
 		CloudRegion:                   cloudRegionFlag,
-		ContainerRegistryURL:          fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
+		ContainerRegistryURL:          fmt.Sprintf("%s/metaphor", registryURL),
 		DomainName:                    domainNameFlag,
 		MetaphorDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", domainNameFlag),
 		MetaphorStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
@@ -811,10 +813,14 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("Created aws cloud resources")
 		viper.Set("kubefirst-checks.terraform-apply-aws", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("applying-aws-terraform", 1)
 	} else {
 		log.Info().Msg("already created aws cluster resources")
+		progressPrinter.IncrementTracker("applying-aws-terraform", 1)
 	}
 
+	progressPrinter.AddTracker("applying-kms", "Applying AWS KMS", 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.detokenize-kms") {
 		gitopsRepo, err := git.PlainOpen(config.GitopsDir)
 		if err != nil {
@@ -849,11 +855,17 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("pushed detokenized kms key to gitops")
 		viper.Set("kubefirst-checks.detokenize-kms", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("applying-kms", 1)
 	} else {
 		log.Info().Msg("already pushed kms key to gitops")
+		progressPrinter.IncrementTracker("applying-kmsm", 1)
 	}
 
+	// Instantiate kube client for eks
 	// todo create a client from config!! need to re-use AwsConfiguration or adopt session in the other direction
+	progressPrinter.AddTracker("creating-eks-kube-config", "Instantiating kube client for eks", 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region: aws.String(cloudRegionFlag),
 	}))
@@ -877,6 +889,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	progressPrinter.IncrementTracker("creating-eks-kube-config", 1)
 
 	// AWS Readiness checks
 	progressPrinter.AddTracker("verifying-aws-cluster-readiness", "Verifying Kubernetes cluster is ready", 1)
@@ -892,11 +905,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 		120,
 	)
 	if err != nil {
-		log.Info().Msgf("Error finding CoreDNS deployment: %s", err)
+		log.Error().Msgf("Error finding CoreDNS deployment: %s", err)
+		return err
 	}
 	_, err = k8s.WaitForDeploymentReady(clientset, coreDNSDeployment, 120)
 	if err != nil {
-		log.Info().Msgf("Error waiting for CoreDNS deployment ready state: %s", err)
+		log.Error().Msgf("Error waiting for CoreDNS deployment ready state: %s", err)
+		return err
 	}
 	progressPrinter.IncrementTracker("verifying-aws-cluster-readiness", 1)
 
@@ -925,6 +940,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// }
 
 	//* install argocd
+	progressPrinter.AddTracker("installing-argocd", "Installing and configuring ArgoCD", 3)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
@@ -934,17 +952,19 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 		viper.Set("kubefirst-checks.argocd-install", true)
 		viper.WriteConfig()
-		// progressPrinter.IncrementTracker("installing-argo-cd", 1)
+		progressPrinter.IncrementTracker("installing-argocd", 1)
 	} else {
 		log.Info().Msg("argo cd already installed, continuing")
-		// progressPrinter.IncrementTracker("installing-argo-cd", 1)
+		progressPrinter.IncrementTracker("installing-argocd", 1)
 	}
 
 	// Wait for ArgoCD to be ready
 	_, err = k8s.VerifyArgoCDReadiness(clientset, true)
 	if err != nil {
-		log.Fatal().Msgf("error waiting for ArgoCD to become ready: %s", err)
+		log.Error().Msgf("error waiting for ArgoCD to become ready: %s", err)
+		return err
 	}
+	progressPrinter.IncrementTracker("installing-argocd", 1)
 
 	//* ArgoCD port-forward
 	// todo DO WE ACTUALLY USE THIS!?
@@ -962,9 +982,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 		argoCDStopChannel,
 	)
 	log.Info().Msgf("port-forward to argocd is available at %s", awsinternal.ArgocdPortForwardURL)
+	progressPrinter.IncrementTracker("installing-argocd", 1)
 
 	// todo need to create argocd repo secret in the cluster
 	//* create argocd kubernetes secret for connectivity to private gitops repo
+	progressPrinter.AddTracker("setting-up-eks-cluster", "Setting up EKS cluster", 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 	executionControl = viper.GetBool("kubefirst-checks.bootstrap-cluster")
 	if !executionControl {
 		log.Info().Msg("Setting argocd username and password credentials")
@@ -1011,8 +1035,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		usernamePasswordString := fmt.Sprintf("%s:%s", pkg.AwsECRUsername, ecrToken)
 		usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
-		registryURL := fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", awsAccountID, cloudRegionFlag)
-
 		dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"auth": "%s"}}}`, registryURL, usernamePasswordStringB64)
 
 		dockerCfgSecret := &v1.Secret{
@@ -1028,12 +1050,17 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		viper.Set("kubefirst-checks.bootstrap-cluster", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("setting-up-eks-cluster", 1)
 	} else {
 		log.Info().Msg("argo credentials already set, continuing")
+		progressPrinter.IncrementTracker("setting-up-eks-cluster", 1)
 	}
 
 	var argocdPassword string
 	//* argocd pods are ready, get and set credentials
+	progressPrinter.AddTracker("creating-argocd-auth", "Creating ArgoCD authentication", 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
 	if !executionControl {
 		log.Info().Msg("Setting argocd username and password credentials")
@@ -1061,11 +1088,16 @@ func createAws(cmd *cobra.Command, args []string) error {
 		viper.Set("components.argocd.auth-token", token)
 		viper.Set("kubefirst-checks.argocd-credentials-set", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("creating-argocd-auth", 1)
 	} else {
 		log.Info().Msg("argo credentials already set, continuing")
+		progressPrinter.IncrementTracker("creating-argocd-auth", 1)
 	}
 
-	//* argocd sync registry and start sync waves
+	//* create registry
+	progressPrinter.AddTracker("create-registry-application", "Deploying registry application to ArgoCD", 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 	executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
 	if !executionControl {
 		log.Info().Msg("applying the registry application to argocd")
@@ -1081,11 +1113,16 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("create-registry-application", 1)
 	} else {
 		log.Info().Msg("argocd registry create already done, continuing")
+		progressPrinter.IncrementTracker("create-registry-application", 1)
 	}
 
-	//* helm install argocd
+	//* initialize and unseal vault
+	progressPrinter.AddTracker("configuring-vault", "Configuring Vault", 3)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 	executionControl = viper.GetBool("kubefirst-checks.vault-ready")
 	if !executionControl {
 		log.Info().Msg("waiting for vault pods to be ready ")
@@ -1098,21 +1135,24 @@ func createAws(cmd *cobra.Command, args []string) error {
 			60,
 		)
 		if err != nil {
-			log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
+			log.Error().Msgf("Error finding Vault StatefulSet: %s", err)
+			return err
 		}
 		_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 60, false)
 		if err != nil {
-			log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
+			log.Error().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
+			return err
 		}
 
 		time.Sleep(time.Second * 20) // todo remove this? might not be needed anymore
 		viper.Set("kubefirst-checks.vault-ready", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("configuring-vault", 1)
 	} else {
 		log.Info().Msg("vault is ready, continuing")
+		progressPrinter.IncrementTracker("configuring-vault", 1)
 	}
 
-	//* argocd sync registry and start sync waves
 	executionControl = viper.GetBool("kubefirst-checks.vault-unseal")
 	if !executionControl {
 		log.Info().Msg("initializing vault and vault unseal")
@@ -1144,8 +1184,10 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		viper.Set("kubefirst-checks.vault-unseal", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("configuring-vault", 1)
 	} else {
 		log.Info().Msg("vault unseal already done, continuing")
+		progressPrinter.IncrementTracker("configuring-vault", 1)
 	}
 
 	vaultRootTokenLookup, err := k8s.ReadSecretV2(clientset, "vault", "vault-unseal-secret")
@@ -1173,8 +1215,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
 	if !executionControl {
-		// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
-
 		//* run vault terraform
 		log.Info().Msg("configuring vault with terraform")
 
@@ -1200,11 +1240,16 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("vault terraform executed successfully")
 		viper.Set("kubefirst-checks.terraform-apply-vault", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("configuring-vault", 1)
 	} else {
 		log.Info().Msg("already executed vault terraform")
+		progressPrinter.IncrementTracker("configuring-vault", 1)
 	}
 
 	//* create users
+	progressPrinter.AddTracker("creating-users", "Creating users", 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-users")
 	if !executionControl {
 		log.Info().Msg("applying users terraform")
@@ -1228,15 +1273,16 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		log.Info().Msg("executed users terraform successfully")
-		// progressPrinter.IncrementTracker("step-users", 1)
 		viper.Set("kubefirst-checks.terraform-apply-users", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("creating-users", 1)
 	} else {
 		log.Info().Msg("already created users with terraform")
+		progressPrinter.IncrementTracker("creating-users", 1)
 	}
 
 	// Wait for console Deployment Pods to transition to Running
-	progressPrinter.AddTracker("deploying-kubefirst-console", "Creating users", 1)
+	progressPrinter.AddTracker("deploying-kubefirst-console", "Deploying kubefirst console", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
@@ -1247,11 +1293,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 		60,
 	)
 	if err != nil {
-		log.Info().Msgf("Error finding console Deployment: %s", err)
+		log.Error().Msgf("Error finding console Deployment: %s", err)
+		return err
 	}
 	_, err = k8s.WaitForDeploymentReady(clientset, consoleDeployment, 120)
 	if err != nil {
-		log.Info().Msgf("Error waiting for console Deployment ready state: %s", err)
+		log.Error().Msgf("Error waiting for console Deployment ready state: %s", err)
+		return err
 	}
 
 	//* console port-forward
@@ -1282,6 +1330,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}
+
+	// Set flags used to track status of active options
+	helpers.SetCompletionFlags(awsinternal.CloudProvider, config.GitProvider)
 
 	//! reports.LocalHandoffScreenV2(argocdPassword, clusterNameFlag, cGitOwner, config, dryRunFlag, false)
 

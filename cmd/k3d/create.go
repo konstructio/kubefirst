@@ -929,7 +929,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// Wait for ArgoCD to be ready
 	_, err = k8s.VerifyArgoCDReadiness(clientset, false)
 	if err != nil {
-		log.Fatal().Msgf("error waiting for ArgoCD to become ready: %s", err)
+		log.Error().Msgf("error waiting for ArgoCD to become ready: %s", err)
+		return err
 	}
 
 	// Kubernetes client rest config
@@ -1035,11 +1036,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		120,
 	)
 	if err != nil {
-		log.Info().Msgf("Error finding Vault StatefulSet: %s", err)
+		log.Error().Msgf("Error finding Vault StatefulSet: %s", err)
+		return err
 	}
 	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 120, false)
 	if err != nil {
-		log.Info().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
+		log.Error().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
+		return err
 	}
 	progressPrinter.IncrementTracker("configuring-vault", 1)
 
@@ -1284,11 +1287,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		60,
 	)
 	if err != nil {
-		log.Info().Msgf("Error finding console Deployment: %s", err)
+		log.Error().Msgf("Error finding console Deployment: %s", err)
+		return err
 	}
 	_, err = k8s.WaitForDeploymentReady(clientset, consoleDeployment, 120)
 	if err != nil {
-		log.Info().Msgf("Error waiting for console Deployment ready state: %s", err)
+		log.Error().Msgf("Error waiting for console Deployment ready state: %s", err)
+		return err
 	}
 
 	//* console port-forward

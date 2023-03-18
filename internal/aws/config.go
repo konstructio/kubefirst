@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	CloudProvider          = "civo"
+	CloudProvider          = "aws"
 	GithubHost             = "github.com"
 	GitlabHost             = "gitlab.com"
 	KubectlClientVersion   = "v1.25.7"
