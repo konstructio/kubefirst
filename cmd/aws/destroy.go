@@ -14,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/eks"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	awsinternal "github.com/kubefirst/kubefirst/internal/aws"
-	"github.com/kubefirst/kubefirst/internal/civo"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
@@ -52,6 +51,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
 	dryRun := viper.GetBool("flags.dry-run")
+	atlantisWebhookURL := fmt.Sprintf("https://atlantis.%s/events", domainName)
 
 	// Switch based on git provider, set params
 	var cGitOwner, cGitToken string
@@ -75,10 +75,8 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 			strings.ToUpper(gitProvider), gitProvider,
 		)
 	}
-
 	progressPrinter.IncrementTracker("preflight-checks", 1)
-
-	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 3)
+	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 2)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	switch gitProvider {
@@ -88,10 +86,11 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
-			tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+			// tfEnvs = awsinternal.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs["GITHUB_TOKEN"] = cGitToken
 			tfEnvs["GITHUB_OWNER"] = cGitOwner
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
-			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = fmt.Sprintf("https://atlantis.%s/events", domainNameFlag)
+			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
 			err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 			if err != nil {
@@ -150,8 +149,14 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
-			tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, gid)
+			// tfEnvs = awsinternal.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs["GITLAB_TOKEN"] = cGitToken
+			tfEnvs["GITLAB_OWNER"] = cGitOwner
+			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
+			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
+			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gid)
+			tfEnvs["TF_VAR_gitlab_owner"] = viper.GetString("flags.gitlab-owner")
 			err = terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -223,6 +228,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 			log.Info().Msgf("http status code %d", httpCode)
 
 		}
+
 		// Pause before cluster destroy to prevent a race condition
 		log.Info().Msg("waiting for aws kubernetes cluster resource removal to finish...")
 		time.Sleep(time.Second * 10)
@@ -235,21 +241,6 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["AWS_SDK_LOAD_CONFIG"] = "1"
 		tfEnvs["TF_VAR_aws_region"] = os.Getenv("AWS_REGION")
 		tfEnvs["AWS_REGION"] = os.Getenv("AWS_REGION")
-
-		switch gitProvider {
-		case "github":
-			tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
-			tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
-			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
-			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = "atlantisWebhookURL"
-			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-		case "gitlab":
-			gid, err := strconv.Atoi(viper.GetString("flags.gitlab-owner-group-id"))
-			if err != nil {
-				return fmt.Errorf("couldn't convert gitlab group id to int: %s", err)
-			}
-			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, gid)
-		}
 		err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -299,8 +290,8 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("unable to delete %q folder, error: %s", config.K1Dir+"/kubeconfig", err)
 		}
 	}
-	time.Sleep(time.Millisecond * 200) // allows progress bars to finish
-	fmt.Println("your aws kubefirst platform has been destroyed")
+	time.Sleep(time.Second * 2) // allows progress bars to finish
+	fmt.Printf("your kubefirst platform running in %s has been destroyed", awsinternal.CloudProvider)
 
 	return nil
 }

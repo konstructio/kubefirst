@@ -22,7 +22,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	awsinternal "github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/bootstrap"
-	"github.com/kubefirst/kubefirst/internal/civo"
 	"github.com/kubefirst/kubefirst/internal/gitClient"
 	"github.com/kubefirst/kubefirst/internal/github"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
@@ -145,7 +144,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return errors.New("your GITHUB_TOKEN is not set. Please set and try again")
 		}
 
-		cGitHost = civo.GithubHost
+		cGitHost = awsinternal.GithubHost
 		cGitOwner = githubOrgFlag
 		cGitToken = os.Getenv("GITHUB_TOKEN")
 		containerRegistryHost = "ghcr.io"
@@ -194,7 +193,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		cGitHost = civo.GitlabHost
+		cGitHost = awsinternal.GitlabHost
 		cGitOwner = groupFullSlug
 		log.Info().Msgf("set gitlab owner to %s", groupFullSlug)
 
@@ -474,11 +473,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	if useTelemetryFlag {
-		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, awsinternal.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
-		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
+		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, awsinternal.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
@@ -547,7 +546,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		GitHubOwner: cGitOwner,
 		GitHubUser:  cGitUser,
 
-		GitlabHost:         civo.GitlabHost,
+		GitlabHost:         awsinternal.GitlabHost,
 		GitlabOwner:        cGitOwner,
 		GitlabOwnerGroupID: cGitlabOwnerGroupID,
 		GitlabUser:         cGitUser,
@@ -883,6 +882,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("verifying-aws-cluster-readiness", "Verifying Kubernetes cluster is ready", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
+	// These may need to be tweaked
 	// CoreDNS
 	coreDNSDeployment, err := k8s.ReturnDeploymentObject(
 		clientset,
@@ -898,7 +898,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("Error waiting for CoreDNS deployment ready state: %s", err)
 	}
-	progressPrinter.IncrementTracker("verifying-civo-cluster-readiness", 1)
+	progressPrinter.IncrementTracker("verifying-aws-cluster-readiness", 1)
 
 	argocdClient, err := argocdapi.NewForConfig(restConfig)
 	if err != nil {
