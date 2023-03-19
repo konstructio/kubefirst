@@ -557,7 +557,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 		GitOpsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
 		ClusterId:                    clusterId,
 
-		AtlantisWebhookURL: atlantisWebhookURL,
+		AtlantisWebhookURL:   atlantisWebhookURL,
+		ContainerRegistryURL: registryURL,
 	}
 
 	metaphorTemplateTokens := awsinternal.MetaphorTokenValues{
@@ -858,7 +859,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("applying-kms", 1)
 	} else {
 		log.Info().Msg("already pushed kms key to gitops")
-		progressPrinter.IncrementTracker("applying-kmsm", 1)
+		progressPrinter.IncrementTracker("applying-kms", 1)
 	}
 
 	// Instantiate kube client for eks
@@ -889,6 +890,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	// This flag is set if the above client config passes
+	// This is used for destroy
+	viper.Set("kubefirst-checks.aws-eks-cluster-created", true)
+
 	progressPrinter.IncrementTracker("creating-eks-kube-config", 1)
 
 	// AWS Readiness checks
@@ -1120,6 +1126,22 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	//* initialize and unseal vault
+	//* configure vault with terraform
+	//* vault port-forward
+	vaultStopChannel := make(chan struct{}, 1)
+	defer func() {
+		close(vaultStopChannel)
+	}()
+	k8s.OpenPortForwardPodWrapper(
+		clientset,
+		restConfig,
+		"vault-0",
+		"vault",
+		8200,
+		8200,
+		vaultStopChannel,
+	)
+
 	progressPrinter.AddTracker("configuring-vault", "Configuring Vault", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
@@ -1138,7 +1160,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			log.Error().Msgf("Error finding Vault StatefulSet: %s", err)
 			return err
 		}
-		_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 60, false)
+		_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 60, true)
 		if err != nil {
 			log.Error().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 			return err
@@ -1197,22 +1219,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	vaultRootToken = vaultRootTokenLookup["root-token"]
 
-	//* configure vault with terraform
-	//* vault port-forward
-	vaultStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(vaultStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		clientset,
-		restConfig,
-		"vault-0",
-		"vault",
-		8200,
-		8200,
-		vaultStopChannel,
-	)
-
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
 	if !executionControl {
 		//* run vault terraform
@@ -1229,7 +1235,24 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = atlantisWebhookSecret
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-		tfEnvs["TF_VAR_kubefirst_bot_ssh_private_key"] = viper.GetString("kbot.private-key") // todo hyrdate a variable up top with these so we dont ref viper.
+		tfEnvs["TF_VAR_kubefirst_bot_ssh_private_key"] = viper.GetString("kbot.private-key")
+		// todo hyrdate a variable up top with these so we dont ref viper.
+
+		if gitProviderFlag == "gitlab" {
+			gl := gitlab.GitLabWrapper{
+				Client: gitlab.NewGitLabClient(cGitToken),
+			}
+			allgroups, err := gl.GetGroups()
+			if err != nil {
+				log.Fatal().Msgf("could not read gitlab groups: %s", err)
+			}
+			gid, err := gl.GetGroupID(allgroups, gitlabGroupFlag)
+			if err != nil {
+				log.Fatal().Msgf("could not get group id for primary group: %s", err)
+			}
+
+			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gid)
+		}
 
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)

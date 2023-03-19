@@ -170,71 +170,72 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	}
 
 	// this should only run if a cluster was created
-	sess := session.Must(session.NewSession(&aws.Config{
-		Region: aws.String(cloudRegionFlag),
-	}))
+	if viper.GetBool("kubefirst-checks.aws-eks-cluster-created") {
+		sess := session.Must(session.NewSession(&aws.Config{
+			Region: aws.String(cloudRegionFlag),
+		}))
 
-	eksSvc := eks.New(sess)
+		eksSvc := eks.New(sess)
 
-	clusterInput := &eks.DescribeClusterInput{
-		Name: aws.String(clusterName),
-	}
-
-	eksClusterInfo, err := eksSvc.DescribeCluster(clusterInput)
-	if err != nil {
-		log.Fatal().Msgf("Error calling DescribeCluster: %v", err)
-	}
-
-	clientset, err := awsinternal.NewClientset(eksClusterInfo.Cluster)
-	if err != nil {
-		log.Fatal().Msgf("Error creating clientset: %v", err)
-	}
-
-	restConfig, err := awsinternal.NewRestConfig(eksClusterInfo.Cluster)
-	if err != nil {
-		return err
-	}
-
-	if viper.GetBool("kubefirst-checks.terraform-apply-aws") || viper.GetBool("kubefirst-checks.terraform-apply-aws-failed") {
-		log.Info().Msg("destroying aws resources with terraform")
-
-		if viper.GetBool("kubefirst-checks.argocd-helm-install") {
-			log.Info().Msg("opening argocd port forward")
-			//* ArgoCD port-forward
-			argoCDStopChannel := make(chan struct{}, 1)
-			defer func() {
-				close(argoCDStopChannel)
-			}()
-			k8s.OpenPortForwardPodWrapper(
-				clientset,
-				restConfig,
-				"argocd-server",
-				"argocd",
-				8080,
-				8080,
-				argoCDStopChannel,
-			)
-
-			log.Info().Msg("getting new auth token for argocd")
-			argocdAuthToken, err := argocd.GetArgoCDToken(viper.GetString("components.argocd.username"), viper.GetString("components.argocd.password"))
-			if err != nil {
-				return err
-			}
-
-			log.Info().Msgf("port-forward to argocd is available at %s", pkg.ArgocdPortForwardURL)
-
-			log.Info().Msg("deleting the registry application")
-			httpCode, _, err := argocd.DeleteApplication(&httpClientNoSSL, pkg.RegistryAppName, argocdAuthToken, "true")
-			if err != nil {
-				return err
-			}
-			log.Info().Msgf("http status code %d", httpCode)
-
+		clusterInput := &eks.DescribeClusterInput{
+			Name: aws.String(clusterName),
 		}
+
+		eksClusterInfo, err := eksSvc.DescribeCluster(clusterInput)
+		if err != nil {
+			log.Fatal().Msgf("Error calling DescribeCluster: %v", err)
+		}
+
+		clientset, err := awsinternal.NewClientset(eksClusterInfo.Cluster)
+		if err != nil {
+			log.Fatal().Msgf("Error creating clientset: %v", err)
+		}
+
+		restConfig, err := awsinternal.NewRestConfig(eksClusterInfo.Cluster)
+		if err != nil {
+			return err
+		}
+
+		log.Info().Msg("opening argocd port forward")
+		//* ArgoCD port-forward
+		argoCDStopChannel := make(chan struct{}, 1)
+		defer func() {
+			close(argoCDStopChannel)
+		}()
+		k8s.OpenPortForwardPodWrapper(
+			clientset,
+			restConfig,
+			"argocd-server",
+			"argocd",
+			8080,
+			8080,
+			argoCDStopChannel,
+		)
+
+		log.Info().Msg("getting new auth token for argocd")
+		argocdAuthToken, err := argocd.GetArgoCDToken(viper.GetString("components.argocd.username"), viper.GetString("components.argocd.password"))
+		if err != nil {
+			return err
+		}
+
+		log.Info().Msgf("port-forward to argocd is available at %s", pkg.ArgocdPortForwardURL)
+
+		log.Info().Msg("deleting the registry application")
+		httpCode, _, err := argocd.DeleteApplication(&httpClientNoSSL, pkg.RegistryAppName, argocdAuthToken, "true")
+		if err != nil {
+			return err
+		}
+		log.Info().Msgf("http status code %d", httpCode)
 
 		// Pause before cluster destroy to prevent a race condition
 		log.Info().Msg("waiting for aws kubernetes cluster resource removal to finish...")
 		time.Sleep(time.Second * 10)
+
+		viper.Set("kubefirst-checks.aws-eks-cluster-created", false)
+	}
+
+	if viper.GetBool("kubefirst-checks.terraform-apply-aws") || viper.GetBool("kubefirst-checks.terraform-apply-aws-failed") {
+		log.Info().Msg("destroying aws resources with terraform")
 
 		log.Info().Msg("destroying aws cloud resources")
 		tfEntrypoint := config.GitopsDir + "/terraform/aws"

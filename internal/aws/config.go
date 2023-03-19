@@ -148,7 +148,8 @@ type GitOpsDirectoryValues struct {
 	GitOpsRepoGitURL             string
 	GitOpsRepoNoHTTPSURL         string
 
-	UseTelemetry string
+	ContainerRegistryURL string
+	UseTelemetry         string
 }
 
 type MetaphorTokenValues struct {

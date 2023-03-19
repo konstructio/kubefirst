@@ -52,6 +52,7 @@ func detokenizeGitops(path string, tokens *GitOpsDirectoryValues) filepath.WalkF
 			newContents = strings.Replace(newContents, "<CLUSTER_TYPE>", tokens.ClusterType, -1)
 			newContents = strings.Replace(newContents, "<DOMAIN_NAME>", tokens.DomainName, -1)
 			newContents = strings.Replace(newContents, "<KUBE_CONFIG_PATH>", tokens.Kubeconfig, -1)
+			newContents = strings.Replace(newContents, "<KUBEFIRST_ARTIFACTS_BUCKET>", tokens.KubefirstArtifactsBucket, -1)
 			newContents = strings.Replace(newContents, "<KUBEFIRST_STATE_STORE_BUCKET>", tokens.KubefirstStateStoreBucket, -1)
 			newContents = strings.Replace(newContents, "<KUBEFIRST_TEAM>", tokens.KubefirstTeam, -1)
 			newContents = strings.Replace(newContents, "<KUBEFIRST_VERSION>", tokens.KubefirstVersion, -1)
@@ -66,6 +67,10 @@ func detokenizeGitops(path string, tokens *GitOpsDirectoryValues) filepath.WalkF
 			newContents = strings.Replace(newContents, "<VAULT_INGRESS_URL>", tokens.VaultIngressURL, -1)
 			newContents = strings.Replace(newContents, "<VAULT_INGRESS_NO_HTTPS_URL>", tokens.VaultIngressNoHTTPSURL, -1)
 			newContents = strings.Replace(newContents, "<VOUCH_INGRESS_URL>", tokens.VouchIngressURL, -1)
+
+			newContents = strings.Replace(newContents, "<AWS_ACCOUNT_ID>", tokens.AwsAccountID, -1)
+			newContents = strings.Replace(newContents, "<AWS_IAM_ARN_ACCOUNT_ROOT>", tokens.AwsIamArnAccountRoot, -1)
+			newContents = strings.Replace(newContents, "<AWS_NODE_CAPACITY_TYPE>", tokens.AwsNodeCapacityType, -1)
 
 			newContents = strings.Replace(newContents, "<GIT_DESCRIPTION>", tokens.GitDescription, -1)
 			newContents = strings.Replace(newContents, "<GIT_NAMESPACE>", tokens.GitNamespace, -1)
@@ -91,7 +96,7 @@ func detokenizeGitops(path string, tokens *GitOpsDirectoryValues) filepath.WalkF
 			newContents = strings.Replace(newContents, "<METAPHOR_DEVELOPMENT_INGRESS_URL>", metaphorDevelopmentIngressURL, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_PRODUCTION_INGRESS_URL>", metaphorProductionIngressURL, -1)
 			newContents = strings.Replace(newContents, "<METAPHOR_STAGING_INGRESS_URL>", metaphorStagingIngressURL, -1)
-
+			newContents = strings.Replace(newContents, "<CONTAINER_REGISTRY_URL>", tokens.ContainerRegistryURL, -1)
 			newContents = strings.Replace(newContents, "<USE_TELEMETRY>", tokens.UseTelemetry, -1)
 
 			err = ioutil.WriteFile(path, []byte(newContents), 0)
