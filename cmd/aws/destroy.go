@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -13,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/eks"
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	awsinternal "github.com/kubefirst/kubefirst/internal/aws"
-	"github.com/kubefirst/kubefirst/internal/civo"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
@@ -25,21 +25,32 @@ import (
 )
 
 func destroyAws(cmd *cobra.Command, args []string) error {
+	// Determine if there are active installs
+	gitProvider := viper.GetString("flags.git-provider")
+	// _, err := helpers.EvalDestroy(awsinternal.CloudProvider, gitProvider)
+	// if err != nil {
+	// 	return err
+	// }
 
-	log.Info().Msg("destroying kubefirst platform running in aws")
-
-	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	httpClientNoSSL := http.Client{Transport: customTransport}
+	// Check for existing port forwards before continuing
+	err := k8s.CheckForExistingPortForwards(8080)
+	if err != nil {
+		return fmt.Errorf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
+	}
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	log.Info().Msg("destroying kubefirst platform in aws")
 
+	customTransport := http.DefaultTransport.(*http.Transport).Clone()
+	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	httpClientNoSSL := http.Client{Transport: customTransport}
+
 	clusterName := viper.GetString("flags.cluster-name")
+	domainName := viper.GetString("flags.domain-name")
 	dryRun := viper.GetBool("flags.dry-run")
-	gitProvider := viper.GetString("flags.git-provider")
+	atlantisWebhookURL := fmt.Sprintf("https://atlantis.%s/events", domainName)
 
 	// Switch based on git provider, set params
 	var cGitOwner, cGitToken string
@@ -55,11 +66,17 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate aws config
-	config := awsinternal.GetConfig(cGitOwner)
+	config := awsinternal.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
 
+	if len(cGitToken) == 0 {
+		return fmt.Errorf(
+			"please set a %s_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/%s/install.html#step-3-kubefirst-init",
+			strings.ToUpper(gitProvider), gitProvider,
+		)
+	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
-	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 3)
+	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 2)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	switch gitProvider {
@@ -69,10 +86,11 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
-			tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
+			// tfEnvs = awsinternal.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs["GITHUB_TOKEN"] = cGitToken
 			tfEnvs["GITHUB_OWNER"] = cGitOwner
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
-			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = fmt.Sprintf("https://atlantis.%s/events", domainNameFlag)
+			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
 			err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 			if err != nil {
@@ -131,8 +149,14 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
-			tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, gid)
+			// tfEnvs = awsinternal.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs["GITLAB_TOKEN"] = cGitToken
+			tfEnvs["GITLAB_OWNER"] = cGitOwner
+			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
+			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
+			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gid)
+			tfEnvs["TF_VAR_gitlab_owner"] = viper.GetString("flags.gitlab-owner")
 			err = terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -144,69 +168,74 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 			progressPrinter.IncrementTracker("platform-destroy", 1)
 		}
 	}
-	sess := session.Must(session.NewSession(&aws.Config{
-		Region: aws.String(cloudRegionFlag),
-	}))
 
-	eksSvc := eks.New(sess)
+	// this should only run if a cluster was created
+	if viper.GetBool("kubefirst-checks.aws-eks-cluster-created") {
+		sess := session.Must(session.NewSession(&aws.Config{
+			Region: aws.String(cloudRegionFlag),
+		}))
 
-	clusterInput := &eks.DescribeClusterInput{
-		Name: aws.String(clusterName),
-	}
-	eksClusterInfo, err := eksSvc.DescribeCluster(clusterInput)
-	if err != nil {
-		log.Fatal().Msgf("Error calling DescribeCluster: %v", err)
-	}
+		eksSvc := eks.New(sess)
 
-	clientset, err := awsinternal.NewClientset(eksClusterInfo.Cluster)
-	if err != nil {
-		log.Fatal().Msgf("Error creating clientset: %v", err)
-	}
-
-	restConfig, err := awsinternal.NewRestConfig(eksClusterInfo.Cluster)
-	if err != nil {
-		return err
-	}
-
-	if viper.GetBool("kubefirst-checks.terraform-apply-aws") {
-		log.Info().Msg("destroying aws resources with terraform")
-
-		if viper.GetBool("kubefirst-checks.argocd-helm-install") {
-			log.Info().Msg("opening argocd port forward")
-			//* ArgoCD port-forward
-			argoCDStopChannel := make(chan struct{}, 1)
-			defer func() {
-				close(argoCDStopChannel)
-			}()
-			k8s.OpenPortForwardPodWrapper(
-				clientset,
-				restConfig,
-				"argocd-server",
-				"argocd",
-				8080,
-				8080,
-				argoCDStopChannel,
-			)
-
-			log.Info().Msg("getting new auth token for argocd")
-			argocdAuthToken, err := argocd.GetArgoCDToken(viper.GetString("components.argocd.username"), viper.GetString("components.argocd.password"))
-			if err != nil {
-				return err
-			}
-
-			log.Info().Msgf("port-forward to argocd is available at %s", pkg.ArgocdPortForwardURL)
-
-			log.Info().Msg("deleting the registry application")
-			httpCode, _, err := argocd.DeleteApplication(&httpClientNoSSL, pkg.RegistryAppName, argocdAuthToken, "true")
-			if err != nil {
-				return err
-			}
-			log.Info().Msgf("http status code %d", httpCode)
-
+		clusterInput := &eks.DescribeClusterInput{
+			Name: aws.String(clusterName),
 		}
+
+		eksClusterInfo, err := eksSvc.DescribeCluster(clusterInput)
+		if err != nil {
+			log.Fatal().Msgf("Error calling DescribeCluster: %v", err)
+		}
+
+		clientset, err := awsinternal.NewClientset(eksClusterInfo.Cluster)
+		if err != nil {
+			log.Fatal().Msgf("Error creating clientset: %v", err)
+		}
+
+		restConfig, err := awsinternal.NewRestConfig(eksClusterInfo.Cluster)
+		if err != nil {
+			return err
+		}
+
+		log.Info().Msg("opening argocd port forward")
+		//* ArgoCD port-forward
+		argoCDStopChannel := make(chan struct{}, 1)
+		defer func() {
+			close(argoCDStopChannel)
+		}()
+		k8s.OpenPortForwardPodWrapper(
+			clientset,
+			restConfig,
+			"argocd-server",
+			"argocd",
+			8080,
+			8080,
+			argoCDStopChannel,
+		)
+
+		log.Info().Msg("getting new auth token for argocd")
+		argocdAuthToken, err := argocd.GetArgoCDToken(viper.GetString("components.argocd.username"), viper.GetString("components.argocd.password"))
+		if err != nil {
+			return err
+		}
+
+		log.Info().Msgf("port-forward to argocd is available at %s", pkg.ArgocdPortForwardURL)
+
+		log.Info().Msg("deleting the registry application")
+		httpCode, _, err := argocd.DeleteApplication(&httpClientNoSSL, pkg.RegistryAppName, argocdAuthToken, "true")
+		if err != nil {
+			return err
+		}
+		log.Info().Msgf("http status code %d", httpCode)
+
 		// Pause before cluster destroy to prevent a race condition
 		log.Info().Msg("waiting for aws kubernetes cluster resource removal to finish...")
 		time.Sleep(time.Second * 10)
+
+		viper.Set("kubefirst-checks.aws-eks-cluster-created", false)
+	}
+
+	if viper.GetBool("kubefirst-checks.terraform-apply-aws") || viper.GetBool("kubefirst-checks.terraform-apply-aws-failed") {
+		log.Info().Msg("destroying aws resources with terraform")
 
 		log.Info().Msg("destroying aws cloud resources")
 		tfEntrypoint := config.GitopsDir + "/terraform/aws"
@@ -216,23 +245,10 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["AWS_SDK_LOAD_CONFIG"] = "1"
 		tfEnvs["TF_VAR_aws_region"] = os.Getenv("AWS_REGION")
 		tfEnvs["AWS_REGION"] = os.Getenv("AWS_REGION")
-
-		switch gitProvider {
-		case "github":
-			tfEnvs["GITHUB_TOKEN"] = os.Getenv("GITHUB_TOKEN")
-			tfEnvs["GITHUB_OWNER"] = githubOwnerFlag
-			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
-			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = "atlantisWebhookURL"
-			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-		case "gitlab":
-			gid, err := strconv.Atoi(viper.GetString("flags.gitlab-owner-group-id"))
-			if err != nil {
-				return fmt.Errorf("couldn't convert gitlab group id to int: %s", err)
-			}
-			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, gid)
-		}
 		err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
+			viper.Set("kubefirst-checks.terraform-apply-aws-failed", true)
+			viper.WriteConfig()
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)
 			return err
 		}
@@ -280,8 +296,8 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("unable to delete %q folder, error: %s", config.K1Dir+"/kubeconfig", err)
 		}
 	}
-	time.Sleep(time.Millisecond * 200) // allows progress bars to finish
-	fmt.Println("your aws kubefirst platform has been destroyed")
+	time.Sleep(time.Second * 2) // allows progress bars to finish
+	fmt.Printf("Your kubefirst platform running in %s has been destroyed.", awsinternal.CloudProvider)
 
 	return nil
 }
