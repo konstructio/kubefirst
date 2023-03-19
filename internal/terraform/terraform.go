@@ -27,7 +27,7 @@ func initActionAutoApprove(dryRun bool, tfAction, tfEntrypoint string, tfEnvs ma
 		log.Info().Msg("error: could not change to directory " + tfEntrypoint)
 		return err
 	}
-	err = pkg.ExecShellWithVars(tfEnvs, config.TerraformClientPath, "init")
+	err = pkg.ExecShellWithVars(tfEnvs, config.TerraformClientPath, "init", "-force-copy")
 	if err != nil {
 		log.Printf("error: terraform init for %s failed: %s", tfEntrypoint, err)
 		return err
