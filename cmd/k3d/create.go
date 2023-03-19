@@ -1039,7 +1039,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Error().Msgf("Error finding Vault StatefulSet: %s", err)
 		return err
 	}
-	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 120, false)
+	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 120, true)
 	if err != nil {
 		log.Error().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 		return err
