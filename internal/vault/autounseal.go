@@ -30,6 +30,9 @@ func (conf *VaultConfiguration) AutoUnseal() (*vaultapi.InitResponse, error) {
 		SecretShares:      SecretShares,
 		SecretThreshold:   SecretThreshold,
 	})
+	if err != nil {
+		return &vaultapi.InitResponse{}, err
+	}
 	log.Info().Msg("vault initialization complete")
 
 	return initResponse, err
