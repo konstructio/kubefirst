@@ -14,7 +14,7 @@ const (
 	MinimumAvailableDiskSize     = 10 // 10 GB
 	KubefirstGitOpsRepository    = "gitops"
 	KubefirstGitOpsRepositoryURL = "https://github.com/kubefirst/gitops-template"
-	LocalDNS                     = "localdev.me"
+	LocalDNS                     = "kubefirst.dev"
 	LocalhostARCH                = runtime.GOARCH
 	LocalhostOS                  = runtime.GOOS
 	AwsECRUsername               = "AWS"
