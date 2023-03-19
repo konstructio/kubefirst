@@ -3,7 +3,6 @@ package aws
 import (
 	"context"
 	"crypto/tls"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -564,7 +563,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	metaphorTemplateTokens := awsinternal.MetaphorTokenValues{
 		ClusterName:                   clusterNameFlag,
 		CloudRegion:                   cloudRegionFlag,
-		ContainerRegistryURL:          fmt.Sprintf("%s/metaphor", registryURL),
+		ContainerRegistryURL:          registryURL,
 		DomainName:                    domainNameFlag,
 		MetaphorDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", domainNameFlag),
 		MetaphorStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
@@ -1039,10 +1038,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		usernamePasswordString := fmt.Sprintf("%s:%s", pkg.AwsECRUsername, ecrToken)
-		usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
-		dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"auth": "%s"}}}`, registryURL, usernamePasswordStringB64)
-
+		dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"auth": "%s"}}}`, registryURL, ecrToken)
 		dockerCfgSecret := &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "argo"},
 			Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
@@ -1126,7 +1122,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	//* initialize and unseal vault
-	//* configure vault with terraform
+	progressPrinter.AddTracker("configuring-vault", "Configuring Vault", 3)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
 	defer func() {
@@ -1141,9 +1139,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		8200,
 		vaultStopChannel,
 	)
-
-	progressPrinter.AddTracker("configuring-vault", "Configuring Vault", 3)
-	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	executionControl = viper.GetBool("kubefirst-checks.vault-ready")
 	if !executionControl {
