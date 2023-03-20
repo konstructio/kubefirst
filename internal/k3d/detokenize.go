@@ -109,7 +109,7 @@ func postRunDetokenizeGitops(path string, tokens *GitopsTokenValues) filepath.Wa
 
 			//change Minio post cluster launch to cluster svc address
 			newContents := string(read)
-			newContents = strings.Replace(newContents, "https://minio.localdev.me", "http://minio.minio.svc.cluster.local:9000", -1)
+			newContents = strings.Replace(newContents, "https://minio.kubefirst.dev", "http://minio.minio.svc.cluster.local:9000", -1)
 			err = ioutil.WriteFile(path, []byte(newContents), 0)
 			if err != nil {
 				return err

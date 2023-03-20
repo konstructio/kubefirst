@@ -11,26 +11,26 @@ import (
 
 const (
 	ArgocdPortForwardURL   = "http://localhost:8080"
-	ArgocdURL              = "https://argocd.localdev.me"
-	ArgoWorkflowsURL       = "https://argo.localdev.me"
-	AtlantisURL            = "https://atlantis.localdev.me"
-	ChartMuseumURL         = "https://chartmuseum.localdev.me"
+	ArgocdURL              = "https://argocd.kubefirst.dev"
+	ArgoWorkflowsURL       = "https://argo.kubefirst.dev"
+	AtlantisURL            = "https://atlantis.kubefirst.dev"
+	ChartMuseumURL         = "https://chartmuseum.kubefirst.dev"
 	CloudProvider          = "k3d"
-	DomainName             = "localdev.me"
+	DomainName             = "kubefirst.dev"
 	GithubHost             = "github.com"
 	GitlabHost             = "gitlab.com"
 	K3dVersion             = "v5.4.6"
 	KubectlVersion         = "v1.25.7"
-	KubefirstConsoleURL    = "https://kubefirst.localdev.me"
+	KubefirstConsoleURL    = "https://kubefirst.kubefirst.dev"
 	LocalhostARCH          = runtime.GOARCH
 	LocalhostOS            = runtime.GOOS
-	MetaphorDevelopmentURL = "https://metaphor-devlopment.localdev.me"
-	MetaphorStagingURL     = "https://metaphor-staging.localdev.me"
-	MetaphorProductionURL  = "https://metaphor-production.localdev.me"
+	MetaphorDevelopmentURL = "https://metaphor-devlopment.kubefirst.dev"
+	MetaphorStagingURL     = "https://metaphor-staging.kubefirst.dev"
+	MetaphorProductionURL  = "https://metaphor-production.kubefirst.dev"
 	MkCertVersion          = "v1.4.4"
 	TerraformVersion       = "1.3.8"
 	VaultPortForwardURL    = "http://localhost:8200"
-	VaultURL               = "https://vault.localdev.me"
+	VaultURL               = "https://vault.kubefirst.dev"
 )
 
 type K3dConfig struct {

@@ -19,35 +19,35 @@ func TestArgoCertificateIntegration(t *testing.T) {
 	}{
 		{
 			name:    "argo",
-			address: "argo.localdev.me",
+			address: "argo.kubefirst.dev",
 		},
 		{
 			name:    "argocd",
-			address: "argocd.localdev.me",
+			address: "argocd.kubefirst.dev",
 		},
 		{
 			name:    "atlantis",
-			address: "atlantis.localdev.me",
+			address: "atlantis.kubefirst.dev",
 		},
 		{
 			name:    "chartmuseum",
-			address: "chartmuseum.localdev.me",
+			address: "chartmuseum.kubefirst.dev",
 		},
 		{
 			name:    "vault",
-			address: "vault.localdev.me",
+			address: "vault.kubefirst.dev",
 		},
 		{
 			name:    "minio",
-			address: "minio.localdev.me",
+			address: "minio.kubefirst.dev",
 		},
 		{
 			name:    "minio-console",
-			address: "minio-console.localdev.me",
+			address: "minio-console.kubefirst.dev",
 		},
 		{
 			name:    "kubefirst",
-			address: "kubefirst.localdev.me",
+			address: "kubefirst.kubefirst.dev",
 		},
 	}
 

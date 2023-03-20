@@ -38,8 +38,8 @@ const (
 	VaultNamespace      = "vault"
 	VaultPodPort        = 8200
 	VaultPodLocalPort   = 8200
-	VaultLocalURL       = "http://vault.localdev.me"
-	VaultLocalURLTLS    = "https://vault.localdev.me"
+	VaultLocalURL       = "http://vault.kubefirst.dev"
+	VaultLocalURLTLS    = "https://vault.kubefirst.dev"
 	VaultPortForwardURL = "http://localhost:8200"
 )
 
@@ -49,7 +49,7 @@ const (
 	ArgoNamespace        = "argo"
 	ArgoPodPort          = 2746
 	ArgoPodLocalPort     = 2746
-	ArgoLocalURLTLS      = "https://argo.localdev.me"
+	ArgoLocalURLTLS      = "https://argo.kubefirst.dev"
 	ArgocdPortForwardURL = "http://localhost:8080"
 )
 
@@ -59,8 +59,8 @@ const (
 	ArgoCDNamespace    = "argocd"
 	ArgoCDPodPort      = 8080
 	ArgoCDPodLocalPort = 8080
-	ArgoCDLocalURL     = "http://argocd.localdev.me"
-	ArgoCDLocalURLTLS  = "https://argocd.localdev.me"
+	ArgoCDLocalURL     = "http://argocd.kubefirst.dev"
+	ArgoCDLocalURLTLS  = "https://argocd.kubefirst.dev"
 	ArgoCDLocalBaseURL = "https://localhost:8080/api/v1"
 )
 
@@ -71,7 +71,7 @@ const (
 	ChartmuseumPodPort      = 8080
 	ChartmuseumPodLocalPort = 8181
 	ChartmuseumLocalURL     = "http://localhost:8181"
-	ChartmuseumLocalURLTLS  = "https://chartmuseum.localdev.me"
+	ChartmuseumLocalURLTLS  = "https://chartmuseum.kubefirst.dev"
 )
 
 // Minio
@@ -80,8 +80,8 @@ const (
 	MinioNamespace    = "minio"
 	MinioPodPort      = 9000
 	MinioPodLocalPort = 9000
-	MinioURL          = "http://minio.localdev.me"
-	MinioURLTLS       = "https://minio.localdev.me"
+	MinioURL          = "http://minio.kubefirst.dev"
+	MinioURLTLS       = "https://minio.kubefirst.dev"
 )
 
 // Minio Console
@@ -90,7 +90,7 @@ const (
 	MinioConsoleNamespace    = "minio"
 	MinioConsolePodPort      = 9001
 	MinioConsolePodLocalPort = 9001
-	MinioConsoleURLTLS       = "https://minio-console.localdev.me"
+	MinioConsoleURLTLS       = "https://minio-console.kubefirst.dev"
 )
 
 // Kubefirst Console
@@ -100,8 +100,8 @@ const (
 	KubefirstConsolePodPort       = 80
 	KubefirstConsolePodLocalPort  = 9094
 	KubefirstConsoleLocalURLCloud = "http://localhost:9094"
-	KubefirstConsoleLocalURL      = "http://kubefirst.localdev.me"
-	KubefirstConsoleLocalURLTLS   = "https://kubefirst.localdev.me"
+	KubefirstConsoleLocalURL      = "http://kubefirst.kubefirst.dev"
+	KubefirstConsoleLocalURLTLS   = "https://kubefirst.kubefirst.dev"
 )
 
 // Atlantis
@@ -110,11 +110,11 @@ const (
 	AtlantisPodName           = "atlantis-0"
 	AtlantisNamespace         = "atlantis"
 	AtlantisPodLocalPort      = 4141
-	AtlantisLocalURLTEST      = "atlantis.localdev.me"
-	AtlantisLocalURL          = "http://atlantis.localdev.me"
-	AtlantisLocalURLTLS       = "https://atlantis.localdev.me"
+	AtlantisLocalURLTEST      = "atlantis.kubefirst.dev"
+	AtlantisLocalURL          = "http://atlantis.kubefirst.dev"
+	AtlantisLocalURLTLS       = "https://atlantis.kubefirst.dev"
 	LocalAtlantisURLTEMPORARY = "localhost:4141" // todo:
-	//LocalAtlantisURL = "atlantis.localdev.me" // todo:
+	//LocalAtlantisURL = "atlantis.kubefirst.dev" // todo:
 )
 
 // MetaphorFrontendDevelopment
@@ -145,7 +145,7 @@ const (
 )
 
 const (
-	MetaphorFrontendSlimTLSDev     = "https://metaphor-development.localdev.me"
-	MetaphorFrontendSlimTLSStaging = "https://metaphor-staging.localdev.me"
-	MetaphorFrontendSlimTLSProd    = "https://metaphor-production.localdev.me"
+	MetaphorFrontendSlimTLSDev     = "https://metaphor-development.kubefirst.dev"
+	MetaphorFrontendSlimTLSStaging = "https://metaphor-staging.kubefirst.dev"
+	MetaphorFrontendSlimTLSProd    = "https://metaphor-production.kubefirst.dev"
 )
