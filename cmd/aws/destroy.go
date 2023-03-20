@@ -234,6 +234,23 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst-checks.aws-eks-cluster-created", false)
 	}
 
+	// Remove outstanding Elastic Load Balancers
+	awsClient := &awsinternal.Conf
+	params, err := awsClient.GetLoadBalancerForDeletion(clusterName)
+	log.Info().Msgf("getting elastic load balancer details for cluster %s", clusterName)
+	if err != nil {
+		log.Warn().Msgf("elastic load balancer for cluster %s not found, continuing", clusterName)
+	}
+	err = awsClient.DeleteSourceSecurityGroup(params)
+	if err != nil {
+		log.Warn().Msgf("source security group for cluster %s not found, continuing", clusterName)
+	}
+
+	err = awsClient.DeleteElasticLoadBalancer(params)
+	if err != nil {
+		log.Warn().Msgf("elastic load balancer for cluster %s not found, continuing", clusterName)
+	}
+
 	if viper.GetBool("kubefirst-checks.terraform-apply-aws") || viper.GetBool("kubefirst-checks.terraform-apply-aws-failed") {
 		log.Info().Msg("destroying aws resources with terraform")
 
