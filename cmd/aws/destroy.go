@@ -174,10 +174,10 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	awsClient := &awsinternal.Conf
 
 	// Remove security groups to prevent hanging resources
-	err = awsClient.DeleteEKSSecurityGroups(clusterName)
-	if err != nil {
-		log.Warn().Msgf("security groups for cluster %s not found: %s", clusterName, err)
-	}
+	// err = awsClient.DeleteEKSSecurityGroups(clusterName)
+	// if err != nil {
+	// 	log.Warn().Msgf("security groups for cluster %s not found: %s", clusterName, err)
+	// }
 
 	// Remove ELBs to prevent hanging resources
 	log.Info().Msgf("getting elastic load balancer details for cluster %s", clusterName)
@@ -189,7 +189,15 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		log.Warn().Msgf("elastic load balancer for cluster %s not found, continuing", clusterName)
 	} else {
 		for _, lb := range params {
-			err := awsClient.DeleteElasticLoadBalancer(lb)
+			// Delete security groups first
+			for _, sg := range lb.ElbSourceSecurityGroups {
+				err := awsClient.DeleteSecurityGroup(sg)
+				if err != nil {
+					log.Error().Msgf("error removing security group %s: %s", sg, err)
+				}
+			}
+			// Delete Elastic Load Balancer
+			err = awsClient.DeleteElasticLoadBalancer(lb)
 			if err != nil {
 				log.Warn().Msgf("could not delete load balancer %s: %s", lb.ElbName, err)
 			}

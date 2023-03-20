@@ -125,6 +125,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.domain-name", domainNameFlag)
 	viper.Set("flags.dry-run", dryRunFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
+	viper.Set("flags.cloud-region", cloudRegionFlag)
 	viper.WriteConfig()
 
 	segmentClient := &segment.Client
@@ -411,8 +412,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		fmt.Println("state store bucket is", strings.ReplaceAll(*kubefirstStateStoreBucket.Location, "/", ""))
-		fmt.Println("artifacts bucket is", strings.ReplaceAll(*kubefirstArtifactsBucket.Location, "/", ""))
+		log.Info().Msgf("state store bucket is", strings.ReplaceAll(*kubefirstStateStoreBucket.Location, "/", ""))
+		log.Info().Msgf("artifacts bucket is", strings.ReplaceAll(*kubefirstArtifactsBucket.Location, "/", ""))
 		// should have argo artifcats and chartmuseum charts
 		viper.Set("kubefirst.state-store-bucket", strings.ReplaceAll(*kubefirstStateStoreBucket.Location, "/", ""))
 		viper.Set("kubefirst.artifacts-bucket", strings.ReplaceAll(*kubefirstArtifactsBucket.Location, "/", ""))
@@ -593,7 +594,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			}
 			allGroups, err := gl.GetGroups()
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 			// Format git url based on full path to group
 			for _, group := range allGroups {
@@ -923,7 +924,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	argocdClient, err := argocdapi.NewForConfig(restConfig)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -1104,16 +1104,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
 	if !executionControl {
 		log.Info().Msg("applying the registry application to argocd")
-		registryApplicationObject, err := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoGitURL, fmt.Sprintf("registry/%s", clusterNameFlag))
-		if err != nil {
-			return err
-		}
-
-		_, err = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
+		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoGitURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("create-registry-application", 1)
@@ -1125,21 +1117,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	//* initialize and unseal vault
 	progressPrinter.AddTracker("configuring-vault", "Configuring Vault", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
-
-	//* vault port-forward
-	vaultStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(vaultStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		clientset,
-		restConfig,
-		"vault-0",
-		"vault",
-		8200,
-		8200,
-		vaultStopChannel,
-	)
 
 	executionControl = viper.GetBool("kubefirst-checks.vault-ready")
 	if !executionControl {
@@ -1170,6 +1147,21 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("vault is ready, continuing")
 		progressPrinter.IncrementTracker("configuring-vault", 1)
 	}
+
+	//* vault port-forward
+	vaultStopChannel := make(chan struct{}, 1)
+	defer func() {
+		close(vaultStopChannel)
+	}()
+	k8s.OpenPortForwardPodWrapper(
+		clientset,
+		restConfig,
+		"vault-0",
+		"vault",
+		8200,
+		8200,
+		vaultStopChannel,
+	)
 
 	executionControl = viper.GetBool("kubefirst-checks.vault-unseal")
 	if !executionControl {

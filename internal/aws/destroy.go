@@ -110,14 +110,102 @@ func (conf *AWSConfiguration) DeleteEKSSecurityGroups(eksClusterName string) err
 
 	// Delete matched security groups
 	for _, sg := range dependentSecurityGroups.SecurityGroups {
-		fmt.Printf("preparing to delete eks security group %s / %s", *sg.GroupName, *sg.GroupId)
+		inboundRules := sg.IpPermissions
+		outboundRules := sg.IpPermissions
+
+		// Revoke ingress rules
+		for _, rule := range inboundRules {
+			log.Info().Msgf("revoking rule %s/%v/%v", *rule.IpProtocol, *rule.FromPort, *rule.ToPort)
+			ec2Client.RevokeSecurityGroupIngress(context.Background(), &ec2.RevokeSecurityGroupIngressInput{
+				GroupName:     sg.GroupName,
+				IpPermissions: inboundRules,
+			})
+		}
+
+		// Revoke egress rules
+		for _, rule := range outboundRules {
+			log.Info().Msgf("revoking rule %s/%v/%v", *rule.IpProtocol, *rule.FromPort, *rule.ToPort)
+			ec2Client.RevokeSecurityGroupEgress(context.Background(), &ec2.RevokeSecurityGroupEgressInput{
+				GroupId:       sg.GroupId,
+				IpPermissions: inboundRules,
+			})
+		}
+	}
+
+	// Delete matched security groups
+	for _, sg := range dependentSecurityGroups.SecurityGroups {
+		log.Info().Msgf("preparing to delete eks security group %s / %s", *sg.GroupName, *sg.GroupId)
 		_, err = ec2Client.DeleteSecurityGroup(context.Background(), &ec2.DeleteSecurityGroupInput{
 			GroupId: sg.GroupId,
 		})
 		if err != nil {
-			return err
+			log.Error().Msgf("error deleting security group %s / %s: %s", *sg.GroupName, *sg.GroupId, err)
+		} else {
+			log.Info().Msgf("deleted security group %s / %s", *sg.GroupName, *sg.GroupId)
 		}
-		fmt.Printf("deleted security group %s / %s", *sg.GroupName, *sg.GroupId)
+	}
+
+	return nil
+}
+
+// DeleteSecurityGroup deletes a security group
+func (conf *AWSConfiguration) DeleteSecurityGroup(sgid string) error {
+	ec2Client := ec2.NewFromConfig(conf.Config, func(o *ec2.Options) {
+		o.Region = RegionUsEast1
+	})
+
+	// Get dependent security groups
+	filterName := "group-id"
+	dependentSecurityGroups, err := ec2Client.DescribeSecurityGroups(context.Background(), &ec2.DescribeSecurityGroupsInput{
+		Filters: []ec2Types.Filter{
+			{
+				Name:   &filterName,
+				Values: []string{sgid},
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	// Delete rules
+	for _, sg := range dependentSecurityGroups.SecurityGroups {
+		inboundRules := sg.IpPermissions
+		outboundRules := sg.IpPermissions
+
+		// Revoke ingress rules
+		for range inboundRules {
+			log.Info().Msg("revoking ingress rules")
+			_, err := ec2Client.RevokeSecurityGroupIngress(context.Background(), &ec2.RevokeSecurityGroupIngressInput{
+				GroupName:     sg.GroupName,
+				IpPermissions: inboundRules,
+			})
+			if err != nil {
+				log.Error().Msgf("error during rule removal: %s", err)
+			}
+		}
+
+		// Revoke egress rules
+		for range outboundRules {
+			log.Info().Msg("revoking egress rules")
+			_, err := ec2Client.RevokeSecurityGroupEgress(context.Background(), &ec2.RevokeSecurityGroupEgressInput{
+				GroupId:       sg.GroupId,
+				IpPermissions: inboundRules,
+			})
+			if err != nil {
+				log.Error().Msgf("error during rule removal: %s", err)
+			}
+		}
+
+		log.Info().Msgf("preparing to delete eks security group %s / %s", *sg.GroupName, *sg.GroupId)
+		_, err = ec2Client.DeleteSecurityGroup(context.Background(), &ec2.DeleteSecurityGroupInput{
+			GroupId: sg.GroupId,
+		})
+		if err != nil {
+			log.Error().Msgf("error deleting security group %s / %s: %s", *sg.GroupName, *sg.GroupId, err)
+		} else {
+			log.Info().Msgf("deleted security group %s / %s", *sg.GroupName, *sg.GroupId)
+		}
 	}
 
 	return nil
