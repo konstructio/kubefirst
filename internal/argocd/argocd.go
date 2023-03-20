@@ -258,8 +258,8 @@ func GetArgocdTokenV2(httpClient *http.Client, argocdBaseURL string, username st
 	return token, nil
 }
 
-func GetArgoCDApplicationObject(gitopsRepoURL, registryPath string) (*v1alpha1ArgocdApplication.Application, error) {
-	app := &v1alpha1ArgocdApplication.Application{
+func GetArgoCDApplicationObject(gitopsRepoURL, registryPath string) *v1alpha1ArgocdApplication.Application {
+	return &v1alpha1ArgocdApplication.Application{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Application",
 			APIVersion: "argoproj.io/v1alpha1",
@@ -297,5 +297,4 @@ func GetArgoCDApplicationObject(gitopsRepoURL, registryPath string) (*v1alpha1Ar
 			},
 		},
 	}
-	return app, nil
 }

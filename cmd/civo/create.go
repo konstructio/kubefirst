@@ -121,6 +121,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.domain-name", domainNameFlag)
 	viper.Set("flags.dry-run", dryRunFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
+	viper.Set("flags.cloud-region", cloudRegionFlag)
 	viper.WriteConfig()
 
 	segmentClient := &segment.Client
