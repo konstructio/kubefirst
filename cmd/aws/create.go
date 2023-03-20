@@ -28,6 +28,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
+	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/segment"
 	"github.com/kubefirst/kubefirst/internal/services"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
@@ -1352,7 +1353,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// Set flags used to track status of active options
 	helpers.SetCompletionFlags(awsinternal.CloudProvider, config.GitProvider)
 
-	//! reports.LocalHandoffScreenV2(argocdPassword, clusterNameFlag, cGitOwner, config, dryRunFlag, false)
+	reports.AwsHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, dryRunFlag, false)
 
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, awsinternal.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
