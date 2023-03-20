@@ -35,7 +35,7 @@ func (conf *VaultConfiguration) AutoUnseal() (*vaultapi.InitResponse, error) {
 	}
 	log.Info().Msg("vault initialization complete")
 
-	return initResponse, err
+	return initResponse, nil
 }
 
 // UnsealRaftLeader initializes and unseals a vault leader when using raft for ha and storage
