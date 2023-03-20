@@ -169,6 +169,33 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Retrieve ingress-nginx load balancer for deletion
+	// todo: There could be more load balancers than this if users add more.
+	awsClient := &awsinternal.Conf
+
+	// Remove security groups to prevent hanging resources
+	err = awsClient.DeleteEKSSecurityGroups(clusterName)
+	if err != nil {
+		log.Warn().Msgf("security groups for cluster %s not found: %s", clusterName, err)
+	}
+
+	// Remove ELBs to prevent hanging resources
+	log.Info().Msgf("getting elastic load balancer details for cluster %s", clusterName)
+	params, err := awsClient.GetLoadBalancersForDeletion(clusterName)
+	if err != nil {
+		return err
+	}
+	if len(params) == 0 {
+		log.Warn().Msgf("elastic load balancer for cluster %s not found, continuing", clusterName)
+	} else {
+		for _, lb := range params {
+			err := awsClient.DeleteElasticLoadBalancer(lb)
+			if err != nil {
+				log.Warn().Msgf("could not delete load balancer %s: %s", lb.ElbName, err)
+			}
+		}
+	}
+
 	// this should only run if a cluster was created
 	if viper.GetBool("kubefirst-checks.aws-eks-cluster-created") {
 		sess := session.Must(session.NewSession(&aws.Config{
@@ -232,23 +259,6 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		time.Sleep(time.Second * 10)
 
 		viper.Set("kubefirst-checks.aws-eks-cluster-created", false)
-	}
-
-	// Remove outstanding Elastic Load Balancers
-	awsClient := &awsinternal.Conf
-	params, err := awsClient.GetLoadBalancerForDeletion(clusterName)
-	log.Info().Msgf("getting elastic load balancer details for cluster %s", clusterName)
-	if err != nil {
-		log.Warn().Msgf("elastic load balancer for cluster %s not found, continuing", clusterName)
-	}
-	err = awsClient.DeleteSourceSecurityGroup(params)
-	if err != nil {
-		log.Warn().Msgf("source security group for cluster %s not found, continuing", clusterName)
-	}
-
-	err = awsClient.DeleteElasticLoadBalancer(params)
-	if err != nil {
-		log.Warn().Msgf("elastic load balancer for cluster %s not found, continuing", clusterName)
 	}
 
 	if viper.GetBool("kubefirst-checks.terraform-apply-aws") || viper.GetBool("kubefirst-checks.terraform-apply-aws-failed") {

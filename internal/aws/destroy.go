@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing"
 	"github.com/rs/zerolog/log"
 )
@@ -18,19 +19,19 @@ type ElbTags struct {
 // ElbDeletionParameters describes an Elastic Load Balancer name and source
 // security group to delete
 type ElbDeletionParameters struct {
-	ElbName                    string
-	ElbSourceSecurityGroupName string
+	ElbName                 string
+	ElbSourceSecurityGroups []string
 }
 
-// GetLoadBalancerForDeletion gets all load balancers and returns details for
+// GetLoadBalancersForDeletion gets all load balancers and returns details for
 // a load balancer associated with the target EKS cluster
-func (conf *AWSConfiguration) GetLoadBalancerForDeletion(eksClusterName string) (ElbDeletionParameters, error) {
+func (conf *AWSConfiguration) GetLoadBalancersForDeletion(eksClusterName string) ([]ElbDeletionParameters, error) {
 	elbClient := elasticloadbalancing.NewFromConfig(conf.Config)
 
 	// Get all elastic load balancers
 	elasticLoadBalancers, err := elbClient.DescribeLoadBalancers(context.Background(), &elasticloadbalancing.DescribeLoadBalancersInput{})
 	if err != nil {
-		return ElbDeletionParameters{}, err
+		return []ElbDeletionParameters{}, err
 	}
 
 	// Build list of Elastic Load Balancer names
@@ -39,7 +40,7 @@ func (conf *AWSConfiguration) GetLoadBalancerForDeletion(eksClusterName string) 
 		elasticLoadBalancerNames = append(elasticLoadBalancerNames, *lb.LoadBalancerName)
 	}
 
-	// Get tags for each Elastic Load Balancer and add to map
+	// Get tags for each Elastic Load Balancer
 	elasticLoadBalancerTags := make(map[string][]ElbTags)
 	for _, elb := range elasticLoadBalancerNames {
 		// Describe tags per Elastic Load Balancer
@@ -47,7 +48,7 @@ func (conf *AWSConfiguration) GetLoadBalancerForDeletion(eksClusterName string) 
 			LoadBalancerNames: []string{elb},
 		})
 		if err != nil {
-			return ElbDeletionParameters{}, err
+			return []ElbDeletionParameters{}, err
 		}
 
 		// Compile tags
@@ -62,53 +63,62 @@ func (conf *AWSConfiguration) GetLoadBalancerForDeletion(eksClusterName string) 
 		elasticLoadBalancerTags[elb] = tagsContainer
 	}
 
-	// Return load balancer name based on associated tags
-	var targetElb string
+	// Return matched load balancers
+	elasticLoadBalancersToDelete := []ElbDeletionParameters{}
 	for key, value := range elasticLoadBalancerTags {
 		for _, tag := range value {
-			fmt.Println(key, value)
 			if tag.Key == fmt.Sprintf("kubernetes.io/cluster/%s", eksClusterName) && tag.Value == "owned" {
-				targetElb = key
+				elasticLoadBalancer, err := elbClient.DescribeLoadBalancers(context.Background(), &elasticloadbalancing.DescribeLoadBalancersInput{
+					LoadBalancerNames: []string{key},
+				})
+				if err != nil {
+					return []ElbDeletionParameters{}, err
+				}
+				targetSecurityGroups := elasticLoadBalancer.LoadBalancerDescriptions[0].SecurityGroups
+				elasticLoadBalancersToDelete = append(elasticLoadBalancersToDelete, ElbDeletionParameters{
+					ElbName:                 key,
+					ElbSourceSecurityGroups: targetSecurityGroups,
+				})
 			}
 		}
 	}
 
-	// Return error if not found
-	var targetSecurityGroup *string
-	if targetElb == "" {
-		return ElbDeletionParameters{}, fmt.Errorf("no elastic load balancer found using name %s", eksClusterName)
-	} else {
-		elasticLoadBalancer, err := elbClient.DescribeLoadBalancers(context.Background(), &elasticloadbalancing.DescribeLoadBalancersInput{
-			LoadBalancerNames: []string{targetElb},
-		})
-		if err != nil {
-			return ElbDeletionParameters{}, err
-		}
-		targetSecurityGroup = elasticLoadBalancer.LoadBalancerDescriptions[0].SourceSecurityGroup.GroupName
-	}
-
-	// Format ElbDeletionParameters detailing name and source sg for ELB
-	source := ElbDeletionParameters{
-		ElbName:                    targetElb,
-		ElbSourceSecurityGroupName: *targetSecurityGroup,
-	}
-
-	return source, nil
+	return elasticLoadBalancersToDelete, nil
 }
 
-// DeleteSourceSecurityGroup deletes a source security group associated with an EKS cluster's
-// Elastic Load Balancer
-func (conf *AWSConfiguration) DeleteSourceSecurityGroup(elbdp ElbDeletionParameters) error {
-	ec2Client := ec2.NewFromConfig(conf.Config)
+// DeleteEKSSecurityGroups deletes security groups associated with an EKS cluster
+func (conf *AWSConfiguration) DeleteEKSSecurityGroups(eksClusterName string) error {
+	ec2Client := ec2.NewFromConfig(conf.Config, func(o *ec2.Options) {
+		o.Region = RegionUsEast1
+	})
 
-	_, err := ec2Client.DeleteSecurityGroup(context.Background(), &ec2.DeleteSecurityGroupInput{
-		GroupName: &elbdp.ElbSourceSecurityGroupName,
+	// Get dependent security groups
+	filterName := "tag-key"
+	maxResults := int32(1000)
+	dependentSecurityGroups, err := ec2Client.DescribeSecurityGroups(context.Background(), &ec2.DescribeSecurityGroupsInput{
+		MaxResults: &maxResults,
+		Filters: []ec2Types.Filter{
+			{
+				Name:   &filterName,
+				Values: []string{fmt.Sprintf("kubernetes.io/cluster/%s", eksClusterName)},
+			},
+		},
 	})
 	if err != nil {
 		return err
 	}
 
-	log.Info().Msgf("deleted elastic load balancer source security group %s", elbdp.ElbSourceSecurityGroupName)
+	// Delete matched security groups
+	for _, sg := range dependentSecurityGroups.SecurityGroups {
+		fmt.Printf("preparing to delete eks security group %s / %s", *sg.GroupName, *sg.GroupId)
+		_, err = ec2Client.DeleteSecurityGroup(context.Background(), &ec2.DeleteSecurityGroupInput{
+			GroupId: sg.GroupId,
+		})
+		if err != nil {
+			return err
+		}
+		fmt.Printf("deleted security group %s / %s", *sg.GroupName, *sg.GroupId)
+	}
 
 	return nil
 }
