@@ -107,7 +107,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 			log.Info().Msg("destroying gitlab resources with terraform")
 			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, cGitOwner)
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 
 			// Before removing Terraform resources, remove any container registry repositories
@@ -289,7 +289,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	if viper.GetString("kbot.gitlab-user-based-ssh-key-title") != "" {
 		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, cGitOwner)
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
 		log.Info().Msg("attempting to delete managed ssh key...")
 		err = gitlabClient.DeleteUserSSHKey(viper.GetString("kbot.gitlab-user-based-ssh-key-title"))

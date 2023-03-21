@@ -196,7 +196,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		cGitToken = os.Getenv("GITLAB_TOKEN")
 		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
 
 		cGitHost = k3d.GitlabHost
@@ -378,7 +378,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		case "gitlab":
 			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 
 			// Check for existing base projects
@@ -638,7 +638,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		if config.GitProvider == "gitlab" {
 			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 			keys, err := gitlabClient.GetUserSSHKeys()
 			if err != nil {
@@ -826,7 +826,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	case "gitlab":
 		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
 
 		for _, project := range createTokensFor {

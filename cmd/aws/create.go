@@ -179,10 +179,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 
 		cGitToken = os.Getenv("GITLAB_TOKEN")
-		cGitToken = os.Getenv("GITLAB_TOKEN")
 		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
 
 		cGitHost = awsinternal.GitlabHost
@@ -326,7 +325,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		case "gitlab":
 			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 
 			// Check for existing base projects
@@ -573,7 +572,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		case "gitlab":
 			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 			// Format git url based on full path to group
 			destinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
@@ -697,7 +696,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		if config.GitProvider == "gitlab" {
 			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 			keys, err := gitlabClient.GetUserSSHKeys()
 			if err != nil {

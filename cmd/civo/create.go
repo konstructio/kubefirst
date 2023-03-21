@@ -176,10 +176,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		cGitToken = os.Getenv("GITLAB_TOKEN")
-		cGitToken = os.Getenv("GITLAB_TOKEN")
 		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
 
 		cGitHost = civo.GitlabHost
@@ -468,7 +467,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		case "gitlab":
 			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 
 			// Check for existing base projects
@@ -610,7 +609,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		case "gitlab":
 			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 			// Format git url based on full path to group
 			destinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
@@ -722,7 +721,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		if config.GitProvider == "gitlab" {
 			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 			keys, err := gitlabClient.GetUserSSHKeys()
 			if err != nil {
@@ -905,7 +904,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	case "gitlab":
 		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
 
 		for _, project := range createTokensFor {
