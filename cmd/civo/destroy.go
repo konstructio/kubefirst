@@ -175,17 +175,17 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
-	if err != nil {
-		return err
-	}
-
-	clientset, err := k8s.GetClientSet(false, config.Kubeconfig)
-	if err != nil {
-		return err
-	}
-
 	if viper.GetBool("kubefirst-checks.terraform-apply-civo") {
+		restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
+		if err != nil {
+			return err
+		}
+
+		clientset, err := k8s.GetClientSet(false, config.Kubeconfig)
+		if err != nil {
+			return err
+		}
+
 		log.Info().Msg("destroying civo resources with terraform")
 
 		clusterName := viper.GetString("flags.cluster-name")
