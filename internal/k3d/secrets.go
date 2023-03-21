@@ -114,7 +114,7 @@ func AddK3DSecrets(
 				"TF_VAR_atlantis_repo_webhook_secret": []byte(atlantisWebhookSecret),
 				"TF_VAR_email_address":                []byte("your@email.com"),
 				"TF_VAR_github_token":                 []byte(tokenValue),
-				"TF_VAR_kubefirst_bot_ssh_public_key": []byte(kbotPublicKey),
+				"TF_VAR_kbot_ssh_public_key":          []byte(kbotPublicKey),
 				"TF_VAR_vault_addr":                   []byte("http://vault.vault.svc.cluster.local:8200"),
 				"TF_VAR_vault_token":                  []byte("k1_local_vault_token"),
 				"VAULT_ADDR":                          []byte("http://vault.vault.svc.cluster.local:8200"),

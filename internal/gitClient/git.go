@@ -121,8 +121,8 @@ func Commit(repo *git.Repository, commitMsg string) error {
 	}
 	w.Commit(commitMsg, &git.CommitOptions{
 		Author: &object.Signature{
-			Name:  "kubefirst-bot",
-			Email: "kubefirst-bot@kubefirst.com",
+			Name:  "kbot",
+			Email: "kbot@kubefirst.com",
 			When:  time.Now(),
 		},
 	})

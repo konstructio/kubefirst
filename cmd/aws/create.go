@@ -654,7 +654,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["GITHUB_OWNER"] = cGitOwner
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
 				return fmt.Errorf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
@@ -692,7 +692,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["GITLAB_OWNER"] = cGitOwner
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gid)
 			tfEnvs["TF_VAR_gitlab_owner"] = viper.GetString("flags.gitlab-owner")
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
@@ -739,7 +739,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 				log.Fatal().Msgf("unable to check for ssh keys in gitlab: %s", err.Error())
 			}
 
-			var keyName = "kubefirst-bot-ssh-key"
+			var keyName = "kbot-ssh-key"
 			var keyFound bool = false
 			for _, key := range keys {
 				if key.Title == keyName {
@@ -1222,8 +1222,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["VAULT_TOKEN"] = vaultRootToken
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = atlantisWebhookSecret
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
-		tfEnvs["TF_VAR_kubefirst_bot_ssh_private_key"] = viper.GetString("kbot.private-key")
+		tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
+		tfEnvs["TF_VAR_kbot_ssh_private_key"] = viper.GetString("kbot.private-key")
 		// todo hyrdate a variable up top with these so we dont ref viper.
 
 		if gitProviderFlag == "gitlab" {
@@ -1274,7 +1274,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["VAULT_TOKEN"] = vaultRootToken
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-		tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+		tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 		tfEnvs[fmt.Sprintf("%s_TOKEN", strings.ToUpper(config.GitProvider))] = cGitToken
 		tfEnvs[fmt.Sprintf("%s_OWNER", strings.ToUpper(config.GitProvider))] = cGitOwner
 
