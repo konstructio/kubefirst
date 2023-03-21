@@ -119,7 +119,7 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string, gitProvider st
 				"TF_VAR_atlantis_repo_webhook_url":    []byte(viper.GetString(fmt.Sprintf("%s.atlantis.webhook.url", gitProvider))),
 				"TF_VAR_email_address":                []byte(viper.GetString("flags.alerts-email")),
 				"TF_VAR_github_token":                 []byte(tokenValue),
-				"TF_VAR_kubefirst_bot_ssh_public_key": []byte(viper.GetString("kbot.public-key")),
+				"TF_VAR_kbot_ssh_public_key":          []byte(viper.GetString("kbot.public-key")),
 				"TF_VAR_vault_addr":                   []byte("http://vault.vault.svc.cluster.local:8200"),
 				"TF_VAR_vault_token":                  []byte("k1_local_vault_token"),
 				"VAULT_ADDR":                          []byte("http://vault.vault.svc.cluster.local:8200"),

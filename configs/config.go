@@ -170,7 +170,7 @@ func ReadConfig() *Config {
 	config.K3dVersion = "v5.4.6"
 
 	//! cleanup below this line?
-	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
+	config.InstallerEmail = "kbot@kubefirst.com"
 
 	// Local Configs URL
 	config.ArgoWorkflowsLocalURL = "http://localhost:2746"
@@ -190,7 +190,7 @@ func ReadConfig() *Config {
 	config.MetaphorProductionLocalURL = "http://localhost:3002"
 	config.MetaphorGoProductionLocalURL = "http://localhost:5002"
 	config.MetaphorFrontendProductionLocalURL = "http://localhost:4002"
-	config.InstallerEmail = "kubefirst-bot@kubefirst.com"
+	config.InstallerEmail = "kbot@kubefirst.com"
 
 	// certificates
 	config.MkCertPath = fmt.Sprintf("%s/mkcert", config.K1ToolsPath)

@@ -764,7 +764,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 				log.Fatal().Msgf("unable to check for ssh keys in gitlab: %s", err.Error())
 			}
 
-			var keyName = "kubefirst-bot-ssh-key"
+			var keyName = "kbot-ssh-key"
 			var keyFound bool = false
 			for _, key := range keys {
 				if key.Title == keyName {

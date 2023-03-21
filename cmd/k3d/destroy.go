@@ -140,7 +140,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["GITHUB_OWNER"] = cGitOwner
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-			tfEnvs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 			tfEnvs["AWS_ACCESS_KEY_ID"] = "kray"
 			tfEnvs["AWS_SECRET_ACCESS_KEY"] = "feedkraystars"
 			tfEnvs["TF_VAR_aws_access_key_id"] = "kray"

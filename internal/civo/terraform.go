@@ -42,7 +42,7 @@ func GetGithubTerraformEnvs(envs map[string]string) map[string]string {
 	// todo, this variable is assicated with repos.tf in gitops-template, considering bootstrap container image for metaphor
 	// envs["TF_VAR_github_token"] = os.Getenv("GITHUB_TOKEN")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
-	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+	envs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 	envs["AWS_ACCESS_KEY_ID"] = viper.GetString("kubefirst.state-store-creds.access-key-id")
 	envs["AWS_SECRET_ACCESS_KEY"] = viper.GetString("kubefirst.state-store-creds.secret-access-key-id")
 	envs["TF_VAR_aws_access_key_id"] = viper.GetString("kubefirst.state-store-creds.access-key-id")
@@ -57,7 +57,7 @@ func GetGitlabTerraformEnvs(envs map[string]string, gid int) map[string]string {
 	envs["GITLAB_OWNER"] = viper.GetString("flags.gitlab-owner")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 	envs["TF_VAR_atlantis_repo_webhook_url"] = viper.GetString("gitlab.atlantis.webhook.url")
-	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+	envs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 	envs["AWS_ACCESS_KEY_ID"] = viper.GetString("kubefirst.state-store-creds.access-key-id")
 	envs["AWS_SECRET_ACCESS_KEY"] = viper.GetString("kubefirst.state-store-creds.secret-access-key-id")
 	envs["TF_VAR_aws_access_key_id"] = viper.GetString("kubefirst.state-store-creds.access-key-id")
@@ -103,8 +103,8 @@ func GetVaultTerraformEnvs(clientset *kubernetes.Clientset, config *CivoConfig, 
 	envs["TF_VAR_civo_token"] = os.Getenv("CIVO_TOKEN")
 	envs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 	envs["TF_VAR_atlantis_repo_webhook_url"] = viper.GetString(fmt.Sprintf("%s.atlantis.webhook.url", config.GitProvider))
-	envs["TF_VAR_kubefirst_bot_ssh_private_key"] = viper.GetString("kbot.private-key")
-	envs["TF_VAR_kubefirst_bot_ssh_public_key"] = viper.GetString("kbot.public-key")
+	envs["TF_VAR_kbot_ssh_private_key"] = viper.GetString("kbot.private-key")
+	envs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 
 	switch config.GitProvider {
 	case "gitlab":
