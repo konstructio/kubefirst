@@ -14,7 +14,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	"github.com/kubefirst/kubefirst/internal/civo"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
-	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
@@ -27,13 +26,13 @@ import (
 func destroyCivo(cmd *cobra.Command, args []string) error {
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
-	_, err := helpers.EvalDestroy(civo.CloudProvider, gitProvider)
-	if err != nil {
-		return err
-	}
+	// _, err := helpers.EvalDestroy(civo.CloudProvider, gitProvider)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Check for existing port forwards before continuing
-	err = k8s.CheckForExistingPortForwards(8080)
+	err := k8s.CheckForExistingPortForwards(8080)
 	if err != nil {
 		return fmt.Errorf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
 	}

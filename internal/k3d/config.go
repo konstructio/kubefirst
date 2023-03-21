@@ -37,21 +37,23 @@ type K3dConfig struct {
 	GithubToken string `env:"GITHUB_TOKEN"`
 	CivoToken   string `env:"CIVO_TOKEN"`
 
-	DestinationGitopsRepoGitURL   string
-	DestinationMetaphorRepoGitURL string
-	GitopsDir                     string
-	GitProvider                   string
-	K1Dir                         string
-	K3dClient                     string
-	Kubeconfig                    string
-	KubectlClient                 string
-	KubefirstConfig               string
-	MetaphorDir                   string
-	MkCertClient                  string
-	MkCertPemDir                  string
-	MkCertSSLSecretDir            string
-	TerraformClient               string
-	ToolsDir                      string
+	DestinationGitopsRepoHttpsURL   string
+	DestinationGitopsRepoGitURL     string
+	DestinationMetaphorRepoHttpsURL string
+	DestinationMetaphorRepoGitURL   string
+	GitopsDir                       string
+	GitProvider                     string
+	K1Dir                           string
+	K3dClient                       string
+	Kubeconfig                      string
+	KubectlClient                   string
+	KubefirstConfig                 string
+	MetaphorDir                     string
+	MkCertClient                    string
+	MkCertPemDir                    string
+	MkCertSSLSecretDir              string
+	TerraformClient                 string
+	ToolsDir                        string
 }
 
 // GetConfig - load default values from kubefirst installer
@@ -77,7 +79,9 @@ func GetConfig(gitProvider string, gitOwner string) *K3dConfig {
 		cGitHost = GitlabHost
 	}
 
+	config.DestinationGitopsRepoHttpsURL = fmt.Sprintf("https://%s/%s/gitops.git", cGitHost, gitOwner)
 	config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@%s:%s/gitops.git", cGitHost, gitOwner)
+	config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("https://%s/%s/metaphor.git", cGitHost, gitOwner)
 	config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@%s:%s/metaphor.git", cGitHost, gitOwner)
 
 	config.GitopsDir = fmt.Sprintf("%s/.k1/gitops", homeDir)
