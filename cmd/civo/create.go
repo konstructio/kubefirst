@@ -176,29 +176,19 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		cGitToken = os.Getenv("GITLAB_TOKEN")
-		gl := gitlab.GitLabWrapper{
-			Client: gitlab.NewGitLabClient(cGitToken),
-		}
-		allGroups, err := gl.GetGroups()
+		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 		if err != nil {
-			log.Fatal().Msgf("unable to get gitlab groups: %s", err)
-		}
-		// Format git url based on full path to group
-		var groupFullSlug string
-		for _, group := range allGroups {
-			if group.Name == gitlabGroupFlag {
-				groupFullSlug = strings.Split(group.WebURL, "/groups/")[1]
-			}
+			return err
 		}
 
 		cGitHost = civo.GitlabHost
-		cGitOwner = groupFullSlug
-		log.Info().Msgf("set gitlab owner to %s", groupFullSlug)
+		cGitOwner = gitlabClient.ParentGroupPath
+		log.Info().Msgf("set gitlab owner to %s", cGitOwner)
 
 		// Get authenticated user's name
-		user, _, err := gl.Client.Users.CurrentUser()
+		user, _, err := gitlabClient.Client.Users.CurrentUser()
 		if err != nil {
-			return errors.New("unable to get authenticated user info")
+			return fmt.Errorf("unable to get authenticated user info - please make sure GITLAB_TOKEN env var is set %s", err.Error())
 		}
 		cGitUser = user.Username
 
@@ -475,43 +465,34 @@ func createCivo(cmd *cobra.Command, args []string) error {
 				return errors.New(errorMsg)
 			}
 		case "gitlab":
-			gl := gitlab.GitLabWrapper{
-				Client: gitlab.NewGitLabClient(cGitToken),
+			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
+			if err != nil {
+				return err
 			}
 
 			// Check for existing base projects
-			projects, err := gl.GetProjects()
+			projects, err := gitlabClient.GetProjects()
 			if err != nil {
 				log.Fatal().Msgf("couldn't get gitlab projects: %s", err)
 			}
 			for _, repositoryName := range newRepositoryNames {
-				found, err := gl.FindProjectInGroup(projects, repositoryName)
-				if err != nil {
-					log.Info().Msg(err.Error())
-				}
-				if found {
-					return fmt.Errorf("project %s already exists and will need to be deleted before continuing", repositoryName)
+				for _, project := range projects {
+					if project.Name == repositoryName {
+						return fmt.Errorf("project %s already exists and will need to be deleted before continuing", repositoryName)
+					}
 				}
 			}
 
-			// Check for existing groups
-			allgroups, err := gl.GetGroups()
-			if err != nil {
-				log.Fatal().Msgf("could not read gitlab groups: %s", err)
-			}
-			gid, err := gl.GetGroupID(allgroups, gitlabGroupFlag)
-			if err != nil {
-				log.Fatal().Msgf("could not get group id for primary group: %s", err)
-			}
+			// Check for existing base projects
 			// Save for detokenize
-			cGitlabOwnerGroupID = gid
+			cGitlabOwnerGroupID = gitlabClient.ParentGroupID
 			viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
 			viper.WriteConfig()
-			subgroups, err := gl.GetSubGroups(gid)
+			subgroups, err := gitlabClient.GetSubGroups()
 			if err != nil {
-				log.Fatal().Msgf("couldn't get gitlab projects: %s", err)
+				log.Fatal().Msgf("couldn't get gitlab subgroups for group %s: %s", cGitOwner, err)
 			}
-			for _, teamName := range newTeamNames {
+			for _, teamName := range newRepositoryNames {
 				for _, sg := range subgroups {
 					if sg.Name == teamName {
 						return fmt.Errorf("subgroup %s already exists and will need to be deleted before continuing", teamName)
@@ -626,21 +607,14 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			destinationGitopsRepoGitURL = config.DestinationGitopsRepoGitURL
 			destinationMetaphorRepoGitURL = config.DestinationMetaphorRepoGitURL
 		case "gitlab":
-			gl := gitlab.GitLabWrapper{
-				Client: gitlab.NewGitLabClient(cGitToken),
-			}
-			allGroups, err := gl.GetGroups()
+			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 			// Format git url based on full path to group
-			for _, group := range allGroups {
-				if group.Name == gitlabGroupFlag {
-					groupFullSlug := strings.Split(group.WebURL, "/groups/")[1]
-					destinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", groupFullSlug)
-					destinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", groupFullSlug)
-				}
-			}
+			destinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
+			destinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
+
 		}
 		// These need to be set for reference elsewhere
 		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), destinationGitopsRepoGitURL)
@@ -702,24 +676,13 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 	case "gitlab":
 		// //* create teams and repositories in gitlab
-		gl := gitlab.GitLabWrapper{
-			Client: gitlab.NewGitLabClient(cGitToken),
-		}
-		allgroups, err := gl.GetGroups()
-		if err != nil {
-			log.Fatal().Msgf("could not read gitlab groups: %s", err)
-		}
-		gid, err := gl.GetGroupID(allgroups, gitlabGroupFlag)
-		if err != nil {
-			log.Fatal().Msgf("could not get group id for primary group: %s", err)
-		}
 		executionControl = viper.GetBool("kubefirst-checks.terraform-apply-gitlab")
 		if !executionControl {
 			log.Info().Msg("Creating gitlab resources with terraform")
 
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
-			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, gid)
+			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, cGitlabOwnerGroupID)
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
 				return fmt.Errorf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
@@ -756,10 +719,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		// For GitLab, we currently need to add an ssh key to the authenticating user
 		if config.GitProvider == "gitlab" {
-			gl := gitlab.GitLabWrapper{
-				Client: gitlab.NewGitLabClient(cGitToken),
+			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
+			if err != nil {
+				return err
 			}
-			keys, err := gl.GetUserSSHKeys()
+			keys, err := gitlabClient.GetUserSSHKeys()
 			if err != nil {
 				log.Fatal().Msgf("unable to check for ssh keys in gitlab: %s", err.Error())
 			}
@@ -778,7 +742,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			}
 			if !keyFound {
 				log.Info().Msgf("creating ssh key %s...", keyName)
-				err := gl.AddUserSSHKey(keyName, viper.GetString("kbot.public-key"))
+				err := gitlabClient.AddUserSSHKey(keyName, viper.GetString("kbot.public-key"))
 				if err != nil {
 					log.Fatal().Msgf("error adding ssh key %s: %s", keyName, err.Error())
 				}
@@ -938,8 +902,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	// Project deploy tokens are generated for each member of createTokensForProjects
 	// These deploy tokens are used to authorize against the GitLab container registry
 	case "gitlab":
-		gl := gitlab.GitLabWrapper{
-			Client: gitlab.NewGitLabClient(cGitToken),
+		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
+		if err != nil {
+			return err
 		}
 
 		for _, project := range createTokensFor {
@@ -950,7 +915,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			}
 
 			log.Info().Msgf("creating project deploy token for project %s...", project)
-			token, err := gl.CreateProjectDeployToken(project, &p)
+			token, err := gitlabClient.CreateProjectDeployToken(project, &p)
 			if err != nil {
 				log.Fatal().Msgf("error creating project deploy token for project %s: %s", project, err)
 			}

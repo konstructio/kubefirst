@@ -1,36 +1,63 @@
 package gitlab
 
 import (
-	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/xanzy/go-gitlab"
 )
 
-func NewGitLabClient(token string) *gitlab.Client {
+// NewGitLabClient instantiates a wrapper to communicate with GitLab
+// It sets the path and ID of the group under which resources will be managed
+func NewGitLabClient(token string, parentGroupName string) (GitLabWrapper, error) {
 	git, err := gitlab.NewClient(token)
 	if err != nil {
-		log.Fatal().Msgf("error instantiating gitlab client: %s", err)
+		return GitLabWrapper{}, fmt.Errorf("error instantiating gitlab client: %s", err)
 	}
 
-	return git
-}
-
-// AddSubGroupToGroup
-func (gl *GitLabWrapper) AddSubGroupToGroup(subGroupID int, groupID int) error {
-	group, resp, err := gl.Client.Groups.TransferSubGroup(subGroupID, &gitlab.TransferSubGroupOptions{
-		GroupID: &groupID,
-	})
-	if err != nil {
-		if resp.StatusCode == 400 {
-			return errors.New("subgroup has already been added to group")
+	// Get parent group ID
+	minAccessLevel := gitlab.AccessLevelValue(gitlab.DeveloperPermissions)
+	container := make([]gitlab.Group, 0)
+	for nextPage := 1; nextPage > 0; {
+		groups, resp, err := git.Groups.ListGroups(&gitlab.ListGroupsOptions{
+			ListOptions: gitlab.ListOptions{
+				Page:    nextPage,
+				PerPage: 10,
+			},
+			MinAccessLevel: &minAccessLevel,
+		})
+		if err != nil {
+			return GitLabWrapper{}, fmt.Errorf("could not get gitlab groups: %s", err)
 		}
-		return err
+		for _, group := range groups {
+			container = append(container, *group)
+		}
+		nextPage = resp.NextPage
 	}
-	log.Info().Msgf("subgroup %d added to group %s", subGroupID, group.Name)
+	var gid int = 0
+	for _, group := range container {
+		if group.FullPath == parentGroupName {
+			gid = group.ID
+		} else {
+			continue
+		}
+	}
+	if gid == 0 {
+		return GitLabWrapper{}, fmt.Errorf("error: could not find gitlab group %s", parentGroupName)
+	}
 
-	return nil
+	// Get parent group path
+	group, _, err := git.Groups.GetGroup(gid, &gitlab.GetGroupOptions{})
+	if err != nil {
+		return GitLabWrapper{}, fmt.Errorf("could not get gitlab parent group path: %s", err)
+	}
+
+	return GitLabWrapper{
+		Client:          git,
+		ParentGroupID:   gid,
+		ParentGroupPath: group.FullPath,
+	}, nil
 }
 
 // CheckProjectExists
@@ -50,22 +77,6 @@ func (gl *GitLabWrapper) CheckProjectExists(projectName string) (bool, error) {
 	return exists, nil
 }
 
-// CreateSubGroup
-func (gl *GitLabWrapper) CreateSubGroup(groupID int, groupName string) error {
-	path := fmt.Sprintf("group-%s", groupName)
-	group, _, err := gl.Client.Groups.CreateGroup(&gitlab.CreateGroupOptions{
-		Name:     &groupName,
-		Path:     &path,
-		ParentID: &groupID,
-	})
-	if err != nil {
-		return err
-	}
-	log.Info().Msgf("group %s created: %s", group.Name, group.WebURL)
-
-	return nil
-}
-
 // GetGroupID
 func (gl *GitLabWrapper) GetGroupID(groups []gitlab.Group, groupName string) (int, error) {
 	for _, g := range groups {
@@ -73,46 +84,19 @@ func (gl *GitLabWrapper) GetGroupID(groups []gitlab.Group, groupName string) (in
 			return g.ID, nil
 		}
 	}
+
 	return 0, fmt.Errorf("group %s not found", groupName)
 }
 
-// GetGroups
-func (gl *GitLabWrapper) GetGroups() ([]gitlab.Group, error) {
-	owned := true
-
-	container := make([]gitlab.Group, 0)
-	for nextPage := 1; nextPage > 0; {
-		groups, resp, err := gl.Client.Groups.ListGroups(&gitlab.ListGroupsOptions{
-			ListOptions: gitlab.ListOptions{
-				Page:    nextPage,
-				PerPage: 10,
-			},
-			Owned: &owned,
-		})
-		if err != nil {
-			return []gitlab.Group{}, err
-		}
-		for _, group := range groups {
-			container = append(container, *group)
-		}
-		nextPage = resp.NextPage
-	}
-
-	return container, nil
-}
-
-// GetProjectID
+// GetProjectID returns a project's ID scoped to the parent group
 func (gl *GitLabWrapper) GetProjectID(projectName string) (int, error) {
-	owned := true
-
 	container := make([]gitlab.Project, 0)
 	for nextPage := 1; nextPage > 0; {
-		projects, resp, err := gl.Client.Projects.ListProjects(&gitlab.ListProjectsOptions{
+		projects, resp, err := gl.Client.Groups.ListGroupProjects(gl.ParentGroupID, &gitlab.ListGroupProjectsOptions{
 			ListOptions: gitlab.ListOptions{
 				Page:    nextPage,
 				PerPage: 10,
 			},
-			Owned: &owned,
 		})
 		if err != nil {
 			return 0, err
@@ -124,7 +108,8 @@ func (gl *GitLabWrapper) GetProjectID(projectName string) (int, error) {
 	}
 
 	for _, project := range container {
-		if project.Name == projectName {
+		if !strings.Contains(project.Name, "deleted") &&
+			strings.ToLower(project.Name) == projectName {
 			return project.ID, nil
 		}
 	}
@@ -132,24 +117,24 @@ func (gl *GitLabWrapper) GetProjectID(projectName string) (int, error) {
 	return 0, fmt.Errorf("could not get project ID for project %s", projectName)
 }
 
-// GetProjects
+// GetProjects for a specific parent group by ID
 func (gl *GitLabWrapper) GetProjects() ([]gitlab.Project, error) {
-	owned := true
-
 	container := make([]gitlab.Project, 0)
 	for nextPage := 1; nextPage > 0; {
-		projects, resp, err := gl.Client.Projects.ListProjects(&gitlab.ListProjectsOptions{
+		projects, resp, err := gl.Client.Groups.ListGroupProjects(gl.ParentGroupID, &gitlab.ListGroupProjectsOptions{
 			ListOptions: gitlab.ListOptions{
 				Page:    nextPage,
 				PerPage: 10,
 			},
-			Owned: &owned,
 		})
 		if err != nil {
 			return []gitlab.Project{}, err
 		}
 		for _, project := range projects {
-			container = append(container, *project)
+			// Skip deleted projects
+			if !strings.Contains(project.Name, "deleted") {
+				container = append(container, *project)
+			}
 		}
 		nextPage = resp.NextPage
 	}
@@ -157,49 +142,15 @@ func (gl *GitLabWrapper) GetProjects() ([]gitlab.Project, error) {
 	return container, nil
 }
 
-// GetSubGroupID
-func (gl *GitLabWrapper) GetSubGroupID(groupID int, subGroupName string) (int, error) {
-	owned := true
-
+// GetSubGroups for a specific parent group by ID
+func (gl *GitLabWrapper) GetSubGroups() ([]gitlab.Group, error) {
 	container := make([]gitlab.Group, 0)
 	for nextPage := 1; nextPage > 0; {
-		subgroups, resp, err := gl.Client.Groups.ListSubGroups(groupID, &gitlab.ListSubGroupsOptions{
+		subgroups, resp, err := gl.Client.Groups.ListSubGroups(gl.ParentGroupID, &gitlab.ListSubGroupsOptions{
 			ListOptions: gitlab.ListOptions{
 				Page:    nextPage,
 				PerPage: 10,
 			},
-			Owned: &owned,
-		})
-		if err != nil {
-			return 0, err
-		}
-		for _, subgroup := range subgroups {
-			container = append(container, *subgroup)
-		}
-		nextPage = resp.NextPage
-	}
-
-	for _, g := range container {
-		if g.Name == subGroupName {
-			return g.ID, nil
-		}
-	}
-
-	return 0, fmt.Errorf("subgroup %s not found", subGroupName)
-}
-
-// GetSubGroups
-func (gl *GitLabWrapper) GetSubGroups(groupID int) ([]gitlab.Group, error) {
-	owned := true
-
-	container := make([]gitlab.Group, 0)
-	for nextPage := 1; nextPage > 0; {
-		subgroups, resp, err := gl.Client.Groups.ListSubGroups(groupID, &gitlab.ListSubGroupsOptions{
-			ListOptions: gitlab.ListOptions{
-				Page:    nextPage,
-				PerPage: 10,
-			},
-			Owned: &owned,
 		})
 		if err != nil {
 			return []gitlab.Group{}, err
@@ -211,17 +162,6 @@ func (gl *GitLabWrapper) GetSubGroups(groupID int) ([]gitlab.Group, error) {
 	}
 
 	return container, nil
-}
-
-// FindProjectInGroup
-func (gl *GitLabWrapper) FindProjectInGroup(projects []gitlab.Project, projectName string) (bool, error) {
-	for _, pj := range projects {
-		if pj.Name == projectName {
-			return true, nil
-		}
-	}
-
-	return false, fmt.Errorf("project %s not found", projectName)
 }
 
 // User Management
@@ -273,28 +213,6 @@ func (gl *GitLabWrapper) GetUserSSHKeys() ([]*gitlab.SSHKey, error) {
 	}
 
 	return keys, nil
-}
-
-// ListUsers
-func (gl *GitLabWrapper) ListUsers() ([]gitlab.User, error) {
-	enabled := true
-	container := make([]gitlab.User, 0)
-	for nextPage := 1; nextPage > 0; {
-		users, resp, err := gl.Client.Users.ListUsers(&gitlab.ListUsersOptions{
-			ListOptions:     gitlab.ListOptions{Page: nextPage, PerPage: 10},
-			Active:          &enabled,
-			ExcludeExternal: &enabled,
-		})
-		if err != nil {
-			return []gitlab.User{}, err
-		}
-		for _, user := range users {
-			container = append(container, *user)
-		}
-		nextPage = resp.NextPage
-	}
-
-	return container, nil
 }
 
 // Container Registry
@@ -391,39 +309,6 @@ func (gl *GitLabWrapper) CreateProjectDeployToken(projectName string, p *DeployT
 		log.Info().Msgf("deploy token %s already exists - skipping", p.Name)
 		return "", nil
 	}
-}
-
-// DeleteProjectDeployToken
-func (gl *GitLabWrapper) DeleteProjectDeployToken(projectName string, tokenName string) error {
-	projectID, err := gl.GetProjectID(projectName)
-	if err != nil {
-		return err
-	}
-
-	allTokens, err := gl.ListProjectDeployTokens(projectName)
-	if err != nil {
-		return err
-	}
-
-	var exists bool = false
-	var tokenID int
-	for _, token := range allTokens {
-		if token.Name == tokenName {
-			exists = true
-			tokenID = token.ID
-		}
-	}
-
-	if exists {
-		_, err = gl.Client.DeployTokens.DeleteProjectDeployToken(projectID, tokenID)
-		if err != nil {
-			return err
-		}
-		log.Info().Msgf("deleted deploy token %s", tokenName)
-	}
-
-	return nil
-
 }
 
 // ListProjectDeployTokens
