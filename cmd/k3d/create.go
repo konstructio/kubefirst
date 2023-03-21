@@ -1056,16 +1056,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		minioStopChannel,
 	)
 
-	//copy files to Minio
-	endpoint := "localhost:9000"
-	accessKeyID := pkg.MinioDefaultUsername
-	secretAccessKey := pkg.MinioDefaultPassword
-
 	// Initialize minio client object.
-	minioClient, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+	minioClient, err := minio.New(pkg.MinioPortForwardEndpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(pkg.MinioDefaultUsername, pkg.MinioDefaultPassword, ""),
 		Secure: false,
-		Region: "us-k3d-1",
+		Region: pkg.MinioRegion,
 	})
 
 	if err != nil {
