@@ -17,7 +17,7 @@ func NewGitLabClient(token string, parentGroupName string) (GitLabWrapper, error
 	}
 
 	// Get parent group ID
-	owned := true
+	minAccessLevel := gitlab.AccessLevelValue(gitlab.DeveloperPermissions)
 	container := make([]gitlab.Group, 0)
 	for nextPage := 1; nextPage > 0; {
 		groups, resp, err := git.Groups.ListGroups(&gitlab.ListGroupsOptions{
@@ -25,7 +25,7 @@ func NewGitLabClient(token string, parentGroupName string) (GitLabWrapper, error
 				Page:    nextPage,
 				PerPage: 10,
 			},
-			Owned: &owned,
+			MinAccessLevel: &minAccessLevel,
 		})
 		if err != nil {
 			return GitLabWrapper{}, fmt.Errorf("could not get gitlab groups: %s", err)
@@ -90,8 +90,6 @@ func (gl *GitLabWrapper) GetGroupID(groups []gitlab.Group, groupName string) (in
 
 // GetProjectID returns a project's ID scoped to the parent group
 func (gl *GitLabWrapper) GetProjectID(projectName string) (int, error) {
-	owned := true
-
 	container := make([]gitlab.Project, 0)
 	for nextPage := 1; nextPage > 0; {
 		projects, resp, err := gl.Client.Groups.ListGroupProjects(gl.ParentGroupID, &gitlab.ListGroupProjectsOptions{
@@ -99,7 +97,6 @@ func (gl *GitLabWrapper) GetProjectID(projectName string) (int, error) {
 				Page:    nextPage,
 				PerPage: 10,
 			},
-			Owned: &owned,
 		})
 		if err != nil {
 			return 0, err
@@ -122,8 +119,6 @@ func (gl *GitLabWrapper) GetProjectID(projectName string) (int, error) {
 
 // GetProjects for a specific parent group by ID
 func (gl *GitLabWrapper) GetProjects() ([]gitlab.Project, error) {
-	owned := true
-
 	container := make([]gitlab.Project, 0)
 	for nextPage := 1; nextPage > 0; {
 		projects, resp, err := gl.Client.Groups.ListGroupProjects(gl.ParentGroupID, &gitlab.ListGroupProjectsOptions{
@@ -131,7 +126,6 @@ func (gl *GitLabWrapper) GetProjects() ([]gitlab.Project, error) {
 				Page:    nextPage,
 				PerPage: 10,
 			},
-			Owned: &owned,
 		})
 		if err != nil {
 			return []gitlab.Project{}, err
@@ -150,8 +144,6 @@ func (gl *GitLabWrapper) GetProjects() ([]gitlab.Project, error) {
 
 // GetSubGroups for a specific parent group by ID
 func (gl *GitLabWrapper) GetSubGroups() ([]gitlab.Group, error) {
-	owned := true
-
 	container := make([]gitlab.Group, 0)
 	for nextPage := 1; nextPage > 0; {
 		subgroups, resp, err := gl.Client.Groups.ListSubGroups(gl.ParentGroupID, &gitlab.ListSubGroupsOptions{
@@ -159,7 +151,6 @@ func (gl *GitLabWrapper) GetSubGroups() ([]gitlab.Group, error) {
 				Page:    nextPage,
 				PerPage: 10,
 			},
-			Owned: &owned,
 		})
 		if err != nil {
 			return []gitlab.Group{}, err
