@@ -52,8 +52,8 @@ func LocalHandoffScreenV2(argocdAdminPassword, clusterName, gitDestDescriptor st
 	handOffData.WriteString(strings.Repeat("-", 59))
 	handOffData.WriteString(fmt.Sprintf("\n %s: %s", strings.Title(gitDestDescriptor), gitOwner))
 	handOffData.WriteString("\n Repos: ")
-	handOffData.WriteString(fmt.Sprintf("\n  %s", config.DestinationGitopsRepoGitURL))
-	handOffData.WriteString(fmt.Sprintf("\n  %s", config.DestinationMetaphorRepoGitURL))
+	handOffData.WriteString(fmt.Sprintf("\n  %s", config.DestinationGitopsRepoHttpsURL))
+	handOffData.WriteString(fmt.Sprintf("\n  %s", config.DestinationMetaphorRepoHttpsURL))
 
 	handOffData.WriteString("\n--- Kubefirst Console ")
 	handOffData.WriteString(strings.Repeat("-", 48))
