@@ -19,6 +19,8 @@ const (
 	LocalhostOS                  = runtime.GOOS
 	AwsECRUsername               = "AWS"
 	RegistryAppName              = "registry"
+	MinioDefaultUsername         = "k-ray"
+	MinioDefaultPassword         = "feedkraystars"
 )
 
 // SegmentIO constants
