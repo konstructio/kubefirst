@@ -97,10 +97,11 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 				log.Error().Msgf("error removing webhook: %s - you may need to manually remove it", err)
 			}
 		case "gitlab":
-			gl := gitlab.GitLabWrapper{
-				Client: gitlab.NewGitLabClient(cGitToken),
+			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, cGitOwner)
+			if err != nil {
+				return err
 			}
-			err = gl.DeleteProjectWebhook("gitops", webhookURL)
+			err = gitlabClient.DeleteProjectWebhook("gitops", webhookURL)
 			if err != nil {
 				log.Error().Msgf("error removing webhook: %s - you may need to manually remove it", err)
 			}
@@ -159,36 +160,28 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	case "gitlab":
 		if viper.GetBool("kubefirst-checks.terraform-apply-gitlab") {
 			log.Info().Msg("destroying gitlab resources with terraform")
-
-			gl := gitlab.GitLabWrapper{
-				Client: gitlab.NewGitLabClient(cGitToken),
-			}
-			allgroups, err := gl.GetGroups()
+			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, cGitOwner)
 			if err != nil {
-				log.Fatal().Msgf("could not read gitlab groups: %s", err)
-			}
-			gid, err := gl.GetGroupID(allgroups, cGitOwner)
-			if err != nil {
-				log.Fatal().Msgf("could not get group id for primary group: %s", err)
+				return err
 			}
 
 			// Before removing Terraform resources, remove any container registry repositories
 			// since failing to remove them beforehand will result in an apply failure
 			var projectsForDeletion = []string{"gitops", "metaphor"}
 			for _, project := range projectsForDeletion {
-				projectExists, err := gl.CheckProjectExists(project)
+				projectExists, err := gitlabClient.CheckProjectExists(project)
 				if err != nil {
 					log.Fatal().Msgf("could not check for existence of project %s: %s", project, err)
 				}
 				if projectExists {
 					log.Info().Msgf("checking project %s for container registries...", project)
-					crr, err := gl.GetProjectContainerRegistryRepositories(project)
+					crr, err := gitlabClient.GetProjectContainerRegistryRepositories(project)
 					if err != nil {
 						log.Fatal().Msgf("could not retrieve container registry repositories: %s", err)
 					}
 					if len(crr) > 0 {
 						for _, cr := range crr {
-							err := gl.DeleteContainerRegistryRepository(project, cr.ID)
+							err := gitlabClient.DeleteContainerRegistryRepository(project, cr.ID)
 							if err != nil {
 								log.Fatal().Msgf("error deleting container registry repository: %s", err)
 							}
@@ -208,7 +201,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["GITLAB_OWNER"] = cGitOwner
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gid)
+			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gitlabClient.ParentGroupID)
 
 			err = terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 			if err != nil {
@@ -238,11 +231,12 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 	// remove ssh key provided one was created
 	if viper.GetString("kbot.gitlab-user-based-ssh-key-title") != "" {
-		gl := gitlab.GitLabWrapper{
-			Client: gitlab.NewGitLabClient(cGitToken),
+		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, cGitOwner)
+		if err != nil {
+			return err
 		}
 		log.Info().Msg("attempting to delete managed ssh key...")
-		err := gl.DeleteUserSSHKey(viper.GetString("kbot.gitlab-user-based-ssh-key-title"))
+		err = gitlabClient.DeleteUserSSHKey(viper.GetString("kbot.gitlab-user-based-ssh-key-title"))
 		if err != nil {
 			log.Warn().Msg(err.Error())
 		}
