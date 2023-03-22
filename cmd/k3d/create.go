@@ -711,7 +711,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	progressPrinter.AddTracker("applying-k3d-terraform", "Applying K3d Terraform", 1)
+	progressPrinter.AddTracker("creating-k3d-cluster", "Creating K3d cluster", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	if !viper.GetBool("kubefirst-checks.terraform-apply-k3d") {
@@ -728,10 +728,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("successfully created k3d cluster")
 		viper.Set("kubefirst-checks.terraform-apply-k3d", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("applying-k3d-terraform", 1)
+		progressPrinter.IncrementTracker("creating-k3d-cluster", 1)
 	} else {
 		log.Info().Msg("already created k3d cluster resources")
-		progressPrinter.IncrementTracker("applying-k3d-terraform", 1)
+		progressPrinter.IncrementTracker("creating-k3d-cluster", 1)
 	}
 
 	clientset, err := k8s.GetClientSet(dryRunFlag, config.Kubeconfig)
