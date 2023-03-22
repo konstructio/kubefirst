@@ -161,40 +161,40 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Retrieve ingress-nginx load balancer for deletion
-	// todo: There could be more load balancers than this if users add more.
-	awsClient := &awsinternal.Conf
-
-	// Remove security groups to prevent hanging resources
-	// err = awsClient.DeleteEKSSecurityGroups(clusterName)
+	// // Retrieve ingress-nginx load balancer for deletion
+	// // todo: There could be more load balancers than this if users add more.
+	// awsClient := &awsinternal.Conf
+	//
+	// // Remove security groups to prevent hanging resources
+	// // err = awsClient.DeleteEKSSecurityGroups(clusterName)
+	// // if err != nil {
+	// // 	log.Warn().Msgf("security groups for cluster %s not found: %s", clusterName, err)
+	// // }
+	//
+	// // Remove ELBs to prevent hanging resources
+	// log.Info().Msgf("getting elastic load balancer details for cluster %s", clusterName)
+	// params, err := awsClient.GetLoadBalancersForDeletion(clusterName)
 	// if err != nil {
-	// 	log.Warn().Msgf("security groups for cluster %s not found: %s", clusterName, err)
+	// 	return err
 	// }
-
-	// Remove ELBs to prevent hanging resources
-	log.Info().Msgf("getting elastic load balancer details for cluster %s", clusterName)
-	params, err := awsClient.GetLoadBalancersForDeletion(clusterName)
-	if err != nil {
-		return err
-	}
-	if len(params) == 0 {
-		log.Warn().Msgf("elastic load balancer for cluster %s not found, continuing", clusterName)
-	} else {
-		for _, lb := range params {
-			// Delete security groups first
-			for _, sg := range lb.ElbSourceSecurityGroups {
-				err := awsClient.DeleteSecurityGroup(sg)
-				if err != nil {
-					log.Error().Msgf("error removing security group %s: %s", sg, err)
-				}
-			}
-			// Delete Elastic Load Balancer
-			err = awsClient.DeleteElasticLoadBalancer(lb)
-			if err != nil {
-				log.Warn().Msgf("could not delete load balancer %s: %s", lb.ElbName, err)
-			}
-		}
-	}
+	// if len(params) == 0 {
+	// 	log.Warn().Msgf("elastic load balancer for cluster %s not found, continuing", clusterName)
+	// } else {
+	// 	for _, lb := range params {
+	// 		// Delete security groups first
+	// 		for _, sg := range lb.ElbSourceSecurityGroups {
+	// 			err := awsClient.DeleteSecurityGroup(sg)
+	// 			if err != nil {
+	// 				log.Error().Msgf("error removing security group %s: %s", sg, err)
+	// 			}
+	// 		}
+	// 		// Delete Elastic Load Balancer
+	// 		err = awsClient.DeleteElasticLoadBalancer(lb)
+	// 		if err != nil {
+	// 			log.Warn().Msgf("could not delete load balancer %s: %s", lb.ElbName, err)
+	// 		}
+	// 	}
+	// }
 
 	// this should only run if a cluster was created
 	if viper.GetBool("kubefirst-checks.aws-eks-cluster-created") {
@@ -222,6 +222,16 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+
+		// Remove applications with external dependencies
+		removeArgoCDApps := []string{"ingress-nginx-components", "ingress-nginx"}
+		err = argocd.ArgoCDApplicationCleanup(clientset, removeArgoCDApps)
+		if err != nil {
+			log.Error().Msgf("encountered error during argocd application cleanup: %s")
+		}
+		// Pause before cluster destroy to prevent a race condition
+		log.Info().Msg("waiting for argocd application deletion to complete...")
+		time.Sleep(time.Second * 20)
 
 		log.Info().Msg("opening argocd port forward")
 		//* ArgoCD port-forward
