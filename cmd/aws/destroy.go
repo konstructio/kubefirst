@@ -312,7 +312,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.terraform-apply-aws") {
 		log.Info().Msg("removing previous platform content")
 
-		err := pkg.ResetK1Dir(config.K1Dir, config.KubefirstConfig)
+		err := pkg.ResetK1Dir(config.K1Dir)
 		if err != nil {
 			return err
 		}
