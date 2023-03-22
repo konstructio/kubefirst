@@ -506,7 +506,7 @@ func FindStringInSlice(s []string, str string) bool {
 	return false
 }
 
-func ResetK1Dir(k1Dir, kubefirstFilePath string) error {
+func ResetK1Dir(k1Dir string) error {
 
 	if _, err := os.Stat(k1Dir + "/argo-workflows"); !os.IsNotExist(err) {
 		// path/to/whatever exists
