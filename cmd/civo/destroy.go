@@ -149,20 +149,6 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			viper.WriteConfig()
 			log.Info().Msg("github resources terraform destroyed")
 
-			//// Since groups are only marked for deletion, attempt to remove them permanently
-			//// This only works on < premium tiers
-			//groupsToDelete := []string{"admins", "developers"}
-			//for _, group := range groupsToDelete {
-			//	gid, err := gitlabClient.GetGroupID(allgroups, group)
-			//	if err != nil {
-			//		log.Error().Msgf("could not get group id for group %s, skipping auto-remove: %s", group, err)
-			//	}
-			//	_, err = gitlabClient.Client.Groups.DeleteGroup(gid)
-			//	if err != nil {
-			//		log.Warn().Msgf("attempt to remove group %s (marked for deletion) failed - you will need to delete it manually: %s", group, err)
-			//	}
-			//}
-
 			progressPrinter.IncrementTracker("platform-destroy", 1)
 		}
 	}

@@ -60,7 +60,7 @@ func NewGitLabClient(token string, parentGroupName string) (GitLabWrapper, error
 	}, nil
 }
 
-// CheckProjectExists
+// CheckProjectExists within a parent group
 func (gl *GitLabWrapper) CheckProjectExists(projectName string) (bool, error) {
 	allprojects, err := gl.GetProjects()
 	if err != nil {
@@ -75,17 +75,6 @@ func (gl *GitLabWrapper) CheckProjectExists(projectName string) (bool, error) {
 	}
 
 	return exists, nil
-}
-
-// GetGroupID
-func (gl *GitLabWrapper) GetGroupID(groups []gitlab.Group, groupName string) (int, error) {
-	for _, g := range groups {
-		if g.Name == groupName {
-			return g.ID, nil
-		}
-	}
-
-	return 0, fmt.Errorf("group %s not found", groupName)
 }
 
 // GetProjectID returns a project's ID scoped to the parent group

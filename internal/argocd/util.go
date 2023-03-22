@@ -40,7 +40,7 @@ func WaitForJobComplete(clientset *kubernetes.Clientset, job *batchv1.Job, timeo
 		case event, ok := <-objChan:
 			if !ok {
 				// Error if the channel closes
-				log.Error().Msg("fail")
+				log.Error().Msgf("failed to wait for job %s to complete", job.Name)
 			}
 			if event.
 				Object.(*batchv1.Job).
