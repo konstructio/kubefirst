@@ -762,6 +762,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			false,
 			config.GitProvider,
 			cGitUser,
+			cGitOwner,
 			config.Kubeconfig,
 			cGitToken,
 		)
