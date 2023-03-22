@@ -23,6 +23,7 @@ func AddK3DSecrets(
 	dryRun bool,
 	gitProvider string,
 	gitUser string,
+	gitOwner string,
 	kubeconfigPath string,
 	tokenValue string,
 ) error {
@@ -127,7 +128,7 @@ func AddK3DSecrets(
 			ObjectMeta: metav1.ObjectMeta{Name: "k3d-ngrok", Namespace: "atlantis"},
 			Data: map[string][]byte{
 				"GIT_PROVIDER": []byte(gitProvider),
-				"GIT_OWNER":    []byte(gitUser),
+				"GIT_OWNER":    []byte(gitOwner),
 				"GIT_TOKEN":    []byte(tokenValue),
 				// This is the only webhook we need for this step
 				"GIT_REPOSITORY": []byte("gitops"),
