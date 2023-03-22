@@ -572,10 +572,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["GITHUB_TOKEN"] = cGitToken
 			tfEnvs["GITHUB_OWNER"] = cGitOwner
 			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
-			tfEnvs["AWS_ACCESS_KEY_ID"] = "kray"
-			tfEnvs["AWS_SECRET_ACCESS_KEY"] = "feedkraystars"
-			tfEnvs["TF_VAR_aws_access_key_id"] = "kray"
-			tfEnvs["TF_VAR_aws_secret_access_key"] = "feedkraystars"
+			tfEnvs["AWS_ACCESS_KEY_ID"] = pkg.MinioDefaultUsername
+			tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
+			tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
+			tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
 				return fmt.Errorf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
@@ -1056,16 +1056,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		minioStopChannel,
 	)
 
-	//copy files to Minio
-	endpoint := "localhost:9000"
-	accessKeyID := "k-ray"
-	secretAccessKey := "feedkraystars"
-
 	// Initialize minio client object.
-	minioClient, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+	minioClient, err := minio.New(pkg.MinioPortForwardEndpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(pkg.MinioDefaultUsername, pkg.MinioDefaultPassword, ""),
 		Secure: false,
-		Region: "us-k3d-1",
+		Region: pkg.MinioRegion,
 	})
 
 	if err != nil {

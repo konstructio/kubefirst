@@ -11,6 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -80,8 +81,8 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string, gitProvider st
 			Data: map[string][]byte{
 				"accesskey":             []byte(viper.GetString("kubefirst.state-store-creds.access-key-id")),
 				"secretkey":             []byte(viper.GetString("kubefirst.state-store-creds.secret-access-key-id")),
-				"BASIC_AUTH_USER":       []byte("k-ray"),
-				"BASIC_AUTH_PASS":       []byte("feedkraystars"),
+				"BASIC_AUTH_USER":       []byte(pkg.MinioDefaultUsername),
+				"BASIC_AUTH_PASS":       []byte(pkg.MinioDefaultPassword),
 				"SSH_PRIVATE_KEY":       []byte(viper.GetString("kbot.private-key")),
 				"PERSONAL_ACCESS_TOKEN": []byte(tokenValue),
 			},
@@ -130,8 +131,8 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string, gitProvider st
 		{
 			ObjectMeta: metav1.ObjectMeta{Name: "chartmuseum-secrets", Namespace: "chartmuseum"},
 			Data: map[string][]byte{
-				"BASIC_AUTH_USER":       []byte("k-ray"),
-				"BASIC_AUTH_PASS":       []byte("feedkraystars"),
+				"BASIC_AUTH_USER":       []byte(pkg.MinioDefaultUsername),
+				"BASIC_AUTH_PASS":       []byte(pkg.MinioDefaultPassword),
 				"AWS_ACCESS_KEY_ID":     []byte(viper.GetString("kubefirst.state-store-creds.access-key-id")),
 				"AWS_SECRET_ACCESS_KEY": []byte(viper.GetString("kubefirst.state-store-creds.secret-access-key-id")),
 			},
@@ -154,8 +155,8 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string, gitProvider st
 		{
 			ObjectMeta: metav1.ObjectMeta{Name: "minio-creds", Namespace: "argo"},
 			Data: map[string][]byte{
-				"accesskey": []byte("k-ray"),
-				"secretkey": []byte("feedkraystars"),
+				"accesskey": []byte(pkg.MinioDefaultUsername),
+				"secretkey": []byte(pkg.MinioDefaultPassword),
 			},
 		},
 		// argo docker config

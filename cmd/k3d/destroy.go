@@ -142,10 +142,10 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
-			tfEnvs["AWS_ACCESS_KEY_ID"] = "kray"
-			tfEnvs["AWS_SECRET_ACCESS_KEY"] = "feedkraystars"
-			tfEnvs["TF_VAR_aws_access_key_id"] = "kray"
-			tfEnvs["TF_VAR_aws_secret_access_key"] = "feedkraystars"
+			tfEnvs["AWS_ACCESS_KEY_ID"] = pkg.MinioDefaultUsername
+			tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
+			tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
+			tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
 
 			err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 			if err != nil {

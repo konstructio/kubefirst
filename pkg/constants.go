@@ -19,6 +19,8 @@ const (
 	LocalhostOS                  = runtime.GOOS
 	AwsECRUsername               = "AWS"
 	RegistryAppName              = "registry"
+	MinioDefaultUsername         = "k-ray"
+	MinioDefaultPassword         = "feedkraystars"
 )
 
 // SegmentIO constants
@@ -76,12 +78,13 @@ const (
 
 // Minio
 const (
-	MinioPodName      = "minio"
-	MinioNamespace    = "minio"
-	MinioPodPort      = 9000
-	MinioPodLocalPort = 9000
-	MinioURL          = "http://minio.localdev.me"
-	MinioURLTLS       = "https://minio.localdev.me"
+	MinioPodName             = "minio"
+	MinioNamespace           = "minio"
+	MinioPodPort             = 9000
+	MinioPodLocalPort        = 9000
+	MinioURL                 = "https://minio.localdev.me"
+	MinioPortForwardEndpoint = "localhost:9000"
+	MinioRegion              = "us-k3d-1"
 )
 
 // Minio Console
