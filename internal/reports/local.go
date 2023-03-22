@@ -46,7 +46,7 @@ func LocalHandoffScreenV2(argocdAdminPassword, clusterName, gitDestDescriptor st
 	handOffData.WriteString("\n  to your local trust store by running the following command: ")
 	handOffData.WriteString(fmt.Sprintf("\n"+"\n    %s -install"+"\n", config.MkCertClient))
 	handOffData.WriteString("\n  For more details on the mkcert utility, please see:")
-	handOffData.WriteString("\n  https://github.com/FiloSottile/mkcert#changing-the-location-of-the-ca-files")
+	handOffData.WriteString("\n  https://github.com/FiloSottile/mkcert")
 
 	handOffData.WriteString(fmt.Sprintf("\n\n--- %s ", caser.String(config.GitProvider)))
 	handOffData.WriteString(strings.Repeat("-", 59))
