@@ -70,7 +70,7 @@ func PrintSectionOverview() []byte {
 		handOffData.WriteString("\n  to your local trust store by running the following command: ")
 		handOffData.WriteString(fmt.Sprintf("\n    %s -install", config.MkCertPath))
 		handOffData.WriteString("\n  For more details on the mkcert utility, please see:")
-		handOffData.WriteString("\n  https://github.com/FiloSottile/mkcert#changing-the-location-of-the-ca-files")
+		handOffData.WriteString("\n  https://github.com/FiloSottile/mkcert")
 	}
 	return handOffData.Bytes()
 }
