@@ -600,6 +600,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["GITLAB_TOKEN"] = cGitToken
 			tfEnvs["GITLAB_OWNER"] = gitlabGroupFlag
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(cGitlabOwnerGroupID)
+			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
+			tfEnvs["AWS_ACCESS_KEY_ID"] = pkg.MinioDefaultUsername
+			tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
+			tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
+			tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
 				return fmt.Errorf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
@@ -1139,7 +1144,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_kbot_ssh_private_key"] = viper.GetString("kbot.private-key")
 		tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 		tfEnvs["TF_VAR_kubernetes_api_endpoint"] = fmt.Sprintf("https://%s", kubernetesInClusterAPIService.Spec.ClusterIP)
-		tfEnvs["GITHUB_OWNER"] = viper.GetString("flags.github-owner")
+		tfEnvs[fmt.Sprintf("%s_OWNER", config.GitProvider)] = viper.GetString(fmt.Sprintf("flags.%s-owner", config.GitProvider))
+		tfEnvs["AWS_ACCESS_KEY_ID"] = pkg.MinioDefaultUsername
+		tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
+		tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
+		tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
 		// tfEnvs["TF_LOG"] = "DEBUG"
 
 		if config.GitProvider == "gitlab" {

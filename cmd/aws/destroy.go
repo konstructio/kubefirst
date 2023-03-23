@@ -250,7 +250,14 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		)
 
 		log.Info().Msg("getting new auth token for argocd")
-		argocdAuthToken, err := argocd.GetArgoCDToken(viper.GetString("components.argocd.username"), viper.GetString("components.argocd.password"))
+
+		secData, err := k8s.ReadSecretV2(clientset, "argocd", "argocd-initial-admin-secret")
+		if err != nil {
+			return err
+		}
+		argocdPassword := secData["password"]
+
+		argocdAuthToken, err := argocd.GetArgoCDToken("admin", argocdPassword)
 		if err != nil {
 			return err
 		}
