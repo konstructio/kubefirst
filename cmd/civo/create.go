@@ -1095,7 +1095,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Error().Msgf("Error finding Vault StatefulSet: %s", err)
 		return err
 	}
-	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 160, true)
+	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 240, true)
 	if err != nil {
 		log.Error().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 		return err
