@@ -45,5 +45,10 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize()
-	rootCmd.AddCommand(aws.NewCommand(), civo.NewCommand(), k3d.NewCommand(), k3d.LocalCommandAlias())
+	rootCmd.AddCommand(
+		aws.NewCommand(),
+		civo.NewCommand(),
+		k3d.NewCommand(),
+		k3d.LocalCommandAlias(),
+	)
 }
