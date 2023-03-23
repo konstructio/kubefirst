@@ -2,6 +2,7 @@ package argocd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/rs/zerolog/log"
@@ -22,13 +23,17 @@ func ApplyArgoCDKustomize(clientset *kubernetes.Clientset) error {
 	name := "argocd-bootstrap"
 	namespace := "argocd"
 
-	_, err := clientset.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: namespace,
-		},
-	}, metav1.CreateOptions{})
+	nsObj := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	_, err := clientset.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
 	if err != nil {
-		return err
+		_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), nsObj, metav1.CreateOptions{})
+		if err != nil {
+			log.Error().Err(err).Msg("")
+			return errors.New("error creating namespace")
+		}
+		log.Info().Msgf("namespace created: %s", namespace)
+	} else {
+		log.Warn().Msgf("namespace %s already exists - skipping", namespace)
 	}
 
 	// Create ServiceAccount
