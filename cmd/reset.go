@@ -3,7 +3,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -16,6 +18,9 @@ var resetCmd = &cobra.Command{
 	Short: "removes local kubefirst content to provision a new platform",
 	Long:  "removes local kubefirst content to provision a new platform",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		progressPrinter.AddTracker("removing-platform-content", "Removing local platform content", 2)
+		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
 		log.Info().Msg("removing previous platform content")
 
 		homePath, err := os.UserHomeDir()
@@ -29,6 +34,7 @@ var resetCmd = &cobra.Command{
 			return err
 		}
 		log.Info().Msg("previous platform content removed")
+		progressPrinter.IncrementTracker("removing-platform-content", 1)
 
 		log.Info().Msg("resetting `$HOME/.kubefirst` config")
 		viper.Set("argocd", "")
@@ -46,6 +52,9 @@ var resetCmd = &cobra.Command{
 				return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/kubeconfig", err)
 			}
 		}
+
+		progressPrinter.IncrementTracker("removing-platform-content", 1)
+		time.Sleep(time.Second * 2)
 
 		return nil
 	},
