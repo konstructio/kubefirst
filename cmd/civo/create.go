@@ -1118,12 +1118,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		time.Sleep(time.Second * 5)
-		err = vaultClient.UnsealRaftFollowers(clientset, restConfig, config.Kubeconfig)
-		if err != nil {
-			return err
-		}
-
 		viper.Set("kubefirst-checks.vault-initialized", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("configuring-vault", 1)
