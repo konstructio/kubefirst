@@ -31,6 +31,7 @@ func GetCivoTerraformEnvs(envs map[string]string) map[string]string {
 	envs["AWS_SECRET_ACCESS_KEY"] = viper.GetString("kubefirst.state-store-creds.secret-access-key-id")
 	envs["TF_VAR_aws_access_key_id"] = viper.GetString("kubefirst.state-store-creds.access-key-id")
 	envs["TF_VAR_aws_secret_access_key"] = viper.GetString("kubefirst.state-store-creds.secret-access-key-id")
+	//envs["TF_LOG"] = "debug"
 
 	return envs
 }

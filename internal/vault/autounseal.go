@@ -1,6 +1,8 @@
 package vault
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -39,7 +41,7 @@ func (conf *VaultConfiguration) AutoUnseal() (*vaultapi.InitResponse, error) {
 }
 
 // UnsealRaftLeader initializes and unseals a vault leader when using raft for ha and storage
-func (conf *VaultConfiguration) UnsealRaftLeader(clientset *kubernetes.Clientset, restConfig *rest.Config, kubeConfigPath string) error {
+func (conf *VaultConfiguration) UnsealRaftLeader(clientset *kubernetes.Clientset, restConfig *rest.Config) error {
 	//* vault port-forward
 	log.Info().Msgf("starting port-forward for vault-0")
 	vaultStopChannel := make(chan struct{}, 1)
@@ -109,16 +111,42 @@ func (conf *VaultConfiguration) UnsealRaftLeader(clientset *kubernetes.Clientset
 		time.Sleep(time.Second * 3)
 
 		// Unseal raft leader
+		sealStatusTracking := 0
+		node := "vault-0"
 		for i, shard := range initResponse.Keys {
-			if i < 3 {
-				log.Info().Msgf("passing unseal shard %v to %s", i+1, "vault-0")
-				_, err := vaultClient.Sys().Unseal(shard)
-				if err != nil {
-					return err
+			if i < SecretThreshold {
+				log.Info().Msgf("passing unseal shard %v to %s", i+1, node)
+				deadline := time.Now().Add(60 * time.Second)
+				ctx, cancel := context.WithDeadline(context.Background(), deadline)
+				defer cancel()
+				// Try 5 times to pass unseal shard
+				for i := 0; i < 5; i++ {
+					_, err := vaultClient.Sys().UnsealWithContext(ctx, shard)
+					if err != nil {
+						if errors.Is(err, context.DeadlineExceeded) {
+							continue
+						}
+					}
+					if i == 5 {
+						return fmt.Errorf("error passing unseal shard %v to %s: %s", i+1, node, err)
+					}
 				}
-			} else {
-				break
+				// Wait for key acceptance
+				for i := 0; i < 10; i++ {
+					sealStatus, err := vaultClient.Sys().SealStatus()
+					if err != nil {
+						return fmt.Errorf("error retrieving health of %s: %s", node, err)
+					}
+					if sealStatus.Progress > sealStatusTracking || !sealStatus.Sealed {
+						log.Info().Msgf("shard accepted")
+						sealStatusTracking += 1
+						break
+					}
+					log.Info().Msgf("waiting for node %s to accept unseal shard", node)
+					time.Sleep(time.Second * 6)
+				}
 			}
+			time.Sleep(time.Second * 5)
 		}
 	case true:
 		log.Info().Msgf("%s is already initialized", "vault-0")
@@ -131,34 +159,48 @@ func (conf *VaultConfiguration) UnsealRaftLeader(clientset *kubernetes.Clientset
 
 		switch health.Sealed {
 		case true:
-			existingInitResponse, err := parseExistingVaultInitSecret(clientset, kubeConfigPath)
+			existingInitResponse, err := parseExistingVaultInitSecret(clientset)
 			if err != nil {
 				return err
 			}
 
 			// Unseal raft leader
+			sealStatusTracking := 0
+			node := "vault-0"
 			for i, shard := range existingInitResponse.Keys {
-				if i < 3 {
-					retries := 10
-					for r := 0; r < retries; r++ {
-						if r > 0 {
-							log.Warn().Msgf("encountered an error during unseal, retrying (%d/%d)", r+1, retries)
-						}
-						time.Sleep(5 * time.Second)
-
-						log.Info().Msgf("passing unseal shard %v to %s", i+1, "vault-0")
-						_, err := vaultClient.Sys().Unseal(shard)
+				if i < SecretThreshold {
+					log.Info().Msgf("passing unseal shard %v to %s", i+1, node)
+					deadline := time.Now().Add(60 * time.Second)
+					ctx, cancel := context.WithDeadline(context.Background(), deadline)
+					defer cancel()
+					// Try 5 times to pass unseal shard
+					for i := 0; i < 5; i++ {
+						_, err := vaultClient.Sys().UnsealWithContext(ctx, shard)
 						if err != nil {
-							continue
-						} else {
-							break
+							if errors.Is(err, context.DeadlineExceeded) {
+								continue
+							}
+						}
+						if i == 5 {
+							return fmt.Errorf("error passing unseal shard %v to %s: %s", i+1, node, err)
 						}
 					}
-					time.Sleep(time.Second * 2)
-				} else {
-					break
+					// Wait for key acceptance
+					for i := 0; i < 10; i++ {
+						sealStatus, err := vaultClient.Sys().SealStatus()
+						if err != nil {
+							return fmt.Errorf("error retrieving health of %s: %s", node, err)
+						}
+						if sealStatus.Progress > sealStatusTracking || !sealStatus.Sealed {
+							log.Info().Msgf("shard accepted")
+							sealStatusTracking += 1
+							break
+						}
+						log.Info().Msgf("waiting for node %s to accept unseal shard", node)
+						time.Sleep(time.Second * 6)
+					}
 				}
-
+				time.Sleep(time.Second * 5)
 			}
 		case false:
 			log.Info().Msgf("%s is already unsealed", "vault-0")
@@ -172,11 +214,11 @@ func (conf *VaultConfiguration) UnsealRaftLeader(clientset *kubernetes.Clientset
 }
 
 // UnsealRaftFollowers initializes, unseals, and joins raft followers when using raft for ha and storage
-func (conf *VaultConfiguration) UnsealRaftFollowers(clientset *kubernetes.Clientset, restConfig *rest.Config, kubeConfigPath string) error {
+func (conf *VaultConfiguration) UnsealRaftFollowers(clientset *kubernetes.Clientset, restConfig *rest.Config) error {
 	// With the current iteration of the Vault helm chart, we create 3 nodes
 	// vault-0 is unsealed as leader, vault-1 and vault-2 are unsealed here
 	raftNodes := []string{"vault-1", "vault-2"}
-	existingInitResponse, err := parseExistingVaultInitSecret(clientset, kubeConfigPath)
+	existingInitResponse, err := parseExistingVaultInitSecret(clientset)
 	if err != nil {
 		return err
 	}
@@ -229,7 +271,7 @@ func (conf *VaultConfiguration) UnsealRaftFollowers(clientset *kubernetes.Client
 			if err != nil {
 				return err
 			}
-			time.Sleep(time.Second * 1)
+			time.Sleep(time.Second * 5)
 		case true:
 			log.Info().Msgf("raft follower %s is already initialized", node)
 		}
@@ -239,34 +281,48 @@ func (conf *VaultConfiguration) UnsealRaftFollowers(clientset *kubernetes.Client
 		if err != nil {
 			return err
 		}
+
 		// Allow time between operations
 		time.Sleep(time.Second * 5)
 
 		switch health.Sealed {
 		case true:
-			// Unseal
-			// Unseal raft leader
+			// Unseal raft followers
+			sealStatusTracking := 0
 			for i, shard := range existingInitResponse.Keys {
-				if i < 3 {
-					retries := 10
-					for r := 0; r < retries; r++ {
-						if r > 0 {
-							log.Warn().Msgf("encountered an error during unseal, retrying (%d/%d)", r+1, retries)
-						}
-						time.Sleep(5 * time.Second)
-
-						log.Info().Msgf("passing unseal shard %v to %s", i+1, node)
-						_, err := vaultClient.Sys().Unseal(shard)
+				if i < SecretThreshold {
+					log.Info().Msgf("passing unseal shard %v to %s", i+1, node)
+					deadline := time.Now().Add(60 * time.Second)
+					ctx, cancel := context.WithDeadline(context.Background(), deadline)
+					defer cancel()
+					// Try 5 times to pass unseal shard
+					for i := 0; i < 5; i++ {
+						_, err := vaultClient.Sys().UnsealWithContext(ctx, shard)
 						if err != nil {
-							continue
-						} else {
-							break
+							if errors.Is(err, context.DeadlineExceeded) {
+								continue
+							}
+						}
+						if i == 5 {
+							return fmt.Errorf("error passing unseal shard %v to %s: %s", i+1, node, err)
 						}
 					}
-					time.Sleep(time.Second * 2)
-				} else {
-					break
+					// Wait for key acceptance
+					for i := 0; i < 10; i++ {
+						sealStatus, err := vaultClient.Sys().SealStatus()
+						if err != nil {
+							return fmt.Errorf("error retrieving health of %s: %s", node, err)
+						}
+						if sealStatus.Progress > sealStatusTracking || !sealStatus.Sealed {
+							log.Info().Msgf("shard accepted")
+							sealStatusTracking += 1
+							break
+						}
+						log.Info().Msgf("waiting for node %s to accept unseal shard", node)
+						time.Sleep(time.Second * 6)
+					}
 				}
+				time.Sleep(time.Second * 5)
 			}
 		case false:
 			log.Info().Msgf("raft follower %s is already unsealed", node)
@@ -283,7 +339,7 @@ func (conf *VaultConfiguration) UnsealRaftFollowers(clientset *kubernetes.Client
 }
 
 // parseExistingVaultInitSecret returns the value of a vault initialization secret if it exists
-func parseExistingVaultInitSecret(clientset *kubernetes.Clientset, kubeConfigPath string) (*vaultapi.InitResponse, error) {
+func parseExistingVaultInitSecret(clientset *kubernetes.Clientset) (*vaultapi.InitResponse, error) {
 	// If vault has already been initialized, the response is formatted to contain the value
 	// of the initialization secret
 	secret, err := k8s.ReadSecretV2(clientset, VaultNamespace, VaultSecretName)

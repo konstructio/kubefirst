@@ -1035,7 +1035,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		vaultClient := &vault.Conf
 
 		// Initialize and unseal Vault
-		err := vaultClient.UnsealRaftLeader(clientset, restConfig, config.Kubeconfig)
+		err := vaultClient.UnsealRaftLeader(clientset, restConfig)
 		if err != nil {
 			return err
 		}
