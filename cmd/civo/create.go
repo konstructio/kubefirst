@@ -842,6 +842,12 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("applying-civo-terraform", 1)
 	}
 
+	//* civo needs extra time to be ready
+	progressPrinter.AddTracker("wait-for-civo", "Wait for Civo Kubernetes", 1)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+	time.Sleep(time.Second * 120)
+	progressPrinter.IncrementTracker("wait-for-civo", 1)
+
 	clientset, err := k8s.GetClientSet(dryRunFlag, config.Kubeconfig)
 	if err != nil {
 		return err
