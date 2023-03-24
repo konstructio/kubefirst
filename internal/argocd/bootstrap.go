@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/rs/zerolog/log"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -135,7 +136,7 @@ func ApplyArgoCDKustomize(clientset *kubernetes.Clientset) error {
 	log.Info().Msg("created argocd bootstrap job")
 
 	// Wait for the Job to finish
-	_, err = WaitForJobComplete(clientset, job, 240)
+	_, err = k8s.WaitForJobComplete(clientset, job, 240)
 	if err != nil {
 		log.Fatal().Msgf("could not run argocd bootstrap job: %s", err)
 	}
