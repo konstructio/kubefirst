@@ -150,6 +150,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 		cGitOwner = githubOrgFlag
 		cGitToken = os.Getenv("GITHUB_TOKEN")
 
+		// Verify token scopes
+		err = github.VerifyTokenPermissions(cGitToken)
+		if err != nil {
+			return err
+		}
+
 		// Handle authorization checks
 		httpClient := http.DefaultClient
 		gitHubService := services.NewGitHubService(httpClient)
@@ -179,6 +185,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 
 		cGitToken = os.Getenv("GITLAB_TOKEN")
+
+		// Verify token scopes
+		err = gitlab.VerifyTokenPermissions(cGitToken)
+		if err != nil {
+			return err
+		}
+
 		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
 		if err != nil {
 			return err
