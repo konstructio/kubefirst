@@ -38,7 +38,7 @@ func NewCommand() *cobra.Command {
 	awsCmd.SilenceUsage = true
 
 	// wire up new commands
-	awsCmd.AddCommand(Create(), Destroy())
+	awsCmd.AddCommand(Create(), Destroy(), Quota())
 
 	return awsCmd
 }
@@ -83,15 +83,15 @@ func Destroy() *cobra.Command {
 
 }
 
-// func Quota() *cobra.Command {
-// 	quotaCmd := &cobra.Command{
-// 		Use:   "quota",
-// 		Short: "Check aws quota status",
-// 		Long:  "Check aws quota status. By default, only ones close to limits will be shown.",
-// 		RunE:  evalAwsQuota,
-// 	}
-//
-// 	quotaCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "us-east-1", "the aws region to monitor quotas in")
-//
-// 	return quotaCmd
-// }
+func Quota() *cobra.Command {
+	quotaCmd := &cobra.Command{
+		Use:   "quota",
+		Short: "Check aws quota status",
+		Long:  "Check aws quota status. By default, only ones close to limits will be shown.",
+		RunE:  evalAwsQuota,
+	}
+
+	quotaCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "us-east-1", "the aws region to provision infrastructure in")
+
+	return quotaCmd
+}
