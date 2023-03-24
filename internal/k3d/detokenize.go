@@ -42,7 +42,7 @@ func detokenizeGitops(path string, tokens *GitopsTokenValues) filepath.WalkFunc 
 			// todo reduce to terraform tokens by moving to helm chart?
 			newContents := string(read)
 			newContents = strings.Replace(newContents, "<ALERTS_EMAIL>", "your@email.com", -1) //
-			newContents = strings.Replace(newContents, "<ARGO_CD_INGRESS_URL>", tokens.ArgocdIngressURL, -1)
+			newContents = strings.Replace(newContents, "<ARGOCD_INGRESS_URL>", tokens.ArgocdIngressURL, -1)
 			newContents = strings.Replace(newContents, "<ARGO_WORKFLOWS_INGRESS_URL>", tokens.ArgoWorkflowsIngressURL, -1)
 			newContents = strings.Replace(newContents, "<ATLANTIS_ALLOW_LIST>", tokens.AtlantisAllowList, -1)
 			newContents = strings.Replace(newContents, "<ATLANTIS_INGRESS_URL>", tokens.AtlantisIngressURL, -1)
