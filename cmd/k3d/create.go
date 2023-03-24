@@ -33,7 +33,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/services"
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/internal/terraform"
-	"github.com/kubefirst/kubefirst/internal/vault"
 	"github.com/kubefirst/kubefirst/internal/wrappers"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/minio/minio-go/v7"
@@ -112,8 +111,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// Check for existing port forwards before continuing
 	err = k8s.CheckForExistingPortForwards(8080, 8200, 9094)
 	if err != nil {
-		log.Fatal().Msgf("%s - this port is required to set up your kubefirst environment - please close any existing port forwards before continuing", err.Error())
-		return err
+		return fmt.Errorf("%s - this port is required to set up your kubefirst environment - please close any existing port forwards before continuing", err.Error())
 	}
 
 	// Global context
@@ -1045,12 +1043,22 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.vault-initialized")
 	if !executionControl {
-		vaultClient := &vault.Conf
-
 		// Initialize and unseal Vault
-		err := vaultClient.UnsealRaftLeader(clientset, restConfig)
+		vaultHandlerPath := "github.com:kubefirst/manifests.git/vault-handler/replicas-1"
+		_, err := pkg.ExecShellReturnStringsV2(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", vaultHandlerPath, "--wait")
+		if err != nil {
+			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", vaultHandlerPath, err.Error())
+			return err
+		}
+
+		// Wait for the Job to finish
+		job, err := k8s.ReturnJobObject(clientset, "vault", "vault-handler")
 		if err != nil {
 			return err
+		}
+		_, err = k8s.WaitForJobComplete(clientset, job, 240)
+		if err != nil {
+			log.Fatal().Msgf("could not run vault unseal job: %s", err)
 		}
 
 		viper.Set("kubefirst-checks.vault-initialized", true)
