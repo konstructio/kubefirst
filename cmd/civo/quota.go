@@ -143,7 +143,7 @@ func (q quotaFormattedOutput) formatQuotaOutput(usageExpression string) string {
 	)
 }
 
-// printCivoQuotaWarning provides visual output detailing quota health
+// printCivoQuotaWarning provides visual output detailing quota health for civo
 func printCivoQuotaWarning(messageHeader string, output []string) string {
 	var createCivoQuotaWarning bytes.Buffer
 	createCivoQuotaWarning.WriteString(strings.Repeat("-", 70))
@@ -152,9 +152,6 @@ func printCivoQuotaWarning(messageHeader string, output []string) string {
 	createCivoQuotaWarning.WriteString("\n")
 	for _, result := range output {
 		createCivoQuotaWarning.WriteString(fmt.Sprintf("%s\n", result))
-	}
-	if len(output) == 0 {
-		createCivoQuotaWarning.WriteString("All quotas are healthy. To show all quotas regardless, run `kubefirst civo quota --show-all`\n")
 	}
 	createCivoQuotaWarning.WriteString("\nIf you encounter any errors while working with Civo, request a limit increase for your account before retrying.\n\n")
 	createCivoQuotaWarning.WriteString(civoQuotaIncreaseLink)
