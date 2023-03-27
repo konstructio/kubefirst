@@ -76,7 +76,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
-	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 2)
+	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	switch gitProvider {
