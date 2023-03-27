@@ -63,11 +63,6 @@ func VerifyTokenPermissions(githubToken string) error {
 		scopes = append(scopes, strings.TrimSpace(s))
 	}
 
-	// api allows all access so we won't need to check the rest
-	if pkg.FindStringInSlice(scopes, "api") {
-		return nil
-	}
-
 	// Compare token scopes to required scopes
 	missingScopes := make([]string, 0)
 	for _, ts := range requiredScopes {
@@ -77,7 +72,7 @@ func VerifyTokenPermissions(githubToken string) error {
 	}
 
 	// Report on any missing scopes
-	if !pkg.FindStringInSlice(scopes, "api") && len(missingScopes) != 0 {
+	if len(missingScopes) != 0 {
 		return fmt.Errorf("the supplied github token is missing authorization scopes - please add: %v", missingScopes)
 	}
 
