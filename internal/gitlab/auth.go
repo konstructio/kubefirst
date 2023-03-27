@@ -16,7 +16,6 @@ const (
 
 var (
 	requiredScopes = []string{
-		"api",
 		"read_api",
 		"read_user",
 		"read_repository",
@@ -64,6 +63,11 @@ func VerifyTokenPermissions(gitlabToken string) error {
 		scopesSlice = append(scopesSlice, string(s.(string)))
 	}
 
+	// api allows all access so we won't need to check the rest
+	if pkg.FindStringInSlice(scopesSlice, "api") {
+		return nil
+	}
+
 	// Compare token scopes to required scopes
 	missingScopes := make([]string, 0)
 	for _, ts := range requiredScopes {
@@ -73,8 +77,8 @@ func VerifyTokenPermissions(gitlabToken string) error {
 	}
 
 	// Report on any missing scopes
-	if len(missingScopes) != 0 {
-		return fmt.Errorf("the supplied gitlab token is missing authorization scopes - please add: %v", missingScopes)
+	if !pkg.FindStringInSlice(scopesSlice, "api") && len(missingScopes) != 0 {
+		return fmt.Errorf("the supplied github token is missing authorization scopes - please add: %v", missingScopes)
 	}
 
 	return nil
