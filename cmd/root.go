@@ -7,6 +7,7 @@ import (
 	"github.com/kubefirst/kubefirst/cmd/aws"
 	"github.com/kubefirst/kubefirst/cmd/civo"
 	"github.com/kubefirst/kubefirst/cmd/k3d"
+	"github.com/kubefirst/kubefirst/cmd/vultr"
 	"github.com/kubefirst/kubefirst/configs"
 
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
@@ -51,5 +52,6 @@ func init() {
 		civo.NewCommand(),
 		k3d.NewCommand(),
 		k3d.LocalCommandAlias(),
+		vultr.NewCommand(),
 	)
 }
