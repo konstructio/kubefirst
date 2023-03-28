@@ -44,6 +44,7 @@ var resetCmd = &cobra.Command{
 		viper.Set("kbot", "")
 		viper.Set("kubefirst-checks", "")
 		viper.Set("kubefirst", "")
+		viper.Set("secrets", "")
 		viper.WriteConfig()
 
 		if _, err := os.Stat(k1Dir + "/kubeconfig"); !os.IsNotExist(err) {
