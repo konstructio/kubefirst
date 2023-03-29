@@ -7,24 +7,40 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/rs/zerolog/log"
 )
 
+// CreateBucket
 func (conf *AWSConfiguration) CreateBucket(bucketName string) (*s3.CreateBucketOutput, error) {
-
 	s3Client := s3.NewFromConfig(conf.Config)
+	log.Info().Msg(conf.Config.Region)
 
-	s3CreateBucketInput := &s3.CreateBucketInput{}
-	s3CreateBucketInput.Bucket = aws.String(bucketName)
-
-	if conf.Config.Region != RegionUsEast1 {
-		s3CreateBucketInput.CreateBucketConfiguration = &s3Types.CreateBucketConfiguration{
-			LocationConstraint: s3Types.BucketLocationConstraint(conf.Config.Region),
+	// Determine called region and whether or not it's a valid location
+	// constraint for S3
+	validLocationConstraints := s3Types.BucketLocationConstraint(conf.Config.Region)
+	var locationConstraint string
+	for _, location := range validLocationConstraints.Values() {
+		if string(location) == conf.Config.Region {
+			locationConstraint = conf.Config.Region
+			break
+		} else {
+			// It defaults to us-east-1 anyway
+			locationConstraint = "us-east-1"
 		}
+	}
+
+	// Create bucket
+	log.Info().Msgf("creating s3 bucket %s with location constraint %s", bucketName, locationConstraint)
+	s3CreateBucketInput := &s3.CreateBucketInput{
+		Bucket: aws.String(bucketName),
+		CreateBucketConfiguration: &s3Types.CreateBucketConfiguration{
+			LocationConstraint: s3Types.BucketLocationConstraint(locationConstraint),
+		},
 	}
 
 	bucket, err := s3Client.CreateBucket(context.Background(), s3CreateBucketInput)
 	if err != nil {
-		return &s3.CreateBucketOutput{}, err
+		return &s3.CreateBucketOutput{}, fmt.Errorf("error creating s3 bucket %s: %s", bucketName, err)
 	}
 
 	versionConfigInput := &s3.PutBucketVersioningInput{
@@ -36,7 +52,7 @@ func (conf *AWSConfiguration) CreateBucket(bucketName string) (*s3.CreateBucketO
 
 	_, err = s3Client.PutBucketVersioning(context.Background(), versionConfigInput)
 	if err != nil {
-		return &s3.CreateBucketOutput{}, err
+		return &s3.CreateBucketOutput{}, fmt.Errorf("error creating s3 bucket %s: %s", bucketName, err)
 	}
 	return bucket, nil
 }

@@ -5,16 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fatih/color"
 	awsinternal "github.com/kubefirst/kubefirst/internal/aws"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/spf13/cobra"
-)
-
-var (
-	green  = color.New(color.FgGreen).SprintFunc()
-	red    = color.New(color.FgRed).SprintFunc()
-	yellow = color.New(color.FgYellow).SprintFunc()
 )
 
 // printAwsQuotaWarning provides visual output detailing quota health for aws
@@ -27,11 +20,11 @@ func printAwsQuotaWarning(messageHeader string, output map[string][]awsinternal.
 	for service, quotas := range output {
 		createAwsQuotaWarning.WriteString(fmt.Sprintf("%s\n", service))
 		createAwsQuotaWarning.WriteString(strings.Repeat("-", 35))
-		createAwsQuotaWarning.WriteString(fmt.Sprintf("\n"))
+		createAwsQuotaWarning.WriteString("\n")
 		for _, thing := range quotas {
 			createAwsQuotaWarning.WriteString(fmt.Sprintf("%s: %v\n", thing.QuotaName, thing.QuotaValue))
 		}
-		createAwsQuotaWarning.WriteString(fmt.Sprintf("\n"))
+		createAwsQuotaWarning.WriteString("\n")
 	}
 
 	// Write to logs, but also output to stdout
@@ -46,7 +39,9 @@ func evalAwsQuota(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	awsClient := &awsinternal.Conf
+	awsClient := &awsinternal.AWSConfiguration{
+		Config: awsinternal.NewAwsV2(cloudRegionFlag),
+	}
 	quotaDetails, err := awsClient.GetServiceQuotas([]string{"eks", "vpc"})
 	if err != nil {
 		return err
