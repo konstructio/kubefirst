@@ -15,7 +15,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func AdjustGitopsRepo(cloudProvider, clusterName, clusterType, gitopsRepoDir, gitProvider, k1Dir string) error {
+func AdjustGitopsRepo(cloudProvider, clusterName, clusterType, gitopsRepoDir, gitProvider, k1Dir string, createApexContent bool) error {
 
 	//* clean up all other platforms
 	for _, platform := range pkg.SupportedPlatforms {
@@ -49,6 +49,13 @@ func AdjustGitopsRepo(cloudProvider, clusterName, clusterType, gitopsRepoDir, gi
 
 	//* copy $HOME/.k1/gitops/cluster-types/${clusterType}/* $HOME/.k1/gitops/registry/${clusterName}
 	clusterContent := fmt.Sprintf("%s/cluster-types/%s", gitopsRepoDir, clusterType)
+
+	// Remove apex content if apex content already exists
+	if !createApexContent {
+		os.Remove(fmt.Sprintf("%s/nginx-apex.yaml", clusterContent))
+		os.RemoveAll(fmt.Sprintf("%s/nginx-apex", clusterContent))
+	}
+
 	err = cp.Copy(clusterContent, fmt.Sprintf("%s/registry/%s", gitopsRepoDir, clusterName), opt)
 	if err != nil {
 		log.Info().Msgf("Error populating cluster content with %s. error: %s", clusterContent, err.Error())
@@ -154,7 +161,7 @@ func AdjustMetaphorRepo(destinationMetaphorRepoGitURL, gitopsRepoDir, gitProvide
 		return fmt.Errorf("error removing previous git ref: %s", err)
 	}
 	// create remote
-	_, err = metaphorRepo.CreateRemote(&config.RemoteConfig{
+	_, _ = metaphorRepo.CreateRemote(&config.RemoteConfig{
 		Name: "origin",
 		URLs: []string{destinationMetaphorRepoGitURL},
 	})
@@ -174,6 +181,7 @@ func PrepareGitRepositories(
 	gitopsTokens *GitOpsDirectoryValues,
 	metaphorDir string,
 	metaphorTokens *MetaphorTokenValues,
+	createApexContent bool,
 ) error {
 
 	//* clone the gitops-template repo
@@ -184,7 +192,7 @@ func PrepareGitRepositories(
 	log.Info().Msg("gitops repository clone complete")
 
 	//* adjust the content for the gitops repo
-	err = AdjustGitopsRepo(CloudProvider, clusterName, clusterType, gitopsDir, gitProvider, k1Dir)
+	err = AdjustGitopsRepo(CloudProvider, clusterName, clusterType, gitopsDir, gitProvider, k1Dir, createApexContent)
 	if err != nil {
 		return err
 	}
@@ -220,7 +228,7 @@ func PrepareGitRepositories(
 		return err
 	}
 
-	metaphorRepo, err := git.PlainOpen(metaphorDir)
+	metaphorRepo, _ := git.PlainOpen(metaphorDir)
 	//* commit initial gitops-template content
 	err = gitClient.Commit(metaphorRepo, "committing initial detokenized metaphor repo content")
 	if err != nil {

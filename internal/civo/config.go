@@ -56,7 +56,7 @@ func GetConfig(clusterName string, domainName string, gitProvider string, gitOwn
 
 	// todo do we want these from envs?
 	if err := env.Parse(&config); err != nil {
-		log.Panic(fmt.Sprintf("error reading environment variables %s", err.Error()))
+		log.Panicf("error reading environment variables %s", err.Error())
 	}
 
 	homeDir, err := os.UserHomeDir()
