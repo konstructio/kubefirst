@@ -657,21 +657,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		gitopsDirectoryTokens.GitOpsRepoGitURL = destinationGitopsRepoGitURL
 
 		// Determine if anything exists at domain apex
-		var createApexContent bool
-		apexContentHttp, err := civo.GetDomainApexContent(fmt.Sprintf("http://%s", domainNameFlag))
-		if err != nil {
-			log.Warn().Msg(err.Error())
-		}
-		apexContentHttps, err := civo.GetDomainApexContent(fmt.Sprintf("https://%s", domainNameFlag))
-		if err != nil {
-			log.Warn().Msg(err.Error())
-		}
-		if apexContentHttp || apexContentHttps {
-			createApexContent = false
-		} else {
-			log.Info().Msgf("domain %s has no apex content", domainNameFlag)
-			createApexContent = true
-		}
+		createApexContent := civo.GetDomainApexContent(domainNameFlag)
 
 		err = civo.PrepareGitRepositories(
 			config.GitProvider,
