@@ -27,6 +27,7 @@ import (
 func destroyAws(cmd *cobra.Command, args []string) error {
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
+	cloudRegionFlag := viper.GetString("flags.cloud-region")
 	// _, err := helpers.EvalDestroy(awsinternal.CloudProvider, gitProvider)
 	// if err != nil {
 	// 	return err
@@ -76,7 +77,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
-	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 3)
+	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 2)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	switch gitProvider {
@@ -156,7 +157,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 			}
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", false)
 			viper.WriteConfig()
-			log.Info().Msg("github resources terraform destroyed")
+			log.Info().Msg("gitlab resources terraform destroyed")
 			progressPrinter.IncrementTracker("platform-destroy", 1)
 		}
 	}
@@ -201,6 +202,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		sess := session.Must(session.NewSession(&aws.Config{
 			Region: aws.String(cloudRegionFlag),
 		}))
+		log.Info().Msgf("region %s", *sess.Config.Region)
 
 		eksSvc := eks.New(sess)
 
