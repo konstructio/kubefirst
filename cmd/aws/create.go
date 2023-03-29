@@ -215,7 +215,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	// Instantiate config
 	config := awsinternal.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
-	awsClient := &awsinternal.Conf
+	awsClient := &awsinternal.AWSConfiguration{
+		Config: awsinternal.NewAwsV2(cloudRegionFlag),
+	}
 
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
 	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -403,8 +405,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log.Info().Msgf("state store bucket is", strings.ReplaceAll(*kubefirstStateStoreBucket.Location, "/", ""))
-		log.Info().Msgf("artifacts bucket is", strings.ReplaceAll(*kubefirstArtifactsBucket.Location, "/", ""))
+		log.Info().Msgf("state store bucket is %s", *kubefirstStateStoreBucket.Location)
+		log.Info().Msgf("artifacts bucket is %s", *kubefirstArtifactsBucket.Location)
 
 		viper.Set("kubefirst.state-store-bucket", strings.ReplaceAll(*kubefirstStateStoreBucket.Location, "/", ""))
 		viper.Set("kubefirst.artifacts-bucket", strings.ReplaceAll(*kubefirstArtifactsBucket.Location, "/", ""))
@@ -542,7 +544,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		GitlabHost:         awsinternal.GitlabHost,
 		GitlabOwner:        cGitOwner,
-		GitlabOwnerGroupID: cGitlabOwnerGroupID,
+		GitlabOwnerGroupID: viper.GetInt("flags.gitlab-owner-group-id"),
 		GitlabUser:         cGitUser,
 
 		GitOpsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
@@ -666,7 +668,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
-			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(cGitlabOwnerGroupID)
+			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(viper.GetInt("flags.gitlab-owner-group-id"))
 			tfEnvs["TF_VAR_gitlab_owner"] = viper.GetString("flags.gitlab-owner")
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
@@ -778,8 +780,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_aws_account_id"] = awsAccountID
 		tfEnvs["TF_VAR_hosted_zone_name"] = domainNameFlag
 		tfEnvs["AWS_SDK_LOAD_CONFIG"] = "1"
-		tfEnvs["TF_VAR_aws_region"] = os.Getenv("AWS_REGION")
-		tfEnvs["AWS_REGION"] = os.Getenv("AWS_REGION")
+		tfEnvs["TF_VAR_aws_region"] = cloudRegionFlag
+		tfEnvs["AWS_REGION"] = cloudRegionFlag
 
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -816,7 +818,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		err = gitClient.Commit(gitopsRepo, "committing detoknized kms key")
+		err = gitClient.Commit(gitopsRepo, "committing detokenized kms key")
 		if err != nil {
 			return err
 		}
@@ -1201,7 +1203,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		// todo hyrdate a variable up top with these so we dont ref viper.
 
 		if gitProviderFlag == "gitlab" {
-			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(cGitlabOwnerGroupID)
+			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(viper.GetInt("flags.gitlab-owner-group-id"))
 		}
 
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"

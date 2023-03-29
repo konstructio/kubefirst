@@ -39,7 +39,9 @@ func evalAwsQuota(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	awsClient := &awsinternal.Conf
+	awsClient := &awsinternal.AWSConfiguration{
+		Config: awsinternal.NewAwsV2(cloudRegionFlag),
+	}
 	quotaDetails, err := awsClient.GetServiceQuotas([]string{"eks", "vpc"})
 	if err != nil {
 		return err

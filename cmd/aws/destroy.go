@@ -287,8 +287,8 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_aws_account_id"] = "awsAccountID"
 		tfEnvs["TF_VAR_hosted_zone_name"] = domainNameFlag
 		tfEnvs["AWS_SDK_LOAD_CONFIG"] = "1"
-		tfEnvs["TF_VAR_aws_region"] = os.Getenv("AWS_REGION")
-		tfEnvs["AWS_REGION"] = os.Getenv("AWS_REGION")
+		tfEnvs["TF_VAR_aws_region"] = cloudRegionFlag
+		tfEnvs["AWS_REGION"] = cloudRegionFlag
 		err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
 			viper.Set("kubefirst-checks.terraform-apply-aws-failed", true)
