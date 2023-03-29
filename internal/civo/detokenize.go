@@ -34,7 +34,7 @@ func detokenizeGitops(path string, tokens *GitOpsDirectoryValues) filepath.WalkF
 		metaphorProductionIngressURL := fmt.Sprintf("https://metaphor-production.%s", tokens.DomainName)
 
 		// var matched bool
-		matched, err := filepath.Match("*", fi.Name())
+		matched, _ := filepath.Match("*", fi.Name())
 		if matched {
 			read, err := ioutil.ReadFile(path)
 			if err != nil {
@@ -125,7 +125,7 @@ func detokenizeAdditionalPath(path string, tokens *GitOpsDirectoryValues) filepa
 		}
 
 		// var matched bool
-		matched, err := filepath.Match("*", fi.Name())
+		matched, _ := filepath.Match("*", fi.Name())
 		if matched {
 			read, err := ioutil.ReadFile(path)
 			if err != nil {
@@ -165,7 +165,7 @@ func detokenizeGitopsMetaphor(path string, tokens *MetaphorTokenValues) filepath
 		}
 
 		// var matched bool
-		matched, err := filepath.Match("*", fi.Name())
+		matched, _ := filepath.Match("*", fi.Name())
 		if matched {
 			read, err := ioutil.ReadFile(path)
 			if err != nil {

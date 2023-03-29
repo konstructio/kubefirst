@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"time"
 
@@ -97,6 +98,22 @@ func TestDomainLiveness(dryRun bool, domainName, domainId, region string) bool {
 		}
 	}
 	return true
+}
+
+// GetDomainApexContent determines whether or not a target domain features
+// a host responding at zone apex
+func GetDomainApexContent(domainName string) (bool, error) {
+	timeout := time.Duration(5 * time.Second)
+	client := http.Client{
+		Timeout: timeout,
+	}
+	resp, err := client.Get(domainName)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	return true, nil
 }
 
 // GetDNSInfo try to reach the provided domain

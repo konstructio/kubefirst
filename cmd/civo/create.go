@@ -656,7 +656,20 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 		gitopsDirectoryTokens.GitOpsRepoGitURL = destinationGitopsRepoGitURL
 
-		err := civo.PrepareGitRepositories(
+		// Determine if anything exists at domain apex
+		var createApexContent bool
+		apexContent, err := civo.GetDomainApexContent("https://kubewhatever.com")
+		if err != nil {
+			log.Warn().Msg(err.Error())
+		}
+		if apexContent {
+			createApexContent = false
+		} else {
+			log.Info().Msgf("domain %s has no apex content", domainNameFlag)
+			createApexContent = true
+		}
+
+		err = civo.PrepareGitRepositories(
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
@@ -669,6 +682,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
 			&metaphorDirectoryTokens,
+			createApexContent,
 		)
 		if err != nil {
 			return err
