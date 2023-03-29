@@ -17,7 +17,6 @@ const (
 	KubectlClientVersion   = "v1.25.7"
 	LocalhostOS            = runtime.GOOS
 	LocalhostArch          = runtime.GOARCH
-	RegionUsEast1          = "us-east-1"
 	TerraformClientVersion = "1.3.8"
 	ArgocdHelmChartVersion = "4.10.5"
 

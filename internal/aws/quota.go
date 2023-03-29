@@ -31,9 +31,7 @@ func (conf *AWSConfiguration) GetServiceQuotas(services []string) (map[string][]
 			if err != nil {
 				return map[string][]QuotaDetailResponse{}, err
 			}
-			for _, q := range resp.Quotas {
-				scopedQuotas = append(scopedQuotas, q)
-			}
+			scopedQuotas = append(scopedQuotas, resp.Quotas...)
 			req.NextToken = resp.NextToken
 			if req.NextToken == nil {
 				break

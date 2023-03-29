@@ -87,9 +87,9 @@ func (conf *AWSConfiguration) GetLoadBalancersForDeletion(eksClusterName string)
 }
 
 // DeleteEKSSecurityGroups deletes security groups associated with an EKS cluster
-func (conf *AWSConfiguration) DeleteEKSSecurityGroups(eksClusterName string) error {
+func (conf *AWSConfiguration) DeleteEKSSecurityGroups(region string, eksClusterName string) error {
 	ec2Client := ec2.NewFromConfig(conf.Config, func(o *ec2.Options) {
-		o.Region = RegionUsEast1
+		o.Region = region
 	})
 
 	// Get dependent security groups
@@ -149,9 +149,9 @@ func (conf *AWSConfiguration) DeleteEKSSecurityGroups(eksClusterName string) err
 }
 
 // DeleteSecurityGroup deletes a security group
-func (conf *AWSConfiguration) DeleteSecurityGroup(sgid string) error {
+func (conf *AWSConfiguration) DeleteSecurityGroup(region string, sgid string) error {
 	ec2Client := ec2.NewFromConfig(conf.Config, func(o *ec2.Options) {
-		o.Region = RegionUsEast1
+		o.Region = region
 	})
 
 	// Get dependent security groups

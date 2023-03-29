@@ -13,13 +13,11 @@ func (conf *AWSConfiguration) CreateBucket(bucketName string) (*s3.CreateBucketO
 
 	s3Client := s3.NewFromConfig(conf.Config)
 
-	s3CreateBucketInput := &s3.CreateBucketInput{}
-	s3CreateBucketInput.Bucket = aws.String(bucketName)
-
-	if conf.Config.Region != RegionUsEast1 {
-		s3CreateBucketInput.CreateBucketConfiguration = &s3Types.CreateBucketConfiguration{
+	s3CreateBucketInput := &s3.CreateBucketInput{
+		Bucket: aws.String(bucketName),
+		CreateBucketConfiguration: &s3Types.CreateBucketConfiguration{
 			LocationConstraint: s3Types.BucketLocationConstraint(conf.Config.Region),
-		}
+		},
 	}
 
 	bucket, err := s3Client.CreateBucket(context.Background(), s3CreateBucketInput)

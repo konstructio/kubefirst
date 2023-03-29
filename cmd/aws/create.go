@@ -392,9 +392,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.state-store-create")
 	if !executionControl {
-
-		// todo need to create an s3 bucket
-		// kubefirst-artifacts-$randomid
+		//
 		kubefirstStateStoreBucket, err := awsClient.CreateBucket(kubefirstStateStoreBucketName)
 		if err != nil {
 			return err
@@ -407,7 +405,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		log.Info().Msgf("state store bucket is", strings.ReplaceAll(*kubefirstStateStoreBucket.Location, "/", ""))
 		log.Info().Msgf("artifacts bucket is", strings.ReplaceAll(*kubefirstArtifactsBucket.Location, "/", ""))
-		// should have argo artifcats and chartmuseum charts
+
 		viper.Set("kubefirst.state-store-bucket", strings.ReplaceAll(*kubefirstStateStoreBucket.Location, "/", ""))
 		viper.Set("kubefirst.artifacts-bucket", strings.ReplaceAll(*kubefirstArtifactsBucket.Location, "/", ""))
 		viper.Set("kubefirst-checks.state-store-create", true)

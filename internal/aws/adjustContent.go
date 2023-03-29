@@ -144,7 +144,7 @@ func AdjustMetaphorRepo(destinationMetaphorRepoGitURL, gitopsRepoDir, gitProvide
 		return fmt.Errorf("error removing previous git ref: %s", err)
 	}
 	// create remote
-	_, err = metaphorRepo.CreateRemote(&config.RemoteConfig{
+	_, _ = metaphorRepo.CreateRemote(&config.RemoteConfig{
 		Name: "origin",
 		URLs: []string{destinationMetaphorRepoGitURL},
 	})
