@@ -51,8 +51,10 @@ func AdjustGitopsRepo(cloudProvider, clusterName, clusterType, gitopsRepoDir, gi
 	clusterContent := fmt.Sprintf("%s/cluster-types/%s", gitopsRepoDir, clusterType)
 
 	// Remove apex content if apex content already exists
-	os.Remove(fmt.Sprintf("%s/nginx-apex.yaml", clusterContent))
-	os.RemoveAll(fmt.Sprintf("%s/nginx-apex", clusterContent))
+	if !createApexContent {
+		os.Remove(fmt.Sprintf("%s/nginx-apex.yaml", clusterContent))
+		os.RemoveAll(fmt.Sprintf("%s/nginx-apex", clusterContent))
+	}
 
 	err = cp.Copy(clusterContent, fmt.Sprintf("%s/registry/%s", gitopsRepoDir, clusterName), opt)
 	if err != nil {
