@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
@@ -18,6 +19,8 @@ var resetCmd = &cobra.Command{
 	Short: "removes local kubefirst content to provision a new platform",
 	Long:  "removes local kubefirst content to provision a new platform",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		helpers.DisplayLogHints()
+
 		progressPrinter.AddTracker("removing-platform-content", "Removing local platform content", 2)
 		progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 

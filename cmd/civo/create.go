@@ -38,6 +38,7 @@ import (
 )
 
 func createCivo(cmd *cobra.Command, args []string) error {
+	helpers.DisplayLogHints()
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 6)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/github"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
+	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
@@ -20,6 +21,8 @@ import (
 )
 
 func destroyK3d(cmd *cobra.Command, args []string) error {
+	helpers.DisplayLogHints()
+
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
 	// _, err := helpers.EvalDestroy(k3d.CloudProvider, gitProvider)

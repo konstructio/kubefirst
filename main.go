@@ -45,14 +45,6 @@ func main() {
 	logfile := fmt.Sprintf("%s/log_%d.log", logsFolder, epoch)
 	//fmt.Printf("Logging at: %s \n", logfile)
 
-	// Avoid printing log helper for certain subcommands
-	var excludeLogHelperFrom []string = []string{"version"}
-	if len(os.Args) > 1 && !pkg.FindStringInSlice(excludeLogHelperFrom, os.Args[1]) {
-		fmt.Printf("\n-----------\n")
-		fmt.Printf("Follow your logs in a new terminal with: \n   tail -f -n +1 %s \n", logfile)
-		fmt.Printf("\n-----------\n")
-	}
-
 	file, err := pkg.OpenLogFile(logfile)
 	if err != nil {
 		stdLog.Panicf("unable to store log location, error is: %s", err)
@@ -82,6 +74,7 @@ func main() {
 	}
 
 	viper.Set("k1-paths.logs-dir", logsFolder)
+	viper.Set("k1-paths.log-file", fmt.Sprintf("%s/log_%d.log", logsFolder, epoch))
 	err = viper.WriteConfig()
 	if err != nil {
 		stdLog.Panicf("unable to set log-file-location, error is: %s", err)
