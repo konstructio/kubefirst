@@ -35,7 +35,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
-	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 3)
+	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 2)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	log.Info().Msg("destroying kubefirst platform running in k3d")

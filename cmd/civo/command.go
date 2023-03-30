@@ -38,7 +38,7 @@ func NewCommand() *cobra.Command {
 	civoCmd.SilenceUsage = true
 
 	// wire up new commands
-	civoCmd.AddCommand(BackupSSL(), Create(), Destroy(), Quota())
+	civoCmd.AddCommand(BackupSSL(), Create(), Destroy(), Quota(), RootCredentials())
 
 	return civoCmd
 }
@@ -104,4 +104,15 @@ func Quota() *cobra.Command {
 	quotaCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "NYC1", "the civo region to monitor quotas in")
 
 	return quotaCmd
+}
+
+func RootCredentials() *cobra.Command {
+	authCmd := &cobra.Command{
+		Use:   "root-credentials",
+		Short: "retrieve root authentication information for platform components",
+		Long:  "retrieve root authentication information for platform components",
+		RunE:  getCivoRootCredentials,
+	}
+
+	return authCmd
 }
