@@ -37,7 +37,7 @@ func NewCommand() *cobra.Command {
 	k3dCmd.SilenceUsage = true
 
 	// wire up new commands
-	k3dCmd.AddCommand(Create(), Destroy())
+	k3dCmd.AddCommand(Create(), Destroy(), RootCredentials())
 
 	return k3dCmd
 }
@@ -54,7 +54,7 @@ func LocalCommandAlias() *cobra.Command {
 	localCmd.SilenceUsage = true
 
 	// wire up new commands
-	localCmd.AddCommand(Create(), Destroy())
+	localCmd.AddCommand(Create(), Destroy(), RootCredentials())
 
 	return localCmd
 }
@@ -91,4 +91,15 @@ func Destroy() *cobra.Command {
 	}
 
 	return destroyCmd
+}
+
+func RootCredentials() *cobra.Command {
+	authCmd := &cobra.Command{
+		Use:   "root-credentials",
+		Short: "retrieve root authentication information for platform components",
+		Long:  "retrieve root authentication information for platform components",
+		RunE:  getK3dRootCredentials,
+	}
+
+	return authCmd
 }

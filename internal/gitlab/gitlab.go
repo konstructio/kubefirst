@@ -44,7 +44,7 @@ func NewGitLabClient(token string, parentGroupName string) (GitLabWrapper, error
 		}
 	}
 	if gid == 0 {
-		return GitLabWrapper{}, fmt.Errorf("error: could not find gitlab group %s", parentGroupName)
+		return GitLabWrapper{}, fmt.Errorf("could not find gitlab group %s", parentGroupName)
 	}
 
 	// Get parent group path

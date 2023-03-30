@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	v1 "k8s.io/api/core/v1"
 
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
@@ -20,14 +19,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-var gitlabToolboxPodName string
-
 var GitlabSecretClient coreV1Types.SecretInterface
-
-type secret struct {
-	namespace string
-	name      string
-}
 
 type PatchJson struct {
 	Op   string `json:"op"`
@@ -150,37 +142,4 @@ func WaitForNamespaceandPods(dryRun bool, kubeconfigPath, kubectlClientPath, nam
 	} else {
 		log.Info().Msg("soft-serve is ready, skipping")
 	}
-}
-
-// CreateSecret creates a key for a specific namespace.
-//
-//	namespace: namespace where secret will be created
-//	secretName: secret name to be stored at a Kubernetes object
-//	data: a single or collection of []bytes that will be stored as a Kubernetes secret
-func CreateSecret(kubeconfigPath, namespace, secretName string, data map[string][]byte) error {
-
-	// todo: method
-	clientset, err := GetClientSet(false, kubeconfigPath)
-	if err != nil {
-		return err
-	}
-
-	secret := v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: namespace,
-		},
-		Data: data,
-	}
-
-	_, err = clientset.CoreV1().Secrets(namespace).Create(
-		context.Background(),
-		&secret,
-		metav1.CreateOptions{},
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
