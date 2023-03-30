@@ -1313,17 +1313,17 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Error().Err(err).Msg("")
 	}
 
-	// Set flags used to track status of active options
-	helpers.SetCompletionFlags(k3d.CloudProvider, config.GitProvider)
-
-	reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, dryRunFlag, false)
-
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, k3d.CloudProvider, clusterId, clusterTypeFlag, k3d.DomainName, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 	}
+	
+	// Set flags used to track status of active options
+	helpers.SetCompletionFlags(k3d.CloudProvider, config.GitProvider)
+
+	reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, dryRunFlag, false)
 
 	time.Sleep(time.Millisecond * 100) // allows progress bars to finish
 
