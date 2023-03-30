@@ -15,6 +15,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	awsinternal "github.com/kubefirst/kubefirst/internal/aws"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
+	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
@@ -25,6 +26,8 @@ import (
 )
 
 func destroyAws(cmd *cobra.Command, args []string) error {
+	helpers.DisplayLogHints()
+
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
 	cloudRegionFlag := viper.GetString("flags.cloud-region")

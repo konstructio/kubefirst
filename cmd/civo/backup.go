@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/kubefirst/kubefirst/internal/civo"
+	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -11,6 +12,8 @@ import (
 )
 
 func backupCivoSSL(cmd *cobra.Command, args []string) error {
+	helpers.DisplayLogHints()
+
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
 	gitProvider := viper.GetString("flags.git-provider")

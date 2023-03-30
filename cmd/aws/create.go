@@ -43,6 +43,7 @@ import (
 )
 
 func createAws(cmd *cobra.Command, args []string) error {
+	helpers.DisplayLogHints()
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
@@ -1305,14 +1306,14 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}
-	
+
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, awsinternal.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 	}
-	
+
 	// Set flags used to track status of active options
 	helpers.SetCompletionFlags(awsinternal.CloudProvider, config.GitProvider)
 

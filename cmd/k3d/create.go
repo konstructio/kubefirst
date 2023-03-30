@@ -47,6 +47,7 @@ var (
 )
 
 func runK3d(cmd *cobra.Command, args []string) error {
+	helpers.DisplayLogHints()
 
 	clusterNameFlag, err := cmd.Flags().GetString("cluster-name")
 	if err != nil {
@@ -1319,7 +1320,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			log.Info().Msg(segmentMsg)
 		}
 	}
-	
+
 	// Set flags used to track status of active options
 	helpers.SetCompletionFlags(k3d.CloudProvider, config.GitProvider)
 
