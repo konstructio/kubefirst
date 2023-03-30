@@ -1305,18 +1305,18 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}
-
-	// Set flags used to track status of active options
-	helpers.SetCompletionFlags(awsinternal.CloudProvider, config.GitProvider)
-
-	reports.AwsHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, dryRunFlag, false)
-
+	
 	if useTelemetryFlag {
 		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, awsinternal.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 	}
+	
+	// Set flags used to track status of active options
+	helpers.SetCompletionFlags(awsinternal.CloudProvider, config.GitProvider)
+
+	reports.AwsHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, dryRunFlag, false)
 
 	time.Sleep(time.Second * 1) // allows progress bars to finish
 
