@@ -63,6 +63,7 @@ func AdjustGitopsRepo(cloudProvider, clusterName, clusterType, gitopsRepoDir, gi
 	}
 	os.RemoveAll(fmt.Sprintf("%s/cluster-types", gitopsRepoDir))
 	os.RemoveAll(fmt.Sprintf("%s/services", gitopsRepoDir))
+	os.RemoveAll(fmt.Sprintf("%s/ci", gitopsRepoDir))
 
 	return nil
 }
