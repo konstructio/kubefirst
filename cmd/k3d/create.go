@@ -1202,7 +1202,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
-		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", strings.ToUpper(config.GitProvider))] = cGitToken
+		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", config.GitProvider)] = cGitToken
 		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
 		tfEnvs["TF_VAR_vault_token"] = vaultRootToken
 		tfEnvs["VAULT_ADDR"] = k3d.VaultPortForwardURL
