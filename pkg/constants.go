@@ -1,6 +1,9 @@
 package pkg
 
-import "runtime"
+import (
+	"fmt"
+	"runtime"
+)
 
 const (
 	JSONContentType              = "application/json"
@@ -14,7 +17,7 @@ const (
 	MinimumAvailableDiskSize     = 10 // 10 GB
 	KubefirstGitOpsRepository    = "gitops"
 	KubefirstGitOpsRepositoryURL = "https://github.com/kubefirst/gitops-template"
-	LocalDNS                     = "localdev.me"
+	LocalDomainName              = "kubefirst.dev"
 	LocalhostARCH                = runtime.GOARCH
 	LocalhostOS                  = runtime.GOOS
 	AwsECRUsername               = "AWS"
@@ -40,9 +43,12 @@ const (
 	VaultNamespace      = "vault"
 	VaultPodPort        = 8200
 	VaultPodLocalPort   = 8200
-	VaultLocalURL       = "http://vault.localdev.me"
-	VaultLocalURLTLS    = "https://vault.localdev.me"
 	VaultPortForwardURL = "http://localhost:8200"
+)
+
+var (
+	VaultLocalURL    = fmt.Sprintf("http://vault.%s", LocalDomainName)
+	VaultLocalURLTLS = fmt.Sprintf("https://vault.%s", LocalDomainName)
 )
 
 // Argo
@@ -51,8 +57,11 @@ const (
 	ArgoNamespace        = "argo"
 	ArgoPodPort          = 2746
 	ArgoPodLocalPort     = 2746
-	ArgoLocalURLTLS      = "https://argo.localdev.me"
 	ArgocdPortForwardURL = "http://localhost:8080"
+)
+
+var (
+	ArgoLocalURLTLS = fmt.Sprintf("https://argo.%s", LocalDomainName)
 )
 
 // ArgoCD
@@ -61,9 +70,12 @@ const (
 	ArgoCDNamespace    = "argocd"
 	ArgoCDPodPort      = 8080
 	ArgoCDPodLocalPort = 8080
-	ArgoCDLocalURL     = "http://argocd.localdev.me"
-	ArgoCDLocalURLTLS  = "https://argocd.localdev.me"
 	ArgoCDLocalBaseURL = "https://localhost:8080/api/v1"
+)
+
+var (
+	ArgoCDLocalURL    = fmt.Sprintf("http://argocd.%s", LocalDomainName)
+	ArgoCDLocalURLTLS = fmt.Sprintf("https://argocd.%s", LocalDomainName)
 )
 
 // ChartMuseum
@@ -73,7 +85,10 @@ const (
 	ChartmuseumPodPort      = 8080
 	ChartmuseumPodLocalPort = 8181
 	ChartmuseumLocalURL     = "http://localhost:8181"
-	ChartmuseumLocalURLTLS  = "https://chartmuseum.localdev.me"
+)
+
+var (
+	ChartmuseumLocalURLTLS = fmt.Sprintf("https://chartmuseum.%s", LocalDomainName)
 )
 
 // Minio
@@ -82,9 +97,12 @@ const (
 	MinioNamespace           = "minio"
 	MinioPodPort             = 9000
 	MinioPodLocalPort        = 9000
-	MinioURL                 = "https://minio.localdev.me"
 	MinioPortForwardEndpoint = "localhost:9000"
 	MinioRegion              = "us-k3d-1"
+)
+
+var (
+	MinioURL = fmt.Sprintf("https://minio.%s", LocalDomainName)
 )
 
 // Minio Console
@@ -93,7 +111,10 @@ const (
 	MinioConsoleNamespace    = "minio"
 	MinioConsolePodPort      = 9001
 	MinioConsolePodLocalPort = 9001
-	MinioConsoleURLTLS       = "https://minio-console.localdev.me"
+)
+
+var (
+	MinioConsoleURLTLS = fmt.Sprintf("https://minio-console.%s", LocalDomainName)
 )
 
 // Kubefirst Console
@@ -103,8 +124,11 @@ const (
 	KubefirstConsolePodPort       = 80
 	KubefirstConsolePodLocalPort  = 9094
 	KubefirstConsoleLocalURLCloud = "http://localhost:9094"
-	KubefirstConsoleLocalURL      = "http://kubefirst.localdev.me"
-	KubefirstConsoleLocalURLTLS   = "https://kubefirst.localdev.me"
+)
+
+var (
+	KubefirstConsoleLocalURL    = fmt.Sprintf("http://kubefirst.%s", LocalDomainName)
+	KubefirstConsoleLocalURLTLS = fmt.Sprintf("https://kubefirst.%s", LocalDomainName)
 )
 
 // Atlantis
@@ -113,11 +137,13 @@ const (
 	AtlantisPodName           = "atlantis-0"
 	AtlantisNamespace         = "atlantis"
 	AtlantisPodLocalPort      = 4141
-	AtlantisLocalURLTEST      = "atlantis.localdev.me"
-	AtlantisLocalURL          = "http://atlantis.localdev.me"
-	AtlantisLocalURLTLS       = "https://atlantis.localdev.me"
 	LocalAtlantisURLTEMPORARY = "localhost:4141" // todo:
-	//LocalAtlantisURL = "atlantis.localdev.me" // todo:
+)
+
+var (
+	AtlantisLocalURLTEST = fmt.Sprintf("atlantis.%s", LocalDomainName)
+	AtlantisLocalURL     = fmt.Sprintf("http://atlantis.%s", LocalDomainName)
+	AtlantisLocalURLTLS  = fmt.Sprintf("https://atlantis.%s", LocalDomainName)
 )
 
 // MetaphorFrontendDevelopment
@@ -147,8 +173,8 @@ const (
 	MetaphorDevelopmentLocalURL         = "http://localhost:3000"
 )
 
-const (
-	MetaphorFrontendSlimTLSDev     = "https://metaphor-development.localdev.me"
-	MetaphorFrontendSlimTLSStaging = "https://metaphor-staging.localdev.me"
-	MetaphorFrontendSlimTLSProd    = "https://metaphor-production.localdev.me"
+var (
+	MetaphorFrontendSlimTLSDev     = fmt.Sprintf("https://metaphor-development.%s", LocalDomainName)
+	MetaphorFrontendSlimTLSStaging = fmt.Sprintf("https://metaphor-staging.%s", LocalDomainName)
+	MetaphorFrontendSlimTLSProd    = fmt.Sprintf("https://metaphor-production.%s", LocalDomainName)
 )

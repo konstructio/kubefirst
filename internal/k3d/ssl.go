@@ -41,7 +41,7 @@ func GenerateTLSSecrets(clientset *kubernetes.Clientset, config K3dConfig) error
 		}
 
 		//* generate certificate
-		fullAppAddress := app.AppName + "." + DomainName                      // example: app-name.localdev.me
+		fullAppAddress := app.AppName + "." + DomainName                      // example: app-name.kubefirst.dev
 		certFileName := config.MkCertPemDir + "/" + app.AppName + "-cert.pem" // example: app-name-cert.pem
 		keyFileName := config.MkCertPemDir + "/" + app.AppName + "-key.pem"   // example: app-name-key.pem
 
@@ -53,7 +53,7 @@ func GenerateTLSSecrets(clientset *kubernetes.Clientset, config K3dConfig) error
 			certFileName,
 			"-key-file",
 			keyFileName,
-			pkg.LocalDNS,
+			DomainName,
 			fullAppAddress,
 		)
 		if err != nil {

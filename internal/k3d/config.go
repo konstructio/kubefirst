@@ -10,27 +10,30 @@ import (
 )
 
 const (
-	ArgocdPortForwardURL   = "http://localhost:8080"
-	ArgocdURL              = "https://argocd.localdev.me"
-	ArgoWorkflowsURL       = "https://argo.localdev.me"
-	AtlantisURL            = "https://atlantis.localdev.me"
-	ChartMuseumURL         = "https://chartmuseum.localdev.me"
-	CloudProvider          = "k3d"
-	DomainName             = "localdev.me"
-	GithubHost             = "github.com"
-	GitlabHost             = "gitlab.com"
-	K3dVersion             = "v5.4.6"
-	KubectlVersion         = "v1.25.7"
-	KubefirstConsoleURL    = "https://kubefirst.localdev.me"
-	LocalhostARCH          = runtime.GOARCH
-	LocalhostOS            = runtime.GOOS
-	MetaphorDevelopmentURL = "https://metaphor-devlopment.localdev.me"
-	MetaphorStagingURL     = "https://metaphor-staging.localdev.me"
-	MetaphorProductionURL  = "https://metaphor-production.localdev.me"
-	MkCertVersion          = "v1.4.4"
-	TerraformVersion       = "1.3.8"
-	VaultPortForwardURL    = "http://localhost:8200"
-	VaultURL               = "https://vault.localdev.me"
+	ArgocdPortForwardURL = "http://localhost:8080"
+	CloudProvider        = "k3d"
+	DomainName           = "kubefirst.dev"
+	GithubHost           = "github.com"
+	GitlabHost           = "gitlab.com"
+	K3dVersion           = "v5.4.6"
+	KubectlVersion       = "v1.25.7"
+	LocalhostARCH        = runtime.GOARCH
+	LocalhostOS          = runtime.GOOS
+	MkCertVersion        = "v1.4.4"
+	TerraformVersion     = "1.3.8"
+	VaultPortForwardURL  = "http://localhost:8200"
+)
+
+var (
+	ArgocdURL              = fmt.Sprintf("https://argocd.%s", DomainName)
+	ArgoWorkflowsURL       = fmt.Sprintf("https://argo.%s", DomainName)
+	AtlantisURL            = fmt.Sprintf("https://atlantis.%s", DomainName)
+	ChartMuseumURL         = fmt.Sprintf("https://chartmuseum.%s", DomainName)
+	KubefirstConsoleURL    = fmt.Sprintf("https://kubefirst.%s", DomainName)
+	MetaphorDevelopmentURL = fmt.Sprintf("https://metaphor-devlopment.%s", DomainName)
+	MetaphorStagingURL     = fmt.Sprintf("https://metaphor-staging.%s", DomainName)
+	MetaphorProductionURL  = fmt.Sprintf("https://metaphor-production.%s", DomainName)
+	VaultURL               = fmt.Sprintf("https://vault.%s", DomainName)
 )
 
 type K3dConfig struct {
