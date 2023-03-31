@@ -55,7 +55,7 @@ func resolveMinioLocal(path string) filepath.WalkFunc {
 		}
 
 		// var matched bool
-		matched, err := filepath.Match("*", fi.Name())
+		matched, _ := filepath.Match("*", fi.Name())
 		if matched {
 			read, err := ioutil.ReadFile(path)
 			if err != nil {

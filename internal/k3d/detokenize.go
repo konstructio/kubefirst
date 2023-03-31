@@ -1,6 +1,7 @@
 package k3d
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -32,7 +33,7 @@ func detokenizeGitops(path string, tokens *GitopsTokenValues) filepath.WalkFunc 
 		}
 
 		// var matched bool
-		matched, err := filepath.Match("*", fi.Name())
+		matched, _ := filepath.Match("*", fi.Name())
 		if matched {
 			read, err := ioutil.ReadFile(path)
 			if err != nil {
@@ -68,6 +69,7 @@ func detokenizeGitops(path string, tokens *GitopsTokenValues) filepath.WalkFunc 
 			newContents = strings.Replace(newContents, "<GITLAB_OWNER_GROUP_ID>", strconv.Itoa(tokens.GitlabOwnerGroupID), -1)
 			newContents = strings.Replace(newContents, "<VAULT_INGRESS_URL>", tokens.VaultIngressURL, -1)
 			newContents = strings.Replace(newContents, "<USE_TELEMETRY>", tokens.UseTelemetry, -1)
+			newContents = strings.Replace(newContents, "<K3D_DOMAIN>", DomainName, -1)
 
 			err = ioutil.WriteFile(path, []byte(newContents), 0)
 			if err != nil {
@@ -100,7 +102,7 @@ func postRunDetokenizeGitops(path string, tokens *GitopsTokenValues) filepath.Wa
 		}
 
 		// var matched bool
-		matched, err := filepath.Match("*", fi.Name())
+		matched, _ := filepath.Match("*", fi.Name())
 		if matched {
 			read, err := ioutil.ReadFile(path)
 			if err != nil {
@@ -109,7 +111,7 @@ func postRunDetokenizeGitops(path string, tokens *GitopsTokenValues) filepath.Wa
 
 			//change Minio post cluster launch to cluster svc address
 			newContents := string(read)
-			newContents = strings.Replace(newContents, "https://minio.localdev.me", "http://minio.minio.svc.cluster.local:9000", -1)
+			newContents = strings.Replace(newContents, fmt.Sprintf("https://minio.%s", DomainName), "http://minio.minio.svc.cluster.local:9000", -1)
 			err = ioutil.WriteFile(path, []byte(newContents), 0)
 			if err != nil {
 				return err
@@ -141,7 +143,7 @@ func detokenize(metaphorDir string, tokens *MetaphorTokenValues) filepath.WalkFu
 		}
 
 		// var matched bool
-		matched, err := filepath.Match("*", fi.Name())
+		matched, _ := filepath.Match("*", fi.Name())
 		if matched {
 			read, err := ioutil.ReadFile(path)
 			if err != nil {
