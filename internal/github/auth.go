@@ -19,7 +19,6 @@ var (
 		"admin:org",
 		"admin:public_key",
 		"admin:repo_hook",
-		"admin:ssh_signing_key",
 		"delete_repo",
 		"repo",
 		"user",
