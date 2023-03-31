@@ -1166,7 +1166,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_kbot_ssh_private_key"] = viper.GetString("kbot.private-key")
 		tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 		tfEnvs["TF_VAR_kubernetes_api_endpoint"] = fmt.Sprintf("https://%s", kubernetesInClusterAPIService.Spec.ClusterIP)
-		tfEnvs[fmt.Sprintf("%s_OWNER", config.GitProvider)] = viper.GetString(fmt.Sprintf("flags.%s-owner", config.GitProvider))
+		tfEnvs[fmt.Sprintf("%s_OWNER", strings.ToUpper(config.GitProvider))] = viper.GetString(fmt.Sprintf("flags.%s-owner", config.GitProvider))
 		tfEnvs["AWS_ACCESS_KEY_ID"] = pkg.MinioDefaultUsername
 		tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
 		tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
