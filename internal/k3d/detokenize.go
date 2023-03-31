@@ -69,6 +69,7 @@ func detokenizeGitops(path string, tokens *GitopsTokenValues) filepath.WalkFunc 
 			newContents = strings.Replace(newContents, "<GITLAB_OWNER_GROUP_ID>", strconv.Itoa(tokens.GitlabOwnerGroupID), -1)
 			newContents = strings.Replace(newContents, "<VAULT_INGRESS_URL>", tokens.VaultIngressURL, -1)
 			newContents = strings.Replace(newContents, "<USE_TELEMETRY>", tokens.UseTelemetry, -1)
+			newContents = strings.Replace(newContents, "<K3D_DOMAIN>", DomainName, -1)
 
 			err = ioutil.WriteFile(path, []byte(newContents), 0)
 			if err != nil {
