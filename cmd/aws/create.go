@@ -45,9 +45,6 @@ import (
 func createAws(cmd *cobra.Command, args []string) error {
 	helpers.DisplayLogHints()
 
-	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 3)
-	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
-
 	alertsEmailFlag, err := cmd.Flags().GetString("alerts-email")
 	if err != nil {
 		return err
@@ -118,6 +115,19 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("%s - this port is required to set up your kubefirst environment - please close any existing port forwards before continuing", err.Error())
 	}
+
+	// Validate aws region
+	awsClient := &awsinternal.AWSConfiguration{
+		Config: awsinternal.NewAwsV2(cloudRegionFlag),
+	}
+
+	_, err = awsClient.CheckAvailabilityZones(cloudRegionFlag)
+	if err != nil {
+		return err
+	}
+
+	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 3)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	// required for destroy command
 	viper.Set("flags.alerts-email", alertsEmailFlag)
@@ -216,9 +226,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	// Instantiate config
 	config := awsinternal.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
-	awsClient := &awsinternal.AWSConfiguration{
-		Config: awsinternal.NewAwsV2(cloudRegionFlag),
-	}
 
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
 	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
