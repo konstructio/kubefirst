@@ -141,6 +141,7 @@ func AdjustMetaphorRepo(destinationMetaphorRepoGitURL, gitopsRepoDir, gitProvide
 		log.Info().Msgf("error populating metaphor repository with %s: %s", argoWorkflowsFolderContent, err)
 		return err
 	}
+	os.RemoveAll(fmt.Sprintf("%s/ci", gitopsRepoDir))
 	os.RemoveAll(fmt.Sprintf("%s/metaphor", gitopsRepoDir))
 
 	//  add
