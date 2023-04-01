@@ -419,6 +419,7 @@ func OpenLogFile(path string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return logFile, nil
 }
 
