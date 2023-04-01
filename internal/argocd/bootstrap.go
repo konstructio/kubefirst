@@ -14,13 +14,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const (
-	// todo main
-	argoCDInstallPath string = "github.com:kubefirst/manifests/argocd?ref=argocd"
-)
-
 // ApplyArgoCDKustomize
-func ApplyArgoCDKustomize(clientset *kubernetes.Clientset) error {
+func ApplyArgoCDKustomize(clientset *kubernetes.Clientset, argoCDInstallPath string) error {
 	enabled := true
 	name := "argocd-bootstrap"
 	namespace := "argocd"

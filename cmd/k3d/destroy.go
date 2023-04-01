@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubefirst/kubefirst/internal/github"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k3d"
@@ -84,31 +83,6 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	if viper.GetBool("kubefirst-checks.post-detokenize") {
-		// Remove remaining webhooks
-		configmap, err := k8s.ReadConfigMapV2(config.Kubeconfig, "atlantis", "ngrok")
-		if err != nil {
-			return err
-		}
-		webhookURL := configmap["active-ngrok-tunnel-url"]
-
-		switch config.GitProvider {
-		case "github":
-			githubSession := github.New(cGitToken)
-			err = githubSession.DeleteRepositoryWebhook(cGitOwner, "gitops", webhookURL)
-			if err != nil {
-				log.Error().Msgf("error removing webhook: %s - you may need to manually remove it", err)
-			}
-		case "gitlab":
-			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, cGitOwner)
-			if err != nil {
-				return err
-			}
-			err = gitlabClient.DeleteProjectWebhook("gitops", webhookURL)
-			if err != nil {
-				log.Error().Msgf("error removing webhook: %s - you may need to manually remove it", err)
-			}
-		}
-
 		// Temporary func to allow destroy
 		err = k3d.ResolveMinioLocal(fmt.Sprintf("%s/terraform", config.GitopsDir))
 		if err != nil {

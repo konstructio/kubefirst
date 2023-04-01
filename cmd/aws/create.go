@@ -933,10 +933,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("installing-argocd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
+	argoCDInstallPath := "github.com:kubefirst/manifests/argocd?ref=argocd"
+
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
-		err = argocd.ApplyArgoCDKustomize(clientset)
+		err = argocd.ApplyArgoCDKustomize(clientset, argoCDInstallPath)
 		if err != nil {
 			return err
 		}

@@ -1000,15 +1000,16 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 	progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
-
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
+	argocCDInstallPath := "github.com:kubefirst/manifests/argocd/k3d?ref=argocd"
 
 	//* install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
-		err = argocd.ApplyArgoCDKustomize(clientset)
+		err = argocd.ApplyArgoCDKustomize(clientset, argocCDInstallPath)
 		if err != nil {
 			return err
 		}

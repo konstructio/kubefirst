@@ -898,11 +898,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
+	argoCDInstallPath := "github.com:kubefirst/manifests/argocd/k3d?ref=argocd"
+
 	//* install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
-		err = argocd.ApplyArgoCDKustomize(clientset)
+		err = argocd.ApplyArgoCDKustomize(clientset, argoCDInstallPath)
 		if err != nil {
 			return err
 		}
@@ -915,7 +917,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	// Wait for ArgoCD to be ready
-	_, err = k8s.VerifyArgoCDReadiness(clientset, false)
+	_, err = k8s.VerifyArgoCDReadiness(clientset, true)
 	if err != nil {
 		log.Error().Msgf("error waiting for ArgoCD to become ready: %s", err)
 		return err
