@@ -56,6 +56,9 @@ func VerifyTokenPermissions(gitlabToken string) error {
 	// Get token scopes
 	var responseJson interface{}
 	err = json.Unmarshal(body, &responseJson)
+	if err != nil {
+		return err
+	}
 	responseJsonMap := responseJson.(map[string]interface{})
 	scopes := responseJsonMap["scopes"].([]interface{})
 	scopesSlice := make([]string, 0)
