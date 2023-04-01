@@ -373,3 +373,38 @@ func (gl *GitLabWrapper) ListProjectWebhooks(projectID int) ([]gitlab.ProjectHoo
 	}
 	return container, nil
 }
+
+// Runners
+
+// ListGroupRunners returns all registered runners for a parent group
+func (gl *GitLabWrapper) ListGroupRunners() ([]gitlab.Runner, error) {
+	container := make([]gitlab.Runner, 0)
+	for nextPage := 1; nextPage > 0; {
+		runners, resp, err := gl.Client.Runners.ListGroupsRunners(gl.ParentGroupID, &gitlab.ListGroupsRunnersOptions{
+			ListOptions: gitlab.ListOptions{Page: nextPage, PerPage: 10},
+			Type:        gitlab.String("group_type"),
+		})
+		if err != nil {
+			return []gitlab.Runner{}, err
+		}
+		for _, runner := range runners {
+			container = append(container, *runner)
+		}
+		nextPage = resp.NextPage
+	}
+
+	return container, nil
+}
+
+// DeleteGroupRunners deletes provided runners for a parent group
+func (gl *GitLabWrapper) DeleteGroupRunners(runners []gitlab.Runner) error {
+	for _, runner := range runners {
+		_, err := gl.Client.Runners.DeleteRegisteredRunnerByID(runner.ID)
+		if err != nil {
+			return err
+		}
+		log.Info().Msgf("deleted runner %s / %s / %v / %s\n", runner.Name, runner.IPAddress, runner.ID, runner.Description)
+	}
+
+	return nil
+}
