@@ -902,10 +902,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
-		argoCDYamlPath := fmt.Sprintf("%s/registry/%s/components/argocd", config.GitopsDir, clusterNameFlag)
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", argoCDYamlPath, "--wait")
+		err = argocd.ApplyArgoCDKustomize(clientset)
 		if err != nil {
-			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", argoCDYamlPath, err.Error())
 			return err
 		}
 		viper.Set("kubefirst-checks.argocd-install", true)

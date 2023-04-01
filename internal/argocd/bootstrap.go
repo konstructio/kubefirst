@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	argoCDInstallPath string = "github.com:argoproj/argo-cd.git/manifests/ha/cluster-install?ref=v2.6.4"
+	// todo main
+	argoCDInstallPath string = "github.com:kubefirst/manifests/argocd?ref=argocd"
 )
 
 // ApplyArgoCDKustomize
