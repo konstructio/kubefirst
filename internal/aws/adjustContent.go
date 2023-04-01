@@ -115,7 +115,6 @@ func AdjustMetaphorRepo(destinationMetaphorRepoGitURL, gitopsRepoDir, gitProvide
 		log.Info().Msgf("Error populating metaphor content with %s. error: %s", metaphorContent, err.Error())
 		return err
 	}
-	os.RemoveAll(fmt.Sprintf("%s/metaphor", gitopsRepoDir))
 
 	//* copy $HOME/.k1/gitops/ci/.argo/* $HOME/.k1/metaphor/.argo
 	argoWorkflowsFolderContent := fmt.Sprintf("%s/gitops/ci/.argo", k1Dir)
@@ -125,6 +124,8 @@ func AdjustMetaphorRepo(destinationMetaphorRepoGitURL, gitopsRepoDir, gitProvide
 		log.Info().Msgf("error populating metaphor repository with %s: %s", argoWorkflowsFolderContent, err)
 		return err
 	}
+	os.RemoveAll(fmt.Sprintf("%s/ci", gitopsRepoDir))
+	os.RemoveAll(fmt.Sprintf("%s/metaphor", gitopsRepoDir))
 
 	//  add
 	// commit
