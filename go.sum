@@ -142,8 +142,6 @@ github.com/aws/aws-sdk-go-v2/credentials v1.12.14 h1:AtVG/amkjbDBfnPr/tuW2IG18HG
 github.com/aws/aws-sdk-go-v2/credentials v1.12.14/go.mod h1:opAndTyq+YN7IpVG57z2CeNuXSQMqTYxGGlYH0m0RMY=
 github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.12 h1:wgJBHO58Pc1V1QAnzdVM3JK3WbE/6eUF0JxCZ+/izz0=
 github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.12/go.mod h1:aZ4vZnyUuxedC7eD4JyEHpGnCz+O2sHQEx3VvAwklSE=
-github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.27 h1:xFXIMBci0UXStoOHq/8w0XIZPB2hgb9CD7uATJhqt10=
-github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.27/go.mod h1:+tj2cHQkChanggNZn1J2fJ1Cv6RO1TV0AA3472do31I=
 github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.11/go.mod h1:tmUB6jakq5DFNcXsXOA/ZQ7/C8VnSKYkx58OI7Fh79g=
 github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.18/go.mod h1:348MLhzV1GSlZSMusdwQpXKbhD7X2gbI/TxwAPKkYZQ=
 github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.19/go.mod h1:llxE6bwUZhuCas0K7qGiu5OgMis3N7kdWtFSxoHmJ7E=
@@ -164,8 +162,6 @@ github.com/aws/aws-sdk-go-v2/service/ec2 v1.54.1 h1:WXGddQBKthNF5vwDp1qH/AVqzzz5
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.54.1/go.mod h1:d1gxyomADOqOm0m9lGsr1m61ubU7lUyWhxkEeJBgPF4=
 github.com/aws/aws-sdk-go-v2/service/ecr v1.18.6 h1:uuk58tRQBUTFTy3P+lgRIuk8dlJxK7jw18tsKfcNisY=
 github.com/aws/aws-sdk-go-v2/service/ecr v1.18.6/go.mod h1:IcfnmIWTFr0QidwQ2AarcxTNcVXYdbofsfXY5Ata2iA=
-github.com/aws/aws-sdk-go-v2/service/eks v1.21.9 h1:EpCymafUCfbSZc31ON/ivJ7KGbWuBfrAK9tXyZESAgk=
-github.com/aws/aws-sdk-go-v2/service/eks v1.21.9/go.mod h1:yZnfn4QYQkit9L31x6aVawzsl4fETpchB4E3J0m8sCM=
 github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.14.13 h1:0NAph78FaUOAgiY99P+erAgPh2PadSPMXD4nbs0Ebl4=
 github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.14.13/go.mod h1:5xLBSQKKFqPohFCrpzACRtnkVG/Fz54K6w+UbkjZOcg=
 github.com/aws/aws-sdk-go-v2/service/iam v1.19.4 h1:hrBxgoUih7uy9sJTXrX0N/3TVgbmevlxEYsP9l+Lje4=
@@ -260,8 +256,6 @@ github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5P
 github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMnBNeIyt5eFwwo7qiLfzFZmjNmxjkiQlU=
 github.com/cilium/ebpf v0.4.0/go.mod h1:4tRaxcgiL706VnOzHOdBlY8IEAIdxINsQBcU4xJJXRs=
 github.com/cilium/ebpf v0.7.0/go.mod h1:/oI2+1shJiTGAMgl6/RgJr36Eo1jzrRcAWbcXO2usCA=
-github.com/cip8/autoname v1.0.0 h1:rErvh6Y/VyE+aifgZWnxrwcu9f6mx1cZIuVGrJ9rRJs=
-github.com/cip8/autoname v1.0.0/go.mod h1:D9lnEk3INEWNKmo8KmmhHyD2JuvZs5/87OhtuWhMDF8=
 github.com/civo/civogo v0.3.23 h1:FTSad682Qu7CsjkNAYWpSe2CSR1NJOE2NRxc6gUzHDk=
 github.com/civo/civogo v0.3.23/go.mod h1:SbS06e0JPgIF27r1sLC97gjU1xWmONQeHgzF1hfLpak=
 github.com/clbanning/x2j v0.0.0-20191024224557-825249438eec/go.mod h1:jMjuTZXRI4dUb/I5gc9Hdhagfvm9+RyrPryS/auMzxE=

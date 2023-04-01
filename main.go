@@ -37,38 +37,39 @@ func main() {
 			log.Info().Msgf("%s directory already exists, continuing", k1Dir)
 		}
 	}
+
+	//* create log directory
 	logsFolder := fmt.Sprintf("%s/logs", k1Dir)
-	// we're ignoring folder creation handling at the moment
-	// todo: add folder creation handler
 	_ = os.Mkdir(logsFolder, 0700)
-
-	logfile := fmt.Sprintf("%s/log_%d.log", logsFolder, epoch)
-	//fmt.Printf("Logging at: %s \n", logfile)
-
-	file, err := pkg.OpenLogFile(logfile)
 	if err != nil {
-		stdLog.Panicf("unable to store log location, error is: %s", err)
+		log.Fatal().Msgf("error creating logs directory: %s", err)
+	}
+
+	//* create session log file
+	logfile := fmt.Sprintf("%s/log_%d.log", logsFolder, epoch)
+	logFileObj, err := pkg.OpenLogFile(logfile)
+	if err != nil {
+		stdLog.Panicf("unable to store log location, error is: %s - please verify the current user has write access to this directory", err)
 	}
 
 	// handle file close request
-	defer func(file *os.File) {
-		err = file.Close()
+	defer func(logFileObj *os.File) {
+		err = logFileObj.Close()
 		if err != nil {
 			log.Print(err)
 		}
-	}(file)
+	}(logFileObj)
 
 	// setup default logging
 	// this Go standard log is active to keep compatibility with current code base
-	stdLog.SetOutput(file)
+	stdLog.SetOutput(logFileObj)
 	stdLog.SetPrefix("LOG: ")
 	stdLog.SetFlags(stdLog.Ldate | stdLog.Lmicroseconds | stdLog.Llongfile)
 
 	// setup Zerolog
-	log.Logger = pkg.ZerologSetup(file, zerolog.InfoLevel)
+	log.Logger = pkg.ZerologSetup(logFileObj, zerolog.InfoLevel)
 
 	config := configs.ReadConfig()
-	// setup Viper (for non-local resources)
 	if err = pkg.SetupViper(config); err != nil {
 		stdLog.Panic(err)
 	}

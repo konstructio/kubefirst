@@ -7,10 +7,8 @@ require (
 	github.com/argoproj/gitops-engine v0.7.1-0.20221208230615-917f5a0f16d5
 	github.com/aws/aws-sdk-go v1.44.213
 	github.com/aws/aws-sdk-go-v2/config v1.17.1
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.27
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.54.1
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.18.6
-	github.com/aws/aws-sdk-go-v2/service/eks v1.21.9
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.14.13
 	github.com/aws/aws-sdk-go-v2/service/iam v1.19.4
 	github.com/aws/aws-sdk-go-v2/service/kms v1.18.6
@@ -24,7 +22,6 @@ require (
 	github.com/charmbracelet/glamour v0.6.0
 	github.com/charmbracelet/lipgloss v0.5.0
 	github.com/chromedp/chromedp v0.8.7
-	github.com/cip8/autoname v1.0.0
 	github.com/civo/civogo v0.3.23
 	github.com/docker/docker v20.10.17+incompatible
 	github.com/dustin/go-humanize v1.0.1
@@ -166,7 +163,7 @@ require (
 	github.com/ProtonMail/go-crypto v0.0.0-20210428141323-04723f9f07d7 // indirect
 	github.com/acomagu/bufpipe v1.0.3 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.17.6
-	github.com/aws/aws-sdk-go-v2/credentials v1.12.14
+	github.com/aws/aws-sdk-go-v2/credentials v1.12.14 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.12 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.30 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.24 // indirect
