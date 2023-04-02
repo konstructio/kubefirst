@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/kubefirst/kubefirst/internal/civo"
-	"github.com/kubefirst/kubefirst/internal/helpers"
+	"github.com/kubefirst/kubefirst/internal/credentials"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -17,7 +17,7 @@ func getCivoRootCredentials(cmd *cobra.Command, args []string) error {
 	gitOwner := viper.GetString(fmt.Sprintf("flags.%s-owner", gitProvider))
 
 	// Determine if there are active installs
-	_, err := helpers.EvalAuth(civo.CloudProvider, gitProvider)
+	_, err := credentials.EvalAuth(civo.CloudProvider, gitProvider)
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func getCivoRootCredentials(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	err = helpers.ParseAuthData(clientset, civo.CloudProvider, gitProvider)
+	err = credentials.ParseAuthData(clientset, civo.CloudProvider, gitProvider)
 	if err != nil {
 		return err
 	}
