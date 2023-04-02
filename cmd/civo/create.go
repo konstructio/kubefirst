@@ -1181,9 +1181,12 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		//* run vault terraform
 		log.Info().Msg("configuring vault with terraform")
+		usernamePasswordString := fmt.Sprintf("%s:%s", cGitUser, cGitToken)
+		base64DockerAuth := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
 
 		tfEnvs := map[string]string{}
 
+		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
 		tfEnvs = civo.GetVaultTerraformEnvs(clientset, config, tfEnvs)
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
