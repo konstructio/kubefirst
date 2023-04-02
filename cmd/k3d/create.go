@@ -1154,11 +1154,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		//* run vault terraform
 		log.Info().Msg("configuring vault with terraform")
 
+		usernamePasswordString := fmt.Sprintf("%s:%s", cGitUser, cGitToken)
+		base64DockerAuth := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+
 		tfEnvs := map[string]string{}
 		//tfEnvs = k3d.GetVaultTerraformEnvs(config, tfEnvs)
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", config.GitProvider)] = cGitToken
 		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
+		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
 		tfEnvs["TF_VAR_vault_token"] = vaultRootToken
 		tfEnvs["VAULT_ADDR"] = k3d.VaultPortForwardURL
 		tfEnvs["VAULT_TOKEN"] = vaultRootToken
