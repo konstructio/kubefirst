@@ -1290,7 +1290,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		"app.kubernetes.io/instance",
 		"kubefirst-console",
 		"kubefirst",
-		300,
+		600,
 	)
 	if err != nil {
 		log.Error().Msgf("Error finding console Deployment: %s", err)
