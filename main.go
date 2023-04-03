@@ -13,8 +13,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/kubefirst/kubefirst/cmd"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
 )
@@ -81,5 +81,20 @@ func main() {
 		stdLog.Panicf("unable to set log-file-location, error is: %s", err)
 	}
 
-	cmd.Execute()
+	// cmd.Execute()
+	kcfg := k8s.CreateKubeConfig(false, "/Users/scott/.kube/config")
+	yamlData, err := kcfg.KustomizeBuild("/Users/scott/src/scratch/k-apply-clgo")
+	if err != nil {
+		fmt.Printf("error yamldata: %s", err)
+	}
+
+	output, err := kcfg.SplitYAMLFile(yamlData)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = kcfg.ApplyObjects("", output)
+	if err != nil {
+		fmt.Printf("error apply: %s", err)
+	}
 }

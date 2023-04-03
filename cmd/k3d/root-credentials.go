@@ -22,12 +22,10 @@ func getK3dRootCredentials(cmd *cobra.Command, args []string) error {
 
 	// Instantiate kubernetes client
 	config := k3d.GetConfig(gitProvider, gitOwner)
-	clientset, err := k8s.GetClientSet(false, config.Kubeconfig)
-	if err != nil {
-		return err
-	}
 
-	err = credentials.ParseAuthData(clientset, k3d.CloudProvider, gitProvider)
+	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
+
+	err = credentials.ParseAuthData(kcfg.Clientset, k3d.CloudProvider, gitProvider)
 	if err != nil {
 		return err
 	}

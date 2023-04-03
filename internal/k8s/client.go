@@ -16,13 +16,14 @@ import (
 var fs afero.Fs = afero.NewOsFs()
 
 type KubernetesClient struct {
-	Clientset      kubernetes.Clientset
+	Clientset      *kubernetes.Clientset
 	RestConfig     *rest.Config
 	KubeConfigPath string
 }
 
-// CreateKubeConfig
-func CreateKubeConfig(inCluster bool, kubeConfigPath string) KubernetesClient {
+// CreateKubeConfig returns a struct KubernetesClient with references to a clientset,
+// restConfig, and path to the Kubernetes config used to generate the client
+func CreateKubeConfig(inCluster bool, kubeConfigPath string) *KubernetesClient {
 	// inCluster is either true or false
 	// If it's true, we pull Kubernetes API authentication from Pod SA
 	// If it's false, we use local machine settings
@@ -37,8 +38,8 @@ func CreateKubeConfig(inCluster bool, kubeConfigPath string) KubernetesClient {
 			panic(err.Error())
 		}
 
-		return KubernetesClient{
-			Clientset:      *clientset,
+		return &KubernetesClient{
+			Clientset:      clientset,
 			RestConfig:     config,
 			KubeConfigPath: "in-cluster",
 		}
@@ -68,8 +69,8 @@ func CreateKubeConfig(inCluster bool, kubeConfigPath string) KubernetesClient {
 		panic(err)
 	}
 
-	return KubernetesClient{
-		Clientset:      *clientset,
+	return &KubernetesClient{
+		Clientset:      clientset,
 		RestConfig:     config,
 		KubeConfigPath: kubeconfig,
 	}
