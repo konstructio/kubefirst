@@ -34,9 +34,6 @@ func NewCommand() *cobra.Command {
 		Long:  "kubefirst civo",
 	}
 
-	// on error, doesnt show helper/usage
-	civoCmd.SilenceUsage = true
-
 	// wire up new commands
 	civoCmd.AddCommand(BackupSSL(), Create(), Destroy(), Quota(), RootCredentials())
 
