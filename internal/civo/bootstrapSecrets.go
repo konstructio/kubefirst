@@ -21,33 +21,13 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string, gitProvider st
 		log.Info().Msg("error getting kubernetes clientset")
 	}
 
-	// Set git provider token value
-	// var containerRegistryHost, gitRunnerSecretName, tokenValue string
-	// switch gitProvider {
-	// case "github":
-	// 	containerRegistryHost = "https://ghcr.io/"
-	// 	gitRunnerSecretName = "controller-manager"
-	// 	tokenValue = os.Getenv("GITHUB_TOKEN")
-	// case "gitlab":
-	// 	containerRegistryHost = "registry.gitlab.io"
-	// 	gitRunnerSecretName = "gitlab-runner"
-	// 	tokenValue = os.Getenv("GITLAB_TOKEN")
-	// }
-
 	// Create namespace
 	// Skip if it already exists
 	newNamespaces := []string{
-		// "argo",
 		"argocd",
 		"atlantis",
-		// "chartmuseum",
 		"external-dns",
 		"external-secrets-operator",
-		// fmt.Sprintf("%s-runner", gitProvider),
-		// "vault",
-		// "development",
-		// "staging",
-		// "production",
 	}
 	for i, s := range newNamespaces {
 		namespace := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s}}
@@ -64,12 +44,6 @@ func BootstrapCivoMgmtCluster(dryRun bool, kubeconfigPath string, gitProvider st
 			log.Warn().Msgf("namespace %s already exists - skipping", s)
 		}
 	}
-
-	// Data used for secret creation
-	// docker auth
-	// usernamePasswordString := fmt.Sprintf("%s:%s", gitUser, tokenValue)
-	// usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
-	// dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"auth": "%s"}}}`, containerRegistryHost, usernamePasswordStringB64)
 
 	// Create secrets
 	createSecrets := []*v1.Secret{
