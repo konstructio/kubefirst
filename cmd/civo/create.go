@@ -1243,7 +1243,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		"app.kubernetes.io/instance",
 		"kubefirst-console",
 		"kubefirst",
-		60,
+		600,
 	)
 	if err != nil {
 		log.Error().Msgf("Error finding console Deployment: %s", err)
