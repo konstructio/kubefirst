@@ -47,6 +47,7 @@ func init() {
 	cobra.OnInitialize()
 	rootCmd.SilenceUsage = true
 	rootCmd.AddCommand(
+		betaCmd,
 		aws.NewCommand(),
 		civo.NewCommand(),
 		k3d.NewCommand(),

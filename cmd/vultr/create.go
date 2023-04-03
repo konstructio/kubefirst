@@ -1,4 +1,4 @@
-package civo
+package vultr
 
 import (
 	"context"
@@ -12,15 +12,12 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"golang.org/x/term"
 	v1 "k8s.io/api/core/v1"
 
-	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/argocd"
-	"github.com/kubefirst/kubefirst/internal/civo"
 	"github.com/kubefirst/kubefirst/internal/github"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/handlers"
@@ -33,16 +30,16 @@ import (
 	internalssh "github.com/kubefirst/kubefirst/internal/ssh"
 	"github.com/kubefirst/kubefirst/internal/ssl"
 	"github.com/kubefirst/kubefirst/internal/terraform"
+	"github.com/kubefirst/kubefirst/internal/vultr"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func createCivo(cmd *cobra.Command, args []string) error {
-	helpers.DisplayLogHints()
+func createVultr(cmd *cobra.Command, args []string) error {
 
-	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 6)
+	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 5)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	alertsEmailFlag, err := cmd.Flags().GetString("alerts-email")
@@ -143,7 +140,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			return errors.New("your GITHUB_TOKEN is not set. Please set and try again")
 		}
 
-		cGitHost = civo.GithubHost
+		cGitHost = vultr.GithubHost
 		cGitOwner = githubOrgFlag
 		cGitToken = os.Getenv("GITHUB_TOKEN")
 		containerRegistryHost = "ghcr.io"
@@ -195,7 +192,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		cGitHost = civo.GitlabHost
+		cGitHost = vultr.GitlabHost
 		cGitOwner = gitlabClient.ParentGroupPath
 		log.Info().Msgf("set gitlab owner to %s", cGitOwner)
 
@@ -214,7 +211,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate config
-	config := civo.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
+	config := vultr.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
 
 	var sshPrivateKey, sshPublicKey string
 
@@ -233,10 +230,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		kubefirstTeam = "false"
 	}
 
-	gitopsDirectoryTokens := civo.GitOpsDirectoryValues{
+	gitopsDirectoryTokens := vultr.GitOpsDirectoryValues{
 		AlertsEmail:               alertsEmailFlag,
 		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
-		CloudProvider:             civo.CloudProvider,
+		CloudProvider:             vultr.CloudProvider,
 		CloudRegion:               cloudRegionFlag,
 		ClusterName:               clusterNameFlag,
 		ClusterType:               clusterTypeFlag,
@@ -269,7 +266,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		GitHubOwner: cGitOwner,
 		GitHubUser:  cGitUser,
 
-		GitlabHost:         civo.GitlabHost,
+		GitlabHost:         vultr.GitlabHost,
 		GitlabOwner:        cGitOwner,
 		GitlabOwnerGroupID: cGitlabOwnerGroupID,
 		GitlabUser:         cGitUser,
@@ -285,7 +282,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if useTelemetryFlag {
 		gitopsDirectoryTokens.UseTelemetry = "true"
 
-		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, vultr.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
@@ -313,15 +310,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	executionControl := viper.GetBool("kubefirst-checks.cloud-credentials")
 	if !executionControl {
-		if os.Getenv("CIVO_TOKEN") == "" {
-			fmt.Println("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security to retrieve your token\nand enter it here, then press Enter:")
-			civoToken, err := term.ReadPassword(0)
-			if err != nil {
-				return errors.New("error reading password input from user")
-			}
-
-			os.Setenv("CIVO_TOKEN", string(civoToken))
-			log.Info().Msg("CIVO_TOKEN set - continuing")
+		if os.Getenv("VULTR_API_KEY") == "" {
+			return fmt.Errorf("your VULTR_API_KEY variable is unset - please set it before continuing")
 		}
 		viper.Set("kubefirst-checks.cloud-credentials", true)
 		viper.WriteConfig()
@@ -331,70 +321,32 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("preflight-checks", 1)
 	}
 
-	executionControl = viper.GetBool("kubefirst-checks.state-store-creds")
-	if !executionControl {
-		creds, err := civo.GetAccessCredentials(kubefirstStateStoreBucketName, cloudRegionFlag)
-		if err != nil {
-			log.Info().Msg(err.Error())
-		}
-
-		// Verify all credentials fields are present
-		var civoCredsFailureMessage string
-		switch {
-		case creds.AccessKeyID == "":
-			civoCredsFailureMessage = "when retrieving civo access credentials, AccessKeyID was empty - please retry your cluster creation"
-		case creds.ID == "":
-			civoCredsFailureMessage = "when retrieving civo access credentials, ID was empty - please retry your cluster creation"
-		case creds.Name == "":
-			civoCredsFailureMessage = "when retrieving civo access credentials, Name was empty - please retry your cluster creation"
-		case creds.SecretAccessKeyID == "":
-			civoCredsFailureMessage = "when retrieving civo access credentials, SecretAccessKeyID was empty - please retry your cluster creation"
-		}
-		if civoCredsFailureMessage != "" {
-			// Creds failed to properly parse, so remove them
-			err := civo.DeleteAccessCredentials(kubefirstStateStoreBucketName, cloudRegionFlag)
-			if err != nil {
-				return err
-			}
-
-			// Return error
-			return fmt.Errorf(civoCredsFailureMessage)
-		}
-
-		viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyID)
-		viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKeyID)
-		viper.Set("kubefirst.state-store-creds.name", creds.Name)
-		viper.Set("kubefirst.state-store-creds.id", creds.ID)
-		viper.Set("kubefirst-checks.state-store-creds", true)
-		viper.WriteConfig()
-		log.Info().Msg("civo object storage credentials created and set")
-		progressPrinter.IncrementTracker("preflight-checks", 1)
-	} else {
-		log.Info().Msg("already created civo object storage credentials - continuing")
-		progressPrinter.IncrementTracker("preflight-checks", 1)
-	}
-
 	skipDomainCheck := viper.GetBool("kubefirst-checks.domain-liveness")
 	if !skipDomainCheck {
+		vultrConf := vultr.VultrConfiguration{
+			Client:  vultr.NewVultr(),
+			Context: context.Background(),
+		}
+
 		// domain id
-		domainId, err := civo.GetDNSInfo(domainNameFlag, cloudRegionFlag)
+		domainId, err := vultrConf.GetDNSInfo(domainNameFlag)
 		if err != nil {
 			log.Info().Msg(err.Error())
 		}
 
 		// viper values set in above function
 		log.Info().Msgf("domainId: %s", domainId)
-		domainLiveness := civo.TestDomainLiveness(false, domainNameFlag, domainId, cloudRegionFlag)
+		domainLiveness := vultrConf.TestDomainLiveness(false, domainNameFlag)
 		if !domainLiveness {
-			msg := "failed to check the liveness of the Domain. A valid public Domain on the same CIVO " +
+			msg := "failed to check the liveness of the Domain. A valid public Domain on the same Vultr " +
 				"account as the one where Kubefirst will be installed is required for this operation to " +
-				"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct CIVO account and " +
+				"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct Vultr account and " +
 				"region.\n - Verify that you have the necessary permissions to access the domain.\n - Check " +
 				"that the domain is correctly configured and is a public domain\n - Check if the " +
 				"domain exists and has the correct name and domain.\n - If you don't have a Domain," +
 				"please follow these instructions to create one: " +
-				"https://www.civo.com/learn/configure-dns \n\n" +
-				"if you are still facing issues please reach out to support team for further assistance"
+				"https://www.vultr.com/docs/introduction-to-vultr-dns/ \n\n" +
+				"if you are still facing issues please reach out to support team for further assistance."
 
 			return errors.New(msg)
 		}
@@ -408,39 +360,43 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.state-store-create")
 	if !executionControl {
-		accessKeyId := viper.GetString("kubefirst.state-store-creds.access-key-id")
-		log.Info().Msgf("access key id %s", accessKeyId)
+		vultrConf := vultr.VultrConfiguration{
+			Client:  vultr.NewVultr(),
+			Context: context.Background(),
+		}
 
-		bucket, err := civo.CreateStorageBucket(accessKeyId, kubefirstStateStoreBucketName, cloudRegionFlag)
+		objst, err := vultrConf.CreateObjectStorage(cloudRegionFlag, kubefirstStateStoreBucketName)
 		if err != nil {
 			log.Info().Msg(err.Error())
 			return err
 		}
 
-		viper.Set("kubefirst.state-store.id", bucket.ID)
-		viper.Set("kubefirst.state-store.name", bucket.Name)
+		err = vultrConf.CreateObjectStorageBucket(vultr.VultrBucketCredentials{
+			AccessKey:       objst.S3AccessKey,
+			SecretAccessKey: objst.S3SecretKey,
+			Endpoint:        objst.S3Hostname,
+		}, kubefirstStateStoreBucketName)
+		if err != nil {
+			return fmt.Errorf("error creating vultr state storage bucket: %s", err)
+		}
+
+		viper.Set("kubefirst.state-store.id", objst.ID)
+		viper.Set("kubefirst.state-store.name", objst.Label)
+		viper.Set("kubefirst.state-store.hostname", objst.S3Hostname)
+		viper.Set("kubefirst.state-store-creds.access-key-id", objst.S3AccessKey)
+		viper.Set("kubefirst.state-store-creds.secret-access-key-id", objst.S3SecretKey)
 		viper.Set("kubefirst-checks.state-store-create", true)
 		viper.WriteConfig()
-		log.Info().Msg("civo state store bucket created")
+
+		//
+		gitopsDirectoryTokens.StateStoreBucketHostname = objst.S3Hostname
+
+		log.Info().Msg("vultr state store bucket created")
 		progressPrinter.IncrementTracker("preflight-checks", 1)
 	} else {
-		log.Info().Msg("already created civo state store bucket - continuing")
+		log.Info().Msg("already created vultr state store bucket - continuing")
 		progressPrinter.IncrementTracker("preflight-checks", 1)
 	}
-
-	// Check quotas
-	quotaMessage, quotaFailures, quotaWarnings, err := returnCivoQuotaEvaluation(cloudRegionFlag)
-	if err != nil {
-		return err
-	}
-	switch {
-	case quotaFailures > 0:
-		fmt.Println(reports.StyleMessage(quotaMessage))
-		return errors.New("at least one of your Civo quotas is close to its limit. Please check the error message above for additional details")
-	case quotaWarnings > 0:
-		fmt.Println(reports.StyleMessage(quotaMessage))
-	}
-	//* CIVO END
 
 	// Objects to check for
 	newRepositoryNames := []string{"gitops", "metaphor"}
@@ -576,11 +532,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	if useTelemetryFlag {
-		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, vultr.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
-		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
+		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, vultr.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
@@ -596,12 +552,12 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
 
-		err := civo.DownloadTools(
+		err := vultr.DownloadTools(
 			config.KubectlClient,
-			civo.KubectlClientVersion,
-			civo.LocalhostOS,
-			civo.LocalhostArch,
-			civo.TerraformClientVersion,
+			vultr.KubectlClientVersion,
+			vultr.LocalhostOS,
+			vultr.LocalhostArch,
+			vultr.TerraformClientVersion,
 			config.ToolsDir,
 		)
 		if err != nil {
@@ -618,7 +574,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// todo should metaphor tokens be global?
-	metaphorDirectoryTokens := civo.MetaphorTokenValues{
+	metaphorDirectoryTokens := vultr.MetaphorTokenValues{
 		ClusterName:                   clusterNameFlag,
 		CloudRegion:                   cloudRegionFlag,
 		ContainerRegistryURL:          fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
@@ -659,10 +615,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 		gitopsDirectoryTokens.GitOpsRepoGitURL = destinationGitopsRepoGitURL
 
-		// Determine if anything exists at domain apex
-		createApexContent := civo.GetDomainApexContent(domainNameFlag)
-
-		err = civo.PrepareGitRepositories(
+		err := vultr.PrepareGitRepositories(
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
@@ -675,7 +628,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
 			&metaphorDirectoryTokens,
-			createApexContent,
 		)
 		if err != nil {
 			return err
@@ -702,7 +654,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
-			tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs = vultr.GetGithubTerraformEnvs(tfEnvs)
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
 				return fmt.Errorf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
@@ -724,7 +676,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
-			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, cGitlabOwnerGroupID)
+			tfEnvs = vultr.GetGitlabTerraformEnvs(tfEnvs, cGitlabOwnerGroupID)
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
 				return fmt.Errorf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
@@ -824,39 +776,39 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
 	}
 
-	//* create civo cloud resources
-	progressPrinter.AddTracker("applying-civo-terraform", "Applying Civo Terraform", 1)
+	//* create vultr cloud resources
+	progressPrinter.AddTracker("applying-vultr-terraform", "Applying Vultr Terraform", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
-	if !viper.GetBool("kubefirst-checks.terraform-apply-civo") {
-		log.Info().Msg("Creating civo cloud resources with terraform")
+	if !viper.GetBool("kubefirst-checks.terraform-apply-vultr") {
+		log.Info().Msg("Creating vultr cloud resources with terraform")
 
-		tfEntrypoint := config.GitopsDir + "/terraform/civo"
+		tfEntrypoint := config.GitopsDir + "/terraform/vultr"
 		tfEnvs := map[string]string{}
-		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
+		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
-			return fmt.Errorf("error creating civo resources with terraform %s : %s", tfEntrypoint, err)
+			return fmt.Errorf("error creating vultr resources with terraform %s : %s", tfEntrypoint, err)
 		}
 
-		log.Info().Msg("Created civo cloud resources")
-		viper.Set("kubefirst-checks.terraform-apply-civo", true)
+		log.Info().Msg("Created vultr cloud resources")
+		viper.Set("kubefirst-checks.terraform-apply-vultr", true)
 		viper.WriteConfig()
-		progressPrinter.IncrementTracker("applying-civo-terraform", 1)
+		progressPrinter.IncrementTracker("applying-vultr-terraform", 1)
 	} else {
 		log.Info().Msg("already created github terraform resources")
-		progressPrinter.IncrementTracker("applying-civo-terraform", 1)
+		progressPrinter.IncrementTracker("applying-vultr-terraform", 1)
 	}
 
-	//* civo needs extra time to be ready
-	progressPrinter.AddTracker("wait-for-civo", "Wait for Civo Kubernetes", 1)
+	//* vultr needs extra time to be ready
+	progressPrinter.AddTracker("wait-for-vultr", "Wait for Vultr Kubernetes", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
-	time.Sleep(time.Second * 120)
-	progressPrinter.IncrementTracker("wait-for-civo", 1)
+	time.Sleep(time.Second * 60)
+	progressPrinter.IncrementTracker("wait-for-vultr", 1)
 
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
-	// Civo Readiness checks
-	progressPrinter.AddTracker("verifying-civo-cluster-readiness", "Verifying Kubernetes cluster is ready", 1)
+	// vultr Readiness checks
+	progressPrinter.AddTracker("verifying-vultr-cluster-readiness", "Verifying Kubernetes cluster is ready", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	// CoreDNS
@@ -876,17 +828,17 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Error().Msgf("Error waiting for CoreDNS deployment ready state: %s", err)
 		return err
 	}
-	progressPrinter.IncrementTracker("verifying-civo-cluster-readiness", 1)
+	progressPrinter.IncrementTracker("verifying-vultr-cluster-readiness", 1)
 
 	// kubernetes.BootstrapSecrets
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	// todo deconstruct CreateNamespaces / CreateSecret
-	// todo move secret structs to constants to be leveraged by either local or civo
+	// todo move secret structs to constants to be leveraged by either local or vultr
 	progressPrinter.AddTracker("bootstrapping-kubernetes-resources", "Bootstrapping Kubernetes resources", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
-		err := civo.BootstrapCivoMgmtCluster(dryRunFlag, config.Kubeconfig, config.GitProvider, cGitUser)
+		err := vultr.BootstrapVultrMgmtCluster(dryRunFlag, config.Kubeconfig, config.GitProvider, cGitUser)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
 			return err
@@ -895,7 +847,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
 	} else {
-		log.Info().Msg("already added secrets to civo cluster")
+		log.Info().Msg("already added secrets to vultr cluster")
 		progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
 	}
 
@@ -999,6 +951,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 	progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
+
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
@@ -1041,14 +994,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		8080,
 		argoCDStopChannel,
 	)
-	log.Info().Msgf("port-forward to argocd is available at %s", civo.ArgocdPortForwardURL)
-
-	if configs.K1Version == "development" {
-		err = pkg.OpenBrowser(pkg.ArgocdPortForwardURL)
-		if err != nil {
-			log.Error().Err(err).Msg("")
-		}
-	}
+	log.Info().Msgf("port-forward to argocd is available at %s", vultr.ArgocdPortForwardURL)
 
 	//* argocd pods are ready, get and set credentials
 	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
@@ -1089,14 +1035,13 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	//* argocd sync registry and start sync waves
 	executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
 	if !executionControl {
-		argocdClient, err := argocdapi.NewForConfig(kcfg.RestConfig)
+		log.Info().Msg("applying the registry application to argocd")
+		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", config.K1Dir, clusterNameFlag)
+		_, err := pkg.ExecShellReturnStringsV2(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
 		if err != nil {
+			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", registryYamlPath, err.Error())
 			return err
 		}
-
-		log.Info().Msg("applying the registry application to argocd")
-		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoGitURL, fmt.Sprintf("registry/%s", clusterNameFlag))
-		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
@@ -1137,18 +1082,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		// Initialize and unseal Vault
 		vaultHandlerPath := "github.com:kubefirst/manifests.git/vault-handler/replicas-3"
-
-		// Build and apply manifests
-		yamlData, err := kcfg.KustomizeBuild(vaultHandlerPath)
+		_, err := pkg.ExecShellReturnStringsV2(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", vaultHandlerPath, "--wait")
 		if err != nil {
-			return err
-		}
-		output, err := kcfg.SplitYAMLFile(yamlData)
-		if err != nil {
-			return err
-		}
-		err = kcfg.ApplyObjects("", output)
-		if err != nil {
+			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", vaultHandlerPath, err.Error())
 			return err
 		}
 
@@ -1192,14 +1128,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		//* run vault terraform
 		log.Info().Msg("configuring vault with terraform")
-		usernamePasswordString := fmt.Sprintf("%s:%s", cGitUser, cGitToken)
-		base64DockerAuth := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
 
 		tfEnvs := map[string]string{}
 
-		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
-		tfEnvs = civo.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
-		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
+		tfEnvs = vultr.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
+		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -1224,8 +1157,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("applying users terraform")
 
 		tfEnvs := map[string]string{}
-		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-		tfEnvs = civo.GetUsersTerraformEnvs(kcfg.Clientset, config, tfEnvs)
+		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
+		tfEnvs = vultr.GetUsersTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -1250,7 +1183,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		"app.kubernetes.io/instance",
 		"kubefirst-console",
 		"kubefirst",
-		600,
+		60,
 	)
 	if err != nil {
 		log.Error().Msgf("Error finding console Deployment: %s", err)
@@ -1279,7 +1212,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	)
 
 	log.Info().Msg("kubefirst installation complete")
-	log.Info().Msg("welcome to your new kubefirst platform powered by Civo cloud")
+	log.Info().Msg("welcome to your new kubefirst platform powered by Vultr cloud")
 
 	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
 	if err != nil {
@@ -1292,17 +1225,17 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	if useTelemetryFlag {
-		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
+		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, vultr.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
 	}
 
 	// Set flags used to track status of active options
-	helpers.SetCompletionFlags(civo.CloudProvider, config.GitProvider)
+	helpers.SetCompletionFlags(vultr.CloudProvider, config.GitProvider)
 
 	// this is probably going to get streamlined later, but this is necessary now
-	reports.CivoHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, dryRunFlag, false)
+	reports.VultrHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, dryRunFlag, false)
 
 	time.Sleep(time.Second * 1) // allows progress bars to finish
 

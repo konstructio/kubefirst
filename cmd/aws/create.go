@@ -934,7 +934,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("installing-argocd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	argoCDInstallPath := "github.com:kubefirst/manifests/argocd?ref=argocd"
+	argoCDInstallPath := "github.com:kubefirst/manifests/argocd/cloud?ref=argocd"
 
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
@@ -976,6 +976,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 	)
 	log.Info().Msgf("port-forward to argocd is available at %s", awsinternal.ArgocdPortForwardURL)
 	progressPrinter.IncrementTracker("installing-argocd", 1)
+
+	if configs.K1Version == "development" {
+		err = pkg.OpenBrowser(pkg.ArgocdPortForwardURL)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
+	}
 
 	// todo need to create argocd repo secret in the cluster
 	//* create argocd kubernetes secret for connectivity to private gitops repo
