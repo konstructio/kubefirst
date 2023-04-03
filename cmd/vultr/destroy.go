@@ -153,15 +153,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 	}
 
 	if viper.GetBool("kubefirst-checks.terraform-apply-vultr") {
-		restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
-		if err != nil {
-			return err
-		}
-
-		clientset, err := k8s.GetClientSet(false, config.Kubeconfig)
-		if err != nil {
-			return err
-		}
+		kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
 		log.Info().Msg("destroying vultr resources with terraform")
 
@@ -172,8 +164,8 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 			close(argoCDStopChannel)
 		}()
 		k8s.OpenPortForwardPodWrapper(
-			clientset,
-			restConfig,
+			kcfg.Clientset,
+			kcfg.RestConfig,
 			"argocd-server",
 			"argocd",
 			8080,
@@ -183,7 +175,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 
 		log.Info().Msg("getting new auth token for argocd")
 
-		secData, err := k8s.ReadSecretV2(clientset, "argocd", "argocd-initial-admin-secret")
+		secData, err := k8s.ReadSecretV2(kcfg.Clientset, "argocd", "argocd-initial-admin-secret")
 		if err != nil {
 			return err
 		}
