@@ -977,6 +977,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 	log.Info().Msgf("port-forward to argocd is available at %s", awsinternal.ArgocdPortForwardURL)
 	progressPrinter.IncrementTracker("installing-argocd", 1)
 
+	if configs.K1Version == "development" {
+		err = pkg.OpenBrowser(pkg.ArgocdPortForwardURL)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
+	}
+
 	// todo need to create argocd repo secret in the cluster
 	//* create argocd kubernetes secret for connectivity to private gitops repo
 	progressPrinter.AddTracker("setting-up-eks-cluster", "Setting up EKS cluster", 1)

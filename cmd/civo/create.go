@@ -1043,6 +1043,13 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	)
 	log.Info().Msgf("port-forward to argocd is available at %s", civo.ArgocdPortForwardURL)
 
+	if configs.K1Version == "development" {
+		err = pkg.OpenBrowser(pkg.ArgocdPortForwardURL)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
+	}
+
 	//* argocd pods are ready, get and set credentials
 	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
 	if !executionControl {
@@ -1129,7 +1136,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("kubefirst-checks.vault-initialized")
 	if !executionControl {
 		// Initialize and unseal Vault
-		vaultHandlerPath := "github.com:kubefirst/manifests.git/vault-handler/replicas-1"
+		vaultHandlerPath := "github.com:kubefirst/manifests.git/vault-handler/replicas-3"
 
 		// Build and apply manifests
 		yamlData, err := kcfg.KustomizeBuild(vaultHandlerPath)
