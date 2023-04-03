@@ -45,6 +45,7 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize()
+	rootCmd.SilenceUsage = true
 	rootCmd.AddCommand(
 		aws.NewCommand(),
 		civo.NewCommand(),

@@ -116,6 +116,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%s - this port is required to set up your kubefirst environment - please close any existing port forwards before continuing", err.Error())
 	}
 
+	// Verify Docker is running
+	dcli := docker.DockerClientWrapper{
+		Client: docker.NewDockerClient(),
+	}
+	_, err = dcli.CheckDockerReady()
+	if err != nil {
+		return err
+	}
+
 	// Global context
 	var ctx context.Context
 	ctx, cancelContext = context.WithCancel(context.Background())
@@ -720,14 +729,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	//* create k3d resources
-	// Verify Docker is running
-	dcli := docker.DockerClientWrapper{
-		Client: docker.NewDockerClient(),
-	}
-	_, err = dcli.CheckDockerReady()
-	if err != nil {
-		return err
-	}
 
 	progressPrinter.AddTracker("creating-k3d-cluster", "Creating K3d cluster", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)

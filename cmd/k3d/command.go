@@ -33,9 +33,6 @@ func NewCommand() *cobra.Command {
 		Long:  "kubefirst k3d",
 	}
 
-	// on error, doesnt show helper/usage
-	k3dCmd.SilenceUsage = true
-
 	// wire up new commands
 	k3dCmd.AddCommand(Create(), Destroy(), RootCredentials())
 
@@ -49,9 +46,6 @@ func LocalCommandAlias() *cobra.Command {
 		Short: "kubefirst local installation with k3d",
 		Long:  "kubefirst local installation with k3d",
 	}
-
-	// on error, doesnt show helper/usage
-	localCmd.SilenceUsage = true
 
 	// wire up new commands
 	localCmd.AddCommand(Create(), Destroy(), RootCredentials())
