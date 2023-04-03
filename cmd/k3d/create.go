@@ -900,11 +900,21 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
 		argoCDYamlPath := fmt.Sprintf("%s/registry/%s/components/argocd", config.GitopsDir, clusterNameFlag)
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", argoCDYamlPath, "--wait")
+
+		// Build and apply manifests
+		yamlData, err := kcfg.KustomizeBuild(argoCDYamlPath)
 		if err != nil {
-			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", argoCDYamlPath, err.Error())
 			return err
 		}
+		output, err := kcfg.SplitYAMLFile(yamlData)
+		if err != nil {
+			return err
+		}
+		err = kcfg.ApplyObjects("", output)
+		if err != nil {
+			return err
+		}
+
 		viper.Set("kubefirst-checks.argocd-install", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
@@ -1037,9 +1047,18 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		// Initialize and unseal Vault
 		vaultHandlerPath := "github.com:kubefirst/manifests.git/vault-handler/replicas-1"
-		_, err := pkg.ExecShellReturnStringsV2(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", vaultHandlerPath, "--wait")
+
+		// Build and apply manifests
+		yamlData, err := kcfg.KustomizeBuild(vaultHandlerPath)
 		if err != nil {
-			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", vaultHandlerPath, err.Error())
+			return err
+		}
+		output, err := kcfg.SplitYAMLFile(yamlData)
+		if err != nil {
+			return err
+		}
+		err = kcfg.ApplyObjects("", output)
+		if err != nil {
 			return err
 		}
 

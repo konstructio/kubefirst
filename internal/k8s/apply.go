@@ -19,7 +19,7 @@ import (
 	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/restmapper"
-	kbuild "sigs.k8s.io/kustomize/kustomize/v5/commands/build"
+	kbuild "sigs.k8s.io/kustomize/kustomize/v4/commands/build"
 	"sigs.k8s.io/kustomize/kyaml/filesys"
 )
 
@@ -83,7 +83,7 @@ func (kcl KubernetesClient) ApplyObjects(namespace string, yamlData [][]byte) er
 		if err != nil {
 			return fmt.Errorf("error applying resource %s %s: %s", gvk.Kind, obj.GetName(), err)
 		}
-		fmt.Printf("applied resource %s %s\n", gvk.Kind, obj.GetName())
+		log.Info().Msgf("applied resource %s %s\n", gvk.Kind, obj.GetName())
 	}
 
 	return nil
