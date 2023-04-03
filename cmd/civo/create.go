@@ -1,6 +1,7 @@
 package civo
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"golang.org/x/term"
 	v1 "k8s.io/api/core/v1"
 
+	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
@@ -1079,13 +1081,14 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	//* argocd sync registry and start sync waves
 	executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
 	if !executionControl {
-		log.Info().Msg("applying the registry application to argocd")
-		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", config.K1Dir, clusterNameFlag)
-		_, err := pkg.ExecShellReturnStringsV2(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
+		argocdClient, err := argocdapi.NewForConfig(kcfg.RestConfig)
 		if err != nil {
-			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", registryYamlPath, err.Error())
 			return err
 		}
+
+		log.Info().Msg("applying the registry application to argocd")
+		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoGitURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
@@ -1125,10 +1128,19 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("kubefirst-checks.vault-initialized")
 	if !executionControl {
 		// Initialize and unseal Vault
-		vaultHandlerPath := "github.com:kubefirst/manifests.git/vault-handler/replicas-3"
-		_, err := pkg.ExecShellReturnStringsV2(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", vaultHandlerPath, "--wait")
+		vaultHandlerPath := "github.com:kubefirst/manifests.git/vault-handler/replicas-1"
+
+		// Build and apply manifests
+		yamlData, err := kcfg.KustomizeBuild(vaultHandlerPath)
 		if err != nil {
-			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", vaultHandlerPath, err.Error())
+			return err
+		}
+		output, err := kcfg.SplitYAMLFile(yamlData)
+		if err != nil {
+			return err
+		}
+		err = kcfg.ApplyObjects("", output)
+		if err != nil {
 			return err
 		}
 
