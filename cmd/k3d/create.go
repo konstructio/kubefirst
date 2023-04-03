@@ -897,14 +897,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
+	argoCDInstallPath := "github.com:kubefirst/manifests/argocd/k3d?ref=argocd"
+
 	//* install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
-		argoCDYamlPath := fmt.Sprintf("%s/registry/%s/components/argocd", config.GitopsDir, clusterNameFlag)
 
 		// Build and apply manifests
-		yamlData, err := kcfg.KustomizeBuild(argoCDYamlPath)
+		yamlData, err := kcfg.KustomizeBuild(argoCDInstallPath)
 		if err != nil {
 			return err
 		}
@@ -1167,11 +1168,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		//* run vault terraform
 		log.Info().Msg("configuring vault with terraform")
 
+		usernamePasswordString := fmt.Sprintf("%s:%s", cGitUser, cGitToken)
+		base64DockerAuth := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+
 		tfEnvs := map[string]string{}
 		//tfEnvs = k3d.GetVaultTerraformEnvs(config, tfEnvs)
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", config.GitProvider)] = cGitToken
 		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
+		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
 		tfEnvs["TF_VAR_vault_token"] = vaultRootToken
 		tfEnvs["VAULT_ADDR"] = k3d.VaultPortForwardURL
 		tfEnvs["VAULT_TOKEN"] = vaultRootToken
@@ -1285,7 +1290,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		"app.kubernetes.io/instance",
 		"kubefirst-console",
 		"kubefirst",
-		60,
+		600,
 	)
 	if err != nil {
 		log.Error().Msgf("Error finding console Deployment: %s", err)

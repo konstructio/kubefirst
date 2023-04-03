@@ -999,15 +999,16 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 	progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
-
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
+	argocCDInstallPath := "github.com:kubefirst/manifests/argocd/cloud?ref=argocd"
 
 	//* install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
-		err = argocd.ApplyArgoCDKustomize(kcfg.Clientset)
+		err = argocd.ApplyArgoCDKustomize(kcfg.Clientset, argocCDInstallPath)
 		if err != nil {
 			return err
 		}
@@ -1184,10 +1185,17 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		//* run vault terraform
 		log.Info().Msg("configuring vault with terraform")
+		usernamePasswordString := fmt.Sprintf("%s:%s", cGitUser, cGitToken)
+		base64DockerAuth := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
 
 		tfEnvs := map[string]string{}
 
+<<<<<<< HEAD
+		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
+		tfEnvs = civo.GetVaultTerraformEnvs(clientset, config, tfEnvs)
+=======
 		tfEnvs = civo.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
+>>>>>>> 6e98f7815c374d21bf20ba7e2f541ae1d2511532
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)

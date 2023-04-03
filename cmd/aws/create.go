@@ -3,6 +3,7 @@ package aws
 import (
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -933,10 +934,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("installing-argocd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
+	argoCDInstallPath := "github.com:kubefirst/manifests/argocd?ref=argocd"
+
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
-		err = argocd.ApplyArgoCDKustomize(clientset)
+		err = argocd.ApplyArgoCDKustomize(clientset, argoCDInstallPath)
 		if err != nil {
 			return err
 		}
@@ -1198,9 +1201,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 
+		usernamePasswordString := fmt.Sprintf("%s:%s", cGitUser, cGitToken)
+		base64DockerAuth := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", config.GitProvider)] = cGitToken
 		tfEnvs["TF_VAR_vault_addr"] = awsinternal.VaultPortForwardURL
+		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
 		tfEnvs["TF_VAR_vault_token"] = vaultRootToken
 		tfEnvs["VAULT_ADDR"] = awsinternal.VaultPortForwardURL
 		tfEnvs["VAULT_TOKEN"] = vaultRootToken
