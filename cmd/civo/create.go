@@ -1190,12 +1190,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 
-<<<<<<< HEAD
 		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
-		tfEnvs = civo.GetVaultTerraformEnvs(clientset, config, tfEnvs)
-=======
 		tfEnvs = civo.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
->>>>>>> 6e98f7815c374d21bf20ba7e2f541ae1d2511532
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
