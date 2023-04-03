@@ -64,15 +64,8 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	config := k3d.GetConfig(gitProvider, cGitOwner)
 
 	log.Info().Msg("destroying kubefirst platform running in k3d")
-	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
-	if err != nil {
-		return err
-	}
 
-	clientset, err := k8s.GetClientSet(false, config.Kubeconfig)
-	if err != nil {
-		return err
-	}
+	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
 	// todo improve these checks, make them standard for
 	// both create and destroy
@@ -119,8 +112,8 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			close(minioStopChannel)
 		}()
 		k8s.OpenPortForwardPodWrapper(
-			clientset,
-			restConfig,
+			kcfg.Clientset,
+			kcfg.RestConfig,
 			"minio",
 			"minio",
 			9000,

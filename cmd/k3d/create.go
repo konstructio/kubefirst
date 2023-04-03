@@ -15,6 +15,7 @@ import (
 	"github.com/rs/zerolog/log"
 	v1 "k8s.io/api/core/v1"
 
+	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
 	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
@@ -751,10 +752,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("creating-k3d-cluster", 1)
 	}
 
-	clientset, err := k8s.GetClientSet(dryRunFlag, config.Kubeconfig)
-	if err != nil {
-		return err
-	}
+	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
 	// kubernetes.BootstrapSecrets
 	// todo there is a secret condition in AddK3DSecrets to this not checked
@@ -766,7 +764,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
 
-		err := k3d.GenerateTLSSecrets(clientset, *config)
+		err := k3d.GenerateTLSSecrets(kcfg.Clientset, *config)
 		if err != nil {
 			return err
 		}
@@ -833,7 +831,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
 				Type:       "Opaque",
 			}
-			err = k8s.CreateSecretV2(clientset, argoDeployTokenSecret)
+			err = k8s.CreateSecretV2(kcfg.Clientset, argoDeployTokenSecret)
 			if err != nil {
 				log.Error().Msgf("error while creating secret for repository deploy token: %s", err)
 			}
@@ -873,7 +871,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 						Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
 						Type:       "kubernetes.io/dockerconfigjson",
 					}
-					err = k8s.CreateSecretV2(clientset, deployTokenSecret)
+					err = k8s.CreateSecretV2(kcfg.Clientset, deployTokenSecret)
 					if err != nil {
 						log.Error().Msgf("error while creating secret for project deploy token: %s", err)
 					}
@@ -886,7 +884,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 					Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
 					Type:       "Opaque",
 				}
-				err = k8s.CreateSecretV2(clientset, argoDeployTokenSecret)
+				err = k8s.CreateSecretV2(kcfg.Clientset, argoDeployTokenSecret)
 				if err != nil {
 					log.Error().Msgf("error while creating secret for project deploy token: %s", err)
 				}
@@ -903,11 +901,21 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
 		argoCDYamlPath := fmt.Sprintf("%s/registry/%s/components/argocd", config.GitopsDir, clusterNameFlag)
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", argoCDYamlPath, "--wait")
+
+		// Build and apply manifests
+		yamlData, err := kcfg.KustomizeBuild(argoCDYamlPath)
 		if err != nil {
-			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", argoCDYamlPath, err.Error())
 			return err
 		}
+		output, err := kcfg.SplitYAMLFile(yamlData)
+		if err != nil {
+			return err
+		}
+		err = kcfg.ApplyObjects("", output)
+		if err != nil {
+			return err
+		}
+
 		viper.Set("kubefirst-checks.argocd-install", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
@@ -917,15 +925,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	// Wait for ArgoCD to be ready
-	_, err = k8s.VerifyArgoCDReadiness(clientset, false)
+	_, err = k8s.VerifyArgoCDReadiness(kcfg.Clientset, false)
 	if err != nil {
 		log.Error().Msgf("error waiting for ArgoCD to become ready: %s", err)
-		return err
-	}
-
-	// Kubernetes client rest config
-	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
-	if err != nil {
 		return err
 	}
 
@@ -935,7 +937,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		log.Info().Msg("Setting argocd username and password credentials")
 
-		argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+		argocd.ArgocdSecretClient = kcfg.Clientset.CoreV1().Secrets("argocd")
 
 		argocdPassword = k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
 		if argocdPassword == "" {
@@ -960,8 +962,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				close(argoCDStopChannel)
 			}()
 			k8s.OpenPortForwardPodWrapper(
-				clientset,
-				restConfig,
+				kcfg.Clientset,
+				kcfg.RestConfig,
 				"argocd-server",
 				"argocd",
 				8080,
@@ -999,13 +1001,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	//* argocd sync registry and start sync waves
 	executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
 	if !executionControl {
-		log.Info().Msg("applying the registry application to argocd")
-		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", config.K1Dir, clusterNameFlag)
-		_, _, err := pkg.ExecShellReturnStrings(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
+		argocdClient, err := argocdapi.NewForConfig(kcfg.RestConfig)
 		if err != nil {
-			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", registryYamlPath, err.Error())
 			return err
 		}
+
+		log.Info().Msg("applying the registry application to argocd")
+		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoGitURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
@@ -1019,7 +1022,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
-		clientset,
+		kcfg.Clientset,
 		"app.kubernetes.io/instance",
 		"vault",
 		"vault",
@@ -1029,7 +1032,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Error().Msgf("Error finding Vault StatefulSet: %s", err)
 		return err
 	}
-	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 120, true)
+	_, err = k8s.WaitForStatefulSetReady(kcfg.Clientset, vaultStatefulSet, 120, true)
 	if err != nil {
 		log.Error().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 		return err
@@ -1046,18 +1049,27 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		// Initialize and unseal Vault
 		vaultHandlerPath := "github.com:kubefirst/manifests.git/vault-handler/replicas-1"
-		_, err := pkg.ExecShellReturnStringsV2(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", vaultHandlerPath, "--wait")
+
+		// Build and apply manifests
+		yamlData, err := kcfg.KustomizeBuild(vaultHandlerPath)
 		if err != nil {
-			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", vaultHandlerPath, err.Error())
+			return err
+		}
+		output, err := kcfg.SplitYAMLFile(yamlData)
+		if err != nil {
+			return err
+		}
+		err = kcfg.ApplyObjects("", output)
+		if err != nil {
 			return err
 		}
 
 		// Wait for the Job to finish
-		job, err := k8s.ReturnJobObject(clientset, "vault", "vault-handler")
+		job, err := k8s.ReturnJobObject(kcfg.Clientset, "vault", "vault-handler")
 		if err != nil {
 			return err
 		}
-		_, err = k8s.WaitForJobComplete(clientset, job, 240)
+		_, err = k8s.WaitForJobComplete(kcfg.Clientset, job, 240)
 		if err != nil {
 			log.Fatal().Msgf("could not run vault unseal job: %s", err)
 		}
@@ -1075,8 +1087,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		close(minioStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		clientset,
-		restConfig,
+		kcfg.Clientset,
+		kcfg.RestConfig,
 		"minio",
 		"minio",
 		9000,
@@ -1119,8 +1131,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		close(vaultStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		clientset,
-		restConfig,
+		kcfg.Clientset,
+		kcfg.RestConfig,
 		"vault-0",
 		"vault",
 		8200,
@@ -1130,7 +1142,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// Retrieve root token from init step
 	var vaultRootToken string
-	secData, err := k8s.ReadSecretV2(clientset, "vault", "vault-unseal-secret")
+	secData, err := k8s.ReadSecretV2(kcfg.Clientset, "vault", "vault-unseal-secret")
 	if err != nil {
 		return err
 	}
@@ -1268,7 +1280,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// Wait for console Deployment Pods to transition to Running
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
-		clientset,
+		kcfg.Clientset,
 		"app.kubernetes.io/instance",
 		"kubefirst-console",
 		"kubefirst",
@@ -1278,7 +1290,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Error().Msgf("Error finding console Deployment: %s", err)
 		return err
 	}
-	_, err = k8s.WaitForDeploymentReady(clientset, consoleDeployment, 120)
+	_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, consoleDeployment, 120)
 	if err != nil {
 		log.Error().Msgf("Error waiting for console Deployment ready state: %s", err)
 		return err
@@ -1290,8 +1302,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		close(consoleStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		clientset,
-		restConfig,
+		kcfg.Clientset,
+		kcfg.RestConfig,
 		"kubefirst-console",
 		"kubefirst",
 		8080,

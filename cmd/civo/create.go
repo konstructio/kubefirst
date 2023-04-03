@@ -1,6 +1,7 @@
 package civo
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"golang.org/x/term"
 	v1 "k8s.io/api/core/v1"
 
+	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
@@ -851,10 +853,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	time.Sleep(time.Second * 120)
 	progressPrinter.IncrementTracker("wait-for-civo", 1)
 
-	clientset, err := k8s.GetClientSet(dryRunFlag, config.Kubeconfig)
-	if err != nil {
-		return err
-	}
+	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
 	// Civo Readiness checks
 	progressPrinter.AddTracker("verifying-civo-cluster-readiness", "Verifying Kubernetes cluster is ready", 1)
@@ -862,7 +861,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	// CoreDNS
 	coreDNSDeployment, err := k8s.ReturnDeploymentObject(
-		clientset,
+		kcfg.Clientset,
 		"kubernetes.io/name",
 		"CoreDNS",
 		"kube-system",
@@ -872,7 +871,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Error().Msgf("Error finding CoreDNS deployment: %s", err)
 		return err
 	}
-	_, err = k8s.WaitForDeploymentReady(clientset, coreDNSDeployment, 240)
+	_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, coreDNSDeployment, 240)
 	if err != nil {
 		log.Error().Msgf("Error waiting for CoreDNS deployment ready state: %s", err)
 		return err
@@ -939,7 +938,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 				Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
 				Type:       "Opaque",
 			}
-			err = k8s.CreateSecretV2(clientset, argoDeployTokenSecret)
+			err = k8s.CreateSecretV2(kcfg.Clientset, argoDeployTokenSecret)
 			if err != nil {
 				log.Error().Msgf("error while creating secret for repository deploy token: %s", err)
 			}
@@ -979,7 +978,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 						Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
 						Type:       "kubernetes.io/dockerconfigjson",
 					}
-					err = k8s.CreateSecretV2(clientset, deployTokenSecret)
+					err = k8s.CreateSecretV2(kcfg.Clientset, deployTokenSecret)
 					if err != nil {
 						log.Error().Msgf("error while creating secret for project deploy token: %s", err)
 					}
@@ -992,7 +991,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 					Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
 					Type:       "Opaque",
 				}
-				err = k8s.CreateSecretV2(clientset, argoDeployTokenSecret)
+				err = k8s.CreateSecretV2(kcfg.Clientset, argoDeployTokenSecret)
 				if err != nil {
 					log.Error().Msgf("error while creating secret for project deploy token: %s", err)
 				}
@@ -1008,7 +1007,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
-		err = argocd.ApplyArgoCDKustomize(clientset)
+		err = argocd.ApplyArgoCDKustomize(kcfg.Clientset)
 		if err != nil {
 			return err
 		}
@@ -1021,14 +1020,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// Wait for ArgoCD to be ready
-	_, err = k8s.VerifyArgoCDReadiness(clientset, true)
+	_, err = k8s.VerifyArgoCDReadiness(kcfg.Clientset, true)
 	if err != nil {
 		log.Error().Msgf("error waiting for ArgoCD to become ready: %s", err)
-		return err
-	}
-
-	restConfig, err := k8s.GetClientConfig(false, config.Kubeconfig)
-	if err != nil {
 		return err
 	}
 
@@ -1038,8 +1032,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		close(argoCDStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		clientset,
-		restConfig,
+		kcfg.Clientset,
+		kcfg.RestConfig,
 		"argocd-server", // todo fix this, it should `argocd
 		"argocd",
 		8080,
@@ -1053,7 +1047,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		log.Info().Msg("Setting argocd username and password credentials")
 
-		argocd.ArgocdSecretClient = clientset.CoreV1().Secrets("argocd")
+		argocd.ArgocdSecretClient = kcfg.Clientset.CoreV1().Secrets("argocd")
 
 		argocdPassword := k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
 		if argocdPassword == "" {
@@ -1087,13 +1081,14 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	//* argocd sync registry and start sync waves
 	executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
 	if !executionControl {
-		log.Info().Msg("applying the registry application to argocd")
-		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", config.K1Dir, clusterNameFlag)
-		_, err := pkg.ExecShellReturnStringsV2(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
+		argocdClient, err := argocdapi.NewForConfig(kcfg.RestConfig)
 		if err != nil {
-			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", registryYamlPath, err.Error())
 			return err
 		}
+
+		log.Info().Msg("applying the registry application to argocd")
+		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoGitURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
@@ -1107,7 +1102,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	vaultStatefulSet, err := k8s.ReturnStatefulSetObject(
-		clientset,
+		kcfg.Clientset,
 		"app.kubernetes.io/instance",
 		"vault",
 		"vault",
@@ -1117,7 +1112,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Error().Msgf("Error finding Vault StatefulSet: %s", err)
 		return err
 	}
-	_, err = k8s.WaitForStatefulSetReady(clientset, vaultStatefulSet, 240, true)
+	_, err = k8s.WaitForStatefulSetReady(kcfg.Clientset, vaultStatefulSet, 240, true)
 	if err != nil {
 		log.Error().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 		return err
@@ -1133,19 +1128,28 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	executionControl = viper.GetBool("kubefirst-checks.vault-initialized")
 	if !executionControl {
 		// Initialize and unseal Vault
-		vaultHandlerPath := "github.com:kubefirst/manifests.git/vault-handler/replicas-3"
-		_, err := pkg.ExecShellReturnStringsV2(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", vaultHandlerPath, "--wait")
+		vaultHandlerPath := "github.com:kubefirst/manifests.git/vault-handler/replicas-1"
+
+		// Build and apply manifests
+		yamlData, err := kcfg.KustomizeBuild(vaultHandlerPath)
 		if err != nil {
-			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", vaultHandlerPath, err.Error())
+			return err
+		}
+		output, err := kcfg.SplitYAMLFile(yamlData)
+		if err != nil {
+			return err
+		}
+		err = kcfg.ApplyObjects("", output)
+		if err != nil {
 			return err
 		}
 
 		// Wait for the Job to finish
-		job, err := k8s.ReturnJobObject(clientset, "vault", "vault-handler")
+		job, err := k8s.ReturnJobObject(kcfg.Clientset, "vault", "vault-handler")
 		if err != nil {
 			return err
 		}
-		_, err = k8s.WaitForJobComplete(clientset, job, 240)
+		_, err = k8s.WaitForJobComplete(kcfg.Clientset, job, 240)
 		if err != nil {
 			log.Fatal().Msgf("could not run vault unseal job: %s", err)
 		}
@@ -1165,8 +1169,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		close(vaultStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		clientset,
-		restConfig,
+		kcfg.Clientset,
+		kcfg.RestConfig,
 		"vault-0",
 		"vault",
 		8200,
@@ -1183,7 +1187,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 
-		tfEnvs = civo.GetVaultTerraformEnvs(clientset, config, tfEnvs)
+		tfEnvs = civo.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
@@ -1210,7 +1214,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs := map[string]string{}
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-		tfEnvs = civo.GetUsersTerraformEnvs(clientset, config, tfEnvs)
+		tfEnvs = civo.GetUsersTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -1231,7 +1235,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
-		clientset,
+		kcfg.Clientset,
 		"app.kubernetes.io/instance",
 		"kubefirst-console",
 		"kubefirst",
@@ -1241,7 +1245,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Error().Msgf("Error finding console Deployment: %s", err)
 		return err
 	}
-	_, err = k8s.WaitForDeploymentReady(clientset, consoleDeployment, 240)
+	_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, consoleDeployment, 240)
 	if err != nil {
 		log.Error().Msgf("Error waiting for console Deployment ready state: %s", err)
 		return err
@@ -1254,8 +1258,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		close(consoleStopChannel)
 	}()
 	k8s.OpenPortForwardPodWrapper(
-		clientset,
-		restConfig,
+		kcfg.Clientset,
+		kcfg.RestConfig,
 		"kubefirst-console",
 		"kubefirst",
 		8080,
