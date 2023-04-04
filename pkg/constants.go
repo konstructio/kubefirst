@@ -11,6 +11,7 @@ const (
 	GitHubOAuthClientId          = "2ced340927e0a6c49a45"
 	CloudK3d                     = "k3d"
 	CloudAws                     = "aws"
+	DefaultS3Region              = "us-east-1"
 	GitHubProviderName           = "github"
 	GitHubHost                   = "github.com"
 	LocalClusterName             = "kubefirst"

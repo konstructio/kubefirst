@@ -8,4 +8,4 @@ type HTTPDoer interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-var SupportedPlatforms = []string{"aws-github", "aws-gitlab", "civo-github", "civo-gitlab", "k3d-github", "k3d-gitlab"}
+var SupportedPlatforms = []string{"aws-github", "aws-gitlab", "civo-github", "civo-gitlab", "k3d-github", "k3d-gitlab", "vulter-github"}
