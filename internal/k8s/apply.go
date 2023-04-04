@@ -81,9 +81,9 @@ func (kcl KubernetesClient) ApplyObjects(namespace string, yamlData [][]byte) er
 			FieldManager: "kubefirst",
 		})
 		if err != nil {
-			return fmt.Errorf("error applying resource %s %s: %s", gvk.Kind, obj.GetName(), err)
+			return fmt.Errorf("error applying %s %s: %s", gvk.Kind, obj.GetName(), err)
 		}
-		log.Info().Msgf("applied resource %s %s\n", gvk.Kind, obj.GetName())
+		log.Info().Msgf("applied %s %s", gvk.Kind, obj.GetName())
 	}
 
 	return nil
