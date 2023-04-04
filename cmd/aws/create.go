@@ -1121,7 +1121,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			"app.kubernetes.io/instance",
 			"vault",
 			"vault",
-			60,
+			600,
 		)
 		if err != nil {
 			log.Error().Msgf("Error finding Vault StatefulSet: %s", err)
@@ -1287,7 +1287,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		"app.kubernetes.io/instance",
 		"kubefirst-console",
 		"kubefirst",
-		60,
+		600,
 	)
 	if err != nil {
 		log.Error().Msgf("Error finding console Deployment: %s", err)

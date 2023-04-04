@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
 )
 
@@ -31,11 +32,13 @@ func (conf *AWSConfiguration) CreateBucket(bucketName string) (*s3.CreateBucketO
 
 	// Create bucket
 	log.Info().Msgf("creating s3 bucket %s with location constraint %s", bucketName, locationConstraint)
-	s3CreateBucketInput := &s3.CreateBucketInput{
-		Bucket: aws.String(bucketName),
-		CreateBucketConfiguration: &s3Types.CreateBucketConfiguration{
+	s3CreateBucketInput := &s3.CreateBucketInput{}
+	s3CreateBucketInput.Bucket = aws.String(bucketName)
+
+	if conf.Config.Region != pkg.DefaultS3Region {
+		s3CreateBucketInput.CreateBucketConfiguration = &s3Types.CreateBucketConfiguration{
 			LocationConstraint: s3Types.BucketLocationConstraint(locationConstraint),
-		},
+		}
 	}
 
 	bucket, err := s3Client.CreateBucket(context.Background(), s3CreateBucketInput)
