@@ -850,7 +850,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	//* civo needs extra time to be ready
 	progressPrinter.AddTracker("wait-for-civo", "Wait for Civo Kubernetes", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
-	time.Sleep(time.Second * 120)
+	if !viper.GetBool("kubefirst-checks.k8s-secrets-created") {
+		time.Sleep(time.Second * 120)
+	} else {
+		time.Sleep(time.Second * 5)
+	}
 	progressPrinter.IncrementTracker("wait-for-civo", 1)
 
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
@@ -1002,13 +1006,13 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	argocCDInstallPath := "github.com:kubefirst/manifests/argocd/cloud?ref=argocd"
+	argoCDInstallPath := "github.com:kubefirst/manifests/argocd/cloud?ref=main"
 
 	//* install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
-		err = argocd.ApplyArgoCDKustomize(kcfg.Clientset, argocCDInstallPath)
+		err = argocd.ApplyArgoCDKustomize(kcfg.Clientset, argoCDInstallPath)
 		if err != nil {
 			return err
 		}
