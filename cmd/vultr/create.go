@@ -955,13 +955,13 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	argocCDInstallPath := "github.com:kubefirst/manifests/argocd/cloud?ref=argocd"
+	argoCDInstallPath := fmt.Sprintf("github.com:kubefirst/manifests/argocd/cloud?ref=%s", pkg.KubefirstManifestRepoRef)
 
 	//* install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		log.Info().Msgf("installing argocd")
-		err = argocd.ApplyArgoCDKustomize(kcfg.Clientset, argocCDInstallPath)
+		err = argocd.ApplyArgoCDKustomize(kcfg.Clientset, argoCDInstallPath)
 		if err != nil {
 			return err
 		}

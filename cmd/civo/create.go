@@ -1006,7 +1006,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	argoCDInstallPath := "github.com:kubefirst/manifests/argocd/cloud?ref=main"
+	argoCDInstallPath := fmt.Sprintf("github.com:kubefirst/manifests/argocd/cloud?ref=%s", pkg.KubefirstManifestRepoRef)
 
 	//* install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")

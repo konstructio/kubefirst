@@ -25,6 +25,9 @@ const (
 	RegistryAppName              = "registry"
 	MinioDefaultUsername         = "k-ray"
 	MinioDefaultPassword         = "feedkraystars"
+
+	// github.com/kubefirst/manifests ref ver
+	KubefirstManifestRepoRef = "main"
 )
 
 // SegmentIO constants
