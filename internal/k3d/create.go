@@ -1,7 +1,6 @@
 package k3d
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -55,7 +54,7 @@ func ClusterCreate(clusterName string, k1Dir string, k3dClient string, kubeconfi
 	err = os.WriteFile(kubeconfig, []byte(kConfigString), 0644)
 	if err != nil {
 		log.Error().Err(err).Msg("error updating config")
-		return errors.New("error updating config")
+		return fmt.Errorf("error updating config")
 	}
 
 	return nil

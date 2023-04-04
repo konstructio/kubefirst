@@ -2,7 +2,6 @@ package vultr
 
 import (
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -72,7 +71,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 		)
 	}
 	if len(vultrToken) == 0 {
-		return errors.New("\n\nYour VULTR_API_KEY environment variable isn't set")
+		return fmt.Errorf("\n\nYour VULTR_API_KEY environment variable isn't set")
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 

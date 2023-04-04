@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -154,7 +153,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	switch gitProviderFlag {
 	case "github":
 		if os.Getenv("GITHUB_TOKEN") == "" {
-			return errors.New("your GITHUB_TOKEN is not set. Please set and try again")
+			return fmt.Errorf("your GITHUB_TOKEN is not set. Please set and try again")
 		}
 
 		cGitHost = awsinternal.GithubHost
@@ -192,7 +191,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	case "gitlab":
 		if os.Getenv("GITLAB_TOKEN") == "" {
-			return errors.New("your GITLAB_TOKEN is not set. please set and try again")
+			return fmt.Errorf("your GITLAB_TOKEN is not set. please set and try again")
 		}
 
 		cGitToken = os.Getenv("GITLAB_TOKEN")
@@ -321,7 +320,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 				}
 			}
 			if newRepositoryExists {
-				return errors.New(errorMsg)
+				return fmt.Errorf(errorMsg)
 			}
 
 			newTeamExists := false
@@ -343,7 +342,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 				}
 			}
 			if newTeamExists {
-				return errors.New(errorMsg)
+				return fmt.Errorf(errorMsg)
 			}
 		case "gitlab":
 			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)

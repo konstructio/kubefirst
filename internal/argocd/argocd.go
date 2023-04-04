@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -189,7 +188,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return "", errors.New("unable to retrieve argocd token")
+		return "", fmt.Errorf("unable to retrieve argocd token")
 	}
 
 	body, err := io.ReadAll(res.Body)
@@ -204,7 +203,7 @@ func GetArgoCDToken(username string, password string) (string, error) {
 	}
 	token := fmt.Sprintf("%v", jsonReturn["token"])
 	if len(token) == 0 {
-		return "", errors.New("unable to retrieve argocd token, make sure provided credentials are valid")
+		return "", fmt.Errorf("unable to retrieve argocd token, make sure provided credentials are valid")
 	}
 
 	return token, nil
@@ -237,7 +236,7 @@ func GetArgocdTokenV2(httpClient *http.Client, argocdBaseURL string, username st
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return "", errors.New("unable to retrieve argocd token")
+		return "", fmt.Errorf("unable to retrieve argocd token")
 	}
 
 	body, err := io.ReadAll(res.Body)
@@ -252,7 +251,7 @@ func GetArgocdTokenV2(httpClient *http.Client, argocdBaseURL string, username st
 	}
 	token := fmt.Sprintf("%v", jsonReturn["token"])
 	if len(token) == 0 {
-		return "", errors.New("unable to retrieve argocd token, make sure provided credentials are valid")
+		return "", fmt.Errorf("unable to retrieve argocd token, make sure provided credentials are valid")
 	}
 
 	return token, nil

@@ -173,7 +173,7 @@ func RemoveSubDomain(fullURL string) (string, error) {
 func IsValidURL(rawURL string) error {
 
 	if len(rawURL) == 0 {
-		return errors.New("rawURL cannot be empty string")
+		return fmt.Errorf("rawURL cannot be empty string")
 	}
 
 	parsedURL, err := url.ParseRequestURI(rawURL)

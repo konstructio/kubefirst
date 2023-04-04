@@ -2,7 +2,6 @@ package civo
 
 import (
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -76,7 +75,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		)
 	}
 	if len(civoToken) == 0 {
-		return errors.New("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set the environment variable")
+		return fmt.Errorf("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set the environment variable")
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
