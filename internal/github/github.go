@@ -2,7 +2,6 @@ package github
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -81,10 +80,10 @@ func (g GithubSession) CreatePrivateRepo(org string, name string, description st
 // as http status code, the caller can make use of the http status code to validate the response.
 func (g GithubSession) RemoveRepo(owner string, name string) (*github.Response, error) {
 	if owner == "" {
-		return nil, errors.New("a repository owner is required")
+		return nil, fmt.Errorf("a repository owner is required")
 	}
 	if name == "" {
-		return nil, errors.New("a repository name is required")
+		return nil, fmt.Errorf("a repository name is required")
 	}
 
 	resp, err := g.gitClient.Repositories.Delete(g.context, owner, name)
