@@ -933,6 +933,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if configs.K1Version == "development" {
+		err = pkg.OpenBrowser(pkg.ArgoCDLocalURLTLS)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
+	}
+
 	var argocdPassword string
 	//* argocd pods are ready, get and set credentials
 	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
