@@ -2,8 +2,8 @@ package argocd
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"time"
 
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/rs/zerolog/log"
@@ -20,13 +20,14 @@ func ApplyArgoCDKustomize(clientset *kubernetes.Clientset, argoCDInstallPath str
 	name := "argocd-bootstrap"
 	namespace := "argocd"
 
+	// Create Namespace
 	nsObj := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := clientset.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
+	_, err := clientset.CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
 	if err != nil {
-		_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), nsObj, metav1.CreateOptions{})
+		_, err = clientset.CoreV1().Namespaces().Create(context.Background(), nsObj, metav1.CreateOptions{})
 		if err != nil {
-			log.Error().Err(err).Msg("")
-			return errors.New("error creating namespace")
+			log.Error().Msgf("error creating namespace: %s", err)
+			return fmt.Errorf("error creating namespace: %s", err)
 		}
 		log.Info().Msgf("namespace created: %s", namespace)
 	} else {
@@ -34,22 +35,28 @@ func ApplyArgoCDKustomize(clientset *kubernetes.Clientset, argoCDInstallPath str
 	}
 
 	// Create ServiceAccount
-	serviceAccount, err := clientset.CoreV1().ServiceAccounts(namespace).Create(context.Background(), &v1.ServiceAccount{
+	saObj := &v1.ServiceAccount{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
 		AutomountServiceAccountToken: &enabled,
-	}, metav1.CreateOptions{})
-	if err != nil {
-		log.Error().Msgf("error creating service account: %s", err)
-		return err
 	}
-	log.Info().Msg("created argocd bootstrap service account")
+	_, err = clientset.CoreV1().ServiceAccounts(namespace).Get(context.Background(), name, metav1.GetOptions{})
+	if err != nil {
+		_, err = clientset.CoreV1().ServiceAccounts(namespace).Create(context.Background(), saObj, metav1.CreateOptions{})
+		if err != nil {
+			log.Error().Msgf("error creating service account: %s", err)
+			return fmt.Errorf("error creating service account: %s", err)
+		}
+		log.Info().Msgf("service account created: %s", name)
+	} else {
+		log.Warn().Msgf("service account %s already exists - skipping", name)
+	}
 
 	// Create ClusterRole
-	_, err = clientset.RbacV1().ClusterRoles().Create(context.Background(), &rbacv1.ClusterRole{
+	crObj := &rbacv1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -62,15 +69,21 @@ func ApplyArgoCDKustomize(clientset *kubernetes.Clientset, argoCDInstallPath str
 				Resources: []string{"*"},
 			},
 		},
-	}, metav1.CreateOptions{})
-	if err != nil {
-		log.Error().Msgf("error creating role: %s", err)
-		return err
 	}
-	log.Info().Msg("created argocd bootstrap role")
+	_, err = clientset.RbacV1().ClusterRoles().Get(context.Background(), name, metav1.GetOptions{})
+	if err != nil {
+		_, err = clientset.RbacV1().ClusterRoles().Create(context.Background(), crObj, metav1.CreateOptions{})
+		if err != nil {
+			log.Error().Msgf("error creating cluster role: %s", err)
+			return fmt.Errorf("error creating cluster role: %s", err)
+		}
+		log.Info().Msgf("cluster role created: %s", name)
+	} else {
+		log.Warn().Msgf("cluster role %s already exists - skipping", name)
+	}
 
 	// Create ClusterRoleBinding
-	_, err = clientset.RbacV1().ClusterRoleBindings().Create(context.Background(), &rbacv1.ClusterRoleBinding{
+	crbObj := &rbacv1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -88,16 +101,22 @@ func ApplyArgoCDKustomize(clientset *kubernetes.Clientset, argoCDInstallPath str
 			Kind:     "ClusterRole",
 			Name:     name,
 		},
-	}, metav1.CreateOptions{})
-	if err != nil {
-		log.Error().Msgf("error creating role binding: %s", err)
-		return err
 	}
-	log.Info().Msg("created argocd bootstrap role binding")
+	_, err = clientset.RbacV1().ClusterRoleBindings().Get(context.Background(), name, metav1.GetOptions{})
+	if err != nil {
+		_, err = clientset.RbacV1().ClusterRoleBindings().Create(context.Background(), crbObj, metav1.CreateOptions{})
+		if err != nil {
+			log.Error().Msgf("error creating cluster role binding: %s", err)
+			return fmt.Errorf("error creating cluster role binding: %s", err)
+		}
+		log.Info().Msgf("cluster role binding created: %s", name)
+	} else {
+		log.Warn().Msgf("cluster role binding %s already exists - skipping", name)
+	}
 
 	// Create Job
 	backoffLimit := int32(1)
-	job, err := clientset.BatchV1().Jobs(namespace).Create(context.Background(), &batchv1.Job{
+	jobObj := &batchv1.Job{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kustomize-apply-argocd",
@@ -124,7 +143,15 @@ func ApplyArgoCDKustomize(clientset *kubernetes.Clientset, argoCDInstallPath str
 			},
 			BackoffLimit: &backoffLimit,
 		},
-	}, metav1.CreateOptions{})
+	}
+	existingJob, err := clientset.BatchV1().Jobs(namespace).Get(context.Background(), jobObj.Name, metav1.GetOptions{})
+	if err == nil {
+		// Delete the job if it already exists because it likely failed on its last run
+		log.Info().Msgf("deleting job %s since it already exists - it will be recreated", jobObj.Name)
+		clientset.BatchV1().Jobs(namespace).Delete(context.Background(), existingJob.Name, metav1.DeleteOptions{})
+		time.Sleep(time.Second * 5)
+	}
+	job, err := clientset.BatchV1().Jobs(namespace).Create(context.Background(), jobObj, metav1.CreateOptions{})
 	if err != nil {
 		log.Error().Msgf("error creating job: %s", err)
 		return err
@@ -140,15 +167,15 @@ func ApplyArgoCDKustomize(clientset *kubernetes.Clientset, argoCDInstallPath str
 	// Cleanup
 	err = clientset.CoreV1().ServiceAccounts(namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
 	if err != nil {
-		log.Error().Msgf("could not clean up argocd bootstrap service account %s - manual removal is required", serviceAccount.Name)
+		log.Error().Msgf("could not clean up argocd bootstrap service account %s - manual removal is required", saObj.Name)
 	}
 	err = clientset.RbacV1().ClusterRoles().Delete(context.Background(), name, metav1.DeleteOptions{})
 	if err != nil {
-		log.Error().Msgf("could not clean up argocd bootstrap cluster role %s - manual removal is required", serviceAccount.Name)
+		log.Error().Msgf("could not clean up argocd bootstrap cluster role %s - manual removal is required", crObj.Name)
 	}
 	err = clientset.RbacV1().ClusterRoleBindings().Delete(context.Background(), name, metav1.DeleteOptions{})
 	if err != nil {
-		log.Error().Msgf("could not clean up argocd bootstrap cluster role binding %s - manual removal is required", serviceAccount.Name)
+		log.Error().Msgf("could not clean up argocd bootstrap cluster role binding %s - manual removal is required", crbObj.Name)
 	}
 
 	return nil
