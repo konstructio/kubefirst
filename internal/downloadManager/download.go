@@ -99,7 +99,7 @@ func Unzip(zipFilepath string, unzipDirectory string) error {
 		log.Info().Msgf("unzipping file %s", filePath)
 
 		if !strings.HasPrefix(filePath, filepath.Clean(dst)+string(os.PathSeparator)) {
-			return errors.New("invalid file path")
+			return fmt.Errorf("invalid file path")
 		}
 		if f.FileInfo().IsDir() {
 			log.Info().Msg("creating directory...")

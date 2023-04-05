@@ -3,11 +3,12 @@ package services
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"github.com/kubefirst/kubefirst/pkg"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/kubefirst/kubefirst/pkg"
 )
 
 type GitHubService struct {
@@ -57,7 +58,7 @@ func (service GitHubService) CheckUserCodeConfirmation(deviceCode string) (strin
 
 	if res.StatusCode != http.StatusOK {
 		log.Printf("waiting user to authorize at GitHub page..., current status code = %d", res.StatusCode)
-		return "", errors.New("unable to issue a GitHub token")
+		return "", fmt.Errorf("unable to issue a GitHub token")
 	}
 
 	defer res.Body.Close()

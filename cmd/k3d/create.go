@@ -3,7 +3,6 @@ package k3d
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -107,7 +106,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// Either user or org can be specified for github, not both
 	if githubOrgFlag != "" && githubUserFlag != "" {
-		return errors.New("only one of --github-user or --github-org can be supplied")
+		return fmt.Errorf("only one of --github-user or --github-org can be supplied")
 	}
 
 	// Check for existing port forwards before continuing
@@ -373,7 +372,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				}
 			}
 			if newRepositoryExists {
-				return errors.New(errorMsg)
+				return fmt.Errorf(errorMsg)
 			}
 
 			newTeamExists := false
@@ -395,7 +394,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				}
 			}
 			if newTeamExists {
-				return errors.New(errorMsg)
+				return fmt.Errorf(errorMsg)
 			}
 		case "gitlab":
 			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
@@ -1302,12 +1301,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("kubefirst installation complete")
 	log.Info().Msg("welcome to your new kubefirst platform running in K3d")
 
-	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
-	if err != nil {
-		log.Error().Err(err).Msg("")
-	}
-
-	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
+	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLTLS)
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}

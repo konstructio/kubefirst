@@ -2,7 +2,6 @@ package k3d
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -54,7 +53,7 @@ func AddK3DSecrets(
 			_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
 			if err != nil {
 				log.Error().Err(err).Msg("")
-				return errors.New("error creating namespace")
+				return fmt.Errorf("error creating namespace")
 			}
 			log.Info().Msgf("%d, %s", i, s)
 			log.Info().Msgf("namespace created: %s", s)

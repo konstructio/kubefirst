@@ -1,7 +1,7 @@
 package wrappers
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/kubefirst/kubefirst/internal/handlers"
 )
@@ -19,7 +19,7 @@ func AuthenticateGitHubUserWrapper(gitHubAccessToken string, gitHubHandler *hand
 	}
 
 	if gitHubAccessToken == "" {
-		return "", errors.New("unable to retrieve a GitHub token for the user")
+		return "", fmt.Errorf("unable to retrieve a GitHub token for the user")
 	}
 
 	return gitHubAccessToken, nil

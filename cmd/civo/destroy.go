@@ -2,7 +2,6 @@ package civo
 
 import (
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -76,7 +75,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		)
 	}
 	if len(civoToken) == 0 {
-		return errors.New("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set the environment variable")
+		return fmt.Errorf("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set the environment variable")
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
@@ -180,46 +179,49 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log.Info().Msg("opening argocd port forward")
-		//* ArgoCD port-forward
-		argoCDStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(argoCDStopChannel)
-		}()
-		k8s.OpenPortForwardPodWrapper(
-			kcfg.Clientset,
-			kcfg.RestConfig,
-			"argocd-server",
-			"argocd",
-			8080,
-			8080,
-			argoCDStopChannel,
-		)
+		// Only port-forward to ArgoCD and delete registry if ArgoCD was installed
+		if viper.GetBool("kubefirst-checks.argocd-install") {
+			log.Info().Msg("opening argocd port forward")
+			//* ArgoCD port-forward
+			argoCDStopChannel := make(chan struct{}, 1)
+			defer func() {
+				close(argoCDStopChannel)
+			}()
+			k8s.OpenPortForwardPodWrapper(
+				kcfg.Clientset,
+				kcfg.RestConfig,
+				"argocd-server",
+				"argocd",
+				8080,
+				8080,
+				argoCDStopChannel,
+			)
 
-		log.Info().Msg("getting new auth token for argocd")
+			log.Info().Msg("getting new auth token for argocd")
 
-		secData, err := k8s.ReadSecretV2(kcfg.Clientset, "argocd", "argocd-initial-admin-secret")
-		if err != nil {
-			return err
+			secData, err := k8s.ReadSecretV2(kcfg.Clientset, "argocd", "argocd-initial-admin-secret")
+			if err != nil {
+				return err
+			}
+			argocdPassword := secData["password"]
+
+			argocdAuthToken, err := argocd.GetArgoCDToken("admin", argocdPassword)
+			if err != nil {
+				return err
+			}
+
+			log.Info().Msgf("port-forward to argocd is available at %s", civo.ArgocdPortForwardURL)
+
+			customTransport := http.DefaultTransport.(*http.Transport).Clone()
+			customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+			argocdHttpClient := http.Client{Transport: customTransport}
+			log.Info().Msg("deleting the registry application")
+			httpCode, _, err := argocd.DeleteApplication(&argocdHttpClient, config.RegistryAppName, argocdAuthToken, "true")
+			if err != nil {
+				return err
+			}
+			log.Info().Msgf("http status code %d", httpCode)
 		}
-		argocdPassword := secData["password"]
-
-		argocdAuthToken, err := argocd.GetArgoCDToken("admin", argocdPassword)
-		if err != nil {
-			return err
-		}
-
-		log.Info().Msgf("port-forward to argocd is available at %s", civo.ArgocdPortForwardURL)
-
-		customTransport := http.DefaultTransport.(*http.Transport).Clone()
-		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-		argocdHttpClient := http.Client{Transport: customTransport}
-		log.Info().Msg("deleting the registry application")
-		httpCode, _, err := argocd.DeleteApplication(&argocdHttpClient, config.RegistryAppName, argocdAuthToken, "true")
-		if err != nil {
-			return err
-		}
-		log.Info().Msgf("http status code %d", httpCode)
 
 		for _, vol := range clusterVolumes {
 			log.Info().Msg("removing volume with name: " + vol.Name)

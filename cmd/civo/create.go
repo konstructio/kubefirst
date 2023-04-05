@@ -3,7 +3,6 @@ package civo
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,7 +11,6 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"golang.org/x/term"
 	v1 "k8s.io/api/core/v1"
 
 	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
@@ -140,7 +138,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	switch gitProviderFlag {
 	case "github":
 		if os.Getenv("GITHUB_TOKEN") == "" {
-			return errors.New("your GITHUB_TOKEN is not set. Please set and try again")
+			return fmt.Errorf("your GITHUB_TOKEN is not set. Please set and try again")
 		}
 
 		cGitHost = civo.GithubHost
@@ -179,7 +177,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	case "gitlab":
 		if os.Getenv("GITLAB_TOKEN") == "" {
-			return errors.New("your GITLAB_TOKEN is not set. please set and try again")
+			return fmt.Errorf("your GITLAB_TOKEN is not set. please set and try again")
 		}
 
 		cGitToken = os.Getenv("GITLAB_TOKEN")
@@ -314,15 +312,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	executionControl := viper.GetBool("kubefirst-checks.cloud-credentials")
 	if !executionControl {
 		if os.Getenv("CIVO_TOKEN") == "" {
-			fmt.Println("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security to retrieve your token\nand enter it here, then press Enter:")
-			civoToken, err := term.ReadPassword(0)
-			if err != nil {
-				return errors.New("error reading password input from user")
-			}
-
-			os.Setenv("CIVO_TOKEN", string(civoToken))
-			log.Info().Msg("CIVO_TOKEN set - continuing")
+			return fmt.Errorf("your CIVO_TOKEN is not set - please set and re-run your last command")
 		}
+		log.Info().Msg("CIVO_TOKEN set - continuing")
 		viper.Set("kubefirst-checks.cloud-credentials", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("preflight-checks", 1)
@@ -396,7 +388,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 				"https://www.civo.com/learn/configure-dns \n\n" +
 				"if you are still facing issues please reach out to support team for further assistance"
 
-			return errors.New(msg)
+			return fmt.Errorf(msg)
 		}
 		viper.Set("kubefirst-checks.domain-liveness", true)
 		viper.WriteConfig()
@@ -436,7 +428,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	switch {
 	case quotaFailures > 0:
 		fmt.Println(reports.StyleMessage(quotaMessage))
-		return errors.New("at least one of your Civo quotas is close to its limit. Please check the error message above for additional details")
+		return fmt.Errorf("at least one of your Civo quotas is close to its limit. Please check the error message above for additional details")
 	case quotaWarnings > 0:
 		fmt.Println(reports.StyleMessage(quotaMessage))
 	}
@@ -478,7 +470,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 				}
 			}
 			if newRepositoryExists {
-				return errors.New(errorMsg)
+				return fmt.Errorf(errorMsg)
 			}
 
 			newTeamExists := false
@@ -500,7 +492,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 				}
 			}
 			if newTeamExists {
-				return errors.New(errorMsg)
+				return fmt.Errorf(errorMsg)
 			}
 		case "gitlab":
 			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
