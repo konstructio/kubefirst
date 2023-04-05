@@ -38,11 +38,8 @@ func detokenizeGitops(path string, tokens *GitOpsDirectoryValues) filepath.WalkF
 
 		if matched {
 			// ignore .git files
-			isGit := strings.Contains(path, "/.git/")
-			if isGit {
-				matched = false
-				// println("skipping", path)
-			} else {
+			if !strings.Contains(path, "/.git/") {
+
 				read, err := ioutil.ReadFile(path)
 				if err != nil {
 					return err
@@ -142,11 +139,7 @@ func detokenizeGitopsMetaphor(metaphorDir string, tokens *MetaphorTokenValues) f
 
 		if matched {
 			// ignore .git files
-			isGit := strings.Contains(path, "/.git/")
-			if isGit {
-				matched = false
-				// println("skipping", path)
-			} else {
+			if !strings.Contains(path, "/.git/") {
 				read, err := ioutil.ReadFile(path)
 				if err != nil {
 					return err
