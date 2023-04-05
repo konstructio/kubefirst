@@ -815,6 +815,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// GitLab Deploy Tokens
 	// Handle secret creation for buildkit
 	createTokensFor := []string{"metaphor"}
+	var metaphorDeployToken string
 	switch config.GitProvider {
 	// GitHub docker auth secret
 	// Buildkit requires a specific format for Docker auth created as a secret
@@ -828,7 +829,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			// Create argo workflows pull secret
 			// This is formatted to work with buildkit
 			argoDeployTokenSecret := &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy", repository), Namespace: "argo"},
+				ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy-token", repository), Namespace: "argo"},
 				Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
 				Type:       "Opaque",
 			}
@@ -848,47 +849,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		for _, project := range createTokensFor {
 			var p = gitlab.DeployTokenCreateParameters{
-				Name:     fmt.Sprintf("%s-deploy", project),
-				Username: fmt.Sprintf("%s-deploy", project),
+				Name:     fmt.Sprintf("%s-deploy-token", project),
+				Username: fmt.Sprintf("%s-deploy-token", project),
 				Scopes:   []string{"read_registry", "write_registry"},
 			}
 
 			log.Info().Msgf("creating project deploy token for project %s...", project)
-			token, err := gitlabClient.CreateProjectDeployToken(project, &p)
+			metaphorDeployToken, err = gitlabClient.CreateProjectDeployToken(project, &p)
 			if err != nil {
 				log.Fatal().Msgf("error creating project deploy token for project %s: %s", project, err)
-			}
-
-			if token != "" {
-				log.Info().Msgf("creating secret for project deploy token for project %s...", project)
-				usernamePasswordString := fmt.Sprintf("%s:%s", p.Username, token)
-				usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
-				dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"username": "%s", "password": "%s", "email": "%s", "auth": "%s"}}}`, containerRegistryHost, p.Username, token, "k-bot@example.com", usernamePasswordStringB64)
-
-				createInNamespace := []string{"development", "staging", "production"}
-				for _, namespace := range createInNamespace {
-					deployTokenSecret := &v1.Secret{
-						ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy", project), Namespace: namespace},
-						Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
-						Type:       "kubernetes.io/dockerconfigjson",
-					}
-					err = k8s.CreateSecretV2(kcfg.Clientset, deployTokenSecret)
-					if err != nil {
-						log.Error().Msgf("error while creating secret for project deploy token: %s", err)
-					}
-				}
-
-				// Create argo workflows pull secret
-				// This is formatted to work with buildkit
-				argoDeployTokenSecret := &v1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy", project), Namespace: "argo"},
-					Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
-					Type:       "Opaque",
-				}
-				err = k8s.CreateSecretV2(kcfg.Clientset, argoDeployTokenSecret)
-				if err != nil {
-					log.Error().Msgf("error while creating secret for project deploy token: %s", err)
-				}
 			}
 		}
 	}
@@ -1170,16 +1139,24 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	//* configure vault with terraform
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
 	if !executionControl {
-		// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
-
-		//* run vault terraform
-		log.Info().Msg("configuring vault with terraform")
-
-		usernamePasswordString := fmt.Sprintf("%s:%s", cGitUser, cGitToken)
-		base64DockerAuth := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
 
 		tfEnvs := map[string]string{}
-		//tfEnvs = k3d.GetVaultTerraformEnvs(config, tfEnvs)
+		var usernamePasswordString, base64DockerAuth string
+
+		if config.GitProvider == "gitlab" {
+			usernamePasswordString = fmt.Sprintf("%s:%s", "metaphor-deploy-token", metaphorDeployToken)
+			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+
+			tfEnvs["TF_VAR_metaphor_deploy_token"] = base64DockerAuth
+			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(cGitlabOwnerGroupID)
+		} else {
+			usernamePasswordString = fmt.Sprintf("%s:%s", cGitUser, cGitToken)
+			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+
+		}
+
+		log.Info().Msg("configuring vault with terraform")
+
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", config.GitProvider)] = cGitToken
 		tfEnvs["TF_VAR_vault_addr"] = k3d.VaultPortForwardURL
@@ -1197,10 +1174,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
 		tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
 		// tfEnvs["TF_LOG"] = "DEBUG"
-
-		if config.GitProvider == "gitlab" {
-			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(cGitlabOwnerGroupID)
-		}
 
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
