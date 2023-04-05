@@ -27,7 +27,7 @@ const (
 	MinioDefaultPassword         = "feedkraystars"
 
 	// github.com/kubefirst/manifests ref ver
-	KubefirstManifestRepoRef = "main"
+	KubefirstManifestRepoRef = "0.1.0"
 )
 
 // SegmentIO constants
