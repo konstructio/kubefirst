@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/atotto/clipboard"
 	"github.com/dustin/go-humanize"
 	"github.com/rs/zerolog/log"
 	v1 "k8s.io/api/core/v1"
@@ -901,13 +902,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if configs.K1Version == "development" {
-		err = pkg.OpenBrowser(pkg.ArgoCDLocalURLTLS)
-		if err != nil {
-			log.Error().Err(err).Msg("")
-		}
-	}
-
 	var argocdPassword string
 	//* argocd pods are ready, get and set credentials
 	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
@@ -973,6 +967,18 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("argo credentials already set, continuing")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
+	}
+
+	if configs.K1Version == "development" {
+		err := clipboard.WriteAll(argocdPassword)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
+
+		err = pkg.OpenBrowser(pkg.ArgoCDLocalURLTLS)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
 	}
 
 	//* argocd sync registry and start sync waves

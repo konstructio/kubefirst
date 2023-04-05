@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/atotto/clipboard"
 	"github.com/rs/zerolog/log"
 	v1 "k8s.io/api/core/v1"
 
@@ -1039,21 +1040,15 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	)
 	log.Info().Msgf("port-forward to argocd is available at %s", civo.ArgocdPortForwardURL)
 
-	if configs.K1Version == "development" {
-		err = pkg.OpenBrowser(pkg.ArgocdPortForwardURL)
-		if err != nil {
-			log.Error().Err(err).Msg("")
-		}
-	}
-
 	//* argocd pods are ready, get and set credentials
+	var argocdPassword string
 	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
 	if !executionControl {
 		log.Info().Msg("Setting argocd username and password credentials")
 
 		argocd.ArgocdSecretClient = kcfg.Clientset.CoreV1().Secrets("argocd")
 
-		argocdPassword := k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
+		argocdPassword = k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
 		if argocdPassword == "" {
 			log.Info().Msg("argocd password not found in secret")
 			return err
@@ -1080,6 +1075,18 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("argo credentials already set, continuing")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
+	}
+
+	if configs.K1Version == "development" {
+		err := clipboard.WriteAll(argocdPassword)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
+
+		err = pkg.OpenBrowser(pkg.ArgocdPortForwardURL)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
 	}
 
 	//* argocd sync registry and start sync waves
