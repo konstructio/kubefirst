@@ -1152,7 +1152,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			usernamePasswordString = fmt.Sprintf("%s:%s", "metaphor-deploy-token", metaphorDeployToken)
 			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
 
-			tfEnvs["TF_VAR_metaphor_deploy_token"] = base64DockerAuth
+			tfEnvs["TF_VAR_metaphor_deploy_token"] = metaphorDeployToken
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(cGitlabOwnerGroupID)
 		} else {
 			usernamePasswordString = fmt.Sprintf("%s:%s", cGitUser, cGitToken)
