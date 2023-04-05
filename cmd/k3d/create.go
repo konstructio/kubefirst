@@ -1328,12 +1328,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("kubefirst installation complete")
 	log.Info().Msg("welcome to your new kubefirst platform running in K3d")
 
-	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
-	if err != nil {
-		log.Error().Err(err).Msg("")
-	}
-
-	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
+	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLTLS)
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}
