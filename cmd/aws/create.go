@@ -1306,7 +1306,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		"app.kubernetes.io/instance",
 		"kubefirst-console",
 		"kubefirst",
-		600,
+		1200,
 	)
 	if err != nil {
 		log.Error().Msgf("Error finding console Deployment: %s", err)
