@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021-2023, Kubefirst
+
+This program is licensed under MIT.
+See the LICENSE file for more details.
+*/
 package reports
 
 import (
@@ -43,7 +49,7 @@ func BuildCreateHandOffReport(clusterData CreateHandOff) bytes.Buffer {
 	handOffData.WriteString(strings.Repeat("-", 70))
 	handOffData.WriteString(fmt.Sprintf("\nCluster %q is up and running!:", clusterData.ClusterName))
 	handOffData.WriteString("\nThis information is available at $HOME/.kubefirst ")
-	handOffData.WriteString(fmt.Sprintf("\nPress ESC to leave this screen and return to shell."))
+	handOffData.WriteString("\nPress ESC to leave this screen and return to shell.")
 	//handOffData.WriteString(strings.Repeat("-", 70))
 
 	handOffData.WriteString("\n--- AWS ")

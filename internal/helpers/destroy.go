@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021-2023, Kubefirst
+
+This program is licensed under MIT.
+See the LICENSE file for more details.
+*/
 package helpers
 
 import (
@@ -16,7 +22,7 @@ func EvalDestroy(expectedCloudProvider string, expectedGitProvider string) (bool
 
 	if !setupComplete {
 		return false, fmt.Errorf(
-			"There are no active kubefirst platforms to destroy.\n\tTo get started, run: kubefirst %s create -h\n",
+			"there are no active kubefirst platforms to destroy.\n\tTo get started, run: kubefirst %s create -h\n",
 			expectedCloudProvider,
 		)
 	}

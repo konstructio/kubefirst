@@ -1,5 +1,8 @@
 /*
-Copyright © 2022 Kubefirst Inc. devops@kubefirst.com
+Copyright (C) 2021-2023, Kubefirst
+
+This program is licensed under MIT.
+See the LICENSE file for more details.
 */
 package main
 
@@ -7,13 +10,13 @@ import (
 	"fmt"
 	stdLog "log"
 	"os"
+	"os/exec"
 	"time"
 
 	"github.com/rs/zerolog"
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/kubefirst/kubefirst/cmd"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
@@ -81,5 +84,11 @@ func main() {
 		stdLog.Panicf("unable to set log-file-location, error is: %s", err)
 	}
 
-	cmd.Execute()
+	//cmd.Execute()
+
+	path, err := exec.LookPath("prog")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(path)
 }

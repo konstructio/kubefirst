@@ -1,13 +1,20 @@
+/*
+Copyright (C) 2021-2023, Kubefirst
+
+This program is licensed under MIT.
+See the LICENSE file for more details.
+*/
 package tests
 
 import (
 	"fmt"
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/pkg"
-	"github.com/spf13/viper"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/spf13/viper"
 )
 
 // TestNgrokGitHubWebhookIntegration tests the ngrok GitHub webhook response, and look for a http response code of 200

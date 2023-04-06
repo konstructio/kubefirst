@@ -1,14 +1,21 @@
+/*
+Copyright (C) 2021-2023, Kubefirst
+
+This program is licensed under MIT.
+See the LICENSE file for more details.
+*/
 package tests
 
 import (
 	"context"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/chromedp/chromedp"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
-	"os"
-	"testing"
-	"time"
 )
 
 // TestVaultLoginEndToEnd tests the end to end flow of logging into the cloud and local vault and retrieving a secret

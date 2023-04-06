@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021-2023, Kubefirst
+
+This program is licensed under MIT.
+See the LICENSE file for more details.
+*/
 package handlers
 
 import (
@@ -6,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -55,6 +62,9 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 		"client_id": pkg.GitHubOAuthClientId,
 		"scope":     "repo public_repo admin:repo_hook admin:org admin:public_key admin:org_hook user project delete_repo write:packages admin:gpg_key workflow",
 	})
+	if err != nil {
+		return "", err
+	}
 
 	req, err := http.NewRequest(http.MethodPost, gitHubDeviceFlowCodeURL, bytes.NewBuffer(requestBody))
 	if err != nil {
@@ -83,7 +93,7 @@ func (handler GitHubHandler) AuthenticateUser() (string, error) {
 	// todo: check http code
 
 	// UI update to the user adding instructions how to proceed
-	gitHubTokenReport := reports.GitHubAuthToken(gitHubDeviceFlow.UserCode, gitHubDeviceFlow.VerificationUri)
+	gitHubTokenReport := printGitHubAuthToken(gitHubDeviceFlow.UserCode, gitHubDeviceFlow.VerificationUri)
 	fmt.Println(reports.StyleMessage(gitHubTokenReport))
 
 	// this blocks the progress until the user hits enter to open the browser
@@ -166,7 +176,6 @@ func (handler GitHubHandler) GetGitHubUser(gitHubAccessToken string) (string, er
 }
 
 func (handler GitHubHandler) CheckGithubOrganizationPermissions(githubToken, githubOwner, githubUsername string) error {
-
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.github.com/orgs/%s/memberships/%s", githubOwner, githubUsername), nil)
 	if err != nil {
 		log.Info().Msg("error setting github owner permissions request")
@@ -210,4 +219,17 @@ func (handler GitHubHandler) CheckGithubOrganizationPermissions(githubToken, git
 
 	return nil
 
+}
+
+func printGitHubAuthToken(userCode, verificationUri string) string {
+	var gitHubTokenReport bytes.Buffer
+	gitHubTokenReport.WriteString(strings.Repeat("-", 69))
+	gitHubTokenReport.WriteString("\nNo GITHUB_TOKEN env variable found!\nUse the code below to get a temporary GitHub Access Token\nThis token will be used by Kubefirst to create your environment\n")
+	gitHubTokenReport.WriteString("\n\nA GitHub Access Token is required to provision GitHub repositories and run workflows in GitHub.\n")
+	gitHubTokenReport.WriteString(strings.Repeat("-", 69) + "\n")
+	gitHubTokenReport.WriteString("1. Copy this code: 📋 " + userCode + " 📋\n\n")
+	gitHubTokenReport.WriteString(fmt.Sprintf("2. When ready, press <enter> to open the page at %s\n\n", verificationUri))
+	gitHubTokenReport.WriteString("3. Authorize the organization you'll be using Kubefirst with - this may also be your personal account")
+
+	return gitHubTokenReport.String()
 }

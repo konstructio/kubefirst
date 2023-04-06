@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021-2023, Kubefirst
+
+This program is licensed under MIT.
+See the LICENSE file for more details.
+*/
 package reports
 
 import (
@@ -117,7 +123,7 @@ func CommandSummary(cleanSummary bytes.Buffer) {
 		Model{Content: style.Render(cleanSummary.String())},
 	)
 
-	if err := p.Start(); err != nil {
+	if _, err := p.Run(); err != nil {
 		log.Panicf("unable to load reports screen, error is: %s", err)
 	}
 }

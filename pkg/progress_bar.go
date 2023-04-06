@@ -1,9 +1,16 @@
+/*
+Copyright (C) 2021-2023, Kubefirst
+
+This program is licensed under MIT.
+See the LICENSE file for more details.
+*/
 package pkg
 
 import (
 	"fmt"
-	"github.com/jedib0t/go-pretty/v6/progress"
 	"time"
+
+	"github.com/jedib0t/go-pretty/v6/progress"
 )
 
 type ActionTracker struct {
