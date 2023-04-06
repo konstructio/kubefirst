@@ -1,13 +1,20 @@
+/*
+Copyright (C) 2021-2023, Kubefirst
+
+This program is licensed under MIT.
+See the LICENSE file for more details.
+*/
 package configs
 
 // code from: https://github.com/carolynvs/stingoftheviper
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"strings"
 )
 
 // it follows Viper precedence:

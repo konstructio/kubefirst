@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021-2023, Kubefirst
+
+This program is licensed under MIT.
+See the LICENSE file for more details.
+*/
 package gitClient
 
 import (
@@ -39,8 +45,8 @@ func AppendFile(cloudType string, reponame string, filename string) bool {
 	return true
 }
 
-//GitAddWithFilter Check workdir for files to commit
-//filter out the undersired ones based on context
+// GitAddWithFilter Check workdir for files to commit
+// filter out the undersired ones based on context
 func GitAddWithFilter(cloudType string, reponame string, w *git.Worktree) error {
 	status, err := w.Status()
 	if err != nil {

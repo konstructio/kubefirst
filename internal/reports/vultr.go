@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021-2023, Kubefirst
+
+This program is licensed under MIT.
+See the LICENSE file for more details.
+*/
 package reports
 
 import (
@@ -48,25 +54,6 @@ func VultrHandoffScreen(argocdAdminPassword, clusterName, domainName string, git
 	handOffData.WriteString(fmt.Sprintf("\n URL: https://argocd.%s", domainName))
 	handOffData.WriteString(fmt.Sprintf("\n username: %s", "admin"))
 	handOffData.WriteString(fmt.Sprintf("\n password: %s", argocdAdminPassword))
-
-	// handOffData.WriteString("\n--- Argo Workflows ")
-	// handOffData.WriteString(strings.Repeat("-", 51))
-	// handOffData.WriteString(fmt.Sprintf("\n URL: %s", k3d.ArgoWorkflowsURL))
-
-	// handOffData.WriteString("\n--- Atlantis ")
-	// handOffData.WriteString(strings.Repeat("-", 57))
-	// handOffData.WriteString(fmt.Sprintf("\n URL: %s", k3d.AtlantisURL))
-
-	// handOffData.WriteString("\n--- Chartmuseum ")
-	// handOffData.WriteString(strings.Repeat("-", 54))
-	// handOffData.WriteString(fmt.Sprintf("\n URL: %s", k3d.ChartMuseumURL))
-
-	// handOffData.WriteString("\n--- Metaphor ")
-	// handOffData.WriteString(strings.Repeat("-", 57))
-	// handOffData.WriteString("\n URLs: ")
-	// handOffData.WriteString(fmt.Sprintf("\n  %s", k3d.MetaphorDevelopmentURL))
-	// handOffData.WriteString(fmt.Sprintf("\n  %s", k3d.MetaphorStagingURL))
-	// handOffData.WriteString(fmt.Sprintf("\n  %s", k3d.MetaphorProductionURL))
 
 	handOffData.WriteString("\n--- Vault ")
 	handOffData.WriteString(strings.Repeat("-", 60))

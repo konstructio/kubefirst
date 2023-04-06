@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021-2023, Kubefirst
+
+This program is licensed under MIT.
+See the LICENSE file for more details.
+*/
 package vultr
 
 import (
@@ -345,7 +351,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 				"domain exists and has the correct name and domain.\n - If you don't have a Domain," +
 				"please follow these instructions to create one: " +
 				"https://www.vultr.com/docs/introduction-to-vultr-dns/ \n\n" +
-				"if you are still facing issues please reach out to support team for further assistance."
+				"if you are still facing issues please reach out to support team for further assistance"
 
 			return fmt.Errorf(msg)
 		}

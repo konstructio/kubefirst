@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021-2023, Kubefirst
+
+This program is licensed under MIT.
+See the LICENSE file for more details.
+*/
 package k3d
 
 import (
@@ -114,7 +120,7 @@ func PrepareGitRepositories(
 		return err
 	}
 
-	metaphorRepo, err := git.PlainOpen(metaphorDir)
+	metaphorRepo, _ := git.PlainOpen(metaphorDir)
 	//* commit initial gitops-template content
 	err = gitClient.Commit(metaphorRepo, "committing initial detokenized metaphor repo content")
 	if err != nil {
