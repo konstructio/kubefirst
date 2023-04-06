@@ -18,12 +18,6 @@ jobs:
         run: echo $GITHUB_REF_NAME > VERSION.md
       - name: Release kubefirst/gitops-template
         run: gh release create -R kubefirst/gitops-template ${{ github.REF_NAME }} --notes "${{ env.RELEASE_NOTES }}"
-      - name: Release kubefirst/metaphor-template
-        run: gh release create -R kubefirst/metaphor-template ${{ github.REF_NAME }} --notes "${{ env.RELEASE_NOTES }}"
-      - name: Release kubefirst/metaphor-go-template
-        run: gh release create -R kubefirst/metaphor-go-template ${{ github.REF_NAME }} --notes "${{ env.RELEASE_NOTES }}"
-      - name: Release kubefirst/metaphor-template
-        run: gh release create -R kubefirst/metaphor-template ${{ github.REF_NAME }} --notes "${{ env.RELEASE_NOTES }}"
   goreleaser:
     runs-on: ubuntu-latest
     steps:
