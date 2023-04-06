@@ -814,6 +814,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
+			viper.Set("kubefirst-checks.terraform-apply-aws-failed", true)
+			viper.WriteConfig()
+
 			return fmt.Errorf("error creating aws resources with terraform %s : %s", tfEntrypoint, err)
 		}
 

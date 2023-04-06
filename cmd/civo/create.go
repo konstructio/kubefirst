@@ -834,6 +834,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
+			viper.Set("kubefirst-checks.terraform-apply-civo-failed", true)
+			viper.WriteConfig()
+
 			return fmt.Errorf("error creating civo resources with terraform %s : %s", tfEntrypoint, err)
 		}
 

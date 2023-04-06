@@ -161,7 +161,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if viper.GetBool("kubefirst-checks.terraform-apply-civo") {
+	if viper.GetBool("kubefirst-checks.terraform-apply-civo") || viper.GetBool("kubefirst-checks.terraform-apply-civo-failed") {
 		kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
 		log.Info().Msg("destroying civo resources with terraform")
