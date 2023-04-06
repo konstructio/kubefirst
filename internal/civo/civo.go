@@ -23,6 +23,7 @@ var backupResolver = &net.Resolver{
 	},
 }
 
+// TestDomainLiveness checks Civo DNS for the liveness test record
 func TestDomainLiveness(dryRun bool, domainName, domainId, region string) bool {
 	if dryRun {
 		log.Info().Msg("[#99] Dry-run mode, TestDomainZoneLiveness skipped.")

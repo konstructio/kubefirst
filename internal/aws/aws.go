@@ -2,9 +2,7 @@ package aws
 
 import (
 	"context"
-	"net"
 	"os"
-	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -28,17 +26,6 @@ type ARecord struct {
 	RecordType  string
 	TTL         *int64
 	AliasTarget *route53Types.AliasTarget
-}
-
-// Some systems fail to resolve TXT records, so try to use Google as a backup
-var backupResolver = &net.Resolver{
-	PreferGo: true,
-	Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-		d := net.Dialer{
-			Timeout: time.Millisecond * time.Duration(10000),
-		}
-		return d.DialContext(ctx, network, "8.8.8.8:53")
-	},
 }
 
 func NewAwsV2(region string) aws.Config {

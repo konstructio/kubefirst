@@ -392,7 +392,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.cloud-credentials")
 	if !executionControl {
-
 		// todo need to verify aws connectivity / credentials have juice
 		// also check if creds will expire before the 45 min provision?
 		viper.Set("kubefirst-checks.cloud-credentials", true)
@@ -428,11 +427,26 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	skipDomainCheck := viper.GetBool("kubefirst-checks.domain-liveness")
 	if !skipDomainCheck {
-		// todo check aws domain liveness
+		domainLiveness := awsClient.TestHostedZoneLiveness(false, domainNameFlag)
+		if !domainLiveness {
+			msg := "failed to check the liveness of the HostedZone. A valid public HostedZone on the same AWS " +
+				"account as the one where Kubefirst will be installed is required for this operation to " +
+				"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct AWS account and " +
+				"region.\n - Verify that you have the necessary permissions to access the hosted zone.\n - Check " +
+				"that the hosted zone is correctly configured and is a public hosted zone\n - Check if the " +
+				"hosted zone exists and has the correct name and domain.\n - If you don't have a HostedZone," +
+				"please follow these instructions to create one: " +
+				"https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zones-working-with.html \n\n" +
+				"if you are still facing issues please reach out to support team for further assistance"
+
+			return fmt.Errorf(msg)
+		}
 		viper.Set("kubefirst-checks.domain-liveness", true)
 		viper.WriteConfig()
+		progressPrinter.IncrementTracker("preflight-checks", 1)
 	} else {
 		log.Info().Msg("domain check already complete - continuing")
+		progressPrinter.IncrementTracker("preflight-checks", 1)
 	}
 
 	executionControl = viper.GetBool("kubefirst-checks.kbot-setup")
