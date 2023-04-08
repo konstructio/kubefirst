@@ -975,7 +975,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	// Wait for ArgoCD to be ready
-	_, err = k8s.VerifyArgoCDReadiness(clientset, true)
+	_, err = k8s.VerifyArgoCDReadiness(clientset, true, 300)
 	if err != nil {
 		log.Error().Msgf("error waiting for ArgoCD to become ready: %s", err)
 		return err

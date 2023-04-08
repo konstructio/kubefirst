@@ -16,9 +16,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/atotto/clipboard"
 	"github.com/rs/zerolog/log"
 	v1 "k8s.io/api/core/v1"
 
+	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/configs"
@@ -43,6 +45,7 @@ import (
 )
 
 func createVultr(cmd *cobra.Command, args []string) error {
+	helpers.DisplayLogHints()
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 5)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
@@ -594,33 +597,37 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
 	var destinationGitopsRepoGitURL, destinationMetaphorRepoGitURL string
 
+	// gitlab may have subgroups, so the destination gitops/metaphor repo git urls may be different
+	switch config.GitProvider {
+	case "github":
+		destinationGitopsRepoGitURL = config.DestinationGitopsRepoGitURL
+		destinationMetaphorRepoGitURL = config.DestinationMetaphorRepoGitURL
+	case "gitlab":
+		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
+		if err != nil {
+			return err
+		}
+		// Format git url based on full path to group
+		destinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
+		destinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
+
+	}
+
 	progressPrinter.AddTracker("cloning-and-formatting-git-repositories", "Cloning and formatting git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 
 		log.Info().Msg("generating your new gitops repository")
 
-		// gitlab may have subgroups, so the destination gitops/metaphor repo git urls may be different
-		switch config.GitProvider {
-		case "github":
-			destinationGitopsRepoGitURL = config.DestinationGitopsRepoGitURL
-			destinationMetaphorRepoGitURL = config.DestinationMetaphorRepoGitURL
-		case "gitlab":
-			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
-			if err != nil {
-				return err
-			}
-			// Format git url based on full path to group
-			destinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
-			destinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
-
-		}
 		// These need to be set for reference elsewhere
 		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), destinationGitopsRepoGitURL)
 		viper.WriteConfig()
 		gitopsDirectoryTokens.GitOpsRepoGitURL = destinationGitopsRepoGitURL
 
-		err := vultr.PrepareGitRepositories(
+		// Determine if anything exists at domain apex
+		apexContentExists := vultr.GetDomainApexContent(domainNameFlag)
+
+		err = vultr.PrepareGitRepositories(
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
@@ -633,6 +640,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
 			&metaphorDirectoryTokens,
+			apexContentExists,
 		)
 		if err != nil {
 			return err
@@ -792,6 +800,9 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
+			viper.Set("kubefirst-checks.terraform-apply-vultr-failed", true)
+			viper.WriteConfig()
+
 			return fmt.Errorf("error creating vultr resources with terraform %s : %s", tfEntrypoint, err)
 		}
 
@@ -804,10 +815,19 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("applying-vultr-terraform", 1)
 	}
 
+	// This flag is set if the above client config passes
+	// This is used for destroy
+	viper.Set("kubefirst-checks.vultr-kubernetes-cluster-created", true)
+	viper.WriteConfig()
+
 	//* vultr needs extra time to be ready
 	progressPrinter.AddTracker("wait-for-vultr", "Wait for Vultr Kubernetes", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
-	time.Sleep(time.Second * 60)
+	if !viper.GetBool("kubefirst-checks.k8s-secrets-created") {
+		time.Sleep(time.Second * 120)
+	} else {
+		time.Sleep(time.Second * 5)
+	}
 	progressPrinter.IncrementTracker("wait-for-vultr", 1)
 
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
@@ -839,6 +859,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	// todo there is a secret condition in AddK3DSecrets to this not checked
 	// todo deconstruct CreateNamespaces / CreateSecret
 	// todo move secret structs to constants to be leveraged by either local or vultr
+	var metaphorDeployToken string
 	progressPrinter.AddTracker("bootstrapping-kubernetes-resources", "Bootstrapping Kubernetes resources", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
@@ -891,7 +912,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			// Create argo workflows pull secret
 			// This is formatted to work with buildkit
 			argoDeployTokenSecret := &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy", repository), Namespace: "argo"},
+				ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy-token", repository), Namespace: "argo"},
 				Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
 				Type:       "Opaque",
 			}
@@ -911,52 +932,20 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 		for _, project := range createTokensFor {
 			var p = gitlab.DeployTokenCreateParameters{
-				Name:     fmt.Sprintf("%s-deploy", project),
-				Username: fmt.Sprintf("%s-deploy", project),
+				Name:     fmt.Sprintf("%s-deploy-token", project),
+				Username: fmt.Sprintf("%s-deploy-token", project),
 				Scopes:   []string{"read_registry", "write_registry"},
 			}
 
 			log.Info().Msgf("creating project deploy token for project %s...", project)
-			token, err := gitlabClient.CreateProjectDeployToken(project, &p)
+			metaphorDeployToken, err = gitlabClient.CreateProjectDeployToken(project, &p)
 			if err != nil {
 				log.Fatal().Msgf("error creating project deploy token for project %s: %s", project, err)
 			}
 
-			if token != "" {
-				log.Info().Msgf("creating secret for project deploy token for project %s...", project)
-				usernamePasswordString := fmt.Sprintf("%s:%s", p.Username, token)
-				usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
-				dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"username": "%s", "password": "%s", "email": "%s", "auth": "%s"}}}`, containerRegistryHost, p.Username, token, "k-bot@example.com", usernamePasswordStringB64)
-
-				createInNamespace := []string{"development", "staging", "production"}
-				for _, namespace := range createInNamespace {
-					deployTokenSecret := &v1.Secret{
-						ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy", project), Namespace: namespace},
-						Data:       map[string][]byte{".dockerconfigjson": []byte(dockerConfigString)},
-						Type:       "kubernetes.io/dockerconfigjson",
-					}
-					err = k8s.CreateSecretV2(kcfg.Clientset, deployTokenSecret)
-					if err != nil {
-						log.Error().Msgf("error while creating secret for project deploy token: %s", err)
-					}
-				}
-
-				// Create argo workflows pull secret
-				// This is formatted to work with buildkit
-				argoDeployTokenSecret := &v1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy", project), Namespace: "argo"},
-					Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
-					Type:       "Opaque",
-				}
-				err = k8s.CreateSecretV2(kcfg.Clientset, argoDeployTokenSecret)
-				if err != nil {
-					log.Error().Msgf("error while creating secret for project deploy token: %s", err)
-				}
-			}
 		}
 	}
 	progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
-
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
@@ -979,7 +968,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	}
 
 	// Wait for ArgoCD to be ready
-	_, err = k8s.VerifyArgoCDReadiness(kcfg.Clientset, true)
+	_, err = k8s.VerifyArgoCDReadiness(kcfg.Clientset, true, 300)
 	if err != nil {
 		log.Error().Msgf("error waiting for ArgoCD to become ready: %s", err)
 		return err
@@ -1002,13 +991,14 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	log.Info().Msgf("port-forward to argocd is available at %s", vultr.ArgocdPortForwardURL)
 
 	//* argocd pods are ready, get and set credentials
+	var argocdPassword string
 	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
 	if !executionControl {
 		log.Info().Msg("Setting argocd username and password credentials")
 
 		argocd.ArgocdSecretClient = kcfg.Clientset.CoreV1().Secrets("argocd")
 
-		argocdPassword := k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
+		argocdPassword = k8s.GetSecretValue(argocd.ArgocdSecretClient, "argocd-initial-admin-secret", "password")
 		if argocdPassword == "" {
 			log.Info().Msg("argocd password not found in secret")
 			return err
@@ -1037,16 +1027,29 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	}
 
+	if configs.K1Version == "development" {
+		err := clipboard.WriteAll(argocdPassword)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
+
+		err = pkg.OpenBrowser(pkg.ArgocdPortForwardURL)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
+	}
+
 	//* argocd sync registry and start sync waves
 	executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
 	if !executionControl {
-		log.Info().Msg("applying the registry application to argocd")
-		registryYamlPath := fmt.Sprintf("%s/gitops/registry/%s/registry.yaml", config.K1Dir, clusterNameFlag)
-		_, err := pkg.ExecShellReturnStringsV2(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "-n", "argocd", "apply", "-f", registryYamlPath, "--wait")
+		argocdClient, err := argocdapi.NewForConfig(kcfg.RestConfig)
 		if err != nil {
-			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", registryYamlPath, err.Error())
 			return err
 		}
+
+		log.Info().Msg("applying the registry application to argocd")
+		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoGitURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
@@ -1064,13 +1067,13 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		"app.kubernetes.io/instance",
 		"vault",
 		"vault",
-		240,
+		300,
 	)
 	if err != nil {
 		log.Error().Msgf("Error finding Vault StatefulSet: %s", err)
 		return err
 	}
-	_, err = k8s.WaitForStatefulSetReady(kcfg.Clientset, vaultStatefulSet, 240, true)
+	_, err = k8s.WaitForStatefulSetReady(kcfg.Clientset, vaultStatefulSet, 300, true)
 	if err != nil {
 		log.Error().Msgf("Error waiting for Vault StatefulSet ready state: %s", err)
 		return err
@@ -1087,9 +1090,18 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		// Initialize and unseal Vault
 		vaultHandlerPath := "github.com:kubefirst/manifests.git/vault-handler/replicas-3"
-		_, err := pkg.ExecShellReturnStringsV2(config.KubectlClient, "--kubeconfig", config.Kubeconfig, "apply", "-k", vaultHandlerPath, "--wait")
+
+		// Build and apply manifests
+		yamlData, err := kcfg.KustomizeBuild(vaultHandlerPath)
 		if err != nil {
-			log.Warn().Msgf("failed to execute kubectl apply -f %s: error %s", vaultHandlerPath, err.Error())
+			return err
+		}
+		output, err := kcfg.SplitYAMLFile(yamlData)
+		if err != nil {
+			return err
+		}
+		err = kcfg.ApplyObjects("", output)
+		if err != nil {
 			return err
 		}
 
@@ -1129,13 +1141,23 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
 	if !executionControl {
-		// todo evaluate progressPrinter.IncrementTracker("step-vault", 1)
+		tfEnvs := map[string]string{}
+		var usernamePasswordString, base64DockerAuth string
 
 		//* run vault terraform
 		log.Info().Msg("configuring vault with terraform")
+		if config.GitProvider == "gitlab" {
+			usernamePasswordString = fmt.Sprintf("%s:%s", "metaphor-deploy-token", metaphorDeployToken)
+			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
 
-		tfEnvs := map[string]string{}
+			tfEnvs["TF_VAR_metaphor_deploy_token"] = metaphorDeployToken
+		} else {
+			usernamePasswordString = fmt.Sprintf("%s:%s", cGitUser, cGitToken)
+			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
 
+		}
+
+		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
 		tfEnvs = vultr.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
@@ -1188,7 +1210,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		"app.kubernetes.io/instance",
 		"kubefirst-console",
 		"kubefirst",
-		60,
+		1200,
 	)
 	if err != nil {
 		log.Error().Msgf("Error finding console Deployment: %s", err)
