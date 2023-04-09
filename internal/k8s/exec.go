@@ -160,7 +160,7 @@ func podExec(kubeConfigPath string, ps *PodSessionOptions, pe v1.PodExecOptions,
 }
 
 // ReturnDeploymentObject returns a matching appsv1.Deployment object based on the filters
-func ReturnDeploymentObject(clientset *kubernetes.Clientset, matchLabel string, matchLabelValue string, namespace string, timeoutSeconds float64) (*appsv1.Deployment, error) {
+func ReturnDeploymentObject(clientset *kubernetes.Clientset, matchLabel string, matchLabelValue string, namespace string, timeoutSeconds int) (*appsv1.Deployment, error) {
 	// Filter
 	deploymentListOptions := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", matchLabel, matchLabelValue),
@@ -202,7 +202,7 @@ func ReturnDeploymentObject(clientset *kubernetes.Clientset, matchLabel string, 
 }
 
 // ReturnPodObject returns a matching v1.Pod object based on the filters
-func ReturnPodObject(kubeConfigPath string, matchLabel string, matchLabelValue string, namespace string, timeoutSeconds float64) (*v1.Pod, error) {
+func ReturnPodObject(kubeConfigPath string, matchLabel string, matchLabelValue string, namespace string, timeoutSeconds int) (*v1.Pod, error) {
 	clientset, err := GetClientSet(false, kubeConfigPath)
 	if err != nil {
 		return nil, err
@@ -258,7 +258,7 @@ func ReturnPodObject(kubeConfigPath string, matchLabel string, matchLabelValue s
 }
 
 // ReturnStatefulSetObject returns a matching appsv1.StatefulSet object based on the filters
-func ReturnStatefulSetObject(clientset *kubernetes.Clientset, matchLabel string, matchLabelValue string, namespace string, timeoutSeconds float64) (*appsv1.StatefulSet, error) {
+func ReturnStatefulSetObject(clientset *kubernetes.Clientset, matchLabel string, matchLabelValue string, namespace string, timeoutSeconds int) (*appsv1.StatefulSet, error) {
 	// Filter
 	statefulSetListOptions := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", matchLabel, matchLabelValue),
@@ -300,7 +300,7 @@ func ReturnStatefulSetObject(clientset *kubernetes.Clientset, matchLabel string,
 }
 
 // WaitForDeploymentReady waits for a target Deployment to become ready
-func WaitForDeploymentReady(clientset *kubernetes.Clientset, deployment *appsv1.Deployment, timeoutSeconds int64) (bool, error) {
+func WaitForDeploymentReady(clientset *kubernetes.Clientset, deployment *appsv1.Deployment, timeoutSeconds int) (bool, error) {
 	// Format list for metav1.ListOptions for watch
 	configuredReplicas := deployment.Status.Replicas
 	watchOptions := metav1.ListOptions{
@@ -341,7 +341,7 @@ func WaitForDeploymentReady(clientset *kubernetes.Clientset, deployment *appsv1.
 }
 
 // WaitForPodReady waits for a target Pod to become ready
-func WaitForPodReady(clientset *kubernetes.Clientset, pod *v1.Pod, timeoutSeconds int64) (bool, error) {
+func WaitForPodReady(clientset *kubernetes.Clientset, pod *v1.Pod, timeoutSeconds int) (bool, error) {
 	// Format list for metav1.ListOptions for watch
 	watchOptions := metav1.ListOptions{
 		FieldSelector: fmt.Sprintf(
@@ -385,7 +385,7 @@ func WaitForPodReady(clientset *kubernetes.Clientset, pod *v1.Pod, timeoutSecond
 }
 
 // WaitForStatefulSetReady waits for a target StatefulSet to become ready
-func WaitForStatefulSetReady(clientset *kubernetes.Clientset, statefulset *appsv1.StatefulSet, timeoutSeconds int64, ignoreReady bool) (bool, error) {
+func WaitForStatefulSetReady(clientset *kubernetes.Clientset, statefulset *appsv1.StatefulSet, timeoutSeconds int, ignoreReady bool) (bool, error) {
 	// Format list for metav1.ListOptions for watch
 	configuredReplicas := statefulset.Status.Replicas
 
@@ -451,7 +451,7 @@ func WaitForStatefulSetReady(clientset *kubernetes.Clientset, statefulset *appsv
 // watchForStatefulSetPodReady inspects a Pod associated with a StatefulSet and
 // uses a channel to determine when it's ready
 // The channel will timeout if the Pod isn't ready by timeoutSeconds
-func watchForStatefulSetPodReady(clientset *kubernetes.Clientset, namespace string, statefulSetName string, podName string, timeoutSeconds int64) error {
+func watchForStatefulSetPodReady(clientset *kubernetes.Clientset, namespace string, statefulSetName string, podName string, timeoutSeconds int) error {
 	podObjWatch, err := clientset.CoreV1().Pods(namespace).Watch(context.Background(), metav1.ListOptions{
 		FieldSelector: fmt.Sprintf(
 			"metadata.name=%s", podName),

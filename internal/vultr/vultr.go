@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -121,4 +122,27 @@ func (c *VultrConfiguration) GetDNSInfo(domainName string) (string, error) {
 	}
 
 	return vultrDNSDomain.Domain, nil
+}
+
+// GetDomainApexContent determines whether or not a target domain features
+// a host responding at zone apex
+func GetDomainApexContent(domainName string) bool {
+	timeout := time.Duration(5 * time.Second)
+	client := http.Client{
+		Timeout: timeout,
+	}
+
+	exists := false
+	for _, proto := range []string{"http", "https"} {
+		fqdn := fmt.Sprintf("%s://%s", proto, domainName)
+		_, err := client.Get(fqdn)
+		if err != nil {
+			log.Warn().Msgf("domain %s has no apex content", fqdn)
+		} else {
+			log.Info().Msgf("domain %s has apex content", fqdn)
+			exists = true
+		}
+	}
+
+	return exists
 }

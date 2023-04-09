@@ -17,19 +17,19 @@ import (
 // and only returns once they're all healthy
 //
 // This helps prevent race conditions and timeouts
-func VerifyArgoCDReadiness(clientset *kubernetes.Clientset, highAvailabilityEnabled bool) (bool, error) {
+func VerifyArgoCDReadiness(clientset *kubernetes.Clientset, highAvailabilityEnabled bool, timeoutSeconds int) (bool, error) {
 	// Wait for ArgoCD StatefulSet Pods to transition to Running
 	argoCDStatefulSet, err := ReturnStatefulSetObject(
 		clientset,
 		"app.kubernetes.io/part-of",
 		"argocd",
 		"argocd",
-		240,
+		timeoutSeconds,
 	)
 	if err != nil {
 		return false, fmt.Errorf("error finding ArgoCD Application Controller StatefulSet: %s", err)
 	}
-	_, err = WaitForStatefulSetReady(clientset, argoCDStatefulSet, 240, false)
+	_, err = WaitForStatefulSetReady(clientset, argoCDStatefulSet, timeoutSeconds, false)
 	if err != nil {
 		return false, fmt.Errorf("error waiting for ArgoCD Application Controller StatefulSet ready state: %s", err)
 	}
@@ -40,12 +40,12 @@ func VerifyArgoCDReadiness(clientset *kubernetes.Clientset, highAvailabilityEnab
 		"app.kubernetes.io/name",
 		"argocd-server",
 		"argocd",
-		240,
+		timeoutSeconds,
 	)
 	if err != nil {
 		log.Info().Msgf("Error finding ArgoCD server deployment: %s", err)
 	}
-	_, err = WaitForDeploymentReady(clientset, argoCDServerDeployment, 240)
+	_, err = WaitForDeploymentReady(clientset, argoCDServerDeployment, timeoutSeconds)
 	if err != nil {
 		log.Info().Msgf("Error waiting for ArgoCD server deployment ready state: %s", err)
 	}
@@ -63,12 +63,12 @@ func VerifyArgoCDReadiness(clientset *kubernetes.Clientset, highAvailabilityEnab
 		"app.kubernetes.io/name",
 		"argocd-repo-server",
 		"argocd",
-		240,
+		timeoutSeconds,
 	)
 	if err != nil {
 		return false, fmt.Errorf("error finding ArgoCD repo deployment: %s", err.Error())
 	}
-	_, err = WaitForDeploymentReady(clientset, argoCDRepoDeployment, 240)
+	_, err = WaitForDeploymentReady(clientset, argoCDRepoDeployment, timeoutSeconds)
 	if err != nil {
 		return false, fmt.Errorf("error waiting for ArgoCD repo deployment ready state: %s", err.Error())
 	}
@@ -81,12 +81,12 @@ func VerifyArgoCDReadiness(clientset *kubernetes.Clientset, highAvailabilityEnab
 			"app.kubernetes.io/name",
 			"argocd-redis-ha-haproxy",
 			"argocd",
-			240,
+			timeoutSeconds,
 		)
 		if err != nil {
 			return false, fmt.Errorf("error finding ArgoCD argocd-redis-ha-haproxy Deployment: %s", err)
 		}
-		_, err = WaitForDeploymentReady(clientset, argoCDRedisHAhaproxyDeployment, 240)
+		_, err = WaitForDeploymentReady(clientset, argoCDRedisHAhaproxyDeployment, timeoutSeconds)
 		if err != nil {
 			return false, fmt.Errorf("error waiting for ArgoCD argocd-redis-ha-haproxy deployment ready state: %s", err.Error())
 		}
@@ -97,12 +97,12 @@ func VerifyArgoCDReadiness(clientset *kubernetes.Clientset, highAvailabilityEnab
 			"app.kubernetes.io/name",
 			"argocd-redis-ha",
 			"argocd",
-			240,
+			timeoutSeconds,
 		)
 		if err != nil {
 			return false, fmt.Errorf("error finding ArgoCD argocd-redis-ha StatefulSet: %s", err.Error())
 		}
-		_, err = WaitForStatefulSetReady(clientset, argoCDRedisHAServerStatefulSet, 240, false)
+		_, err = WaitForStatefulSetReady(clientset, argoCDRedisHAServerStatefulSet, timeoutSeconds, false)
 		if err != nil {
 			return false, fmt.Errorf("error waiting for ArgoCD argocd-redis-ha StatefulSet ready state: %s", err.Error())
 		}
@@ -114,12 +114,12 @@ func VerifyArgoCDReadiness(clientset *kubernetes.Clientset, highAvailabilityEnab
 			"app.kubernetes.io/name",
 			"argocd-redis",
 			"argocd",
-			240,
+			timeoutSeconds,
 		)
 		if err != nil {
 			return false, fmt.Errorf("error finding ArgoCD argocd-redis Deployment: %s", err)
 		}
-		_, err = WaitForDeploymentReady(clientset, argoCDRedisDeployment, 240)
+		_, err = WaitForDeploymentReady(clientset, argoCDRedisDeployment, timeoutSeconds)
 		if err != nil {
 			return false, fmt.Errorf("error waiting for ArgoCD argocd-redis Deployment ready state: %s", err)
 		}

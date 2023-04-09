@@ -17,6 +17,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/argocd"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
+	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
@@ -28,6 +29,8 @@ import (
 )
 
 func destroyVultr(cmd *cobra.Command, args []string) error {
+	helpers.DisplayLogHints()
+
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
 	// _, err := helpers.EvalDestroy(vultr.CloudProvider, gitProvider)
@@ -157,7 +160,33 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if viper.GetBool("kubefirst-checks.terraform-apply-vultr") {
+	// this should only run if a cluster was created
+	if viper.GetBool("kubefirst-checks.vultr-kubernetes-cluster-created") {
+		kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
+
+		// Remove applications with external dependencies
+		removeArgoCDApps := []string{
+			"ingress-nginx-components",
+			"ingress-nginx",
+			"argo-components",
+			"argo",
+			"atlantis-components",
+			"atlantis",
+			"vault-components",
+			"vault",
+		}
+		err = argocd.ArgoCDApplicationCleanup(kcfg.Clientset, removeArgoCDApps)
+		if err != nil {
+			log.Error().Msgf("encountered error during argocd application cleanup: %s")
+		}
+		// Pause before cluster destroy to prevent a race condition
+		log.Info().Msg("waiting for argocd application deletion to complete...")
+		time.Sleep(time.Second * 20)
+
+		viper.Set("kubefirst-checks.vultr-kubernetes-cluster-created", false)
+	}
+
+	if viper.GetBool("kubefirst-checks.terraform-apply-vultr") || viper.GetBool("kubefirst-checks.terraform-apply-vultr-failed") {
 		kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
 		log.Info().Msg("destroying vultr resources with terraform")
