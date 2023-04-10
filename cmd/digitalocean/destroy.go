@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package digitalocean
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -260,6 +261,20 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 		log.Info().Msg("digitalocean resources terraform destroyed")
 		progressPrinter.IncrementTracker("platform-destroy", 1)
+	}
+
+	// Remove hanging volumes
+	digitaloceanConf := digitalocean.DigitaloceanConfiguration{
+		Client:  digitalocean.NewDigitalocean(),
+		Context: context.Background(),
+	}
+	resources, err := digitaloceanConf.GetKubernetesAssociatedResources(clusterName)
+	if err != nil {
+		return err
+	}
+	err = digitaloceanConf.DeleteKubernetesClusterVolumes(resources)
+	if err != nil {
+		return err
 	}
 
 	// remove ssh key provided one was created
