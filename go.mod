@@ -24,6 +24,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.5.0
 	github.com/chromedp/chromedp v0.8.7
 	github.com/civo/civogo v0.3.23
+	github.com/digitalocean/godo v1.98.0
 	github.com/docker/docker v20.10.17+incompatible
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-git/go-git/v5 v5.4.2
