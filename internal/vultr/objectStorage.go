@@ -83,13 +83,13 @@ func (c *VultrConfiguration) CreateObjectStorageBucket(cr VultrBucketCredentials
 		Secure: useSSL,
 	})
 	if err != nil {
-		return fmt.Errorf("hey: %s", err)
+		return fmt.Errorf("error initializing minio client for vultr: %s", err)
 	}
 
 	location := "us-east-1"
 	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating bucket %s for %s: %s", bucketName, cr.Endpoint, err)
 	}
 
 	return nil

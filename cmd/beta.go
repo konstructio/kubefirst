@@ -9,6 +9,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst/cmd/digitalocean"
 	"github.com/kubefirst/kubefirst/cmd/vultr"
 	"github.com/spf13/cobra"
 )
@@ -27,6 +28,7 @@ var betaCmd = &cobra.Command{
 func init() {
 	cobra.OnInitialize()
 	betaCmd.AddCommand(
+		digitalocean.NewCommand(),
 		vultr.NewCommand(),
 	)
 }
