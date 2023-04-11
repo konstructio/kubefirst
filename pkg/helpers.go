@@ -365,25 +365,27 @@ func InformUser(message string, silentMode bool) {
 }
 
 // OpenBrowser opens the browser with the given URL
+// At this time, support is limited to darwin platforms
 func OpenBrowser(url string) error {
-	var err error
-
 	switch runtime.GOOS {
 	case "linux":
-		if err = exec.Command("xdg-open", url).Start(); err != nil {
-			return err
-		}
+		//if err = exec.Command("xdg-open", url).Start(); err != nil {
+		//	return err
+		//}
+		return nil
 	case "windows":
-		if err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start(); err != nil {
-			return err
-		}
+		//if err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start(); err != nil {
+		//	return err
+		//}
+		return nil
 	case "darwin":
-		if err = exec.Command("open", url).Start(); err != nil {
-			return err
+		if err := exec.Command("open", url).Start(); err != nil {
+			log.Warn().Msgf("unable to load the browser - continuing")
+			return nil
 		}
 	default:
-		err = fmt.Errorf("unable to load the browser, unsupported platform")
-		return err
+		log.Warn().Msgf("unable to load the browser, unsupported platform - continuing")
+		return nil
 	}
 
 	return nil
