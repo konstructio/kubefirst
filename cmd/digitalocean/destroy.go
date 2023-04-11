@@ -187,6 +187,16 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst-checks.digitalocean-kubernetes-cluster-created", false)
 	}
 
+	// Fetch cluster resources prior to deletion
+	digitaloceanConf := digitalocean.DigitaloceanConfiguration{
+		Client:  digitalocean.NewDigitalocean(),
+		Context: context.Background(),
+	}
+	resources, err := digitaloceanConf.GetKubernetesAssociatedResources(clusterName)
+	if err != nil {
+		return err
+	}
+
 	if viper.GetBool("kubefirst-checks.terraform-apply-digitalocean") || viper.GetBool("kubefirst-checks.terraform-apply-digitalocean-failed") {
 		kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
@@ -264,14 +274,6 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 	}
 
 	// Remove hanging volumes
-	digitaloceanConf := digitalocean.DigitaloceanConfiguration{
-		Client:  digitalocean.NewDigitalocean(),
-		Context: context.Background(),
-	}
-	resources, err := digitaloceanConf.GetKubernetesAssociatedResources(clusterName)
-	if err != nil {
-		return err
-	}
 	err = digitaloceanConf.DeleteKubernetesClusterVolumes(resources)
 	if err != nil {
 		return err

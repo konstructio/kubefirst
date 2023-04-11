@@ -1,3 +1,9 @@
+/*
+Copyright (C) 2021-2023, Kubefirst
+
+This program is licensed under MIT.
+See the LICENSE file for more details.
+*/
 package digitalocean
 
 import (
@@ -21,7 +27,7 @@ func (c *DigitaloceanConfiguration) GetKubernetesAssociatedResources(clusterName
 		}
 	}
 	if clusterID == "" {
-		return &godo.KubernetesAssociatedResources{}, fmt.Errorf("could not find cluster ID for cluster name %s: %s", clusterName, err)
+		return &godo.KubernetesAssociatedResources{}, fmt.Errorf("could not find cluster ID for cluster name %s", err)
 	}
 
 	resources, _, err := c.Client.Kubernetes.ListAssociatedResourcesForDeletion(c.Context, clusterID)

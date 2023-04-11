@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package vultr
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -186,6 +187,18 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst-checks.vultr-kubernetes-cluster-created", false)
 	}
 
+	// Fetch cluster-associated volumes prior to deletion
+
+	//GetKubernetesAssociatedBlockStorage
+	vultrConf := vultr.VultrConfiguration{
+		Client:  vultr.NewVultr(),
+		Context: context.Background(),
+	}
+	blockStorage, err := vultrConf.GetKubernetesAssociatedBlockStorage("", true)
+	if err != nil {
+		return err
+	}
+
 	if viper.GetBool("kubefirst-checks.terraform-apply-vultr") || viper.GetBool("kubefirst-checks.terraform-apply-vultr-failed") {
 		kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
@@ -260,6 +273,12 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 		log.Info().Msg("vultr resources terraform destroyed")
 		progressPrinter.IncrementTracker("platform-destroy", 1)
+	}
+
+	// Remove hanging volumes
+	err = vultrConf.DeleteBlockStorage(blockStorage)
+	if err != nil {
+		return err
 	}
 
 	// remove ssh key provided one was created

@@ -20,7 +20,7 @@ import (
 
 const (
 	// https://hub.docker.com/r/rancher/k3s/tags?page=1&name=v1.23
-	k3dImageTag string = "v1.23.17-k3s1"
+	k3dImageTag string = "v1.26.3-k3s1"
 )
 
 // ClusterCreate create an k3d cluster
