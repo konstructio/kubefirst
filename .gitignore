@@ -24,4 +24,4 @@ my.test
 go.test
 kubefirst.yaml
 # kubefirst # <- this is causing files in docs to not commit, need a more explicit path ignored
-
+cypress/screenshots
