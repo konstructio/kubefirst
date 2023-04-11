@@ -209,6 +209,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 		cGitHost = digitalocean.GitlabHost
 		cGitOwner = gitlabClient.ParentGroupPath
+		cGitlabOwnerGroupID = gitlabClient.ParentGroupID
 		log.Info().Msgf("set gitlab owner to %s", cGitOwner)
 
 		// Get authenticated user's name
@@ -220,6 +221,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 		containerRegistryHost = "registry.gitlab.com"
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
+		viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
 		viper.WriteConfig()
 	default:
 		log.Error().Msgf("invalid git provider option")
@@ -491,9 +493,6 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 			// Check for existing base projects
 			// Save for detokenize
-			cGitlabOwnerGroupID = gitlabClient.ParentGroupID
-			viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
-			viper.WriteConfig()
 			subgroups, err := gitlabClient.GetSubGroups()
 			if err != nil {
 				log.Fatal().Msgf("couldn't get gitlab subgroups for group %s: %s", cGitOwner, err)

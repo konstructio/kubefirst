@@ -229,6 +229,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		cGitHost = k3d.GitlabHost
 		cGitOwner = gitlabClient.ParentGroupPath
+		cGitlabOwnerGroupID = gitlabClient.ParentGroupID
 		log.Info().Msgf("set gitlab owner to %s", cGitOwner)
 
 		// Get authenticated user's name
@@ -237,8 +238,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("unable to get authenticated user info - please make sure GITLAB_TOKEN env var is set %s", err.Error())
 		}
 		cGitUser = user.Username
+
 		containerRegistryHost = "registry.gitlab.com"
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
+		viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
+		viper.WriteConfig()
 	default:
 		log.Error().Msgf("invalid git provider option")
 	}
@@ -424,7 +428,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 			// Check for existing base projects
 			// Save for detokenize
-			cGitlabOwnerGroupID = gitlabClient.ParentGroupID
 			subgroups, err := gitlabClient.GetSubGroups()
 			if err != nil {
 				log.Fatal().Msgf("couldn't get gitlab subgroups for group %s: %s", cGitOwner, err)
@@ -446,7 +449,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("preflight-checks", 1)
 	}
 
-	// todo this is actually your personal account
 	executionControl = viper.GetBool("kubefirst-checks.kbot-setup")
 	if !executionControl {
 		log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
