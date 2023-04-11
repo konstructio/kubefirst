@@ -23,3 +23,15 @@ func CustomHttpClient(allowInsecure bool) *http.Client {
 	}
 	return &httpClient
 }
+
+// ResolveAddress returns whether or not an address is resolvable
+func ResolveAddress(address string) error {
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+
+	_, err := httpClient.Get(address)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

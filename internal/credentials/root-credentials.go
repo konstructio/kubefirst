@@ -14,6 +14,7 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/kubefirst/kubefirst/internal/helpers"
+	"github.com/kubefirst/kubefirst/internal/httpCommon"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/reports"
 	"github.com/kubefirst/kubefirst/internal/vault"
@@ -69,24 +70,32 @@ func ParseAuthData(clientset *kubernetes.Clientset, cloudProvider string, gitPro
 	var argoCDPassword string
 	argoCDSecretData, err := k8s.ReadSecretV2(clientset, "argocd", "argocd-initial-admin-secret")
 	if err != nil {
-		return err
+		log.Warn().Msgf("argocd secret may not exist: %s", err)
 	}
 	argoCDPassword = argoCDSecretData["password"]
 
 	// Retrieve kbot password
-	if vaultRootToken == "" {
-		fmt.Println("Cannot retrieve Vault token automatically. Please provide one here:")
-		fmt.Scanln(&vaultRootToken)
-	}
-	vault := vault.VaultConfiguration{}
-	kbotPassword, err := vault.GetUserPassword(
-		fmt.Sprintf("https://vault.%s", domainName),
-		vaultRootToken,
-		"kbot",
-		"initial-password",
-	)
-	if err != nil {
-		return err
+	vaultUrl := fmt.Sprintf("https://vault.%s", domainName)
+	vaultResolves := httpCommon.ResolveAddress(vaultUrl)
+	var kbotPassword string
+
+	if vaultResolves == nil {
+		if vaultRootToken == "" {
+			fmt.Println("Cannot retrieve Vault token automatically. Please provide one here:")
+			fmt.Scanln(&vaultRootToken)
+		}
+		vault := vault.VaultConfiguration{}
+		kbotPassword, err = vault.GetUserPassword(
+			vaultUrl,
+			vaultRootToken,
+			"kbot",
+			"initial-password",
+		)
+		if err != nil {
+			log.Warn().Msgf("problem retrieving kbot password: %s", err)
+		}
+	} else {
+		kbotPassword = fmt.Sprintf("Cannot resolve Vault yet: %s - wait a few minutes and try again.", vaultResolves)
 	}
 
 	// If copying to clipboard, no need to return all output
@@ -119,13 +128,16 @@ func ParseAuthData(clientset *kubernetes.Clientset, cloudProvider string, gitPro
 	}
 
 	// Format parameters for final output
-	params := make(map[string]string)
-	paramsSorted := make(map[string]string)
+	params := make(map[string]string, 0)
+	paramsSorted := make(map[string]string, 0)
 
 	// Each item from the objects above should be added to params
-	params["ArgoCD Admin Password"] = argoCDPassword
-	params["KBot User Password"] = kbotPassword
-
+	if argoCDPassword != "" {
+		params["ArgoCD Admin Password"] = argoCDPassword
+	}
+	if kbotPassword != "" {
+		params["KBot User Password"] = kbotPassword
+	}
 	if vaultRootToken != "" {
 		params["Vault Root Token"] = vaultRootToken
 	}
@@ -155,6 +167,9 @@ func printAuthData(messageHeader string, params map[string]string) string {
 	createAuthData.WriteString(strings.Repeat("-", 70))
 	createAuthData.WriteString("\n\n")
 
+	if len(params) == 0 {
+		createAuthData.WriteString("No credentials were retrived.")
+	}
 	for object, auth := range params {
 		createAuthData.WriteString(fmt.Sprintf("%s: %s\n\n", object, auth))
 	}
