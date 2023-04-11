@@ -12,11 +12,13 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/atotto/clipboard"
 	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/kubefirst/kubefirst/internal/vault"
+	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -25,10 +27,17 @@ import (
 func EvalAuth(expectedCloudProvider string, expectedGitProvider string) (bool, error) {
 	flags := helpers.GetCompletionFlags()
 
+	platformHint := expectedCloudProvider
+	for _, betaProvider := range pkg.BetaProviders {
+		if expectedCloudProvider == betaProvider {
+			platformHint = fmt.Sprintf("beta %s", expectedCloudProvider)
+		}
+	}
+
 	if !flags.SetupComplete {
 		return false, fmt.Errorf(
 			"There are no active kubefirst platforms to retrieve credentials for.\n\tTo get started, run: kubefirst %s create -h\n",
-			expectedCloudProvider,
+			platformHint,
 		)
 	}
 
@@ -45,7 +54,7 @@ func EvalAuth(expectedCloudProvider string, expectedGitProvider string) (bool, e
 }
 
 // ParseAuthData gets base root credentials for platform components
-func ParseAuthData(clientset *kubernetes.Clientset, cloudProvider string, gitProvider string) error {
+func ParseAuthData(clientset *kubernetes.Clientset, cloudProvider string, gitProvider string, domainName string, opts *CredentialOptions) error {
 	// Retrieve vault root token
 	var vaultRootToken string
 	vaultUnsealSecretData, err := k8s.ReadSecretV2(clientset, "vault", "vault-unseal-secret")
@@ -65,7 +74,49 @@ func ParseAuthData(clientset *kubernetes.Clientset, cloudProvider string, gitPro
 	argoCDPassword = argoCDSecretData["password"]
 
 	// Retrieve kbot password
-	kbotPassword := viper.GetString("kbot.password")
+	if vaultRootToken == "" {
+		fmt.Println("Cannot retrieve Vault token automatically. Please provide one here:")
+		fmt.Scanln(&vaultRootToken)
+	}
+	vault := vault.VaultConfiguration{}
+	kbotPassword, err := vault.GetUserPassword(
+		fmt.Sprintf("https://vault.%s", domainName),
+		vaultRootToken,
+		"kbot",
+		"initial-password",
+	)
+	if err != nil {
+		return err
+	}
+
+	// If copying to clipboard, no need to return all output
+	switch {
+	case opts.CopyArgoCDPasswordToClipboard:
+		err := clipboard.WriteAll(argoCDPassword)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
+		fmt.Println("The ArgoCD initial admin password has been copied to the clipboard. Note that if you change this password, this value is no longer valid.")
+		return nil
+	case opts.CopyKbotPasswordToClipboard:
+		err := clipboard.WriteAll(kbotPassword)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
+		fmt.Println("The kbot password has been copied to the clipboard.")
+		return nil
+	case opts.CopyVaultPasswordToClipboard:
+		if vaultRootToken != "" {
+			err := clipboard.WriteAll(vaultRootToken)
+			if err != nil {
+				log.Error().Err(err).Msg("")
+			}
+			fmt.Println("The Vault root token has been copied to the clipboard.")
+		} else {
+			fmt.Println("The Vault root token secret does not exist and was not copied to the clipboard.")
+		}
+		return nil
+	}
 
 	// Format parameters for final output
 	params := make(map[string]string)
