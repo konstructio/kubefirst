@@ -16,6 +16,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/kubefirst/kubefirst/cmd"
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/spf13/viper"
@@ -83,10 +84,5 @@ func main() {
 		stdLog.Panicf("unable to set log-file-location, error is: %s", err)
 	}
 
-	//cmd.Execute()
-	err = pkg.OpenBrowser("https://www.google.com")
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(err)
+	cmd.Execute()
 }
