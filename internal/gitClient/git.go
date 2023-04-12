@@ -20,9 +20,7 @@ import (
 )
 
 func Clone(gitRef, repoLocalPath, repoURL string) (*git.Repository, error) {
-
-	// kubefirst tags do not contain a `v` prefix, to use the library requires the v to be valid
-	isSemVer := semver.IsValid("v" + gitRef)
+	isSemVer := semver.IsValid(gitRef)
 
 	var refName plumbing.ReferenceName
 
