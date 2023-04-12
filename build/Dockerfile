@@ -5,7 +5,7 @@ ARG KUBEFIRST_VERSION=1.10.5
 
 RUN apt-get update && \
     apt-get install -y unzip curl jq vim unzip less \
-     && rm -rf /var/lib/apt/lists/* 
+    && rm -rf /var/lib/apt/lists/* 
 
 # Kubernetes client
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.21.3/bin/$(uname -s)/amd64/kubectl && \
