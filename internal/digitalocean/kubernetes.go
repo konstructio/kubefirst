@@ -46,13 +46,12 @@ func (c *DigitaloceanConfiguration) DeleteKubernetesClusterVolumes(resources *go
 	}
 
 	for _, vol := range resources.Volumes {
-		voldata, _, err := c.Client.Storage.GetVolume(c.Context, vol.ID)
-		if err != nil {
-			return err
-		}
-
 		// Wait for volume to unattach
 		for i := 0; i < 120; i++ {
+			voldata, _, err := c.Client.Storage.GetVolume(c.Context, vol.ID)
+			if err != nil {
+				return err
+			}
 			if len(voldata.DropletIDs) != 0 {
 				log.Info().Msgf("volume %s is still attached to droplet(s) - waiting...", vol.ID)
 			}
@@ -60,7 +59,7 @@ func (c *DigitaloceanConfiguration) DeleteKubernetesClusterVolumes(resources *go
 		}
 
 		log.Info().Msg("removing volume with name: " + vol.Name)
-		_, err = c.Client.Storage.DeleteVolume(c.Context, voldata.ID)
+		_, err := c.Client.Storage.DeleteVolume(c.Context, vol.ID)
 		if err != nil {
 			return err
 		}
