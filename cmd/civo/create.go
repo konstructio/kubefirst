@@ -851,7 +851,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("wait-for-civo", "Wait for Civo Kubernetes", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.k8s-secrets-created") {
-		time.Sleep(time.Second * 120)
+		time.Sleep(time.Second * 60)
 	} else {
 		time.Sleep(time.Second * 5)
 	}
