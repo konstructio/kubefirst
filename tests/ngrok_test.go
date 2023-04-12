@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/kubefirst/runtime/configs"
+	"github.com/kubefirst/runtime/pkg"
 	"github.com/spf13/viper"
 )
 

@@ -10,12 +10,12 @@ builds:
     goos:
       - linux
       - darwin
-#      - windows
+    #      - windows
     flags:
       - -trimpath
     ldflags:
       - -X github.com/kubefirst/kubefirst/configs.K1Version=v{{.Version}}
-      
+
 #archives:
 #  - replacements:
 #      darwin: Darwin
@@ -26,7 +26,7 @@ builds:
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  name_template: '{{ incpatch .Version }}-next'
 changelog:
   sort: asc
   filters:
@@ -34,10 +34,10 @@ changelog:
       - '^docs:'
       - '^test:'
 brews:
-- name: kubefirst
-  homepage: https://github.com/kubefirst/kubefirst
-  tap:
-    owner: kubefirst
-    name: homebrew-tools
-  dependencies:
-    - aws-iam-authenticator
+  - name: kubefirst
+    homepage: https://github.com/kubefirst/kubefirst
+    tap:
+      owner: kubefirst
+      name: homebrew-tools
+    dependencies:
+      - aws-iam-authenticator

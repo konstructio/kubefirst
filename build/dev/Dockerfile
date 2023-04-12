@@ -5,7 +5,7 @@ ARG KUBEFIRST_VERSION=1.9.3
 
 RUN apt-get update && \
     apt-get install -y unzip curl jq vim unzip less \
-     && rm -rf /var/lib/apt/lists/* 
+    && rm -rf /var/lib/apt/lists/* 
 
 # Kubernetes client
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.21.3/bin/$(uname -s)/amd64/kubectl && \
@@ -45,7 +45,7 @@ COPY --chown=developer:developer . .
 
 # download dependencies and prepare fresh installation
 RUN go mod download
-RUN go build -ldflags="-X github.com/kubefirst/kubefirst/configs.K1Version=${KUBEFIRST_VERSION}" .
+RUN go build -ldflags="-X github.com/kubefirst/runtime/configs.K1Version=${KUBEFIRST_VERSION}" .
 
 USER root
 RUN  mv ./kubefirst /usr/local/bin/ && chmod 777 /usr/local/bin/kubefirst

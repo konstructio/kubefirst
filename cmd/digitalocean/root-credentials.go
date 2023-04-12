@@ -9,9 +9,9 @@ package digitalocean
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst/internal/credentials"
-	"github.com/kubefirst/kubefirst/internal/digitalocean"
-	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/runtime/pkg/credentials"
+	"github.com/kubefirst/runtime/pkg/digitalocean"
+	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

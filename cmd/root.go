@@ -13,9 +13,9 @@ import (
 	"github.com/kubefirst/kubefirst/cmd/aws"
 	"github.com/kubefirst/kubefirst/cmd/civo"
 	"github.com/kubefirst/kubefirst/cmd/k3d"
-	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/runtime/configs"
 
-	"github.com/kubefirst/kubefirst/internal/progressPrinter"
+	"github.com/kubefirst/runtime/pkg/progressPrinter"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +40,7 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	//This will allow all child commands to have informUser available for free.
-	//Refers: https://github.com/kubefirst/kubefirst/issues/525
+	//Refers: https://github.com/kubefirst/runtime/issues/525
 	//Before removing next line, please read ticket above.
 	progressPrinter.GetInstance()
 	err := rootCmd.Execute()
