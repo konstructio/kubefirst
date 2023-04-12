@@ -523,7 +523,6 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		}
 		log.Info().Msg("ssh key pair creation complete")
 
-		viper.Set("kbot.password", kbotPasswordFlag)
 		viper.Set("kbot.private-key", sshPrivateKey)
 		viper.Set("kbot.public-key", sshPublicKey)
 		viper.Set("kbot.username", "kbot")
@@ -823,7 +822,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("wait-for-vultr", "Wait for Vultr Kubernetes", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.k8s-secrets-created") {
-		time.Sleep(time.Second * 120)
+		time.Sleep(time.Second * 60)
 	} else {
 		time.Sleep(time.Second * 5)
 	}

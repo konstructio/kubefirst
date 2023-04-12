@@ -53,14 +53,18 @@ func AwsHandoffScreen(argocdAdminPassword, clusterName, domainName string, gitOw
 	handOffData.WriteString("\n--- ArgoCD ")
 	handOffData.WriteString(strings.Repeat("-", 59))
 	handOffData.WriteString(fmt.Sprintf("\n URL: https://argocd.%s", domainName))
-	handOffData.WriteString(fmt.Sprintf("\n username: %s", "admin"))
-	handOffData.WriteString(fmt.Sprintf("\n password: %s", argocdAdminPassword))
 
 	handOffData.WriteString("\n--- Vault ")
 	handOffData.WriteString(strings.Repeat("-", 60))
 	handOffData.WriteString(fmt.Sprintf("\n URL: %s", fmt.Sprintf("https://vault.%s", domainName)))
-	handOffData.WriteString(fmt.Sprintf("\n Root token: %s", "Check the secret vault-unseal-secret in Namespace vault"))
 	handOffData.WriteString("\n" + strings.Repeat("-", 70))
+
+	handOffData.WriteString("\n\nNote:")
+	handOffData.WriteString("\n  To retrieve root credentials for your kubefirst platform, including")
+	handOffData.WriteString("\n  ArgoCD, the kbot user password, and Vault, run the following command:")
+	handOffData.WriteString(fmt.Sprintf("\n"+"\n    kubefirst %s root-credentials"+"\n", awsinternal.CloudProvider))
+	handOffData.WriteString("\n  Note that this command allows you to copy these passwords diretly")
+	handOffData.WriteString("\n  to your clipboard. Provide the -h flag for additional details.")
 
 	CommandSummary(handOffData)
 }

@@ -558,7 +558,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 		log.Info().Msg("ssh key pair creation complete")
 
-		viper.Set("kbot.password", kbotPasswordFlag)
 		viper.Set("kbot.private-key", sshPrivateKey)
 		viper.Set("kbot.public-key", sshPublicKey)
 		viper.Set("kbot.username", "kbot")

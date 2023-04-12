@@ -28,6 +28,11 @@ var (
 	kbotPasswordFlag         string
 	useTelemetryFlag         bool
 
+	// RootCredentials
+	copyArgoCDPasswordToClipboardFlag bool
+	copyKbotPasswordToClipboardFlag   bool
+	copyVaultPasswordToClipboardFlag  bool
+
 	// Supported git providers
 	supportedGitProviders = []string{"github", "gitlab"}
 )
@@ -44,7 +49,7 @@ func NewCommand() *cobra.Command {
 	digitaloceanCmd.SilenceUsage = true
 
 	// wire up new commands
-	digitaloceanCmd.AddCommand(Create(), Destroy())
+	digitaloceanCmd.AddCommand(Create(), Destroy(), RootCredentials())
 
 	return digitaloceanCmd
 }
@@ -86,4 +91,19 @@ func Destroy() *cobra.Command {
 	}
 
 	return destroyCmd
+}
+
+func RootCredentials() *cobra.Command {
+	authCmd := &cobra.Command{
+		Use:   "root-credentials",
+		Short: "retrieve root authentication information for platform components",
+		Long:  "retrieve root authentication information for platform components",
+		RunE:  getDigitaloceanRootCredentials,
+	}
+
+	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the argocd password to the clipboard (optional)")
+	authCmd.Flags().BoolVar(&copyKbotPasswordToClipboardFlag, "kbot", false, "copy the kbot password to the clipboard (optional)")
+	authCmd.Flags().BoolVar(&copyVaultPasswordToClipboardFlag, "vault", false, "copy the vault password to the clipboard (optional)")
+
+	return authCmd
 }

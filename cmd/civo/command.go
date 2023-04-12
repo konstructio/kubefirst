@@ -28,6 +28,11 @@ var (
 	kbotPasswordFlag         string
 	useTelemetryFlag         bool
 
+	// RootCredentials
+	copyArgoCDPasswordToClipboardFlag bool
+	copyKbotPasswordToClipboardFlag   bool
+	copyVaultPasswordToClipboardFlag  bool
+
 	// Supported git providers
 	supportedGitProviders = []string{"github", "gitlab"}
 )
@@ -116,6 +121,10 @@ func RootCredentials() *cobra.Command {
 		Long:  "retrieve root authentication information for platform components",
 		RunE:  getCivoRootCredentials,
 	}
+
+	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the argocd password to the clipboard (optional)")
+	authCmd.Flags().BoolVar(&copyKbotPasswordToClipboardFlag, "kbot", false, "copy the kbot password to the clipboard (optional)")
+	authCmd.Flags().BoolVar(&copyVaultPasswordToClipboardFlag, "vault", false, "copy the vault password to the clipboard (optional)")
 
 	return authCmd
 }
