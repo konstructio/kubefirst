@@ -47,21 +47,23 @@ func (c *DigitaloceanConfiguration) DeleteKubernetesClusterVolumes(resources *go
 
 	for _, vol := range resources.Volumes {
 		// Wait for volume to unattach
-		for i := 0; i < 120; i++ {
+		for i := 0; i < 24; i++ {
 			voldata, _, err := c.Client.Storage.GetVolume(c.Context, vol.ID)
 			if err != nil {
 				return err
 			}
 			if len(voldata.DropletIDs) != 0 {
 				log.Info().Msgf("volume %s is still attached to droplet(s) - waiting...", vol.ID)
+			} else {
+				break
 			}
-			time.Sleep(time.Second * 1)
+			time.Sleep(time.Second * 5)
 		}
 
 		log.Info().Msg("removing volume with name: " + vol.Name)
 		_, err := c.Client.Storage.DeleteVolume(c.Context, vol.ID)
 		if err != nil {
-			return err
+			log.Error().Msgf("error deleting volume %s: %s", vol.ID, err)
 		}
 		log.Info().Msg("volume " + vol.ID + " deleted")
 	}
