@@ -4,7 +4,7 @@ Copyright (C) 2021-2023, Kubefirst
 This program is licensed under MIT.
 See the LICENSE file for more details.
 */
-package vultr
+package digitalocean
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	CloudProvider          = "vultr"
+	CloudProvider          = "digitalocean"
 	GithubHost             = "github.com"
 	GitlabHost             = "gitlab.com"
 	KubectlClientVersion   = "v1.25.7"
@@ -30,10 +30,10 @@ const (
 	VaultPortForwardURL  = pkg.VaultPortForwardURL
 )
 
-type VultrConfig struct {
-	VultrToken  string `env:"VULTR_API_KEY"`
-	GithubToken string `env:"GITHUB_TOKEN"`
-	GitlabToken string `env:"GITLAB_TOKEN"`
+type DigitaloceanConfig struct {
+	DigitaloceanToken string `env:"DO_TOKEN"`
+	GithubToken       string `env:"GITHUB_TOKEN"`
+	GitlabToken       string `env:"GITLAB_TOKEN"`
 
 	ArgoWorkflowsDir                string
 	DestinationGitopsRepoHttpsURL   string
@@ -57,8 +57,8 @@ type VultrConfig struct {
 }
 
 // GetConfig - load default values from kubefirst installer
-func GetConfig(clusterName string, domainName string, gitProvider string, gitOwner string) *VultrConfig {
-	config := VultrConfig{}
+func GetConfig(clusterName string, domainName string, gitProvider string, gitOwner string) *DigitaloceanConfig {
+	config := DigitaloceanConfig{}
 
 	// todo do we want these from envs?
 	if err := env.Parse(&config); err != nil {

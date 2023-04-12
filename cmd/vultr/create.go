@@ -202,6 +202,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 		cGitHost = vultr.GitlabHost
 		cGitOwner = gitlabClient.ParentGroupPath
+		cGitlabOwnerGroupID = gitlabClient.ParentGroupID
 		log.Info().Msgf("set gitlab owner to %s", cGitOwner)
 
 		// Get authenticated user's name
@@ -213,6 +214,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 		containerRegistryHost = "registry.gitlab.com"
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
+		viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
 		viper.WriteConfig()
 	default:
 		log.Error().Msgf("invalid git provider option")
@@ -487,9 +489,6 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 			// Check for existing base projects
 			// Save for detokenize
-			cGitlabOwnerGroupID = gitlabClient.ParentGroupID
-			viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
-			viper.WriteConfig()
 			subgroups, err := gitlabClient.GetSubGroups()
 			if err != nil {
 				log.Fatal().Msgf("couldn't get gitlab subgroups for group %s: %s", cGitOwner, err)
@@ -524,7 +523,6 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		}
 		log.Info().Msg("ssh key pair creation complete")
 
-		viper.Set("kbot.password", kbotPasswordFlag)
 		viper.Set("kbot.private-key", sshPrivateKey)
 		viper.Set("kbot.public-key", sshPublicKey)
 		viper.Set("kbot.username", "kbot")
@@ -824,7 +822,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("wait-for-vultr", "Wait for Vultr Kubernetes", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.k8s-secrets-created") {
-		time.Sleep(time.Second * 120)
+		time.Sleep(time.Second * 60)
 	} else {
 		time.Sleep(time.Second * 5)
 	}

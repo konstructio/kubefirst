@@ -4,7 +4,7 @@ Copyright (C) 2021-2023, Kubefirst
 This program is licensed under MIT.
 See the LICENSE file for more details.
 */
-package civo
+package digitalocean
 
 import (
 	"fmt"
@@ -39,44 +39,36 @@ var (
 
 func NewCommand() *cobra.Command {
 
-	civoCmd := &cobra.Command{
-		Use:   "civo",
-		Short: "kubefirst civo installation",
-		Long:  "kubefirst civo",
+	digitaloceanCmd := &cobra.Command{
+		Use:   "digitalocean",
+		Short: "kubefirst digitalocean installation",
+		Long:  "kubefirst digitalocean",
 	}
+
+	// on error, doesnt show helper/usage
+	digitaloceanCmd.SilenceUsage = true
 
 	// wire up new commands
-	civoCmd.AddCommand(BackupSSL(), Create(), Destroy(), Quota(), RootCredentials())
+	digitaloceanCmd.AddCommand(Create(), Destroy(), RootCredentials())
 
-	return civoCmd
-}
-
-func BackupSSL() *cobra.Command {
-	backupSSLCmd := &cobra.Command{
-		Use:   "backup-ssl",
-		Short: "backup the cluster resources related tls certificates from cert-manager",
-		Long:  "kubefirst uses a combination of external-dns, ingress-nginx, and cert-manager for provisioning automated tls certificates for services with an ingress. this command will backup all the kubernetes resources to restore in a new cluster with the same domain name",
-		RunE:  backupCivoSSL,
-	}
-
-	return backupSSLCmd
+	return digitaloceanCmd
 }
 
 func Create() *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:              "create",
-		Short:            "create the kubefirst platform running on civo kubernetes",
+		Short:            "create the kubefirst platform running on digitalocean kubernetes",
 		TraverseChildren: true,
-		RunE:             createCivo,
+		RunE:             createDigitalocean,
 	}
 
 	// todo review defaults and update descriptions
 	createCmd.Flags().StringVar(&alertsEmailFlag, "alerts-email", "", "email address for let's encrypt certificate notifications (required)")
 	createCmd.MarkFlagRequired("alerts-email")
-	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "NYC1", "the civo region to provision infrastructure in")
+	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "nyc3", "the digitalocean region to provision infrastructure in")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
-	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the Civo DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
+	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the digitalocean DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
 	createCmd.Flags().BoolVar(&dryRun, "dry-run", false, "don't execute the installation")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
@@ -94,24 +86,11 @@ func Destroy() *cobra.Command {
 	destroyCmd := &cobra.Command{
 		Use:   "destroy",
 		Short: "destroy the kubefirst platform",
-		Long:  "destroy the kubefirst platform running in civo and remove all resources",
-		RunE:  destroyCivo,
+		Long:  "destroy the kubefirst platform running in digitalocean and remove all resources",
+		RunE:  destroyDigitalocean,
 	}
 
 	return destroyCmd
-}
-
-func Quota() *cobra.Command {
-	quotaCmd := &cobra.Command{
-		Use:   "quota",
-		Short: "Check Civo quota status",
-		Long:  "Check Civo quota status. By default, only ones close to limits will be shown.",
-		RunE:  evalCivoQuota,
-	}
-
-	quotaCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "NYC1", "the civo region to monitor quotas in")
-
-	return quotaCmd
 }
 
 func RootCredentials() *cobra.Command {
@@ -119,7 +98,7 @@ func RootCredentials() *cobra.Command {
 		Use:   "root-credentials",
 		Short: "retrieve root authentication information for platform components",
 		Long:  "retrieve root authentication information for platform components",
-		RunE:  getCivoRootCredentials,
+		RunE:  getDigitaloceanRootCredentials,
 	}
 
 	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the argocd password to the clipboard (optional)")

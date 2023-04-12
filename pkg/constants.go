@@ -11,6 +11,10 @@ import (
 	"runtime"
 )
 
+var (
+	BetaProviders []string = []string{"digitalocean", "vultr"}
+)
+
 const (
 	JSONContentType              = "application/json"
 	SoftServerURI                = "ssh://127.0.0.1:8022/config"

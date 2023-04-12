@@ -4,7 +4,7 @@ Copyright (C) 2021-2023, Kubefirst
 This program is licensed under MIT.
 See the LICENSE file for more details.
 */
-package vultr
+package digitalocean
 
 import (
 	"context"
@@ -17,24 +17,24 @@ import (
 	"time"
 
 	"github.com/kubefirst/kubefirst/internal/argocd"
+	"github.com/kubefirst/kubefirst/internal/digitalocean"
 	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
 	"github.com/kubefirst/kubefirst/internal/helpers"
 	"github.com/kubefirst/kubefirst/internal/k8s"
 	"github.com/kubefirst/kubefirst/internal/progressPrinter"
 	"github.com/kubefirst/kubefirst/internal/terraform"
-	"github.com/kubefirst/kubefirst/internal/vultr"
 	"github.com/kubefirst/kubefirst/pkg"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-func destroyVultr(cmd *cobra.Command, args []string) error {
+func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 	helpers.DisplayLogHints()
 
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
-	// _, err := helpers.EvalDestroy(vultr.CloudProvider, gitProvider)
+	// _, err := helpers.EvalDestroy(digitalocean.CloudProvider, gitProvider)
 	// if err != nil {
 	// 	return err
 	// }
@@ -48,7 +48,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	log.Info().Msg("destroying kubefirst platform in vultr")
+	log.Info().Msg("destroying kubefirst platform in digitalocean")
 
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
@@ -67,12 +67,12 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 		log.Panic().Msgf("invalid git provider option")
 	}
 
-	// Instantiate vultr config
-	config := vultr.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
+	// Instantiate digitalocean config
+	config := digitalocean.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
 
 	// todo improve these checks, make them standard for
 	// both create and destroy
-	vultrToken := os.Getenv("VULTR_API_KEY")
+	digitaloceanToken := os.Getenv("DO_TOKEN")
 
 	if len(cGitToken) == 0 {
 		return fmt.Errorf(
@@ -80,8 +80,8 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 			strings.ToUpper(gitProvider), gitProvider,
 		)
 	}
-	if len(vultrToken) == 0 {
-		return fmt.Errorf("\n\nYour VULTR_API_KEY environment variable isn't set")
+	if len(digitaloceanToken) == 0 {
+		return fmt.Errorf("\n\nYour DO_TOKEN environment variable isn't set")
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 
@@ -95,8 +95,8 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
-			tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
-			tfEnvs = vultr.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
+			tfEnvs = digitalocean.GetGithubTerraformEnvs(tfEnvs)
 			err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -146,8 +146,8 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
-			tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
-			tfEnvs = vultr.GetGitlabTerraformEnvs(tfEnvs, gitlabClient.ParentGroupID)
+			tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
+			tfEnvs = digitalocean.GetGitlabTerraformEnvs(tfEnvs, gitlabClient.ParentGroupID)
 			err = terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -162,7 +162,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 	}
 
 	// this should only run if a cluster was created
-	if viper.GetBool("kubefirst-checks.vultr-kubernetes-cluster-created") {
+	if viper.GetBool("kubefirst-checks.digitalocean-kubernetes-cluster-created") {
 		kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
 		// Remove applications with external dependencies
@@ -184,25 +184,23 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("waiting for argocd application deletion to complete...")
 		time.Sleep(time.Second * 20)
 
-		viper.Set("kubefirst-checks.vultr-kubernetes-cluster-created", false)
+		viper.Set("kubefirst-checks.digitalocean-kubernetes-cluster-created", false)
 	}
 
-	// Fetch cluster-associated volumes prior to deletion
-
-	//GetKubernetesAssociatedBlockStorage
-	vultrConf := vultr.VultrConfiguration{
-		Client:  vultr.NewVultr(),
+	// Fetch cluster resources prior to deletion
+	digitaloceanConf := digitalocean.DigitaloceanConfiguration{
+		Client:  digitalocean.NewDigitalocean(),
 		Context: context.Background(),
 	}
-	blockStorage, err := vultrConf.GetKubernetesAssociatedBlockStorage("", true)
+	resources, err := digitaloceanConf.GetKubernetesAssociatedResources(clusterName)
 	if err != nil {
 		return err
 	}
 
-	if viper.GetBool("kubefirst-checks.terraform-apply-vultr") || viper.GetBool("kubefirst-checks.terraform-apply-vultr-failed") {
+	if viper.GetBool("kubefirst-checks.terraform-apply-digitalocean") || viper.GetBool("kubefirst-checks.terraform-apply-digitalocean-failed") {
 		kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
-		log.Info().Msg("destroying vultr resources with terraform")
+		log.Info().Msg("destroying digitalocean resources with terraform")
 
 		log.Info().Msg("opening argocd port forward")
 		//* ArgoCD port-forward
@@ -233,7 +231,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log.Info().Msgf("port-forward to argocd is available at %s", vultr.ArgocdPortForwardURL)
+		log.Info().Msgf("port-forward to argocd is available at %s", digitalocean.ArgocdPortForwardURL)
 
 		customTransport := http.DefaultTransport.(*http.Transport).Clone()
 		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -246,37 +244,37 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("http status code %d", httpCode)
 
 		// Pause before cluster destroy to prevent a race condition
-		log.Info().Msg("waiting for vultr Kubernetes cluster resource removal to finish...")
+		log.Info().Msg("waiting for digitalocean Kubernetes cluster resource removal to finish...")
 		time.Sleep(time.Second * 10)
 
-		log.Info().Msg("destroying vultr cloud resources")
-		tfEntrypoint := config.GitopsDir + "/terraform/vultr"
+		log.Info().Msg("destroying digitalocean cloud resources")
+		tfEntrypoint := config.GitopsDir + "/terraform/digitalocean"
 		tfEnvs := map[string]string{}
-		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
+		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
 
 		switch gitProvider {
 		case "github":
-			tfEnvs = vultr.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs = digitalocean.GetGithubTerraformEnvs(tfEnvs)
 		case "gitlab":
 			gid, err := strconv.Atoi(viper.GetString("flags.gitlab-owner-group-id"))
 			if err != nil {
 				return fmt.Errorf("couldn't convert gitlab group id to int: %s", err)
 			}
-			tfEnvs = vultr.GetGitlabTerraformEnvs(tfEnvs, gid)
+			tfEnvs = digitalocean.GetGitlabTerraformEnvs(tfEnvs, gid)
 		}
 		err = terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
 		if err != nil {
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)
 			return err
 		}
-		viper.Set("kubefirst-checks.terraform-apply-vultr", false)
+		viper.Set("kubefirst-checks.terraform-apply-digitalocean", false)
 		viper.WriteConfig()
-		log.Info().Msg("vultr resources terraform destroyed")
+		log.Info().Msg("digitalocean resources terraform destroyed")
 		progressPrinter.IncrementTracker("platform-destroy", 1)
 	}
 
 	// Remove hanging volumes
-	err = vultrConf.DeleteBlockStorage(blockStorage)
+	err = digitaloceanConf.DeleteKubernetesClusterVolumes(resources)
 	if err != nil {
 		return err
 	}
@@ -295,7 +293,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 	}
 
 	//* remove local content and kubefirst config file for re-execution
-	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.terraform-apply-vultr") {
+	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.terraform-apply-digitalocean") {
 		log.Info().Msg("removing previous platform content")
 
 		err := pkg.ResetK1Dir(config.K1Dir)
@@ -321,7 +319,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 		}
 	}
 	time.Sleep(time.Second * 2) // allows progress bars to finish
-	fmt.Printf("Your kubefirst platform running in %s has been destroyed.", vultr.CloudProvider)
+	fmt.Printf("Your kubefirst platform running in %s has been destroyed.", digitalocean.CloudProvider)
 
 	return nil
 }

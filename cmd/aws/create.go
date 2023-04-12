@@ -216,6 +216,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		cGitHost = awsinternal.GitlabHost
 		cGitOwner = gitlabClient.ParentGroupPath
+		cGitlabOwnerGroupID = gitlabClient.ParentGroupID
 		log.Info().Msgf("set gitlab owner to %s", cGitOwner)
 
 		// Get authenticated user's name
@@ -226,6 +227,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		cGitUser = user.Username
 
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
+		viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
 		viper.WriteConfig()
 	default:
 		log.Error().Msgf("invalid git provider option")
@@ -372,9 +374,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 			// Check for existing base projects
 			// Save for detokenize
-			cGitlabOwnerGroupID = gitlabClient.ParentGroupID
-			viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
-			viper.WriteConfig()
 			subgroups, err := gitlabClient.GetSubGroups()
 			if err != nil {
 				log.Fatal().Msgf("couldn't get gitlab subgroups for group %s: %s", cGitOwner, err)
@@ -468,7 +467,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 		log.Info().Msg("ssh key pair creation complete")
 
-		viper.Set("kbot.password", kbotPasswordFlag)
 		viper.Set("kbot.private-key", sshPrivateKey)
 		viper.Set("kbot.public-key", sshPublicKey)
 		viper.Set("kbot.username", "kbot")

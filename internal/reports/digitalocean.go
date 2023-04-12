@@ -9,15 +9,14 @@ package reports
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"strings"
 
-	"github.com/rs/zerolog/log"
-
-	awsinternal "github.com/kubefirst/kubefirst/internal/aws"
+	"github.com/kubefirst/kubefirst/internal/digitalocean"
 )
 
-// AwsHandoffScreen prints the handoff screen
-func AwsHandoffScreen(argocdAdminPassword, clusterName, domainName string, gitOwner string, config *awsinternal.AwsConfig, dryRun bool, silentMode bool) {
+// DigitaloceanHandoffScreen prints the handoff screen
+func DigitaloceanHandoffScreen(argocdAdminPassword, clusterName, domainName string, gitOwner string, config *digitalocean.DigitaloceanConfig, dryRun bool, silentMode bool) {
 	// prepare data for the handoff report
 	if dryRun {
 		log.Printf("[#99] Dry-run mode, LocalHandoffScreen skipped.")
@@ -62,7 +61,7 @@ func AwsHandoffScreen(argocdAdminPassword, clusterName, domainName string, gitOw
 	handOffData.WriteString("\n\nNote:")
 	handOffData.WriteString("\n  To retrieve root credentials for your kubefirst platform, including")
 	handOffData.WriteString("\n  ArgoCD, the kbot user password, and Vault, run the following command:")
-	handOffData.WriteString(fmt.Sprintf("\n"+"\n    kubefirst %s root-credentials"+"\n", awsinternal.CloudProvider))
+	handOffData.WriteString(fmt.Sprintf("\n"+"\n    kubefirst %s root-credentials"+"\n", digitalocean.CloudProvider))
 	handOffData.WriteString("\n  Note that this command allows you to copy these passwords diretly")
 	handOffData.WriteString("\n  to your clipboard. Provide the -h flag for additional details.")
 
