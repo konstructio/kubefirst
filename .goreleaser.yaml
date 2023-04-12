@@ -14,7 +14,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -X github.com/kubefirst/kubefirst/configs.K1Version={{.Version}}
+      - -X github.com/kubefirst/kubefirst/configs.K1Version=v{{.Version}}
       
 #archives:
 #  - replacements:
