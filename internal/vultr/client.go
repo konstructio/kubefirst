@@ -8,7 +8,11 @@ package vultr
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/vultr/govultr/v3"
 	"golang.org/x/oauth2"
@@ -26,4 +30,29 @@ func NewVultr() *govultr.Client {
 	vultrClient := govultr.NewClient(oauth2.NewClient(ctx, ts))
 
 	return vultrClient
+}
+
+// HealthCheck looks for any service alerts in the specified region
+func (c *VultrConfiguration) HealthCheck(region string) error {
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+	var output ServiceAlerts
+
+	resp, err := httpClient.Get("https://status.vultr.com/alerts.json")
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	err = json.NewDecoder(resp.Body).Decode(&output)
+	if err != nil {
+		return err
+	}
+
+	for _, alert := range output.ServiceAlerts {
+		if alert.Region == region {
+			fmt.Println(alert.Entries)
+		}
+	}
+
+	return nil
 }

@@ -59,6 +59,7 @@ func Create() *cobra.Command {
 		Use:              "create",
 		Short:            "create the kubefirst platform running on vultr kubernetes",
 		TraverseChildren: true,
+		PreRunE:          checkVultrCloudHealth,
 		RunE:             createVultr,
 	}
 
