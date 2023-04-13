@@ -19,11 +19,11 @@ import (
 	"github.com/atotto/clipboard"
 	"github.com/dustin/go-humanize"
 	"github.com/rs/zerolog/log"
-	v1 "k8s.io/api/core/v1"
 
 	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
 	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/argocd"
@@ -360,86 +360,16 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			)
 		}
 
-		switch config.GitProvider {
-		case "github":
-			githubSession := github.New(cGitToken)
-			newRepositoryExists := false
-			// todo hoist to globals
-			errorMsg := "the following repositories must be removed before continuing with your kubefirst installation.\n\t"
-
-			for _, repositoryName := range newRepositoryNames {
-				responseStatusCode := githubSession.CheckRepoExists(cGitOwner, repositoryName)
-
-				// https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
-				repositoryExistsStatusCode := 200
-				repositoryDoesNotExistStatusCode := 404
-
-				if responseStatusCode == repositoryExistsStatusCode {
-					log.Info().Msgf("repository https://github.com/%s/%s exists", cGitOwner, repositoryName)
-					errorMsg = errorMsg + fmt.Sprintf("https://github.com/%s/%s\n\t", cGitOwner, repositoryName)
-					newRepositoryExists = true
-				} else if responseStatusCode == repositoryDoesNotExistStatusCode {
-					log.Info().Msgf("repository https://github.com/%s/%s does not exist, continuing", cGitOwner, repositoryName)
-				}
-			}
-			if newRepositoryExists {
-				return fmt.Errorf(errorMsg)
-			}
-
-			newTeamExists := false
-			errorMsg = "the following teams must be removed before continuing with your kubefirst installation.\n\t"
-
-			for _, teamName := range newTeamNames {
-				responseStatusCode := githubSession.CheckTeamExists(cGitOwner, teamName)
-
-				// https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#get-a-team-by-name
-				teamExistsStatusCode := 200
-				teamDoesNotExistStatusCode := 404
-
-				if responseStatusCode == teamExistsStatusCode {
-					log.Info().Msgf("team https://github.com/%s/%s exists", cGitOwner, teamName)
-					errorMsg = errorMsg + fmt.Sprintf("https://github.com/orgs/%s/teams/%s\n\t", cGitOwner, teamName)
-					newTeamExists = true
-				} else if responseStatusCode == teamDoesNotExistStatusCode {
-					log.Info().Msgf("https://github.com/orgs/%s/teams/%s does not exist, continuing", cGitOwner, teamName)
-				}
-			}
-			if newTeamExists {
-				return fmt.Errorf(errorMsg)
-			}
-		case "gitlab":
-			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
-			if err != nil {
-				return err
-			}
-
-			// Check for existing base projects
-			projects, err := gitlabClient.GetProjects()
-			if err != nil {
-				log.Fatal().Msgf("couldn't get gitlab projects: %s", err)
-			}
-			for _, repositoryName := range newRepositoryNames {
-				for _, project := range projects {
-					if project.Name == repositoryName {
-						return fmt.Errorf("project %s already exists and will need to be deleted before continuing", repositoryName)
-					}
-				}
-			}
-
-			// Check for existing base projects
-			// Save for detokenize
-			subgroups, err := gitlabClient.GetSubGroups()
-			if err != nil {
-				log.Fatal().Msgf("couldn't get gitlab subgroups for group %s: %s", cGitOwner, err)
-			}
-			for _, teamName := range newRepositoryNames {
-				for _, sg := range subgroups {
-					if sg.Name == teamName {
-						return fmt.Errorf("subgroup %s already exists and will need to be deleted before continuing", teamName)
-					}
-				}
-			}
+		initGitParameters := gitShim.GitInitParameters{
+			GitProvider:  gitProviderFlag,
+			GitToken:     cGitToken,
+			GitOwner:     cGitOwner,
+			Repositories: newRepositoryNames,
+			Teams:        newTeamNames,
+			GithubOrg:    githubOrgFlag,
+			GitlabGroup:  gitlabGroupFlag,
 		}
+		gitShim.InitializeGitProvider(&initGitParameters)
 
 		viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider), true)
 		viper.WriteConfig()
@@ -819,57 +749,22 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// 	log.Info().Msg("no files found in secrets directory, continuing")
 	// }
 
-	// GitLab Deploy Tokens
-	// Handle secret creation for buildkit
-	createTokensFor := []string{"metaphor"}
-	var metaphorDeployToken string
-	switch config.GitProvider {
-	// GitHub docker auth secret
-	// Buildkit requires a specific format for Docker auth created as a secret
-	// For GitHub, this becomes the provided token (pat)
-	case "github":
-		usernamePasswordString := fmt.Sprintf("%s:%s", cGitUser, cGitToken)
-		usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
-		dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"username": "%s", "password": "%s", "email": "%s", "auth": "%s"}}}`, containerRegistryHost, cGitUser, cGitToken, "k-bot@example.com", usernamePasswordStringB64)
-
-		for _, repository := range createTokensFor {
-			// Create argo workflows pull secret
-			// This is formatted to work with buildkit
-			argoDeployTokenSecret := &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-deploy-token", repository), Namespace: "argo"},
-				Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
-				Type:       "Opaque",
-			}
-			err = k8s.CreateSecretV2(kcfg.Clientset, argoDeployTokenSecret)
-			if err != nil {
-				log.Error().Msgf("error while creating secret for repository deploy token: %s", err)
-			}
-		}
-	// GitLab Deploy Tokens
-	// Project deploy tokens are generated for each member of createTokensForProjects
-	// These deploy tokens are used to authorize against the GitLab container registry
-	case "gitlab":
-		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
-		if err != nil {
-			return err
-		}
-
-		for _, project := range createTokensFor {
-			var p = gitlab.DeployTokenCreateParameters{
-				Name:     fmt.Sprintf("%s-deploy-token", project),
-				Username: fmt.Sprintf("%s-deploy-token", project),
-				Scopes:   []string{"read_registry", "write_registry"},
-			}
-
-			log.Info().Msgf("creating project deploy token for project %s...", project)
-			metaphorDeployToken, err = gitlabClient.CreateProjectDeployToken(project, &p)
-			if err != nil {
-				log.Fatal().Msgf("error creating project deploy token for project %s: %s", project, err)
-			}
-		}
+	// Container registry authentication creation
+	containerRegistryAuth := gitShim.ContainerRegistryAuth{
+		GitProvider:           gitProviderFlag,
+		GitUser:               cGitUser,
+		GitToken:              cGitToken,
+		GitlabGroupFlag:       gitlabGroupFlag,
+		GithubOwner:           cGitOwner,
+		ContainerRegistryHost: containerRegistryHost,
+		Clientset:             kcfg.Clientset,
 	}
-	progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
+	containerRegistryAuthToken, err := gitShim.CreateContainerRegistrySecret(&containerRegistryAuth)
+	if err != nil {
+		return err
+	}
 
+	progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
@@ -1156,10 +1051,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		var usernamePasswordString, base64DockerAuth string
 
 		if config.GitProvider == "gitlab" {
-			usernamePasswordString = fmt.Sprintf("%s:%s", "metaphor-deploy-token", metaphorDeployToken)
+			usernamePasswordString = fmt.Sprintf("%s:%s", "container-registry-auth", containerRegistryAuthToken)
 			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
 
-			tfEnvs["TF_VAR_metaphor_deploy_token"] = metaphorDeployToken
+			tfEnvs["TF_VAR_container_registry_auth"] = containerRegistryAuthToken
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(cGitlabOwnerGroupID)
 		} else {
 			usernamePasswordString = fmt.Sprintf("%s:%s", cGitUser, cGitToken)
