@@ -9,9 +9,9 @@ package civo
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst/internal/civo"
-	"github.com/kubefirst/kubefirst/internal/credentials"
-	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/runtime/pkg/civo"
+	"github.com/kubefirst/runtime/pkg/credentials"
+	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

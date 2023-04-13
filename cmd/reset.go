@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kubefirst/kubefirst/internal/helpers"
-	"github.com/kubefirst/kubefirst/internal/progressPrinter"
-	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/kubefirst/runtime/pkg"
+	"github.com/kubefirst/runtime/pkg/helpers"
+	"github.com/kubefirst/runtime/pkg/progressPrinter"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
