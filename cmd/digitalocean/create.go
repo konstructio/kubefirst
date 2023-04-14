@@ -23,6 +23,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
+	"github.com/kubefirst/kubefirst/internal/telemetryShim"
 	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/argocd"
@@ -308,10 +309,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	if useTelemetryFlag {
 		gitopsDirectoryTokens.UseTelemetry = "true"
 
-		segmentMsg := segmentClient.SendCountMetric(segment.MetricInitStarted)
-		if segmentMsg != "" {
-			log.Info().Msg(segmentMsg)
-		}
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitStarted, "")
 	} else {
 		gitopsDirectoryTokens.UseTelemetry = "false"
 	}
@@ -336,13 +334,17 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 	executionControl := viper.GetBool("kubefirst-checks.cloud-credentials")
 	if !executionControl {
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudCredentialsCheckStarted, "")
+
 		for _, env := range []string{"DO_TOKEN", "DO_SPACES_KEY", "DO_SPACES_SECRET"} {
 			if os.Getenv(env) == "" {
+				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudCredentialsCheckFailed, fmt.Sprintf("%s environment variable was not set", env))
 				return fmt.Errorf("your %s variable is unset - please set it before continuing", env)
 			}
 		}
 		viper.Set("kubefirst-checks.cloud-credentials", true)
 		viper.WriteConfig()
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudCredentialsCheckCompleted, "")
 		progressPrinter.IncrementTracker("preflight-checks", 1)
 	} else {
 		log.Info().Msg("already completed cloud credentials check - continuing")
@@ -351,6 +353,8 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 	skipDomainCheck := viper.GetBool("kubefirst-checks.domain-liveness")
 	if !skipDomainCheck {
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessStarted, "")
+
 		digitaloceanConf := digitalocean.DigitaloceanConfiguration{
 			Client:  digitalocean.NewDigitalocean(),
 			Context: context.Background(),
@@ -366,6 +370,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("domainId: %s", domainId)
 		domainLiveness := digitaloceanConf.TestDomainLiveness(false, domainNameFlag)
 		if !domainLiveness {
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessFailed, "domain liveness test failed")
 			msg := "failed to check the liveness of the Domain. A valid public Domain on the same digitalocean " +
 				"account as the one where Kubefirst will be installed is required for this operation to " +
 				"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct digitalocean account and " +
@@ -380,6 +385,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		}
 		viper.Set("kubefirst-checks.domain-liveness", true)
 		viper.WriteConfig()
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessCompleted, "")
 		progressPrinter.IncrementTracker("preflight-checks", 1)
 	} else {
 		log.Info().Msg("domain check already complete - continuing")
@@ -388,6 +394,8 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.state-store-create")
 	if !executionControl {
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricStateStoreCreateStarted, "")
+
 		digitaloceanConf := digitalocean.DigitaloceanConfiguration{
 			Client:  digitalocean.NewDigitalocean(),
 			Context: context.Background(),
@@ -400,7 +408,9 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		}
 		err = digitaloceanConf.CreateSpaceBucket(creds, kubefirstStateStoreBucketName)
 		if err != nil {
-			return fmt.Errorf("error creating spaces bucket %s: %s", kubefirstStateStoreBucketName, err)
+			msg := fmt.Sprintf("error creating spaces bucket %s: %s", kubefirstStateStoreBucketName, err)
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricStateStoreCreateFailed, msg)
+			return fmt.Errorf(msg)
 		}
 
 		viper.Set("kubefirst.state-store.id", "")
@@ -410,6 +420,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKey)
 		viper.Set("kubefirst-checks.state-store-create", true)
 		viper.WriteConfig()
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricStateStoreCreateCompleted, "")
 
 		//
 		gitopsDirectoryTokens.StateStoreBucketHostname = creds.Endpoint
@@ -427,11 +438,14 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider))
 	if !executionControl {
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitCredentialsCheckStarted, "")
 		if len(cGitToken) == 0 {
-			return fmt.Errorf(
-				"please set a %s_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/github/install.html#step-3-kubefirst-init",
+			msg := fmt.Sprintf(
+				"please set a %s_TOKEN environment variable to continue",
 				strings.ToUpper(config.GitProvider),
 			)
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitCredentialsCheckFailed, msg)
+			return fmt.Errorf(msg)
 		}
 
 		initGitParameters := gitShim.GitInitParameters{
@@ -447,6 +461,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 		viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider), true)
 		viper.WriteConfig()
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitCredentialsCheckCompleted, "")
 		progressPrinter.IncrementTracker("preflight-checks", 1)
 	} else {
 		log.Info().Msg(fmt.Sprintf("already completed %s checks - continuing", config.GitProvider))
@@ -455,10 +470,12 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.kbot-setup")
 	if !executionControl {
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricKbotSetupStarted, "")
 
 		log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
 		sshPrivateKey, sshPublicKey, err = internalssh.CreateSshKeyPair()
 		if err != nil {
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricKbotSetupFailed, err.Error())
 			return err
 		}
 		if len(kbotPasswordFlag) == 0 {
@@ -471,6 +488,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		viper.Set("kbot.username", "kbot")
 		viper.Set("kubefirst-checks.kbot-setup", true)
 		viper.WriteConfig()
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricKbotSetupCompleted, "")
 		log.Info().Msg("kbot-setup complete")
 		progressPrinter.IncrementTracker("preflight-checks", 1)
 	} else {
@@ -480,16 +498,9 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
-	if useTelemetryFlag {
-		segmentMsg := segmentClient.SendCountMetric(segment.MetricInitCompleted)
-		if segmentMsg != "" {
-			log.Info().Msg(segmentMsg)
-		}
-		segmentMsg = segmentClient.SendCountMetric(segment.MetricMgmtClusterInstallStarted)
-		if segmentMsg != "" {
-			log.Info().Msg(segmentMsg)
-		}
-	}
+	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitCompleted, "")
+	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricMgmtClusterInstallStarted, "")
+
 	publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
 	if err != nil {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
@@ -604,6 +615,8 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		// //* create teams and repositories in github
 		executionControl = viper.GetBool("kubefirst-checks.terraform-apply-github")
 		if !executionControl {
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyStarted, "")
+
 			log.Info().Msg("Creating github resources with terraform")
 
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
@@ -611,12 +624,15 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 			tfEnvs = digitalocean.GetGithubTerraformEnvs(tfEnvs)
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
-				return fmt.Errorf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
+				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
+				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
+				return fmt.Errorf(msg)
 			}
 
 			log.Info().Msgf("Created git repositories and teams for github.com/%s", cGitOwner)
 			viper.Set("kubefirst-checks.terraform-apply-github", true)
 			viper.WriteConfig()
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyCompleted, "")
 			progressPrinter.IncrementTracker("applying-git-terraform", 1)
 		} else {
 			log.Info().Msg("already created github terraform resources")
@@ -626,6 +642,8 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		// //* create teams and repositories in gitlab
 		executionControl = viper.GetBool("kubefirst-checks.terraform-apply-gitlab")
 		if !executionControl {
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyStarted, "")
+
 			log.Info().Msg("Creating gitlab resources with terraform")
 
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
@@ -633,13 +651,16 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 			tfEnvs = digitalocean.GetGitlabTerraformEnvs(tfEnvs, cGitlabOwnerGroupID)
 			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 			if err != nil {
-				return fmt.Errorf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
+				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
+				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
+				return fmt.Errorf(msg)
 			}
 
 			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabGroupFlag)
 			progressPrinter.IncrementTracker("applying-git-terraform", 1)
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", true)
 			viper.WriteConfig()
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyCompleted, "")
 		} else {
 			log.Info().Msg("already created gitlab terraform resources")
 			progressPrinter.IncrementTracker("applying-git-terraform", 1)
@@ -655,6 +676,8 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
 	if !executionControl {
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushStarted, "")
+
 		gitopsRepo, err := git.PlainOpen(config.GitopsDir)
 		if err != nil {
 			log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
@@ -705,7 +728,9 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 			Auth:       publicKeys,
 		})
 		if err != nil {
-			log.Panic().Msgf("error pushing detokenized gitops repository to remote %s: %s", destinationGitopsRepoGitURL, err)
+			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", destinationGitopsRepoGitURL, err)
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
+			log.Panic().Msg(msg)
 		}
 
 		// push metaphor repo to remote
@@ -716,7 +741,9 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 			},
 		)
 		if err != nil {
-			log.Panic().Msgf("error pushing detokenized metaphor repository to remote %s: %s", destinationMetaphorRepoGitURL, err)
+			msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", destinationMetaphorRepoGitURL, err)
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
+			log.Panic().Msg(msg)
 		}
 
 		// todo delete the local gitops repo and re-clone it
@@ -724,6 +751,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("successfully pushed gitops to git@%s/%s/gitops", cGitHost, cGitOwner)
 		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
 		viper.WriteConfig()
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushCompleted, "")
 		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
 	} else {
 		log.Info().Msg("already pushed detokenized gitops repository content")
@@ -734,6 +762,8 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("applying-digitalocean-terraform", "Applying digitalocean Terraform", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.terraform-apply-digitalocean") {
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudTerraformApplyStarted, "")
+
 		log.Info().Msg("Creating digitalocean cloud resources with terraform")
 
 		tfEntrypoint := config.GitopsDir + "/terraform/digitalocean"
@@ -741,15 +771,17 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
+			msg := fmt.Sprintf("error creating digitalocean resources with terraform %s : %s", tfEntrypoint, err)
 			viper.Set("kubefirst-checks.terraform-apply-digitalocean-failed", true)
 			viper.WriteConfig()
-
-			return fmt.Errorf("error creating digitalocean resources with terraform %s : %s", tfEntrypoint, err)
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudTerraformApplyFailed, msg)
+			return fmt.Errorf(msg)
 		}
 
 		log.Info().Msg("Created digitalocean cloud resources")
 		viper.Set("kubefirst-checks.terraform-apply-digitalocean", true)
 		viper.WriteConfig()
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudTerraformApplyCompleted, "")
 		progressPrinter.IncrementTracker("applying-digitalocean-terraform", 1)
 	} else {
 		log.Info().Msg("already created github terraform resources")
@@ -861,13 +893,17 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	//* install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricArgoCDInstallStarted, "")
+
 		log.Info().Msgf("installing argocd")
 		err = argocd.ApplyArgoCDKustomize(kcfg.Clientset, argoCDInstallPath)
 		if err != nil {
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricArgoCDInstallFailed, err.Error())
 			return err
 		}
 		viper.Set("kubefirst-checks.argocd-install", true)
 		viper.WriteConfig()
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricArgoCDInstallCompleted, "")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	} else {
 		log.Info().Msg("argo cd already installed, continuing")
@@ -949,6 +985,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	//* argocd sync registry and start sync waves
 	executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
 	if !executionControl {
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCreateRegistryStarted, "")
 		argocdClient, err := argocdapi.NewForConfig(kcfg.RestConfig)
 		if err != nil {
 			return err
@@ -959,6 +996,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCreateRegistryCompleted, "")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	} else {
 		log.Info().Msg("argocd registry create already done, continuing")
@@ -995,6 +1033,8 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.vault-initialized")
 	if !executionControl {
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultInitializationStarted, "")
+
 		// Initialize and unseal Vault
 		vaultHandlerPath := "github.com:kubefirst/manifests.git/vault-handler/replicas-3"
 
@@ -1019,11 +1059,14 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		}
 		_, err = k8s.WaitForJobComplete(kcfg.Clientset, job, 240)
 		if err != nil {
-			log.Fatal().Msgf("could not run vault unseal job: %s", err)
+			msg := fmt.Sprintf("could not run vault unseal job: %s", err)
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultInitializationFailed, msg)
+			log.Fatal().Msg(msg)
 		}
 
 		viper.Set("kubefirst-checks.vault-initialized", true)
 		viper.WriteConfig()
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultInitializationFailed, "")
 		progressPrinter.IncrementTracker("configuring-vault", 1)
 	} else {
 		log.Info().Msg("vault is already initialized - skipping")
@@ -1048,6 +1091,8 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
 	if !executionControl {
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyStarted, "")
+
 		tfEnvs := map[string]string{}
 		var usernamePasswordString, base64DockerAuth string
 
@@ -1061,7 +1106,6 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		} else {
 			usernamePasswordString = fmt.Sprintf("%s:%s", cGitUser, cGitToken)
 			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
-
 		}
 
 		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
@@ -1070,12 +1114,14 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyFailed, err.Error())
 			return err
 		}
 
 		log.Info().Msg("vault terraform executed successfully")
 		viper.Set("kubefirst-checks.terraform-apply-vault", true)
 		viper.WriteConfig()
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyCompleted, "")
 		progressPrinter.IncrementTracker("configuring-vault", 1)
 	} else {
 		log.Info().Msg("already executed vault terraform")
@@ -1088,6 +1134,8 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-users")
 	if !executionControl {
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyStarted, "")
+
 		log.Info().Msg("applying users terraform")
 
 		tfEnvs := map[string]string{}
@@ -1096,12 +1144,14 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
 		if err != nil {
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyStarted, err.Error())
 			return err
 		}
 		log.Info().Msg("executed users terraform successfully")
 		// progressPrinter.IncrementTracker("step-users", 1)
 		viper.Set("kubefirst-checks.terraform-apply-users", true)
 		viper.WriteConfig()
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyCompleted, "")
 		progressPrinter.IncrementTracker("creating-users", 1)
 	} else {
 		log.Info().Msg("already created users with terraform")
@@ -1158,12 +1208,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		log.Error().Err(err).Msg("")
 	}
 
-	if useTelemetryFlag {
-		segmentMsg := segmentClient.SendCountMetric(segment.MetricMgmtClusterInstallCompleted)
-		if segmentMsg != "" {
-			log.Info().Msg(segmentMsg)
-		}
-	}
+	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricMgmtClusterInstallCompleted, "")
 
 	// Set flags used to track status of active options
 	helpers.SetCompletionFlags(digitalocean.CloudProvider, config.GitProvider)
