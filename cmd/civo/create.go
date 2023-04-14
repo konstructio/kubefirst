@@ -130,15 +130,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.cloud-region", cloudRegionFlag)
 	viper.WriteConfig()
 
-	segmentClient := &segment.Client
-
-	defer func(c segment.SegmentClient) {
-		err := c.Client.Close()
-		if err != nil {
-			log.Info().Msgf("error closing segment client %s", err.Error())
-		}
-	}(*segmentClient)
-
 	// Switch based on git provider, set params
 	var cGitHost, cGitOwner, cGitToken, cGitUser, containerRegistryHost string
 	var cGitlabOwnerGroupID int
@@ -289,10 +280,28 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	viper.Set(fmt.Sprintf("%s.atlantis.webhook.url", config.GitProvider), fmt.Sprintf("https://atlantis.%s/events", domainNameFlag))
 	viper.WriteConfig()
 
+	// Segment Client
+	segmentClient := &segment.SegmentClient{
+		CliVersion:        configs.K1Version,
+		CloudProvider:     civo.CloudProvider,
+		ClusterID:         clusterId,
+		ClusterType:       clusterTypeFlag,
+		DomainName:        domainNameFlag,
+		GitProvider:       gitProviderFlag,
+		KubefirstTeam:     kubefirstTeam,
+		KubefirstTeamInfo: os.Getenv("KUBEFIRST_TEAM_INFO"),
+	}
+	segmentClient.SetupClient()
+	defer func(c segment.SegmentClient) {
+		err := c.Client.Close()
+		if err != nil {
+			log.Info().Msgf("error closing segment client %s", err.Error())
+		}
+	}(*segmentClient)
 	if useTelemetryFlag {
 		gitopsDirectoryTokens.UseTelemetry = "true"
 
-		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitStarted)
+		segmentMsg := segmentClient.SendCountMetric(segment.MetricInitStarted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
@@ -503,11 +512,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	if useTelemetryFlag {
-		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricInitCompleted)
+		segmentMsg := segmentClient.SendCountMetric(segment.MetricInitCompleted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
-		segmentMsg = segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallStarted)
+		segmentMsg = segmentClient.SendCountMetric(segment.MetricMgmtClusterInstallStarted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
@@ -1174,7 +1183,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	if useTelemetryFlag {
-		segmentMsg := segmentClient.SendCountMetric(configs.K1Version, civo.CloudProvider, clusterId, clusterTypeFlag, domainNameFlag, gitProviderFlag, kubefirstTeam, pkg.MetricMgmtClusterInstallCompleted)
+		segmentMsg := segmentClient.SendCountMetric(segment.MetricMgmtClusterInstallCompleted)
 		if segmentMsg != "" {
 			log.Info().Msg(segmentMsg)
 		}
