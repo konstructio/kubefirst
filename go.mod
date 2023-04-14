@@ -10,12 +10,13 @@ require (
 	github.com/civo/civogo v0.3.28
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-git/go-git/v5 v5.6.1
-	github.com/kubefirst/runtime v0.1.7-beta
+	github.com/kubefirst/runtime v0.1.7
 	github.com/rs/zerolog v1.29.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
 	k8s.io/api v0.26.0
 	k8s.io/apimachinery v0.26.0
+	k8s.io/client-go v11.0.1-0.20190816222228-6d55c1b1f1ca+incompatible
 )
 
 replace (
@@ -146,7 +147,6 @@ require (
 	k8s.io/apiextensions-apiserver v0.26.0 // indirect
 	k8s.io/apiserver v0.24.2 // indirect
 	k8s.io/cli-runtime v0.24.2 // indirect
-	k8s.io/client-go v11.0.1-0.20190816222228-6d55c1b1f1ca+incompatible // indirect
 	k8s.io/component-base v0.24.2 // indirect
 	k8s.io/component-helpers v0.24.2 // indirect
 	k8s.io/kube-aggregator v0.24.2 // indirect
