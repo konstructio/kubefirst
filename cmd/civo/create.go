@@ -1089,7 +1089,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		viper.Set("kubefirst-checks.vault-initialized", true)
 		viper.WriteConfig()
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultInitializationFailed, "")
+		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultInitializationCompleted, "")
 		progressPrinter.IncrementTracker("configuring-vault", 1)
 	} else {
 		log.Info().Msg("vault is already initialized - skipping")
