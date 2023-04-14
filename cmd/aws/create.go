@@ -24,6 +24,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/eks"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/argocd"
@@ -306,86 +307,16 @@ func createAws(cmd *cobra.Command, args []string) error {
 			)
 		}
 
-		switch config.GitProvider {
-		case "github":
-			githubSession := github.New(cGitToken)
-			newRepositoryExists := false
-			// todo hoist to globals
-			errorMsg := "the following repositories must be removed before continuing with your kubefirst installation.\n\t"
-
-			for _, repositoryName := range newRepositoryNames {
-				responseStatusCode := githubSession.CheckRepoExists(githubOrgFlag, repositoryName)
-
-				// https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
-				repositoryExistsStatusCode := 200
-				repositoryDoesNotExistStatusCode := 404
-
-				if responseStatusCode == repositoryExistsStatusCode {
-					log.Info().Msgf("repository https://github.com/%s/%s exists", githubOrgFlag, repositoryName)
-					errorMsg = errorMsg + fmt.Sprintf("https://github.com/%s/%s\n\t", githubOrgFlag, repositoryName)
-					newRepositoryExists = true
-				} else if responseStatusCode == repositoryDoesNotExistStatusCode {
-					log.Info().Msgf("repository https://github.com/%s/%s does not exist, continuing", githubOrgFlag, repositoryName)
-				}
-			}
-			if newRepositoryExists {
-				return fmt.Errorf(errorMsg)
-			}
-
-			newTeamExists := false
-			errorMsg = "the following teams must be removed before continuing with your kubefirst installation.\n\t"
-
-			for _, teamName := range newTeamNames {
-				responseStatusCode := githubSession.CheckTeamExists(githubOrgFlag, teamName)
-
-				// https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#get-a-team-by-name
-				teamExistsStatusCode := 200
-				teamDoesNotExistStatusCode := 404
-
-				if responseStatusCode == teamExistsStatusCode {
-					log.Info().Msgf("team https://github.com/%s/%s exists", githubOrgFlag, teamName)
-					errorMsg = errorMsg + fmt.Sprintf("https://github.com/orgs/%s/teams/%s\n\t", githubOrgFlag, teamName)
-					newTeamExists = true
-				} else if responseStatusCode == teamDoesNotExistStatusCode {
-					log.Info().Msgf("https://github.com/orgs/%s/teams/%s does not exist, continuing", githubOrgFlag, teamName)
-				}
-			}
-			if newTeamExists {
-				return fmt.Errorf(errorMsg)
-			}
-		case "gitlab":
-			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
-			if err != nil {
-				return err
-			}
-
-			// Check for existing base projects
-			projects, err := gitlabClient.GetProjects()
-			if err != nil {
-				log.Fatal().Msgf("couldn't get gitlab projects: %s", err)
-			}
-			for _, repositoryName := range newRepositoryNames {
-				for _, project := range projects {
-					if project.Name == repositoryName {
-						return fmt.Errorf("project %s already exists and will need to be deleted before continuing", repositoryName)
-					}
-				}
-			}
-
-			// Check for existing base projects
-			// Save for detokenize
-			subgroups, err := gitlabClient.GetSubGroups()
-			if err != nil {
-				log.Fatal().Msgf("couldn't get gitlab subgroups for group %s: %s", cGitOwner, err)
-			}
-			for _, teamName := range newRepositoryNames {
-				for _, sg := range subgroups {
-					if sg.Name == teamName {
-						return fmt.Errorf("subgroup %s already exists and will need to be deleted before continuing", teamName)
-					}
-				}
-			}
+		initGitParameters := gitShim.GitInitParameters{
+			GitProvider:  gitProviderFlag,
+			GitToken:     cGitToken,
+			GitOwner:     cGitOwner,
+			Repositories: newRepositoryNames,
+			Teams:        newTeamNames,
+			GithubOrg:    githubOrgFlag,
+			GitlabGroup:  gitlabGroupFlag,
 		}
+		gitShim.InitializeGitProvider(&initGitParameters)
 
 		viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider), true)
 		viper.WriteConfig()
