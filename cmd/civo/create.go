@@ -605,7 +605,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		gitopsDirectoryTokens.GitOpsRepoGitURL = destinationGitopsRepoGitURL
 
 		// Determine if anything exists at domain apex
-		createApexContent := civo.GetDomainApexContent(domainNameFlag)
+		apexContentExists := civo.GetDomainApexContent(domainNameFlag)
 
 		err = civo.PrepareGitRepositories(
 			config.GitProvider,
@@ -620,7 +620,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
 			&metaphorDirectoryTokens,
-			createApexContent,
+			apexContentExists,
 		)
 		if err != nil {
 			return err
