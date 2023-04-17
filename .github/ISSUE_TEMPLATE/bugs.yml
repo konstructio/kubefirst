@@ -11,7 +11,6 @@ body:
     attributes:
       label: Which version of kubefirst are you using?
       description: Run `kubefirst version` to find the version number
-      placeholder: https://docs.kubefirst.io/
     validations:
       required: true
   - type: dropdown
