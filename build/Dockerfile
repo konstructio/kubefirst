@@ -29,11 +29,14 @@ RUN curl -LO https://s3.us-west-2.amazonaws.com/amazon-eks/1.21.2/2021-07-05/bin
     chmod +x aws-iam-authenticator && \
     mv aws-iam-authenticator /usr/local/bin/
 
+# change shell from bin/sh to bin/bash
+SHELL ["/bin/bash", "-c"]
+
 # Kubefirst cli
-RUN ["/bin/bash", "-c", "curl -LO https://github.com/kubefirst/kubefirst/releases/download/$KUBEFIRST_VERSION/kubefirst_${KUBEFIRST_VERSION:1}_linux_amd64.tar.gz && \
+RUN curl -LO https://github.com/kubefirst/kubefirst/releases/download/$KUBEFIRST_VERSION/kubefirst_${KUBEFIRST_VERSION:1}_linux_amd64.tar.gz && \
     tar -xvzf kubefirst_${KUBEFIRST_VERSION:1}_linux_amd64.tar.gz -C /usr/local/bin/ && \
     chmod +x /usr/local/bin/kubefirst && \
-    rm kubefirst_${KUBEFIRST_VERSION:1}_linux_amd64.tar.gz"]
+    rm kubefirst_${KUBEFIRST_VERSION:1}_linux_amd64.tar.gz
 
 # setup user
 RUN useradd -ms /bin/bash developer
