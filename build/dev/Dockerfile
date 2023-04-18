@@ -45,7 +45,7 @@ COPY --chown=developer:developer . .
 
 # download dependencies and prepare fresh installation
 RUN go mod download
-RUN go build -ldflags="-X github.com/kubefirst/kubefirst/configs.K1Version=${KUBEFIRST_VERSION}" .
+RUN go build -ldflags="-X github.com/kubefirst/runtime/configs.K1Version=${KUBEFIRST_VERSION}" .
 
 USER root
 RUN  mv ./kubefirst /usr/local/bin/ && chmod 777 /usr/local/bin/kubefirst
