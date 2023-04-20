@@ -13,6 +13,7 @@ import (
 	"github.com/kubefirst/kubefirst/cmd/aws"
 	"github.com/kubefirst/kubefirst/cmd/civo"
 	"github.com/kubefirst/kubefirst/cmd/k3d"
+	"github.com/kubefirst/kubefirst/internal/common"
 	"github.com/kubefirst/runtime/configs"
 
 	"github.com/kubefirst/runtime/pkg/progressPrinter"
@@ -42,6 +43,7 @@ func Execute() {
 	//This will allow all child commands to have informUser available for free.
 	//Refers: https://github.com/kubefirst/runtime/issues/525
 	//Before removing next line, please read ticket above.
+	common.CheckForVersionUpdate()
 	progressPrinter.GetInstance()
 	err := rootCmd.Execute()
 	if err != nil {
