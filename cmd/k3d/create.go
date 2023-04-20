@@ -40,6 +40,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/reports"
 	"github.com/kubefirst/runtime/pkg/segment"
 	"github.com/kubefirst/runtime/pkg/services"
+	"github.com/kubefirst/runtime/pkg/ssh"
 	internalssh "github.com/kubefirst/runtime/pkg/ssh"
 	"github.com/kubefirst/runtime/pkg/terraform"
 	"github.com/kubefirst/runtime/pkg/wrappers"
@@ -56,6 +57,16 @@ var (
 
 func runK3d(cmd *cobra.Command, args []string) error {
 	helpers.DisplayLogHints()
+
+	for _, host := range []string{"github.com", "gitlab.com"} {
+		key, err := ssh.GetHostKey(host)
+		if err != nil {
+			return err
+		} else {
+			log.Info().Msgf("%s %s\n", host, key.Type())
+		}
+
+	}
 
 	clusterNameFlag, err := cmd.Flags().GetString("cluster-name")
 	if err != nil {
@@ -792,8 +803,54 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
 	progressPrinter.IncrementTracker("bootstrapping-kubernetes-resources", 1)
+
+	// k3d Readiness checks
+	progressPrinter.AddTracker("verifying-k3d-cluster-readiness", "Verifying Kubernetes cluster is ready", 3)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+
+	// traefik
+	traefikDeployment, err := k8s.ReturnDeploymentObject(
+		kcfg.Clientset,
+		"kubernetes.io/name",
+		"traefik",
+		"kube-system",
+		240,
+	)
+	if err != nil {
+		log.Error().Msgf("error finding traefik deployment: %s", err)
+		return err
+	}
+	_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, traefikDeployment, 240)
+	if err != nil {
+		log.Error().Msgf("error waiting for traefik deployment ready state: %s", err)
+		return err
+	}
+	progressPrinter.IncrementTracker("verifying-k3d-cluster-readiness", 1)
+
+	// metrics-server
+	metricsServerDeployment, err := k8s.ReturnDeploymentObject(
+		kcfg.Clientset,
+		"k8s-app",
+		"metrics-server",
+		"kube-system",
+		240,
+	)
+	if err != nil {
+		log.Error().Msgf("error finding metrics-server deployment: %s", err)
+		return err
+	}
+	_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, metricsServerDeployment, 240)
+	if err != nil {
+		log.Error().Msgf("error waiting for metrics-server deployment ready state: %s", err)
+		return err
+	}
+	progressPrinter.IncrementTracker("verifying-k3d-cluster-readiness", 1)
+
+	time.Sleep(time.Second * 20)
+
+	progressPrinter.IncrementTracker("verifying-k3d-cluster-readiness", 1)
+
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
@@ -1081,6 +1138,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Error().Msgf("error looking up kubernetes api server service: %s")
 		return err
+	}
+
+	err = helpers.TestEndpointTLS(k3d.VaultURL)
+	if err != nil {
+		return fmt.Errorf(
+			"unable to reach vault over https - this is likely due to the mkcert certificate store missing. please install it via `%s -install`", config.MkCertClient,
+		)
 	}
 
 	//* configure vault with terraform
