@@ -40,7 +40,6 @@ import (
 	"github.com/kubefirst/runtime/pkg/reports"
 	"github.com/kubefirst/runtime/pkg/segment"
 	"github.com/kubefirst/runtime/pkg/services"
-	"github.com/kubefirst/runtime/pkg/ssh"
 	internalssh "github.com/kubefirst/runtime/pkg/ssh"
 	"github.com/kubefirst/runtime/pkg/terraform"
 	"github.com/kubefirst/runtime/pkg/wrappers"
@@ -58,14 +57,21 @@ var (
 func runK3d(cmd *cobra.Command, args []string) error {
 	helpers.DisplayLogHints()
 
-	for _, host := range []string{"github.com", "gitlab.com"} {
-		key, err := ssh.GetHostKey(host)
+	switch gitProviderFlag {
+	case "github":
+		key, err := internalssh.GetHostKey("github.com")
 		if err != nil {
-			return err
+			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan -H github.com >> ~/.ssh/known_hosts` to remedy")
 		} else {
-			log.Info().Msgf("%s %s\n", host, key.Type())
+			log.Info().Msgf("%s %s\n", "github.com", key.Type())
 		}
-
+	case "gitlab":
+		key, err := internalssh.GetHostKey("gitlab.com")
+		if err != nil {
+			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts` to remedy")
+		} else {
+			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
+		}
 	}
 
 	clusterNameFlag, err := cmd.Flags().GetString("cluster-name")
