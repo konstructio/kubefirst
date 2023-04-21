@@ -43,4 +43,4 @@ RUN useradd -ms /bin/bash developer
 USER developer
 WORKDIR /home/developer/kubefirst
 
-RUN kubefirst clean
+RUN kubefirst version
