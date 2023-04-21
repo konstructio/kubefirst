@@ -1146,7 +1146,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	err = helpers.TestEndpointTLS(k3d.VaultURL)
+	err = helpers.TestEndpointTLS(strings.Replace(k3d.VaultURL, "https://", "", 1))
 	if err != nil {
 		return fmt.Errorf(
 			"unable to reach vault over https - this is likely due to the mkcert certificate store missing. please install it via `%s -install`", config.MkCertClient,
