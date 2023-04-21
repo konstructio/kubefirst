@@ -818,7 +818,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// traefik
 	traefikDeployment, err := k8s.ReturnDeploymentObject(
 		kcfg.Clientset,
-		"kubernetes.io/name",
+		"app.kubernetes.io/name",
 		"traefik",
 		"kube-system",
 		240,
