@@ -36,7 +36,7 @@ Each of our platforms have install guides that detail the prerequesites, command
 - [Civo with GitHub](https://docs.kubefirst.io/kubefirst/civo/github/install)
 - [Civo with GitLab](https://docs.kubefirst.io/kubefirst/civo/gitlab/install)
 - [AWS with GitHub](https://docs.kubefirst.io/kubefirst/aws/github/install)
-- [AWS with GitHub](https://docs.kubefirst.io/kubefirst/aws/gitlab/install)
+- [AWS with GitLab](https://docs.kubefirst.io/kubefirst/aws/gitlab/install)
 
 ## Overview
 
