@@ -65,7 +65,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate K3d config
-	config := k3d.GetConfig(gitProvider, cGitOwner)
+	config := k3d.GetConfig(clusterName, gitProvider, cGitOwner)
 
 	log.Info().Msg("destroying kubefirst platform running in k3d")
 
