@@ -59,7 +59,6 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
-	dryRun := viper.GetBool("flags.dry-run")
 	atlantisWebhookURL := fmt.Sprintf("https://atlantis.%s/events", domainName)
 
 	// Switch based on git provider, set params
@@ -102,7 +101,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
-			err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+			err := terraform.InitDestroyAutoApprove(tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
 				return err
@@ -159,7 +158,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gitlabClient.ParentGroupID)
 			tfEnvs["TF_VAR_gitlab_owner"] = viper.GetString("flags.gitlab-owner")
-			err = terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+			err = terraform.InitDestroyAutoApprove(tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
 				return err
@@ -300,7 +299,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["AWS_SDK_LOAD_CONFIG"] = "1"
 		tfEnvs["TF_VAR_aws_region"] = cloudRegionFlag
 		tfEnvs["AWS_REGION"] = cloudRegionFlag
-		err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+		err := terraform.InitDestroyAutoApprove(tfEntrypoint, tfEnvs)
 		if err != nil {
 			viper.Set("kubefirst-checks.terraform-apply-aws-failed", true)
 			viper.WriteConfig()
