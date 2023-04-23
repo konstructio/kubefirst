@@ -24,6 +24,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/telemetryShim"
+	"github.com/kubefirst/kubefirst/internal/utilities"
 	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/argocd"
@@ -64,9 +65,6 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
 		}
 	}
-
-	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 5)
-	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	alertsEmailFlag, err := cmd.Flags().GetString("alerts-email")
 	if err != nil {
@@ -128,6 +126,26 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	utilities.CreateK1ClusterDirectory(clusterNameFlag)
+	helpers.DisplayLogHints()
+
+	switch gitProviderFlag {
+	case "github":
+		key, err := internalssh.GetHostKey("github.com")
+		if err != nil {
+			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
+		} else {
+			log.Info().Msgf("%s %s\n", "github.com", key.Type())
+		}
+	case "gitlab":
+		key, err := internalssh.GetHostKey("gitlab.com")
+		if err != nil {
+			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
+		} else {
+			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
+		}
+	}
+
 	// Check for existing port forwards before continuing
 	err = k8s.CheckForExistingPortForwards(8080, 8200, 9094)
 	if err != nil {
@@ -141,6 +159,9 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.Set("flags.cloud-region", cloudRegionFlag)
 	viper.WriteConfig()
+
+	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 5)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	// Switch based on git provider, set params
 	var cGitHost, cGitOwner, cGitToken, cGitUser, containerRegistryHost string
@@ -628,7 +649,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
 			tfEnvs = vultr.GetGithubTerraformEnvs(tfEnvs)
-			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -655,7 +676,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
 			tfEnvs = vultr.GetGitlabTerraformEnvs(tfEnvs, cGitlabOwnerGroupID)
-			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -775,7 +796,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		tfEntrypoint := config.GitopsDir + "/terraform/vultr"
 		tfEnvs := map[string]string{}
 		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			msg := fmt.Sprintf("error creating vultr resources with terraform %s : %s", tfEntrypoint, err)
 			viper.Set("kubefirst-checks.terraform-apply-vultr-failed", true)
@@ -1118,7 +1139,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		tfEnvs = vultr.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyFailed, err.Error())
 			return err
@@ -1148,7 +1169,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
 		tfEnvs = vultr.GetUsersTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyStarted, err.Error())
 			return err

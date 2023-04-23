@@ -96,7 +96,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 			tfEnvs := map[string]string{}
 			tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
 			tfEnvs = vultr.GetGithubTerraformEnvs(tfEnvs)
-			err := terraform.InitDestroyAutoApprove(tfEntrypoint, tfEnvs)
+			err := terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
 				return err
@@ -147,7 +147,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 			tfEnvs := map[string]string{}
 			tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
 			tfEnvs = vultr.GetGitlabTerraformEnvs(tfEnvs, gitlabClient.ParentGroupID)
-			err = terraform.InitDestroyAutoApprove(tfEntrypoint, tfEnvs)
+			err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
 				return err
@@ -263,7 +263,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 			}
 			tfEnvs = vultr.GetGitlabTerraformEnvs(tfEnvs, gid)
 		}
-		err = terraform.InitDestroyAutoApprove(tfEntrypoint, tfEnvs)
+		err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)
 			return err

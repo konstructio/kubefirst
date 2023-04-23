@@ -26,6 +26,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/telemetryShim"
+	"github.com/kubefirst/kubefirst/internal/utilities"
 	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/argocd"
@@ -52,25 +53,6 @@ import (
 )
 
 func createAws(cmd *cobra.Command, args []string) error {
-	helpers.DisplayLogHints()
-
-	switch gitProviderFlag {
-	case "github":
-		key, err := internalssh.GetHostKey("github.com")
-		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "github.com", key.Type())
-		}
-	case "gitlab":
-		key, err := internalssh.GetHostKey("gitlab.com")
-		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
-		}
-	}
-
 	alertsEmailFlag, err := cmd.Flags().GetString("alerts-email")
 	if err != nil {
 		return err
@@ -131,6 +113,26 @@ func createAws(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	utilities.CreateK1ClusterDirectory(clusterNameFlag)
+	helpers.DisplayLogHints()
+
+	switch gitProviderFlag {
+	case "github":
+		key, err := internalssh.GetHostKey("github.com")
+		if err != nil {
+			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
+		} else {
+			log.Info().Msgf("%s %s\n", "github.com", key.Type())
+		}
+	case "gitlab":
+		key, err := internalssh.GetHostKey("gitlab.com")
+		if err != nil {
+			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
+		} else {
+			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
+		}
+	}
+
 	// Check for existing port forwards before continuing
 	err = k8s.CheckForExistingPortForwards(8080, 8200, 9094)
 	if err != nil {
@@ -147,9 +149,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 3)
-	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
-
 	// required for destroy command
 	viper.Set("flags.alerts-email", alertsEmailFlag)
 	viper.Set("flags.cluster-name", clusterNameFlag)
@@ -157,6 +156,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.Set("flags.cloud-region", cloudRegionFlag)
 	viper.WriteConfig()
+
+	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 3)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	// Switch based on git provider, set params
 	var cGitHost, cGitOwner, cGitToken, cGitUser string
@@ -616,7 +618,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
-			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -650,7 +652,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(viper.GetInt("flags.gitlab-owner-group-id"))
 			tfEnvs["TF_VAR_gitlab_owner"] = viper.GetString("flags.gitlab-owner")
-			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -775,7 +777,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_aws_region"] = cloudRegionFlag
 		tfEnvs["AWS_REGION"] = cloudRegionFlag
 
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			msg := fmt.Sprintf("error creating aws resources with terraform %s : %s", tfEntrypoint, err)
 			viper.Set("kubefirst-checks.terraform-apply-aws-failed", true)
@@ -1231,7 +1233,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyFailed, err.Error())
 			return err
@@ -1271,7 +1273,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs[fmt.Sprintf("%s_OWNER", strings.ToUpper(config.GitProvider))] = cGitOwner
 
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyStarted, err.Error())
 			return err

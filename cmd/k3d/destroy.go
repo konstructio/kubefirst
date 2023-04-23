@@ -65,7 +65,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate K3d config
-	config := k3d.GetConfig(gitProvider, cGitOwner)
+	config := k3d.GetConfig(clusterName, gitProvider, cGitOwner)
 
 	log.Info().Msg("destroying kubefirst platform running in k3d")
 
@@ -121,7 +121,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
 			tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
 
-			err := terraform.InitDestroyAutoApprove(tfEntrypoint, tfEnvs)
+			err := terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
 				return err
@@ -177,7 +177,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gitlabClient.ParentGroupID)
 
-			err = terraform.InitDestroyAutoApprove(tfEntrypoint, tfEnvs)
+			err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
 				return err
