@@ -84,11 +84,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	dryRunFlag, err := cmd.Flags().GetBool("dry-run")
-	if err != nil {
-		return err
-	}
-
 	githubOrgFlag, err := cmd.Flags().GetString("github-org")
 	if err != nil {
 		return err
@@ -164,7 +159,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// Store flags for application state maintenance
 	viper.Set("flags.cluster-name", clusterNameFlag)
 	viper.Set("flags.domain-name", k3d.DomainName)
-	viper.Set("flags.dry-run", dryRunFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.WriteConfig()
 
@@ -562,7 +556,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
 			tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
 			tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
-			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -596,7 +590,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
 			tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
 			tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
-			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -758,7 +752,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			viper.GetString("kbot.public-key"),
 			config.DestinationGitopsRepoGitURL,
 			viper.GetString("kbot.private-key"),
-			false,
 			config.GitProvider,
 			cGitUser,
 			cGitOwner,
@@ -1194,7 +1187,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		// tfEnvs["TF_LOG"] = "DEBUG"
 
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
-		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyFailed, err.Error())
 			return err
@@ -1231,7 +1224,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs[fmt.Sprintf("%s_OWNER", strings.ToUpper(config.GitProvider))] = cGitOwner
 
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
-		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyStarted, err.Error())
 			return err
@@ -1336,7 +1329,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// Set flags used to track status of active options
 	helpers.SetCompletionFlags(k3d.CloudProvider, config.GitProvider)
 
-	reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, dryRunFlag, false)
+	reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, false)
 
 	time.Sleep(time.Millisecond * 100) // allows progress bars to finish
 

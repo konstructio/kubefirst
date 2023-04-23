@@ -96,11 +96,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	dryRunFlag, err := cmd.Flags().GetBool("dry-run")
-	if err != nil {
-		return err
-	}
-
 	githubOrgFlag, err := cmd.Flags().GetString("github-org")
 	if err != nil {
 		return err
@@ -159,7 +154,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.alerts-email", alertsEmailFlag)
 	viper.Set("flags.cluster-name", clusterNameFlag)
 	viper.Set("flags.domain-name", domainNameFlag)
-	viper.Set("flags.dry-run", dryRunFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.Set("flags.cloud-region", cloudRegionFlag)
 	viper.WriteConfig()
@@ -397,7 +391,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if !skipDomainCheck {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessStarted, "")
 
-		domainLiveness := awsClient.TestHostedZoneLiveness(false, domainNameFlag)
+		domainLiveness := awsClient.TestHostedZoneLiveness(domainNameFlag)
 		if !domainLiveness {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessFailed, "domain liveness test failed")
 			msg := "failed to check the liveness of the HostedZone. A valid public HostedZone on the same AWS " +
@@ -622,7 +616,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
-			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -656,7 +650,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(viper.GetInt("flags.gitlab-owner-group-id"))
 			tfEnvs["TF_VAR_gitlab_owner"] = viper.GetString("flags.gitlab-owner")
-			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -781,7 +775,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_aws_region"] = cloudRegionFlag
 		tfEnvs["AWS_REGION"] = cloudRegionFlag
 
-		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 		if err != nil {
 			msg := fmt.Sprintf("error creating aws resources with terraform %s : %s", tfEntrypoint, err)
 			viper.Set("kubefirst-checks.terraform-apply-aws-failed", true)
@@ -1237,7 +1231,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
-		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyFailed, err.Error())
 			return err
@@ -1277,7 +1271,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs[fmt.Sprintf("%s_OWNER", strings.ToUpper(config.GitProvider))] = cGitOwner
 
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
-		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyStarted, err.Error())
 			return err
@@ -1347,7 +1341,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// Set flags used to track status of active options
 	helpers.SetCompletionFlags(awsinternal.CloudProvider, config.GitProvider)
 
-	reports.AwsHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, dryRunFlag, false)
+	reports.AwsHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
 
 	time.Sleep(time.Second * 1) // allows progress bars to finish
 

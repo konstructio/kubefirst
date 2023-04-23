@@ -93,11 +93,6 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	dryRunFlag, err := cmd.Flags().GetBool("dry-run")
-	if err != nil {
-		return err
-	}
-
 	githubOrgFlag, err := cmd.Flags().GetString("github-org")
 	if err != nil {
 		return err
@@ -143,7 +138,6 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.alerts-email", alertsEmailFlag)
 	viper.Set("flags.cluster-name", clusterNameFlag)
 	viper.Set("flags.domain-name", domainNameFlag)
-	viper.Set("flags.dry-run", dryRunFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.Set("flags.cloud-region", cloudRegionFlag)
 	viper.WriteConfig()
@@ -385,7 +379,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 		// viper values set in above function
 		log.Info().Msgf("domainId: %s", domainId)
-		domainLiveness := digitaloceanConf.TestDomainLiveness(false, domainNameFlag)
+		domainLiveness := digitaloceanConf.TestDomainLiveness(domainNameFlag)
 		if !domainLiveness {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessFailed, "domain liveness test failed")
 			msg := "failed to check the liveness of the Domain. A valid public Domain on the same digitalocean " +
@@ -639,7 +633,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
 			tfEnvs = digitalocean.GetGithubTerraformEnvs(tfEnvs)
-			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -666,7 +660,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
 			tfEnvs = digitalocean.GetGitlabTerraformEnvs(tfEnvs, cGitlabOwnerGroupID)
-			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -786,7 +780,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		tfEntrypoint := config.GitopsDir + "/terraform/digitalocean"
 		tfEnvs := map[string]string{}
 		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
-		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 		if err != nil {
 			msg := fmt.Sprintf("error creating digitalocean resources with terraform %s : %s", tfEntrypoint, err)
 			viper.Set("kubefirst-checks.terraform-apply-digitalocean-failed", true)
@@ -853,7 +847,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
-		err := digitalocean.BootstrapDigitaloceanMgmtCluster(dryRunFlag, config.Kubeconfig, config.GitProvider, cGitUser)
+		err := digitalocean.BootstrapDigitaloceanMgmtCluster(config.Kubeconfig, config.GitProvider, cGitUser)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
 			return err
@@ -1129,7 +1123,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		tfEnvs = digitalocean.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
-		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyFailed, err.Error())
 			return err
@@ -1159,7 +1153,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
 		tfEnvs = digitalocean.GetUsersTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
-		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyStarted, err.Error())
 			return err
@@ -1231,7 +1225,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	helpers.SetCompletionFlags(digitalocean.CloudProvider, config.GitProvider)
 
 	// this is probably going to get streamlined later, but this is necessary now
-	reports.DigitaloceanHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, dryRunFlag, false)
+	reports.DigitaloceanHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
 
 	time.Sleep(time.Second * 1) // allows progress bars to finish
 

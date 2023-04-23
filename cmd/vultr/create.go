@@ -93,11 +93,6 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	dryRunFlag, err := cmd.Flags().GetBool("dry-run")
-	if err != nil {
-		return err
-	}
-
 	githubOrgFlag, err := cmd.Flags().GetString("github-org")
 	if err != nil {
 		return err
@@ -143,7 +138,6 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.alerts-email", alertsEmailFlag)
 	viper.Set("flags.cluster-name", clusterNameFlag)
 	viper.Set("flags.domain-name", domainNameFlag)
-	viper.Set("flags.dry-run", dryRunFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.Set("flags.cloud-region", cloudRegionFlag)
 	viper.WriteConfig()
@@ -376,7 +370,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 		// viper values set in above function
 		log.Info().Msgf("domainId: %s", domainId)
-		domainLiveness := vultrConf.TestDomainLiveness(false, domainNameFlag)
+		domainLiveness := vultrConf.TestDomainLiveness(domainNameFlag)
 		if !domainLiveness {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessFailed, "domain liveness test failed")
 			msg := "failed to check the liveness of the Domain. A valid public Domain on the same Vultr " +
@@ -634,7 +628,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
 			tfEnvs = vultr.GetGithubTerraformEnvs(tfEnvs)
-			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -661,7 +655,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
 			tfEnvs = vultr.GetGitlabTerraformEnvs(tfEnvs, cGitlabOwnerGroupID)
-			err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -781,7 +775,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		tfEntrypoint := config.GitopsDir + "/terraform/vultr"
 		tfEnvs := map[string]string{}
 		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
-		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 		if err != nil {
 			msg := fmt.Sprintf("error creating vultr resources with terraform %s : %s", tfEntrypoint, err)
 			viper.Set("kubefirst-checks.terraform-apply-vultr-failed", true)
@@ -848,7 +842,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
-		err := vultr.BootstrapVultrMgmtCluster(dryRunFlag, config.Kubeconfig, config.GitProvider, cGitUser)
+		err := vultr.BootstrapVultrMgmtCluster(config.Kubeconfig, config.GitProvider, cGitUser)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
 			return err
@@ -1124,7 +1118,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		tfEnvs = vultr.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
-		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyFailed, err.Error())
 			return err
@@ -1154,7 +1148,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
 		tfEnvs = vultr.GetUsersTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
-		err := terraform.InitApplyAutoApprove(dryRunFlag, tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyStarted, err.Error())
 			return err
@@ -1226,7 +1220,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	helpers.SetCompletionFlags(vultr.CloudProvider, config.GitProvider)
 
 	// this is probably going to get streamlined later, but this is necessary now
-	reports.VultrHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, dryRunFlag, false)
+	reports.VultrHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
 
 	time.Sleep(time.Second * 1) // allows progress bars to finish
 
