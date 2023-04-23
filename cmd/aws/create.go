@@ -618,11 +618,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
-<<<<<<< HEAD
-			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
-=======
-			err := terraform.InitApplyAutoApprove(dryRunFlag, config.TerraformClient, tfEntrypoint, tfEnvs)
->>>>>>> 307718a (fix: k1 dir namespacing for multi-cluster)
+			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -656,11 +652,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(viper.GetInt("flags.gitlab-owner-group-id"))
 			tfEnvs["TF_VAR_gitlab_owner"] = viper.GetString("flags.gitlab-owner")
-<<<<<<< HEAD
-			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
-=======
-			err := terraform.InitApplyAutoApprove(dryRunFlag, config.TerraformClient, tfEntrypoint, tfEnvs)
->>>>>>> 307718a (fix: k1 dir namespacing for multi-cluster)
+			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -785,11 +777,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_aws_region"] = cloudRegionFlag
 		tfEnvs["AWS_REGION"] = cloudRegionFlag
 
-<<<<<<< HEAD
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
-=======
-		err := terraform.InitApplyAutoApprove(dryRunFlag, config.TerraformClient, tfEntrypoint, tfEnvs)
->>>>>>> 307718a (fix: k1 dir namespacing for multi-cluster)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			msg := fmt.Sprintf("error creating aws resources with terraform %s : %s", tfEntrypoint, err)
 			viper.Set("kubefirst-checks.terraform-apply-aws-failed", true)
@@ -1245,7 +1233,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyFailed, err.Error())
 			return err
@@ -1285,7 +1273,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs[fmt.Sprintf("%s_OWNER", strings.ToUpper(config.GitProvider))] = cGitOwner
 
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyStarted, err.Error())
 			return err

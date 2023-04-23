@@ -558,7 +558,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
 			tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
 			tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
-			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -592,7 +592,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
 			tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
 			tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
-			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -1189,7 +1189,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		// tfEnvs["TF_LOG"] = "DEBUG"
 
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyFailed, err.Error())
 			return err
@@ -1226,7 +1226,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs[fmt.Sprintf("%s_OWNER", strings.ToUpper(config.GitProvider))] = cGitOwner
 
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyStarted, err.Error())
 			return err

@@ -663,7 +663,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
 			tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
-			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -690,7 +690,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
 			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, cGitlabOwnerGroupID)
-			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -810,7 +810,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		tfEntrypoint := config.GitopsDir + "/terraform/civo"
 		tfEnvs := map[string]string{}
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			msg := fmt.Sprintf("error creating civo resources with terraform %s : %s", tfEntrypoint, err)
 			viper.Set("kubefirst-checks.terraform-apply-civo-failed", true)
@@ -1148,7 +1148,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		tfEnvs = civo.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyFailed, err.Error())
 			return err
@@ -1178,7 +1178,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
 		tfEnvs = civo.GetUsersTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyStarted, err.Error())
 			return err

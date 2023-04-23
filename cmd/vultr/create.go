@@ -649,7 +649,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
 			tfEnvs = vultr.GetGithubTerraformEnvs(tfEnvs)
-			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -676,7 +676,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
 			tfEnvs = vultr.GetGitlabTerraformEnvs(tfEnvs, cGitlabOwnerGroupID)
-			err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
@@ -796,7 +796,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		tfEntrypoint := config.GitopsDir + "/terraform/vultr"
 		tfEnvs := map[string]string{}
 		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			msg := fmt.Sprintf("error creating vultr resources with terraform %s : %s", tfEntrypoint, err)
 			viper.Set("kubefirst-checks.terraform-apply-vultr-failed", true)
@@ -1139,7 +1139,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		tfEnvs = vultr.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyFailed, err.Error())
 			return err
@@ -1169,7 +1169,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
 		tfEnvs = vultr.GetUsersTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
-		err := terraform.InitApplyAutoApprove(tfEntrypoint, tfEnvs)
+		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyStarted, err.Error())
 			return err

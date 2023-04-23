@@ -96,7 +96,7 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 			tfEnvs := map[string]string{}
 			tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
 			tfEnvs = digitalocean.GetGithubTerraformEnvs(tfEnvs)
-			err := terraform.InitDestroyAutoApprove(tfEntrypoint, tfEnvs)
+			err := terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
 				return err
@@ -147,7 +147,7 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 			tfEnvs := map[string]string{}
 			tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
 			tfEnvs = digitalocean.GetGitlabTerraformEnvs(tfEnvs, gitlabClient.ParentGroupID)
-			err = terraform.InitDestroyAutoApprove(tfEntrypoint, tfEnvs)
+			err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
 				return err
@@ -261,7 +261,7 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 			}
 			tfEnvs = digitalocean.GetGitlabTerraformEnvs(tfEnvs, gid)
 		}
-		err = terraform.InitDestroyAutoApprove(tfEntrypoint, tfEnvs)
+		err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			log.Printf("error executing terraform destroy %s", tfEntrypoint)
 			return err
