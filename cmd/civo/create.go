@@ -29,6 +29,7 @@ import (
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/argocd"
 	"github.com/kubefirst/runtime/pkg/civo"
+	"github.com/kubefirst/runtime/pkg/dns"
 	"github.com/kubefirst/runtime/pkg/github"
 	gitlab "github.com/kubefirst/runtime/pkg/gitlab"
 	"github.com/kubefirst/runtime/pkg/handlers"
@@ -402,6 +403,13 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	skipDomainCheck := viper.GetBool("kubefirst-checks.domain-liveness")
 	if !skipDomainCheck {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessStarted, "")
+
+		// verify dns
+		err := dns.VerifyProviderDNS(civo.CloudProvider, cloudRegionFlag, domainNameFlag)
+		if err != nil {
+			return err
+		}
+
 		// domain id
 		domainId, err := civo.GetDNSInfo(domainNameFlag, cloudRegionFlag)
 		if err != nil {

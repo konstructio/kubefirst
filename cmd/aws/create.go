@@ -32,6 +32,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/argocd"
 	awsinternal "github.com/kubefirst/runtime/pkg/aws"
 	"github.com/kubefirst/runtime/pkg/bootstrap"
+	"github.com/kubefirst/runtime/pkg/dns"
 	"github.com/kubefirst/runtime/pkg/gitClient"
 	"github.com/kubefirst/runtime/pkg/github"
 	gitlab "github.com/kubefirst/runtime/pkg/gitlab"
@@ -392,6 +393,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 	skipDomainCheck := viper.GetBool("kubefirst-checks.domain-liveness")
 	if !skipDomainCheck {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessStarted, "")
+
+		// verify dns
+		err := dns.VerifyProviderDNS("aws", cloudRegionFlag, domainNameFlag)
+		if err != nil {
+			return err
+		}
 
 		domainLiveness := awsClient.TestHostedZoneLiveness(domainNameFlag)
 		if !domainLiveness {

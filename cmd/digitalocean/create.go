@@ -29,6 +29,7 @@ import (
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/argocd"
 	"github.com/kubefirst/runtime/pkg/digitalocean"
+	"github.com/kubefirst/runtime/pkg/dns"
 	"github.com/kubefirst/runtime/pkg/github"
 	gitlab "github.com/kubefirst/runtime/pkg/gitlab"
 	"github.com/kubefirst/runtime/pkg/handlers"
@@ -371,6 +372,12 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		digitaloceanConf := digitalocean.DigitaloceanConfiguration{
 			Client:  digitalocean.NewDigitalocean(),
 			Context: context.Background(),
+		}
+
+		// verify dns
+		err := dns.VerifyProviderDNS(digitalocean.CloudProvider, cloudRegionFlag, domainNameFlag)
+		if err != nil {
+			return err
 		}
 
 		// domain id
