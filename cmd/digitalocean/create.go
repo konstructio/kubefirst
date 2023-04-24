@@ -98,11 +98,6 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	kbotPasswordFlag, err := cmd.Flags().GetString("kbot-password")
-	if err != nil {
-		return err
-	}
-
 	useTelemetryFlag, err := cmd.Flags().GetBool("use-telemetry")
 	if err != nil {
 		return err
@@ -497,9 +492,6 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricKbotSetupFailed, err.Error())
 			return err
-		}
-		if len(kbotPasswordFlag) == 0 {
-			kbotPasswordFlag = pkg.Random(20)
 		}
 		log.Info().Msg("ssh key pair creation complete")
 
