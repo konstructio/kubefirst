@@ -28,6 +28,7 @@ import (
 	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/argocd"
+	"github.com/kubefirst/runtime/pkg/dns"
 	"github.com/kubefirst/runtime/pkg/github"
 	gitlab "github.com/kubefirst/runtime/pkg/gitlab"
 	"github.com/kubefirst/runtime/pkg/handlers"
@@ -381,6 +382,12 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		vultrConf := vultr.VultrConfiguration{
 			Client:  vultr.NewVultr(),
 			Context: context.Background(),
+		}
+
+		// verify dns
+		err := dns.VerifyProviderDNS(vultr.CloudProvider, cloudRegionFlag, domainNameFlag)
+		if err != nil {
+			return err
 		}
 
 		// domain id
