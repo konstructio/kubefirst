@@ -24,7 +24,6 @@ var (
 	gitopsTemplateURLFlag    string
 	gitopsTemplateBranchFlag string
 	domainNameFlag           string
-	kbotPasswordFlag         string
 	useTelemetryFlag         bool
 
 	// RootCredentials
@@ -74,7 +73,6 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "main", "the branch to clone for the gitops-template repository")
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
-	createCmd.Flags().StringVar(&kbotPasswordFlag, "kbot-password", "", "the default password to use for the kbot user")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
 
 	return createCmd
