@@ -16,10 +16,12 @@ import (
 
 // CheckForVersionUpdate determines whether or not there is a new cli version available
 func CheckForVersionUpdate() {
-	res, skip := versionCheck()
-	if !skip {
-		if res.Outdated {
-			fmt.Printf("A newer version (v%s) is available! Please upgrade with: \"brew upgrade kubefirst\"\n", res.Current)
+	if configs.K1Version != configs.DefaultK1Version {
+		res, skip := versionCheck()
+		if !skip {
+			if res.Outdated {
+				fmt.Printf("A newer version (v%s) is available! Please upgrade with: \"brew upgrade kubefirst\"\n", res.Current)
+			}
 		}
 	}
 }
