@@ -36,7 +36,6 @@ var (
 )
 
 func NewCommand() *cobra.Command {
-
 	digitaloceanCmd := &cobra.Command{
 		Use:   "digitalocean",
 		Short: "kubefirst digitalocean installation",

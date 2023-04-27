@@ -35,7 +35,6 @@ var (
 )
 
 func NewCommand() *cobra.Command {
-
 	k3dCmd := &cobra.Command{
 		Use:   "k3d",
 		Short: "kubefirst k3d installation",
@@ -80,6 +79,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "main", "the branch to clone for the gitops-template repository")
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
+
 	return createCmd
 }
 

@@ -36,7 +36,6 @@ var (
 )
 
 func NewCommand() *cobra.Command {
-
 	civoCmd := &cobra.Command{
 		Use:   "civo",
 		Short: "kubefirst civo installation",
