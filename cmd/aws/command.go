@@ -36,7 +36,6 @@ var (
 )
 
 func NewCommand() *cobra.Command {
-
 	awsCmd := &cobra.Command{
 		Use:   "aws",
 		Short: "kubefirst aws installation",

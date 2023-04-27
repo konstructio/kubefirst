@@ -47,6 +47,7 @@ func Execute() {
 	progressPrinter.GetInstance()
 	err := rootCmd.Execute()
 	if err != nil {
+		fmt.Printf("\nIf a detailed error message was available, please make the necessary corrections before retrying.\nYou can re-run the last command to try the operation again.\n\n")
 		os.Exit(1)
 	}
 }
