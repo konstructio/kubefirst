@@ -305,6 +305,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		ClusterType:       clusterTypeFlag,
 		DomainName:        k3d.DomainName,
 		GitProvider:       gitProviderFlag,
+		KubefirstClient:   "cli",
 		KubefirstTeam:     kubefirstTeam,
 		KubefirstTeamInfo: os.Getenv("KUBEFIRST_TEAM_INFO"),
 	}
