@@ -305,6 +305,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		ClusterType:       clusterTypeFlag,
 		DomainName:        domainNameFlag,
 		GitProvider:       gitProviderFlag,
+		KubefirstClient:   "cli",
 		KubefirstTeam:     kubefirstTeam,
 		KubefirstTeamInfo: os.Getenv("KUBEFIRST_TEAM_INFO"),
 	}

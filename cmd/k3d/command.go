@@ -42,7 +42,7 @@ func NewCommand() *cobra.Command {
 	}
 
 	// wire up new commands
-	k3dCmd.AddCommand(Create(), Destroy(), RootCredentials())
+	k3dCmd.AddCommand(Create(), Destroy(), RootCredentials(), UnsealVault())
 
 	return k3dCmd
 }
@@ -107,4 +107,15 @@ func RootCredentials() *cobra.Command {
 	authCmd.Flags().BoolVar(&copyVaultPasswordToClipboardFlag, "vault", false, "copy the vault password to the clipboard (optional)")
 
 	return authCmd
+}
+
+func UnsealVault() *cobra.Command {
+	unsealVaultCmd := &cobra.Command{
+		Use:   "unseal-vault",
+		Short: "check to see if an existing vault instance is sealed and, if so, unseal it",
+		Long:  "check to see if an existing vault instance is sealed and, if so, unseal it",
+		RunE:  unsealVault,
+	}
+
+	return unsealVaultCmd
 }
