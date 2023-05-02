@@ -8,6 +8,7 @@ package common
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/kubefirst/runtime/configs"
@@ -20,7 +21,12 @@ func CheckForVersionUpdate() {
 		res, skip := versionCheck()
 		if !skip {
 			if res.Outdated {
-				fmt.Printf("A newer version (v%s) is available! Please upgrade with: \"brew upgrade kubefirst\"\n", res.Current)
+				switch runtime.GOOS {
+				case "darwin":
+					fmt.Printf("A newer version (v%s) is available! Please upgrade with: \"brew upgrade kubefirst\"\n", res.Current)
+				default:
+					fmt.Printf("A newer version (v%s) is available! \"https://github.com/kubefirst/kubefirst/blob/main/build/README.md\"\n", res.Current)
+				}
 			}
 		}
 	}
