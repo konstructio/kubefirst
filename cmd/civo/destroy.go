@@ -68,10 +68,13 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 
 	// Instantiate civo config
 	config := civo.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
-
-	// todo improve these checks, make them standard for
-	// both create and destroy
-	civoToken := os.Getenv("CIVO_TOKEN")
+	config.CivoToken = os.Getenv("CIVO_TOKEN")
+	switch gitProviderFlag {
+	case "github":
+		config.GithubToken = cGitToken
+	case "gitlab":
+		config.GitlabToken = cGitToken
+	}
 
 	if len(cGitToken) == 0 {
 		return fmt.Errorf(
@@ -79,7 +82,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 			strings.ToUpper(gitProvider), gitProvider,
 		)
 	}
-	if len(civoToken) == 0 {
+	if len(config.CivoToken) == 0 {
 		return fmt.Errorf("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set the environment variable")
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
@@ -94,8 +97,8 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
-			tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-			tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs = civo.GetCivoTerraformEnvs(config, tfEnvs)
+			tfEnvs = civo.GetGithubTerraformEnvs(config, tfEnvs)
 			err := terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -145,8 +148,8 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
-			tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
-			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, gitlabClient.ParentGroupID)
+			tfEnvs = civo.GetCivoTerraformEnvs(config, tfEnvs)
+			tfEnvs = civo.GetGitlabTerraformEnvs(config, tfEnvs, gitlabClient.ParentGroupID)
 			err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -244,17 +247,17 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("destroying civo cloud resources")
 		tfEntrypoint := config.GitopsDir + "/terraform/civo"
 		tfEnvs := map[string]string{}
-		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetCivoTerraformEnvs(config, tfEnvs)
 
 		switch gitProvider {
 		case "github":
-			tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs = civo.GetGithubTerraformEnvs(config, tfEnvs)
 		case "gitlab":
 			gid, err := strconv.Atoi(viper.GetString("flags.gitlab-owner-group-id"))
 			if err != nil {
 				return fmt.Errorf("couldn't convert gitlab group id to int: %s", err)
 			}
-			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, gid)
+			tfEnvs = civo.GetGitlabTerraformEnvs(config, tfEnvs, gid)
 		}
 		err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
