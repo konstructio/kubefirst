@@ -362,7 +362,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.state-store-creds")
 	if !executionControl {
-		creds, err := civo.GetAccessCredentials(kubefirstStateStoreBucketName, cloudRegionFlag)
+		creds, err := civo.GetAccessCredentials(config.CivoToken, kubefirstStateStoreBucketName, cloudRegionFlag)
 		if err != nil {
 			log.Info().Msg(err.Error())
 		}
@@ -381,7 +381,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 		if civoCredsFailureMessage != "" {
 			// Creds failed to properly parse, so remove them
-			err := civo.DeleteAccessCredentials(kubefirstStateStoreBucketName, cloudRegionFlag)
+			err := civo.DeleteAccessCredentials(config.CivoToken, kubefirstStateStoreBucketName, cloudRegionFlag)
 			if err != nil {
 				return err
 			}
@@ -414,14 +414,14 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		// domain id
-		domainId, err := civo.GetDNSInfo(domainNameFlag, cloudRegionFlag)
+		domainId, err := civo.GetDNSInfo(config.CivoToken, domainNameFlag, cloudRegionFlag)
 		if err != nil {
 			log.Info().Msg(err.Error())
 		}
 
 		// viper values set in above function
 		log.Info().Msgf("domainId: %s", domainId)
-		domainLiveness := civo.TestDomainLiveness(domainNameFlag, domainId, cloudRegionFlag)
+		domainLiveness := civo.TestDomainLiveness(config.CivoToken, domainNameFlag, domainId, cloudRegionFlag)
 		if !domainLiveness {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessFailed, "domain liveness test failed")
 			msg := "failed to check the liveness of the Domain. A valid public Domain on the same CIVO " +
@@ -452,7 +452,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		accessKeyId := viper.GetString("kubefirst.state-store-creds.access-key-id")
 		log.Info().Msgf("access key id %s", accessKeyId)
 
-		bucket, err := civo.CreateStorageBucket(accessKeyId, kubefirstStateStoreBucketName, cloudRegionFlag)
+		bucket, err := civo.CreateStorageBucket(config.CivoToken, accessKeyId, kubefirstStateStoreBucketName, cloudRegionFlag)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricStateStoreCreateFailed, err.Error())
 			log.Info().Msg(err.Error())
