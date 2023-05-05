@@ -137,13 +137,6 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.cloud-region", cloudRegionFlag)
 	viper.WriteConfig()
 
-	// Verify region compatibility
-	digitaloceanConf := digitalocean.DigitaloceanConfiguration{
-		Client:  digitalocean.NewDigitalocean(),
-		Context: context.Background(),
-	}
-	digitaloceanConf.ValidateRegion(cloudRegionFlag)
-
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 5)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
@@ -230,6 +223,20 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 	// Instantiate config
 	config := digitalocean.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
+	config.DigitaloceanToken = os.Getenv("DO_TOKEN")
+	switch gitProviderFlag {
+	case "github":
+		config.GithubToken = cGitToken
+	case "gitlab":
+		config.GitlabToken = cGitToken
+	}
+
+	// Verify region compatibility
+	digitaloceanConf := digitalocean.DigitaloceanConfiguration{
+		Client:  digitalocean.NewDigitalocean(os.Getenv("DO_TOKEN")),
+		Context: context.Background(),
+	}
+	digitaloceanConf.ValidateRegion(cloudRegionFlag)
 
 	var sshPrivateKey, sshPublicKey string
 
@@ -366,7 +373,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessStarted, "")
 
 		digitaloceanConf := digitalocean.DigitaloceanConfiguration{
-			Client:  digitalocean.NewDigitalocean(),
+			Client:  digitalocean.NewDigitalocean(os.Getenv("DO_TOKEN")),
 			Context: context.Background(),
 		}
 
@@ -413,7 +420,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricStateStoreCreateStarted, "")
 
 		digitaloceanConf := digitalocean.DigitaloceanConfiguration{
-			Client:  digitalocean.NewDigitalocean(),
+			Client:  digitalocean.NewDigitalocean(os.Getenv("DO_TOKEN")),
 			Context: context.Background(),
 		}
 
@@ -634,7 +641,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
-			tfEnvs = digitalocean.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs = digitalocean.GetGithubTerraformEnvs(config, tfEnvs)
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
@@ -661,7 +668,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
-			tfEnvs = digitalocean.GetGitlabTerraformEnvs(tfEnvs, cGitlabOwnerGroupID)
+			tfEnvs = digitalocean.GetGitlabTerraformEnvs(config, tfEnvs, cGitlabOwnerGroupID)
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
@@ -781,7 +788,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := config.GitopsDir + "/terraform/digitalocean"
 		tfEnvs := map[string]string{}
-		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
+		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(config, tfEnvs)
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			msg := fmt.Sprintf("error creating digitalocean resources with terraform %s : %s", tfEntrypoint, err)
@@ -849,7 +856,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
-		err := digitalocean.BootstrapDigitaloceanMgmtCluster(config.Kubeconfig, config.GitProvider, cGitUser)
+		err := digitalocean.BootstrapDigitaloceanMgmtCluster(config.DigitaloceanToken, config.Kubeconfig, config.GitProvider, cGitUser)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
 			return err
@@ -1123,7 +1130,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
 		tfEnvs = digitalocean.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
-		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
+		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -1152,7 +1159,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("applying users terraform")
 
 		tfEnvs := map[string]string{}
-		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
+		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(config, tfEnvs)
 		tfEnvs = digitalocean.GetUsersTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)

@@ -242,6 +242,13 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 	// Instantiate config
 	config := vultr.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
+	config.VultrToken = os.Getenv("VULTR_API_KEY")
+	switch gitProviderFlag {
+	case "github":
+		config.GithubToken = cGitToken
+	case "gitlab":
+		config.GitlabToken = cGitToken
+	}
 
 	var sshPrivateKey, sshPublicKey string
 
@@ -358,7 +365,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudCredentialsCheckStarted, "")
 
-		if os.Getenv("VULTR_API_KEY") == "" {
+		if config.VultrToken == "" {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudCredentialsCheckFailed, "VULTR_API_KEY environment variable was not set")
 			return fmt.Errorf("your VULTR_API_KEY variable is unset - please set it before continuing")
 		}
@@ -376,7 +383,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessStarted, "")
 
 		vultrConf := vultr.VultrConfiguration{
-			Client:  vultr.NewVultr(),
+			Client:  vultr.NewVultr(config.VultrToken),
 			Context: context.Background(),
 		}
 
@@ -423,7 +430,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricStateStoreCreateStarted, "")
 
 		vultrConf := vultr.VultrConfiguration{
-			Client:  vultr.NewVultr(),
+			Client:  vultr.NewVultr(config.VultrToken),
 			Context: context.Background(),
 		}
 
@@ -648,7 +655,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
-			tfEnvs = vultr.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs = vultr.GetGithubTerraformEnvs(config, tfEnvs)
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
@@ -675,7 +682,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
-			tfEnvs = vultr.GetGitlabTerraformEnvs(tfEnvs, cGitlabOwnerGroupID)
+			tfEnvs = vultr.GetGitlabTerraformEnvs(config, tfEnvs, cGitlabOwnerGroupID)
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
@@ -795,7 +802,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := config.GitopsDir + "/terraform/vultr"
 		tfEnvs := map[string]string{}
-		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
+		tfEnvs = vultr.GetVultrTerraformEnvs(config, tfEnvs)
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			msg := fmt.Sprintf("error creating vultr resources with terraform %s : %s", tfEntrypoint, err)
@@ -863,7 +870,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
-		err := vultr.BootstrapVultrMgmtCluster(config.Kubeconfig, config.GitProvider, cGitUser)
+		err := vultr.BootstrapVultrMgmtCluster(config.VultrToken, config.Kubeconfig, config.GitProvider, cGitUser)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
 			return err
@@ -1137,7 +1144,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
 		tfEnvs = vultr.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
-		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
+		tfEnvs = vultr.GetVultrTerraformEnvs(config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -1166,7 +1173,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("applying users terraform")
 
 		tfEnvs := map[string]string{}
-		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
+		tfEnvs = vultr.GetVultrTerraformEnvs(config, tfEnvs)
 		tfEnvs = vultr.GetUsersTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)

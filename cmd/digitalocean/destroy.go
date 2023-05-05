@@ -68,10 +68,13 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 
 	// Instantiate digitalocean config
 	config := digitalocean.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
-
-	// todo improve these checks, make them standard for
-	// both create and destroy
-	digitaloceanToken := os.Getenv("DO_TOKEN")
+	config.DigitaloceanToken = os.Getenv("DO_TOKEN")
+	switch gitProviderFlag {
+	case "github":
+		config.GithubToken = cGitToken
+	case "gitlab":
+		config.GitlabToken = cGitToken
+	}
 
 	if len(cGitToken) == 0 {
 		return fmt.Errorf(
@@ -79,7 +82,7 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 			strings.ToUpper(gitProvider), gitProvider,
 		)
 	}
-	if len(digitaloceanToken) == 0 {
+	if len(config.DigitaloceanToken) == 0 {
 		return fmt.Errorf("\n\nYour DO_TOKEN environment variable isn't set")
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
@@ -94,8 +97,8 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
-			tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
-			tfEnvs = digitalocean.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(config, tfEnvs)
+			tfEnvs = digitalocean.GetGithubTerraformEnvs(config, tfEnvs)
 			err := terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -145,8 +148,8 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
-			tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
-			tfEnvs = digitalocean.GetGitlabTerraformEnvs(tfEnvs, gitlabClient.ParentGroupID)
+			tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(config, tfEnvs)
+			tfEnvs = digitalocean.GetGitlabTerraformEnvs(config, tfEnvs, gitlabClient.ParentGroupID)
 			err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -188,7 +191,7 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 
 	// Fetch cluster resources prior to deletion
 	digitaloceanConf := digitalocean.DigitaloceanConfiguration{
-		Client:  digitalocean.NewDigitalocean(),
+		Client:  digitalocean.NewDigitalocean(config.DigitaloceanToken),
 		Context: context.Background(),
 	}
 	resources, err := digitaloceanConf.GetKubernetesAssociatedResources(clusterName)
@@ -249,17 +252,17 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("destroying digitalocean cloud resources")
 		tfEntrypoint := config.GitopsDir + "/terraform/digitalocean"
 		tfEnvs := map[string]string{}
-		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
+		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(config, tfEnvs)
 
 		switch gitProvider {
 		case "github":
-			tfEnvs = digitalocean.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs = digitalocean.GetGithubTerraformEnvs(config, tfEnvs)
 		case "gitlab":
 			gid, err := strconv.Atoi(viper.GetString("flags.gitlab-owner-group-id"))
 			if err != nil {
 				return fmt.Errorf("couldn't convert gitlab group id to int: %s", err)
 			}
-			tfEnvs = digitalocean.GetGitlabTerraformEnvs(tfEnvs, gid)
+			tfEnvs = digitalocean.GetGitlabTerraformEnvs(config, tfEnvs, gid)
 		}
 		err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {

@@ -68,18 +68,23 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 
 	// Instantiate vultr config
 	config := vultr.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
+	config.VultrToken = os.Getenv("VULTR_API_KEY")
+	switch gitProviderFlag {
+	case "github":
+		config.GithubToken = cGitToken
+	case "gitlab":
+		config.GitlabToken = cGitToken
+	}
 
 	// todo improve these checks, make them standard for
 	// both create and destroy
-	vultrToken := os.Getenv("VULTR_API_KEY")
-
 	if len(cGitToken) == 0 {
 		return fmt.Errorf(
 			"please set a %s_TOKEN environment variable to continue\n https://docs.kubefirst.io/kubefirst/%s/install.html#step-3-kubefirst-init",
 			strings.ToUpper(gitProvider), gitProvider,
 		)
 	}
-	if len(vultrToken) == 0 {
+	if len(config.VultrToken) == 0 {
 		return fmt.Errorf("\n\nYour VULTR_API_KEY environment variable isn't set")
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
@@ -94,8 +99,8 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
-			tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
-			tfEnvs = vultr.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs = vultr.GetVultrTerraformEnvs(config, tfEnvs)
+			tfEnvs = vultr.GetGithubTerraformEnvs(config, tfEnvs)
 			err := terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -145,8 +150,8 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
-			tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
-			tfEnvs = vultr.GetGitlabTerraformEnvs(tfEnvs, gitlabClient.ParentGroupID)
+			tfEnvs = vultr.GetVultrTerraformEnvs(config, tfEnvs)
+			tfEnvs = vultr.GetGitlabTerraformEnvs(config, tfEnvs, gitlabClient.ParentGroupID)
 			err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -190,7 +195,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 
 	//GetKubernetesAssociatedBlockStorage
 	vultrConf := vultr.VultrConfiguration{
-		Client:  vultr.NewVultr(),
+		Client:  vultr.NewVultr(config.VultrToken),
 		Context: context.Background(),
 	}
 	blockStorage, err := vultrConf.GetKubernetesAssociatedBlockStorage("", true)
@@ -251,17 +256,17 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("destroying vultr cloud resources")
 		tfEntrypoint := config.GitopsDir + "/terraform/vultr"
 		tfEnvs := map[string]string{}
-		tfEnvs = vultr.GetVultrTerraformEnvs(tfEnvs)
+		tfEnvs = vultr.GetVultrTerraformEnvs(config, tfEnvs)
 
 		switch gitProvider {
 		case "github":
-			tfEnvs = vultr.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs = vultr.GetGithubTerraformEnvs(config, tfEnvs)
 		case "gitlab":
 			gid, err := strconv.Atoi(viper.GetString("flags.gitlab-owner-group-id"))
 			if err != nil {
 				return fmt.Errorf("couldn't convert gitlab group id to int: %s", err)
 			}
-			tfEnvs = vultr.GetGitlabTerraformEnvs(tfEnvs, gid)
+			tfEnvs = vultr.GetGitlabTerraformEnvs(config, tfEnvs, gid)
 		}
 		err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {

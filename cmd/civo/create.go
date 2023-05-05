@@ -223,6 +223,13 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	// Instantiate config
 	config := civo.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
+	config.CivoToken = os.Getenv("CIVO_TOKEN")
+	switch gitProviderFlag {
+	case "github":
+		config.GithubToken = cGitToken
+	case "gitlab":
+		config.GitlabToken = cGitToken
+	}
 
 	var sshPrivateKey, sshPublicKey string
 
@@ -339,7 +346,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudCredentialsCheckStarted, "")
 
-		if os.Getenv("CIVO_TOKEN") == "" {
+		if config.CivoToken == "" {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudCredentialsCheckFailed, "CIVO_TOKEN environment variable was not set")
 			return fmt.Errorf("your CIVO_TOKEN is not set - please set and re-run your last command")
 		}
@@ -663,7 +670,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
-			tfEnvs = civo.GetGithubTerraformEnvs(tfEnvs)
+			tfEnvs = civo.GetGithubTerraformEnvs(config, tfEnvs)
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
@@ -690,7 +697,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
-			tfEnvs = civo.GetGitlabTerraformEnvs(tfEnvs, cGitlabOwnerGroupID)
+			tfEnvs = civo.GetGitlabTerraformEnvs(config, tfEnvs, cGitlabOwnerGroupID)
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
@@ -810,7 +817,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := config.GitopsDir + "/terraform/civo"
 		tfEnvs := map[string]string{}
-		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetCivoTerraformEnvs(config, tfEnvs)
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
 			msg := fmt.Sprintf("error creating civo resources with terraform %s : %s", tfEntrypoint, err)
@@ -873,7 +880,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
-		err := civo.BootstrapCivoMgmtCluster(config.Kubeconfig, config.GitProvider, cGitUser)
+		err := civo.BootstrapCivoMgmtCluster(config.CivoToken, config.Kubeconfig, config.GitProvider, cGitUser)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
 			return err
@@ -1147,7 +1154,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
 		tfEnvs = civo.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
-		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetCivoTerraformEnvs(config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -1176,7 +1183,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("applying users terraform")
 
 		tfEnvs := map[string]string{}
-		tfEnvs = civo.GetCivoTerraformEnvs(tfEnvs)
+		tfEnvs = civo.GetCivoTerraformEnvs(config, tfEnvs)
 		tfEnvs = civo.GetUsersTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
