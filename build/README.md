@@ -14,6 +14,8 @@ kubefirst help
 
 # Linux Download
 
+## Manual Install
+
 ```bash
 export KUBEFIRST_VERSION=`curl https://github.com/kubefirst/kubefirst/releases/latest  -Ls -o /dev/null -w %{url_effective} | grep -oE "[^/]+$"`
 ```
@@ -31,3 +33,20 @@ curl -LO $BINARY_URL && \
 ```bash
 kubefirst info
 ```
+
+## Install with ASDF ([asdf-kubefirst](https://github.com/Claywd/asdf-kubefirst))
+    Its best to run latest but if you alreayd have asdf setup and prefer to use it, there is a kubefirst plugin available to get kubefirst installed and running quickly with asdf. 
+
+    Installation instructions for asdf are here. Confirm its installed with `asdf version`
+    The [asdf-kubefirst plugin is here](https://github.com/Claywd/asdf-kubefirst)
+
+    Once you have asdf installed, just run the following commands kubefirst will be up and running.
+
+    ```
+    asdf plugin-add kubefirst https://github.com/Claywd/asdf-kubefirst.git;
+    asdf install kubefirst latest;
+    asdf global kubefirst;
+    kubefirst version; 
+    ```
+
+
