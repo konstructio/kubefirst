@@ -35,7 +35,7 @@ kubefirst info
 ```
 
 ## Install with ASDF ([asdf-kubefirst](https://github.com/Claywd/asdf-kubefirst))
-    Its best to run latest but if you alreayd have asdf setup and prefer to use it, there is a kubefirst plugin available to get kubefirst installed and running quickly with asdf. 
+    It's best to run latest but if you already have asdf setup and prefer to use it, there is a kubefirst plugin available to get kubefirst installed and running quickly with asdf.
 
     Installation instructions for asdf are here. Confirm its installed with `asdf version`
     The [asdf-kubefirst plugin is here](https://github.com/Claywd/asdf-kubefirst)
