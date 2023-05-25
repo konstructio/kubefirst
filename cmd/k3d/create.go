@@ -714,7 +714,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		err := k3d.ClusterCreate(clusterNameFlag, config.K1Dir, config.K3dClient, config.Kubeconfig)
 		if err != nil {
-			msg := fmt.Sprintf("error creating k3d resources with terraform: %s", err)
+			msg := fmt.Sprintf("error creating k3d resources with k3d client %s: %s", config.K3dClient, err)
 			viper.Set("kubefirst-checks.terraform-apply-k3d-failed", true)
 			viper.WriteConfig()
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudTerraformApplyFailed, msg)
