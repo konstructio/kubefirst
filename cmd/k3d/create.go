@@ -1319,6 +1319,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("kubefirst installation complete")
 	log.Info().Msg("welcome to your new kubefirst platform running in K3d")
+	time.Sleep(time.Second * 1) // allows progress bars to finish
 
 	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLTLS)
 	if err != nil {
@@ -1331,8 +1332,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	helpers.SetCompletionFlags(k3d.CloudProvider, config.GitProvider)
 
 	reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, false)
-
-	time.Sleep(time.Millisecond * 100) // allows progress bars to finish
 
 	defer func(c segment.SegmentClient) {
 		err := c.Client.Close()
