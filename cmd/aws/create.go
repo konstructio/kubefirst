@@ -1327,6 +1327,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("kubefirst installation complete")
 	log.Info().Msg("welcome to your new kubefirst platform powered by AWS")
+	time.Sleep(time.Second * 1) // allows progress bars to finish
 
 	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
 	if err != nil {
@@ -1344,8 +1345,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	helpers.SetCompletionFlags(awsinternal.CloudProvider, config.GitProvider)
 
 	reports.AwsHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
-
-	time.Sleep(time.Second * 1) // allows progress bars to finish
 
 	defer func(c segment.SegmentClient) {
 		err := c.Client.Close()

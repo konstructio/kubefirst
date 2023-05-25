@@ -1215,6 +1215,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 	//* console port-forward
 	progressPrinter.IncrementTracker("deploying-kubefirst-console", 1)
+
 	consoleStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(consoleStopChannel)
@@ -1231,6 +1232,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("kubefirst installation complete")
 	log.Info().Msg("welcome to your new kubefirst platform powered by Vultr cloud")
+	time.Sleep(time.Second * 1) // allows progress bars to finish
 
 	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
 	if err != nil {
@@ -1249,8 +1251,6 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 	// this is probably going to get streamlined later, but this is necessary now
 	reports.VultrHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
-
-	time.Sleep(time.Second * 1) // allows progress bars to finish
 
 	defer func(c segment.SegmentClient) {
 		err := c.Client.Close()
