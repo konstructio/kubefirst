@@ -61,6 +61,7 @@ func init() {
 		civo.NewCommand(),
 		k3d.NewCommand(),
 		k3d.LocalCommandAlias(),
+		LaunchCommand(),
 		LetsEncryptCommand(),
 	)
 }

@@ -26,12 +26,12 @@ func LetsEncryptCommand() *cobra.Command {
 	}
 
 	// wire up new commands
-	letsEncryptCommand.AddCommand(Status())
+	letsEncryptCommand.AddCommand(status())
 
 	return letsEncryptCommand
 }
 
-func Status() *cobra.Command {
+func status() *cobra.Command {
 	statusCmd := &cobra.Command{
 		Use:              "status",
 		Short:            "check the usage statistics for a letsencrypt certificate",
