@@ -63,5 +63,6 @@ func init() {
 		k3d.LocalCommandAlias(),
 		LaunchCommand(),
 		LetsEncryptCommand(),
+		TerraformCommand(),
 	)
 }
