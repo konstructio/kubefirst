@@ -34,19 +34,21 @@ curl -LO $BINARY_URL && \
 kubefirst info
 ```
 
-## Install with ASDF ([asdf-kubefirst](https://github.com/Claywd/asdf-kubefirst))
-    It's best to run latest but if you already have asdf setup and prefer to use it, there is a kubefirst plugin available to get kubefirst installed and running quickly with asdf.
+## Install with ASDF ([asdf-kubefirst](https://github.com/Claywd/asdf-kubefirst)) 
+  *Not maintained by kubefirst*
+  
+It's best to run latest but if you already have asdf setup and prefer to use it, there is a kubefirst plugin available to get kubefirst installed and running quickly with asdf.
 
-    Installation instructions for asdf are here. Confirm its installed with `asdf version`
+Installation instructions for asdf are here. Confirm its installed with `asdf version`
     The [asdf-kubefirst plugin is here](https://github.com/Claywd/asdf-kubefirst)
 
-    Once you have asdf installed, just run the following commands kubefirst will be up and running.
+Once you have asdf installed, just run the following commands kubefirst will be up and running.
 
-    ```
-    asdf plugin-add kubefirst https://github.com/Claywd/asdf-kubefirst.git;
-    asdf install kubefirst latest;
-    asdf global kubefirst;
-    kubefirst version; 
-    ```
+```zsh
+asdf plugin-add kubefirst https://github.com/Claywd/asdf-kubefirst.git;
+asdf install kubefirst latest;
+asdf global kubefirst;
+kubefirst version; 
+```
 
 
