@@ -16,6 +16,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/downloadManager"
 	"github.com/kubefirst/runtime/pkg/helpers"
 	"github.com/kubefirst/runtime/pkg/k3d"
+	"github.com/kubefirst/runtime/pkg/k8s"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -61,6 +62,8 @@ func launchUp() *cobra.Command {
 			}
 
 			helpers.DisplayLogHints()
+
+			log.Infof("%s/%s", k3d.LocalhostOS, k3d.LocalhostARCH)
 
 			homeDir, err := os.UserHomeDir()
 			if err != nil {
@@ -142,6 +145,7 @@ func launchUp() *cobra.Command {
 			}
 
 			// Create k3d cluster
+			kubeconfigPath := fmt.Sprintf("%s/.k1/%s/kubeconfig", homeDir, clusterName)
 			_, _, err = pkg.ExecShellReturnStrings(
 				k3dClient,
 				"cluster",
@@ -153,7 +157,7 @@ func launchUp() *cobra.Command {
 				log.Info("Creating k3d cluster for Kubefirst console and API")
 				err = k3d.ClusterCreateConsoleAPI(
 					clusterName,
-					fmt.Sprintf("%s/.k1/%s/kubeconfig", homeDir, clusterName),
+					kubeconfigPath,
 					k3dClient,
 					fmt.Sprintf("%s/kubeconfig", dir),
 				)
@@ -221,7 +225,7 @@ func launchUp() *cobra.Command {
 			res, _, err = pkg.ExecShellReturnStrings(
 				helmClient,
 				"--kubeconfig",
-				fmt.Sprintf("%s/.k1/%s/kubeconfig", homeDir, clusterName),
+				kubeconfigPath,
 				"list",
 				"-o",
 				"yaml",
@@ -244,14 +248,11 @@ func launchUp() *cobra.Command {
 				}
 			}
 
-			fmt.Println(k3d.LocalhostOS)
-			fmt.Println(k3d.LocalhostARCH)
-
 			if !chartInstalled {
 				installFlags := []string{
 					"install",
 					"--kubeconfig",
-					fmt.Sprintf("%s/.k1/%s/kubeconfig", homeDir, clusterName),
+					kubeconfigPath,
 					"--namespace",
 					"kubefirst",
 					helmChartName,
@@ -275,6 +276,32 @@ func launchUp() *cobra.Command {
 			} else {
 				log.Info("Kubefirst console helm chart already installed")
 			}
+
+			// Wait for API Deployment Pods to transition to Running
+			log.Info("Waiting for Kubefirst API Deployment...")
+			kcfg := k8s.CreateKubeConfig(false, kubeconfigPath)
+			apiDeployment, err := k8s.ReturnDeploymentObject(
+				kcfg.Clientset,
+				"app.kubernetes.io/name",
+				"kubefirst-api",
+				"kubefirst",
+				240,
+			)
+			if err != nil {
+				log.Fatalf("error looking for kubefirst api: %s", err)
+			}
+			_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, apiDeployment, 120)
+			if err != nil {
+				log.Fatalf("error waiting for kubefirst api: %s", err)
+			}
+
+			log.Infof(
+				"Kubefirst is ready - to get started, run: `kubectl --kubeconfig %s --namespace %s port-forward service/%s 8080:8080`",
+				kubeconfigPath,
+				helmChartName,
+				"kubefirst-console",
+			)
+			log.Info("Once the port-forward is started, open your browser to: http://localhost:8080")
 		},
 	}
 
