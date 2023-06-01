@@ -30,7 +30,7 @@ const (
 	helmChartName     = "kubefirst"
 	helmChartRepoName = "kubefirst"
 	helmChartRepoURL  = "https://charts.kubefirst.com"
-	helmChartVersion  = "0.0.12"
+	helmChartVersion  = "0.0.13"
 )
 
 func LaunchCommand() *cobra.Command {
