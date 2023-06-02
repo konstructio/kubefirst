@@ -7,8 +7,10 @@ See the LICENSE file for more details.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/kubefirst/kubefirst/internal/helm"
 	k3dint "github.com/kubefirst/kubefirst/internal/k3d"
@@ -20,6 +22,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -30,7 +34,7 @@ const (
 	helmChartName     = "kubefirst"
 	helmChartRepoName = "kubefirst"
 	helmChartRepoURL  = "https://charts.kubefirst.com"
-	helmChartVersion  = "0.0.13"
+	helmChartVersion  = "0.0.15"
 )
 
 func LaunchCommand() *cobra.Command {
@@ -144,6 +148,30 @@ func launchUp() *cobra.Command {
 				log.Info("helm is already installed, continuing")
 			}
 
+			// Download mkcert
+			mkcertClient := fmt.Sprintf("%s/mkcert", toolsDir)
+			_, err = os.Stat(mkcertClient)
+			if err != nil {
+				log.Info("Downloading mkcert...")
+				mkcertDownloadURL := fmt.Sprintf(
+					"https://github.com/FiloSottile/mkcert/releases/download/%s/mkcert-%s-%s-%s",
+					"v1.4.4",
+					"v1.4.4",
+					k3d.LocalhostOS,
+					k3d.LocalhostARCH,
+				)
+				err = downloadManager.DownloadFile(mkcertClient, mkcertDownloadURL)
+				if err != nil {
+					log.Fatalf("error while trying to download mkcert: %s", err)
+				}
+				err = os.Chmod(mkcertClient, 0755)
+				if err != nil {
+					log.Fatal(err.Error())
+				}
+			} else {
+				log.Info("mkcert is already installed, continuing")
+			}
+
 			// Create k3d cluster
 			kubeconfigPath := fmt.Sprintf("%s/.k1/%s/kubeconfig", homeDir, clusterName)
 			_, _, err = pkg.ExecShellReturnStrings(
@@ -154,7 +182,7 @@ func launchUp() *cobra.Command {
 			)
 			if err != nil {
 				log.Warn("k3d cluster does not exist and will be created")
-				log.Info("Creating k3d cluster for Kubefirst console and API")
+				log.Info("Creating k3d cluster for Kubefirst console and API...")
 				err = k3d.ClusterCreateConsoleAPI(
 					clusterName,
 					kubeconfigPath,
@@ -260,6 +288,8 @@ func launchUp() *cobra.Command {
 					"--version",
 					helmChartVersion,
 					"kubefirst/kubefirst",
+					"--set",
+					"console.ingress.createTraefikRoute=true",
 				}
 				if k3d.LocalhostARCH == "arm64" {
 					installFlags = append(installFlags, "--set")
@@ -269,7 +299,7 @@ func launchUp() *cobra.Command {
 				// Install helm chart
 				a, b, err := pkg.ExecShellReturnStrings(helmClient, installFlags...)
 				if err != nil {
-					log.Errorf("error installing helm chart: %s %s %s", err, a, b)
+					log.Fatalf("error installing helm chart: %s %s %s", err, a, b)
 				}
 
 				log.Info("Kubefirst console helm chart installed successfully")
@@ -295,13 +325,73 @@ func launchUp() *cobra.Command {
 				log.Fatalf("error waiting for kubefirst api: %s", err)
 			}
 
-			log.Infof(
-				"Kubefirst is ready - to get started, run: `kubectl --kubeconfig %s --namespace %s port-forward service/%s 8080:8080`",
-				kubeconfigPath,
-				helmChartName,
-				"kubefirst-console",
+			// Generate certificate for console
+			sslPemDir := fmt.Sprintf("%s/ssl", dir)
+			if _, err := os.Stat(sslPemDir); os.IsNotExist(err) {
+				err := os.MkdirAll(sslPemDir, os.ModePerm)
+				if err != nil {
+					log.Warnf("%s directory already exists, continuing", sslPemDir)
+				}
+			}
+			log.Info("Certificate directory created")
+
+			mkcertPemDir := fmt.Sprintf("%s/%s/pem", sslPemDir, "kubefirst.dev")
+			if _, err := os.Stat(mkcertPemDir); os.IsNotExist(err) {
+				err := os.MkdirAll(mkcertPemDir, os.ModePerm)
+				if err != nil {
+					log.Warnf("%s directory already exists, continuing", mkcertPemDir)
+				}
+			}
+
+			fullAppAddress := "console.kubefirst.dev"
+			certFileName := mkcertPemDir + "/" + "kubefirst-console" + "-cert.pem"
+			keyFileName := mkcertPemDir + "/" + "kubefirst-console" + "-key.pem"
+
+			_, _, err = pkg.ExecShellReturnStrings(
+				mkcertClient,
+				"-cert-file",
+				certFileName,
+				"-key-file",
+				keyFileName,
+				"kubefirst.dev",
+				fullAppAddress,
 			)
-			log.Info("Once the port-forward is started, open your browser to: http://localhost:8080")
+			if err != nil {
+				log.Fatalf("error generating certificate for console: %s", err)
+			}
+
+			//* read certificate files
+			certPem, err := os.ReadFile(fmt.Sprintf("%s/%s-cert.pem", mkcertPemDir, "kubefirst-console"))
+			if err != nil {
+				log.Fatalf("error generating certificate for console: %s", err)
+			}
+			keyPem, err := os.ReadFile(fmt.Sprintf("%s/%s-key.pem", mkcertPemDir, "kubefirst-console"))
+			if err != nil {
+				log.Fatalf("error generating certificate for console: %s", err)
+			}
+
+			_, err = kcfg.Clientset.CoreV1().Secrets("kubefirst").Get(context.Background(), "kubefirst-console-tls", metav1.GetOptions{})
+			if err == nil {
+				log.Infof("kubernetes secret %s/%s already created - skipping", "kubefirst", "kubefirst-console")
+			} else if strings.Contains(err.Error(), "not found") {
+				_, err = kcfg.Clientset.CoreV1().Secrets("kubefirst").Create(context.Background(), &v1.Secret{
+					Type: "kubernetes.io/tls",
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("%s-tls", "kubefirst-console"),
+						Namespace: "kubefirst",
+					},
+					Data: map[string][]byte{
+						"tls.crt": []byte(certPem),
+						"tls.key": []byte(keyPem),
+					},
+				}, metav1.CreateOptions{})
+				if err != nil {
+					log.Fatalf("error creating kubernetes secret for cert: %s", err)
+				}
+				log.Info("Created Kubernetes Secret for certificate")
+			}
+
+			log.Info("Kubefirst Console is now available! https://console.kubefirst.dev")
 		},
 	}
 
