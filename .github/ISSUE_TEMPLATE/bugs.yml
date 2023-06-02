@@ -21,8 +21,10 @@ body:
       options:
         - None specific
         - AWS
-        - CIVO
+        - Civo
+        - DigitalOcean
         - k3d (local)
+        - Vultr
     validations:
       required: true
   - type: dropdown
