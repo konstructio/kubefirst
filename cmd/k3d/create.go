@@ -331,7 +331,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// this branch flag value is overridden with a tag when running from a
 	// kubefirst binary for version compatibility
-	if configs.K1Version != "development" {
+	if gitopsTemplateBranchFlag == "" && configs.K1Version != "development" {
 		gitopsTemplateBranchFlag = configs.K1Version
 	}
 	log.Info().Msgf("kubefirst version configs.K1Version: %s ", configs.K1Version)
