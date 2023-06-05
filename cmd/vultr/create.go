@@ -123,7 +123,6 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	}
 
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
-	helpers.DisplayLogHints()
 
 	switch gitProviderFlag {
 	case "github":
