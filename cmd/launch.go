@@ -34,7 +34,9 @@ const (
 	helmChartName     = "kubefirst"
 	helmChartRepoName = "kubefirst"
 	helmChartRepoURL  = "https://charts.kubefirst.com"
-	helmChartVersion  = "0.0.18"
+	helmChartVersion  = "0.0.21"
+	namespace         = "kubefirst"
+	secretName        = "kubefirst-initial-secrets"
 )
 
 func LaunchCommand() *cobra.Command {
@@ -57,12 +59,23 @@ func launchUp() *cobra.Command {
 		Short:            "launch new console and api instance",
 		TraverseChildren: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			choice := k3dint.MongoDestinationChooser()
-			switch choice {
+			dbDestination := k3dint.MongoDestinationChooser()
+			var dbHost, dbUser, dbPassword string
+			switch dbDestination {
 			case "atlas":
+				fmt.Println("MongoDB Atlas Host String: ")
+				fmt.Scanln(&dbHost)
+
+				fmt.Println("MongoDB Atlas Username: ")
+				fmt.Scanln(&dbUser)
+
+				fmt.Println("MongoDB Atlas Password: ")
+				fmt.Scanln(&dbPassword)
+
+				fmt.Println()
 			case "in-cluster":
 			default:
-				log.Fatalf("%s is not a valid option", choice)
+				log.Fatalf("%s is not a valid option", dbDestination)
 			}
 
 			helpers.DisplayLogHints()
@@ -194,7 +207,28 @@ func launchUp() *cobra.Command {
 					log.Fatal(msg)
 				}
 				log.Info("k3d cluster for Kubefirst console and API created successfully")
+
+				// Wait for traefik
+				kcfg := k8s.CreateKubeConfig(false, kubeconfigPath)
+				log.Info("Waiting for traefik...")
+				traefikDeployment, err := k8s.ReturnDeploymentObject(
+					kcfg.Clientset,
+					"app.kubernetes.io/name",
+					"traefik",
+					"kube-system",
+					240,
+				)
+				if err != nil {
+					log.Fatalf("error looking for traefik: %s", err)
+				}
+				_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, traefikDeployment, 120)
+				if err != nil {
+					log.Fatalf("error waiting for traefik: %s", err)
+				}
 			}
+
+			// Establish Kubernetes client for console cluster
+			kcfg := k8s.CreateKubeConfig(false, kubeconfigPath)
 
 			// Determine if helm chart repository has already been added
 			res, _, err := pkg.ExecShellReturnStrings(
@@ -282,18 +316,70 @@ func launchUp() *cobra.Command {
 					"--kubeconfig",
 					kubeconfigPath,
 					"--namespace",
-					"kubefirst",
+					namespace,
 					helmChartName,
-					"--create-namespace",
 					"--version",
 					helmChartVersion,
 					"kubefirst/kubefirst",
 					"--set",
 					"console.ingress.createTraefikRoute=true",
 				}
-				if k3d.LocalhostARCH == "arm64" {
+				switch dbDestination {
+				case "in-cluster":
+					installFlags = append(installFlags, "--create-namespace")
 					installFlags = append(installFlags, "--set")
-					installFlags = append(installFlags, "mongodb.image.repository=arm64v8/mongo,mongodb.image.tag=latest,mongodb.persistence.mountPath=/data/db,mongodb.extraEnvVarsSecret=kubefirst-initial-secrets")
+					installFlags = append(installFlags, "mongodb.enabled=true")
+
+					if k3d.LocalhostARCH == "arm64" {
+						installFlags = append(installFlags, "--set")
+						installFlags = append(installFlags, "mongodb.image.repository=arm64v8/mongo,mongodb.image.tag=latest,mongodb.persistence.mountPath=/data/db,mongodb.extraEnvVarsSecret=kubefirst-initial-secrets")
+					}
+				case "atlas":
+					installFlags = append(installFlags, "--set")
+					installFlags = append(installFlags, "mongodb.enabled=false")
+					installFlags = append(installFlags, "--set")
+					installFlags = append(installFlags, fmt.Sprintf("kubefirst-api.existingSecret=%s", secretName))
+					installFlags = append(installFlags, "--set")
+					installFlags = append(installFlags, fmt.Sprintf("kubefirst-api.atlasDbHost=%s", dbHost))
+					installFlags = append(installFlags, "--set")
+					installFlags = append(installFlags, fmt.Sprintf("kubefirst-api.atlasDbUsername=%s", dbUser))
+
+					// Create Namespace
+					_, err = kcfg.Clientset.CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
+					if err == nil {
+						log.Info("kubernetes Namespace already created - skipping")
+					} else if strings.Contains(err.Error(), "not found") {
+						_, err = kcfg.Clientset.CoreV1().Namespaces().Create(context.Background(), &v1.Namespace{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: namespace,
+							},
+						}, metav1.CreateOptions{})
+						if err != nil {
+							log.Fatalf("error creating kubernetes secret for initial secret: %s", err)
+						}
+						log.Info("Created Kubernetes Namespace for kubefirst")
+					}
+
+					// Create Secret
+					_, err = kcfg.Clientset.CoreV1().Secrets(namespace).Get(context.Background(), secretName, metav1.GetOptions{})
+					if err == nil {
+						log.Infof("kubernetes secret %s/%s already created - skipping", namespace, secretName)
+					} else if strings.Contains(err.Error(), "not found") {
+						_, err = kcfg.Clientset.CoreV1().Secrets(namespace).Create(context.Background(), &v1.Secret{
+							Type: "Opaque",
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      secretName,
+								Namespace: namespace,
+							},
+							Data: map[string][]byte{
+								"mongodb-root-password": []byte(dbPassword),
+							},
+						}, metav1.CreateOptions{})
+						if err != nil {
+							log.Fatalf("error creating kubernetes secret for initial secret: %s", err)
+						}
+						log.Info("Created Kubernetes Secret for database authentication")
+					}
 				}
 
 				// Install helm chart
@@ -309,7 +395,6 @@ func launchUp() *cobra.Command {
 
 			// Wait for API Deployment Pods to transition to Running
 			log.Info("Waiting for Kubefirst API Deployment...")
-			kcfg := k8s.CreateKubeConfig(false, kubeconfigPath)
 			apiDeployment, err := k8s.ReturnDeploymentObject(
 				kcfg.Clientset,
 				"app.kubernetes.io/name",
@@ -370,15 +455,15 @@ func launchUp() *cobra.Command {
 				log.Fatalf("error generating certificate for console: %s", err)
 			}
 
-			_, err = kcfg.Clientset.CoreV1().Secrets("kubefirst").Get(context.Background(), "kubefirst-console-tls", metav1.GetOptions{})
+			_, err = kcfg.Clientset.CoreV1().Secrets(namespace).Get(context.Background(), "kubefirst-console-tls", metav1.GetOptions{})
 			if err == nil {
-				log.Infof("kubernetes secret %s/%s already created - skipping", "kubefirst", "kubefirst-console")
+				log.Infof("kubernetes secret %s/%s already created - skipping", namespace, "kubefirst-console")
 			} else if strings.Contains(err.Error(), "not found") {
-				_, err = kcfg.Clientset.CoreV1().Secrets("kubefirst").Create(context.Background(), &v1.Secret{
+				_, err = kcfg.Clientset.CoreV1().Secrets(namespace).Create(context.Background(), &v1.Secret{
 					Type: "kubernetes.io/tls",
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      fmt.Sprintf("%s-tls", "kubefirst-console"),
-						Namespace: "kubefirst",
+						Namespace: namespace,
 					},
 					Data: map[string][]byte{
 						"tls.crt": []byte(certPem),
