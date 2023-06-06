@@ -448,7 +448,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitCompleted, "")
-	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricMgmtClusterInstallStarted, "")
+	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallStarted, "")
 
 	publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
 	if err != nil {
@@ -1339,7 +1339,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Error().Err(err).Msg("")
 	}
 
-	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricMgmtClusterInstallCompleted, "")
+	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallCompleted, "")
 
 	// Set flags used to track status of active options
 	helpers.SetCompletionFlags(awsinternal.CloudProvider, config.GitProvider)

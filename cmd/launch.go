@@ -324,6 +324,8 @@ func launchUp() *cobra.Command {
 					"kubefirst/kubefirst",
 					"--set",
 					"console.ingress.createTraefikRoute=true",
+					"--set",
+					"kubefirst-api.installMethod=kubefirst-launch",
 				}
 				switch dbDestination {
 				case "in-cluster":
