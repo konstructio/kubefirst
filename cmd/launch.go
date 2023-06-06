@@ -31,6 +31,7 @@ var (
 )
 
 const (
+	consoleURL        = "https://console.kubefirst.dev"
 	helmChartName     = "kubefirst"
 	helmChartRepoName = "kubefirst"
 	helmChartRepoURL  = "https://charts.kubefirst.com"
@@ -476,7 +477,12 @@ func launchUp() *cobra.Command {
 				log.Info("Created Kubernetes Secret for certificate")
 			}
 
-			log.Info("Kubefirst Console is now available! https://console.kubefirst.dev")
+			log.Infof("Kubefirst Console is now available! %s", consoleURL)
+
+			err = pkg.OpenBrowser(consoleURL)
+			if err != nil {
+				log.Errorf("error attempting to open console in browser: %s", err)
+			}
 		},
 	}
 
