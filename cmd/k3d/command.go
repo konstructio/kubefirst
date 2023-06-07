@@ -25,6 +25,7 @@ var (
 	gitProviderFlag          string
 	gitopsTemplateURLFlag    string
 	gitopsTemplateBranchFlag string
+	gitProtocolFlag          string
 	useTelemetryFlag         bool
 
 	// RootCredentials
@@ -34,6 +35,9 @@ var (
 
 	// Supported git providers
 	supportedGitProviders = []string{"github", "gitlab"}
+
+	// Supported git providers
+	supportedGitProtocolOverride = []string{"https", "ssh"}
 )
 
 func NewCommand() *cobra.Command {
@@ -74,6 +78,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
+	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git provider - one of: %s (default is ssh)", supportedGitProtocolOverride))
 	createCmd.Flags().StringVar(&githubUserFlag, "github-user", "", "the GitHub user for the new gitops and metaphor repositories - this cannot be used with --github-org")
 	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - this cannot be used with --github-user")
 	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
