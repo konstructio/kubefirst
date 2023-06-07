@@ -48,23 +48,6 @@ import (
 )
 
 func createVultr(cmd *cobra.Command, args []string) error {
-	switch gitProviderFlag {
-	case "github":
-		key, err := internalssh.GetHostKey("github.com")
-		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "github.com", key.Type())
-		}
-	case "gitlab":
-		key, err := internalssh.GetHostKey("gitlab.com")
-		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
-		}
-	}
-
 	alertsEmailFlag, err := cmd.Flags().GetString("alerts-email")
 	if err != nil {
 		return err
@@ -168,6 +151,9 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	var cGitlabOwnerGroupID int
 	switch gitProviderFlag {
 	case "github":
+		if githubOrgFlag == "" {
+			return fmt.Errorf("please provide a github organization using the --github-org flag")
+		}
 		if os.Getenv("GITHUB_TOKEN") == "" {
 			return fmt.Errorf("your GITHUB_TOKEN is not set. Please set and try again")
 		}
@@ -207,6 +193,9 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		viper.Set("flags.github-owner", githubOrgFlag)
 		viper.WriteConfig()
 	case "gitlab":
+		if gitlabGroupFlag == "" {
+			return fmt.Errorf("please provide a gitlab group using the --gitlab-group flag")
+		}
 		if os.Getenv("GITLAB_TOKEN") == "" {
 			return fmt.Errorf("your GITLAB_TOKEN is not set. please set and try again")
 		}
