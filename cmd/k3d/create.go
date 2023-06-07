@@ -708,68 +708,36 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 
 		//Push to remotes and use https
-		if strings.Contains(viper.GetString("flags.git-protocol"), "https") {
-			// Push gitops repo to remote
-			err = gitopsRepo.Push(
-				&git.PushOptions{
-					RemoteName: config.GitProvider,
-					Auth:       httpAuth,
-				},
-			)
-			if err != nil {
-				msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoHttpsURL, err)
-				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
-				if !strings.Contains(msg, "already up-to-date") {
-					log.Panic().Msg(msg)
-				}
+		// Push gitops repo to remote
+		err = gitopsRepo.Push(
+			&git.PushOptions{
+				RemoteName: config.GitProvider,
+				Auth:       httpAuth,
+			},
+		)
+		if err != nil {
+			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoHttpsURL, err)
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
+			if !strings.Contains(msg, "already up-to-date") {
+				log.Panic().Msg(msg)
 			}
-
-			// push metaphor repo to remote
-			err = metaphorRepo.Push(
-				&git.PushOptions{
-					RemoteName: "origin",
-					Auth:       httpAuth,
-				},
-			)
-			if err != nil {
-				msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoGitURL, err)
-				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
-				if !strings.Contains(msg, "already up-to-date") {
-					log.Panic().Msg(msg)
-				}
-			}
-			log.Info().Msgf("successfully pushed gitops and metaphor repositories to https://%s/%s", cGitHost, cGitOwner)
-		} else { //default to ssh
-			err = gitopsRepo.Push(
-				&git.PushOptions{
-					RemoteName: config.GitProvider,
-					Auth:       publicKeys,
-				},
-			)
-			if err != nil {
-				msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoGitURL, err)
-				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
-				if !strings.Contains(msg, "already up-to-date") {
-					log.Panic().Msg(msg)
-				}
-			}
-
-			// push metaphor repo to remote
-			err = metaphorRepo.Push(
-				&git.PushOptions{
-					RemoteName: "origin",
-					Auth:       publicKeys,
-				},
-			)
-			if err != nil {
-				msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoGitURL, err)
-				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
-				if !strings.Contains(msg, "already up-to-date") {
-					log.Panic().Msg(msg)
-				}
-			}
-			log.Info().Msgf("successfully pushed gitops and metaphor repositories to git@%s/%s", cGitHost, cGitOwner)
 		}
+
+		// push metaphor repo to remote
+		err = metaphorRepo.Push(
+			&git.PushOptions{
+				RemoteName: "origin",
+				Auth:       httpAuth,
+			},
+		)
+		if err != nil {
+			msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoGitURL, err)
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
+			if !strings.Contains(msg, "already up-to-date") {
+				log.Panic().Msg(msg)
+			}
+		}
+		log.Info().Msgf("successfully pushed gitops and metaphor repositories to https://%s/%s", cGitHost, cGitOwner)
 
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
