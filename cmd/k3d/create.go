@@ -492,6 +492,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		KubeconfigPath:                config.Kubeconfig,
 		GitopsRepoGitURL:              config.DestinationGitopsRepoGitURL,
 		GitopsRepoHttpsURL:            config.DestinationGitopsRepoHttpsURL,
+		GitopsRepoURL:                 config.DestinationGitopsRepoURL,
 		GitProvider:                   config.GitProvider,
 		ClusterId:                     clusterId,
 		CloudProvider:                 k3d.CloudProvider,
@@ -792,19 +793,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		DestinationGitopsRepoURL := ""
-
-		if strings.Contains(viper.GetString("git-protocol"), "https") {
-			DestinationGitopsRepoURL = config.DestinationGitopsRepoHttpsURL
-
-		} else {
-			DestinationGitopsRepoURL = config.DestinationGitopsRepoGitURL
-		}
-
 		err = k3d.AddK3DSecrets(
 			atlantisWebhookSecret,
 			viper.GetString("kbot.public-key"),
-			DestinationGitopsRepoURL,
+			config.DestinationGitopsRepoURL,
 			viper.GetString("kbot.private-key"),
 			config.GitProvider,
 			cGitUser,
@@ -1036,7 +1028,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 
 		log.Info().Msg("applying the registry application to argocd")
-		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoHttpsURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
 		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
