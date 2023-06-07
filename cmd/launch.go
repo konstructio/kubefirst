@@ -35,7 +35,7 @@ const (
 	helmChartName     = "kubefirst"
 	helmChartRepoName = "kubefirst"
 	helmChartRepoURL  = "https://charts.kubefirst.com"
-	helmChartVersion  = "0.0.21"
+	helmChartVersion  = "0.0.24"
 	namespace         = "kubefirst"
 	secretName        = "kubefirst-initial-secrets"
 )
@@ -324,6 +324,8 @@ func launchUp() *cobra.Command {
 					"kubefirst/kubefirst",
 					"--set",
 					"console.ingress.createTraefikRoute=true",
+					"--set",
+					"kubefirst-api.installMethod=kubefirst-launch",
 				}
 				switch dbDestination {
 				case "in-cluster":
