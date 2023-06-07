@@ -103,6 +103,12 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// If cluster setup is complete, return
+	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
+	if clusterSetupComplete {
+		return fmt.Errorf("this cluster install process has already completed successfully")
+	}
+
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 	helpers.DisplayLogHints()
 
@@ -333,9 +339,20 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 	// this branch flag value is overridden with a tag when running from a
 	// kubefirst binary for version compatibility
-	if gitopsTemplateBranchFlag == "" && configs.K1Version != "development" {
-		gitopsTemplateBranchFlag = configs.K1Version
+	switch configs.K1Version {
+	case "development":
+		if strings.Contains(gitopsTemplateURLFlag, "https://github.com/kubefirst/gitops-template.git") && gitopsTemplateBranchFlag == "" {
+			gitopsTemplateBranchFlag = "main"
+		}
+	case "default":
+		switch gitopsTemplateURLFlag {
+		case "https://github.com/kubefirst/gitops-template.git":
+			if gitopsTemplateBranchFlag == "" {
+				gitopsTemplateBranchFlag = configs.K1Version
+			}
+		}
 	}
+
 	log.Info().Msgf("kubefirst version configs.K1Version: %s ", configs.K1Version)
 	log.Info().Msgf("cloning gitops-template repo url: %s ", gitopsTemplateURLFlag)
 	log.Info().Msgf("cloning gitops-template repo branch: %s ", gitopsTemplateBranchFlag)
@@ -519,7 +536,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitCompleted, "")
-	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricMgmtClusterInstallStarted, "")
+	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallStarted, "")
 
 	publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
 	if err != nil {
@@ -1229,7 +1246,10 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		log.Error().Err(err).Msg("")
 	}
 
-	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricMgmtClusterInstallCompleted, "")
+	// Mark cluster install as complete
+	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallCompleted, "")
+	viper.Set("kubefirst-checks.cluster-install-complete", true)
+	viper.WriteConfig()
 
 	// Set flags used to track status of active options
 	helpers.SetCompletionFlags(digitalocean.CloudProvider, config.GitProvider)
