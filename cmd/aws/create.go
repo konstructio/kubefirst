@@ -167,6 +167,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 	var cGitlabOwnerGroupID int
 	switch gitProviderFlag {
 	case "github":
+		if githubOrgFlag == "" {
+			return fmt.Errorf("please provide a github organization using the --github-org flag")
+		}
 		if os.Getenv("GITHUB_TOKEN") == "" {
 			return fmt.Errorf("your GITHUB_TOKEN is not set. Please set and try again")
 		}
@@ -205,6 +208,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 		viper.Set("flags.github-owner", githubOrgFlag)
 		viper.WriteConfig()
 	case "gitlab":
+		if gitlabGroupFlag == "" {
+			return fmt.Errorf("please provide a gitlab group using the --gitlab-group flag")
+		}
 		if os.Getenv("GITLAB_TOKEN") == "" {
 			return fmt.Errorf("your GITLAB_TOKEN is not set. please set and try again")
 		}
