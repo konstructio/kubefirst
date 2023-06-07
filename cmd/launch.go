@@ -35,7 +35,7 @@ const (
 	helmChartName     = "kubefirst"
 	helmChartRepoName = "kubefirst"
 	helmChartRepoURL  = "https://charts.kubefirst.com"
-	helmChartVersion  = "0.0.26"
+	helmChartVersion  = "0.0.27"
 	namespace         = "kubefirst"
 	secretName        = "kubefirst-initial-secrets"
 )
