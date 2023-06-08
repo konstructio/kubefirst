@@ -488,6 +488,12 @@ func launchUp() *cobra.Command {
 
 			log.Infof("Kubefirst Console is now available! %s", consoleURL)
 
+			log.Warn("Kubefirst has generated local certificates for use with the console using `mkcert`.")
+			log.Warn("If you experience certificate errors when accessing the console, please run the following command: ")
+			log.Warnf("	%s -install", mkcertClient)
+			log.Warn()
+			log.Warn("For more information on `mkcert`, check out: https://github.com/FiloSottile/mkcert")
+
 			err = pkg.OpenBrowser(consoleURL)
 			if err != nil {
 				log.Errorf("error attempting to open console in browser: %s", err)
