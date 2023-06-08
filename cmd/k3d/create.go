@@ -220,6 +220,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		log.Info().Msgf("ignoring %s", cGitOwner)
 	case "gitlab":
+		if gitlabGroupFlag == "" {
+			return fmt.Errorf("please provide a gitlab group using the --gitlab-group flag")
+		}
+
 		cGitToken = os.Getenv("GITLAB_TOKEN")
 
 		// Verify token scopes
