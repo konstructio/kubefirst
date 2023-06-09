@@ -14,6 +14,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/helm"
 	k3dint "github.com/kubefirst/kubefirst/internal/k3d"
+	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/downloadManager"
 	"github.com/kubefirst/runtime/pkg/helpers"
@@ -324,6 +325,8 @@ func launchUp() *cobra.Command {
 					"kubefirst/kubefirst",
 					"--set",
 					"console.ingress.createTraefikRoute=true",
+					"--set",
+					fmt.Sprintf("console.chartVersion=%s", configs.K1Version),
 					"--set",
 					"kubefirst-api.installMethod=kubefirst-launch",
 				}
