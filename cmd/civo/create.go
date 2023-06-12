@@ -348,7 +348,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		if strings.Contains(gitopsTemplateURLFlag, "https://github.com/kubefirst/gitops-template.git") && gitopsTemplateBranchFlag == "" {
 			gitopsTemplateBranchFlag = "main"
 		}
-	case "default":
+	default:
 		switch gitopsTemplateURLFlag {
 		case "https://github.com/kubefirst/gitops-template.git":
 			if gitopsTemplateBranchFlag == "" {
@@ -535,8 +535,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			GitOwner:     cGitOwner,
 			Repositories: newRepositoryNames,
 			Teams:        newTeamNames,
-			GithubOrg:    githubOrgFlag,
-			GitlabGroup:  gitlabGroupFlag,
 		}
 		gitShim.InitializeGitProvider(&initGitParameters)
 
