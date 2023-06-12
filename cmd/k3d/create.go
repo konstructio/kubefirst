@@ -217,8 +217,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("flags.github-owner", cGitOwner)
 		viper.Set("github.session_token", cGitToken)
 		viper.WriteConfig()
-
-		log.Info().Msgf("ignoring %s", cGitOwner)
 	case "gitlab":
 		if gitlabGroupFlag == "" {
 			return fmt.Errorf("please provide a gitlab group using the --gitlab-group flag")
@@ -346,7 +344,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		if strings.Contains(gitopsTemplateURLFlag, "https://github.com/kubefirst/gitops-template.git") && gitopsTemplateBranchFlag == "" {
 			gitopsTemplateBranchFlag = "main"
 		}
-	case "default":
+	default:
 		switch gitopsTemplateURLFlag {
 		case "https://github.com/kubefirst/gitops-template.git":
 			if gitopsTemplateBranchFlag == "" {
@@ -358,8 +356,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	log.Info().Msgf("kubefirst version configs.K1Version: %s ", configs.K1Version)
 	log.Info().Msgf("cloning gitops-template repo url: %s ", gitopsTemplateURLFlag)
 	log.Info().Msgf("cloning gitops-template repo branch: %s ", gitopsTemplateBranchFlag)
-	// this branch flag value is overridden with a tag when running from a
-	// kubefirst binary for version compatibility
 
 	atlantisWebhookSecret := viper.GetString("secrets.atlantis-webhook")
 	if atlantisWebhookSecret == "" {
@@ -410,8 +406,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			GitOwner:     cGitOwner,
 			Repositories: newRepositoryNames,
 			Teams:        newTeamNames,
-			GithubOrg:    githubOrgFlag,
-			GitlabGroup:  gitlabGroupFlag,
 		}
 		gitShim.InitializeGitProvider(&initGitParameters)
 

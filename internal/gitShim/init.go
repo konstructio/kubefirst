@@ -20,8 +20,6 @@ type GitInitParameters struct {
 	GitOwner     string
 	Repositories []string
 	Teams        []string
-	GithubOrg    string
-	GitlabGroup  string
 }
 
 // InitializeGitProvider
@@ -34,18 +32,18 @@ func InitializeGitProvider(p *GitInitParameters) error {
 		errorMsg := "the following repositories must be removed before continuing with your kubefirst installation.\n\t"
 
 		for _, repositoryName := range p.Repositories {
-			responseStatusCode := githubSession.CheckRepoExists(p.GithubOrg, repositoryName)
+			responseStatusCode := githubSession.CheckRepoExists(p.GitOwner, repositoryName)
 
 			// https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#get-a-repository
 			repositoryExistsStatusCode := 200
 			repositoryDoesNotExistStatusCode := 404
 
 			if responseStatusCode == repositoryExistsStatusCode {
-				log.Info().Msgf("repository https://github.com/%s/%s exists", p.GithubOrg, repositoryName)
-				errorMsg = errorMsg + fmt.Sprintf("https://github.com/%s/%s\n\t", p.GithubOrg, repositoryName)
+				log.Info().Msgf("repository https://github.com/%s/%s exists", p.GitOwner, repositoryName)
+				errorMsg = errorMsg + fmt.Sprintf("https://github.com/%s/%s\n\t", p.GitOwner, repositoryName)
 				newRepositoryExists = true
 			} else if responseStatusCode == repositoryDoesNotExistStatusCode {
-				log.Info().Msgf("repository https://github.com/%s/%s does not exist, continuing", p.GithubOrg, repositoryName)
+				log.Info().Msgf("repository https://github.com/%s/%s does not exist, continuing", p.GitOwner, repositoryName)
 			}
 		}
 		if newRepositoryExists {
@@ -56,25 +54,25 @@ func InitializeGitProvider(p *GitInitParameters) error {
 		errorMsg = "the following teams must be removed before continuing with your kubefirst installation.\n\t"
 
 		for _, teamName := range p.Teams {
-			responseStatusCode := githubSession.CheckTeamExists(p.GithubOrg, teamName)
+			responseStatusCode := githubSession.CheckTeamExists(p.GitOwner, teamName)
 
 			// https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#get-a-team-by-name
 			teamExistsStatusCode := 200
 			teamDoesNotExistStatusCode := 404
 
 			if responseStatusCode == teamExistsStatusCode {
-				log.Info().Msgf("team https://github.com/%s/%s exists", p.GithubOrg, teamName)
-				errorMsg = errorMsg + fmt.Sprintf("https://github.com/orgs/%s/teams/%s\n\t", p.GithubOrg, teamName)
+				log.Info().Msgf("team https://github.com/%s/%s exists", p.GitOwner, teamName)
+				errorMsg = errorMsg + fmt.Sprintf("https://github.com/orgs/%s/teams/%s\n\t", p.GitOwner, teamName)
 				newTeamExists = true
 			} else if responseStatusCode == teamDoesNotExistStatusCode {
-				log.Info().Msgf("https://github.com/orgs/%s/teams/%s does not exist, continuing", p.GithubOrg, teamName)
+				log.Info().Msgf("https://github.com/orgs/%s/teams/%s does not exist, continuing", p.GitOwner, teamName)
 			}
 		}
 		if newTeamExists {
 			return fmt.Errorf(errorMsg)
 		}
 	case "gitlab":
-		gitlabClient, err := gitlab.NewGitLabClient(p.GitToken, p.GitlabGroup)
+		gitlabClient, err := gitlab.NewGitLabClient(p.GitToken, p.GitOwner)
 		if err != nil {
 			return err
 		}
