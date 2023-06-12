@@ -148,6 +148,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.domain-name", domainNameFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.Set("flags.cloud-region", cloudRegionFlag)
+	viper.Set("flags.gcp-project", gcpProjectFlag)
 	viper.WriteConfig()
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 5)
