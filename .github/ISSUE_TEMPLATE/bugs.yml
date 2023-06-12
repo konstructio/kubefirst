@@ -16,7 +16,7 @@ body:
   - type: dropdown
     id: cloud
     attributes:
-      label: Which installation type?
+      label: Which cloud provider?
       multiple: true
       options:
         - None specific
@@ -25,6 +25,17 @@ body:
         - DigitalOcean
         - k3d (local)
         - Vultr
+    validations:
+      required: true
+  - type: dropdown
+    id: cloud
+    attributes:
+      label: Which installation type?
+      multiple: true
+      options:
+        - None specific
+        - UI (Console app)
+        - CLI
     validations:
       required: true
   - type: dropdown
