@@ -48,6 +48,7 @@ func destroyGCP(cmd *cobra.Command, args []string) error {
 
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
+	gcpProject := viper.GetString("flags.gcp-project")
 
 	// Switch based on git provider, set params
 	var cGitOwner, cGitToken string
@@ -101,7 +102,7 @@ func destroyGCP(cmd *cobra.Command, args []string) error {
 			tfEnvs = gcp.GetGithubTerraformEnvs(config, tfEnvs)
 			a, _ := os.ReadFile(config.GCPAuth)
 			tfEnvs["GOOGLE_CLOUD_KEYFILE_JSON"] = string(a)
-			tfEnvs["TF_VAR_project"] = gcpProjectFlag
+			tfEnvs["TF_VAR_project"] = gcpProject
 			err := terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -153,8 +154,10 @@ func destroyGCP(cmd *cobra.Command, args []string) error {
 			tfEnvs := map[string]string{}
 			tfEnvs = gcp.GetGitlabTerraformEnvs(config, tfEnvs, gitlabClient.ParentGroupID)
 			a, _ := os.ReadFile(config.GCPAuth)
+			// Not sure why this breaks, adding it here for now
+			tfEnvs["GITLAB_TOKEN"] = cGitToken
 			tfEnvs["GOOGLE_CLOUD_KEYFILE_JSON"] = string(a)
-			tfEnvs["TF_VAR_project"] = gcpProjectFlag
+			tfEnvs["TF_VAR_project"] = gcpProject
 			err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
@@ -186,6 +189,7 @@ func destroyGCP(cmd *cobra.Command, args []string) error {
 		}
 		a, _ := os.ReadFile(config.GCPAuth)
 		tfEnvs["GOOGLE_CLOUD_KEYFILE_JSON"] = string(a)
+		tfEnvs["TF_VAR_project"] = gcpProject
 
 		err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
