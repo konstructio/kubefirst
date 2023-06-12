@@ -28,7 +28,7 @@ body:
     validations:
       required: true
   - type: dropdown
-    id: cloud
+    id: type
     attributes:
       label: Which installation type?
       multiple: true
