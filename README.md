@@ -31,12 +31,9 @@ The Kubefirst CLI creates instant GitOps platforms that integrate some of the be
 
 Each of our platforms have install guides that detail the prerequesites, commands, and resulting platform that you'll receive.
 
-- [k3d with GitHub (local)](https://docs.kubefirst.io/kubefirst/local/github/install)
-- [k3d with GitLab (local)](https://docs.kubefirst.io/kubefirst/local/gitlab/install)
-- [Civo with GitHub](https://docs.kubefirst.io/kubefirst/civo/github/install)
-- [Civo with GitLab](https://docs.kubefirst.io/kubefirst/civo/gitlab/install)
-- [AWS with GitHub](https://docs.kubefirst.io/kubefirst/aws/github/install)
-- [AWS with GitLab](https://docs.kubefirst.io/kubefirst/aws/gitlab/install)
+- [k3d (local)](https://docs.kubefirst.io/k3d/overview/index.html)
+- [Civo](https://docs.kubefirst.io/civo/overview/index.html)
+- [AWS](https://docs.kubefirst.io/aws/overview/index.html)
 
 ## Overview
 
