@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/kubefirst/kubefirst/cmd/digitalocean"
+	"github.com/kubefirst/kubefirst/cmd/gcp"
 	"github.com/kubefirst/kubefirst/cmd/vultr"
 	"github.com/spf13/cobra"
 )
@@ -29,6 +30,7 @@ func init() {
 	cobra.OnInitialize()
 	betaCmd.AddCommand(
 		digitalocean.NewCommand(),
+		gcp.NewCommand(),
 		vultr.NewCommand(),
 	)
 }
