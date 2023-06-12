@@ -22,6 +22,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/k8s"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,7 +73,13 @@ func launchUp() *cobra.Command {
 				fmt.Scanln(&dbUser)
 
 				fmt.Println("MongoDB Atlas Password: ")
-				fmt.Scanln(&dbPassword)
+				dbPasswordInput, err := term.ReadPassword(0)
+				if err != nil {
+					log.Fatalf("error parsing password: %s", err)
+				}
+
+				dbPassword = string(dbPasswordInput)
+				dbHost = strings.Replace(dbHost, "mongodb+srv://", "", -1)
 
 				fmt.Println()
 			case "in-cluster":
