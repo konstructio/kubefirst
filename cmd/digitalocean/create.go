@@ -501,7 +501,10 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 			Repositories: newRepositoryNames,
 			Teams:        newTeamNames,
 		}
-		gitShim.InitializeGitProvider(&initGitParameters)
+		err = gitShim.InitializeGitProvider(&initGitParameters)
+		if err != nil {
+			return err
+		}
 
 		viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider), true)
 		viper.WriteConfig()
