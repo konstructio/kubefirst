@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "pelagic-program-389315",
+  "private_key_id": "4191c9056b8465a8f877bb68f6cb34316598a76e",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCkh59x2nIrJIFj\nMfiXPo5gjvTJ5QdHk8ai8YUqOv5ghZgf9ctRYTMjEzxnQte9B1el4D7ZYY60yz0p\nJB5bG1Vme2z2OVrT+I4f0tJVMgr+xv3xjQFviivpj4UD0kWnPb5jagQAOhnXKXQX\nkDET1Z5t+cjtWGAejl/aohvo7ZAzepCLG26fpWy336XGLbgtaFGDS2/bwkfR8WDv\nkxg+aAw+M3MzcCbJvMJx9AQySiReseOVL5hzYHIb8pcf0bRhjbLABQ13uUzj5wML\npBgsb5iX0/b1oXh3db+SSeybR/seA+a7CvpXM/3n6Ni8l7/8miaM+g43tpgrf4Il\ncbYr5eZjAgMBAAECggEALHxfKDGgXPnp4iBIztwjMwh0N4KtjTTvqG8VSm3ZCdAV\nac7TwpU9dmZlFqaEHqA1mqwfUjeGlmu9hbo2WvvxA1ysAYdQf6/c/c3LAS4euvSj\nBQTTNo1tgiFEHdxk6OtQ5yBrJISRKBQVR6m9G1fPFn1LTqFum9RzJnJeiYRyUPiK\n9AU/lVaIXD/oUJSe2bGm90GUgG2o4nvBEo5JFx/zo89X0m3AsQ3psq7XE8FIpdMe\naGZelAz112EDH+AbIBUz58M/5aJuoWITBAgGjqk3IXHQTdXUMC5VtwRux3ufR33J\nxM/qB4gjl8lFHxd3ost6pg33ACQF2Mx7C1cSL7Q6gQKBgQDoeFyZqM3EQKexOA8+\nMxx5cukl7N5kW9WhdaDR9KuK6nF3V33LvNLa/oSEgunmTGTu0ok8Ya0RuxZxtIDv\nWPlnRQPaA2ylGmjheyXlbFU91GHyrIDb0c3HxKck3Lkfoa1Y4NiW1DvtMf1wyy09\ndX08Bmvmm3O0sZ0AihEvwYl0+QKBgQC1LtPQiPUMKtG4cuMxxG5GqCB40+4KSu6B\nqvWwbIJyP30p8sAJAk0HOcFqnODuGyVApIf6X26U5w9PXD53IgBM6Uaqty8fPLYf\nKiojKqq9isy35S5zpYEMpSdDAcnRneW77e+aTW0ZJhK/FPJx98ESB8KNk1F67RR+\nuFsg9TC5OwKBgHtT30xlkUQcSNprsyp8Uw7bN3U3RIRZc+xESx0XgCoiVi/J6qK7\neeFURVlHWm8i+Cj66HNwHjDZ3/5SlFRmD2oJ4xE13913NUzp2CDuaAp1McFcYsA7\nfcANQ976efud+ii8oCrkTSZ47st3/ngsbFP71CJzNd8WmwQ+Ov/q3NGBAoGAIrnb\n7R8i4HcghRq4AuTkQfSdbKsp950PA5lRx8O0aNNUWQLm3ZMsUlM2iAmTbu+S/0XJ\nrio2VqHGpG5IpqrEpfkcC0Ja7MDFI0oAk4bs/LEqtaBee9nf1x2cXdJs7Rk3XAKp\npshqPaS3eRo5sbBLt/n2xw3SUx43jGYnSTTVZtsCgYB6NrB13BJ/kY5Kvj2IG9lF\nB26Y8AkgBpTaqPZVRmkpcK8urQxugB1rQoigmGteu53iCa61v7UwVT1YIc4SlSgC\ng34rm9CxNAuwVcNY9JnOfWkMPXIeTQzUdrKwju2NitJasI3i8ePI5legrR1LUd9Q\nEHSV/7FSxTZbCN4rPAarVQ==\n-----END PRIVATE KEY-----\n",
+  "client_email": "terraform@pelagic-program-389315.iam.gserviceaccount.com",
+  "client_id": "108625958727443597005",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/terraform%40pelagic-program-389315.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
