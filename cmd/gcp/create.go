@@ -501,8 +501,6 @@ func createGCP(cmd *cobra.Command, args []string) error {
 			GitOwner:     cGitOwner,
 			Repositories: newRepositoryNames,
 			Teams:        newTeamNames,
-			GithubOrg:    githubOrgFlag,
-			GitlabGroup:  gitlabGroupFlag,
 		}
 		gitShim.InitializeGitProvider(&initGitParameters)
 
