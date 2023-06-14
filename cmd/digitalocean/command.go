@@ -38,7 +38,7 @@ var (
 func NewCommand() *cobra.Command {
 	digitaloceanCmd := &cobra.Command{
 		Use:   "digitalocean",
-		Short: "kubefirst digitalocean installation",
+		Short: "kubefirst DigitalOcean installation",
 		Long:  "kubefirst digitalocean",
 	}
 
@@ -54,7 +54,7 @@ func NewCommand() *cobra.Command {
 func Create() *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:              "create",
-		Short:            "create the kubefirst platform running on digitalocean kubernetes",
+		Short:            "create the kubefirst platform running on DigitalOcean Kubernetes",
 		TraverseChildren: true,
 		RunE:             createDigitalocean,
 	}
@@ -62,10 +62,10 @@ func Create() *cobra.Command {
 	// todo review defaults and update descriptions
 	createCmd.Flags().StringVar(&alertsEmailFlag, "alerts-email", "", "email address for let's encrypt certificate notifications (required)")
 	createCmd.MarkFlagRequired("alerts-email")
-	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "nyc3", "the digitalocean region to provision infrastructure in")
+	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "nyc3", "the DigitalOcean region to provision infrastructure in")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
-	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the digitalocean DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
+	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the DigitalOcean DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
 	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - required if using github")
@@ -81,7 +81,7 @@ func Destroy() *cobra.Command {
 	destroyCmd := &cobra.Command{
 		Use:   "destroy",
 		Short: "destroy the kubefirst platform",
-		Long:  "destroy the kubefirst platform running in digitalocean and remove all resources",
+		Long:  "destroy the kubefirst platform running in DigitalOcean and remove all resources",
 		RunE:  destroyDigitalocean,
 	}
 
