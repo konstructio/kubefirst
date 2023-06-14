@@ -14,6 +14,8 @@ import (
 
 var (
 	// Create
+	applicationNameFlag      string
+	applicationNamespaceFlag string
 	cloudRegionFlag          string
 	clusterNameFlag          string
 	clusterTypeFlag          string
@@ -42,13 +44,12 @@ func NewCommand() *cobra.Command {
 	}
 
 	// wire up new commands
-	k3dCmd.AddCommand(Create(), Destroy(), RootCredentials(), UnsealVault())
+	k3dCmd.AddCommand(Create(), Destroy(), MkCert(), RootCredentials(), UnsealVault())
 
 	return k3dCmd
 }
 
 func LocalCommandAlias() *cobra.Command {
-
 	localCmd := &cobra.Command{
 		Use:   "local",
 		Short: "kubefirst local installation with k3d",
@@ -56,7 +57,7 @@ func LocalCommandAlias() *cobra.Command {
 	}
 
 	// wire up new commands
-	localCmd.AddCommand(Create(), Destroy(), RootCredentials())
+	localCmd.AddCommand(Create(), Destroy(), MkCert(), RootCredentials(), UnsealVault())
 
 	return localCmd
 }
@@ -92,6 +93,22 @@ func Destroy() *cobra.Command {
 	}
 
 	return destroyCmd
+}
+
+func MkCert() *cobra.Command {
+	mkCertCmd := &cobra.Command{
+		Use:   "mkcert",
+		Short: "create a single ssl certificate for a local application",
+		Long:  "create a single ssl certificate for a local application",
+		RunE:  mkCert,
+	}
+
+	mkCertCmd.Flags().StringVar(&applicationNameFlag, "application", "", "the name of the application (required)")
+	mkCertCmd.MarkFlagRequired("application")
+	mkCertCmd.Flags().StringVar(&applicationNamespaceFlag, "namespace", "", "the application namespace (required)")
+	mkCertCmd.MarkFlagRequired("namespace")
+
+	return mkCertCmd
 }
 
 func RootCredentials() *cobra.Command {

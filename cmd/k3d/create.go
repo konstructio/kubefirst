@@ -222,6 +222,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("please provide a gitlab group using the --gitlab-group flag")
 		}
 
+		if os.Getenv("GITLAB_TOKEN") == "" {
+			return fmt.Errorf("GITLAB_TOKEN environment variable unset - please set it and try again")
+		}
+
 		cGitToken = os.Getenv("GITLAB_TOKEN")
 
 		// Verify token scopes
@@ -725,7 +729,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("creating-k3d-cluster", "Creating K3d cluster", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	if !viper.GetBool("kubefirst-checks.terraform-apply-k3d") {
+	if !viper.GetBool("kubefirst-checks.create-k3d-cluster") {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudTerraformApplyStarted, "")
 
 		log.Info().Msg("Creating k3d cluster")
@@ -733,14 +737,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		err := k3d.ClusterCreate(clusterNameFlag, config.K1Dir, config.K3dClient, config.Kubeconfig)
 		if err != nil {
 			msg := fmt.Sprintf("error creating k3d resources with k3d client %s: %s", config.K3dClient, err)
-			viper.Set("kubefirst-checks.terraform-apply-k3d-failed", true)
+			viper.Set("kubefirst-checks.create-k3d-cluster-failed", true)
 			viper.WriteConfig()
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudTerraformApplyFailed, msg)
 			return fmt.Errorf(msg)
 		}
 
 		log.Info().Msg("successfully created k3d cluster")
-		viper.Set("kubefirst-checks.terraform-apply-k3d", true)
+		viper.Set("kubefirst-checks.create-k3d-cluster", true)
 		viper.WriteConfig()
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudTerraformApplyCompleted, "")
 		progressPrinter.IncrementTracker("creating-k3d-cluster", 1)
@@ -752,15 +756,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
 	// kubernetes.BootstrapSecrets
-	// todo there is a secret condition in AddK3DSecrets to this not checked
-	// todo deconstruct CreateNamespaces / CreateSecret
-	// todo move secret structs to constants to be leveraged by either local or civo
 	progressPrinter.AddTracker("bootstrapping-kubernetes-resources", "Bootstrapping Kubernetes resources", 2)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
-
 		err := k3d.GenerateTLSSecrets(kcfg.Clientset, *config)
 		if err != nil {
 			return err
@@ -1102,7 +1102,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		Secure: false,
 		Region: pkg.MinioRegion,
 	})
-
 	if err != nil {
 		log.Info().Msgf("Error creating Minio client: %s", err)
 	}
@@ -1154,7 +1153,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// to work with Kubernetes auth
 	kubernetesInClusterAPIService, err := k8s.ReadService(config.Kubeconfig, "default", "kubernetes")
 	if err != nil {
-		log.Error().Msgf("error looking up kubernetes api server service: %s")
+		log.Error().Msgf("error looking up kubernetes api server service: %s", err)
 		return err
 	}
 
