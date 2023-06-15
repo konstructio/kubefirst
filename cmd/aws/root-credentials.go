@@ -7,6 +7,8 @@ See the LICENSE file for more details.
 package aws
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/eks"
@@ -42,10 +44,15 @@ func getAwsRootCredentials(cmd *cobra.Command, args []string) error {
 		CopyVaultPasswordToClipboard:  v,
 	}
 
-	// Determine if there are active installs
+	// Determine if there are eligible installs
 	_, err = credentials.EvalAuth(awsinternal.CloudProvider, gitProvider)
 	if err != nil {
 		return err
+	}
+
+	// Determine if the Kubernetes cluster is available
+	if !viper.GetBool("kubefirst-checks.terraform-apply-aws") {
+		return fmt.Errorf("it looks like a kubernetes cluster has not been created yet - try again")
 	}
 
 	// Instantiate kubernetes client

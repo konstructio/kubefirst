@@ -1369,7 +1369,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	// Set flags used to track status of active options
-	helpers.SetCompletionFlags(awsinternal.CloudProvider, config.GitProvider)
+	helpers.SetClusterStatusFlags(awsinternal.CloudProvider, config.GitProvider)
 
 	reports.AwsHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
 

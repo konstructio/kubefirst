@@ -34,7 +34,7 @@ const (
 
 // unsealVault will attempt to unseal vaule again if it is currently unsealed
 func unsealVault(cmd *cobra.Command, args []string) error {
-	flags := helpers.GetCompletionFlags()
+	flags := helpers.GetClusterStatusFlags()
 	if !flags.SetupComplete {
 		return fmt.Errorf("there doesn't appear to be an active k3d cluster")
 	}

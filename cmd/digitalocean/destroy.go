@@ -180,7 +180,7 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 		}
 		err = argocd.ArgoCDApplicationCleanup(kcfg.Clientset, removeArgoCDApps)
 		if err != nil {
-			log.Error().Msgf("encountered error during argocd application cleanup: %s")
+			log.Error().Msgf("encountered error during argocd application cleanup: %s", err)
 		}
 		// Pause before cluster destroy to prevent a race condition
 		log.Info().Msg("waiting for argocd application deletion to complete...")

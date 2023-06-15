@@ -41,10 +41,15 @@ func getCivoRootCredentials(cmd *cobra.Command, args []string) error {
 		CopyVaultPasswordToClipboard:  v,
 	}
 
-	// Determine if there are active installs
+	// Determine if there are eligible installs
 	_, err = credentials.EvalAuth(civo.CloudProvider, gitProvider)
 	if err != nil {
 		return err
+	}
+
+	// Determine if the Kubernetes cluster is available
+	if !viper.GetBool("kubefirst-checks.terraform-apply-civo") {
+		return fmt.Errorf("it looks like a kubernetes cluster has not been created yet - try again")
 	}
 
 	// Instantiate kubernetes client
