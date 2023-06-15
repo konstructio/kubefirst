@@ -31,7 +31,7 @@ func mkCert(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	flags := helpers.GetCompletionFlags()
+	flags := helpers.GetClusterStatusFlags()
 	if !flags.SetupComplete {
 		return fmt.Errorf("there doesn't appear to be an active k3d cluster")
 	}
