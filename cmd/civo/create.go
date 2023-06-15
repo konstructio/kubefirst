@@ -1288,7 +1288,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	// Set flags used to track status of active options
-	helpers.SetCompletionFlags(civo.CloudProvider, config.GitProvider)
+	helpers.SetClusterStatusFlags(civo.CloudProvider, config.GitProvider)
 
 	// this is probably going to get streamlined later, but this is necessary now
 	reports.CivoHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)

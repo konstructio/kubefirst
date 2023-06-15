@@ -1259,7 +1259,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	// Set flags used to track status of active options
-	helpers.SetCompletionFlags(digitalocean.CloudProvider, config.GitProvider)
+	helpers.SetClusterStatusFlags(digitalocean.CloudProvider, config.GitProvider)
 
 	// this is probably going to get streamlined later, but this is necessary now
 	reports.DigitaloceanHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)

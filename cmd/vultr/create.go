@@ -1254,7 +1254,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	// Set flags used to track status of active options
-	helpers.SetCompletionFlags(vultr.CloudProvider, config.GitProvider)
+	helpers.SetClusterStatusFlags(vultr.CloudProvider, config.GitProvider)
 
 	// this is probably going to get streamlined later, but this is necessary now
 	reports.VultrHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)

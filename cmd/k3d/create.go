@@ -1349,7 +1349,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	// Set flags used to track status of active options
-	helpers.SetCompletionFlags(k3d.CloudProvider, config.GitProvider)
+	helpers.SetClusterStatusFlags(k3d.CloudProvider, config.GitProvider)
 
 	reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, false)
 
