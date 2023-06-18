@@ -433,11 +433,13 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricStateStoreCreateStarted, "")
 
 		vultrConf := vultr.VultrConfiguration{
-			Client:  vultr.NewVultr(config.VultrToken),
-			Context: context.Background(),
+			Client:              vultr.NewVultr(config.VultrToken),
+			Context:             context.Background(),
+			Region:              cloudRegionFlag,
+			ObjectStorageRegion: "ewr",
 		}
 
-		objst, err := vultrConf.CreateObjectStorage(cloudRegionFlag, kubefirstStateStoreBucketName)
+		objst, err := vultrConf.CreateObjectStorage(kubefirstStateStoreBucketName)
 		if err != nil {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricStateStoreCreateFailed, err.Error())
 			log.Info().Msg(err.Error())
