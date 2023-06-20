@@ -9,6 +9,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -29,6 +30,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/k8s"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"golang.org/x/term"
 	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
@@ -42,6 +44,8 @@ var (
 	httpClient = http.Client{
 		Timeout: time.Second * 2,
 	}
+	// additionalHelmFlags can optionally pass user-supplied flags to helm
+	additionalHelmFlags []string
 )
 
 const (
@@ -49,7 +53,7 @@ const (
 	helmChartName     = "kubefirst"
 	helmChartRepoName = "kubefirst"
 	helmChartRepoURL  = "https://charts.kubefirst.com"
-	helmChartVersion  = "2.1.4"
+	helmChartVersion  = "2.1.7"
 	namespace         = "kubefirst"
 	secretName        = "kubefirst-initial-secrets"
 )
@@ -87,34 +91,7 @@ func launchUp() *cobra.Command {
 		TraverseChildren: true,
 		PreRun:           checkDocker,
 		Run: func(cmd *cobra.Command, args []string) {
-			dbDestination := k3dint.MongoDestinationChooser()
-			var dbHost, dbUser, dbPassword string
-			switch dbDestination {
-			case "atlas":
-				fmt.Println("MongoDB Atlas Host String: ")
-				fmt.Scanln(&dbHost)
-
-				fmt.Println("MongoDB Atlas Username: ")
-				fmt.Scanln(&dbUser)
-
-				fmt.Println("MongoDB Atlas Password: ")
-				dbPasswordInput, err := term.ReadPassword(0)
-				if err != nil {
-					log.Fatalf("error parsing password: %s", err)
-				}
-
-				dbPassword = string(dbPasswordInput)
-				dbHost = strings.Replace(dbHost, "mongodb+srv://", "", -1)
-
-				fmt.Println()
-			case "in-cluster":
-			default:
-				log.Fatalf("%s is not a valid option", dbDestination)
-			}
-
 			helpers.DisplayLogHints()
-
-			log.Infof("%s/%s", k3d.LocalhostOS, k3d.LocalhostARCH)
 
 			homeDir, err := os.UserHomeDir()
 			if err != nil {
@@ -135,6 +112,50 @@ func launchUp() *cobra.Command {
 					log.Infof("%s directory already exists, continuing", toolsDir)
 				}
 			}
+
+			if err := setupLaunchConfigFile(dir); err != nil {
+				log.Fatal(err)
+			}
+
+			dbInitialized := viper.GetBool("launch.database-initialized")
+			var dbHost, dbUser, dbPassword string
+
+			if !dbInitialized {
+				dbDestination := k3dint.MongoDestinationChooser()
+				switch dbDestination {
+				case "atlas":
+					fmt.Println("MongoDB Atlas Host String: ")
+					fmt.Scanln(&dbHost)
+
+					fmt.Println("MongoDB Atlas Username: ")
+					fmt.Scanln(&dbUser)
+
+					fmt.Println("MongoDB Atlas Password: ")
+					dbPasswordInput, err := term.ReadPassword(0)
+					if err != nil {
+						log.Fatalf("error parsing password: %s", err)
+					}
+
+					dbPassword = string(dbPasswordInput)
+					dbHost = strings.Replace(dbHost, "mongodb+srv://", "", -1)
+
+					fmt.Println()
+
+					viper.Set("launch.database-destination", "atlas")
+					viper.Set("launch.database-initialized", true)
+					viper.WriteConfig()
+				case "in-cluster":
+					viper.Set("launch.database-destination", "in-cluster")
+					viper.Set("launch.database-initialized", true)
+					viper.WriteConfig()
+				default:
+					log.Fatalf("%s is not a valid option", dbDestination)
+				}
+			} else {
+				log.Info("Database has already been initialized, skipping")
+			}
+
+			log.Infof("%s/%s", k3d.LocalhostOS, k3d.LocalhostARCH)
 
 			// Download k3d
 			k3dClient := fmt.Sprintf("%s/k3d", toolsDir)
@@ -363,13 +384,20 @@ func launchUp() *cobra.Command {
 					"kubefirst-api.installMethod=kubefirst-launch",
 				}
 
+				if len(additionalHelmFlags) > 0 {
+					for _, f := range additionalHelmFlags {
+						installFlags = append(installFlags, "--set")
+						installFlags = append(installFlags, f)
+					}
+				}
+
 				switch k3d.LocalhostARCH {
 				case "arm64":
 					installFlags = append(installFlags, "--set")
 					installFlags = append(installFlags, "kubefirst-api.image.hook.tag=arm64")
 				}
 
-				switch dbDestination {
+				switch viper.GetString("launch.database-destination") {
 				case "in-cluster":
 					installFlags = append(installFlags, "--create-namespace")
 					installFlags = append(installFlags, "--set")
@@ -450,7 +478,7 @@ func launchUp() *cobra.Command {
 			if err != nil {
 				log.Fatalf("error looking for kubefirst api: %s", err)
 			}
-			_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, apiDeployment, 120)
+			_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, apiDeployment, 300)
 			if err != nil {
 				log.Fatalf("error waiting for kubefirst api: %s", err)
 			}
@@ -536,6 +564,8 @@ func launchUp() *cobra.Command {
 		},
 	}
 
+	launchUpCmd.Flags().StringSliceVar(&additionalHelmFlags, "helm-flag", []string{}, "additional helm flag to pass to the `launch up` command - can be used any number of times")
+
 	return launchUpCmd
 }
 
@@ -556,12 +586,15 @@ func launchDown() *cobra.Command {
 			log.Info("Deleting k3d cluster for Kubefirst console and API")
 
 			dir := fmt.Sprintf("%s/.k1/%s", homeDir, consoleClusterName)
+			if _, err := os.Stat(dir); os.IsNotExist(err) {
+				log.Fatalf("cluster %s directory does not exist", dir)
+			}
 			toolsDir := fmt.Sprintf("%s/tools", dir)
 			k3dClient := fmt.Sprintf("%s/k3d", toolsDir)
 
 			_, _, err = pkg.ExecShellReturnStrings(k3dClient, "cluster", "delete", consoleClusterName)
 			if err != nil {
-				log.Fatal("error deleting k3d cluster")
+				log.Fatalf("error deleting k3d cluster: %s", err)
 			}
 
 			log.Info("k3d cluster for Kubefirst console and API deleted successfully")
@@ -767,6 +800,31 @@ func displayFormattedClusterInfo(clusters []map[string]interface{}) error {
 	err := writer.Flush()
 	if err != nil {
 		return fmt.Errorf("error closing buffer: %s", err)
+	}
+
+	return nil
+}
+
+// setupLaunchConfigFile
+func setupLaunchConfigFile(dir string) error {
+	viperConfigFile := fmt.Sprintf("%s/.launch", dir)
+
+	if _, err := os.Stat(viperConfigFile); errors.Is(err, os.ErrNotExist) {
+		log.Debugf("launch config file not found, creating a blank one: %s", viperConfigFile)
+		err = os.WriteFile(viperConfigFile, []byte(""), 0700)
+		if err != nil {
+			return fmt.Errorf("unable to create blank config file, error is: %s", err)
+		}
+	}
+
+	viper.SetConfigFile(viperConfigFile)
+	viper.SetConfigType("yaml")
+	viper.AutomaticEnv() // read in environment variables that match
+
+	// if a config file is found, read it in.
+	err := viper.ReadInConfig()
+	if err != nil {
+		return fmt.Errorf("unable to read config file, error is: %s", err)
 	}
 
 	return nil
