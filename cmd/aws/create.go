@@ -415,7 +415,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessStarted, "")
 
 		// verify dns
-		err := dns.VerifyProviderDNS("aws", cloudRegionFlag, domainNameFlag)
+		ns, err := awsClient.GetHostedZoneNameServers(domainNameFlag)
+		if err != nil {
+			return err
+		}
+
+		err = dns.VerifyProviderDNS("aws", cloudRegionFlag, domainNameFlag, ns)
 		if err != nil {
 			return err
 		}
