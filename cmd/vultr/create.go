@@ -391,7 +391,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		}
 
 		// verify dns
-		err := dns.VerifyProviderDNS(vultr.CloudProvider, cloudRegionFlag, domainNameFlag)
+		err := dns.VerifyProviderDNS(vultr.CloudProvider, cloudRegionFlag, domainNameFlag, nil)
 		if err != nil {
 			return err
 		}

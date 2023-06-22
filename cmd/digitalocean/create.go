@@ -401,7 +401,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		}
 
 		// verify dns
-		err := dns.VerifyProviderDNS(digitalocean.CloudProvider, cloudRegionFlag, domainNameFlag)
+		err := dns.VerifyProviderDNS(digitalocean.CloudProvider, cloudRegionFlag, domainNameFlag, nil)
 		if err != nil {
 			return err
 		}
