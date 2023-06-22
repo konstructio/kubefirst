@@ -436,7 +436,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessStarted, "")
 
 		// verify dns
-		err := dns.VerifyProviderDNS(civo.CloudProvider, cloudRegionFlag, domainNameFlag)
+		err := dns.VerifyProviderDNS(civo.CloudProvider, cloudRegionFlag, domainNameFlag, nil)
 		if err != nil {
 			return err
 		}
