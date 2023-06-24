@@ -16,6 +16,7 @@ var (
 	// Create
 	applicationNameFlag      string
 	applicationNamespaceFlag string
+	ciFlag                   bool
 	cloudRegionFlag          string
 	clusterNameFlag          string
 	clusterTypeFlag          string
@@ -75,6 +76,7 @@ func Create() *cobra.Command {
 	}
 
 	// todo review defaults and update descriptions
+	createCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
