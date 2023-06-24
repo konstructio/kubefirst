@@ -53,6 +53,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	ciFlag, err := cmd.Flags().GetBool("ci")
+	if err != nil {
+		return err
+	}
+
 	cloudRegionFlag, err := cmd.Flags().GetString("cloud-region")
 	if err != nil {
 		return err
@@ -353,6 +358,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		case "https://github.com/kubefirst/gitops-template.git":
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
+			}
+		default:
+			if gitopsTemplateBranchFlag == "" {
+				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
 			}
 		}
 	}
@@ -1265,8 +1274,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	// Set flags used to track status of active options
 	helpers.SetClusterStatusFlags(civo.CloudProvider, config.GitProvider)
 
-	// this is probably going to get streamlined later, but this is necessary now
-	reports.CivoHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
+	if !ciFlag {
+		reports.CivoHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
+	}
 
 	defer func(c segment.SegmentClient) {
 		err := c.Client.Close()
