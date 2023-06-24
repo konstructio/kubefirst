@@ -705,5 +705,5 @@ func DeleteCluster(managedClusterName string) {
 		os.Exit(0)
 	}
 
-	fmt.Printf("Submitted request to delete cluster %s: %s - follow progress with `kubefirst console list-clusters`", managedClusterName, objMap["message"])
+	fmt.Printf("Submitted request to delete cluster %s: %s - follow progress with `kubefirst launch list-clusters`", managedClusterName, objMap["message"])
 }
