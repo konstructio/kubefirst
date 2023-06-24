@@ -57,6 +57,11 @@ var (
 )
 
 func runK3d(cmd *cobra.Command, args []string) error {
+	ciFlag, err := cmd.Flags().GetBool("ci")
+	if err != nil {
+		return err
+	}
+
 	clusterNameFlag, err := cmd.Flags().GetString("cluster-name")
 	if err != nil {
 		return err
@@ -136,11 +141,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// Either user or org can be specified for github, not both
 	if githubOrgFlag != "" && githubUserFlag != "" {
 		return fmt.Errorf("only one of --github-user or --github-org can be supplied")
-	}
-
-	//Validate we got a branch if they gave us a repo
-	if gitopsTemplateURLFlag != "" && gitopsTemplateBranchFlag == "" {
-		log.Panic().Msgf("must supply gitops-template-branch flag when gitops-template-url is set")
 	}
 
 	// Check for existing port forwards before continuing
@@ -365,6 +365,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		case "https://github.com/kubefirst/gitops-template.git":
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
+			}
+		default:
+			if gitopsTemplateBranchFlag == "" {
+				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
 			}
 		}
 	}
@@ -1354,7 +1358,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// Set flags used to track status of active options
 	helpers.SetClusterStatusFlags(k3d.CloudProvider, config.GitProvider)
 
-	reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, false)
+	if !ciFlag {
+		reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, false)
+	}
 
 	defer func(c segment.SegmentClient) {
 		err := c.Client.Close()

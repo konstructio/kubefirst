@@ -53,6 +53,11 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	ciFlag, err := cmd.Flags().GetBool("ci")
+	if err != nil {
+		return err
+	}
+
 	cloudRegionFlag, err := cmd.Flags().GetString("cloud-region")
 	if err != nil {
 		return err
@@ -349,8 +354,13 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
+		default:
+			if gitopsTemplateBranchFlag == "" {
+				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
+			}
 		}
 	}
+
 	log.Info().Msgf("kubefirst version configs.K1Version: %s ", configs.K1Version)
 	log.Info().Msgf("cloning gitops-template repo url: %s ", gitopsTemplateURLFlag)
 	log.Info().Msgf("cloning gitops-template repo branch: %s ", gitopsTemplateBranchFlag)
@@ -1233,8 +1243,9 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	// Set flags used to track status of active options
 	helpers.SetClusterStatusFlags(vultr.CloudProvider, config.GitProvider)
 
-	// this is probably going to get streamlined later, but this is necessary now
-	reports.VultrHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
+	if !ciFlag {
+		reports.VultrHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
+	}
 
 	defer func(c segment.SegmentClient) {
 		err := c.Client.Close()
