@@ -328,6 +328,9 @@ func Up(additionalHelmFlags []string) {
 		}
 	}
 
+	kubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
+	kubefirstTeamInfo := os.Getenv("KUBEFIRST_TEAM_INFO")
+
 	if !chartInstalled {
 		installFlags := []string{
 			"install",
@@ -345,6 +348,10 @@ func Up(additionalHelmFlags []string) {
 			fmt.Sprintf("console.chartVersion=%s", configs.K1Version),
 			"--set",
 			"kubefirst-api.installMethod=kubefirst-launch",
+			"--set",
+			fmt.Sprintf("kubefirst-api.kubefirstTeam=%s", kubefirstTeam),
+			"--set",
+			fmt.Sprintf("kubefirst-api.kubefirstTeamInfo=%s", kubefirstTeamInfo),
 		}
 
 		if len(additionalHelmFlags) > 0 {
@@ -352,12 +359,6 @@ func Up(additionalHelmFlags []string) {
 				installFlags = append(installFlags, "--set")
 				installFlags = append(installFlags, f)
 			}
-		}
-
-		switch k3d.LocalhostARCH {
-		case "arm64":
-			installFlags = append(installFlags, "--set")
-			installFlags = append(installFlags, "kubefirst-api.image.hook.tag=arm64")
 		}
 
 		switch viper.GetString("launch.database-destination") {
