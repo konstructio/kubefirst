@@ -69,7 +69,7 @@ func destroyGCP(cmd *cobra.Command, args []string) error {
 	// This gets read for terraform applies and is applied as a variable containing the contents of the file
 	// This is otherwise leveraged by the runtime to provide application default credentials to the GCP go SDK/API
 	config.GCPAuth = os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
-	switch gitProviderFlag {
+	switch gitProvider {
 	case "github":
 		config.GithubToken = cGitToken
 	case "gitlab":

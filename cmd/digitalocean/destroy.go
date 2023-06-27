@@ -69,7 +69,7 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 	// Instantiate digitalocean config
 	config := digitalocean.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
 	config.DigitaloceanToken = os.Getenv("DO_TOKEN")
-	switch gitProviderFlag {
+	switch gitProvider {
 	case "github":
 		config.GithubToken = cGitToken
 	case "gitlab":
