@@ -66,7 +66,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 	// Instantiate K3d config
 	config := k3d.GetConfig(clusterName, gitProvider, cGitOwner)
-	switch gitProviderFlag {
+	switch gitProvider {
 	case "github":
 		config.GithubToken = cGitToken
 	case "gitlab":
