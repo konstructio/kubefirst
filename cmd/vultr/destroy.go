@@ -69,7 +69,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 	// Instantiate vultr config
 	config := vultr.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
 	config.VultrToken = os.Getenv("VULTR_API_KEY")
-	switch gitProviderFlag {
+	switch gitProvider {
 	case "github":
 		config.GithubToken = cGitToken
 	case "gitlab":
