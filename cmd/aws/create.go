@@ -936,7 +936,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// }
 
 	//* install argocd
-	progressPrinter.AddTracker("installing-argocd", "Installing and configuring ArgoCD", 3)
+	progressPrinter.AddTracker("installing-argocd", "Installing and configuring Argo CD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	argoCDInstallPath := fmt.Sprintf("github.com:kubefirst/manifests/argocd/cloud?ref=%s", pkg.KubefirstManifestRepoRef)
@@ -1057,7 +1057,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	var argocdPassword string
 	//* argocd pods are ready, get and set credentials
-	progressPrinter.AddTracker("creating-argocd-auth", "Creating ArgoCD authentication", 1)
+	progressPrinter.AddTracker("creating-argocd-auth", "Creating Argo CD authentication", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
@@ -1106,7 +1106,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	//* create registry
-	progressPrinter.AddTracker("create-registry-application", "Deploying registry application to ArgoCD", 1)
+	progressPrinter.AddTracker("create-registry-application", "Deploying registry app to Argo CD", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
