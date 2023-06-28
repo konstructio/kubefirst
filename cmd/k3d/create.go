@@ -875,7 +875,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.IncrementTracker("verifying-k3d-cluster-readiness", 1)
 
-	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring ArgoCD", 3)
+	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring Argo CD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	argoCDInstallPath := fmt.Sprintf("github.com:kubefirst/manifests/argocd/k3d?ref=%s", pkg.KubefirstManifestRepoRef)
