@@ -66,7 +66,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 	// Instantiate K3d config
 	config := k3d.GetConfig(clusterName, gitProvider, cGitOwner)
-	switch gitProviderFlag {
+	switch gitProvider {
 	case "github":
 		config.GithubToken = cGitToken
 	case "gitlab":
@@ -195,7 +195,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if viper.GetBool("kubefirst-checks.terraform-apply-k3d") || viper.GetBool("kubefirst-checks.terraform-apply-k3d-failed") {
+	if viper.GetBool("kubefirst-checks.create-k3d-cluster") || viper.GetBool("kubefirst-checks.create-k3d-cluster-failed") {
 		log.Info().Msg("destroying k3d resources with terraform")
 
 		err := k3d.DeleteK3dCluster(clusterName, config.K1Dir, config.K3dClient)
@@ -203,7 +203,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		viper.Set("kubefirst-checks.terraform-apply-k3d", false)
+		viper.Set("kubefirst-checks.create-k3d-cluster", false)
 		viper.WriteConfig()
 		log.Info().Msg("k3d resources terraform destroyed")
 		progressPrinter.IncrementTracker("platform-destroy", 1)
@@ -223,7 +223,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	//* remove local content and kubefirst config file for re-execution
-	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.terraform-apply-k3d") {
+	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.create-k3d-cluster") {
 		log.Info().Msg("removing previous platform content")
 
 		err := pkg.ResetK1Dir(config.K1Dir)

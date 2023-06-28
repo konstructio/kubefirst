@@ -69,7 +69,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	// Instantiate civo config
 	config := civo.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
 	config.CivoToken = os.Getenv("CIVO_TOKEN")
-	switch gitProviderFlag {
+	switch gitProvider {
 	case "github":
 		config.GithubToken = cGitToken
 	case "gitlab":

@@ -15,6 +15,7 @@ import (
 var (
 	// Create
 	alertsEmailFlag          string
+	ciFlag                   bool
 	cloudRegionFlag          string
 	clusterNameFlag          string
 	clusterTypeFlag          string
@@ -39,7 +40,7 @@ var (
 func NewCommand() *cobra.Command {
 	gcpCmd := &cobra.Command{
 		Use:   "gcp",
-		Short: "kubefirst gcp installation",
+		Short: "kubefirst GCP installation",
 		Long:  "kubefirst gcp",
 	}
 
@@ -55,7 +56,7 @@ func NewCommand() *cobra.Command {
 func Create() *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:              "create",
-		Short:            "create the kubefirst platform running on gcp kubernetes",
+		Short:            "create the kubefirst platform running on GCP kubernetes",
 		TraverseChildren: true,
 		RunE:             createGCP,
 	}
@@ -63,10 +64,11 @@ func Create() *cobra.Command {
 	// todo review defaults and update descriptions
 	createCmd.Flags().StringVar(&alertsEmailFlag, "alerts-email", "", "email address for let's encrypt certificate notifications (required)")
 	createCmd.MarkFlagRequired("alerts-email")
-	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "us-east1", "the gcp region to provision infrastructure in")
+	createCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
+	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "us-east1", "the GCP region to provision infrastructure in")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
-	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the gcp DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
+	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the GCP DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
 	createCmd.Flags().StringVar(&gcpProjectFlag, "gcp-project", "", "gcp project id (required)")
 	createCmd.MarkFlagRequired("gcp-project")
@@ -84,7 +86,7 @@ func Destroy() *cobra.Command {
 	destroyCmd := &cobra.Command{
 		Use:   "destroy",
 		Short: "destroy the kubefirst platform",
-		Long:  "destroy the kubefirst platform running in gcp and remove all resources",
+		Long:  "destroy the kubefirst platform running in GCP and remove all resources",
 		RunE:  destroyGCP,
 	}
 

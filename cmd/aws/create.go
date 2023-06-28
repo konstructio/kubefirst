@@ -59,6 +59,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	ciFlag, err := cmd.Flags().GetBool("ci")
+	if err != nil {
+		return err
+	}
+
 	cloudRegionFlag, err := cmd.Flags().GetString("cloud-region")
 	if err != nil {
 		return err
@@ -317,6 +322,10 @@ func createAws(cmd *cobra.Command, args []string) error {
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
+		default:
+			if gitopsTemplateBranchFlag == "" {
+				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
+			}
 		}
 	}
 
@@ -415,9 +424,16 @@ func createAws(cmd *cobra.Command, args []string) error {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessStarted, "")
 
 		// verify dns
-		err := dns.VerifyProviderDNS("aws", cloudRegionFlag, domainNameFlag)
+		isPrivateZone, nameServers, err := awsClient.GetHostedZoneNameServers(domainNameFlag)
 		if err != nil {
 			return err
+		}
+
+		if !isPrivateZone {
+			err = dns.VerifyProviderDNS("aws", cloudRegionFlag, domainNameFlag, nameServers)
+			if err != nil {
+				return err
+			}
 		}
 
 		domainLiveness := awsClient.TestHostedZoneLiveness(domainNameFlag)
@@ -632,7 +648,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		if !executionControl {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyStarted, "")
 
-			log.Info().Msg("Creating github resources with terraform")
+			log.Info().Msg("Creating GitHub resources with Terraform")
 
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
@@ -655,7 +671,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyCompleted, "")
 			progressPrinter.IncrementTracker("applying-git-terraform", 1)
 		} else {
-			log.Info().Msg("already created github terraform resources")
+			log.Info().Msg("already created GitHub Terraform resources")
 			progressPrinter.IncrementTracker("applying-git-terraform", 1)
 		}
 	case "gitlab":
@@ -664,7 +680,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		if !executionControl {
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyStarted, "")
 
-			log.Info().Msg("Creating gitlab resources with terraform")
+			log.Info().Msg("Creating GitLab resources with Terraform")
 
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
@@ -689,7 +705,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			viper.WriteConfig()
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyCompleted, "")
 		} else {
-			log.Info().Msg("already created gitlab terraform resources")
+			log.Info().Msg("already created GitLab Terraform resources")
 			progressPrinter.IncrementTracker("applying-git-terraform", 1)
 		}
 	}
@@ -715,38 +731,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 			log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
 		}
 
-		// For GitLab, we currently need to add an ssh key to the authenticating user
-		if config.GitProvider == "gitlab" {
-			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
-			if err != nil {
-				return err
-			}
-			keys, err := gitlabClient.GetUserSSHKeys()
-			if err != nil {
-				log.Fatal().Msgf("unable to check for ssh keys in gitlab: %s", err.Error())
-			}
-
-			var keyName = "kbot-ssh-key"
-			var keyFound bool = false
-			for _, key := range keys {
-				if key.Title == keyName {
-					if strings.Contains(key.Key, strings.TrimSuffix(viper.GetString("kbot.public-key"), "\n")) {
-						log.Info().Msgf("ssh key %s already exists and key is up to date, continuing", keyName)
-						keyFound = true
-					} else {
-						log.Fatal().Msgf("ssh key %s already exists and key data has drifted - please remove before continuing", keyName)
-					}
-				}
-			}
-			if !keyFound {
-				log.Info().Msgf("creating ssh key %s...", keyName)
-				err := gitlabClient.AddUserSSHKey(keyName, viper.GetString("kbot.public-key"))
-				if err != nil {
-					log.Fatal().Msgf("error adding ssh key %s: %s", keyName, err.Error())
-				}
-				viper.Set("kbot.gitlab-user-based-ssh-key-title", keyName)
-				viper.WriteConfig()
-			}
+		err = internalssh.EvalSSHKey(&internalssh.EvalSSHKeyRequest{
+			GitProvider:     gitProviderFlag,
+			GitlabGroupFlag: gitlabGroupFlag,
+			GitToken:        cGitToken,
+		})
+		if err != nil {
+			return err
 		}
 
 		// Push gitops repo to remote
@@ -1369,9 +1360,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	// Set flags used to track status of active options
-	helpers.SetCompletionFlags(awsinternal.CloudProvider, config.GitProvider)
+	helpers.SetClusterStatusFlags(awsinternal.CloudProvider, config.GitProvider)
 
-	reports.AwsHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
+	if !ciFlag {
+		reports.AwsHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
+	}
 
 	defer func(c segment.SegmentClient) {
 		err := c.Client.Close()

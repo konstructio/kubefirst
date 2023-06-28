@@ -14,6 +14,9 @@ import (
 
 var (
 	// Create
+	applicationNameFlag      string
+	applicationNamespaceFlag string
+	ciFlag                   bool
 	cloudRegionFlag          string
 	clusterNameFlag          string
 	clusterTypeFlag          string
@@ -23,6 +26,7 @@ var (
 	gitProviderFlag          string
 	gitopsTemplateURLFlag    string
 	gitopsTemplateBranchFlag string
+	gitProtocolFlag          string
 	useTelemetryFlag         bool
 
 	// RootCredentials
@@ -32,6 +36,9 @@ var (
 
 	// Supported git providers
 	supportedGitProviders = []string{"github", "gitlab"}
+
+	// Supported git providers
+	supportedGitProtocolOverride = []string{"https", "ssh"}
 )
 
 func NewCommand() *cobra.Command {
@@ -42,13 +49,12 @@ func NewCommand() *cobra.Command {
 	}
 
 	// wire up new commands
-	k3dCmd.AddCommand(Create(), Destroy(), RootCredentials(), UnsealVault())
+	k3dCmd.AddCommand(Create(), Destroy(), MkCert(), RootCredentials(), UnsealVault())
 
 	return k3dCmd
 }
 
 func LocalCommandAlias() *cobra.Command {
-
 	localCmd := &cobra.Command{
 		Use:   "local",
 		Short: "kubefirst local installation with k3d",
@@ -56,7 +62,7 @@ func LocalCommandAlias() *cobra.Command {
 	}
 
 	// wire up new commands
-	localCmd.AddCommand(Create(), Destroy(), RootCredentials())
+	localCmd.AddCommand(Create(), Destroy(), MkCert(), RootCredentials(), UnsealVault())
 
 	return localCmd
 }
@@ -70,9 +76,11 @@ func Create() *cobra.Command {
 	}
 
 	// todo review defaults and update descriptions
+	createCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
+	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git provider - one of: %s (default is ssh)", supportedGitProtocolOverride))
 	createCmd.Flags().StringVar(&githubUserFlag, "github-user", "", "the GitHub user for the new gitops and metaphor repositories - this cannot be used with --github-org")
 	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - this cannot be used with --github-user")
 	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
@@ -92,6 +100,22 @@ func Destroy() *cobra.Command {
 	}
 
 	return destroyCmd
+}
+
+func MkCert() *cobra.Command {
+	mkCertCmd := &cobra.Command{
+		Use:   "mkcert",
+		Short: "create a single ssl certificate for a local application",
+		Long:  "create a single ssl certificate for a local application",
+		RunE:  mkCert,
+	}
+
+	mkCertCmd.Flags().StringVar(&applicationNameFlag, "application", "", "the name of the application (required)")
+	mkCertCmd.MarkFlagRequired("application")
+	mkCertCmd.Flags().StringVar(&applicationNamespaceFlag, "namespace", "", "the application namespace (required)")
+	mkCertCmd.MarkFlagRequired("namespace")
+
+	return mkCertCmd
 }
 
 func RootCredentials() *cobra.Command {
