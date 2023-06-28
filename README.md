@@ -37,7 +37,7 @@ Each of our platforms have install guides that detail the prerequesites, command
 
 ## Overview
 
-https://docs.kubefirst.io/kubefirst/overview
+<https://docs.kubefirst.io>
 
 ![kubefirst architecture diagram](images/kubefirst-arch.png)
 
