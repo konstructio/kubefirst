@@ -28,7 +28,7 @@ func LaunchCommand() *cobra.Command {
 	}
 
 	// wire up new commands
-	launchCommand.AddCommand(launchUp(), launchDown(), launchListClusters(), launchDeleteCluster())
+	launchCommand.AddCommand(launchUp(), launchDown(), launchCluster())
 
 	return launchCommand
 }
@@ -64,10 +64,23 @@ func launchDown() *cobra.Command {
 	return launchDownCmd
 }
 
+// launchCluster
+func launchCluster() *cobra.Command {
+	launchClusterCmd := &cobra.Command{
+		Use:              "cluster",
+		Short:            "interact with clusters created by the kubefirst console",
+		TraverseChildren: true,
+	}
+
+	launchClusterCmd.AddCommand(launchListClusters(), launchDeleteCluster())
+
+	return launchClusterCmd
+}
+
 // launchListClusters makes a request to the console API to list created clusters
 func launchListClusters() *cobra.Command {
 	launchListClustersCmd := &cobra.Command{
-		Use:              "list-clusters",
+		Use:              "list",
 		Short:            "list clusters created by the kubefirst console",
 		TraverseChildren: true,
 		PreRun:           checkDocker,
@@ -82,7 +95,7 @@ func launchListClusters() *cobra.Command {
 // launchDeleteCluster makes a request to the console API to delete a single cluster
 func launchDeleteCluster() *cobra.Command {
 	launchDeleteClusterCmd := &cobra.Command{
-		Use:              "delete-cluster",
+		Use:              "delete",
 		Short:            "delete a cluster created by the kubefirst console",
 		TraverseChildren: true,
 		PreRun:           checkDocker,
