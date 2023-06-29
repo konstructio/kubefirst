@@ -240,7 +240,7 @@ func Up(additionalHelmFlags []string) {
 	} else {
 		log.Warn("Kubefirst console has already been deployed. To start over, run `kubefirst launch down` to completely remove the existing console.")
 		log.Warnf("If you have manually removed %s, the k3d cluster must be manually removed by running the following command: ", dir)
-		log.Info("	k3d delete cluster kubefirst-console")
+		log.Info("	k3d cluster delete kubefirst-console")
 		log.Warn("You will have to install the k3d utility if you do not have it installed if the directory shown above has been deleted.")
 		os.Exit(1)
 	}
