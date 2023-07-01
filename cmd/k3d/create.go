@@ -23,7 +23,7 @@ import (
 	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
 	githttps "github.com/go-git/go-git/v5/plumbing/transport/http"
-	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/telemetryShim"
 	"github.com/kubefirst/kubefirst/internal/utilities"
@@ -471,6 +471,12 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitCompleted, "")
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallStarted, "")
 
+	//* generate public keys for ssh
+	publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
+	if err != nil {
+		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
+	}
+
 	gitopsDirectoryTokens := k3d.GitopsTokenValues{
 		GithubOwner:                   cGitOwner,
 		GithubUser:                    cGitUser,
@@ -507,9 +513,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	} else {
 		gitopsDirectoryTokens.UseTelemetry = "false"
 	}
-
-	//* generate public keys for ssh
-	publicKeys, err := gitssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
 
 	//* generate http credentials for git auth over https
 	httpAuth := &githttps.BasicAuth{
