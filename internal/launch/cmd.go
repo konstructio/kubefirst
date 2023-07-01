@@ -21,6 +21,7 @@ import (
 	k3dint "github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg"
+	"github.com/kubefirst/runtime/pkg/db"
 	"github.com/kubefirst/runtime/pkg/downloadManager"
 	"github.com/kubefirst/runtime/pkg/helpers"
 	"github.com/kubefirst/runtime/pkg/k3d"
@@ -98,6 +99,21 @@ func Up(additionalHelmFlags []string) {
 
 			fmt.Println()
 
+			// Verify database connectivity
+			mdbcl := db.Connect(&db.MongoDBClientParameters{
+				HostType: dbDestination,
+				Host:     dbHost,
+				Username: dbUser,
+				Password: dbPassword,
+			})
+			err = mdbcl.TestDatabaseConnection()
+			if err != nil {
+				log.Fatalf("Error validating Mongo credentials: %s", err)
+			}
+			mdbcl.Client.Disconnect(mdbcl.Context)
+
+			log.Info("MongoDB Atlas credentials verified")
+
 			viper.Set("launch.database-destination", "atlas")
 			viper.Set("launch.database-initialized", true)
 			viper.WriteConfig()
@@ -111,6 +127,8 @@ func Up(additionalHelmFlags []string) {
 	} else {
 		log.Info("Database has already been initialized, skipping")
 	}
+
+	fmt.Println()
 
 	log.Infof("%s/%s", k3d.LocalhostOS, k3d.LocalhostARCH)
 
