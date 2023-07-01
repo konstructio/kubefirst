@@ -471,7 +471,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitCompleted, "")
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallStarted, "")
 
-	gitopsTemplateTokens := k3d.GitopsTokenValues{
+	gitopsDirectoryTokens := k3d.GitopsTokenValues{
 		GithubOwner:                   cGitOwner,
 		GithubUser:                    cGitUser,
 		GitlabOwner:                   cGitOwner,
@@ -503,9 +503,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	if useTelemetryFlag {
-		gitopsTemplateTokens.UseTelemetry = "true"
+		gitopsDirectoryTokens.UseTelemetry = "true"
 	} else {
-		gitopsTemplateTokens.UseTelemetry = "false"
+		gitopsDirectoryTokens.UseTelemetry = "false"
 	}
 
 	//* generate public keys for ssh
@@ -565,7 +565,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			gitopsTemplateURLFlag,
 			config.DestinationMetaphorRepoHttpsURL,
 			config.K1Dir,
-			&gitopsTemplateTokens,
+			&gitopsDirectoryTokens,
 			config.MetaphorDir,
 			&metaphorTemplateTokens,
 			gitProtocolFlag,
@@ -1271,7 +1271,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	err = k3d.PostRunPrepareGitopsRepository(clusterNameFlag,
 		config.GitopsDir,
-		&gitopsTemplateTokens,
+		&gitopsDirectoryTokens,
 	)
 	if err != nil {
 		log.Info().Msgf("Error detokenize post run: %s", err)

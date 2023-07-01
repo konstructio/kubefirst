@@ -21,6 +21,7 @@ import (
 
 	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
+	githttps "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/telemetryShim"
@@ -93,6 +94,11 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	gitProtocolFlag, err := cmd.Flags().GetString("git-protocol")
+	if err != nil {
+		return err
+	}
+
 	gitopsTemplateURLFlag, err := cmd.Flags().GetString("gitops-template-url")
 	if err != nil {
 		return err
@@ -132,6 +138,11 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		} else {
 			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
 		}
+	}
+
+	//Validate we got a branch if they gave us a repo
+	if gitopsTemplateURLFlag != "" && gitopsTemplateBranchFlag == "" {
+		log.Panic().Msgf("must supply gitops-template-branch flag when gitops-template-url is set")
 	}
 
 	// Check for existing port forwards before continuing
@@ -233,6 +244,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		containerRegistryHost = "registry.gitlab.com"
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
 		viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
+		viper.Set("flags.git-protocol", gitProtocolFlag)
 		viper.WriteConfig()
 	default:
 		log.Error().Msgf("invalid git provider option")
@@ -554,10 +566,21 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitCompleted, "")
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallStarted, "")
 
-	publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
-	if err != nil {
-		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
+	var publicKeys *ssh.PublicKeys
+	var httpAuth *githttps.basicAuth
+
+	if gitProtocolFlag != "https" {
+		*publicKeys, err = ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
+		if err != nil {
+			log.Info().Msgf("generate public keys failed: %s\n", err.Error())
+		}
+	} else {
+		httpAuth = &githttps.BasicAuth{
+			Username: cGitUser,
+			Password: cGitToken,
+		}
 	}
+	//* generate http credentials for git auth over https
 
 	//* download dependencies to `$HOME/.k1/tools`
 	progressPrinter.AddTracker("downloading-tools", "Downloading tools", 1)
