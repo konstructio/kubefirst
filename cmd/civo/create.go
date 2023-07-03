@@ -74,10 +74,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	dnsProviderFlag, err := cmd.Flags().GetString("dns-provider")
-	if err != nil {
-		return err
-	}
+	// dnsProviderFlag, err := cmd.Flags().GetString("dns-provider")
+	// if err != nil {
+	// 	return err
+	// }
 
 	domainNameFlag, err := cmd.Flags().GetString("domain-name")
 	if err != nil {
@@ -149,7 +149,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	// required for destroy command
 	viper.Set("flags.alerts-email", alertsEmailFlag)
 	viper.Set("flags.cluster-name", clusterNameFlag)
-	viper.Set("flags.dns-provider", dnsProviderFlag)
+	// viper.Set("flags.dns-provider", dnsProviderFlag)
 	viper.Set("flags.domain-name", domainNameFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.Set("flags.cloud-region", cloudRegionFlag)
