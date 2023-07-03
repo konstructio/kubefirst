@@ -19,6 +19,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/helpers"
 	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/kubefirst/runtime/pkg/progressPrinter"
+	"github.com/kubefirst/runtime/pkg/providerConfigs"
 	"github.com/kubefirst/runtime/pkg/terraform"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -64,7 +65,7 @@ func destroyGCP(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate GCP config
-	config := gcp.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
+	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
 	// This is the environment variable required to create and is set to the path of the service account json file
 	// This gets read for terraform applies and is applied as a variable containing the contents of the file
 	// This is otherwise leveraged by the runtime to provide application default credentials to the GCP go SDK/API

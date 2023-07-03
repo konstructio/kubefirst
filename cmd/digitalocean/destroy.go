@@ -23,6 +23,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/helpers"
 	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/kubefirst/runtime/pkg/progressPrinter"
+	"github.com/kubefirst/runtime/pkg/providerConfigs"
 	"github.com/kubefirst/runtime/pkg/terraform"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -67,7 +68,7 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate digitalocean config
-	config := digitalocean.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
+	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
 	config.DigitaloceanToken = os.Getenv("DO_TOKEN")
 	switch gitProvider {
 	case "github":
@@ -233,7 +234,7 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log.Info().Msgf("port-forward to argocd is available at %s", digitalocean.ArgocdPortForwardURL)
+		log.Info().Msgf("port-forward to argocd is available at %s", providerConfigs.ArgocdPortForwardURL)
 
 		customTransport := http.DefaultTransport.(*http.Transport).Clone()
 		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}

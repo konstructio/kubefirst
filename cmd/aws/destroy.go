@@ -25,6 +25,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/helpers"
 	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/kubefirst/runtime/pkg/progressPrinter"
+	"github.com/kubefirst/runtime/pkg/providerConfigs"
 	"github.com/kubefirst/runtime/pkg/terraform"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -75,7 +76,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate aws config
-	config := awsinternal.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
+	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
 
 	if len(cGitToken) == 0 {
 		return fmt.Errorf(

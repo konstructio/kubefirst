@@ -36,6 +36,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/helpers"
 	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/kubefirst/runtime/pkg/progressPrinter"
+	"github.com/kubefirst/runtime/pkg/providerConfigs"
 	"github.com/kubefirst/runtime/pkg/reports"
 	"github.com/kubefirst/runtime/pkg/segment"
 	"github.com/kubefirst/runtime/pkg/services"
@@ -69,6 +70,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	clusterTypeFlag, err := cmd.Flags().GetString("cluster-type")
+	if err != nil {
+		return err
+	}
+
+	dnsProviderFlag, err := cmd.Flags().GetString("dns-provider")
 	if err != nil {
 		return err
 	}
@@ -143,6 +149,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	// required for destroy command
 	viper.Set("flags.alerts-email", alertsEmailFlag)
 	viper.Set("flags.cluster-name", clusterNameFlag)
+	viper.Set("flags.dns-provider", dnsProviderFlag)
 	viper.Set("flags.domain-name", domainNameFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.Set("flags.cloud-region", cloudRegionFlag)
@@ -163,7 +170,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("your GITHUB_TOKEN is not set. Please set and try again")
 		}
 
-		cGitHost = civo.GithubHost
+		cGitHost = providerConfigs.GithubHost
 		cGitOwner = githubOrgFlag
 		cGitToken = os.Getenv("GITHUB_TOKEN")
 		containerRegistryHost = "ghcr.io"
@@ -218,7 +225,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		cGitHost = civo.GitlabHost
+		cGitHost = providerConfigs.GitlabHost
 		cGitOwner = gitlabClient.ParentGroupPath
 		cGitlabOwnerGroupID = gitlabClient.ParentGroupID
 		log.Info().Msgf("set gitlab owner to %s", cGitOwner)
@@ -239,7 +246,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate config
-	config := civo.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
+	config := providerConfigs.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
 	config.CivoToken = os.Getenv("CIVO_TOKEN")
 	switch gitProviderFlag {
 	case "github":
@@ -270,7 +277,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		kubefirstTeam = "false"
 	}
 
-	gitopsDirectoryTokens := civo.GitOpsDirectoryValues{
+	gitopsDirectoryTokens := providerConfigs.GitOpsDirectoryValues{
 		AlertsEmail:               alertsEmailFlag,
 		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
 		CloudProvider:             civo.CloudProvider,
@@ -306,7 +313,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		GitHubOwner: cGitOwner,
 		GitHubUser:  cGitUser,
 
-		GitlabHost:         civo.GitlabHost,
+		GitlabHost:         providerConfigs.GitlabHost,
 		GitlabOwner:        cGitOwner,
 		GitlabOwnerGroupID: cGitlabOwnerGroupID,
 		GitlabUser:         cGitUser,
@@ -602,10 +609,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		err := civo.DownloadTools(
 			config.KubectlClient,
-			civo.KubectlClientVersion,
-			civo.LocalhostOS,
-			civo.LocalhostArch,
-			civo.TerraformClientVersion,
+			providerConfigs.KubectlClientVersion,
+			providerConfigs.LocalhostOS,
+			providerConfigs.LocalhostArch,
+			providerConfigs.TerraformClientVersion,
 			config.ToolsDir,
 		)
 		if err != nil {
@@ -622,7 +629,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// todo should metaphor tokens be global?
-	metaphorDirectoryTokens := civo.MetaphorTokenValues{
+	metaphorDirectoryTokens := providerConfigs.MetaphorTokenValues{
 		ClusterName:                   clusterNameFlag,
 		CloudRegion:                   cloudRegionFlag,
 		ContainerRegistryURL:          fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
@@ -666,7 +673,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		// Determine if anything exists at domain apex
 		apexContentExists := civo.GetDomainApexContent(domainNameFlag)
 
-		err = civo.PrepareGitRepositories(
+		err = providerConfigs.PrepareGitRepositories(
+			civo.CloudProvider,
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
@@ -988,7 +996,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		8080,
 		argoCDStopChannel,
 	)
-	log.Info().Msgf("port-forward to argocd is available at %s", civo.ArgocdPortForwardURL)
+	log.Info().Msgf("port-forward to argocd is available at %s", providerConfigs.ArgocdPortForwardURL)
 
 	//* argocd pods are ready, get and set credentials
 	var argocdPassword string

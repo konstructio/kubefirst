@@ -19,12 +19,13 @@ var (
 	cloudRegionFlag          string
 	clusterNameFlag          string
 	clusterTypeFlag          string
+	dnsProviderFlag          string
+	domainNameFlag           string
 	githubOrgFlag            string
 	gitlabGroupFlag          string
 	gitProviderFlag          string
 	gitopsTemplateURLFlag    string
 	gitopsTemplateBranchFlag string
-	domainNameFlag           string
 	useTelemetryFlag         bool
 
 	// RootCredentials
@@ -75,6 +76,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "NYC1", "the civo region to provision infrastructure in")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
+	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "cloud", "the dns provider to use (i.e. civo|cloudflare) civo by default")
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the Civo DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))

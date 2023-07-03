@@ -22,6 +22,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/helpers"
 	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/kubefirst/runtime/pkg/progressPrinter"
+	"github.com/kubefirst/runtime/pkg/providerConfigs"
 	"github.com/kubefirst/runtime/pkg/terraform"
 	"github.com/kubefirst/runtime/pkg/vultr"
 	"github.com/rs/zerolog/log"
@@ -67,7 +68,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate vultr config
-	config := vultr.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
+	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
 	config.VultrToken = os.Getenv("VULTR_API_KEY")
 	switch gitProvider {
 	case "github":
@@ -237,7 +238,7 @@ func destroyVultr(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log.Info().Msgf("port-forward to argocd is available at %s", vultr.ArgocdPortForwardURL)
+		log.Info().Msgf("port-forward to argocd is available at %s", providerConfigs.ArgocdPortForwardURL)
 
 		customTransport := http.DefaultTransport.(*http.Transport).Clone()
 		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
