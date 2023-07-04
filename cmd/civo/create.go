@@ -411,29 +411,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			log.Info().Msg(err.Error())
 		}
 
-		// Verify all credentials fields are present
-		var civoCredsFailureMessage string
-		switch {
-		case creds.AccessKeyID == "":
-			civoCredsFailureMessage = "when retrieving civo access credentials, AccessKeyID was empty - please retry your cluster creation"
-		case creds.ID == "":
-			civoCredsFailureMessage = "when retrieving civo access credentials, ID was empty - please retry your cluster creation"
-		case creds.Name == "":
-			civoCredsFailureMessage = "when retrieving civo access credentials, Name was empty - please retry your cluster creation"
-		case creds.SecretAccessKeyID == "":
-			civoCredsFailureMessage = "when retrieving civo access credentials, SecretAccessKeyID was empty - please retry your cluster creation"
-		}
-		if civoCredsFailureMessage != "" {
-			// Creds failed to properly parse, so remove them
-			err := civoConf.DeleteAccessCredentials(kubefirstStateStoreBucketName, cloudRegionFlag)
-			if err != nil {
-				return err
-			}
-
-			// Return error
-			return fmt.Errorf(civoCredsFailureMessage)
-		}
-
 		viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyID)
 		viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKeyID)
 		viper.Set("kubefirst.state-store-creds.name", creds.Name)
