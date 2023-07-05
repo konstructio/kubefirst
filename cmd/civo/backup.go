@@ -9,8 +9,8 @@ package civo
 import (
 	"os"
 
-	"github.com/kubefirst/runtime/pkg/civo"
 	"github.com/kubefirst/runtime/pkg/helpers"
+	"github.com/kubefirst/runtime/pkg/providerConfigs"
 	"github.com/kubefirst/runtime/pkg/ssl"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -35,7 +35,7 @@ func backupCivoSSL(cmd *cobra.Command, args []string) error {
 		log.Panic().Msgf("invalid git provider option")
 	}
 
-	config := civo.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
+	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
 
 	if _, err := os.Stat(config.SSLBackupDir + "/certificates"); os.IsNotExist(err) {
 		// path/to/whatever does not exist

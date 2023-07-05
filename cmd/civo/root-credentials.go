@@ -12,6 +12,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/civo"
 	"github.com/kubefirst/runtime/pkg/credentials"
 	"github.com/kubefirst/runtime/pkg/k8s"
+	"github.com/kubefirst/runtime/pkg/providerConfigs"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -53,7 +54,7 @@ func getCivoRootCredentials(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate kubernetes client
-	config := civo.GetConfig(clusterName, domainName, gitProvider, gitOwner)
+	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, gitOwner)
 
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 

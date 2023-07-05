@@ -36,6 +36,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/helpers"
 	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/kubefirst/runtime/pkg/progressPrinter"
+	"github.com/kubefirst/runtime/pkg/providerConfigs"
 	"github.com/kubefirst/runtime/pkg/reports"
 	"github.com/kubefirst/runtime/pkg/segment"
 	"github.com/kubefirst/runtime/pkg/services"
@@ -163,7 +164,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("your GITHUB_TOKEN is not set. Please set and try again")
 		}
 
-		cGitHost = digitalocean.GithubHost
+		cGitHost = providerConfigs.GithubHost
 		cGitOwner = githubOrgFlag
 		cGitToken = os.Getenv("GITHUB_TOKEN")
 		containerRegistryHost = "ghcr.io"
@@ -218,7 +219,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		cGitHost = digitalocean.GitlabHost
+		cGitHost = providerConfigs.GitlabHost
 		cGitOwner = gitlabClient.ParentGroupPath
 		cGitlabOwnerGroupID = gitlabClient.ParentGroupID
 		log.Info().Msgf("set gitlab owner to %s", cGitOwner)
@@ -239,7 +240,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate config
-	config := digitalocean.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
+	config := providerConfigs.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
 	config.DigitaloceanToken = os.Getenv("DO_TOKEN")
 	switch gitProviderFlag {
 	case "github":
@@ -272,7 +273,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		kubefirstTeam = "false"
 	}
 
-	gitopsDirectoryTokens := digitalocean.GitOpsDirectoryValues{
+	gitopsDirectoryTokens := providerConfigs.GitOpsDirectoryValues{
 		AlertsEmail:               alertsEmailFlag,
 		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
 		CloudProvider:             digitalocean.CloudProvider,
@@ -308,7 +309,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		GitHubOwner: cGitOwner,
 		GitHubUser:  cGitUser,
 
-		GitlabHost:         digitalocean.GitlabHost,
+		GitlabHost:         providerConfigs.GitlabHost,
 		GitlabOwner:        cGitOwner,
 		GitlabOwnerGroupID: cGitlabOwnerGroupID,
 		GitlabUser:         cGitUser,
@@ -567,10 +568,10 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 		err := digitalocean.DownloadTools(
 			config.KubectlClient,
-			digitalocean.KubectlClientVersion,
-			digitalocean.LocalhostOS,
-			digitalocean.LocalhostArch,
-			digitalocean.TerraformClientVersion,
+			providerConfigs.KubectlClientVersion,
+			providerConfigs.LocalhostOS,
+			providerConfigs.LocalhostArch,
+			providerConfigs.TerraformClientVersion,
 			config.ToolsDir,
 		)
 		if err != nil {
@@ -587,7 +588,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	}
 
 	// todo should metaphor tokens be global?
-	metaphorDirectoryTokens := digitalocean.MetaphorTokenValues{
+	metaphorDirectoryTokens := providerConfigs.MetaphorTokenValues{
 		ClusterName:                   clusterNameFlag,
 		CloudRegion:                   cloudRegionFlag,
 		ContainerRegistryURL:          fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
@@ -632,7 +633,8 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		// Determine if anything exists at domain apex
 		apexContentExists := digitalocean.GetDomainApexContent(domainNameFlag)
 
-		err = digitalocean.PrepareGitRepositories(
+		err = providerConfigs.PrepareGitRepositories(
+			digitalocean.CloudProvider,
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
@@ -959,7 +961,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		8080,
 		argoCDStopChannel,
 	)
-	log.Info().Msgf("port-forward to argocd is available at %s", digitalocean.ArgocdPortForwardURL)
+	log.Info().Msgf("port-forward to argocd is available at %s", providerConfigs.ArgocdPortForwardURL)
 
 	//* argocd pods are ready, get and set credentials
 	var argocdPassword string

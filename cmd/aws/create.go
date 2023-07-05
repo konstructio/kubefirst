@@ -40,6 +40,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/helpers"
 	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/kubefirst/runtime/pkg/progressPrinter"
+	"github.com/kubefirst/runtime/pkg/providerConfigs"
 	"github.com/kubefirst/runtime/pkg/reports"
 	"github.com/kubefirst/runtime/pkg/segment"
 	"github.com/kubefirst/runtime/pkg/services"
@@ -179,7 +180,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("your GITHUB_TOKEN is not set. Please set and try again")
 		}
 
-		cGitHost = awsinternal.GithubHost
+		cGitHost = providerConfigs.GithubHost
 		cGitOwner = githubOrgFlag
 		cGitToken = os.Getenv("GITHUB_TOKEN")
 
@@ -233,7 +234,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		cGitHost = awsinternal.GitlabHost
+		cGitHost = providerConfigs.GitlabHost
 		cGitOwner = gitlabClient.ParentGroupPath
 		cGitlabOwnerGroupID = gitlabClient.ParentGroupID
 		log.Info().Msgf("set gitlab owner to %s", cGitOwner)
@@ -253,7 +254,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate config
-	config := awsinternal.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
+	config := providerConfigs.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
 
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
 	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -499,7 +500,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
 
-		err := awsinternal.DownloadTools(config, awsinternal.KubectlClientVersion, awsinternal.TerraformClientVersion)
+		err := awsinternal.DownloadTools(config, providerConfigs.KubectlClientVersion, providerConfigs.TerraformClientVersion)
 		if err != nil {
 			return err
 		}
@@ -517,7 +518,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	awsAccountID := *iamCaller.Account
 	registryURL := fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", awsAccountID, cloudRegionFlag)
 
-	gitopsTemplateTokens := awsinternal.GitOpsDirectoryValues{
+	gitopsTemplateTokens := providerConfigs.GitOpsDirectoryValues{
 		AlertsEmail:               alertsEmailFlag,
 		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
 		AwsIamArnAccountRoot:      fmt.Sprintf("arn:aws:iam::%s:root", *iamCaller.Account),
@@ -528,7 +529,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		ClusterName:               clusterNameFlag,
 		ClusterType:               clusterTypeFlag,
 		DomainName:                domainNameFlag,
-		Kubeconfig:                config.Kubeconfig,
+		KubeconfigPath:            config.Kubeconfig,
 		KubefirstArtifactsBucket:  kubefirstArtifactsBucketName,
 		KubefirstStateStoreBucket: kubefirstStateStoreBucketName,
 		KubefirstTeam:             os.Getenv("KUBEFIRST_TEAM"),
@@ -557,7 +558,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		GitHubOwner: cGitOwner,
 		GitHubUser:  cGitUser,
 
-		GitlabHost:         awsinternal.GitlabHost,
+		GitlabHost:         providerConfigs.GitlabHost,
 		GitlabOwner:        cGitOwner,
 		GitlabOwnerGroupID: viper.GetInt("flags.gitlab-owner-group-id"),
 		GitlabUser:         cGitUser,
@@ -570,7 +571,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		ContainerRegistryURL: registryURL,
 	}
 
-	metaphorTemplateTokens := awsinternal.MetaphorTokenValues{
+	metaphorTemplateTokens := providerConfigs.MetaphorTokenValues{
 		ClusterName:                   clusterNameFlag,
 		CloudRegion:                   cloudRegionFlag,
 		ContainerRegistryURL:          registryURL,
@@ -611,7 +612,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 		gitopsTemplateTokens.GitOpsRepoGitURL = destinationGitopsRepoGitURL
 
-		err := awsinternal.PrepareGitRepositories(
+		err := providerConfigs.PrepareGitRepositories(
+			awsinternal.CloudProvider,
 			gitProviderFlag,
 			clusterNameFlag,
 			clusterTypeFlag,
@@ -624,6 +626,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 			&gitopsTemplateTokens,
 			config.MetaphorDir,
 			&metaphorTemplateTokens,
+			// Harecoded apex content to avoid creating apex resources for aws
+			true,
 		)
 		if err != nil {
 			return err
@@ -983,7 +987,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		8080,
 		argoCDStopChannel,
 	)
-	log.Info().Msgf("port-forward to argocd is available at %s", awsinternal.ArgocdPortForwardURL)
+	log.Info().Msgf("port-forward to argocd is available at %s", providerConfigs.ArgocdPortForwardURL)
 	progressPrinter.IncrementTracker("installing-argocd", 1)
 
 	// todo need to create argocd repo secret in the cluster
@@ -1232,10 +1236,10 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", config.GitProvider)] = cGitToken
-		tfEnvs["TF_VAR_vault_addr"] = awsinternal.VaultPortForwardURL
+		tfEnvs["TF_VAR_vault_addr"] = providerConfigs.VaultPortForwardURL
 		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
 		tfEnvs["TF_VAR_vault_token"] = vaultRootToken
-		tfEnvs["VAULT_ADDR"] = awsinternal.VaultPortForwardURL
+		tfEnvs["VAULT_ADDR"] = providerConfigs.VaultPortForwardURL
 		tfEnvs["VAULT_TOKEN"] = vaultRootToken
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = atlantisWebhookSecret
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
@@ -1277,9 +1281,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs := map[string]string{}
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", config.GitProvider)] = cGitToken
-		tfEnvs["TF_VAR_vault_addr"] = awsinternal.VaultPortForwardURL
+		tfEnvs["TF_VAR_vault_addr"] = providerConfigs.VaultPortForwardURL
 		tfEnvs["TF_VAR_vault_token"] = vaultRootToken
-		tfEnvs["VAULT_ADDR"] = awsinternal.VaultPortForwardURL
+		tfEnvs["VAULT_ADDR"] = providerConfigs.VaultPortForwardURL
 		tfEnvs["VAULT_TOKEN"] = vaultRootToken
 		tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
