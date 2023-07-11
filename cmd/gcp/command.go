@@ -23,6 +23,7 @@ var (
 	githubOrgFlag            string
 	gitlabGroupFlag          string
 	gitProviderFlag          string
+	gitProtocolFlag          string
 	gitopsTemplateURLFlag    string
 	gitopsTemplateBranchFlag string
 	domainNameFlag           string
@@ -35,6 +36,9 @@ var (
 
 	// Supported git providers
 	supportedGitProviders = []string{"github", "gitlab"}
+
+	// Supported git providers
+	supportedGitProtocolOverride = []string{"https", "ssh"}
 )
 
 func NewCommand() *cobra.Command {
@@ -73,6 +77,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&gcpProjectFlag, "gcp-project", "", "gcp project id (required)")
 	createCmd.MarkFlagRequired("gcp-project")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
+	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %s", supportedGitProtocolOverride))
 	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - required if using github")
 	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "", "the branch to clone for the gitops-template repository")

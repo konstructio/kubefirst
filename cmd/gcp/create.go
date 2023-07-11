@@ -161,7 +161,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	// Switch based on git provider, set params
-	var cGitHost, cGitOwner, cGitToken, cGitUser, containerRegistryHost string
+	var cGitHost, cGitOwner, cGitToken, cGitUser, containerRegistryHost, destinationMetaphorRepoHttpsURL, destinationGitopsRepoHttpsURL, destinationGitopsRepoGitURL, destinationMetaphorRepoGitURL string
 	var cGitlabOwnerGroupID int
 	switch gitProviderFlag {
 	case "github":
@@ -243,6 +243,21 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
 		viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
 		viper.WriteConfig()
+
+		// gitlab may have subgroups, so the destination gitops/metaphor repo git urls may be different
+		gitlabClient, err = gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
+		if err != nil {
+			return err
+		}
+		// Format git url based on full path to group
+		switch gitProtocolFlag {
+		case "https":
+			destinationGitopsRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
+			destinationMetaphorRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
+		default:
+			destinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
+			destinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
+		}
 	default:
 		log.Error().Msgf("invalid git provider option")
 	}
@@ -259,6 +274,12 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	case "gitlab":
 		config.GitlabToken = cGitToken
 	}
+	//Set urls for repo creation, tokens, registry apps, etc. Distinct and intended to replace the git url
+	config.DestinationGitopsRepoHttpsURL = destinationGitopsRepoHttpsURL
+	config.DestinationMetaphorRepoHttpsURL = destinationMetaphorRepoHttpsURL
+
+	config.DestinationGitopsRepoGitURL = destinationGitopsRepoGitURL
+	config.DestinationMetaphorRepoGitURL = destinationMetaphorRepoGitURL
 
 	var sshPrivateKey, sshPublicKey string
 
@@ -596,25 +617,6 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	}
 
 	//* git clone and detokenize the gitops repository
-	// todo improve this logic for removing `kubefirst clean`
-	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
-	var destinationGitopsRepoGitURL, destinationMetaphorRepoGitURL string
-
-	// gitlab may have subgroups, so the destination gitops/metaphor repo git urls may be different
-	switch config.GitProvider {
-	case "github":
-		destinationGitopsRepoGitURL = config.DestinationGitopsRepoGitURL
-		destinationMetaphorRepoGitURL = config.DestinationMetaphorRepoGitURL
-	case "gitlab":
-		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
-		if err != nil {
-			return err
-		}
-		// Format git url based on full path to group
-		destinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
-		destinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
-
-	}
 
 	progressPrinter.AddTracker("cloning-and-formatting-git-repositories", "Cloning and formatting git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
@@ -645,6 +647,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 			config.MetaphorDir,
 			&metaphorDirectoryTokens,
 			apexContentExists,
+			"",
 		)
 		if err != nil {
 			return err
@@ -865,7 +868,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
-		err := gcp.BootstrapGCPMgmtCluster(kcfg.Clientset, config.GitProvider, cGitUser)
+		err := gcp.BootstrapGCPMgmtCluster(kcfg.Clientset, config.GitProvider, cGitUser, config.DestinationGitopsRepoURL)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
 			return err

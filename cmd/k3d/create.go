@@ -143,6 +143,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("only one of --github-user or --github-org can be supplied")
 	}
 
+	//Validate we got a branch if they gave us a repo
+	if gitopsTemplateURLFlag != "" && gitopsTemplateBranchFlag == "" {
+		log.Panic().Msgf("must supply gitops-template-branch flag when gitops-template-url is set")
+	}
+
 	// Check for existing port forwards before continuing
 	err = k8s.CheckForExistingPortForwards(8080, 8200, 9000, 9094)
 	if err != nil {
@@ -175,6 +180,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.domain-name", k3d.DomainName)
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.Set("flags.git-protocol", gitProtocolFlag)
+
 	viper.WriteConfig()
 
 	// Switch based on git provider, set params
@@ -266,6 +272,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		containerRegistryHost = "registry.gitlab.com"
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
 		viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
+		viper.Set("gitlab.session_token", cGitToken)
 		viper.WriteConfig()
 	default:
 		log.Error().Msgf("invalid git provider option")
