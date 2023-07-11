@@ -23,7 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/eks"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	githttps "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/telemetryShim"
 	"github.com/kubefirst/kubefirst/internal/utilities"
@@ -100,6 +100,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	gitProtocolFlag, err := cmd.Flags().GetString("git-protocol")
+	if err != nil {
+		return err
+	}
+
 	gitopsTemplateURLFlag, err := cmd.Flags().GetString("gitops-template-url")
 	if err != nil {
 		return err
@@ -141,6 +146,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	//Validate we got a branch if they gave us a repo
+	if gitopsTemplateURLFlag != "" && gitopsTemplateBranchFlag == "" {
+		log.Panic().Msgf("must supply gitops-template-branch flag when gitops-template-url is set")
+	}
+
 	// Check for existing port forwards before continuing
 	err = k8s.CheckForExistingPortForwards(8080, 8200, 9094)
 	if err != nil {
@@ -162,6 +172,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.cluster-name", clusterNameFlag)
 	viper.Set("flags.domain-name", domainNameFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
+	viper.Set("flags.git-protocol", gitProtocolFlag)
 	viper.Set("flags.cloud-region", cloudRegionFlag)
 	viper.WriteConfig()
 
@@ -169,7 +180,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	// Switch based on git provider, set params
-	var cGitHost, cGitOwner, cGitToken, cGitUser string
+	var cGitHost, cGitOwner, cGitToken, cGitUser, destinationMetaphorRepoHttpsURL, destinationGitopsRepoHttpsURL, destinationGitopsRepoGitURL, destinationMetaphorRepoGitURL string
 	var cGitlabOwnerGroupID int
 	switch gitProviderFlag {
 	case "github":
@@ -249,6 +260,16 @@ func createAws(cmd *cobra.Command, args []string) error {
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
 		viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
 		viper.WriteConfig()
+
+		// Format git url based on full path to group
+		switch gitProtocolFlag {
+		case "https":
+			destinationGitopsRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
+			destinationMetaphorRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
+		default:
+			destinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
+			destinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
+		}
 	default:
 		log.Error().Msgf("invalid git provider option")
 	}
@@ -259,6 +280,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
 	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	httpClientNoSSL := http.Client{Transport: customTransport}
+
+	//Set urls for repo creation, tokens, registry apps, etc. Distinct and intended to replace the git url
+	config.DestinationGitopsRepoHttpsURL = destinationGitopsRepoHttpsURL
+	config.DestinationMetaphorRepoHttpsURL = destinationMetaphorRepoHttpsURL
+
+	config.DestinationGitopsRepoGitURL = destinationGitopsRepoGitURL
+	config.DestinationMetaphorRepoGitURL = destinationMetaphorRepoGitURL
 
 	vaultClient := &vault.Conf
 
@@ -491,10 +519,20 @@ func createAws(cmd *cobra.Command, args []string) error {
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitCompleted, "")
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallStarted, "")
 
-	publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
-	if err != nil {
-		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
+	//removed because we no longer default to ssh for kubefirst cli calls since we require the token anyways
+	// publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
+	// if err != nil {
+	// 	log.Info().Msgf("generate public keys failed: %s\n", err.Error())
+	// }
+
+	//* generate http credentials for git auth over https
+	httpAuth := &githttps.BasicAuth{
+		Username: cGitUser,
+		Password: cGitToken,
 	}
+
+	progressPrinter.AddTracker("download-dependencies", "Downloading dependencies", 3)
+	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	//* download dependencies to `$HOME/.k1/tools`
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
@@ -518,7 +556,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	awsAccountID := *iamCaller.Account
 	registryURL := fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", awsAccountID, cloudRegionFlag)
 
-	gitopsTemplateTokens := providerConfigs.GitOpsDirectoryValues{
+	gitopsDirectoryTokens := providerConfigs.GitOpsDirectoryValues{
 		AlertsEmail:               alertsEmailFlag,
 		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
 		AwsIamArnAccountRoot:      fmt.Sprintf("arn:aws:iam::%s:root", *iamCaller.Account),
@@ -549,6 +587,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 		GitDescription:       fmt.Sprintf("%s hosted git", config.GitProvider),
 		GitNamespace:         "N/A",
 		GitProvider:          config.GitProvider,
+		GitopsRepoGitURL:     config.DestinationGitopsRepoGitURL,
+		GitopsRepoHttpsURL:   config.DestinationGitopsRepoHttpsURL,
+		GitopsRepoURL:        config.DestinationGitopsRepoURL,
 		GitRunner:            fmt.Sprintf("%s Runner", config.GitProvider),
 		GitRunnerDescription: fmt.Sprintf("Self Hosted %s Runner", config.GitProvider),
 		GitRunnerNS:          fmt.Sprintf("%s-runner", config.GitProvider),
@@ -582,53 +623,36 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	//* git clone and detokenize the gitops repository
-	// todo improve this logic for removing `kubefirst clean`
-	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
-	var destinationGitopsRepoGitURL, destinationMetaphorRepoGitURL string
-
 	progressPrinter.AddTracker("cloning-and-formatting-git-repositories", "Cloning and formatting git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 
 		log.Info().Msg("generating your new gitops repository")
 
-		// gitlab may have subgroups, so the destination gitops/metaphor repo git urls may be different
-		switch config.GitProvider {
-		case "github":
-			destinationGitopsRepoGitURL = config.DestinationGitopsRepoGitURL
-			destinationMetaphorRepoGitURL = config.DestinationMetaphorRepoGitURL
-		case "gitlab":
-			gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
-			if err != nil {
-				return err
-			}
-			// Format git url based on full path to group
-			destinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
-			destinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
-
-		}
 		// These need to be set for reference elsewhere
-		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), destinationGitopsRepoGitURL)
+		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoGitURL)
 		viper.WriteConfig()
-		gitopsTemplateTokens.GitOpsRepoGitURL = destinationGitopsRepoGitURL
+		gitopsDirectoryTokens.GitOpsRepoGitURL = config.DestinationGitopsRepoGitURL
 
 		err := providerConfigs.PrepareGitRepositories(
 			awsinternal.CloudProvider,
 			gitProviderFlag,
 			clusterNameFlag,
 			clusterTypeFlag,
-			config.DestinationGitopsRepoGitURL,
+			config.DestinationGitopsRepoHttpsURL,
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
-			config.DestinationMetaphorRepoGitURL,
+			config.DestinationMetaphorRepoHttpsURL,
 			config.K1Dir,
-			&gitopsTemplateTokens,
+			&gitopsDirectoryTokens,
 			config.MetaphorDir,
 			&metaphorTemplateTokens,
 			// Harecoded apex content to avoid creating apex resources for aws
 			true,
+			gitProtocolFlag,
 		)
+
 		if err != nil {
 			return err
 		}
@@ -645,6 +669,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// * handle git terraform apply
 	progressPrinter.AddTracker("applying-git-terraform", fmt.Sprintf("Applying %s Terraform", config.GitProvider), 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoHttpsURL)
+	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoHttpsURL)
 	switch config.GitProvider {
 	case "github":
 		// //* create teams and repositories in github
@@ -747,26 +773,31 @@ func createAws(cmd *cobra.Command, args []string) error {
 		// Push gitops repo to remote
 		err = gitopsRepo.Push(&git.PushOptions{
 			RemoteName: config.GitProvider,
-			Auth:       publicKeys,
+			Auth:       httpAuth,
 		})
 		if err != nil {
-			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", destinationGitopsRepoGitURL, err)
+			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoHttpsURL, err)
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
-			log.Panic().Msg(msg)
+			if !strings.Contains(msg, "already up-to-date") {
+				log.Panic().Msg(msg)
+			}
 		}
 
 		// push metaphor repo to remote
 		err = metaphorRepo.Push(
 			&git.PushOptions{
 				RemoteName: "origin",
-				Auth:       publicKeys,
+				Auth:       httpAuth,
 			},
 		)
 		if err != nil {
-			msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", destinationMetaphorRepoGitURL, err)
+			msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoHttpsURL, err)
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
-			log.Panic().Msg(msg)
+			if !strings.Contains(msg, "already up-to-date") {
+				log.Panic().Msg(msg)
+			}
 		}
+		log.Info().Msgf("successfully pushed gitops and metaphor repositories to https://%s/%s", cGitHost, cGitOwner)
 
 		// todo delete the local gitops repo and re-clone it
 		// todo that way we can stop worrying about which origin we're going to push to
@@ -826,12 +857,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		gitopsTemplateTokens.AwsKmsKeyId = awsKmsKeyId
+		gitopsDirectoryTokens.AwsKmsKeyId = awsKmsKeyId
 
 		if err := pkg.ReplaceFileContent(
 			fmt.Sprintf("%s/registry/%s/components/vault/application.yaml", config.GitopsDir, clusterNameFlag),
 			"<AWS_KMS_KEY_ID>",
-			gitopsTemplateTokens.AwsKmsKeyId,
+			gitopsDirectoryTokens.AwsKmsKeyId,
 		); err != nil {
 			return err
 		}
@@ -843,7 +874,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		err = gitopsRepo.Push(&git.PushOptions{
 			RemoteName: config.GitProvider,
-			Auth:       publicKeys,
+			Auth:       httpAuth,
 		})
 		if err != nil {
 			return err
@@ -1005,6 +1036,27 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
+		// swap secret data based on https flag
+		secretData := map[string][]byte{}
+
+		if strings.Contains(config.DestinationGitopsRepoURL, "https") {
+			// http basic auth
+			secretData = map[string][]byte{
+				"type":     []byte("git"),
+				"name":     []byte(fmt.Sprintf("%s-gitops", cGitOwner)),
+				"url":      []byte(config.DestinationGitopsRepoURL),
+				"username": []byte(cGitUser),
+				"password": []byte(cGitToken),
+			}
+		} else {
+			// ssh
+			secretData = map[string][]byte{
+				"type":          []byte("git"),
+				"name":          []byte(fmt.Sprintf("%s-gitops", cGitOwner)),
+				"url":           []byte(config.DestinationGitopsRepoURL),
+				"sshPrivateKey": []byte(viper.GetString("kbot.private-key")),
+			}
+		}
 		secret := &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        "repo-credentials-template",
@@ -1012,12 +1064,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 				Annotations: map[string]string{"managed-by": "argocd.argoproj.io"},
 				Labels:      map[string]string{"argocd.argoproj.io/secret-type": "repository"},
 			},
-			Data: map[string][]byte{
-				"type":          []byte("git"),
-				"name":          []byte(fmt.Sprintf("%s-gitops", cGitOwner)),
-				"url":           []byte(config.DestinationGitopsRepoGitURL),
-				"sshPrivateKey": []byte(viper.GetString("kbot.private-key")),
-			},
+			Data: secretData,
 		}
 
 		_, err := clientset.CoreV1().Secrets(secret.ObjectMeta.Namespace).Get(context.TODO(), secret.ObjectMeta.Name, metav1.GetOptions{})
@@ -1118,7 +1165,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCreateRegistryStarted, "")
 
 		log.Info().Msg("applying the registry application to argocd")
-		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoGitURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
 		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
@@ -1236,6 +1283,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", config.GitProvider)] = cGitToken
+		tfEnvs[fmt.Sprintf("TF_VAR_%s_user", config.GitProvider)] = cGitUser
 		tfEnvs["TF_VAR_vault_addr"] = providerConfigs.VaultPortForwardURL
 		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
 		tfEnvs["TF_VAR_vault_token"] = vaultRootToken
