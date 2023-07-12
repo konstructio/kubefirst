@@ -80,6 +80,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// dnsProviderFlag, err := cmd.Flags().GetString("dns-provider")
+	// if err != nil {
+	// 	return err
+	// }
+
 	domainNameFlag, err := cmd.Flags().GetString("domain-name")
 	if err != nil {
 		return err
@@ -160,6 +165,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// required for destroy command
 	viper.Set("flags.alerts-email", alertsEmailFlag)
 	viper.Set("flags.cluster-name", clusterNameFlag)
+	// viper.Set("flags.dns-provider", dnsProviderFlag)
 	viper.Set("flags.domain-name", domainNameFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.Set("flags.cloud-region", cloudRegionFlag)
@@ -424,6 +430,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if !skipDomainCheck {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessStarted, "")
 
+		// switch dnsProviderFlag {
+		// case "aws":
 		// verify dns
 		isPrivateZone, nameServers, err := awsClient.GetHostedZoneNameServers(domainNameFlag)
 		if err != nil {
@@ -456,6 +464,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessCompleted, "")
 		progressPrinter.IncrementTracker("preflight-checks", 1)
+		// case "cloudflare":
+		// 	// Implement a Cloudflare check at some point
+		// 	log.Info().Msg("domain check already complete - continuing")
+		// 	progressPrinter.IncrementTracker("preflight-checks", 1)
+		// }
 	} else {
 		log.Info().Msg("domain check already complete - continuing")
 		progressPrinter.IncrementTracker("preflight-checks", 1)
@@ -519,15 +532,16 @@ func createAws(cmd *cobra.Command, args []string) error {
 	registryURL := fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", awsAccountID, cloudRegionFlag)
 
 	gitopsTemplateTokens := providerConfigs.GitOpsDirectoryValues{
-		AlertsEmail:               alertsEmailFlag,
-		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
-		AwsIamArnAccountRoot:      fmt.Sprintf("arn:aws:iam::%s:root", *iamCaller.Account),
-		AwsNodeCapacityType:       "ON_DEMAND", // todo adopt cli flag
-		AwsAccountID:              *iamCaller.Account,
-		CloudProvider:             awsinternal.CloudProvider,
-		CloudRegion:               cloudRegionFlag,
-		ClusterName:               clusterNameFlag,
-		ClusterType:               clusterTypeFlag,
+		AlertsEmail:          alertsEmailFlag,
+		AtlantisAllowList:    fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
+		AwsIamArnAccountRoot: fmt.Sprintf("arn:aws:iam::%s:root", *iamCaller.Account),
+		AwsNodeCapacityType:  "ON_DEMAND", // todo adopt cli flag
+		AwsAccountID:         *iamCaller.Account,
+		CloudProvider:        awsinternal.CloudProvider,
+		CloudRegion:          cloudRegionFlag,
+		ClusterName:          clusterNameFlag,
+		ClusterType:          clusterTypeFlag,
+		// DNSProvider:               dnsProviderFlag,
 		DomainName:                domainNameFlag,
 		KubeconfigPath:            config.Kubeconfig,
 		KubefirstArtifactsBucket:  kubefirstArtifactsBucketName,

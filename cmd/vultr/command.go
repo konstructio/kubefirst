@@ -19,12 +19,13 @@ var (
 	cloudRegionFlag          string
 	clusterNameFlag          string
 	clusterTypeFlag          string
+	dnsProviderFlag          string
+	domainNameFlag           string
 	githubOrgFlag            string
 	gitlabGroupFlag          string
 	gitProviderFlag          string
 	gitopsTemplateURLFlag    string
 	gitopsTemplateBranchFlag string
-	domainNameFlag           string
 	useTelemetryFlag         bool
 
 	// RootCredentials
@@ -32,7 +33,8 @@ var (
 	copyKbotPasswordToClipboardFlag   bool
 	copyVaultPasswordToClipboardFlag  bool
 
-	// Supported git providers
+	// Supported providers
+	supportedDNSProviders = []string{"vultr", "cloudflare"}
 	supportedGitProviders = []string{"github", "gitlab"}
 )
 
@@ -68,6 +70,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "ewr", "the Vultr region to provision infrastructure in")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
+	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "vultr", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the Vultr DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
