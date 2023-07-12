@@ -74,6 +74,11 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	dnsProviderFlag, err := cmd.Flags().GetString("dns-provider")
+	if err != nil {
+		return err
+	}
+
 	domainNameFlag, err := cmd.Flags().GetString("domain-name")
 	if err != nil {
 		return err
@@ -141,9 +146,25 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%s - this port is required to set up your kubefirst environment - please close any existing port forwards before continuing", err.Error())
 	}
 
+	//Validate we got a branch if they gave us a repo
+	if gitopsTemplateURLFlag != "" && gitopsTemplateBranchFlag == "" {
+		log.Panic().Msgf("must supply gitops-template-branch flag when gitops-template-url is set")
+	}
+
+	// Validate required environment variables for dns provider
+	if dnsProviderFlag == "cloudflare" {
+		if os.Getenv("CF_API_KEY") == "" {
+			return fmt.Errorf("your CF_API_KEY environment variable is not set. Please set and try again")
+		}
+		if os.Getenv("CF_API_EMAIL") == "" {
+			return fmt.Errorf("your CF_API_EMAIL environment variable is not set. Please set and try again")
+		}
+	}
+
 	// required for destroy command
 	viper.Set("flags.alerts-email", alertsEmailFlag)
 	viper.Set("flags.cluster-name", clusterNameFlag)
+	viper.Set("flags.dns-provider", dnsProviderFlag)
 	viper.Set("flags.domain-name", domainNameFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.Set("flags.cloud-region", cloudRegionFlag)
@@ -273,6 +294,15 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		kubefirstTeam = "false"
 	}
 
+	var externalDNSProviderTokenEnvName, externalDNSProviderSecretKey string
+	if dnsProviderFlag == "cloudflare" {
+		externalDNSProviderTokenEnvName = "CF_API_KEY"
+		externalDNSProviderSecretKey = "cf-api-key"
+	} else {
+		externalDNSProviderTokenEnvName = "DO_TOKEN"
+		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", digitalocean.CloudProvider)
+	}
+
 	gitopsDirectoryTokens := providerConfigs.GitOpsDirectoryValues{
 		AlertsEmail:               alertsEmailFlag,
 		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
@@ -280,11 +310,18 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		CloudRegion:               cloudRegionFlag,
 		ClusterName:               clusterNameFlag,
 		ClusterType:               clusterTypeFlag,
+		DNSProvider:               dnsProviderFlag,
 		DomainName:                domainNameFlag,
 		KubeconfigPath:            config.Kubeconfig,
 		KubefirstStateStoreBucket: kubefirstStateStoreBucketName,
 		KubefirstTeam:             kubefirstTeam,
 		KubefirstVersion:          configs.K1Version,
+
+		ExternalDNSProviderName:         dnsProviderFlag,
+		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
+		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-creds", digitalocean.CloudProvider),
+		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
+		CloudflareAccountEmail:          os.Getenv("CF_API_EMAIL"),
 
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
 		ArgoCDIngressNoHTTPSURL:        fmt.Sprintf("argocd.%s", domainNameFlag),
@@ -405,9 +442,50 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	if !skipDomainCheck {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessStarted, "")
 
-		digitaloceanConf := digitalocean.DigitaloceanConfiguration{
-			Client:  digitalocean.NewDigitalocean(os.Getenv("DO_TOKEN")),
-			Context: context.Background(),
+		switch dnsProviderFlag {
+		case "digitalocean":
+			digitaloceanConf := digitalocean.DigitaloceanConfiguration{
+				Client:  digitalocean.NewDigitalocean(os.Getenv("DO_TOKEN")),
+				Context: context.Background(),
+			}
+
+			// verify dns
+			err := dns.VerifyProviderDNS(digitalocean.CloudProvider, cloudRegionFlag, domainNameFlag, nil)
+			if err != nil {
+				return err
+			}
+
+			// domain id
+			domainId, err := digitaloceanConf.GetDNSInfo(domainNameFlag)
+			if err != nil {
+				log.Info().Msg(err.Error())
+			}
+
+			// viper values set in above function
+			log.Info().Msgf("domainId: %s", domainId)
+			domainLiveness := digitaloceanConf.TestDomainLiveness(domainNameFlag)
+			if !domainLiveness {
+				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessFailed, "domain liveness test failed")
+				msg := "failed to check the liveness of the Domain. A valid public Domain on the same digitalocean " +
+					"account as the one where Kubefirst will be installed is required for this operation to " +
+					"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct digitalocean account and " +
+					"region.\n - Verify that you have the necessary permissions to access the domain.\n - Check " +
+					"that the domain is correctly configured and is a public domain\n - Check if the " +
+					"domain exists and has the correct name and domain.\n - If you don't have a Domain," +
+					"please follow these instructions to create one: " +
+					"https://docs.digitalocean.com/products/networking/dns/how-to/ \n\n" +
+					"if you are still facing issues please reach out to support team for further assistance"
+
+				return fmt.Errorf(msg)
+			}
+			viper.Set("kubefirst-checks.domain-liveness", true)
+			viper.WriteConfig()
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessCompleted, "")
+			progressPrinter.IncrementTracker("preflight-checks", 1)
+		case "cloudflare":
+			// Implement a Cloudflare check at some point
+			log.Info().Msg("domain check already complete - continuing")
+			progressPrinter.IncrementTracker("preflight-checks", 1)
 		}
 
 		// verify dns
@@ -866,7 +944,13 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
-		err := digitalocean.BootstrapDigitaloceanMgmtCluster(config.DigitaloceanToken, config.Kubeconfig, config.GitProvider, cGitUser)
+		err := digitalocean.BootstrapDigitaloceanMgmtCluster(
+			config.DigitaloceanToken,
+			config.Kubeconfig,
+			config.GitProvider,
+			cGitUser,
+			os.Getenv("CF_API_KEY"),
+		)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
 			return err
