@@ -153,11 +153,8 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 	// Validate required environment variables for dns provider
 	if dnsProviderFlag == "cloudflare" {
-		if os.Getenv("CF_API_KEY") == "" {
-			return fmt.Errorf("your CF_API_KEY environment variable is not set. Please set and try again")
-		}
-		if os.Getenv("CF_API_EMAIL") == "" {
-			return fmt.Errorf("your CF_API_EMAIL environment variable is not set. Please set and try again")
+		if os.Getenv("CF_API_TOKEN") == "" {
+			return fmt.Errorf("your CF_API_TOKEN environment variable is not set. Please set and try again")
 		}
 	}
 
@@ -289,8 +286,8 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 	var externalDNSProviderTokenEnvName, externalDNSProviderSecretKey string
 	if dnsProviderFlag == "cloudflare" {
-		externalDNSProviderTokenEnvName = "CF_API_KEY"
-		externalDNSProviderSecretKey = "cf-api-key"
+		externalDNSProviderTokenEnvName = "CF_API_TOKEN"
+		externalDNSProviderSecretKey = "cf-api-token"
 	} else {
 		externalDNSProviderTokenEnvName = "VULTR_API_KEY"
 		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", vultr.CloudProvider)
@@ -314,7 +311,6 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
 		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-creds", vultr.CloudProvider),
 		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
-		CloudflareAccountEmail:          os.Getenv("CF_API_EMAIL"),
 
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
 		ArgoCDIngressNoHTTPSURL:        fmt.Sprintf("argocd.%s", domainNameFlag),
@@ -914,7 +910,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			config.Kubeconfig,
 			config.GitProvider,
 			cGitUser,
-			os.Getenv("CF_API_KEY"),
+			os.Getenv("CF_API_TOKEN"),
 		)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
