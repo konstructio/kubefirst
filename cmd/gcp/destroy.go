@@ -31,6 +31,7 @@ func destroyGCP(cmd *cobra.Command, args []string) error {
 
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
+	gitProtocol := viper.GetString("flags.git-protocol")
 	// _, err := helpers.EvalDestroy(gcp.CloudProvider, gitProvider)
 	// if err != nil {
 	// 	return err
@@ -65,7 +66,7 @@ func destroyGCP(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate GCP config
-	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
+	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner, gitProtocol)
 	// This is the environment variable required to create and is set to the path of the service account json file
 	// This gets read for terraform applies and is applied as a variable containing the contents of the file
 	// This is otherwise leveraged by the runtime to provide application default credentials to the GCP go SDK/API

@@ -39,6 +39,7 @@ func mkCert(cmd *cobra.Command, args []string) error {
 		viper.GetString("flags.cluster-name"),
 		flags.GitProvider,
 		viper.GetString(fmt.Sprintf("flags.%s-owner", flags.GitProvider)),
+		flags.GitProtocol,
 	)
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 

@@ -30,6 +30,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
+	gitProtocol := viper.GetString("flags.git-protocol")
 	// _, err := helpers.EvalDestroy(k3d.CloudProvider, gitProvider)
 	// if err != nil {
 	// 	return err
@@ -65,7 +66,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate K3d config
-	config := k3d.GetConfig(clusterName, gitProvider, cGitOwner)
+	config := k3d.GetConfig(clusterName, gitProvider, cGitOwner, gitProtocol)
 	switch gitProvider {
 	case "github":
 		config.GithubToken = cGitToken

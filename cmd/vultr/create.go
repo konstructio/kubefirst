@@ -21,7 +21,7 @@ import (
 
 	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	githttps "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/telemetryShim"
 	"github.com/kubefirst/kubefirst/internal/utilities"
@@ -99,6 +99,11 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	gitProtocolFlag, err := cmd.Flags().GetString("git-protocol")
+	if err != nil {
+		return err
+	}
+
 	gitopsTemplateURLFlag, err := cmd.Flags().GetString("gitops-template-url")
 	if err != nil {
 		return err
@@ -140,6 +145,11 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	//Validate we got a branch if they gave us a repo
+	if gitopsTemplateURLFlag != "" && gitopsTemplateBranchFlag == "" {
+		log.Panic().Msgf("must supply gitops-template-branch flag when gitops-template-url is set")
+	}
+
 	// Check for existing port forwards before continuing
 	err = k8s.CheckForExistingPortForwards(8080, 8200, 9094)
 	if err != nil {
@@ -164,6 +174,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.dns-provider", dnsProviderFlag)
 	viper.Set("flags.domain-name", domainNameFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
+	viper.Set("flags.git-protocol", gitProtocolFlag)
 	viper.Set("flags.cloud-region", cloudRegionFlag)
 	viper.WriteConfig()
 
@@ -258,13 +269,27 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate config
-	config := providerConfigs.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner)
+	config := providerConfigs.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner, gitProtocolFlag)
 	config.VultrToken = os.Getenv("VULTR_API_KEY")
 	switch gitProviderFlag {
 	case "github":
 		config.GithubToken = cGitToken
 	case "gitlab":
 		config.GitlabToken = cGitToken
+		// gitlab may have subgroups, so the destination gitops/metaphor repo git urls may be different
+		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
+		if err != nil {
+			return err
+		}
+		// Format git url based on full path to group
+		switch gitProtocolFlag {
+		case "https":
+			config.DestinationGitopsRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
+			config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
+		default:
+			config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
+			config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
+		}
 	}
 
 	var sshPrivateKey, sshPublicKey string
@@ -326,6 +351,9 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		GitDescription:       fmt.Sprintf("%s hosted git", config.GitProvider),
 		GitNamespace:         "N/A",
 		GitProvider:          config.GitProvider,
+		GitopsRepoGitURL:     config.DestinationGitopsRepoGitURL,
+		GitopsRepoHttpsURL:   config.DestinationGitopsRepoHttpsURL,
+		GitopsRepoURL:        config.DestinationGitopsRepoURL,
 		GitRunner:            fmt.Sprintf("%s Runner", config.GitProvider),
 		GitRunnerDescription: fmt.Sprintf("Self Hosted %s Runner", config.GitProvider),
 		GitRunnerNS:          fmt.Sprintf("%s-runner", config.GitProvider),
@@ -389,7 +417,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
 		default:
-			if gitopsTemplateBranchFlag == "" {
+			if gitopsTemplateBranchFlag != "" {
 				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
 			}
 		}
@@ -592,9 +620,16 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitCompleted, "")
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallStarted, "")
 
-	publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
-	if err != nil {
-		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
+	//removed because we no longer default to ssh for kubefirst cli calls since we require the token anyways
+	// publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
+	// if err != nil {
+	// 	log.Info().Msgf("generate public keys failed: %s\n", err.Error())
+	// }
+
+	//* generate http credentials for git auth over https
+	httpAuth := &githttps.BasicAuth{
+		Username: cGitUser,
+		Password: cGitToken,
 	}
 
 	//* download dependencies to `$HOME/.k1/tools`
@@ -637,24 +672,6 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
-	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
-	var destinationGitopsRepoGitURL, destinationMetaphorRepoGitURL string
-
-	// gitlab may have subgroups, so the destination gitops/metaphor repo git urls may be different
-	switch config.GitProvider {
-	case "github":
-		destinationGitopsRepoGitURL = config.DestinationGitopsRepoGitURL
-		destinationMetaphorRepoGitURL = config.DestinationMetaphorRepoGitURL
-	case "gitlab":
-		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
-		if err != nil {
-			return err
-		}
-		// Format git url based on full path to group
-		destinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
-		destinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
-
-	}
 
 	progressPrinter.AddTracker("cloning-and-formatting-git-repositories", "Cloning and formatting git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
@@ -663,9 +680,8 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("generating your new gitops repository")
 
 		// These need to be set for reference elsewhere
-		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), destinationGitopsRepoGitURL)
+		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoHttpsURL)
 		viper.WriteConfig()
-		gitopsDirectoryTokens.GitOpsRepoGitURL = destinationGitopsRepoGitURL
 
 		// Determine if anything exists at domain apex
 		apexContentExists := vultr.GetDomainApexContent(domainNameFlag)
@@ -675,16 +691,17 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
-			destinationGitopsRepoGitURL,
+			config.DestinationGitopsRepoHttpsURL,
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
-			destinationMetaphorRepoGitURL,
+			config.DestinationMetaphorRepoHttpsURL,
 			config.K1Dir,
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
 			&metaphorDirectoryTokens,
 			apexContentExists,
+			gitProtocolFlag,
 		)
 		if err != nil {
 			return err
@@ -702,8 +719,8 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	//* handle git terraform apply
 	progressPrinter.AddTracker("applying-git-terraform", fmt.Sprintf("Applying %s Terraform", config.GitProvider), 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
-	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoHttpsURL)
-	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoHttpsURL)
+	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoURL)
+	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationGitopsRepoURL)
 	switch config.GitProvider {
 	case "github":
 		// //* create teams and repositories in github
@@ -765,8 +782,8 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	log.Info().Msgf("referencing gitops repository: %s", destinationGitopsRepoGitURL)
-	log.Info().Msgf("referencing metaphor repository: %s", destinationMetaphorRepoGitURL)
+	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoHttpsURL)
+	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoHttpsURL)
 
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
 	if !executionControl {
@@ -791,33 +808,36 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
+		//Push to remotes and use https
 		// Push gitops repo to remote
 		err = gitopsRepo.Push(&git.PushOptions{
 			RemoteName: config.GitProvider,
-			Auth:       publicKeys,
+			Auth:       httpAuth,
 		})
 		if err != nil {
-			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", destinationGitopsRepoGitURL, err)
+			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoHttpsURL, err)
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
-			log.Panic().Msg(msg)
+			if !strings.Contains(msg, "already up-to-date") {
+				log.Panic().Msg(msg)
+			}
 		}
 
 		// push metaphor repo to remote
 		err = metaphorRepo.Push(
 			&git.PushOptions{
 				RemoteName: "origin",
-				Auth:       publicKeys,
+				Auth:       httpAuth,
 			},
 		)
 		if err != nil {
-			msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", destinationMetaphorRepoGitURL, err)
+			msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoHttpsURL, err)
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
-			log.Panic().Msg(msg)
+			if !strings.Contains(msg, "already up-to-date") {
+				log.Panic().Msg(msg)
+			}
 		}
 
-		// todo delete the local gitops repo and re-clone it
-		// todo that way we can stop worrying about which origin we're going to push to
-		log.Info().Msgf("successfully pushed gitops to git@%s/%s/gitops", cGitHost, cGitOwner)
+		log.Info().Msgf("successfully pushed gitops and metaphor repositories to https://%s/%s", cGitHost, cGitOwner)
 		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
 		viper.WriteConfig()
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushCompleted, "")
@@ -911,6 +931,8 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			config.GitProvider,
 			cGitUser,
 			os.Getenv("CF_API_TOKEN"),
+			config.DestinationGitopsRepoURL,
+			config.GitProtocol,
 		)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
@@ -1067,7 +1089,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		}
 
 		log.Info().Msg("applying the registry application to argocd")
-		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoGitURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
 		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()

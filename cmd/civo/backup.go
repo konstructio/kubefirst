@@ -23,6 +23,7 @@ func backupCivoSSL(cmd *cobra.Command, args []string) error {
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
 	gitProvider := viper.GetString("flags.git-provider")
+	gitProtocol := viper.GetString("flags.git-protocol")
 
 	// Switch based on git provider, set params
 	var cGitOwner string
@@ -35,7 +36,7 @@ func backupCivoSSL(cmd *cobra.Command, args []string) error {
 		log.Panic().Msgf("invalid git provider option")
 	}
 
-	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
+	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner, gitProtocol)
 
 	if _, err := os.Stat(config.SSLBackupDir + "/certificates"); os.IsNotExist(err) {
 		// path/to/whatever does not exist

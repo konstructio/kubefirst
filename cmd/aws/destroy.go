@@ -37,6 +37,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
+	gitProtocol := viper.GetString("flags.git-protocol")
 	cloudRegionFlag := viper.GetString("flags.cloud-region")
 	// _, err := helpers.EvalDestroy(awsinternal.CloudProvider, gitProvider)
 	// if err != nil {
@@ -76,7 +77,7 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate aws config
-	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
+	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner, gitProtocol)
 
 	if len(cGitToken) == 0 {
 		return fmt.Errorf(
