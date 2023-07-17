@@ -24,6 +24,7 @@ func getAwsRootCredentials(cmd *cobra.Command, args []string) error {
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
 	gitProvider := viper.GetString("flags.git-provider")
+	// gitProtocol := viper.GetString("flags.git-protocol")
 
 	// Parse flags
 	a, err := cmd.Flags().GetBool("argocd")

@@ -35,6 +35,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
+	gitProtocol := viper.GetString("flags.git-protocol")
 	// _, err := helpers.EvalDestroy(civo.CloudProvider, gitProvider)
 	// if err != nil {
 	// 	return err
@@ -68,7 +69,7 @@ func destroyCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate civo config
-	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
+	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner, gitProtocol)
 	config.CivoToken = os.Getenv("CIVO_TOKEN")
 	switch gitProvider {
 	case "github":

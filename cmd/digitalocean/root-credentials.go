@@ -21,6 +21,7 @@ func getDigitaloceanRootCredentials(cmd *cobra.Command, args []string) error {
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
 	gitProvider := viper.GetString("flags.git-provider")
+	gitProtocol := viper.GetString("flags.git-protocol")
 	gitOwner := viper.GetString(fmt.Sprintf("flags.%s-owner", gitProvider))
 
 	// Parse flags
@@ -54,7 +55,7 @@ func getDigitaloceanRootCredentials(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate kubernetes client
-	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, gitOwner)
+	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, gitOwner, gitProtocol)
 
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
