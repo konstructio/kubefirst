@@ -981,6 +981,21 @@ func createAws(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Container registry authentication creation
+	containerRegistryAuth := gitShim.ContainerRegistryAuth{
+		GitProvider:           gitProviderFlag,
+		GitUser:               cGitUser,
+		GitToken:              cGitToken,
+		GitlabGroupFlag:       gitlabGroupFlag,
+		GithubOwner:           cGitOwner,
+		ContainerRegistryHost: containerRegistryHost,
+		Clientset:             clientset,
+	}
+	containerRegistryAuthToken, err := gitShim.CreateContainerRegistrySecret(&containerRegistryAuth)
+	if err != nil {
+		return err
+	}
+
 	// //* check for ssl restore
 	// log.Info().Msg("checking for tls secrets to restore")
 	// secretsFilesToRestore, err := ioutil.ReadDir(config.SSLBackupDir + "/secrets")
@@ -1305,10 +1320,21 @@ func createAws(cmd *cobra.Command, args []string) error {
 		//* run vault terraform
 		log.Info().Msg("configuring vault with terraform")
 
-		tfEnvs := map[string]string{}
+		//* run vault terraform
+		log.Info().Msg("configuring vault with terraform")
 
-		usernamePasswordString := fmt.Sprintf("%s:%s", cGitUser, cGitToken)
-		base64DockerAuth := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+		tfEnvs := map[string]string{}
+		var usernamePasswordString, base64DockerAuth string
+
+		if config.GitProvider == "gitlab" {
+			usernamePasswordString = fmt.Sprintf("%s:%s", "container-registry-auth", containerRegistryAuthToken)
+			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+
+			tfEnvs["TF_VAR_container_registry_auth"] = containerRegistryAuthToken
+		} else {
+			usernamePasswordString = fmt.Sprintf("%s:%s", cGitUser, cGitToken)
+			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+		}
 
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", config.GitProvider)] = cGitToken
