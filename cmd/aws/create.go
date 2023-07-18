@@ -60,6 +60,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	ecrFlag, err := cmd.Flags().GetBool("ecr")
+	if err != nil {
+		return err
+	}
+
 	ciFlag, err := cmd.Flags().GetBool("ci")
 	if err != nil {
 		return err
@@ -186,7 +191,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	// Switch based on git provider, set params
-	var cGitHost, cGitOwner, cGitToken, cGitUser string
+	var cGitHost, cGitOwner, cGitToken, cGitUser, containerRegistryHost, containerRegistryURL string
 	var cGitlabOwnerGroupID int
 	switch gitProviderFlag {
 	case "github":
@@ -200,6 +205,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		cGitHost = providerConfigs.GithubHost
 		cGitOwner = githubOrgFlag
 		cGitToken = os.Getenv("GITHUB_TOKEN")
+		containerRegistryHost = "ghcr.io"
 
 		// Verify token scopes
 		err = github.VerifyTokenPermissions(cGitToken)
@@ -263,6 +269,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 		cGitUser = user.Username
 
+		containerRegistryHost = "registry.gitlab.com"
 		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
 		viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
 		viper.WriteConfig()
@@ -568,7 +575,14 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 	atlantisWebhookURL := fmt.Sprintf("https://atlantis.%s/events", domainNameFlag)
 	awsAccountID := *iamCaller.Account
-	registryURL := fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", awsAccountID, cloudRegionFlag)
+
+	// if someone gives us the ecr flag, we overwrite the registry url
+
+	if ecrFlag {
+		containerRegistryURL = fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", awsAccountID, cloudRegionFlag)
+	} else {
+		containerRegistryURL = fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner)
+	}
 
 	gitopsDirectoryTokens := providerConfigs.GitOpsDirectoryValues{
 		AlertsEmail:          alertsEmailFlag,
@@ -624,13 +638,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 		ClusterId:                    clusterId,
 
 		AtlantisWebhookURL:   atlantisWebhookURL,
-		ContainerRegistryURL: registryURL,
+		ContainerRegistryURL: containerRegistryURL,
 	}
 
 	metaphorTemplateTokens := providerConfigs.MetaphorTokenValues{
 		ClusterName:                   clusterNameFlag,
 		CloudRegion:                   cloudRegionFlag,
-		ContainerRegistryURL:          registryURL,
+		ContainerRegistryURL:          containerRegistryURL,
 		DomainName:                    domainNameFlag,
 		MetaphorDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", domainNameFlag),
 		MetaphorStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
@@ -1101,7 +1115,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"auth": "%s"}}}`, registryURL, ecrToken)
+		dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"auth": "%s"}}}`, containerRegistryURL, ecrToken)
 		dockerCfgSecret := &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "argo"},
 			Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
