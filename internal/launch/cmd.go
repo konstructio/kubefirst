@@ -363,7 +363,7 @@ func Up(additionalHelmFlags []string) {
 			"--set",
 			"console.ingress.createTraefikRoute=true",
 			"--set",
-			fmt.Sprintf("console.chartVersion=%s", configs.K1Version),
+			fmt.Sprintf("global.kubefirstVersion=%s", configs.K1Version),
 			"--set",
 			"kubefirst-api.installMethod=kubefirst-launch",
 			"--set",
