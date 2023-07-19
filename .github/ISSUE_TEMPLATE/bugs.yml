@@ -23,6 +23,7 @@ body:
         - AWS
         - Civo
         - DigitalOcean
+        - Google Cloud
         - k3d (local)
         - Vultr
     validations:
