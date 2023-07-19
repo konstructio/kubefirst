@@ -21,7 +21,6 @@ import (
 
 	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/telemetryShim"
 	"github.com/kubefirst/kubefirst/internal/utilities"
@@ -581,9 +580,16 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitCompleted, "")
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallStarted, "")
 
-	publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
-	if err != nil {
-		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
+	//removed because we no longer default to ssh for kubefirst cli calls since we require the token anyways
+	// publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
+	// if err != nil {
+	// 	log.Info().Msgf("generate public keys failed: %s\n", err.Error())
+	// }
+
+	//* generate http credentials for git auth over https
+	httpAuth := &githttps.BasicAuth{
+		Username: cGitUser,
+		Password: cGitToken,
 	}
 
 	//* download dependencies to `$HOME/.k1/tools`
@@ -767,7 +773,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		// Push gitops repo to remote
 		err = gitopsRepo.Push(&git.PushOptions{
 			RemoteName: config.GitProvider,
-			Auth:       publicKeys,
+			Auth:       httpAuth,
 		})
 		if err != nil {
 			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoHttpsURL, err)
@@ -779,7 +785,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		err = metaphorRepo.Push(
 			&git.PushOptions{
 				RemoteName: "origin",
-				Auth:       publicKeys,
+				Auth:       httpAuth,
 			},
 		)
 		if err != nil {
