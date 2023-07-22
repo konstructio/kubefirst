@@ -14,12 +14,12 @@ import (
 
 var (
 	// Create
-	alertsEmailFlag string
-	ciFlag          bool
-	cloudRegionFlag string
-	clusterNameFlag string
-	clusterTypeFlag string
-	// dnsProviderFlag          string
+	alertsEmailFlag          string
+	ciFlag                   bool
+	cloudRegionFlag          string
+	clusterNameFlag          string
+	clusterTypeFlag          string
+	dnsProviderFlag          string
 	domainNameFlag           string
 	gcpProjectFlag           string
 	githubOrgFlag            string
@@ -74,7 +74,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "us-east1", "the GCP region to provision infrastructure in")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
-	// createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "gcp", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
+	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "gcp", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the GCP DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
 	createCmd.Flags().StringVar(&gcpProjectFlag, "gcp-project", "", "gcp project id (required)")

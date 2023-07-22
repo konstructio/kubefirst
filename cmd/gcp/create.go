@@ -21,6 +21,7 @@ import (
 
 	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
+	githttps "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/telemetryShim"
 	"github.com/kubefirst/kubefirst/internal/utilities"
@@ -75,10 +76,10 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// dnsProviderFlag, err := cmd.Flags().GetString("dns-provider")
-	// if err != nil {
-	// 	return err
-	// }
+	dnsProviderFlag, err := cmd.Flags().GetString("dns-provider")
+	if err != nil {
+		return err
+	}
 
 	domainNameFlag, err := cmd.Flags().GetString("domain-name")
 	if err != nil {
@@ -155,7 +156,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	// required for destroy command
 	viper.Set("flags.alerts-email", alertsEmailFlag)
 	viper.Set("flags.cluster-name", clusterNameFlag)
-	// viper.Set("flags.dns-provider", dnsProviderFlag)
+	viper.Set("flags.dns-provider", dnsProviderFlag)
 	viper.Set("flags.domain-name", domainNameFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.Set("flags.cloud-region", cloudRegionFlag)
@@ -253,7 +254,14 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate config
-	config := providerConfigs.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner, gitProtocolFlag)
+	config := providerConfigs.GetConfig(
+		clusterNameFlag,
+		domainNameFlag,
+		gitProviderFlag,
+		cGitOwner,
+		gitProtocolFlag,
+		os.Getenv("CF_API_TOKEN"),
+	)
 	// This is the environment variable required to create and is set to the path of the service account json file
 	// This gets read for terraform applies and is applied as a variable containing the contents of the file
 	// This is otherwise leveraged by the runtime to provide application default credentials to the GCP go SDK/API
@@ -298,13 +306,13 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	}
 
 	gitopsDirectoryTokens := providerConfigs.GitOpsDirectoryValues{
-		AlertsEmail:       alertsEmailFlag,
-		AtlantisAllowList: fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
-		CloudProvider:     gcp.CloudProvider,
-		CloudRegion:       cloudRegionFlag,
-		ClusterName:       clusterNameFlag,
-		ClusterType:       clusterTypeFlag,
-		// DNSProvider:               dnsProviderFlag,
+		AlertsEmail:               alertsEmailFlag,
+		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
+		CloudProvider:             gcp.CloudProvider,
+		CloudRegion:               cloudRegionFlag,
+		ClusterName:               clusterNameFlag,
+		ClusterType:               clusterTypeFlag,
+		DNSProvider:               dnsProviderFlag,
 		DomainName:                domainNameFlag,
 		KubeconfigPath:            config.Kubeconfig,
 		KubefirstArtifactsBucket:  kubefirstArtifactsBucketName,
@@ -429,46 +437,46 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	if !skipDomainCheck {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessStarted, "")
 
-		// switch dnsProviderFlag {
-		// case "gcp":
-		gcpConf := gcp.GCPConfiguration{
-			Context: context.Background(),
-			Project: gcpProjectFlag,
-			Region:  cloudRegionFlag,
+		switch dnsProviderFlag {
+		case "gcp":
+			gcpConf := gcp.GCPConfiguration{
+				Context: context.Background(),
+				Project: gcpProjectFlag,
+				Region:  cloudRegionFlag,
+			}
+
+			// verify dns
+			// TODO: update to work with gcp?
+			//err := dns.VerifyProviderDNS(gcp.CloudProvider, cloudRegionFlag, domainNameFlag)
+			//if err != nil {
+			//	return err
+			//}
+
+			// viper values set in above function
+			domainLiveness := gcpConf.TestHostedZoneLiveness(domainNameFlag)
+			if !domainLiveness {
+				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessFailed, "domain liveness test failed")
+				msg := "failed to check the liveness of the Domain. A valid public Domain on the same GCP " +
+					"account as the one where Kubefirst will be installed is required for this operation to " +
+					"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct GCP project and " +
+					"region.\n - Verify that you have the necessary permissions to access the domain.\n - Check " +
+					"that the domain is correctly configured and is a public domain\n - Check if the " +
+					"domain exists and has the correct name and domain.\n - If you don't have a Domain," +
+					"please follow these instructions to create one: " +
+					"https://cloud.google.com/dns/docs/tutorials/create-domain-tutorial \n\n" +
+					"if you are still facing issues please reach out to the support team for further assistance"
+
+				return fmt.Errorf(msg)
+			}
+			viper.Set("kubefirst-checks.domain-liveness", true)
+			viper.WriteConfig()
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessCompleted, "")
+			progressPrinter.IncrementTracker("preflight-checks", 1)
+		case "cloudflare":
+			// Implement a Cloudflare check at some point
+			log.Info().Msg("domain check already complete - continuing")
+			progressPrinter.IncrementTracker("preflight-checks", 1)
 		}
-
-		// verify dns
-		// TODO: update to work with gcp?
-		//err := dns.VerifyProviderDNS(gcp.CloudProvider, cloudRegionFlag, domainNameFlag)
-		//if err != nil {
-		//	return err
-		//}
-
-		// viper values set in above function
-		domainLiveness := gcpConf.TestHostedZoneLiveness(domainNameFlag)
-		if !domainLiveness {
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessFailed, "domain liveness test failed")
-			msg := "failed to check the liveness of the Domain. A valid public Domain on the same GCP " +
-				"account as the one where Kubefirst will be installed is required for this operation to " +
-				"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct GCP project and " +
-				"region.\n - Verify that you have the necessary permissions to access the domain.\n - Check " +
-				"that the domain is correctly configured and is a public domain\n - Check if the " +
-				"domain exists and has the correct name and domain.\n - If you don't have a Domain," +
-				"please follow these instructions to create one: " +
-				"https://cloud.google.com/dns/docs/tutorials/create-domain-tutorial \n\n" +
-				"if you are still facing issues please reach out to the support team for further assistance"
-
-			return fmt.Errorf(msg)
-		}
-		viper.Set("kubefirst-checks.domain-liveness", true)
-		viper.WriteConfig()
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessCompleted, "")
-		progressPrinter.IncrementTracker("preflight-checks", 1)
-		// case "cloudflare":
-		// 	// Implement a Cloudflare check at some point
-		// 	log.Info().Msg("domain check already complete - continuing")
-		// 	progressPrinter.IncrementTracker("preflight-checks", 1)
-		// }
 	} else {
 		log.Info().Msg("domain check already complete - continuing")
 		progressPrinter.IncrementTracker("preflight-checks", 1)
@@ -641,6 +649,21 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		// These need to be set for reference elsewhere
 		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoHttpsURL)
 		viper.WriteConfig()
+
+		var externalDNSProviderTokenEnvName, externalDNSProviderSecretKey string
+		if dnsProviderFlag == "cloudflare" {
+			externalDNSProviderTokenEnvName = "CF_API_TOKEN"
+			externalDNSProviderSecretKey = "cf-api-token"
+		} else {
+			externalDNSProviderTokenEnvName = "GCP_AUTH"
+			externalDNSProviderSecretKey = fmt.Sprintf("%s-token", gcp.CloudProvider)
+		}
+
+		gitopsDirectoryTokens.ExternalDNSProviderName = dnsProviderFlag
+		gitopsDirectoryTokens.ExternalDNSProviderTokenEnvName = externalDNSProviderTokenEnvName
+		gitopsDirectoryTokens.ExternalDNSProviderSecretName = fmt.Sprintf("%s-creds", gcp.CloudProvider)
+		gitopsDirectoryTokens.ExternalDNSProviderSecretKey = externalDNSProviderSecretKey
+
 		gitopsDirectoryTokens.GitOpsRepoGitURL = config.DestinationGitopsRepoHttpsURL
 
 		// Determine if anything exists at domain apex
@@ -882,7 +905,16 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	executionControl = viper.GetBool("kubefirst-checks.k8s-secrets-created")
 	if !executionControl {
-		err := gcp.BootstrapGCPMgmtCluster(kcfg.Clientset, config.GitProvider, cGitUser, config.DestinationGitopsRepoURL, config.GitProtocol)
+		err := gcp.BootstrapGCPMgmtCluster(
+			kcfg.Clientset,
+			config.GitProvider,
+			cGitUser,
+			config.DestinationGitopsRepoURL,
+			config.GitProtocol,
+			os.Getenv("CF_API_TOKEN"),
+			config.GCPAuth,
+		)
+
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
 			return err

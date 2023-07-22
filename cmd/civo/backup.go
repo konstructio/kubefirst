@@ -36,7 +36,14 @@ func backupCivoSSL(cmd *cobra.Command, args []string) error {
 		log.Panic().Msgf("invalid git provider option")
 	}
 
-	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner, gitProtocol)
+	config := providerConfigs.GetConfig(
+		clusterName,
+		domainName,
+		gitProvider,
+		cGitOwner,
+		gitProtocol,
+		os.Getenv("CF_API_TOKEN"),
+	)
 
 	if _, err := os.Stat(config.SSLBackupDir + "/certificates"); os.IsNotExist(err) {
 		// path/to/whatever does not exist

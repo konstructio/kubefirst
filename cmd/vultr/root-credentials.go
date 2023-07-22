@@ -8,6 +8,7 @@ package vultr
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/kubefirst/runtime/pkg/credentials"
 	"github.com/kubefirst/runtime/pkg/k8s"
@@ -55,7 +56,14 @@ func getVultrRootCredentials(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate kubernetes client
-	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, gitOwner, gitProtocol)
+	config := providerConfigs.GetConfig(
+		clusterName,
+		domainName,
+		gitProvider,
+		gitOwner,
+		gitProtocol,
+		os.Getenv("CF_API_TOKEN"),
+	)
 
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 

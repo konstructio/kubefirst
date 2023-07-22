@@ -64,7 +64,14 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate digitalocean config
-	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner, gitProtocol)
+	config := providerConfigs.GetConfig(
+		clusterName,
+		domainName,
+		gitProvider,
+		cGitOwner,
+		gitProtocol,
+		os.Getenv("CF_API_TOKEN"),
+	)
 	config.DigitaloceanToken = os.Getenv("DO_TOKEN")
 	switch gitProvider {
 	case "github":

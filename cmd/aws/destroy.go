@@ -77,7 +77,14 @@ func destroyAws(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate aws config
-	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner, gitProtocol)
+	config := providerConfigs.GetConfig(
+		clusterName,
+		domainName,
+		gitProvider,
+		cGitOwner,
+		gitProtocol,
+		os.Getenv("CF_API_TOKEN"),
+	)
 
 	if len(cGitToken) == 0 {
 		return fmt.Errorf(
