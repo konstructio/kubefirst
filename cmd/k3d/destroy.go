@@ -13,13 +13,13 @@ import (
 	"strings"
 	"time"
 
-	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
-	"github.com/kubefirst/kubefirst/internal/helpers"
-	"github.com/kubefirst/kubefirst/internal/k3d"
-	"github.com/kubefirst/kubefirst/internal/k8s"
-	"github.com/kubefirst/kubefirst/internal/progressPrinter"
-	"github.com/kubefirst/kubefirst/internal/terraform"
-	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/kubefirst/runtime/pkg"
+	gitlab "github.com/kubefirst/runtime/pkg/gitlab"
+	"github.com/kubefirst/runtime/pkg/helpers"
+	"github.com/kubefirst/runtime/pkg/k3d"
+	"github.com/kubefirst/runtime/pkg/k8s"
+	"github.com/kubefirst/runtime/pkg/progressPrinter"
+	"github.com/kubefirst/runtime/pkg/terraform"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -30,6 +30,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
+	gitProtocol := viper.GetString("flags.git-protocol")
 	// _, err := helpers.EvalDestroy(k3d.CloudProvider, gitProvider)
 	// if err != nil {
 	// 	return err
@@ -50,7 +51,6 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 	clusterName := viper.GetString("flags.cluster-name")
 	atlantisWebhookURL := fmt.Sprintf("%s/events", viper.GetString("ngrok.host"))
-	dryRun := viper.GetBool("flags.dry-run")
 
 	// Switch based on git provider, set params
 	var cGitOwner, cGitToken string
@@ -66,7 +66,13 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate K3d config
-	config := k3d.GetConfig(gitProvider, cGitOwner)
+	config := k3d.GetConfig(clusterName, gitProvider, cGitOwner, gitProtocol)
+	switch gitProvider {
+	case "github":
+		config.GithubToken = cGitToken
+	case "gitlab":
+		config.GitlabToken = cGitToken
+	}
 
 	log.Info().Msg("destroying kubefirst platform running in k3d")
 
@@ -122,7 +128,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
 			tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
 
-			err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+			err := terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
 				return err
@@ -178,7 +184,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(gitlabClient.ParentGroupID)
 
-			err = terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+			err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
 				return err
@@ -190,7 +196,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if viper.GetBool("kubefirst-checks.terraform-apply-k3d") || viper.GetBool("kubefirst-checks.terraform-apply-k3d-failed") {
+	if viper.GetBool("kubefirst-checks.create-k3d-cluster") || viper.GetBool("kubefirst-checks.create-k3d-cluster-failed") {
 		log.Info().Msg("destroying k3d resources with terraform")
 
 		err := k3d.DeleteK3dCluster(clusterName, config.K1Dir, config.K3dClient)
@@ -198,7 +204,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		viper.Set("kubefirst-checks.terraform-apply-k3d", false)
+		viper.Set("kubefirst-checks.create-k3d-cluster", false)
 		viper.WriteConfig()
 		log.Info().Msg("k3d resources terraform destroyed")
 		progressPrinter.IncrementTracker("platform-destroy", 1)
@@ -218,7 +224,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	//* remove local content and kubefirst config file for re-execution
-	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.terraform-apply-k3d") {
+	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.create-k3d-cluster") {
 		log.Info().Msg("removing previous platform content")
 
 		err := pkg.ResetK1Dir(config.K1Dir)

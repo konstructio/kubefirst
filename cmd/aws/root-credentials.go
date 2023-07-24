@@ -7,11 +7,13 @@ See the LICENSE file for more details.
 package aws
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/eks"
-	awsinternal "github.com/kubefirst/kubefirst/internal/aws"
-	"github.com/kubefirst/kubefirst/internal/credentials"
+	awsinternal "github.com/kubefirst/runtime/pkg/aws"
+	"github.com/kubefirst/runtime/pkg/credentials"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -22,6 +24,7 @@ func getAwsRootCredentials(cmd *cobra.Command, args []string) error {
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
 	gitProvider := viper.GetString("flags.git-provider")
+	// gitProtocol := viper.GetString("flags.git-protocol")
 
 	// Parse flags
 	a, err := cmd.Flags().GetBool("argocd")
@@ -42,10 +45,15 @@ func getAwsRootCredentials(cmd *cobra.Command, args []string) error {
 		CopyVaultPasswordToClipboard:  v,
 	}
 
-	// Determine if there are active installs
+	// Determine if there are eligible installs
 	_, err = credentials.EvalAuth(awsinternal.CloudProvider, gitProvider)
 	if err != nil {
 		return err
+	}
+
+	// Determine if the Kubernetes cluster is available
+	if !viper.GetBool("kubefirst-checks.terraform-apply-aws") {
+		return fmt.Errorf("it looks like a kubernetes cluster has not been created yet - try again")
 	}
 
 	// Instantiate kubernetes client

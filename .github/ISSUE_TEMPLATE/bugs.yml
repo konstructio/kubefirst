@@ -11,19 +11,32 @@ body:
     attributes:
       label: Which version of kubefirst are you using?
       description: Run `kubefirst version` to find the version number
-      placeholder: https://docs.kubefirst.io/
     validations:
       required: true
   - type: dropdown
     id: cloud
     attributes:
-      label: Which installation type?
+      label: Which cloud provider?
       multiple: true
       options:
         - None specific
         - AWS
-        - CIVO
+        - Civo
+        - DigitalOcean
+        - Google Cloud
         - k3d (local)
+        - Vultr
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Which installation type?
+      multiple: true
+      options:
+        - None specific
+        - UI (Console app)
+        - CLI
     validations:
       required: true
   - type: dropdown

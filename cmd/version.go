@@ -9,7 +9,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/runtime/configs"
 	"github.com/spf13/cobra"
 )
 
@@ -22,6 +22,6 @@ var versionCmd = &cobra.Command{
 	Short: "print the version number for kubefirst-cli",
 	Long:  `All software has versions. This is kubefirst's`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("\n\nkubefirst-cli golang utility version: %s\n\n", configs.K1Version)
+		fmt.Printf("\nkubefirst-cli golang utility version: %s\n\n", configs.K1Version)
 	},
 }

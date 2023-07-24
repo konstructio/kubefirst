@@ -7,23 +7,19 @@ See the LICENSE file for more details.
 package digitalocean
 
 import (
-	"context"
-	"crypto/tls"
 	"fmt"
-	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/kubefirst/kubefirst/internal/argocd"
-	"github.com/kubefirst/kubefirst/internal/digitalocean"
-	gitlab "github.com/kubefirst/kubefirst/internal/gitlab"
-	"github.com/kubefirst/kubefirst/internal/helpers"
-	"github.com/kubefirst/kubefirst/internal/k8s"
-	"github.com/kubefirst/kubefirst/internal/progressPrinter"
-	"github.com/kubefirst/kubefirst/internal/terraform"
-	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/kubefirst/runtime/pkg"
+	"github.com/kubefirst/runtime/pkg/digitalocean"
+	gitlab "github.com/kubefirst/runtime/pkg/gitlab"
+	"github.com/kubefirst/runtime/pkg/helpers"
+	"github.com/kubefirst/runtime/pkg/k8s"
+	"github.com/kubefirst/runtime/pkg/progressPrinter"
+	"github.com/kubefirst/runtime/pkg/providerConfigs"
+	"github.com/kubefirst/runtime/pkg/terraform"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -34,6 +30,7 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
+	gitProtocol := viper.GetString("flags.git-protocol")
 	// _, err := helpers.EvalDestroy(digitalocean.CloudProvider, gitProvider)
 	// if err != nil {
 	// 	return err
@@ -52,7 +49,6 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
-	dryRun := viper.GetBool("flags.dry-run")
 
 	// Switch based on git provider, set params
 	var cGitOwner, cGitToken string
@@ -68,11 +64,14 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate digitalocean config
-	config := digitalocean.GetConfig(clusterName, domainName, gitProvider, cGitOwner)
-
-	// todo improve these checks, make them standard for
-	// both create and destroy
-	digitaloceanToken := os.Getenv("DO_TOKEN")
+	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner, gitProtocol)
+	config.DigitaloceanToken = os.Getenv("DO_TOKEN")
+	switch gitProvider {
+	case "github":
+		config.GithubToken = cGitToken
+	case "gitlab":
+		config.GitlabToken = cGitToken
+	}
 
 	if len(cGitToken) == 0 {
 		return fmt.Errorf(
@@ -80,7 +79,7 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 			strings.ToUpper(gitProvider), gitProvider,
 		)
 	}
-	if len(digitaloceanToken) == 0 {
+	if len(config.DigitaloceanToken) == 0 {
 		return fmt.Errorf("\n\nYour DO_TOKEN environment variable isn't set")
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
@@ -95,9 +94,9 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
-			tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
-			tfEnvs = digitalocean.GetGithubTerraformEnvs(tfEnvs)
-			err := terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+			tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(config, tfEnvs)
+			tfEnvs = digitalocean.GetGithubTerraformEnvs(config, tfEnvs)
+			err := terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
 				return err
@@ -146,9 +145,9 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
-			tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
-			tfEnvs = digitalocean.GetGitlabTerraformEnvs(tfEnvs, gitlabClient.ParentGroupID)
-			err = terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
+			tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(config, tfEnvs)
+			tfEnvs = digitalocean.GetGitlabTerraformEnvs(config, tfEnvs, gitlabClient.ParentGroupID)
+			err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
 				return err
@@ -161,123 +160,123 @@ func destroyDigitalocean(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// this should only run if a cluster was created
-	if viper.GetBool("kubefirst-checks.digitalocean-kubernetes-cluster-created") {
-		kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
+	// // this should only run if a cluster was created
+	// if viper.GetBool("kubefirst-checks.digitalocean-kubernetes-cluster-created") {
+	// 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
-		// Remove applications with external dependencies
-		removeArgoCDApps := []string{
-			"ingress-nginx-components",
-			"ingress-nginx",
-			"argo-components",
-			"argo",
-			"atlantis-components",
-			"atlantis",
-			"vault-components",
-			"vault",
-		}
-		err = argocd.ArgoCDApplicationCleanup(kcfg.Clientset, removeArgoCDApps)
-		if err != nil {
-			log.Error().Msgf("encountered error during argocd application cleanup: %s")
-		}
-		// Pause before cluster destroy to prevent a race condition
-		log.Info().Msg("waiting for argocd application deletion to complete...")
-		time.Sleep(time.Second * 20)
+	// 	// Remove applications withku external dependencies
+	// 	removeArgoCDApps := []string{
+	// 		"ingress-nginx-components",
+	// 		"ingress-nginx",
+	// 		"argo-components",
+	// 		"argo",
+	// 		"atlantis-components",
+	// 		"atlantis",
+	// 		"vault-components",
+	// 		"vault",
+	// 	}
+	// 	err = argocd.ArgoCDApplicationCleanup(kcfg.Clientset, removeArgoCDApps)
+	// 	if err != nil {
+	// 		log.Error().Msgf("encountered error during argocd application cleanup: %s", err)
+	// 	}
+	// 	// Pause before cluster destroy to prevent a race condition
+	// 	log.Info().Msg("waiting for argocd application deletion to complete...")
+	// 	time.Sleep(time.Second * 20)
 
-		viper.Set("kubefirst-checks.digitalocean-kubernetes-cluster-created", false)
-	}
+	// 	viper.Set("kubefirst-checks.digitalocean-kubernetes-cluster-created", false)
+	// }
 
-	// Fetch cluster resources prior to deletion
-	digitaloceanConf := digitalocean.DigitaloceanConfiguration{
-		Client:  digitalocean.NewDigitalocean(),
-		Context: context.Background(),
-	}
-	resources, err := digitaloceanConf.GetKubernetesAssociatedResources(clusterName)
-	if err != nil {
-		return err
-	}
+	// // Fetch cluster resources prior to deletion
+	// digitaloceanConf := digitalocean.DigitaloceanConfiguration{
+	// 	Client:  digitalocean.NewDigitalocean(config.DigitaloceanToken),
+	// 	Context: context.Background(),
+	// }
+	// resources, err := digitaloceanConf.GetKubernetesAssociatedResources(clusterName)
+	// if err != nil {
+	// 	return err
+	// }
 
-	if viper.GetBool("kubefirst-checks.terraform-apply-digitalocean") || viper.GetBool("kubefirst-checks.terraform-apply-digitalocean-failed") {
-		kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
+	// if viper.GetBool("kubefirst-checks.terraform-apply-digitalocean") || viper.GetBool("kubefirst-checks.terraform-apply-digitalocean-failed") {
+	// 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
-		log.Info().Msg("destroying digitalocean resources with terraform")
+	// 	log.Info().Msg("destroying digitalocean resources with terraform")
 
-		log.Info().Msg("opening argocd port forward")
-		//* ArgoCD port-forward
-		argoCDStopChannel := make(chan struct{}, 1)
-		defer func() {
-			close(argoCDStopChannel)
-		}()
-		k8s.OpenPortForwardPodWrapper(
-			kcfg.Clientset,
-			kcfg.RestConfig,
-			"argocd-server",
-			"argocd",
-			8080,
-			8080,
-			argoCDStopChannel,
-		)
+	// 	log.Info().Msg("opening argocd port forward")
+	// 	//* ArgoCD port-forward
+	// 	argoCDStopChannel := make(chan struct{}, 1)
+	// 	defer func() {
+	// 		close(argoCDStopChannel)
+	// 	}()
+	// 	k8s.OpenPortForwardPodWrapper(
+	// 		kcfg.Clientset,
+	// 		kcfg.RestConfig,
+	// 		"argocd-server",
+	// 		"argocd",
+	// 		8080,
+	// 		8080,
+	// 		argoCDStopChannel,
+	// 	)
 
-		log.Info().Msg("getting new auth token for argocd")
+	// 	log.Info().Msg("getting new auth token for argocd")
 
-		secData, err := k8s.ReadSecretV2(kcfg.Clientset, "argocd", "argocd-initial-admin-secret")
-		if err != nil {
-			return err
-		}
-		argocdPassword := secData["password"]
+	// 	secData, err := k8s.ReadSecretV2(kcfg.Clientset, "argocd", "argocd-initial-admin-secret")
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	argocdPassword := secData["password"]
 
-		argocdAuthToken, err := argocd.GetArgoCDToken("admin", argocdPassword)
-		if err != nil {
-			return err
-		}
+	// 	argocdAuthToken, err := argocd.GetArgoCDToken("admin", argocdPassword)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		log.Info().Msgf("port-forward to argocd is available at %s", digitalocean.ArgocdPortForwardURL)
+	// 	log.Info().Msgf("port-forward to argocd is available at %s", providerConfigs.ArgocdPortForwardURL)
 
-		customTransport := http.DefaultTransport.(*http.Transport).Clone()
-		customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-		argocdHttpClient := http.Client{Transport: customTransport}
-		log.Info().Msg("deleting the registry application")
-		httpCode, _, err := argocd.DeleteApplication(&argocdHttpClient, config.RegistryAppName, argocdAuthToken, "true")
-		if err != nil {
-			return err
-		}
-		log.Info().Msgf("http status code %d", httpCode)
+	// 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
+	// 	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	// 	argocdHttpClient := http.Client{Transport: customTransport}
+	// 	log.Info().Msg("deleting the registry application")
+	// 	httpCode, _, err := argocd.DeleteApplication(&argocdHttpClient, config.RegistryAppName, argocdAuthToken, "true")
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	log.Info().Msgf("http status code %d", httpCode)
 
-		// Pause before cluster destroy to prevent a race condition
-		log.Info().Msg("waiting for digitalocean Kubernetes cluster resource removal to finish...")
-		time.Sleep(time.Second * 10)
+	// 	// Pause before cluster destroy to prevent a race condition
+	// 	log.Info().Msg("waiting for digitalocean Kubernetes cluster resource removal to finish...")
+	// 	time.Sleep(time.Second * 10)
 
-		log.Info().Msg("destroying digitalocean cloud resources")
-		tfEntrypoint := config.GitopsDir + "/terraform/digitalocean"
-		tfEnvs := map[string]string{}
-		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(tfEnvs)
+	// 	log.Info().Msg("destroying digitalocean cloud resources")
+	// 	tfEntrypoint := config.GitopsDir + "/terraform/digitalocean"
+	// 	tfEnvs := map[string]string{}
+	// 	tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(config, tfEnvs)
 
-		switch gitProvider {
-		case "github":
-			tfEnvs = digitalocean.GetGithubTerraformEnvs(tfEnvs)
-		case "gitlab":
-			gid, err := strconv.Atoi(viper.GetString("flags.gitlab-owner-group-id"))
-			if err != nil {
-				return fmt.Errorf("couldn't convert gitlab group id to int: %s", err)
-			}
-			tfEnvs = digitalocean.GetGitlabTerraformEnvs(tfEnvs, gid)
-		}
-		err = terraform.InitDestroyAutoApprove(dryRun, tfEntrypoint, tfEnvs)
-		if err != nil {
-			log.Printf("error executing terraform destroy %s", tfEntrypoint)
-			return err
-		}
-		viper.Set("kubefirst-checks.terraform-apply-digitalocean", false)
-		viper.WriteConfig()
-		log.Info().Msg("digitalocean resources terraform destroyed")
-		progressPrinter.IncrementTracker("platform-destroy", 1)
-	}
+	// 	switch gitProvider {
+	// 	case "github":
+	// 		tfEnvs = digitalocean.GetGithubTerraformEnvs(config, tfEnvs)
+	// 	case "gitlab":
+	// 		gid, err := strconv.Atoi(viper.GetString("flags.gitlab-owner-group-id"))
+	// 		if err != nil {
+	// 			return fmt.Errorf("couldn't convert gitlab group id to int: %s", err)
+	// 		}
+	// 		tfEnvs = digitalocean.GetGitlabTerraformEnvs(config, tfEnvs, gid)
+	// 	}
+	// 	err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
+	// 	if err != nil {
+	// 		log.Printf("error executing terraform destroy %s", tfEntrypoint)
+	// 		return err
+	// 	}
+	// 	viper.Set("kubefirst-checks.terraform-apply-digitalocean", false)
+	// 	viper.WriteConfig()
+	// 	log.Info().Msg("digitalocean resources terraform destroyed")
+	// 	progressPrinter.IncrementTracker("platform-destroy", 1)
+	// }
 
-	// Remove hanging volumes
-	err = digitaloceanConf.DeleteKubernetesClusterVolumes(resources)
-	if err != nil {
-		return err
-	}
+	// // Remove hanging volumes
+	// err = digitaloceanConf.DeleteKubernetesClusterVolumes(resources)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// remove ssh key provided one was created
 	if viper.GetString("kbot.gitlab-user-based-ssh-key-title") != "" {
