@@ -9,9 +9,10 @@ package civo
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst/internal/civo"
-	"github.com/kubefirst/kubefirst/internal/credentials"
-	"github.com/kubefirst/kubefirst/internal/k8s"
+	"github.com/kubefirst/runtime/pkg/civo"
+	"github.com/kubefirst/runtime/pkg/credentials"
+	"github.com/kubefirst/runtime/pkg/k8s"
+	"github.com/kubefirst/runtime/pkg/providerConfigs"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -20,6 +21,7 @@ func getCivoRootCredentials(cmd *cobra.Command, args []string) error {
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
 	gitProvider := viper.GetString("flags.git-provider")
+	gitProtocol := viper.GetString("flags.git-protocol")
 	gitOwner := viper.GetString(fmt.Sprintf("flags.%s-owner", gitProvider))
 
 	// Parse flags
@@ -41,14 +43,19 @@ func getCivoRootCredentials(cmd *cobra.Command, args []string) error {
 		CopyVaultPasswordToClipboard:  v,
 	}
 
-	// Determine if there are active installs
+	// Determine if there are eligible installs
 	_, err = credentials.EvalAuth(civo.CloudProvider, gitProvider)
 	if err != nil {
 		return err
 	}
 
+	// Determine if the Kubernetes cluster is available
+	if !viper.GetBool("kubefirst-checks.terraform-apply-civo") {
+		return fmt.Errorf("it looks like a kubernetes cluster has not been created yet - try again")
+	}
+
 	// Instantiate kubernetes client
-	config := civo.GetConfig(clusterName, domainName, gitProvider, gitOwner)
+	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, gitOwner, gitProtocol)
 
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 

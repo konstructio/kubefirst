@@ -14,8 +14,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/kubefirst/kubefirst/configs"
-	"github.com/kubefirst/kubefirst/internal/reports"
+	"github.com/kubefirst/runtime/configs"
+	"github.com/kubefirst/runtime/pkg/reports"
 	"github.com/spf13/cobra"
 )
 

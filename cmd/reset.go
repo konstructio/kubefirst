@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kubefirst/kubefirst/internal/helpers"
-	"github.com/kubefirst/kubefirst/internal/progressPrinter"
-	"github.com/kubefirst/kubefirst/pkg"
+	"github.com/kubefirst/runtime/pkg"
+	"github.com/kubefirst/runtime/pkg/helpers"
+	"github.com/kubefirst/runtime/pkg/progressPrinter"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -39,7 +39,10 @@ var resetCmd = &cobra.Command{
 				return fmt.Errorf("unable to determine contents of kubefirst-checks")
 			}
 		default:
-			checks := parseConfigEntryKubefirstChecks(checksMap)
+			checks, err := parseConfigEntryKubefirstChecks(checksMap)
+			if err != nil {
+				log.Error().Msgf("error: %s - resetting directory without checks", err)
+			}
 			// If destroy hasn't been run yet, reset should fail to avoid orphaned resources
 			switch {
 			case checks[fmt.Sprintf("terraform-apply-%s", gitProvider)]:
@@ -69,7 +72,10 @@ func init() {
 
 // parseConfigEntryKubefirstChecks gathers the kubefirst-checks section of the Viper
 // config file and parses as a map[string]bool
-func parseConfigEntryKubefirstChecks(raw interface{}) map[string]bool {
+func parseConfigEntryKubefirstChecks(raw interface{}) (map[string]bool, error) {
+	if raw == nil {
+		return map[string]bool{}, fmt.Errorf("checks configuration is nil")
+	}
 	checks := raw.(map[string]interface{})
 	checksMap := make(map[string]bool, 0)
 	for key, value := range checks {
@@ -80,7 +86,7 @@ func parseConfigEntryKubefirstChecks(raw interface{}) map[string]bool {
 		checksMap[strKey] = boolValueP
 	}
 
-	return checksMap
+	return checksMap, nil
 }
 
 // runReset carries out the reset function
