@@ -1,18 +1,18 @@
-# name: Test CI
+ name: Test CI
 
-# on:
-#   push:
-# jobs:
+ on:
+   push:
+ jobs:
 
-#   build:
+   build:
 
-#     runs-on: ubuntu-latest
+     runs-on: ubuntu-latest
 
-#     steps:
-#     - uses: actions/checkout@v3
-#       with:
-#         ref: ${{ github.ref }}
-#     - name: Running Tests
-#       run: |
-#         docker-compose -f docker-compose-test.yaml build --no-cache \
-#         && docker compose -f docker-compose-test.yaml run kubefirst-unit-tests
+     steps:
+     - uses: actions/checkout@v3
+       with:
+         ref: ${{ github.ref }}
+     - name: Running Tests
+       run: |
+         docker-compose -f docker-compose-test.yaml build --no-cache \
+         && docker compose -f docker-compose-test.yaml run kubefirst-unit-tests
