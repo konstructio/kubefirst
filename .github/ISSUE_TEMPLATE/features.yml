@@ -27,9 +27,9 @@ body:
   - type: checkboxes
     id: adoption
     attributes:
-      label: adoption
+      label: Is this missing feature preventing you from using kubefirst?
       options:
-        - label: Is this missing feature preventing you from using kubefirst?
+        - label: Yes
   - type: checkboxes
     id: terms
     attributes:
