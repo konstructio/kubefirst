@@ -1,0 +1,40 @@
+name: Feature Request
+description: Share which feature you think kubefirst is missing
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to share your feature idea with us!
+  - type: textarea
+    id: feature
+    attributes:
+      label: What is your feature idea?
+      description: |
+        Give us as many details as possible.
+      placeholder: Tell us what can be improved!
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Why is it needed? 
+      description: |
+        Give us as many details as possible.
+      placeholder: Tell us what can be improved!
+    validations:
+      required: true
+  - type: checkboxes
+    id: adoption
+    attributes:
+      label: adoption
+      options:
+        - label: Is this missing feature preventing you from using kubefirst?
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/kubefirst/kubefirst/blob/main/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
