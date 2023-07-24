@@ -29,7 +29,7 @@ body:
     attributes:
       label: Is this missing feature preventing you from using kubefirst?
       options:
-        - label: Yes
+        - label: "Yes"
   - type: checkboxes
     id: terms
     attributes:
