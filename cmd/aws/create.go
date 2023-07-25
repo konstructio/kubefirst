@@ -1090,7 +1090,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("Setting argocd username and password credentials")
 
 		err := awsClient.BootstrapAwsMgmtCluster(
-			config.CivoToken,
 			config.Kubeconfig,
 			config.GitProvider,
 			cGitUser,
