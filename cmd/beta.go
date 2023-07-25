@@ -11,6 +11,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/cmd/digitalocean"
 	"github.com/kubefirst/kubefirst/cmd/gcp"
+	"github.com/kubefirst/kubefirst/cmd/generate"
 	"github.com/kubefirst/kubefirst/cmd/vultr"
 	"github.com/spf13/cobra"
 )
@@ -31,6 +32,7 @@ func init() {
 	betaCmd.AddCommand(
 		digitalocean.NewCommand(),
 		gcp.NewCommand(),
+		generate.Generate(),
 		vultr.NewCommand(),
 	)
 }
