@@ -1329,9 +1329,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 		tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 		tfEnvs["TF_VAR_kbot_ssh_private_key"] = viper.GetString("kbot.private-key")
-		if ecrFlag {
-			tfEnvs["TF_VAR_user_ecr"] = "true"
-		}
+		tfEnvs["TF_VAR_use_ecr"] = strconv.FormatBool(ecrFlag)
 		// todo hyrdate a variable up top with these so we dont ref viper.
 
 		if gitProviderFlag == "gitlab" {
