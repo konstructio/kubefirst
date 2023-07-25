@@ -668,7 +668,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		ContainerRegistryURL: containerRegistryURL,
 	}
 
-	metaphorTemplateTokens := providerConfigs.MetaphorTokenValues{
+	metaphorDirectoryTokens := providerConfigs.MetaphorTokenValues{
 		ClusterName:                   clusterNameFlag,
 		CloudRegion:                   cloudRegionFlag,
 		ContainerRegistryURL:          containerRegistryURL,
@@ -677,6 +677,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 		MetaphorStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
 		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
 	}
+
+	config.GitOpsDirectoryValues = &gitopsDirectoryTokens
+	config.MetaphorDirectoryValues = &metaphorDirectoryTokens
 
 	//* git clone and detokenize the gitops repository
 	progressPrinter.AddTracker("cloning-and-formatting-git-repositories", "Cloning and formatting git repositories", 1)
@@ -703,7 +706,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			config.K1Dir,
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
-			&metaphorTemplateTokens,
+			&metaphorDirectoryTokens,
 			// Harecoded apex content to avoid creating apex resources for aws
 			true,
 			gitProtocolFlag,
