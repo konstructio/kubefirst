@@ -880,6 +880,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := config.GitopsDir + "/terraform/aws"
 		tfEnvs := map[string]string{}
+		tfEnvs["TF_VAR_use_ecr"] = strconv.FormatBool(ecrFlag)
 		tfEnvs["TF_VAR_aws_account_id"] = awsAccountID
 		tfEnvs["TF_VAR_hosted_zone_name"] = domainNameFlag
 		tfEnvs["AWS_SDK_LOAD_CONFIG"] = "1"
@@ -1329,7 +1330,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 		tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 		tfEnvs["TF_VAR_kbot_ssh_private_key"] = viper.GetString("kbot.private-key")
-		tfEnvs["TF_VAR_use_ecr"] = strconv.FormatBool(ecrFlag)
 		// todo hyrdate a variable up top with these so we dont ref viper.
 
 		if gitProviderFlag == "gitlab" {
