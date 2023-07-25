@@ -389,6 +389,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	viper.Set(fmt.Sprintf("%s.atlantis.webhook.url", config.GitProvider), fmt.Sprintf("https://atlantis.%s/events", domainNameFlag))
 	viper.WriteConfig()
 
+	config.GitOpsDirectoryValues = &gitopsDirectoryTokens
+
 	// Segment Client
 	segmentClient := &segment.SegmentClient{
 		CliVersion:        configs.K1Version,
@@ -692,6 +694,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		MetaphorStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
 		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
 	}
+
+	config.MetaphorDirectoryValues = &metaphorDirectoryTokens
 
 	progressPrinter.AddTracker("cloning-and-formatting-git-repositories", "Cloning and formatting git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
