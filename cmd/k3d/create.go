@@ -737,7 +737,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	//* create k3d resources
 
-	progressPrinter.AddTracker("creating-k3d-cluster", "Creating K3d cluster", 1)
+	progressPrinter.AddTracker("creating-k3d-cluster", "Creating k3d cluster", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	if !viper.GetBool("kubefirst-checks.create-k3d-cluster") {
