@@ -143,11 +143,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("only one of --github-user or --github-org can be supplied")
 	}
 
-	//Validate we got a branch if they gave us a repo
-	if gitopsTemplateURLFlag != "" && gitopsTemplateBranchFlag == "" {
-		log.Panic().Msgf("must supply gitops-template-branch flag when gitops-template-url is set")
-	}
-
 	// Check for existing port forwards before continuing
 	err = k8s.CheckForExistingPortForwards(8080, 8200, 9000, 9094)
 	if err != nil {
