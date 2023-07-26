@@ -264,7 +264,14 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate config
-	config := providerConfigs.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner, gitProtocolFlag)
+	config := providerConfigs.GetConfig(
+		clusterNameFlag,
+		domainNameFlag,
+		gitProviderFlag,
+		cGitOwner,
+		gitProtocolFlag,
+		os.Getenv("CF_API_TOKEN"),
+	)
 	config.DigitaloceanToken = os.Getenv("DO_TOKEN")
 	switch gitProviderFlag {
 	case "github":
@@ -497,45 +504,12 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 				return fmt.Errorf(msg)
 			}
-			viper.Set("kubefirst-checks.domain-liveness", true)
-			viper.WriteConfig()
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessCompleted, "")
-			progressPrinter.IncrementTracker("preflight-checks", 1)
+
 		case "cloudflare":
 			// Implement a Cloudflare check at some point
 			log.Info().Msg("domain check already complete - continuing")
 			progressPrinter.IncrementTracker("preflight-checks", 1)
 		}
-
-		// verify dns
-		err := dns.VerifyProviderDNS(digitalocean.CloudProvider, cloudRegionFlag, domainNameFlag, nil)
-		if err != nil {
-			return err
-		}
-
-		// domain id
-		domainId, err := digitaloceanConf.GetDNSInfo(domainNameFlag)
-		if err != nil {
-			log.Info().Msg(err.Error())
-		}
-
-		// viper values set in above function
-		log.Info().Msgf("domainId: %s", domainId)
-		// domainLiveness := digitaloceanConf.TestDomainLiveness(domainNameFlag)
-		// if !domainLiveness {
-		// 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessFailed, "domain liveness test failed")
-		// 	msg := "failed to check the liveness of the Domain. A valid public Domain on the same digitalocean " +
-		// 		"account as the one where Kubefirst will be installed is required for this operation to " +
-		// 		"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct digitalocean account and " +
-		// 		"region.\n - Verify that you have the necessary permissions to access the domain.\n - Check " +
-		// 		"that the domain is correctly configured and is a public domain\n - Check if the " +
-		// 		"domain exists and has the correct name and domain.\n - If you don't have a Domain," +
-		// 		"please follow these instructions to create one: " +
-		// 		"https://docs.digitalocean.com/products/networking/dns/how-to/ \n\n" +
-		// 		"if you are still facing issues please reach out to support team for further assistance"
-
-		// 	return fmt.Errorf(msg)
-		// }
 		viper.Set("kubefirst-checks.domain-liveness", true)
 		viper.WriteConfig()
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessCompleted, "")
@@ -701,6 +675,8 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
 	}
 
+	config.GitOpsDirectoryValues = &gitopsDirectoryTokens
+	config.MetaphorDirectoryValues = &metaphorDirectoryTokens
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {

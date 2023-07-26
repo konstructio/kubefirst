@@ -269,7 +269,14 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate config
-	config := providerConfigs.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner, gitProtocolFlag)
+	config := providerConfigs.GetConfig(
+		clusterNameFlag,
+		domainNameFlag,
+		gitProviderFlag,
+		cGitOwner,
+		gitProtocolFlag,
+		os.Getenv("CF_API_TOKEN"),
+	)
 	config.VultrToken = os.Getenv("VULTR_API_KEY")
 	switch gitProviderFlag {
 	case "github":
@@ -670,6 +677,8 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
 	}
 
+	config.GitOpsDirectoryValues = &gitopsDirectoryTokens
+	config.MetaphorDirectoryValues = &metaphorDirectoryTokens
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 

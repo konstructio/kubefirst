@@ -31,7 +31,6 @@ import (
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/argocd"
 	awsinternal "github.com/kubefirst/runtime/pkg/aws"
-	"github.com/kubefirst/runtime/pkg/bootstrap"
 	"github.com/kubefirst/runtime/pkg/dns"
 	"github.com/kubefirst/runtime/pkg/gitClient"
 	"github.com/kubefirst/runtime/pkg/github"
@@ -85,10 +84,10 @@ func createAws(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// dnsProviderFlag, err := cmd.Flags().GetString("dns-provider")
-	// if err != nil {
-	// 	return err
-	// }
+	dnsProviderFlag, err := cmd.Flags().GetString("dns-provider")
+	if err != nil {
+		return err
+	}
 
 	domainNameFlag, err := cmd.Flags().GetString("domain-name")
 	if err != nil {
@@ -180,7 +179,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// required for destroy command
 	viper.Set("flags.alerts-email", alertsEmailFlag)
 	viper.Set("flags.cluster-name", clusterNameFlag)
-	// viper.Set("flags.dns-provider", dnsProviderFlag)
+	viper.Set("flags.dns-provider", dnsProviderFlag)
 	viper.Set("flags.domain-name", domainNameFlag)
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.Set("flags.git-protocol", gitProtocolFlag)
@@ -279,7 +278,14 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate config
-	config := providerConfigs.GetConfig(clusterNameFlag, domainNameFlag, gitProviderFlag, cGitOwner, gitProtocolFlag)
+	config := providerConfigs.GetConfig(
+		clusterNameFlag,
+		domainNameFlag,
+		gitProviderFlag,
+		cGitOwner,
+		gitProtocolFlag,
+		os.Getenv("CF_API_TOKEN"),
+	)
 
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
 	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -372,6 +378,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 			if gitopsTemplateBranchFlag != "" {
 				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
 			}
+		}
+	}
+
+	// Validate required environment variables for dns provider
+	if dnsProviderFlag == "cloudflare" {
+		if os.Getenv("CF_API_TOKEN") == "" {
+			return fmt.Errorf("your CF_API_TOKEN environment variable is not set. Please set and try again")
 		}
 	}
 
@@ -469,45 +482,45 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if !skipDomainCheck {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessStarted, "")
 
-		// switch dnsProviderFlag {
-		// case "aws":
-		// verify dns
-		isPrivateZone, nameServers, err := awsClient.GetHostedZoneNameServers(domainNameFlag)
-		if err != nil {
-			return err
-		}
-
-		if !isPrivateZone {
-			err = dns.VerifyProviderDNS("aws", cloudRegionFlag, domainNameFlag, nameServers)
+		switch dnsProviderFlag {
+		case "aws":
+			//verify dns
+			isPrivateZone, nameServers, err := awsClient.GetHostedZoneNameServers(domainNameFlag)
 			if err != nil {
 				return err
 			}
-		}
 
-		domainLiveness := awsClient.TestHostedZoneLiveness(domainNameFlag)
-		if !domainLiveness {
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessFailed, "domain liveness test failed")
-			msg := "failed to check the liveness of the HostedZone. A valid public HostedZone on the same AWS " +
-				"account as the one where Kubefirst will be installed is required for this operation to " +
-				"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct AWS account and " +
-				"region.\n - Verify that you have the necessary permissions to access the hosted zone.\n - Check " +
-				"that the hosted zone is correctly configured and is a public hosted zone\n - Check if the " +
-				"hosted zone exists and has the correct name and domain.\n - If you don't have a HostedZone," +
-				"please follow these instructions to create one: " +
-				"https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zones-working-with.html \n\n" +
-				"if you are still facing issues please reach out to support team for further assistance"
+			if !isPrivateZone {
+				err = dns.VerifyProviderDNS("aws", cloudRegionFlag, domainNameFlag, nameServers)
+				if err != nil {
+					return err
+				}
+			}
 
-			return fmt.Errorf(msg)
+			domainLiveness := awsClient.TestHostedZoneLiveness(domainNameFlag)
+			if !domainLiveness {
+				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessFailed, "domain liveness test failed")
+				msg := "failed to check the liveness of the HostedZone. A valid public HostedZone on the same AWS " +
+					"account as the one where Kubefirst will be installed is required for this operation to " +
+					"complete.\nTroubleshoot Steps:\n\n - Make sure you are using the correct AWS account and " +
+					"region.\n - Verify that you have the necessary permissions to access the hosted zone.\n - Check " +
+					"that the hosted zone is correctly configured and is a public hosted zone\n - Check if the " +
+					"hosted zone exists and has the correct name and domain.\n - If you don't have a HostedZone," +
+					"please follow these instructions to create one: " +
+					"https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zones-working-with.html \n\n" +
+					"if you are still facing issues please reach out to support team for further assistance"
+
+				return fmt.Errorf(msg)
+			}
+			viper.Set("kubefirst-checks.domain-liveness", true)
+			viper.WriteConfig()
+			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessCompleted, "")
+			progressPrinter.IncrementTracker("preflight-checks", 1)
+		case "cloudflare":
+			// Implement a Cloudflare check at some point
+			log.Info().Msg("domain check already complete - continuing")
+			progressPrinter.IncrementTracker("preflight-checks", 1)
 		}
-		viper.Set("kubefirst-checks.domain-liveness", true)
-		viper.WriteConfig()
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricDomainLivenessCompleted, "")
-		progressPrinter.IncrementTracker("preflight-checks", 1)
-		// case "cloudflare":
-		// 	// Implement a Cloudflare check at some point
-		// 	log.Info().Msg("domain check already complete - continuing")
-		// 	progressPrinter.IncrementTracker("preflight-checks", 1)
-		// }
 	} else {
 		log.Info().Msg("domain check already complete - continuing")
 		progressPrinter.IncrementTracker("preflight-checks", 1)
@@ -584,23 +597,37 @@ func createAws(cmd *cobra.Command, args []string) error {
 		containerRegistryURL = fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner)
 	}
 
+	var externalDNSProviderTokenEnvName, externalDNSProviderSecretKey string
+	if dnsProviderFlag == "cloudflare" {
+		externalDNSProviderTokenEnvName = "CF_API_TOKEN"
+		externalDNSProviderSecretKey = "cf-api-token"
+	} else {
+		externalDNSProviderTokenEnvName = "CIVO_TOKEN"
+		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", awsinternal.CloudProvider)
+	}
+
 	gitopsDirectoryTokens := providerConfigs.GitOpsDirectoryValues{
-		AlertsEmail:          alertsEmailFlag,
-		AtlantisAllowList:    fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
-		AwsIamArnAccountRoot: fmt.Sprintf("arn:aws:iam::%s:root", *iamCaller.Account),
-		AwsNodeCapacityType:  "ON_DEMAND", // todo adopt cli flag
-		AwsAccountID:         *iamCaller.Account,
-		CloudProvider:        awsinternal.CloudProvider,
-		CloudRegion:          cloudRegionFlag,
-		ClusterName:          clusterNameFlag,
-		ClusterType:          clusterTypeFlag,
-		// DNSProvider:               dnsProviderFlag,
+		AlertsEmail:               alertsEmailFlag,
+		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
+		AwsIamArnAccountRoot:      fmt.Sprintf("arn:aws:iam::%s:root", *iamCaller.Account),
+		AwsNodeCapacityType:       "ON_DEMAND", // todo adopt cli flag
+		AwsAccountID:              *iamCaller.Account,
+		CloudProvider:             awsinternal.CloudProvider,
+		CloudRegion:               cloudRegionFlag,
+		ClusterName:               clusterNameFlag,
+		ClusterType:               clusterTypeFlag,
+		DNSProvider:               dnsProviderFlag,
 		DomainName:                domainNameFlag,
 		KubeconfigPath:            config.Kubeconfig,
 		KubefirstArtifactsBucket:  kubefirstArtifactsBucketName,
 		KubefirstStateStoreBucket: kubefirstStateStoreBucketName,
 		KubefirstTeam:             os.Getenv("KUBEFIRST_TEAM"),
 		KubefirstVersion:          configs.K1Version,
+
+		ExternalDNSProviderName:         dnsProviderFlag,
+		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
+		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-creds", awsinternal.CloudProvider),
+		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
 
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
 		ArgoCDIngressNoHTTPSURL:        fmt.Sprintf("argocd.%s", domainNameFlag),
@@ -641,7 +668,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		ContainerRegistryURL: containerRegistryURL,
 	}
 
-	metaphorTemplateTokens := providerConfigs.MetaphorTokenValues{
+	metaphorDirectoryTokens := providerConfigs.MetaphorTokenValues{
 		ClusterName:                   clusterNameFlag,
 		CloudRegion:                   cloudRegionFlag,
 		ContainerRegistryURL:          containerRegistryURL,
@@ -650,6 +677,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 		MetaphorStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
 		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
 	}
+
+	config.GitOpsDirectoryValues = &gitopsDirectoryTokens
+	config.MetaphorDirectoryValues = &metaphorDirectoryTokens
 
 	//* git clone and detokenize the gitops repository
 	progressPrinter.AddTracker("cloning-and-formatting-git-repositories", "Cloning and formatting git repositories", 1)
@@ -676,7 +706,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			config.K1Dir,
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
-			&metaphorTemplateTokens,
+			&metaphorDirectoryTokens,
 			// Harecoded apex content to avoid creating apex resources for aws
 			true,
 			gitProtocolFlag,
@@ -850,6 +880,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		tfEntrypoint := config.GitopsDir + "/terraform/aws"
 		tfEnvs := map[string]string{}
+		tfEnvs["TF_VAR_use_ecr"] = strconv.FormatBool(ecrFlag)
 		tfEnvs["TF_VAR_aws_account_id"] = awsAccountID
 		tfEnvs["TF_VAR_hosted_zone_name"] = domainNameFlag
 		tfEnvs["AWS_SDK_LOAD_CONFIG"] = "1"
@@ -1059,71 +1090,19 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if !executionControl {
 		log.Info().Msg("Setting argocd username and password credentials")
 
-		log.Info().Msg("creating service accounts and namespaces")
-		err = bootstrap.ServiceAccounts(clientset)
+		err := awsClient.BootstrapAwsMgmtCluster(
+			config.Kubeconfig,
+			config.GitProvider,
+			cGitUser,
+			os.Getenv("CF_API_TOKEN"),
+			config.DestinationGitopsRepoURL,
+			config.GitProtocol,
+			clientset,
+			ecrFlag,
+			containerRegistryURL,
+		)
 		if err != nil {
-			return err
-		}
-
-		// swap secret data based on https flag
-		secretData := map[string][]byte{}
-
-		if strings.Contains(config.DestinationGitopsRepoURL, "https") {
-			// http basic auth
-			secretData = map[string][]byte{
-				"type":     []byte("git"),
-				"name":     []byte(fmt.Sprintf("%s-gitops", cGitOwner)),
-				"url":      []byte(config.DestinationGitopsRepoURL),
-				"username": []byte(cGitUser),
-				"password": []byte(cGitToken),
-			}
-		} else {
-			// ssh
-			secretData = map[string][]byte{
-				"type":          []byte("git"),
-				"name":          []byte(fmt.Sprintf("%s-gitops", cGitOwner)),
-				"url":           []byte(config.DestinationGitopsRepoURL),
-				"sshPrivateKey": []byte(viper.GetString("kbot.private-key")),
-			}
-		}
-		secret := &v1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        "repo-credentials-template",
-				Namespace:   "argocd",
-				Annotations: map[string]string{"managed-by": "argocd.argoproj.io"},
-				Labels:      map[string]string{"argocd.argoproj.io/secret-type": "repository"},
-			},
-			Data: secretData,
-		}
-
-		_, err := clientset.CoreV1().Secrets(secret.ObjectMeta.Namespace).Get(context.TODO(), secret.ObjectMeta.Name, metav1.GetOptions{})
-		if err == nil {
-			log.Info().Msgf("kubernetes secret %s/%s already created - skipping", secret.Namespace, secret.Name)
-		} else if strings.Contains(err.Error(), "not found") {
-			err := k8s.CreateSecretV2(clientset, secret)
-			if err != nil {
-				log.Info().Msgf("error creating kubernetes secret %s/%s: %s", secret.Namespace, secret.Name, err)
-				return err
-			}
-			log.Info().Msgf("created kubernetes secret: %s/%s", secret.Namespace, secret.Name)
-		}
-
-		log.Info().Msg("secret create for argocd to connect to gitops repo")
-
-		ecrToken, err := awsClient.GetECRAuthToken()
-		if err != nil {
-			return err
-		}
-
-		dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"auth": "%s"}}}`, containerRegistryURL, ecrToken)
-		dockerCfgSecret := &v1.Secret{
-			ObjectMeta: metav1.ObjectMeta{Name: "docker-config", Namespace: "argo"},
-			Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
-			Type:       "Opaque",
-		}
-		_, err = clientset.CoreV1().Secrets(dockerCfgSecret.ObjectMeta.Namespace).Create(context.TODO(), dockerCfgSecret, metav1.CreateOptions{})
-		if err != nil {
-			log.Info().Msgf("error creating kubernetes secret %s/%s: %s", dockerCfgSecret.Namespace, dockerCfgSecret.Name, err)
+			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
 			return err
 		}
 
@@ -1133,6 +1112,21 @@ func createAws(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("argo credentials already set, continuing")
 		progressPrinter.IncrementTracker("setting-up-eks-cluster", 1)
+	}
+
+	// Container registry authentication creation
+	containerRegistryAuth := gitShim.ContainerRegistryAuth{
+		GitProvider:           gitProviderFlag,
+		GitUser:               cGitUser,
+		GitToken:              cGitToken,
+		GitlabGroupFlag:       gitlabGroupFlag,
+		GithubOwner:           cGitOwner,
+		ContainerRegistryHost: containerRegistryHost,
+		Clientset:             clientset,
+	}
+	containerRegistryAuthToken, err := gitShim.CreateContainerRegistrySecret(&containerRegistryAuth)
+	if err != nil {
+		return err
 	}
 
 	var argocdPassword string
@@ -1306,9 +1300,23 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("configuring vault with terraform")
 
 		tfEnvs := map[string]string{}
+		var usernamePasswordString, base64DockerAuth string
 
-		usernamePasswordString := fmt.Sprintf("%s:%s", cGitUser, cGitToken)
-		base64DockerAuth := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+		if config.GitProvider == "gitlab" {
+			usernamePasswordString = fmt.Sprintf("%s:%s", "container-registry-auth", containerRegistryAuthToken)
+			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+
+			tfEnvs["TF_VAR_container_registry_auth"] = containerRegistryAuthToken
+		} else {
+			usernamePasswordString = fmt.Sprintf("%s:%s", cGitUser, cGitToken)
+			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+		}
+
+		if viper.GetString("flags.dns-provider") == "cloudflare" {
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareAPIToken
+		} else {
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CivoToken
+		}
 
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
 		tfEnvs[fmt.Sprintf("TF_VAR_%s_token", config.GitProvider)] = cGitToken
@@ -1322,9 +1330,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 		tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 		tfEnvs["TF_VAR_kbot_ssh_private_key"] = viper.GetString("kbot.private-key")
-		if ecrFlag {
-			tfEnvs["TF_VAR_user_ecr"] = "true"
-		}
 		// todo hyrdate a variable up top with these so we dont ref viper.
 
 		if gitProviderFlag == "gitlab" {

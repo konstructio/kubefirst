@@ -66,7 +66,14 @@ func destroyGCP(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate GCP config
-	config := providerConfigs.GetConfig(clusterName, domainName, gitProvider, cGitOwner, gitProtocol)
+	config := providerConfigs.GetConfig(
+		clusterName,
+		domainName,
+		gitProvider,
+		cGitOwner,
+		gitProtocol,
+		os.Getenv("CF_API_TOKEN"),
+	)
 	// This is the environment variable required to create and is set to the path of the service account json file
 	// This gets read for terraform applies and is applied as a variable containing the contents of the file
 	// This is otherwise leveraged by the runtime to provide application default credentials to the GCP go SDK/API
