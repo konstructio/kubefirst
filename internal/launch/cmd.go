@@ -357,8 +357,6 @@ func Up(additionalHelmFlags []string) {
 			"--namespace",
 			namespace,
 			helmChartName,
-			"--version",
-			helmChartVersion,
 			"kubefirst/kubefirst",
 			"--set",
 			"console.ingress.createTraefikRoute=true",
