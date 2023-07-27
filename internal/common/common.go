@@ -23,7 +23,7 @@ func CheckForVersionUpdate() {
 			if res.Outdated {
 				switch runtime.GOOS {
 				case "darwin":
-					fmt.Printf("A newer version (v%s) is available! Please upgrade with: \"brew upgrade kubefirst\"\n", res.Current)
+					fmt.Printf("A newer version (v%s) is available! Please upgrade with: \"brew update && brew upgrade kubefirst\"\n", res.Current)
 				default:
 					fmt.Printf("A newer version (v%s) is available! \"https://github.com/kubefirst/kubefirst/blob/main/build/README.md\"\n", res.Current)
 				}
