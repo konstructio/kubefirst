@@ -395,14 +395,19 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		if strings.Contains(gitopsTemplateURLFlag, "https://github.com/kubefirst/gitops-template.git") && gitopsTemplateBranchFlag == "" {
 			gitopsTemplateBranchFlag = "main"
 		}
-	case "default":
+	default:
 		switch gitopsTemplateURLFlag {
 		case "https://github.com/kubefirst/gitops-template.git":
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
+		default:
+			if gitopsTemplateBranchFlag != "" {
+				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
+			}
 		}
 	}
+
 	log.Info().Msgf("kubefirst version configs.K1Version: %s ", configs.K1Version)
 	log.Info().Msgf("cloning gitops-template repo url: %s ", gitopsTemplateURLFlag)
 	log.Info().Msgf("cloning gitops-template repo branch: %s ", gitopsTemplateBranchFlag)
