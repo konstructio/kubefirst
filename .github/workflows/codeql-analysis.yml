@@ -23,6 +23,7 @@ on:
       - '**.go'
   schedule:
     - cron: '0 0 * * 6' # Saturdays at midnight
+  workflow_dispatch:
 
 jobs:
   analyze:
