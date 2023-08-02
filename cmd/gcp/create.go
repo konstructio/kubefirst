@@ -309,7 +309,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		kubefirstTeam = "false"
 	}
 
-	gitopsDirectoryTokens := providerConfigs.GitOpsDirectoryValues{
+	gitopsDirectoryTokens := providerConfigs.GitopsDirectoryValues{
 		AlertsEmail:               alertsEmailFlag,
 		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
 		CloudProvider:             gcp.CloudProvider,
@@ -343,6 +343,9 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		GitNamespace:         "N/A",
 		GitProvider:          config.GitProvider,
 		GitProtocol:          config.GitProtocol,
+		GitopsRepoGitURL:     config.DestinationGitopsRepoGitURL,
+		GitopsRepoHttpsURL:   config.DestinationGitopsRepoHttpsURL,
+		GitopsRepoURL:        config.DestinationGitopsRepoURL,
 		GitRunner:            fmt.Sprintf("%s Runner", config.GitProvider),
 		GitRunnerDescription: fmt.Sprintf("Self Hosted %s Runner", config.GitProvider),
 		GitRunnerNS:          fmt.Sprintf("%s-runner", config.GitProvider),
@@ -357,8 +360,8 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		GitlabOwnerGroupID: cGitlabOwnerGroupID,
 		GitlabUser:         cGitUser,
 
-		GitOpsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
-		GitOpsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
+		GitopsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
+		GitopsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
 		ClusterId:                    clusterId,
 	}
 
@@ -647,7 +650,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
 	}
 
-	config.GitOpsDirectoryValues = &gitopsDirectoryTokens
+	config.GitopsDirectoryValues = &gitopsDirectoryTokens
 	config.MetaphorDirectoryValues = &metaphorDirectoryTokens
 	//* git clone and detokenize the gitops repository
 
@@ -675,7 +678,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		gitopsDirectoryTokens.ExternalDNSProviderSecretName = fmt.Sprintf("%s-creds", gcp.CloudProvider)
 		gitopsDirectoryTokens.ExternalDNSProviderSecretKey = externalDNSProviderSecretKey
 
-		gitopsDirectoryTokens.GitOpsRepoGitURL = config.DestinationGitopsRepoHttpsURL
+		gitopsDirectoryTokens.GitopsRepoURL = config.DestinationGitopsRepoHttpsURL
 
 		// Determine if anything exists at domain apex
 		apexContentExists := gcp.GetDomainApexContent(domainNameFlag)
@@ -1199,6 +1202,13 @@ func createGCP(cmd *cobra.Command, args []string) error {
 			usernamePasswordString = fmt.Sprintf("%s:%s", cGitUser, cGitToken)
 			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
 		}
+
+		//This needs to be tested
+		// if viper.GetString("flags.dns-provider") == "cloudflare" {
+		// 	tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareApiToken
+		// } else {
+		// 	tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = "GOOGLE_APPLICATION_CREDENTIALS"
+		// }
 
 		a, _ := os.ReadFile(config.GCPAuth)
 		tfEnvs["GOOGLE_CLOUD_KEYFILE_JSON"] = string(a)

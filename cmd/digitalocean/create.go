@@ -326,7 +326,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", digitalocean.CloudProvider)
 	}
 
-	gitopsDirectoryTokens := providerConfigs.GitOpsDirectoryValues{
+	gitopsDirectoryTokens := providerConfigs.GitopsDirectoryValues{
 		AlertsEmail:               alertsEmailFlag,
 		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
 		CloudProvider:             digitalocean.CloudProvider,
@@ -376,8 +376,8 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		GitlabOwnerGroupID: cGitlabOwnerGroupID,
 		GitlabUser:         cGitUser,
 
-		GitOpsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
-		GitOpsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
+		GitopsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
+		GitopsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
 		ClusterId:                    clusterId,
 	}
 
@@ -674,7 +674,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
 	}
 
-	config.GitOpsDirectoryValues = &gitopsDirectoryTokens
+	config.GitopsDirectoryValues = &gitopsDirectoryTokens
 	config.MetaphorDirectoryValues = &metaphorDirectoryTokens
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
@@ -1213,6 +1213,12 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		} else {
 			usernamePasswordString = fmt.Sprintf("%s:%s", cGitUser, cGitToken)
 			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
+		}
+
+		if viper.GetString("flags.dns-provider") == "cloudflare" {
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareApiToken
+		} else {
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = "AWS_Placeholder"
 		}
 
 		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
