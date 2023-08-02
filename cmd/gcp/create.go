@@ -281,9 +281,13 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		case "https":
 			config.DestinationGitopsRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
 			config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
+			config.DestinationGitopsRepoURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
+			config.DestinationMetaphorRepoURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
 		default:
-			config.DestinationGitopsRepoHttpsURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
-			config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
+			config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
+			config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
+			config.DestinationGitopsRepoURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
+			config.DestinationMetaphorRepoURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
 		}
 	}
 
@@ -305,7 +309,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		kubefirstTeam = "false"
 	}
 
-	gitopsDirectoryTokens := providerConfigs.GitOpsDirectoryValues{
+	gitopsDirectoryTokens := providerConfigs.GitopsDirectoryValues{
 		AlertsEmail:               alertsEmailFlag,
 		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
 		CloudProvider:             gcp.CloudProvider,
@@ -339,6 +343,9 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		GitNamespace:         "N/A",
 		GitProvider:          config.GitProvider,
 		GitProtocol:          config.GitProtocol,
+		GitopsRepoGitURL:     config.DestinationGitopsRepoGitURL,
+		GitopsRepoHttpsURL:   config.DestinationGitopsRepoHttpsURL,
+		GitopsRepoURL:        config.DestinationGitopsRepoURL,
 		GitRunner:            fmt.Sprintf("%s Runner", config.GitProvider),
 		GitRunnerDescription: fmt.Sprintf("Self Hosted %s Runner", config.GitProvider),
 		GitRunnerNS:          fmt.Sprintf("%s-runner", config.GitProvider),
@@ -353,8 +360,8 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		GitlabOwnerGroupID: cGitlabOwnerGroupID,
 		GitlabUser:         cGitUser,
 
-		GitOpsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
-		GitOpsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
+		GitopsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
+		GitopsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
 		ClusterId:                    clusterId,
 	}
 
@@ -643,7 +650,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
 	}
 
-	config.GitOpsDirectoryValues = &gitopsDirectoryTokens
+	config.GitopsDirectoryValues = &gitopsDirectoryTokens
 	config.MetaphorDirectoryValues = &metaphorDirectoryTokens
 	//* git clone and detokenize the gitops repository
 
@@ -671,8 +678,6 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		gitopsDirectoryTokens.ExternalDNSProviderSecretName = fmt.Sprintf("%s-creds", gcp.CloudProvider)
 		gitopsDirectoryTokens.ExternalDNSProviderSecretKey = externalDNSProviderSecretKey
 
-		gitopsDirectoryTokens.GitOpsRepoGitURL = config.DestinationGitopsRepoHttpsURL
-
 		// Determine if anything exists at domain apex
 		apexContentExists := gcp.GetDomainApexContent(domainNameFlag)
 
@@ -681,11 +686,11 @@ func createGCP(cmd *cobra.Command, args []string) error {
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
-			config.DestinationGitopsRepoHttpsURL,
+			config.DestinationGitopsRepoHttpsURL, //default to https for git interactions when creating remotes
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
-			config.DestinationMetaphorRepoHttpsURL,
+			config.DestinationMetaphorRepoHttpsURL, //default to https for git interactions when creating remotes
 			config.K1Dir,
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
@@ -1077,7 +1082,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		}
 
 		log.Info().Msg("applying the registry application to argocd")
-		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoHttpsURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
 		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()

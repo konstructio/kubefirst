@@ -300,9 +300,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 		case "https":
 			config.DestinationGitopsRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
 			config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
+			config.DestinationGitopsRepoURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
+			config.DestinationMetaphorRepoURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
 		default:
 			config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
 			config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
+			config.DestinationGitopsRepoURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
+			config.DestinationMetaphorRepoURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
 		}
 	}
 
@@ -601,7 +605,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", awsinternal.CloudProvider)
 	}
 
-	gitopsDirectoryTokens := providerConfigs.GitOpsDirectoryValues{
+	gitopsDirectoryTokens := providerConfigs.GitopsDirectoryValues{
 		AlertsEmail:               alertsEmailFlag,
 		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
 		AwsIamArnAccountRoot:      fmt.Sprintf("arn:aws:iam::%s:root", *iamCaller.Account),
@@ -655,8 +659,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 		GitlabOwnerGroupID: viper.GetInt("flags.gitlab-owner-group-id"),
 		GitlabUser:         cGitUser,
 
-		GitOpsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
-		GitOpsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
+		GitopsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
+		GitopsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
 		ClusterId:                    clusterId,
 
 		AtlantisWebhookURL:   atlantisWebhookURL,
@@ -673,7 +677,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
 	}
 
-	config.GitOpsDirectoryValues = &gitopsDirectoryTokens
+	config.GitopsDirectoryValues = &gitopsDirectoryTokens
 	config.MetaphorDirectoryValues = &metaphorDirectoryTokens
 
 	//* git clone and detokenize the gitops repository
@@ -686,18 +690,18 @@ func createAws(cmd *cobra.Command, args []string) error {
 		// These need to be set for reference elsewhere
 		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoGitURL)
 		viper.WriteConfig()
-		gitopsDirectoryTokens.GitOpsRepoGitURL = config.DestinationGitopsRepoGitURL
+		gitopsDirectoryTokens.GitopsRepoGitURL = config.DestinationGitopsRepoGitURL
 
 		err := providerConfigs.PrepareGitRepositories(
 			awsinternal.CloudProvider,
 			gitProviderFlag,
 			clusterNameFlag,
 			clusterTypeFlag,
-			config.DestinationGitopsRepoHttpsURL,
+			config.DestinationGitopsRepoHttpsURL, //default to https for git interactions when creating remotes
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
-			config.DestinationMetaphorRepoHttpsURL,
+			config.DestinationMetaphorRepoHttpsURL, //default to https for git interactions when creating remotes
 			config.K1Dir,
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
@@ -1308,9 +1312,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 
 		if viper.GetString("flags.dns-provider") == "cloudflare" {
-			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareAPIToken
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareApiToken
 		} else {
-			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CivoToken
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = "AWS_Placeholder"
 		}
 
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"
