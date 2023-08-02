@@ -678,8 +678,6 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		gitopsDirectoryTokens.ExternalDNSProviderSecretName = fmt.Sprintf("%s-creds", gcp.CloudProvider)
 		gitopsDirectoryTokens.ExternalDNSProviderSecretKey = externalDNSProviderSecretKey
 
-		gitopsDirectoryTokens.GitopsRepoURL = config.DestinationGitopsRepoHttpsURL
-
 		// Determine if anything exists at domain apex
 		apexContentExists := gcp.GetDomainApexContent(domainNameFlag)
 
@@ -688,11 +686,11 @@ func createGCP(cmd *cobra.Command, args []string) error {
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
-			config.DestinationGitopsRepoHttpsURL,
+			config.DestinationGitopsRepoHttpsURL, //default to https for git interactions when creating remotes
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
-			config.DestinationMetaphorRepoHttpsURL,
+			config.DestinationMetaphorRepoHttpsURL, //default to https for git interactions when creating remotes
 			config.K1Dir,
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
