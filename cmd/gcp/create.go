@@ -1201,13 +1201,6 @@ func createGCP(cmd *cobra.Command, args []string) error {
 			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
 		}
 
-		//This needs to be tested
-		// if viper.GetString("flags.dns-provider") == "cloudflare" {
-		// 	tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareApiToken
-		// } else {
-		// 	tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = "GOOGLE_APPLICATION_CREDENTIALS"
-		// }
-
 		a, _ := os.ReadFile(config.GCPAuth)
 		tfEnvs["GOOGLE_CLOUD_KEYFILE_JSON"] = string(a)
 		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
