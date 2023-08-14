@@ -7,13 +7,9 @@ See the LICENSE file for more details.
 package civo
 
 import (
-	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -22,7 +18,6 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/rs/zerolog/log"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
@@ -49,6 +44,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/ssl"
 	"github.com/kubefirst/runtime/pkg/terraform"
 	runtimetypes "github.com/kubefirst/runtime/pkg/types"
+	utils "github.com/kubefirst/runtime/pkg/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -125,11 +121,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// // If cluster setup is complete, return
-	// clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
-	// if clusterSetupComplete {
-	// 	return fmt.Errorf("this cluster install process has already completed successfully")
-	// }
+	// If cluster setup is complete, return
+	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
+	if clusterSetupComplete {
+		return fmt.Errorf("this cluster install process has already completed successfully")
+	}
 
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 	helpers.DisplayLogHints()
@@ -1330,139 +1326,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		log.Error().Err(err).Msg("")
 	}
 
-	cl := runtimetypes.Cluster{
-		ID:                    primitive.NewObjectID(),
-		CreationTimestamp:     fmt.Sprintf("%v", time.Now().UTC()),
-		UseTelemetry:          useTelemetryFlag,
-		Status:                "provisioned",
-		AlertsEmail:           alertsEmailFlag,
-		ClusterName:           clusterNameFlag,
-		CloudProvider:         civo.CloudProvider,
-		CloudRegion:           cloudRegionFlag,
-		DomainName:            domainNameFlag,
-		ClusterID:             clusterId,
-		ClusterType:           "mgmt",
-		GitopsTemplateURL:     gitopsTemplateURLFlag,
-		GitopsTemplateBranch:  gitopsTemplateBranchFlag,
-		GitProvider:           gitProviderFlag,
-		GitHost:               fmt.Sprintf("%s.com", gitProviderFlag),
-		GitOwner:              cGitOwner,
-		GitUser:               cGitUser,
-		GitToken:              cGitToken,
-		GitlabOwnerGroupID:    cGitlabOwnerGroupID,
-		AtlantisWebhookSecret: atlantisWebhookSecret,
-		AtlantisWebhookURL:    fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
-		KubefirstTeam:         kubefirstTeam,
-		PublicKey:             sshPublicKey,
-		PrivateKey:            sshPrivateKey,
-	}
-	cl.CivoAuth.Token = config.CivoToken
-
-	cl.StateStoreCredentials.AccessKeyID = viper.GetString("kubefirst.state-store-creds.access-key-id")
-	cl.StateStoreCredentials.SecretAccessKey = viper.GetString("kubefirst.state-store-creds.secret-access-key-id")
-	cl.StateStoreCredentials.Name = viper.GetString("kubefirst.state-store-creds.name")
-	cl.StateStoreCredentials.ID = viper.GetString("kubefirst.state-store-creds.id")
-
-	cl.StateStoreDetails.ID = viper.GetString("kubefirst.state-store.id")
-	cl.StateStoreDetails.Name = viper.GetString("kubefirst.state-store.name")
-	cl.StateStoreDetails.Hostname = viper.GetString("kubefirst.state-store.hostname")
-
-	var localFilePath = fmt.Sprintf("%s/%s.json", "/tmp/api/cluster/export", clusterNameFlag)
-	var remoteFilePath = fmt.Sprintf("%s.json", clusterNameFlag)
-
-	log.Info().Msgf("creating export file %s", localFilePath)
-
-	if _, err := os.Stat("/tmp/api/cluster/export"); os.IsNotExist(err) {
-		log.Info().Msgf("cluster exports directory does not exist, creating")
-		err := os.MkdirAll("/tmp/api/cluster/export", 0777)
-		if err != nil {
-			return err
-		}
-	}
-
-	file, _ := json.MarshalIndent(cl, "", " ")
-	_ = os.WriteFile(localFilePath, file, 0644)
-
-	log.Info().Msgf("file created %s", localFilePath)
-
-	log.Info().Msgf("pushing export object")
-
-	pushObject := runtimetypes.PushBucketObject{
-		LocalFilePath:  localFilePath,
-		RemoteFilePath: remoteFilePath,
-		ContentType:    "application/json",
-	}
-
-	err = civo.PutClusterObject(&cl.StateStoreCredentials, &cl.StateStoreDetails, &pushObject)
-	if err != nil {
-		log.Error().Err(err).Msgf("error pushing cluster object, %s", cl.StateStoreDetails.Hostname)
-
-		return err
-	}
-
-	//* kubefirst api port-forward
-	kubefirstApiStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(kubefirstApiStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		kcfg.Clientset,
-		kcfg.RestConfig,
-		"kubefirst-console-kubefirst-api",
-		"kubefirst",
-		8081,
-		8085,
-		kubefirstApiStopChannel,
-	)
-
-	importUrl := "http://localhost:8085/api/v1/cluster/import"
-
-	importObject := runtimetypes.ImportClusterRequest{
-		ClusterName:           clusterNameFlag,
-		CloudRegion:           cloudRegionFlag,
-		CloudProvider:         "civo",
-		StateStoreCredentials: cl.StateStoreCredentials,
-		StateStoreDetails:     cl.StateStoreDetails,
-	}
-
-	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	httpClient := http.Client{Transport: customTransport}
-
-	payload, err := json.Marshal(importObject)
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, importUrl, bytes.NewReader(payload))
-	if err != nil {
-		return err
-	}
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Accept", "application/json")
-
-	res, err := httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		log.Info().Msgf("unable to import cluster %s", res.Status)
-		return nil
-	}
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
-	log.Info().Msgf("Import: %s", string(body))
-
-	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
-	if err != nil {
-		log.Error().Err(err).Msg("")
-	}
-
 	// Mark cluster install as complete
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallCompleted, "")
 	viper.Set("kubefirst-checks.cluster-install-complete", true)
@@ -1470,6 +1333,41 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	// Set flags used to track status of active options
 	helpers.SetClusterStatusFlags(civo.CloudProvider, config.GitProvider)
+
+	//Export and Import Cluster
+	cl := utilities.CreateClusterRecordFromRaw(useTelemetryFlag, cGitOwner, cGitUser, cGitToken, cGitlabOwnerGroupID, gitopsTemplateURLFlag, gitopsTemplateBranchFlag)
+
+	var localFilePath = fmt.Sprintf("%s/%s.json", "/tmp/api/cluster/export", clusterNameFlag)
+	var remoteFilePath = fmt.Sprintf("%s.json", clusterNameFlag)
+	utilities.CreateClusterRecordFile(clusterNameFlag, cl)
+
+	pushObject := runtimetypes.PushBucketObject{
+		LocalFilePath:  localFilePath,
+		RemoteFilePath: remoteFilePath,
+		ContentType:    "application/json",
+	}
+
+	err = utils.PutClusterObject(&cl.StateStoreCredentials, &cl.StateStoreDetails, &pushObject)
+	if err != nil {
+		log.Error().Err(err).Msgf("error pushing cluster object, %s", cl.StateStoreDetails.Hostname)
+		return err
+	}
+
+	kubernetesConfig := runtimetypes.KubernetesClient{
+		Clientset:      kcfg.Clientset,
+		KubeConfigPath: kcfg.KubeConfigPath,
+		RestConfig:     kcfg.RestConfig,
+	}
+	err = utils.ExportCluster(kubernetesConfig, cl)
+	if err != nil {
+		log.Error().Err(err).Msg("error exporting cluster object")
+		return err
+	}
+
+	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+	}
 
 	if !ciFlag {
 		reports.CivoHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
