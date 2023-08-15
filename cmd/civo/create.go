@@ -1361,6 +1361,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	err = utils.ExportCluster(kubernetesConfig, cl)
 	if err != nil {
 		log.Error().Err(err).Msg("error exporting cluster object")
+		viper.Set("kubefirst.setup-complete", false)
+		viper.Set("kubefirst-checks.cluster-install-complete", false)
+		viper.WriteConfig()
 		return err
 	}
 
