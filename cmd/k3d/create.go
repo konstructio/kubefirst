@@ -1322,7 +1322,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
 		kcfg.Clientset,
 		"app.kubernetes.io/instance",
-		"kubefirst-console",
+		"kubefirst",
 		"kubefirst",
 		600,
 	)
@@ -1336,7 +1336,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	//* console port-forward
+	// * console port-forward
 	consoleStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(consoleStopChannel)
@@ -1352,10 +1352,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	)
 
 	progressPrinter.IncrementTracker("wrapping-up", 1)
-
-	log.Info().Msg("kubefirst installation complete")
-	log.Info().Msg("welcome to your new kubefirst platform running in K3d")
-	time.Sleep(time.Second * 1) // allows progress bars to finish
 
 	// Mark cluster install as complete
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallCompleted, "")
@@ -1396,6 +1392,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}
+
+	log.Info().Msg("kubefirst installation complete")
+	log.Info().Msg("welcome to your new kubefirst platform running in K3d")
+	time.Sleep(time.Second * 1) // allows progress bars to finish
 
 	if !ciFlag {
 		reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, false)
