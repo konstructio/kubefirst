@@ -279,8 +279,6 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		// Format git url based on full path to group
 		switch gitProtocolFlag {
 		case "https":
-			config.DestinationGitopsRepoGitURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
-			config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
 			config.DestinationGitopsRepoURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
 			config.DestinationMetaphorRepoURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
 		default:
