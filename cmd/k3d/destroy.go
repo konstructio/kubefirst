@@ -39,8 +39,8 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	// Check for existing port forwards before continuing
 	err := k8s.CheckForExistingPortForwards(9000)
 	if err != nil {
-		log.Fatal().Msgf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
-		return err
+		log.Error().Msgf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
+		return fmt.Errorf("%s (maybe the handoff screen is still open in another terminal) - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
 	}
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
