@@ -571,7 +571,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
-			config.DestinationGitopsRepoGitURL, //default to https for git interactions when creating remotes
+			config.DestinationGitopsRepoURL, //default to https for git interactions when creating remotes
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
