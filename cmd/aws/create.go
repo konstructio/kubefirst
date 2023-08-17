@@ -703,7 +703,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			gitProviderFlag,
 			clusterNameFlag,
 			clusterTypeFlag,
-			config.DestinationGitopsRepoGitURL, //default to https for git interactions when creating remotes
+			config.DestinationGitopsRepoURL, //default to https for git interactions when creating remotes
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
@@ -751,11 +751,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["GITHUB_OWNER"] = cGitOwner
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
+
 			// Erase public key to prevent it from being created if the git protocol argument is set to htps
 			switch config.GitProtocol {
-			case "https":
-				tfEnvs["TF_VAR_kbot_ssh_public_key"] = ""
+			case "ssh":
+				tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 			}
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
@@ -792,9 +792,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_gitlab_owner"] = viper.GetString("flags.gitlab-owner")
 			// Erase public key to prevent it from being created if the git protocol argument is set to htps
 			switch config.GitProtocol {
-			case "https":
-				tfEnvs["TF_VAR_kbot_ssh_public_key"] = ""
-			default:
+			case "ssh":
 				tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 			}
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
