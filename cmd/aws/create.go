@@ -10,6 +10,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -941,10 +942,33 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
+		w, err := gitopsRepo.Worktree()
+		if err != nil {
+			return err
+		}
+
+		acceptableError := errors.New("already up-to-date")
+
+		// Info("git pull origin")
+		err = w.Pull(&git.PullOptions{
+			RemoteName: config.GitProvider,
+			Auth:       httpAuth,
+			// If your local branch is not master,you will have to specify the branch
+			// ReferenceName: plumbing.NewBranchReferenceName(config.GitProvider),
+		})
+		if err != nil {
+			if err.Error() != acceptableError.Error() {
+				return err
+			}
+			log.Info().Msg("Repo already up to date, nothing to push")
+		}
+		log.Info().Msgf("Pulled latest changes into gitops repo from %s", config.GitProvider)
+
 		err = gitClient.Commit(gitopsRepo, "committing detokenized kms key")
 		if err != nil {
 			return err
 		}
+		log.Info().Msgf("Latest changes have been committed into gitops repo from %s", config.GitProvider)
 
 		err = gitopsRepo.Push(&git.PushOptions{
 			RemoteName: config.GitProvider,
