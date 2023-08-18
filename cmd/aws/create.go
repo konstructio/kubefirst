@@ -300,7 +300,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		switch gitProtocolFlag {
 		case "https":
 			config.DestinationGitopsRepoURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
-			config.DestinationGitopsRepoURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
 			config.DestinationMetaphorRepoURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
 		default:
 			config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
@@ -695,9 +694,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("generating your new gitops repository")
 
 		// These need to be set for reference elsewhere
-		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), gitopsRepoURL)
+		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoURL)
 		viper.WriteConfig()
-		gitopsDirectoryTokens.GitopsRepoGitURL = gitopsRepoURL
+		gitopsDirectoryTokens.GitopsRepoGitURL = config.DestinationGitopsRepoGitURL
 
 		err := providerConfigs.PrepareGitRepositories(
 			awsinternal.CloudProvider,
@@ -734,7 +733,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// * handle git terraform apply
 	progressPrinter.AddTracker("applying-git-terraform", fmt.Sprintf("Applying %s Terraform", config.GitProvider), 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
-	log.Info().Msgf("referencing gitops repository: %s", gitopsRepoURL)
+	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoURL)
 	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoURL)
 	switch config.GitProvider {
 	case "github":
@@ -818,7 +817,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	log.Info().Msgf("referencing gitops repository: %s", gitopsRepoURL)
+	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoURL)
 	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoURL)
 
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
@@ -850,7 +849,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			Auth:       httpAuth,
 		})
 		if err != nil {
-			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", gitopsRepoURL, err)
+			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoURL, err)
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
 			if !strings.Contains(msg, "already up-to-date") {
 				log.Panic().Msg(msg)
@@ -968,7 +967,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		log.Info().Msgf("Latest changes have been committed into gitops repo from %s", config.GitProvider)
+		log.Info().Msgf("Latest changes have been into gitops repo from %s", config.GitProvider)
 
 		err = gitopsRepo.Push(&git.PushOptions{
 			RemoteName: config.GitProvider,
