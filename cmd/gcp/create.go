@@ -281,7 +281,6 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		config.DestinationMetaphorRepoURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
 		config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
 		config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
-		}
 	}
 
 	var sshPrivateKey, sshPublicKey string
