@@ -671,7 +671,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 			externalDNSProviderSecretKey = "cf-api-token"
 		} else {
 			externalDNSProviderTokenEnvName = "GCP_AUTH"
-			externalDNSProviderSecretKey = fmt.Sprintf("%s-token", gcp.CloudProvider)
+			externalDNSProviderSecretKey = fmt.Sprintf("google_application_credentials")
 		}
 
 		gitopsDirectoryTokens.ExternalDNSProviderName = dnsProviderFlag
