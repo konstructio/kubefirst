@@ -1146,6 +1146,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 			clientset,
 			ecrFlag,
 			containerRegistryURL,
+			dnsProviderFlag,
+			gitopsDirectoryTokens.CloudProvider,
 		)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")

@@ -46,6 +46,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/vault"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/thanhpk/randstr"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -684,6 +685,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		gitopsDirectoryTokens.ExternalDNSProviderTokenEnvName = externalDNSProviderTokenEnvName
 		gitopsDirectoryTokens.ExternalDNSProviderSecretName = fmt.Sprintf("%s-creds", gcp.CloudProvider)
 		gitopsDirectoryTokens.ExternalDNSProviderSecretKey = externalDNSProviderSecretKey
+		gitopsDirectoryTokens.GoogleUniqueness = randstr.String(16)
 
 		// Determine if anything exists at domain apex
 		apexContentExists := gcp.GetDomainApexContent(domainNameFlag)
@@ -872,6 +874,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		tfEnvs["GOOGLE_CLOUD_KEYFILE_JSON"] = string(a)
 		tfEnvs["TF_VAR_project"] = gcpProjectFlag
 		tfEnvs["TF_VAR_force_destroy"] = strconv.FormatBool(forceDestroy)
+		tfEnvs["TF_VAR_uniqueness"] = gitopsDirectoryTokens.GoogleUniqueness
 		tfEntrypoint := config.GitopsDir + "/terraform/gcp/services"
 		err = terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -943,6 +946,8 @@ func createGCP(cmd *cobra.Command, args []string) error {
 			config.GitProtocol,
 			os.Getenv("CF_API_TOKEN"),
 			config.GCPAuth,
+			dnsProviderFlag,
+			gitopsDirectoryTokens.CloudProvider,
 		)
 
 		if err != nil {
