@@ -362,6 +362,8 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		GitopsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
 		GitopsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
 		ClusterId:                    clusterId,
+
+		ContainerRegistryURL: fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
 	}
 
 	viper.Set(fmt.Sprintf("%s.atlantis.webhook.url", config.GitProvider), fmt.Sprintf("https://atlantis.%s/events", domainNameFlag))
@@ -669,7 +671,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 			externalDNSProviderSecretKey = "cf-api-token"
 		} else {
 			externalDNSProviderTokenEnvName = "GCP_AUTH"
-			externalDNSProviderSecretKey = fmt.Sprintf("%s-token", gcp.CloudProvider)
+			externalDNSProviderSecretKey = fmt.Sprintf("google_application_credentials")
 		}
 
 		gitopsDirectoryTokens.ExternalDNSProviderName = dnsProviderFlag
