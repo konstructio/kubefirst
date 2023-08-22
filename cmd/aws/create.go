@@ -602,7 +602,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", awsinternal.CloudProvider)
 	}
 
-	gitopsDirectoryTokens := providerConfigs.GitOpsDirectoryValues{
+	gitopsDirectoryTokens := providerConfigs.GitopsDirectoryValues{
 		AlertsEmail:               alertsEmailFlag,
 		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
 		AwsIamArnAccountRoot:      fmt.Sprintf("arn:aws:iam::%s:root", *iamCaller.Account),
@@ -640,7 +640,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		GitNamespace:         "N/A",
 		GitProvider:          config.GitProvider,
 		GitopsRepoGitURL:     config.DestinationGitopsRepoGitURL,
-		GitopsRepoHttpsURL:   config.DestinationGitopsRepoHttpsURL,
 		GitopsRepoURL:        config.DestinationGitopsRepoURL,
 		GitRunner:            fmt.Sprintf("%s Runner", config.GitProvider),
 		GitRunnerDescription: fmt.Sprintf("Self Hosted %s Runner", config.GitProvider),
@@ -656,8 +655,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 		GitlabOwnerGroupID: viper.GetInt("flags.gitlab-owner-group-id"),
 		GitlabUser:         cGitUser,
 
-		GitOpsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
-		GitOpsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
+		GitopsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
+		GitopsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
 		ClusterId:                    clusterId,
 
 		AtlantisWebhookURL:   atlantisWebhookURL,
@@ -674,7 +673,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", domainNameFlag),
 	}
 
-	config.GitOpsDirectoryValues = &gitopsDirectoryTokens
+	config.GitopsDirectoryValues = &gitopsDirectoryTokens
 	config.MetaphorDirectoryValues = &metaphorDirectoryTokens
 
 	//* git clone and detokenize the gitops repository
@@ -687,7 +686,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		// These need to be set for reference elsewhere
 		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoGitURL)
 		viper.WriteConfig()
-		gitopsDirectoryTokens.GitOpsRepoGitURL = config.DestinationGitopsRepoGitURL
+		gitopsDirectoryTokens.GitopsRepoGitURL = config.DestinationGitopsRepoGitURL
 
 		err := providerConfigs.PrepareGitRepositories(
 			awsinternal.CloudProvider,
@@ -1310,6 +1309,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		if viper.GetString("flags.dns-provider") == "cloudflare" {
 			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareAPIToken
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareOriginCaIssuerAPIToken
 		} else {
 			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CivoToken
 		}

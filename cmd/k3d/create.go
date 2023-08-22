@@ -479,7 +479,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
 	}
 
-	gitopsTemplateTokens := k3d.GitopsTokenValues{
+	gitopsTemplateTokens := k3d.GitopsDirectoryValues{
 		GithubOwner:                   cGitOwner,
 		GithubUser:                    cGitUser,
 		GitlabOwner:                   cGitOwner,
@@ -503,7 +503,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		KubefirstTeam:                 kubefirstTeam,
 		KubeconfigPath:                config.Kubeconfig,
 		GitopsRepoGitURL:              config.DestinationGitopsRepoGitURL,
-		GitopsRepoHttpsURL:            config.DestinationGitopsRepoHttpsURL,
 		GitopsRepoURL:                 config.DestinationGitopsRepoURL,
 		GitProvider:                   config.GitProvider,
 		ClusterId:                     clusterId,
