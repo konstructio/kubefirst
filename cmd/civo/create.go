@@ -266,6 +266,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		cGitOwner,
 		gitProtocolFlag,
 		os.Getenv("CF_API_TOKEN"),
+		os.Getenv("CF_ORIGIN_CA_ISSUER_API_TOKEN"),
 	)
 	config.CivoToken = os.Getenv("CIVO_TOKEN")
 	switch gitProviderFlag {
