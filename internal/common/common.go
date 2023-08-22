@@ -55,7 +55,7 @@ func versionCheck() (res *CheckResponse, skip bool) {
 	resp, err := http.Get("https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/k/kubefirst.rb")
 
 	if err != nil {
-		fmt.Printf("checking for a newer version failed with: %s", err)
+		fmt.Printf("checking for a newer version failed (cannot get Homebrew formula) with: %s", err)
 		return nil, true
 	}
 	defer resp.Body.Close()
@@ -64,7 +64,7 @@ func versionCheck() (res *CheckResponse, skip bool) {
 		bodyBytes, err := io.ReadAll(resp.Body)
 
 		if err != nil {
-			fmt.Printf("checking for a newer version failed with: %s", err)
+			fmt.Printf("checking for a newer version failed (cannot read the file) with: %s", err)
 			return nil, true
 		}
 
@@ -75,11 +75,11 @@ func versionCheck() (res *CheckResponse, skip bool) {
 			latestVersion = matches[1]
 			fmt.Printf(latestVersion)
 		} else {
-			fmt.Printf("checking for a newer version failed with: %s", err)
+			fmt.Printf("checking for a newer version failed (no reference to kubefirst release) with: %s", err)
 			return nil, true
 		}
 	} else {
-		fmt.Printf("checking for a newer version failed with: %s", err)
+		fmt.Printf("checking for a newer version failed (HTTP error) with: %s", err)
 		return nil, true
 	}
 
