@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -82,6 +83,11 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	}
 
 	domainNameFlag, err := cmd.Flags().GetString("domain-name")
+	if err != nil {
+		return err
+	}
+
+	forceDestroy, err := cmd.Flags().GetBool("force_destroy")
 	if err != nil {
 		return err
 	}
@@ -865,6 +871,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		a, _ := os.ReadFile(config.GCPAuth)
 		tfEnvs["GOOGLE_CLOUD_KEYFILE_JSON"] = string(a)
 		tfEnvs["TF_VAR_project"] = gcpProjectFlag
+		tfEnvs["TF_VAR_force_destroy"] = strconv.FormatBool(forceDestroy)
 		tfEntrypoint := config.GitopsDir + "/terraform/gcp/services"
 		err = terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
