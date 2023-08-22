@@ -32,6 +32,7 @@ func destroyGCP(cmd *cobra.Command, args []string) error {
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
 	gitProtocol := viper.GetString("flags.git-protocol")
+	forceDestroy := viper.GetBool("flags.force_destroy")
 	// _, err := helpers.EvalDestroy(gcp.CloudProvider, gitProvider)
 	// if err != nil {
 	// 	return err
@@ -167,6 +168,7 @@ func destroyGCP(cmd *cobra.Command, args []string) error {
 			tfEnvs["GITLAB_TOKEN"] = cGitToken
 			tfEnvs["GOOGLE_CLOUD_KEYFILE_JSON"] = string(a)
 			tfEnvs["TF_VAR_project"] = gcpProject
+			tfEnvs["TF_VAR_force_destroy"] = strconv.FormatBool(forceDestroy)
 			err = terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				log.Printf("error executing terraform destroy %s", tfEntrypoint)
