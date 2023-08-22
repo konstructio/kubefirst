@@ -60,28 +60,28 @@ func versionCheck() (res *CheckResponse, skip bool) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusOK {
-		bodyBytes, err := io.ReadAll(resp.Body)
-
-		if err != nil {
-			fmt.Printf("checking for a newer version failed (cannot read the file) with: %s", err)
-			return nil, true
-		}
-
-		bodyString := string(bodyBytes)
-		if strings.Contains(bodyString, "url \"https://github.com/kubefirst/kubefirst/archive/refs/tags/") {
-			re := regexp.MustCompile(`.*/v(.*).tar.gz"`)
-			matches := re.FindStringSubmatch(bodyString)
-			latestVersion = matches[1]
-			fmt.Printf(latestVersion)
-		} else {
-			fmt.Printf("checking for a newer version failed (no reference to kubefirst release) with: %s", err)
-			return nil, true
-		}
-	} else {
+if resp.StatusCode != http.StatusOK {
 		fmt.Printf("checking for a newer version failed (HTTP error) with: %s", err)
 		return nil, true
 	}
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("checking for a newer version failed (cannot read the file) with: %s", err)
+		return nil, true
+	}
+
+	bodyString := string(bodyBytes)
+
+	if !strings.Contains(bodyString, "url \"https://github.com/kubefirst/kubefirst/archive/refs/tags/") {
+		fmt.Printf("checking for a newer version failed (no reference to kubefirst release) with: %s", err)
+		return nil, true
+	}
+	
+	re := regexp.MustCompile(`.*/v(.*).tar.gz"`)
+	matches := re.FindStringSubmatch(bodyString)
+	latestVersion = matches[1]
+	fmt.Printf(latestVersion)
 
 	return &CheckResponse{
 		Current:  configs.K1Version,
