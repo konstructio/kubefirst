@@ -332,8 +332,10 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		KubefirstTeam:             kubefirstTeam,
 		KubefirstVersion:          configs.K1Version,
 
-		GCPAuth:    config.GCPAuth,
-		GCPProject: gcpProjectFlag,
+		GCPAuth:          config.GCPAuth,
+		GCPProject:       gcpProjectFlag,
+		GoogleUniqueness: randstr.String(5),
+		ForceDestroy:     strconv.FormatBool(forceDestroy),
 
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
 		ArgoCDIngressNoHTTPSURL:        fmt.Sprintf("argocd.%s", domainNameFlag),
@@ -685,7 +687,6 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		gitopsDirectoryTokens.ExternalDNSProviderTokenEnvName = externalDNSProviderTokenEnvName
 		gitopsDirectoryTokens.ExternalDNSProviderSecretName = fmt.Sprintf("%s-creds", gcp.CloudProvider)
 		gitopsDirectoryTokens.ExternalDNSProviderSecretKey = externalDNSProviderSecretKey
-		gitopsDirectoryTokens.GoogleUniqueness = randstr.String(16)
 
 		// Determine if anything exists at domain apex
 		apexContentExists := gcp.GetDomainApexContent(domainNameFlag)
@@ -873,8 +874,6 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		a, _ := os.ReadFile(config.GCPAuth)
 		tfEnvs["GOOGLE_CLOUD_KEYFILE_JSON"] = string(a)
 		tfEnvs["TF_VAR_project"] = gcpProjectFlag
-		tfEnvs["TF_VAR_force_destroy"] = strconv.FormatBool(forceDestroy)
-		tfEnvs["TF_VAR_uniqueness"] = gitopsDirectoryTokens.GoogleUniqueness
 		tfEntrypoint := config.GitopsDir + "/terraform/gcp/services"
 		err = terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
