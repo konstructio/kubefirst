@@ -60,7 +60,7 @@ func versionCheck() (res *CheckResponse, skip bool) {
 	}
 	defer resp.Body.Close()
 
-if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("checking for a newer version failed (HTTP error) with: %s", err)
 		return nil, true
 	}
@@ -72,16 +72,14 @@ if resp.StatusCode != http.StatusOK {
 	}
 
 	bodyString := string(bodyBytes)
-
 	if !strings.Contains(bodyString, "url \"https://github.com/kubefirst/kubefirst/archive/refs/tags/") {
 		fmt.Printf("checking for a newer version failed (no reference to kubefirst release) with: %s", err)
 		return nil, true
 	}
-	
+
 	re := regexp.MustCompile(`.*/v(.*).tar.gz"`)
 	matches := re.FindStringSubmatch(bodyString)
 	latestVersion = matches[1]
-	fmt.Printf(latestVersion)
 
 	return &CheckResponse{
 		Current:  configs.K1Version,
