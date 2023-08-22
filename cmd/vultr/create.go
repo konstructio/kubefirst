@@ -281,8 +281,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		// Format git url based on full path to group
 		switch gitProtocolFlag {
 		case "https":
-			config.DestinationGitopsRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
-			config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
+			config.DestinationMetaphorRepoURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
 			config.DestinationGitopsRepoURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
 			config.DestinationMetaphorRepoURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
 		default:
@@ -319,6 +318,15 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", vultr.CloudProvider)
 	}
 
+	// Swap tokens for git protocol
+	var gitopsRepoURL string
+	switch config.GitProtocol {
+	case "https":
+		gitopsRepoURL = config.DestinationGitopsRepoURL
+	default:
+		gitopsRepoURL = config.DestinationGitopsRepoGitURL
+	}
+
 	gitopsDirectoryTokens := providerConfigs.GitopsDirectoryValues{
 		AlertsEmail:               alertsEmailFlag,
 		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
@@ -352,9 +360,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		GitDescription:       fmt.Sprintf("%s hosted git", config.GitProvider),
 		GitNamespace:         "N/A",
 		GitProvider:          config.GitProvider,
-		GitopsRepoGitURL:     config.DestinationGitopsRepoGitURL,
-		GitopsRepoHttpsURL:   config.DestinationGitopsRepoHttpsURL,
-		GitopsRepoURL:        config.DestinationGitopsRepoURL,
+		GitopsRepoURL:        gitopsRepoURL,
 		GitRunner:            fmt.Sprintf("%s Runner", config.GitProvider),
 		GitRunnerDescription: fmt.Sprintf("Self Hosted %s Runner", config.GitProvider),
 		GitRunnerNS:          fmt.Sprintf("%s-runner", config.GitProvider),
@@ -683,7 +689,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("generating your new gitops repository")
 
 		// These need to be set for reference elsewhere
-		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoHttpsURL)
+		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoURL)
 		viper.WriteConfig()
 
 		// Determine if anything exists at domain apex
@@ -694,11 +700,11 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
-			config.DestinationGitopsRepoHttpsURL, //default to https for git interactions when creating remotes
+			config.DestinationGitopsRepoURL, //default to https for git interactions when creating remotes
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
-			config.DestinationMetaphorRepoHttpsURL, //default to https for git interactions when creating remotes
+			config.DestinationMetaphorRepoURL, //default to https for git interactions when creating remotes
 			config.K1Dir,
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
@@ -763,6 +769,11 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{}
 			tfEnvs = vultr.GetGitlabTerraformEnvs(config, tfEnvs, cGitlabOwnerGroupID)
+			// Erase public key to prevent it from being created if the git protocol argument is set to htps
+			switch config.GitProtocol {
+			case "https":
+				tfEnvs["TF_VAR_kbot_ssh_public_key"] = ""
+			}
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
@@ -785,8 +796,8 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoHttpsURL)
-	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoHttpsURL)
+	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoURL)
+	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoURL)
 
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
 	if !executionControl {
@@ -818,7 +829,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			Auth:       httpAuth,
 		})
 		if err != nil {
-			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoHttpsURL, err)
+			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoURL, err)
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
 			if !strings.Contains(msg, "already up-to-date") {
 				log.Panic().Msg(msg)
@@ -833,7 +844,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			},
 		)
 		if err != nil {
-			msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoHttpsURL, err)
+			msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoURL, err)
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
 			if !strings.Contains(msg, "already up-to-date") {
 				log.Panic().Msg(msg)
@@ -934,7 +945,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			config.GitProvider,
 			cGitUser,
 			os.Getenv("CF_API_TOKEN"),
-			config.DestinationGitopsRepoURL,
+			gitopsRepoURL,
 			config.GitProtocol,
 		)
 		if err != nil {
@@ -1092,7 +1103,8 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		}
 
 		log.Info().Msg("applying the registry application to argocd")
-		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+		registryApplicationObject := argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+
 		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
