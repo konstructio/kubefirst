@@ -362,6 +362,8 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		GitopsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
 		GitopsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
 		ClusterId:                    clusterId,
+
+		ContainerRegistryURL: fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
 	}
 
 	viper.Set(fmt.Sprintf("%s.atlantis.webhook.url", config.GitProvider), fmt.Sprintf("https://atlantis.%s/events", domainNameFlag))
