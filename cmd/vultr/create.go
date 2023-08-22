@@ -947,6 +947,8 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			os.Getenv("CF_API_TOKEN"),
 			gitopsRepoURL,
 			config.GitProtocol,
+			dnsProviderFlag,
+			gitopsDirectoryTokens.CloudProvider,
 		)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
