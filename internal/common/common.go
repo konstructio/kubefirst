@@ -69,12 +69,14 @@ func versionCheck() (res *CheckResponse, skip bool) {
 		}
 
 		bodyString := string(bodyBytes)
-		for _, sentence := range strings.Split(bodyString, "\n") {
-			if strings.Contains(sentence, "url \"https://github.com/kubefirst/kubefirst/archive/refs/tags/") {
-				re := regexp.MustCompile(`.*/v(.*).tar.gz"`)
-				matches := re.FindStringSubmatch(sentence)
-				latestVersion = matches[1]
-			}
+		if strings.Contains(bodyString, "url \"https://github.com/kubefirst/kubefirst/archive/refs/tags/") {
+			re := regexp.MustCompile(`.*/v(.*).tar.gz"`)
+			matches := re.FindStringSubmatch(bodyString)
+			latestVersion = matches[1]
+			fmt.Printf(latestVersion)
+		} else {
+			fmt.Printf("checking for a newer version failed with: %s", err)
+			return nil, true
 		}
 	} else {
 		fmt.Printf("checking for a newer version failed with: %s", err)
