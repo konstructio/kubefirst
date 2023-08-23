@@ -314,7 +314,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		externalDNSProviderSecretKey = "cf-api-token"
 	} else {
 		externalDNSProviderTokenEnvName = "GCP_AUTH"
-		externalDNSProviderSecretKey = fmt.Sprintf("google_application_credentials")
+		externalDNSProviderSecretKey = fmt.Sprintf("google-auth")
 	}
 
 	// Swap tokens for git protocol
