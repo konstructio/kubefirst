@@ -308,6 +308,15 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		kubefirstTeam = "false"
 	}
 
+	var externalDNSProviderTokenEnvName, externalDNSProviderSecretKey string
+	if dnsProviderFlag == "cloudflare" {
+		externalDNSProviderTokenEnvName = "CF_API_TOKEN"
+		externalDNSProviderSecretKey = "cf-api-token"
+	} else {
+		externalDNSProviderTokenEnvName = "GCP_AUTH"
+		externalDNSProviderSecretKey = fmt.Sprintf("google_application_credentials")
+	}
+
 	// Swap tokens for git protocol
 	var gitopsRepoURL string
 	switch config.GitProtocol {
@@ -348,6 +357,11 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		VaultIngressNoHTTPSURL:         fmt.Sprintf("vault.%s", domainNameFlag),
 		VaultDataBucketName:            fmt.Sprintf("%s-vault-data-%s", gcpProjectFlag, clusterNameFlag),
 		VouchIngressURL:                fmt.Sprintf("https://vouch.%s", domainNameFlag),
+
+		ExternalDNSProviderName:         dnsProviderFlag,
+		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
+		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-auth", gcp.CloudProvider),
+		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
 
 		GitDescription:       fmt.Sprintf("%s hosted git", config.GitProvider),
 		GitNamespace:         "N/A",
@@ -606,7 +620,8 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	}
 
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
-
+	progressPrinter.IncrementTracker("preflight-checks", 1)
+	progressPrinter.IncrementTracker("preflight-checks", 1)
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitCompleted, "")
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallStarted, "")
 
@@ -673,20 +688,6 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		// These need to be set for reference elsewhere
 		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoURL)
 		viper.WriteConfig()
-
-		var externalDNSProviderTokenEnvName, externalDNSProviderSecretKey string
-		if dnsProviderFlag == "cloudflare" {
-			externalDNSProviderTokenEnvName = "CF_API_TOKEN"
-			externalDNSProviderSecretKey = "cf-api-token"
-		} else {
-			externalDNSProviderTokenEnvName = "GCP_AUTH"
-			externalDNSProviderSecretKey = fmt.Sprintf("google_application_credentials")
-		}
-
-		gitopsDirectoryTokens.ExternalDNSProviderName = dnsProviderFlag
-		gitopsDirectoryTokens.ExternalDNSProviderTokenEnvName = externalDNSProviderTokenEnvName
-		gitopsDirectoryTokens.ExternalDNSProviderSecretName = fmt.Sprintf("%s-creds", gcp.CloudProvider)
-		gitopsDirectoryTokens.ExternalDNSProviderSecretKey = externalDNSProviderSecretKey
 
 		// Determine if anything exists at domain apex
 		apexContentExists := gcp.GetDomainApexContent(domainNameFlag)
