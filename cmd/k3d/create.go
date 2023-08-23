@@ -23,7 +23,6 @@ import (
 	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
 	githttps "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/telemetryShim"
 	"github.com/kubefirst/kubefirst/internal/utilities"
@@ -474,11 +473,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitCompleted, "")
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallStarted, "")
 
-	//* generate public keys for ssh
-	publicKeys, err := ssh.NewPublicKeys("git", []byte(viper.GetString("kbot.private-key")), "")
-	if err != nil {
-		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
-	}
 
 	// Swap tokens for git protocol
 	switch config.GitProtocol {
@@ -1321,7 +1315,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 	err = gitopsRepo.Push(&git.PushOptions{
 		RemoteName: config.GitProvider,
-		Auth:       publicKeys,
+		Auth:       httpAuth,
 	})
 	if err != nil {
 		log.Info().Msgf("Error pushing repo: %s", err)
