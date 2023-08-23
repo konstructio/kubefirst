@@ -442,7 +442,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg(fmt.Sprintf("already completed %s checks - continuing", config.GitProvider))
 		progressPrinter.IncrementTracker("preflight-checks", 1)
 	}
-
+	// Swap tokens for git protocol
+	var gitopsRepoURL string
 	executionControl = viper.GetBool("kubefirst-checks.kbot-setup")
 	if !executionControl {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricKbotSetupStarted, "")
@@ -479,7 +480,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
 	}
 
-	gitopsTemplateTokens := k3d.GitopsDirectoryValues{
+	// Swap tokens for git protocol
+	switch config.GitProtocol {
+	case "https":
+		gitopsRepoURL = config.DestinationGitopsRepoURL
+	default:
+		gitopsRepoURL = config.DestinationGitopsRepoGitURL
+	}
+
+	gitopsDirectoryTokens := k3d.GitopsDirectoryValues{
 		GithubOwner:                   cGitOwner,
 		GithubUser:                    cGitUser,
 		GitlabOwner:                   cGitOwner,
@@ -502,17 +511,16 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		KubefirstVersion:              configs.K1Version,
 		KubefirstTeam:                 kubefirstTeam,
 		KubeconfigPath:                config.Kubeconfig,
-		GitopsRepoGitURL:              config.DestinationGitopsRepoGitURL,
-		GitopsRepoURL:                 config.DestinationGitopsRepoURL,
+		GitopsRepoURL:                 gitopsRepoURL,
 		GitProvider:                   config.GitProvider,
 		ClusterId:                     clusterId,
 		CloudProvider:                 k3d.CloudProvider,
 	}
 
 	if useTelemetryFlag {
-		gitopsTemplateTokens.UseTelemetry = "true"
+		gitopsDirectoryTokens.UseTelemetry = "true"
 	} else {
-		gitopsTemplateTokens.UseTelemetry = "false"
+		gitopsDirectoryTokens.UseTelemetry = "false"
 	}
 
 	//* generate http credentials for git auth over https
@@ -563,13 +571,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
-			config.DestinationGitopsRepoHttpsURL,
+			config.DestinationGitopsRepoURL, //default to https for git interactions when creating remotes
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
-			config.DestinationMetaphorRepoHttpsURL,
+			config.DestinationMetaphorRepoURL, //default to https for git interactions when creating remotes
 			config.K1Dir,
-			&gitopsTemplateTokens,
+			&gitopsDirectoryTokens,
 			config.MetaphorDir,
 			&metaphorTemplateTokens,
 			gitProtocolFlag,
@@ -609,6 +617,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
 			tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
 			tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
+			// Erase public key to prevent it from being created if the git protocol argument is set to htps
+			switch config.GitProtocol {
+			case "https":
+				tfEnvs["TF_VAR_kbot_ssh_public_key"] = ""
+			}
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
@@ -643,6 +656,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
 			tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
 			tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
+			// Erase public key to prevent it from being created if the git protocol argument is set to htps
+			switch config.GitProtocol {
+			case "https":
+				tfEnvs["TF_VAR_kbot_ssh_public_key"] = ""
+			}
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
@@ -665,8 +683,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoHttpsURL)
-	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoHttpsURL)
+	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoGitURL)
+	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoURL)
 
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
 	if !executionControl {
@@ -700,7 +718,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			},
 		)
 		if err != nil {
-			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoHttpsURL, err)
+			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoGitURL, err)
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
 			if !strings.Contains(msg, "already up-to-date") {
 				log.Panic().Msg(msg)
@@ -715,7 +733,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			},
 		)
 		if err != nil {
-			msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoHttpsURL, err)
+			msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoURL, err)
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
 			if !strings.Contains(msg, "already up-to-date") {
 				log.Panic().Msg(msg)
@@ -779,7 +797,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		err = k3d.AddK3DSecrets(
 			atlantisWebhookSecret,
 			viper.GetString("kbot.public-key"),
-			config.DestinationGitopsRepoURL,
+			gitopsRepoURL,
 			viper.GetString("kbot.private-key"),
 			config.GitProvider,
 			cGitUser,
@@ -1011,7 +1029,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 
 		log.Info().Msg("applying the registry application to argocd")
-		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+		registryApplicationObject := argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+
 		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
@@ -1275,7 +1294,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	err = k3d.PostRunPrepareGitopsRepository(clusterNameFlag,
 		config.GitopsDir,
-		&gitopsTemplateTokens,
+		&gitopsDirectoryTokens,
 	)
 	if err != nil {
 		log.Info().Msgf("Error detokenize post run: %s", err)

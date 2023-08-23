@@ -29,6 +29,7 @@ var (
 	gitopsTemplateURLFlag    string
 	gitopsTemplateBranchFlag string
 	useTelemetryFlag         bool
+	forceDestroyFlag         bool
 
 	// RootCredentials
 	copyArgoCDPasswordToClipboardFlag bool
@@ -74,7 +75,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "us-east1", "the GCP region to provision infrastructure in")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
-	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "gcp", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
+	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "google", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the GCP DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
 	createCmd.Flags().StringVar(&gcpProjectFlag, "gcp-project", "", "gcp project id (required)")
@@ -86,7 +87,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "", "the branch to clone for the gitops-template repository")
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
-
+	createCmd.Flags().BoolVar(&forceDestroyFlag, "force_destroy", false, "allows force destruction on objects (helpful for test environments, defaults to false)")
 	return createCmd
 }
 

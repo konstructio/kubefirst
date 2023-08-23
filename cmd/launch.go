@@ -45,7 +45,7 @@ func launchUp() *cobra.Command {
 		},
 	}
 
-	launchUpCmd.Flags().StringSliceVar(&additionalHelmFlags, "helm-flag", []string{}, "additional helm flag to pass to the `launch up` command - can be used any number of times")
+	launchUpCmd.Flags().StringSliceVar(&additionalHelmFlags, "helm-flag", []string{}, "additional helm flag to pass to the launch up command - can be used any number of times")
 
 	return launchUpCmd
 }

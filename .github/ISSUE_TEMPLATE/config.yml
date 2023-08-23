@@ -1,3 +1,4 @@
+blank_issues_enabled: false
 contact_links:
   - name: Documentations
     url: https://github.com/kubefirst/docs/issues/new?assignees=&labels=docs&template=docs.yml&title=%5BDocs%5D%3A+

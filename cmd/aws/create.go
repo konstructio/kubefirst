@@ -10,6 +10,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -297,14 +298,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		// Format git url based on full path to group
-		switch gitProtocolFlag {
-		case "https":
-			config.DestinationGitopsRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
-			config.DestinationMetaphorRepoHttpsURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
-		default:
-			config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
-			config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
-		}
+		// Format git url based on full path to group
+		config.DestinationGitopsRepoURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
+		config.DestinationMetaphorRepoURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
+		config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
+		config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
 	}
 
 	vaultClient := &vault.Conf
@@ -684,7 +682,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("generating your new gitops repository")
 
 		// These need to be set for reference elsewhere
-		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoGitURL)
+		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoURL)
 		viper.WriteConfig()
 		gitopsDirectoryTokens.GitopsRepoGitURL = config.DestinationGitopsRepoGitURL
 
@@ -693,11 +691,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 			gitProviderFlag,
 			clusterNameFlag,
 			clusterTypeFlag,
-			config.DestinationGitopsRepoHttpsURL,
+			config.DestinationGitopsRepoURL, //default to https for git interactions when creating remotes
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
-			config.DestinationMetaphorRepoHttpsURL,
+			config.DestinationMetaphorRepoURL, //default to https for git interactions when creating remotes
 			config.K1Dir,
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
@@ -723,8 +721,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// * handle git terraform apply
 	progressPrinter.AddTracker("applying-git-terraform", fmt.Sprintf("Applying %s Terraform", config.GitProvider), 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
-	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoHttpsURL)
-	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoHttpsURL)
+	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoURL)
+	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoURL)
 	switch config.GitProvider {
 	case "github":
 		// //* create teams and repositories in github
@@ -741,7 +739,12 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["GITHUB_OWNER"] = cGitOwner
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
+
+			// Erase public key to prevent it from being created if the git protocol argument is set to htps
+			switch config.GitProtocol {
+			case "ssh":
+				tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
+			}
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
@@ -773,9 +776,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["GITLAB_OWNER"] = cGitOwner
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
-			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(viper.GetInt("flags.gitlab-owner-group-id"))
 			tfEnvs["TF_VAR_gitlab_owner"] = viper.GetString("flags.gitlab-owner")
+			// Erase public key to prevent it from being created if the git protocol argument is set to htps
+			switch config.GitProtocol {
+			case "ssh":
+				tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
+			}
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
@@ -798,8 +805,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoHttpsURL)
-	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoHttpsURL)
+	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoURL)
+	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoURL)
 
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
 	if !executionControl {
@@ -830,7 +837,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			Auth:       httpAuth,
 		})
 		if err != nil {
-			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoHttpsURL, err)
+			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoURL, err)
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
 			if !strings.Contains(msg, "already up-to-date") {
 				log.Panic().Msg(msg)
@@ -845,7 +852,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			},
 		)
 		if err != nil {
-			msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoHttpsURL, err)
+			msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoURL, err)
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
 			if !strings.Contains(msg, "already up-to-date") {
 				log.Panic().Msg(msg)
@@ -922,10 +929,33 @@ func createAws(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
+		w, err := gitopsRepo.Worktree()
+		if err != nil {
+			return err
+		}
+
+		acceptableError := errors.New("already up-to-date")
+
+		// Info("git pull origin")
+		err = w.Pull(&git.PullOptions{
+			RemoteName: config.GitProvider,
+			Auth:       httpAuth,
+			// If your local branch is not master,you will have to specify the branch
+			// ReferenceName: plumbing.NewBranchReferenceName(config.GitProvider),
+		})
+		if err != nil {
+			if err.Error() != acceptableError.Error() {
+				return err
+			}
+			log.Info().Msg("Repo already up to date, nothing to push")
+		}
+		log.Info().Msgf("Pulled latest changes into gitops repo from %s", config.GitProvider)
+
 		err = gitClient.Commit(gitopsRepo, "committing detokenized kms key")
 		if err != nil {
 			return err
 		}
+		log.Info().Msgf("Latest changes have been into gitops repo from %s", config.GitProvider)
 
 		err = gitopsRepo.Push(&git.PushOptions{
 			RemoteName: config.GitProvider,
@@ -1090,7 +1120,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			config.GitProvider,
 			cGitUser,
 			os.Getenv("CF_API_TOKEN"),
-			config.DestinationGitopsRepoURL,
+			gitopsRepoURL,
 			config.GitProtocol,
 			clientset,
 			ecrFlag,
@@ -1183,7 +1213,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCreateRegistryStarted, "")
 
 		log.Info().Msg("applying the registry application to argocd")
-		registryApplicationObject := argocd.GetArgoCDApplicationObject(config.DestinationGitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+		registryApplicationObject := argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+
 		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
@@ -1311,7 +1342,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareAPIToken
 			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareOriginCaIssuerAPIToken
 		} else {
-			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CivoToken
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = "AWS_Placeholder"
 		}
 
 		tfEnvs["TF_VAR_email_address"] = "your@email.com"

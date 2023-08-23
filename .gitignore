@@ -25,3 +25,6 @@ go.test
 kubefirst.yaml
 # kubefirst # <- this is causing files in docs to not commit, need a more explicit path ignored
 
+__debug_*
+kubefirst
+launch.json
