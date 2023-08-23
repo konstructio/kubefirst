@@ -1303,7 +1303,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
 		kcfg.Clientset,
 		"app.kubernetes.io/instance",
-		"kubefirst-console",
+		"kubefirst",
 		"kubefirst",
 		1200,
 	)
@@ -1332,10 +1332,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		9094,
 		consoleStopChannel,
 	)
-
-	log.Info().Msg("kubefirst installation complete")
-	log.Info().Msg("welcome to your new kubefirst platform powered by Civo cloud")
-	time.Sleep(time.Second * 1) // allows progress bars to finish
 
 	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
 	if err != nil {
@@ -1374,6 +1370,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		KubeConfigPath: kcfg.KubeConfigPath,
 		RestConfig:     kcfg.RestConfig,
 	}
+
 	err = utils.ExportCluster(kubernetesConfig, cl)
 	if err != nil {
 		log.Error().Err(err).Msg("error exporting cluster object")
@@ -1381,15 +1378,19 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst-checks.cluster-install-complete", false)
 		viper.WriteConfig()
 		return err
-	}
+	} else {
+		err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
 
-	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
-	if err != nil {
-		log.Error().Err(err).Msg("")
-	}
+		log.Info().Msg("kubefirst installation complete")
+		log.Info().Msg("welcome to your new kubefirst platform running in K3d")
+		time.Sleep(time.Second * 1) // allows progress bars to finish
 
-	if !ciFlag {
-		reports.CivoHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
+		if !ciFlag {
+			reports.CivoHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
+		}
 	}
 
 	defer func(c segment.SegmentClient) {
@@ -1400,4 +1401,5 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}(*segmentClient)
 
 	return nil
+
 }
