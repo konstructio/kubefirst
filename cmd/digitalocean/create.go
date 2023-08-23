@@ -344,7 +344,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 		ExternalDNSProviderName:         dnsProviderFlag,
 		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
-		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-creds", digitalocean.CloudProvider),
+		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-auth", digitalocean.CloudProvider),
 		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
 
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),

@@ -343,7 +343,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 		ExternalDNSProviderName:         dnsProviderFlag,
 		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
-		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-creds", vultr.CloudProvider),
+		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-auth", vultr.CloudProvider),
 		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
 
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
