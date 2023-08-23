@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -82,6 +83,11 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	}
 
 	domainNameFlag, err := cmd.Flags().GetString("domain-name")
+	if err != nil {
+		return err
+	}
+
+	forceDestroy, err := cmd.Flags().GetBool("force_destroy")
 	if err != nil {
 		return err
 	}
@@ -277,16 +283,10 @@ func createGCP(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		// Format git url based on full path to group
-		switch gitProtocolFlag {
-		case "https":
-			config.DestinationGitopsRepoURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
-			config.DestinationMetaphorRepoURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
-		default:
-			config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
-			config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
-			config.DestinationGitopsRepoURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
-			config.DestinationMetaphorRepoURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
-		}
+		config.DestinationGitopsRepoURL = fmt.Sprintf("https://gitlab.com/%s/gitops.git", gitlabClient.ParentGroupPath)
+		config.DestinationMetaphorRepoURL = fmt.Sprintf("https://gitlab.com/%s/metaphor.git", gitlabClient.ParentGroupPath)
+		config.DestinationGitopsRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/gitops.git", gitlabClient.ParentGroupPath)
+		config.DestinationMetaphorRepoGitURL = fmt.Sprintf("git@gitlab.com:%s/metaphor.git", gitlabClient.ParentGroupPath)
 	}
 
 	var sshPrivateKey, sshPublicKey string
@@ -368,6 +368,8 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		GitopsRepoAtlantisWebhookURL: fmt.Sprintf("https://atlantis.%s/events", domainNameFlag),
 		GitopsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
 		ClusterId:                    clusterId,
+
+		ContainerRegistryURL: fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
 	}
 
 	viper.Set(fmt.Sprintf("%s.atlantis.webhook.url", config.GitProvider), fmt.Sprintf("https://atlantis.%s/events", domainNameFlag))
@@ -666,7 +668,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("generating your new gitops repository")
 
 		// These need to be set for reference elsewhere
-		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoGitURL)
+		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoURL)
 		viper.WriteConfig()
 
 		var externalDNSProviderTokenEnvName, externalDNSProviderSecretKey string
@@ -675,7 +677,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 			externalDNSProviderSecretKey = "cf-api-token"
 		} else {
 			externalDNSProviderTokenEnvName = "GCP_AUTH"
-			externalDNSProviderSecretKey = fmt.Sprintf("%s-token", gcp.CloudProvider)
+			externalDNSProviderSecretKey = fmt.Sprintf("google_application_credentials")
 		}
 
 		gitopsDirectoryTokens.ExternalDNSProviderName = dnsProviderFlag
@@ -691,7 +693,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
-			config.DestinationGitopsRepoGitURL, //default to https for git interactions when creating remotes
+			config.DestinationGitopsRepoURL, //default to https for git interactions when creating remotes
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
@@ -794,7 +796,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoGitURL)
+	log.Info().Msgf("referencing gitops repository: %s", config.DestinationGitopsRepoURL)
 	log.Info().Msgf("referencing metaphor repository: %s", config.DestinationMetaphorRepoURL)
 
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
@@ -826,7 +828,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 			Auth:       httpAuth,
 		})
 		if err != nil {
-			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoGitURL, err)
+			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoURL, err)
 			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
 			log.Panic().Msg(msg)
 		}
@@ -869,6 +871,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		a, _ := os.ReadFile(config.GCPAuth)
 		tfEnvs["GOOGLE_CLOUD_KEYFILE_JSON"] = string(a)
 		tfEnvs["TF_VAR_project"] = gcpProjectFlag
+		tfEnvs["TF_VAR_force_destroy"] = strconv.FormatBool(forceDestroy)
 		tfEntrypoint := config.GitopsDir + "/terraform/gcp/services"
 		err = terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
