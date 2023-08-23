@@ -360,7 +360,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 
 		ExternalDNSProviderName:         dnsProviderFlag,
 		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
-		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-auth", gcp.CloudProvider),
+		ExternalDNSProviderSecretName:   fmt.Sprintf("google-auth"),
 		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
 
 		GitDescription:       fmt.Sprintf("%s hosted git", config.GitProvider),
