@@ -609,8 +609,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 		externalDNSProviderTokenEnvName = "CF_API_TOKEN"
 		externalDNSProviderSecretKey = "cf-api-token"
 	} else {
-		externalDNSProviderTokenEnvName = "CIVO_TOKEN"
-		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", awsinternal.CloudProvider)
+		externalDNSProviderTokenEnvName = "AWS_AUTH"
+		externalDNSProviderSecretKey = fmt.Sprintf("%s-auth", awsinternal.CloudProvider)
 	}
 
 	// Swap tokens for git protocol
@@ -628,7 +628,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		AwsIamArnAccountRoot:      fmt.Sprintf("arn:aws:iam::%s:root", *iamCaller.Account),
 		AwsNodeCapacityType:       "ON_DEMAND", // todo adopt cli flag
 		AwsAccountID:              *iamCaller.Account,
-		CloudProvider:             awsinternal.CloudProvider,
+		CloudProvider:             awsinterEXTERNAL_DNS_PROVIDER_SECRET_NAMEnal.CloudProvider,
 		CloudRegion:               cloudRegionFlag,
 		ClusterName:               clusterNameFlag,
 		ClusterType:               clusterTypeFlag,
