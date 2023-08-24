@@ -1288,7 +1288,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// Wait for console Deployment Pods to transition to Running
-	progressPrinter.AddTracker("deploying-kubefirst-console", "Deploying kubefirst console", 1)
+	progressPrinter.AddTracker("syncing-remaining-argocd-apps", "Syncing Remaining ArgoCD Apps", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
@@ -1309,7 +1309,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	//* console port-forward
-	progressPrinter.IncrementTracker("deploying-kubefirst-console", 1)
+	progressPrinter.IncrementTracker("syncing-remaining-argocd-apps", 1)
 	consoleStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(consoleStopChannel)
