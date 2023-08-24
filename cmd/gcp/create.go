@@ -343,7 +343,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 
 		GCPAuth:          config.GCPAuth,
 		GCPProject:       gcpProjectFlag,
-		GoogleUniqueness: randstr.String(5),
+		GoogleUniqueness: strings.ToLower(randstr.String(5)),
 		ForceDestroy:     strconv.FormatBool(forceDestroy),
 
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
