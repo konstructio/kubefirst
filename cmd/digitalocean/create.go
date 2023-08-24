@@ -316,7 +316,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		externalDNSProviderSecretKey = "cf-api-token"
 	} else {
 		externalDNSProviderTokenEnvName = "DO_TOKEN"
-		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", digitalocean.CloudProvider)
+		externalDNSProviderSecretKey = fmt.Sprintf("%s-auth", digitalocean.CloudProvider)
 	}
 
 	// Swap tokens for git protocol

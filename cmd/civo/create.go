@@ -316,7 +316,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		externalDNSProviderSecretKey = "cf-api-token"
 	} else {
 		externalDNSProviderTokenEnvName = "CIVO_TOKEN"
-		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", civo.CloudProvider)
+		externalDNSProviderSecretKey = fmt.Sprintf("%s-auth", civo.CloudProvider)
 	}
 
 	// Swap tokens for git protocol; used by tokens, argocd registry object, and secret bootstrapping for argo template credentials
