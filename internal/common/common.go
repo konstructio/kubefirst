@@ -8,12 +8,28 @@ package common
 
 import (
 	"fmt"
+	"io"
+	"net/http"
+	"regexp"
 	"runtime"
 	"strings"
 
-	"github.com/kubefirst/runtime/configs"
-	"github.com/tcnksm/go-latest"
+	"github.com/kubefirst/kubefirst/configs"
 )
+
+type CheckResponse struct {
+	// Current is current latest version on source.
+	Current string
+
+	// Outdate is true when target version is less than Curernt on source.
+	Outdated bool
+
+	// Latest is true when target version is equal to Current on source.
+	Latest bool
+
+	// New is true when target version is greater than Current on source.
+	New bool
+}
 
 // CheckForVersionUpdate determines whether or not there is a new cli version available
 func CheckForVersionUpdate() {
@@ -33,17 +49,42 @@ func CheckForVersionUpdate() {
 }
 
 // versionCheck compares local to remote version
-func versionCheck() (res *latest.CheckResponse, skip bool) {
-	githubTag := &latest.GithubTag{
-		Owner:             "kubefirst",
-		Repository:        "kubefirst",
-		FixVersionStrFunc: latest.DeleteFrontV(),
-	}
-	res, err := latest.Check(githubTag, strings.Replace(configs.K1Version, "v", "", 1))
+func versionCheck() (res *CheckResponse, skip bool) {
+	var latestVersion string
+
+	resp, err := http.Get("https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/k/kubefirst.rb")
+
 	if err != nil {
-		fmt.Printf("checking for a newer version failed with: %s", err)
+		fmt.Printf("checking for a newer version failed (cannot get Homebrew formula) with: %s", err)
+		return nil, true
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("checking for a newer version failed (HTTP error) with: %s", err)
 		return nil, true
 	}
 
-	return res, false
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("checking for a newer version failed (cannot read the file) with: %s", err)
+		return nil, true
+	}
+
+	bodyString := string(bodyBytes)
+	if !strings.Contains(bodyString, "url \"https://github.com/kubefirst/kubefirst/archive/refs/tags/") {
+		fmt.Printf("checking for a newer version failed (no reference to kubefirst release) with: %s", err)
+		return nil, true
+	}
+
+	re := regexp.MustCompile(`.*/v(.*).tar.gz"`)
+	matches := re.FindStringSubmatch(bodyString)
+	latestVersion = matches[1]
+
+	return &CheckResponse{
+		Current:  configs.K1Version,
+		Outdated: latestVersion < configs.K1Version,
+		Latest:   latestVersion == configs.K1Version,
+		New:      configs.K1Version > latestVersion,
+	}, false
 }
