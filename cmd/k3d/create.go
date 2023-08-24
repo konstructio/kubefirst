@@ -1404,19 +1404,19 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst-checks.cluster-install-complete", false)
 		viper.WriteConfig()
 		return err
-	}
+	} else {
+		err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
 
-	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
-	if err != nil {
-		log.Error().Err(err).Msg("")
-	}
+		log.Info().Msg("kubefirst installation complete")
+		log.Info().Msg("welcome to your new kubefirst platform running in K3d")
+		time.Sleep(time.Second * 1) // allows progress bars to finish
 
-	log.Info().Msg("kubefirst installation complete")
-	log.Info().Msg("welcome to your new kubefirst platform running in K3d")
-	time.Sleep(time.Second * 1) // allows progress bars to finish
-
-	if !ciFlag {
-		reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, false)
+		if !ciFlag {
+			reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, false)
+		}
 	}
 
 	defer func(c segment.SegmentClient) {
