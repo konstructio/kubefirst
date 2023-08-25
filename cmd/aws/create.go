@@ -614,7 +614,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		AwsIamArnAccountRoot:      fmt.Sprintf("arn:aws:iam::%s:root", *iamCaller.Account),
 		AwsNodeCapacityType:       "ON_DEMAND", // todo adopt cli flag
 		AwsAccountID:              *iamCaller.Account,
-		CloudProvider:             awsinterEXTERNAL_DNS_PROVIDER_SECRET_NAMEnal.CloudProvider,
+		CloudProvider:             awsinternal.CloudProvider,
 		CloudRegion:               cloudRegionFlag,
 		ClusterName:               clusterNameFlag,
 		ClusterType:               clusterTypeFlag,
