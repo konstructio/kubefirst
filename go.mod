@@ -14,12 +14,13 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/hashicorp/vault/api v1.9.0
-	github.com/kubefirst/runtime v0.3.9
+	github.com/kubefirst/runtime v0.3.12
 	github.com/rs/zerolog v1.29.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 	github.com/tcnksm/go-latest v0.0.0-20170313132115-e3007ae9052e
+	go.mongodb.org/mongo-driver v1.10.0
 	k8s.io/api v0.26.2
 	k8s.io/apimachinery v0.27.1
 	k8s.io/client-go v11.0.1-0.20190816222228-6d55c1b1f1ca+incompatible
@@ -167,7 +168,6 @@ require (
 	github.com/xlab/treeprint v1.1.0 // indirect
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
-	go.mongodb.org/mongo-driver v1.10.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
