@@ -313,8 +313,8 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		externalDNSProviderTokenEnvName = "CF_API_TOKEN"
 		externalDNSProviderSecretKey = "cf-api-token"
 	} else {
-		externalDNSProviderTokenEnvName = "GCP_AUTH"
-		externalDNSProviderSecretKey = fmt.Sprintf("google-auth")
+		externalDNSProviderTokenEnvName = "GOOGLE_AUTH"
+		externalDNSProviderSecretKey = fmt.Sprintf("%s-auth", dnsProviderFlag)
 	}
 
 	// Swap tokens for git protocol
@@ -360,7 +360,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 
 		ExternalDNSProviderName:         dnsProviderFlag,
 		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
-		ExternalDNSProviderSecretName:   fmt.Sprintf("google-auth"),
+		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-auth", dnsProviderFlag),
 		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
 
 		GitDescription:       fmt.Sprintf("%s hosted git", config.GitProvider),

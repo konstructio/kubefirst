@@ -37,7 +37,7 @@ var (
 	copyVaultPasswordToClipboardFlag  bool
 
 	// Supported providers
-	supportedDNSProviders = []string{"gcp", "cloudflare"}
+	supportedDNSProviders = []string{"google", "cloudflare"}
 	supportedGitProviders = []string{"github", "gitlab"}
 
 	// Supported git providers
