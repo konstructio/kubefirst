@@ -88,7 +88,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	forceDestroy, err := cmd.Flags().GetBool("force_destroy")
+	forceDestroy, err := cmd.Flags().GetBool("force-destroy")
 	if err != nil {
 		return err
 	}
