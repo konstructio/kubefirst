@@ -742,6 +742,11 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/github"
 			tfEnvs := map[string]string{}
 			tfEnvs = vultr.GetGithubTerraformEnvs(config, tfEnvs)
+			// Erase public key to prevent it from being created if the git protocol argument is set to htps
+			switch config.GitProtocol {
+			case "https":
+				tfEnvs["TF_VAR_kbot_ssh_public_key"] = ""
+			}
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
