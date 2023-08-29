@@ -1237,6 +1237,15 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
 		tfEnvs = digitalocean.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(config, tfEnvs)
+
+		//dns provider secret to be stored in vault for external dns lifecycle
+		switch dnsProviderFlag {
+		case "cloudflare":
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = config.CloudflareApiToken
+		default:
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = config.DigitaloceanToken
+		}
+
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
