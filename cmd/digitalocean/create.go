@@ -316,7 +316,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		externalDNSProviderSecretKey = "cf-api-token"
 	} else {
 		externalDNSProviderTokenEnvName = "DO_TOKEN"
-		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", digitalocean.CloudProvider)
+		externalDNSProviderSecretKey = fmt.Sprintf("%s-auth", digitalocean.CloudProvider)
 	}
 
 	// Swap tokens for git protocol
@@ -344,7 +344,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 		ExternalDNSProviderName:         dnsProviderFlag,
 		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
-		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-creds", digitalocean.CloudProvider),
+		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-auth", digitalocean.CloudProvider),
 		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
 
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
@@ -953,6 +953,8 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 			os.Getenv("CF_API_TOKEN"),
 			gitopsRepoURL,
 			config.GitProtocol,
+			dnsProviderFlag,
+			gitopsDirectoryTokens.CloudProvider,
 		)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")

@@ -14,11 +14,12 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/hashicorp/vault/api v1.9.0
-	github.com/kubefirst/runtime v0.3.12
+	github.com/kubefirst/runtime v0.3.13
 	github.com/rs/zerolog v1.29.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
+	github.com/thanhpk/randstr v1.0.6
 	go.mongodb.org/mongo-driver v1.10.0
 	k8s.io/api v0.26.2
 	k8s.io/apimachinery v0.27.1

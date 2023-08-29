@@ -315,7 +315,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		externalDNSProviderSecretKey = "cf-api-token"
 	} else {
 		externalDNSProviderTokenEnvName = "VULTR_API_KEY"
-		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", vultr.CloudProvider)
+		externalDNSProviderSecretKey = fmt.Sprintf("%s-auth", vultr.CloudProvider)
 	}
 
 	// Swap tokens for git protocol
@@ -343,7 +343,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 
 		ExternalDNSProviderName:         dnsProviderFlag,
 		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
-		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-creds", vultr.CloudProvider),
+		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-auth", vultr.CloudProvider),
 		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
 
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
@@ -952,6 +952,8 @@ func createVultr(cmd *cobra.Command, args []string) error {
 			os.Getenv("CF_API_TOKEN"),
 			gitopsRepoURL,
 			config.GitProtocol,
+			dnsProviderFlag,
+			gitopsDirectoryTokens.CloudProvider,
 		)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")

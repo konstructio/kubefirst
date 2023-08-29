@@ -609,8 +609,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 		externalDNSProviderTokenEnvName = "CF_API_TOKEN"
 		externalDNSProviderSecretKey = "cf-api-token"
 	} else {
-		externalDNSProviderTokenEnvName = "CIVO_TOKEN"
-		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", awsinternal.CloudProvider)
+		externalDNSProviderTokenEnvName = "AWS_AUTH"
+		externalDNSProviderSecretKey = fmt.Sprintf("%s-auth", awsinternal.CloudProvider)
 	}
 
 	// Swap tokens for git protocol
@@ -642,7 +642,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		ExternalDNSProviderName:         dnsProviderFlag,
 		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
-		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-creds", awsinternal.CloudProvider),
+		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-auth", awsinternal.CloudProvider),
 		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
 
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
@@ -1146,6 +1146,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 			clientset,
 			ecrFlag,
 			containerRegistryURL,
+			dnsProviderFlag,
+			gitopsDirectoryTokens.CloudProvider,
 		)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")

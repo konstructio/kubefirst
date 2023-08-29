@@ -318,7 +318,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		externalDNSProviderSecretKey = "cf-api-token"
 	} else {
 		externalDNSProviderTokenEnvName = "CIVO_TOKEN"
-		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", civo.CloudProvider)
+		externalDNSProviderSecretKey = fmt.Sprintf("%s-auth", civo.CloudProvider)
 	}
 
 	// Swap tokens for git protocol; used by tokens, argocd registry object, and secret bootstrapping for argo template credentials
@@ -346,7 +346,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		ExternalDNSProviderName:         dnsProviderFlag,
 		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
-		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-creds", civo.CloudProvider),
+		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-auth", civo.CloudProvider),
 		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
 
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
@@ -963,6 +963,8 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			os.Getenv("CF_API_TOKEN"),
 			gitopsRepoURL,
 			config.GitProtocol,
+			dnsProviderFlag,
+			gitopsDirectoryTokens.CloudProvider,
 		)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
