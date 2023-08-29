@@ -1385,6 +1385,14 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(viper.GetInt("flags.gitlab-owner-group-id"))
 		}
 
+		//dns provider secret to be stored in vault for external dns lifecycle
+		switch dnsProviderFlag {
+		case "cloudflare":
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = config.CloudflareApiToken
+		default:
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = "This is not used, role used instead" //Not strictly used. We use a role in GCP but keeping this here for consistency
+		}
+
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
