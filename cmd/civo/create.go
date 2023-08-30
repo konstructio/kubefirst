@@ -424,12 +424,16 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 	default:
 		switch gitopsTemplateURLFlag {
-		case "https://github.com/kubefirst/gitops-template.git":
+		case "https://github.com/kubefirst/gitops-template.git": //default value
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
-		default:
-			if gitopsTemplateBranchFlag != "" {
+		case "https://github.com/kubefirst/gitops-template": // edge case for valid but incomplete url
+			if gitopsTemplateBranchFlag == "" {
+				gitopsTemplateBranchFlag = configs.K1Version
+			}
+		default: // not equal to our defaults
+			if gitopsTemplateBranchFlag == "" { //didn't supply the branch flag but they did supply the  repo flag
 				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
 			}
 		}
