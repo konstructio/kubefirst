@@ -423,19 +423,23 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			gitopsTemplateBranchFlag = "main"
 		}
 	default:
-		switch gitopsTemplateURLFlag {
+		switch strings.ToLower(gitopsTemplateBranchFlag) {
 		case "https://github.com/kubefirst/gitops-template.git": //default value
 			if gitopsTemplateBranchFlag == "" {
+				log.Info().Msgf("--gitops-template-repo-url supplied and branch not supplied so setting branch name to main")
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
 		case "https://github.com/kubefirst/gitops-template": // edge case for valid but incomplete url
 			if gitopsTemplateBranchFlag == "" {
+				log.Info().Msgf("--gitops-template-repo-url supplied and branch not supplied so setting branch name to main")
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
 		default: // not equal to our defaults
-			if gitopsTemplateBranchFlag == "" { //didn't supply the branch flag but they did supply the  repo flag
+			if len(strings.TrimSpace(gitopsTemplateBranchFlag)) == 0 { //didn't supply the branch flag but they did supply the  repo flag
+				log.Info().Msgf("--gitops-template-repo-url supplied and branch not supplied but if branch is not supplied then --gitops-template-url must be set to https://github.com/kubefirst/gitops-template or https://github.com/kubefirst/gitops-template.git ")
 				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
 			}
+			log.Info().Msgf("--gitops-template-repo-url supplied and branch supplied so continuing on")
 		}
 	}
 
