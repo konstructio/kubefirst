@@ -1248,7 +1248,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		if viper.GetString("flags.dns-provider") == "cloudflare" {
 			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareApiToken
 		} else {
-			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = "AWS_Placeholder"
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CivoToken
 		}
 
 		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
