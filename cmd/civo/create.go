@@ -16,10 +16,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/atotto/clipboard"
-	"github.com/rs/zerolog/log"
-
+	v1alpha1ArgocdApplication "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
+	"github.com/atotto/clipboard"
 	"github.com/go-git/go-git/v5"
 	githttps "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
@@ -45,6 +44,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/terraform"
 	runtimetypes "github.com/kubefirst/runtime/pkg/types"
 	utils "github.com/kubefirst/runtime/pkg/utils"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1134,7 +1134,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		log.Info().Msg("applying the registry application to argocd")
 
-		var registryApplicationObject string
+		var registryApplicationObject *v1alpha1ArgocdApplication.Application = nil
 		if gitProviderFlag == "github" {
 			registryApplicationObject = argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/clusters/%s", clusterNameFlag))
 		} else {
