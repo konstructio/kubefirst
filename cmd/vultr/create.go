@@ -84,12 +84,12 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	githubOrgFlag, err := cmd.Flags().GetString("github-org")
+	githubOrgFlag, err := strings.ToLower(.Flags().GetString("github-org"))
 	if err != nil {
 		return err
 	}
 
-	gitlabGroupFlag, err := cmd.Flags().GetString("gitlab-group")
+	gitlabGroupFlag, err := strings.ToLower(cmd.Flags().GetString("gitlab-group"))
 	if err != nil {
 		return err
 	}

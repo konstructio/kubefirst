@@ -86,12 +86,12 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	githubOrgFlag, err := cmd.Flags().GetString("github-org")
+	githubOrgFlag, err := strings.ToLower(.Flags().GetString("github-org"))
 	if err != nil {
 		return err
 	}
 
-	gitlabGroupFlag, err := cmd.Flags().GetString("gitlab-group")
+	gitlabGroupFlag, err := strings.ToLower(cmd.Flags().GetString("gitlab-group"))
 	if err != nil {
 		return err
 	}
@@ -369,9 +369,9 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		GitRunnerNS:          fmt.Sprintf("%s-runner", config.GitProvider),
 		GitURL:               gitopsTemplateURLFlag,
 
-		GitHubHost:  fmt.Sprintf("https://github.com/%s/gitops.git", cGitOwner),
-		GitHubOwner: cGitOwner,
-		GitHubUser:  cGitUser,
+		GitHubHost:  fmt.Sprintf("https://github.com/%s/gitops.git", strings.ToLower(cGitOwner)),
+		GitHubOwner: strings.ToLower(cGitOwner),
+		GitHubUser:  strings.ToLower(cGitUser),
 
 		GitlabHost:         providerConfigs.GitlabHost,
 		GitlabOwner:        cGitOwner,
