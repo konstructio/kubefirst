@@ -1241,7 +1241,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		//dns provider secret to be stored in vault for external dns lifecycle
 		switch dnsProviderFlag {
 		case "cloudflare":
-			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = config.CloudflareApiToken
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = config.CloudflareAPIToken
 		default:
 			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = string(a) //Not strictly used. We use a role in GCP but keeping this here for consistency
 		}
