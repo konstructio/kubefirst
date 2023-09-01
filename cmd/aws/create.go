@@ -600,6 +600,14 @@ func createAws(cmd *cobra.Command, args []string) error {
 		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", awsinternal.CloudProvider)
 	}
 
+	var gitopsRepoURL string
+	switch config.GitProtocol {
+	case "https":
+		gitopsRepoURL = config.DestinationGitopsRepoURL
+	default:
+		gitopsRepoURL = config.DestinationGitopsRepoGitURL
+	}
+
 	gitopsDirectoryTokens := providerConfigs.GitopsDirectoryValues{
 		AlertsEmail:               alertsEmailFlag,
 		AtlantisAllowList:         fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
@@ -637,8 +645,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		GitDescription:       fmt.Sprintf("%s hosted git", config.GitProvider),
 		GitNamespace:         "N/A",
 		GitProvider:          config.GitProvider,
-		GitopsRepoGitURL:     config.DestinationGitopsRepoGitURL,
-		GitopsRepoURL:        config.DestinationGitopsRepoURL,
+		GitopsRepoURL:        gitopsRepoURL,
 		GitRunner:            fmt.Sprintf("%s Runner", config.GitProvider),
 		GitRunnerDescription: fmt.Sprintf("Self Hosted %s Runner", config.GitProvider),
 		GitRunnerNS:          fmt.Sprintf("%s-runner", config.GitProvider),
