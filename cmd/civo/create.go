@@ -1136,7 +1136,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		var registryApplicationObject string
 		if gitProviderFlag == "github" {
-			registryApplicationObject = argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+			registryApplicationObject = argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/clusters/%s", clusterNameFlag))
 		} else {
 			registryApplicationObject = argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
 		}
