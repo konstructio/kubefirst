@@ -1250,7 +1250,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		}
 
 		if viper.GetString("flags.dns-provider") == "cloudflare" {
-			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareApiToken
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareAPIToken
 			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareOriginCaIssuerAPIToken
 		} else {
 			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CivoToken
@@ -1263,7 +1263,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		//dns provider secret to be stored in vault for external dns lifecycle
 		switch dnsProviderFlag {
 		case "cloudflare":
-			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = config.CloudflareApiToken
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = config.CloudflareAPIToken
 		default:
 			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = config.CivoToken
 		}
