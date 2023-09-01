@@ -268,6 +268,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		cGitOwner,
 		gitProtocolFlag,
 		os.Getenv("CF_API_TOKEN"),
+		os.Getenv("CF_ORIGIN_CA_ISSUER_API_TOKEN"),
 	)
 	config.DigitaloceanToken = os.Getenv("DO_TOKEN")
 	switch gitProviderFlag {
@@ -1236,6 +1237,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 		if viper.GetString("flags.dns-provider") == "cloudflare" {
 			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareApiToken
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareOriginCaIssuerAPIToken
 		} else {
 			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = "AWS_Placeholder"
 		}

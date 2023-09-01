@@ -46,3 +46,4 @@ Each of our platforms have install guides that detail the prerequesites, command
 Feed K-Ray a GitHub star ⭐ above to bookmark our project and keep K-Ray happy!!
 
 [![Star History Chart](https://api.star-history.com/svg?repos=kubefirst/kubefirst&type=Date)](https://star-history.com/#kubefirst/kubefirst&Date)
+

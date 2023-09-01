@@ -63,6 +63,7 @@ func getDigitaloceanRootCredentials(cmd *cobra.Command, args []string) error {
 		gitOwner,
 		gitProtocol,
 		os.Getenv("CF_API_TOKEN"),
+		os.Getenv("CF_ORIGIN_CA_ISSUER_API_TOKEN"),
 	)
 
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)

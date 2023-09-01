@@ -270,6 +270,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		cGitOwner,
 		gitProtocolFlag,
 		os.Getenv("CF_API_TOKEN"),
+		os.Getenv("CF_ORIGIN_CA_ISSUER_API_TOKEN"),
 	)
 	config.CivoToken = os.Getenv("CIVO_TOKEN")
 	switch gitProviderFlag {
@@ -971,6 +972,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 			config.GitProvider,
 			cGitUser,
 			os.Getenv("CF_API_TOKEN"),
+			os.Getenv("CF_ORIGIN_CA_ISSUER_API_TOKEN"),
 			gitopsRepoURL,
 			config.GitProtocol,
 			dnsProviderFlag,
@@ -1249,6 +1251,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 		if viper.GetString("flags.dns-provider") == "cloudflare" {
 			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareApiToken
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CloudflareOriginCaIssuerAPIToken
 		} else {
 			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", gitopsDirectoryTokens.ExternalDNSProviderName)] = config.CivoToken
 		}
