@@ -88,11 +88,13 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	githubOrgFlag = strings.ToLower(githubOrgFlag)
 
 	gitlabGroupFlag, err := cmd.Flags().GetString("gitlab-group")
 	if err != nil {
 		return err
 	}
+	gitlabGroupFlag = strings.ToLower(gitlabGroupFlag)
 
 	gitProviderFlag, err := cmd.Flags().GetString("git-provider")
 	if err != nil {
@@ -317,7 +319,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		externalDNSProviderSecretKey = "cf-api-token"
 	} else {
 		externalDNSProviderTokenEnvName = "DO_TOKEN"
-		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", digitalocean.CloudProvider)
+		externalDNSProviderSecretKey = fmt.Sprintf("%s-auth", digitalocean.CloudProvider)
 	}
 
 	// Swap tokens for git protocol
@@ -345,7 +347,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 
 		ExternalDNSProviderName:         dnsProviderFlag,
 		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
-		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-creds", digitalocean.CloudProvider),
+		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-auth", dnsProviderFlag),
 		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
 
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
@@ -421,12 +423,16 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		}
 	default:
 		switch gitopsTemplateURLFlag {
-		case "https://github.com/kubefirst/gitops-template.git":
+		case "https://github.com/kubefirst/gitops-template.git": //default value
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
-		default:
-			if gitopsTemplateBranchFlag != "" {
+		case "https://github.com/kubefirst/gitops-template": // edge case for valid but incomplete url
+			if gitopsTemplateBranchFlag == "" {
+				gitopsTemplateBranchFlag = configs.K1Version
+			}
+		default: // not equal to our defaults
+			if gitopsTemplateBranchFlag == "" { //didn't supply the branch flag but they did supply the  repo flag
 				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
 			}
 		}
@@ -954,6 +960,8 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 			os.Getenv("CF_API_TOKEN"),
 			gitopsRepoURL,
 			config.GitProtocol,
+			dnsProviderFlag,
+			gitopsDirectoryTokens.CloudProvider,
 		)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
@@ -1237,6 +1245,15 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
 		tfEnvs = digitalocean.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEnvs = digitalocean.GetDigitaloceanTerraformEnvs(config, tfEnvs)
+
+		//dns provider secret to be stored in vault for external dns lifecycle
+		switch dnsProviderFlag {
+		case "cloudflare":
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = config.CloudflareApiToken
+		default:
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = config.DigitaloceanToken
+		}
+
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -1285,7 +1302,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	}
 
 	// Wait for console Deployment Pods to transition to Running
-	progressPrinter.AddTracker("deploying-kubefirst-console", "Deploying kubefirst console", 1)
+	progressPrinter.AddTracker("syncing-remaining-argocd-apps", "Syncing Remaining ArgoCD Apps", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
@@ -1306,7 +1323,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	}
 
 	//* console port-forward
-	progressPrinter.IncrementTracker("deploying-kubefirst-console", 1)
+	progressPrinter.IncrementTracker("syncing-remaining-argocd-apps", 1)
 	consoleStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(consoleStopChannel)

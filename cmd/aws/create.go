@@ -46,6 +46,8 @@ import (
 	"github.com/kubefirst/runtime/pkg/services"
 	internalssh "github.com/kubefirst/runtime/pkg/ssh"
 	"github.com/kubefirst/runtime/pkg/terraform"
+	runtimetypes "github.com/kubefirst/runtime/pkg/types"
+	utils "github.com/kubefirst/runtime/pkg/utils"
 	"github.com/kubefirst/runtime/pkg/vault"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -99,11 +101,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	githubOrgFlag = strings.ToLower(githubOrgFlag)
 
 	gitlabGroupFlag, err := cmd.Flags().GetString("gitlab-group")
 	if err != nil {
 		return err
 	}
+	gitlabGroupFlag = strings.ToLower(gitlabGroupFlag)
 
 	gitProviderFlag, err := cmd.Flags().GetString("git-provider")
 	if err != nil {
@@ -166,6 +170,16 @@ func createAws(cmd *cobra.Command, args []string) error {
 	awsClient := &awsinternal.AWSConfiguration{
 		Config: awsinternal.NewAwsV2(cloudRegionFlag),
 	}
+	creds, err := awsClient.Config.Credentials.Retrieve(aws.BackgroundContext())
+
+	if err != nil {
+		return err
+	}
+
+	viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyID)
+	viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKey)
+	viper.Set("kubefirst.state-store-creds.token", creds.SessionToken)
+	viper.WriteConfig()
 
 	_, err = awsClient.CheckAvailabilityZones(cloudRegionFlag)
 	if err != nil {
@@ -364,12 +378,16 @@ func createAws(cmd *cobra.Command, args []string) error {
 		}
 	default:
 		switch gitopsTemplateURLFlag {
-		case "https://github.com/kubefirst/gitops-template.git":
+		case "https://github.com/kubefirst/gitops-template.git": //default value
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
-		default:
-			if gitopsTemplateBranchFlag != "" {
+		case "https://github.com/kubefirst/gitops-template": // edge case for valid but incomplete url
+			if gitopsTemplateBranchFlag == "" {
+				gitopsTemplateBranchFlag = configs.K1Version
+			}
+		default: // not equal to our defaults
+			if gitopsTemplateBranchFlag == "" { //didn't supply the branch flag but they did supply the  repo flag
 				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
 			}
 		}
@@ -462,7 +480,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("state store bucket is %s", *kubefirstStateStoreBucket.Location)
 		log.Info().Msgf("artifacts bucket is %s", *kubefirstArtifactsBucket.Location)
 
-		viper.Set("kubefirst.state-store-bucket", strings.ReplaceAll(*kubefirstStateStoreBucket.Location, "/", ""))
+		viper.Set("kubefirst.state-store-bucket", kubefirstStateStoreBucketName)
+		viper.Set("kubefirst.state-store.name", kubefirstStateStoreBucketName)
+		viper.Set("kubefirst.state-store.hostname", "s3.amazonaws.com")
 		viper.Set("kubefirst.artifacts-bucket", strings.ReplaceAll(*kubefirstArtifactsBucket.Location, "/", ""))
 		viper.Set("kubefirst-checks.state-store-create", true)
 		viper.WriteConfig()
@@ -596,8 +616,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 		externalDNSProviderTokenEnvName = "CF_API_TOKEN"
 		externalDNSProviderSecretKey = "cf-api-token"
 	} else {
-		externalDNSProviderTokenEnvName = "CIVO_TOKEN"
-		externalDNSProviderSecretKey = fmt.Sprintf("%s-token", awsinternal.CloudProvider)
+		externalDNSProviderTokenEnvName = "AWS_AUTH"
+		externalDNSProviderSecretKey = fmt.Sprintf("%s-auth", awsinternal.CloudProvider)
 	}
 
 	var gitopsRepoURL string
@@ -628,7 +648,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 
 		ExternalDNSProviderName:         dnsProviderFlag,
 		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
-		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-creds", awsinternal.CloudProvider),
+		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-auth", dnsProviderFlag),
 		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
 
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
@@ -1132,6 +1152,8 @@ func createAws(cmd *cobra.Command, args []string) error {
 			clientset,
 			ecrFlag,
 			containerRegistryURL,
+			dnsProviderFlag,
+			gitopsDirectoryTokens.CloudProvider,
 		)
 		if err != nil {
 			log.Info().Msg("Error adding kubernetes secrets for bootstrap")
@@ -1370,6 +1392,14 @@ func createAws(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(viper.GetInt("flags.gitlab-owner-group-id"))
 		}
 
+		//dns provider secret to be stored in vault for external dns lifecycle
+		switch dnsProviderFlag {
+		case "cloudflare":
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = config.CloudflareApiToken
+		default:
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = "This is not used, role used instead" //Not strictly used. We use a role in GCP but keeping this here for consistency
+		}
+
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -1427,13 +1457,13 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	// Wait for console Deployment Pods to transition to Running
-	progressPrinter.AddTracker("deploying-kubefirst-console", "Deploying kubefirst console", 1)
+	progressPrinter.AddTracker("syncing-remaining-argocd-apps", "Syncing Remaining ArgoCD Apps", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
 		clientset,
 		"app.kubernetes.io/instance",
-		"kubefirst-console",
+		"kubefirst",
 		"kubefirst",
 		1200,
 	)
@@ -1448,7 +1478,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	//* console port-forward
-	progressPrinter.IncrementTracker("deploying-kubefirst-console", 1)
+	progressPrinter.IncrementTracker("syncing-remaining-argocd-apps", 1)
 	consoleStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(consoleStopChannel)
@@ -1463,16 +1493,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		consoleStopChannel,
 	)
 
-	log.Info().Msg("kubefirst installation complete")
-	log.Info().Msg("welcome to your new kubefirst platform powered by AWS")
-	time.Sleep(time.Second * 1) // allows progress bars to finish
-
 	err = pkg.IsConsoleUIAvailable(pkg.KubefirstConsoleLocalURLCloud)
-	if err != nil {
-		log.Error().Err(err).Msg("")
-	}
-
-	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}
@@ -1485,8 +1506,50 @@ func createAws(cmd *cobra.Command, args []string) error {
 	// Set flags used to track status of active options
 	helpers.SetClusterStatusFlags(awsinternal.CloudProvider, config.GitProvider)
 
-	if !ciFlag {
-		reports.AwsHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
+	//Export and Import Cluster
+	cl := utilities.CreateClusterRecordFromRaw(useTelemetryFlag, cGitOwner, cGitUser, cGitToken, cGitlabOwnerGroupID, gitopsTemplateURLFlag, gitopsTemplateBranchFlag)
+
+	var localFilePath = fmt.Sprintf("%s/%s.json", "/tmp/api/cluster/export", clusterNameFlag)
+	var remoteFilePath = fmt.Sprintf("%s.json", clusterNameFlag)
+	utilities.CreateClusterRecordFile(clusterNameFlag, cl)
+
+	pushObject := runtimetypes.PushBucketObject{
+		LocalFilePath:  localFilePath,
+		RemoteFilePath: remoteFilePath,
+		ContentType:    "application/json",
+	}
+
+	err = utils.PutClusterObject(&cl.StateStoreCredentials, &cl.StateStoreDetails, &pushObject)
+	if err != nil {
+		log.Error().Err(err).Msgf("error pushing cluster object, %s", cl.StateStoreDetails.Hostname)
+		return err
+	}
+
+	kubernetesConfig := runtimetypes.KubernetesClient{
+		Clientset:      clientset,
+		KubeConfigPath: config.Kubeconfig,
+		RestConfig:     restConfig,
+	}
+	err = utils.ExportCluster(kubernetesConfig, cl)
+	if err != nil {
+		log.Error().Err(err).Msg("error exporting cluster object")
+		viper.Set("kubefirst.setup-complete", false)
+		viper.Set("kubefirst-checks.cluster-install-complete", false)
+		viper.WriteConfig()
+		return err
+	} else {
+		err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
+
+		log.Info().Msg("kubefirst installation complete")
+		log.Info().Msg("welcome to your new kubefirst platform running in K3d")
+		time.Sleep(time.Second * 1) // allows progress bars to finish
+
+		if !ciFlag {
+			reports.AwsHandoffScreen(viper.GetString("components.argocd.password"), clusterNameFlag, domainNameFlag, cGitOwner, config, false)
+		}
 	}
 
 	defer func(c segment.SegmentClient) {

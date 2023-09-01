@@ -43,6 +43,8 @@ import (
 	"github.com/kubefirst/runtime/pkg/services"
 	internalssh "github.com/kubefirst/runtime/pkg/ssh"
 	"github.com/kubefirst/runtime/pkg/terraform"
+	runtimetypes "github.com/kubefirst/runtime/pkg/types"
+	utils "github.com/kubefirst/runtime/pkg/utils"
 	"github.com/kubefirst/runtime/pkg/wrappers"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -363,12 +365,16 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 	default:
 		switch gitopsTemplateURLFlag {
-		case "https://github.com/kubefirst/gitops-template.git":
+		case "https://github.com/kubefirst/gitops-template.git": //default value
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
-		default:
-			if gitopsTemplateBranchFlag != "" {
+		case "https://github.com/kubefirst/gitops-template": // edge case for valid but incomplete url
+			if gitopsTemplateBranchFlag == "" {
+				gitopsTemplateBranchFlag = configs.K1Version
+			}
+		default: // not equal to our defaults
+			if gitopsTemplateBranchFlag == "" { //didn't supply the branch flag but they did supply the  repo flag
 				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
 			}
 		}
@@ -473,7 +479,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitCompleted, "")
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallStarted, "")
 
-
 	// Swap tokens for git protocol
 	switch config.GitProtocol {
 	case "https":
@@ -557,6 +562,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	//* git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
+	progressPrinter.IncrementTracker("preflight-checks", 1)
+	progressPrinter.IncrementTracker("preflight-checks", 1)
 	progressPrinter.AddTracker("cloning-and-formatting-git-repositories", "Cloning and formatting git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
@@ -1136,6 +1143,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	bucketName := "kubefirst-state-store"
 	log.Info().Msgf("BucketName: %s", bucketName)
 
+	viper.Set("kubefirst.state-store.name", bucketName)
+	viper.Set("kubefirst.state-store.hostname", "minio-console.kubefirst.dev")
+	viper.Set("kubefirst.state-store-creds.access-key-id", pkg.MinioDefaultUsername)
+	viper.Set("kubefirst.state-store-creds.secret-access-key-id", pkg.MinioDefaultPassword)
+
 	// Upload the zip file with FPutObject
 	info, err := minioClient.FPutObject(ctx, bucketName, objectName, filePath, minio.PutObjectOptions{ContentType: contentType})
 	if err != nil {
@@ -1327,7 +1339,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
 		kcfg.Clientset,
 		"app.kubernetes.io/instance",
-		"kubefirst-console",
+		"kubefirst",
 		"kubefirst",
 		600,
 	)
@@ -1341,7 +1353,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	//* console port-forward
+	// * console port-forward
 	consoleStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(consoleStopChannel)
@@ -1358,15 +1370,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.IncrementTracker("wrapping-up", 1)
 
-	log.Info().Msg("kubefirst installation complete")
-	log.Info().Msg("welcome to your new kubefirst platform running in K3d")
-	time.Sleep(time.Second * 1) // allows progress bars to finish
-
-	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLTLS)
-	if err != nil {
-		log.Error().Err(err).Msg("")
-	}
-
 	// Mark cluster install as complete
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallCompleted, "")
 	viper.Set("kubefirst-checks.cluster-install-complete", true)
@@ -1375,8 +1378,44 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// Set flags used to track status of active options
 	helpers.SetClusterStatusFlags(k3d.CloudProvider, config.GitProvider)
 
-	if !ciFlag {
-		reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, false)
+	//Export and Import Cluster
+	cl := utilities.CreateClusterRecordFromRaw(useTelemetryFlag, cGitOwner, cGitUser, cGitToken, cGitlabOwnerGroupID, gitopsTemplateURLFlag, gitopsTemplateBranchFlag)
+
+	var localFilePath = fmt.Sprintf("%s/%s.json", "/tmp/api/cluster/export", clusterNameFlag)
+	utilities.CreateClusterRecordFile(clusterNameFlag, cl)
+
+	// Upload the zip file with FPutObject
+	info, err = minioClient.FPutObject(ctx, bucketName, fmt.Sprintf("%s.json", clusterNameFlag), localFilePath, minio.PutObjectOptions{ContentType: "application/json"})
+	if err != nil {
+		log.Info().Msgf("Error uploading to Minio bucket: %s", err)
+	}
+
+	kubernetesConfig := runtimetypes.KubernetesClient{
+		Clientset:      kcfg.Clientset,
+		KubeConfigPath: kcfg.KubeConfigPath,
+		RestConfig:     kcfg.RestConfig,
+	}
+
+	err = utils.ExportCluster(kubernetesConfig, cl)
+	if err != nil {
+		log.Error().Err(err).Msg("error exporting cluster object")
+		viper.Set("kubefirst.setup-complete", false)
+		viper.Set("kubefirst-checks.cluster-install-complete", false)
+		viper.WriteConfig()
+		return err
+	} else {
+		err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
+
+		log.Info().Msg("kubefirst installation complete")
+		log.Info().Msg("welcome to your new kubefirst platform running in K3d")
+		time.Sleep(time.Second * 1) // allows progress bars to finish
+
+		if !ciFlag {
+			reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, false)
+		}
 	}
 
 	defer func(c segment.SegmentClient) {

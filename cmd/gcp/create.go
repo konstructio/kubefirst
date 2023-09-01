@@ -46,6 +46,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/vault"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/thanhpk/randstr"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -87,7 +88,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	forceDestroy, err := cmd.Flags().GetBool("force_destroy")
+	forceDestroy, err := cmd.Flags().GetBool("force-destroy")
 	if err != nil {
 		return err
 	}
@@ -101,11 +102,13 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	githubOrgFlag = strings.ToLower(githubOrgFlag)
 
 	gitlabGroupFlag, err := cmd.Flags().GetString("gitlab-group")
 	if err != nil {
 		return err
 	}
+	gitlabGroupFlag = strings.ToLower(gitlabGroupFlag)
 
 	gitProviderFlag, err := cmd.Flags().GetString("git-provider")
 	if err != nil {
@@ -308,6 +311,15 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		kubefirstTeam = "false"
 	}
 
+	var externalDNSProviderTokenEnvName, externalDNSProviderSecretKey string
+	if dnsProviderFlag == "cloudflare" {
+		externalDNSProviderTokenEnvName = "CF_API_TOKEN"
+		externalDNSProviderSecretKey = "cf-api-token"
+	} else {
+		externalDNSProviderTokenEnvName = "GOOGLE_AUTH"
+		externalDNSProviderSecretKey = fmt.Sprintf("%s-auth", dnsProviderFlag)
+	}
+
 	// Swap tokens for git protocol
 	var gitopsRepoURL string
 	switch config.GitProtocol {
@@ -332,8 +344,10 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		KubefirstTeam:             kubefirstTeam,
 		KubefirstVersion:          configs.K1Version,
 
-		GCPAuth:    config.GCPAuth,
-		GCPProject: gcpProjectFlag,
+		GCPAuth:          config.GCPAuth,
+		GCPProject:       gcpProjectFlag,
+		GoogleUniqueness: strings.ToLower(randstr.String(5)),
+		ForceDestroy:     strconv.FormatBool(forceDestroy),
 
 		ArgoCDIngressURL:               fmt.Sprintf("https://argocd.%s", domainNameFlag),
 		ArgoCDIngressNoHTTPSURL:        fmt.Sprintf("argocd.%s", domainNameFlag),
@@ -346,6 +360,11 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		VaultIngressNoHTTPSURL:         fmt.Sprintf("vault.%s", domainNameFlag),
 		VaultDataBucketName:            fmt.Sprintf("%s-vault-data-%s", gcpProjectFlag, clusterNameFlag),
 		VouchIngressURL:                fmt.Sprintf("https://vouch.%s", domainNameFlag),
+
+		ExternalDNSProviderName:         dnsProviderFlag,
+		ExternalDNSProviderTokenEnvName: externalDNSProviderTokenEnvName,
+		ExternalDNSProviderSecretName:   fmt.Sprintf("%s-auth", dnsProviderFlag),
+		ExternalDNSProviderSecretKey:    externalDNSProviderSecretKey,
 
 		GitDescription:       fmt.Sprintf("%s hosted git", config.GitProvider),
 		GitNamespace:         "N/A",
@@ -370,7 +389,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		GitopsRepoNoHTTPSURL:         fmt.Sprintf("%s.com/%s/gitops.git", cGitHost, cGitOwner),
 		ClusterId:                    clusterId,
 
-		ContainerRegistryURL: fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
+		ContainerRegistryURL: fmt.Sprintf("%s/%s", containerRegistryHost, cGitOwner),
 	}
 
 	viper.Set(fmt.Sprintf("%s.atlantis.webhook.url", config.GitProvider), fmt.Sprintf("https://atlantis.%s/events", domainNameFlag))
@@ -412,12 +431,16 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		}
 	default:
 		switch gitopsTemplateURLFlag {
-		case "https://github.com/kubefirst/gitops-template.git":
+		case "https://github.com/kubefirst/gitops-template.git": //default value
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
-		default:
-			if gitopsTemplateBranchFlag != "" {
+		case "https://github.com/kubefirst/gitops-template": // edge case for valid but incomplete url
+			if gitopsTemplateBranchFlag == "" {
+				gitopsTemplateBranchFlag = configs.K1Version
+			}
+		default: // not equal to our defaults
+			if gitopsTemplateBranchFlag == "" { //didn't supply the branch flag but they did supply the  repo flag
 				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
 			}
 		}
@@ -604,7 +627,8 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	}
 
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
-
+	progressPrinter.IncrementTracker("preflight-checks", 1)
+	progressPrinter.IncrementTracker("preflight-checks", 1)
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitCompleted, "")
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallStarted, "")
 
@@ -651,7 +675,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	metaphorDirectoryTokens := providerConfigs.MetaphorTokenValues{
 		ClusterName:                   clusterNameFlag,
 		CloudRegion:                   cloudRegionFlag,
-		ContainerRegistryURL:          fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
+		ContainerRegistryURL:          fmt.Sprintf("%s/%s", containerRegistryHost, cGitOwner),
 		DomainName:                    domainNameFlag,
 		MetaphorDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", domainNameFlag),
 		MetaphorStagingIngressURL:     fmt.Sprintf("metaphor-staging.%s", domainNameFlag),
@@ -671,20 +695,6 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		// These need to be set for reference elsewhere
 		viper.Set(fmt.Sprintf("%s.repos.gitops.git-url", config.GitProvider), config.DestinationGitopsRepoURL)
 		viper.WriteConfig()
-
-		var externalDNSProviderTokenEnvName, externalDNSProviderSecretKey string
-		if dnsProviderFlag == "cloudflare" {
-			externalDNSProviderTokenEnvName = "CF_API_TOKEN"
-			externalDNSProviderSecretKey = "cf-api-token"
-		} else {
-			externalDNSProviderTokenEnvName = "GCP_AUTH"
-			externalDNSProviderSecretKey = fmt.Sprintf("google_application_credentials")
-		}
-
-		gitopsDirectoryTokens.ExternalDNSProviderName = dnsProviderFlag
-		gitopsDirectoryTokens.ExternalDNSProviderTokenEnvName = externalDNSProviderTokenEnvName
-		gitopsDirectoryTokens.ExternalDNSProviderSecretName = fmt.Sprintf("%s-creds", gcp.CloudProvider)
-		gitopsDirectoryTokens.ExternalDNSProviderSecretKey = externalDNSProviderSecretKey
 
 		// Determine if anything exists at domain apex
 		apexContentExists := gcp.GetDomainApexContent(domainNameFlag)
@@ -872,7 +882,6 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		a, _ := os.ReadFile(config.GCPAuth)
 		tfEnvs["GOOGLE_CLOUD_KEYFILE_JSON"] = string(a)
 		tfEnvs["TF_VAR_project"] = gcpProjectFlag
-		tfEnvs["TF_VAR_force_destroy"] = strconv.FormatBool(forceDestroy)
 		tfEntrypoint := config.GitopsDir + "/terraform/gcp/services"
 		err = terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -944,6 +953,8 @@ func createGCP(cmd *cobra.Command, args []string) error {
 			config.GitProtocol,
 			os.Getenv("CF_API_TOKEN"),
 			config.GCPAuth,
+			dnsProviderFlag,
+			gitopsDirectoryTokens.CloudProvider,
 		)
 
 		if err != nil {
@@ -1226,6 +1237,15 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_b64_docker_auth"] = base64DockerAuth
 		tfEnvs = gcp.GetVaultTerraformEnvs(kcfg.Clientset, config, tfEnvs)
 		tfEnvs = gcp.GetGCPTerraformEnvs(config, tfEnvs)
+
+		//dns provider secret to be stored in vault for external dns lifecycle
+		switch dnsProviderFlag {
+		case "cloudflare":
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = config.CloudflareApiToken
+		default:
+			tfEnvs[fmt.Sprintf("TF_VAR_%s_secret", strings.ToLower(dnsProviderFlag))] = string(a) //Not strictly used. We use a role in GCP but keeping this here for consistency
+		}
+
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
@@ -1276,7 +1296,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	}
 
 	// Wait for console Deployment Pods to transition to Running
-	progressPrinter.AddTracker("deploying-kubefirst-console", "Deploying kubefirst console", 1)
+	progressPrinter.AddTracker("syncing-remaining-argocd-apps", "Syncing Remaining ArgoCD Apps", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	consoleDeployment, err := k8s.ReturnDeploymentObject(
@@ -1297,7 +1317,7 @@ func createGCP(cmd *cobra.Command, args []string) error {
 	}
 
 	//* console port-forward
-	progressPrinter.IncrementTracker("deploying-kubefirst-console", 1)
+	progressPrinter.IncrementTracker("syncing-remaining-argocd-apps", 1)
 
 	consoleStopChannel := make(chan struct{}, 1)
 	defer func() {
