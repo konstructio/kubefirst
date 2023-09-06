@@ -1,0 +1,14 @@
+---
+name: Validate if commits in PR are signed
+on: pull_request
+
+jobs:
+  signed-commits-check:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Check out code
+        uses: actions/checkout@v3.5.3
+
+      - name: Check signed commits in PR
+        uses: 1Password/check-signed-commits-action@v1
