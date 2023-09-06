@@ -608,7 +608,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 	if ecrFlag {
 		containerRegistryURL = fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", awsAccountID, cloudRegionFlag)
 	} else {
-		containerRegistryURL = fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner)
+		containerRegistryURL = fmt.Sprintf("%s/%s", containerRegistryHost, cGitOwner)
 	}
 
 	var externalDNSProviderTokenEnvName, externalDNSProviderSecretKey string
