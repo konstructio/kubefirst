@@ -1342,9 +1342,11 @@ func createGCP(cmd *cobra.Command, args []string) error {
 		log.Error().Err(err).Msg("")
 	}
 
-	err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
-	if err != nil {
-		log.Error().Err(err).Msg("")
+	if !ciFlag {
+		err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
 	}
 
 	// Mark cluster install as complete

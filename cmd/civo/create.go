@@ -1405,9 +1405,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 		return err
 	} else {
-		err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
-		if err != nil {
-			log.Error().Err(err).Msg("")
+		if !ciFlag {
+			err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
+			if err != nil {
+				log.Error().Err(err).Msg("")
+			}
 		}
 
 		log.Info().Msg("kubefirst installation complete")
