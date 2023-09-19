@@ -1,0 +1,20 @@
+---
+name: Markdown Syntax Validation
+
+on: [push, workflow_dispatch]
+
+jobs:
+  markdown-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v4.0.0
+
+      - name: Validate Markdown .md
+        uses: DavidAnson/markdownlint-cli2-action@v12.0.0
+        with:
+          command: config
+          globs: |
+            .markdownlint.json
+            **.md
