@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD041 -->
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="images/kubefirst-light.svg" alt="Kubefirst Logo">
@@ -22,7 +23,6 @@
   <a href="https://github.com/kubefirst/kubefirst/releases"><img title="Release date" src="https://img.shields.io/github/release-date/kubefirst/kubefirst"/></a>
 </p>
 
-
 ---
 
 # Kubefirst CLI
@@ -46,4 +46,3 @@ Each of our platforms have install guides that detail the prerequesites, command
 Feed K-Ray a GitHub star ⭐ above to bookmark our project and keep K-Ray happy!!
 
 [![Star History Chart](https://api.star-history.com/svg?repos=kubefirst/kubefirst&type=Date)](https://star-history.com/#kubefirst/kubefirst&Date)
-
