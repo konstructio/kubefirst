@@ -1,6 +1,0 @@
-{
-    "parserPreset": "conventional-changelog-conventionalcommits",
-	"rules": {
-        "header-max-length": [2, "always", 72]
-    }
-}
