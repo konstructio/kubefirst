@@ -8,10 +8,16 @@ package gitShim
 
 import (
 	"fmt"
+	"net/http"
+	"os"
 
 	"github.com/kubefirst/runtime/pkg/github"
 	"github.com/kubefirst/runtime/pkg/gitlab"
+	"github.com/kubefirst/runtime/pkg/handlers"
+	"github.com/kubefirst/runtime/pkg/services"
+	"github.com/kubefirst/runtime/pkg/types"
 	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
 )
 
 type GitInitParameters struct {
@@ -106,4 +112,92 @@ func InitializeGitProvider(p *GitInitParameters) error {
 	}
 
 	return nil
+}
+
+func ValidateGitCredentials(gitProviderFlag string, githubOrgFlag string, gitlabGroupFlag string) (types.GitAuth, error) {
+	gitAuth := types.GitAuth{}
+
+	// Switch based on git provider, set params
+	switch gitProviderFlag {
+	case "github":
+		if githubOrgFlag == "" {
+			return gitAuth, fmt.Errorf("please provide a github organization using the --github-org flag")
+		}
+		if os.Getenv("GITHUB_TOKEN") == "" {
+			return gitAuth, fmt.Errorf("your GITHUB_TOKEN is not set. Please set and try again")
+		}
+
+		gitAuth.Owner = githubOrgFlag
+		gitAuth.Token = os.Getenv("GITHUB_TOKEN")
+
+		// Verify token scopes
+		err := github.VerifyTokenPermissions(gitAuth.Token)
+		if err != nil {
+			return gitAuth, err
+		}
+
+		// Handle authorization checks
+		httpClient := http.DefaultClient
+		gitHubService := services.NewGitHubService(httpClient)
+		gitHubHandler := handlers.NewGitHubHandler(gitHubService)
+
+		// get github data to set user based on the provided token
+		log.Info().Msg("verifying github authentication")
+		githubUser, err := gitHubHandler.GetGitHubUser(gitAuth.Token)
+		if err != nil {
+			return gitAuth, err
+		}
+
+		gitAuth.User = githubUser
+		viper.Set("github.user", githubUser)
+		err = viper.WriteConfig()
+		if err != nil {
+			return gitAuth, err
+		}
+		err = gitHubHandler.CheckGithubOrganizationPermissions(gitAuth.Token, githubOrgFlag, githubUser)
+		if err != nil {
+			return gitAuth, err
+		}
+		viper.Set("flags.github-owner", githubOrgFlag)
+		viper.WriteConfig()
+	case "gitlab":
+		if gitlabGroupFlag == "" {
+			return gitAuth, fmt.Errorf("please provide a gitlab group using the --gitlab-group flag")
+		}
+		if os.Getenv("GITLAB_TOKEN") == "" {
+			return gitAuth, fmt.Errorf("your GITLAB_TOKEN is not set. please set and try again")
+		}
+
+		gitAuth.Token = os.Getenv("GITLAB_TOKEN")
+
+		// Verify token scopes
+		err := gitlab.VerifyTokenPermissions(gitAuth.Token)
+		if err != nil {
+			return gitAuth, err
+		}
+
+		gitlabClient, err := gitlab.NewGitLabClient(gitAuth.Token, gitlabGroupFlag)
+		if err != nil {
+			return gitAuth, err
+		}
+
+		gitAuth.Owner = gitlabClient.ParentGroupPath
+		cGitlabOwnerGroupID := gitlabClient.ParentGroupID
+		log.Info().Msgf("set gitlab owner to %s", gitAuth.Owner)
+
+		// Get authenticated user's name
+		user, _, err := gitlabClient.Client.Users.CurrentUser()
+		if err != nil {
+			return gitAuth, fmt.Errorf("unable to get authenticated user info - please make sure GITLAB_TOKEN env var is set %s", err)
+		}
+		gitAuth.User = user.Username
+
+		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
+		viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
+		viper.WriteConfig()
+	default:
+		log.Error().Msgf("invalid git provider option")
+	}
+
+	return gitAuth, nil
 }
