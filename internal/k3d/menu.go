@@ -102,7 +102,11 @@ func (m Model) View() string {
 	return "\n" + m.List.View()
 }
 
-func MongoDestinationChooser() string {
+func MongoDestinationChooser(inCluster bool) string {
+	if inCluster {
+		return "in-cluster"
+	}
+
 	items := []list.Item{
 		Item("in-cluster"),
 		Item("atlas"),
