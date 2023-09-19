@@ -21,7 +21,12 @@ Before making a code change, first discuss your idea via an [issue](https://gith
 
 Kubefirst is created using the [Go Programming Language](https://go.dev). To set up your computer, follow [these steps](https://go.dev/doc/install).
 
-Once Go is installed, you can run Kubefirst from any branch using `go run .`. Go will automatically install the needed modules listed in the [go.mod](go.mod) file. As an example, if you want to create a [local cluster](https://docs.kubefirst.io/kubefirst/local/install.html), the command would be `go run . local`.
+Once Go is installed, you can run Kubefirst from any branch using `go run .`. Go will automatically install the needed modules listed in the [go.mod](go.mod) file. As an example, if you want to create a [local cluster](https://docs.kubefirst.io/kubefirst/local/install.html), the command would be `go run . k3d create`. Note that even if you run kubefirst from `main`, the [gitops-template](https://github.com/kubefirst/gitops-template) version used will be the [latest release](https://github.com/kubefirst/gitops-template/releases). If you also want to use the latest from `main` for the template also, you need to run to use the `--gitops-template-url`, and the `--gitops-template-branch` as follow:
+
+```shell
+go run . k3d create --gitops-template-url https://github.com/kubefirst/gitops-template --gitops-template-branch main
+```
+
 Since Go is a compiled programming language, every time you use the `run` command, Go will compile the code before running it. If you want to save time, you can compile your code using `go build`, which will generate a file named `kubefirst`. You will then be able to run your compiled version with the `./kubefirst` command.
 
 ## Getting Started with the Documentation
