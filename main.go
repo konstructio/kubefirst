@@ -17,6 +17,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/cmd"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/spf13/viper"
@@ -84,5 +85,11 @@ func main() {
 		stdLog.Panicf("unable to set log-file-location, error is: %s", err)
 	}
 
-	cmd.Execute()
+	progress.InitializeProgressTerminal()
+
+	go func() {
+		cmd.Execute()
+	}()
+
+	progress.Progress.Run()
 }

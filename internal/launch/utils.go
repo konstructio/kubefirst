@@ -7,13 +7,9 @@ See the LICENSE file for more details.
 package launch
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"text/tabwriter"
-
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 // displayFormattedClusterInfo uses tabwriter to pretty print information on clusters using
@@ -34,31 +30,6 @@ func displayFormattedClusterInfo(clusters []map[string]interface{}) error {
 	err := writer.Flush()
 	if err != nil {
 		return fmt.Errorf("error closing buffer: %s", err)
-	}
-
-	return nil
-}
-
-// setupLaunchConfigFile
-func setupLaunchConfigFile(dir string) error {
-	viperConfigFile := fmt.Sprintf("%s/.launch", dir)
-
-	if _, err := os.Stat(viperConfigFile); errors.Is(err, os.ErrNotExist) {
-		log.Debugf("launch config file not found, creating a blank one: %s", viperConfigFile)
-		err = os.WriteFile(viperConfigFile, []byte(""), 0700)
-		if err != nil {
-			return fmt.Errorf("unable to create blank config file, error is: %s", err)
-		}
-	}
-
-	viper.SetConfigFile(viperConfigFile)
-	viper.SetConfigType("yaml")
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// if a config file is found, read it in.
-	err := viper.ReadInConfig()
-	if err != nil {
-		return fmt.Errorf("unable to read config file, error is: %s", err)
 	}
 
 	return nil

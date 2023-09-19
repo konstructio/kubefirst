@@ -41,7 +41,7 @@ func launchUp() *cobra.Command {
 		TraverseChildren: true,
 		PreRun:           checkDocker,
 		Run: func(cmd *cobra.Command, args []string) {
-			launch.Up(additionalHelmFlags)
+			launch.Up(additionalHelmFlags, false, true)
 		},
 	}
 
@@ -57,7 +57,7 @@ func launchDown() *cobra.Command {
 		Short:            "remove console and api instance",
 		TraverseChildren: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			launch.Down()
+			launch.Down(false)
 		},
 	}
 
