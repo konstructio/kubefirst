@@ -7,12 +7,12 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@main
+        uses: actions/checkout@v4.0.0
         with:
           fetch-depth: 0
       
       - name: Lint the commits
-        uses: wagoid/commitlint-github-action@v5
+        uses: wagoid/commitlint-github-action@v5.4.3
         with:
-          configFile: .commitlint.json
+          configFile: .commitlintrc.js
           failOnWarnings: true
