@@ -1,0 +1,70 @@
+{
+	"ignorePatterns": [
+		{
+			"pattern": "^https://www.linkedin.com.*"
+		},
+		{
+			"pattern": ".*\\]$"
+		},
+		{
+			"pattern": "https://www.enterprisetimes.co.uk*"
+		},
+		{
+			"pattern": "https://www.pexels.com*"
+		},
+		{
+			"pattern": "https://www.pngrepo.com"
+		},
+		{
+			"pattern": "https://tdwi.org*"
+		},
+		{
+			"pattern": "https://www.fakepersongenerator.com*"
+		},
+		{
+			"pattern": "https://dash.readme.com*"
+		},
+		{
+			"pattern": "https://cfpland.com*"
+		},
+		{
+			"pattern": "https://n8n.io*"
+		},
+		{
+			"pattern": "https://confs.tech*"
+		},
+		{
+			"pattern": "https://businesswire.com*"
+		},
+		{
+			"pattern": "https://www.tmcnet.com*"
+		},
+		{
+			"pattern": "https://.*kubefirst.dev*"
+		},
+		{
+			"pattern": "http://localhost*"
+		},
+		{
+			"pattern": "https://gitlab.com*"
+		},
+		{
+			"pattern": "https://.*vultr.com*"
+		}
+	],
+	"replacementPatterns": [
+		{
+			"pattern": "{require(\"(*)\").default}",
+			"replacement": "*"
+		},
+		{
+		  "pattern": "^/img/*",
+		  "replacement": "/static/img/*"
+		}
+	],
+  "timeout": "30s",
+  "retryOn429": true,
+  "retryCount": 2,
+  "fallbackRetryDelay": "1m",
+  "aliveStatusCodes": [200, 429]
+}
