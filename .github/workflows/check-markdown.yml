@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v4.0.0
 
       - name: Validate Markdown .md
-        uses: DavidAnson/markdownlint-cli2-action@v12.0.0
+        uses: DavidAnson/markdownlint-cli2-action@v13.0.0
         with:
           config: .markdownlint.json
           globs: "**.md"
