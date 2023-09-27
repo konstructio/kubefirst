@@ -4,11 +4,12 @@ Copyright (C) 2021-2023, Kubefirst
 This program is licensed under MIT.
 See the LICENSE file for more details.
 */
-package gcp
+package google
 
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst/internal/common"
 	"github.com/spf13/cobra"
 )
 
@@ -46,9 +47,9 @@ var (
 
 func NewCommand() *cobra.Command {
 	gcpCmd := &cobra.Command{
-		Use:   "gcp",
-		Short: "kubefirst GCP installation",
-		Long:  "kubefirst gcp",
+		Use:   "google",
+		Short: "kubefirst Google installation",
+		Long:  "kubefirst google",
 	}
 
 	// on error, doesnt show helper/usage
@@ -65,7 +66,8 @@ func Create() *cobra.Command {
 		Use:              "create",
 		Short:            "create the kubefirst platform running on GCP kubernetes",
 		TraverseChildren: true,
-		RunE:             createGCP,
+		RunE:             createGoogle,
+		PreRun:           common.CheckDocker,
 	}
 
 	// todo review defaults and update descriptions
@@ -93,10 +95,11 @@ func Create() *cobra.Command {
 
 func Destroy() *cobra.Command {
 	destroyCmd := &cobra.Command{
-		Use:   "destroy",
-		Short: "destroy the kubefirst platform",
-		Long:  "destroy the kubefirst platform running in GCP and remove all resources",
-		RunE:  destroyGCP,
+		Use:    "destroy",
+		Short:  "destroy the kubefirst platform",
+		Long:   "destroy the kubefirst platform running in Goole and remove all resources",
+		RunE:   common.Destroy,
+		PreRun: common.CheckDocker,
 	}
 
 	return destroyCmd
@@ -107,7 +110,7 @@ func RootCredentials() *cobra.Command {
 		Use:   "root-credentials",
 		Short: "retrieve root authentication information for platform components",
 		Long:  "retrieve root authentication information for platform components",
-		RunE:  getGCPRootCredentials,
+		RunE:  common.GetRootCredentials,
 	}
 
 	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the argocd password to the clipboard (optional)")

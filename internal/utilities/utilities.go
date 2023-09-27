@@ -7,24 +7,17 @@ See the LICENSE file for more details.
 package utilities
 
 import (
-	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"time"
 
-	"github.com/kubefirst/runtime/pkg/types"
+	"github.com/kubefirst/kubefirst-api/pkg/types"
+	"github.com/kubefirst/kubefirst/configs"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
-
-// Uncomment this for debbuging purposes
-// var ConsoleIngresUrl = "http://localhost:3000"
-var ConsoleIngresUrl = "https://console.kubefirst.dev"
 
 // CreateK1ClusterDirectory
 func CreateK1ClusterDirectory(clusterName string) {
@@ -157,6 +150,14 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth types.GitAuth, gitopsTemplateU
 		},
 	}
 
+	if cl.GitopsTemplateBranch == "" {
+		cl.GitopsTemplateBranch = configs.K1Version
+
+		if configs.K1Version == "development" {
+			cl.GitopsTemplateBranch = "main"
+		}
+	}
+
 	switch cloudProvider {
 	case "civo":
 		cl.CivoAuth.Token = os.Getenv("CIVO_TOKEN")
@@ -195,136 +196,4 @@ func CreateClusterRecordFile(clustername string, cluster types.Cluster) error {
 	log.Info().Msgf("file created %s", localFilePath)
 
 	return nil
-}
-
-func CreateCluster(cluster types.ClusterDefinition) error {
-	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	httpClient := http.Client{Transport: customTransport}
-
-	requestObject := types.ProxyCreateClusterRequest{
-		Body: cluster,
-		Url:  fmt.Sprintf("/cluster/%s", cluster.ClusterName),
-	}
-
-	payload, err := json.Marshal(requestObject)
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", ConsoleIngresUrl), bytes.NewReader(payload))
-	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return err
-	}
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Accept", "application/json")
-
-	res, err := httpClient.Do(req)
-	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		log.Info().Msgf("unable to create cluster %s", res.Status)
-		return err
-	}
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		log.Info().Msgf("unable to create cluster %s", err)
-
-		return err
-	}
-
-	log.Info().Msgf("Created cluster: %s", string(body))
-
-	return nil
-}
-
-func ResetClusterProgress(clusterName string) error {
-	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	httpClient := http.Client{Transport: customTransport}
-
-	requestObject := types.ProxyResetClusterRequest{
-		Url: fmt.Sprintf("/cluster/%s/reset_progress", clusterName),
-	}
-
-	payload, err := json.Marshal(requestObject)
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", ConsoleIngresUrl), bytes.NewReader(payload))
-	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return err
-	}
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Accept", "application/json")
-
-	res, err := httpClient.Do(req)
-	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		log.Info().Msgf("unable to create cluster %s", res.Status)
-		return err
-	}
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		log.Info().Msgf("unable to create cluster %s", err)
-
-		return err
-	}
-
-	log.Info().Msgf("Import: %s", string(body))
-
-	return nil
-}
-
-func GetCluster(clusterName string) (types.Cluster, error) {
-	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	httpClient := http.Client{Transport: customTransport}
-
-	cluster := types.Cluster{}
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/proxy?url=/cluster/%s", ConsoleIngresUrl, clusterName), nil)
-	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return cluster, err
-	}
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Accept", "application/json")
-
-	res, err := httpClient.Do(req)
-	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return cluster, err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		log.Info().Msgf("unable to get cluster %s", res.Status)
-		return cluster, err
-	}
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		log.Info().Msgf("unable to get cluster %s", err)
-
-		return cluster, err
-	}
-
-	err = json.Unmarshal(body, &cluster)
-	if err != nil {
-		log.Info().Msgf("unable to cast cluster object %s", err)
-		return cluster, err
-	}
-
-	return cluster, nil
 }

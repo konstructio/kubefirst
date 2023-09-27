@@ -9,6 +9,7 @@ package digitalocean
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst/internal/common"
 	"github.com/spf13/cobra"
 )
 
@@ -63,6 +64,7 @@ func Create() *cobra.Command {
 		Short:            "create the kubefirst platform running on DigitalOcean Kubernetes",
 		TraverseChildren: true,
 		RunE:             createDigitalocean,
+		PreRun:           common.CheckDocker,
 	}
 
 	// todo review defaults and update descriptions
@@ -88,10 +90,11 @@ func Create() *cobra.Command {
 
 func Destroy() *cobra.Command {
 	destroyCmd := &cobra.Command{
-		Use:   "destroy",
-		Short: "destroy the kubefirst platform",
-		Long:  "destroy the kubefirst platform running in DigitalOcean and remove all resources",
-		RunE:  destroyDigitalocean,
+		Use:    "destroy",
+		Short:  "destroy the kubefirst platform",
+		Long:   "destroy the kubefirst platform running in DigitalOcean and remove all resources",
+		RunE:   common.Destroy,
+		PreRun: common.CheckDocker,
 	}
 
 	return destroyCmd
@@ -102,7 +105,7 @@ func RootCredentials() *cobra.Command {
 		Use:   "root-credentials",
 		Short: "retrieve root authentication information for platform components",
 		Long:  "retrieve root authentication information for platform components",
-		RunE:  getDigitaloceanRootCredentials,
+		RunE:  common.GetRootCredentials,
 	}
 
 	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the argocd password to the clipboard (optional)")

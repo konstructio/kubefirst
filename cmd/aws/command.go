@@ -9,6 +9,7 @@ package aws
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst/internal/common"
 	"github.com/spf13/cobra"
 )
 
@@ -60,6 +61,7 @@ func Create() *cobra.Command {
 		Short:            "create the kubefirst platform running in aws",
 		TraverseChildren: true,
 		RunE:             createAws,
+		PreRun:           common.CheckDocker,
 	}
 
 	// todo review defaults and update descriptions
@@ -86,10 +88,11 @@ func Create() *cobra.Command {
 
 func Destroy() *cobra.Command {
 	destroyCmd := &cobra.Command{
-		Use:   "destroy",
-		Short: "destroy the kubefirst platform",
-		Long:  "deletes the GitHub resources, aws resources, and local content to re-provision",
-		RunE:  destroyAws,
+		Use:    "destroy",
+		Short:  "destroy the kubefirst platform",
+		Long:   "deletes the GitHub resources, aws resources, and local content to re-provision",
+		RunE:   common.Destroy,
+		PreRun: common.CheckDocker,
 	}
 
 	return destroyCmd
@@ -114,12 +117,8 @@ func RootCredentials() *cobra.Command {
 		Use:   "root-credentials",
 		Short: "retrieve root authentication information for platform components",
 		Long:  "retrieve root authentication information for platform components",
-		RunE:  getAwsRootCredentials,
+		RunE:  common.GetRootCredentials,
 	}
-
-	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the argocd password to the clipboard (optional)")
-	authCmd.Flags().BoolVar(&copyKbotPasswordToClipboardFlag, "kbot", false, "copy the kbot password to the clipboard (optional)")
-	authCmd.Flags().BoolVar(&copyVaultPasswordToClipboardFlag, "vault", false, "copy the vault password to the clipboard (optional)")
 
 	return authCmd
 }

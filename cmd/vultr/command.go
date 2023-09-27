@@ -9,6 +9,7 @@ package vultr
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst/internal/common"
 	"github.com/spf13/cobra"
 )
 
@@ -64,6 +65,7 @@ func Create() *cobra.Command {
 		Short:            "create the kubefirst platform running on Vultr kubernetes",
 		TraverseChildren: true,
 		RunE:             createVultr,
+		PreRun:           common.CheckDocker,
 	}
 
 	// todo review defaults and update descriptions
@@ -89,10 +91,11 @@ func Create() *cobra.Command {
 
 func Destroy() *cobra.Command {
 	destroyCmd := &cobra.Command{
-		Use:   "destroy",
-		Short: "destroy the kubefirst platform",
-		Long:  "destroy the kubefirst platform running in Vultr and remove all resources",
-		RunE:  destroyVultr,
+		Use:    "destroy",
+		Short:  "destroy the kubefirst platform",
+		Long:   "destroy the kubefirst platform running in Vultr and remove all resources",
+		RunE:   common.Destroy,
+		PreRun: common.CheckDocker,
 	}
 
 	return destroyCmd
@@ -103,7 +106,7 @@ func RootCredentials() *cobra.Command {
 		Use:   "root-credentials",
 		Short: "retrieve root authentication information for platform components",
 		Long:  "retrieve root authentication information for platform components",
-		RunE:  getVultrRootCredentials,
+		RunE:  common.GetRootCredentials,
 	}
 
 	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the argocd password to the clipboard (optional)")

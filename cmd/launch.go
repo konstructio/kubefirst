@@ -9,9 +9,8 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst/internal/common"
 	"github.com/kubefirst/kubefirst/internal/launch"
-	"github.com/kubefirst/runtime/pkg/docker"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +38,7 @@ func launchUp() *cobra.Command {
 		Use:              "up",
 		Short:            "launch new console and api instance",
 		TraverseChildren: true,
-		PreRun:           checkDocker,
+		PreRun:           common.CheckDocker,
 		Run: func(cmd *cobra.Command, args []string) {
 			launch.Up(additionalHelmFlags, false, true)
 		},
@@ -83,7 +82,7 @@ func launchListClusters() *cobra.Command {
 		Use:              "list",
 		Short:            "list clusters created by the kubefirst console",
 		TraverseChildren: true,
-		PreRun:           checkDocker,
+		PreRun:           common.CheckDocker,
 		Run: func(cmd *cobra.Command, args []string) {
 			launch.ListClusters()
 		},
@@ -98,7 +97,7 @@ func launchDeleteCluster() *cobra.Command {
 		Use:              "delete",
 		Short:            "delete a cluster created by the kubefirst console",
 		TraverseChildren: true,
-		PreRun:           checkDocker,
+		PreRun:           common.CheckDocker,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return fmt.Errorf("you must provide a cluster name as the only argument to this command")
@@ -111,16 +110,4 @@ func launchDeleteCluster() *cobra.Command {
 	}
 
 	return launchDeleteClusterCmd
-}
-
-// checkDocker makes sure Docker is running before all commands
-func checkDocker(cmd *cobra.Command, args []string) {
-	// Verify Docker is running
-	dcli := docker.DockerClientWrapper{
-		Client: docker.NewDockerClient(),
-	}
-	_, err := dcli.CheckDockerReady()
-	if err != nil {
-		log.Fatalf("Docker must be running to use this command. Error checking Docker status: %s", err)
-	}
 }

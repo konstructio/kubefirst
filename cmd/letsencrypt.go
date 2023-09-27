@@ -9,7 +9,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/kubefirst/runtime/pkg/certificates"
+	"github.com/kubefirst/kubefirst-api/pkg/certificates"
 	"github.com/spf13/cobra"
 )
 

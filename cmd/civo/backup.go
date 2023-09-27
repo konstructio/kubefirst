@@ -9,8 +9,8 @@ package civo
 import (
 	"os"
 
+	"github.com/kubefirst/kubefirst-api/pkg/providerConfigs"
 	"github.com/kubefirst/runtime/pkg/helpers"
-	"github.com/kubefirst/runtime/pkg/providerConfigs"
 	"github.com/kubefirst/runtime/pkg/ssl"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"

@@ -6,6 +6,56 @@ See the LICENSE file for more details.
 */
 package progress
 
+import (
+	"github.com/kubefirst/kubefirst-api/pkg/types"
+)
+
+// Terminal model
+type progressModel struct {
+	// Terminal
+	error         string
+	isProvisioned bool
+
+	header string
+
+	// Provisioning fields
+	clusterName         string
+	provisioningCluster types.Cluster
+	completedSteps      []string
+	nextStep            string
+	successMessage      string
+}
+
+// Bubbletea messsages
+
+type CusterProvisioningMsg types.Cluster
+
+type startProvision struct {
+	clusterName string
+}
+
+type addStep struct {
+	message string
+}
+
+type completeStep struct {
+	message string
+}
+
+type errorMsg struct {
+	message string
+}
+
+type headerMsg struct {
+	message string
+}
+
+type successMsg struct {
+	message string
+}
+
+// Custom
+
 type ProvisionSteps struct {
 	install_tools_check           string
 	domain_liveness_check         string
