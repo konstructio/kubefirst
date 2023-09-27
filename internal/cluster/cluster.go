@@ -155,3 +155,43 @@ func GetCluster(clusterName string) (apiTypes.Cluster, error) {
 
 	return cluster, nil
 }
+
+func GetClusters() ([]apiTypes.Cluster, error) {
+	customTransport := http.DefaultTransport.(*http.Transport).Clone()
+	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	httpClient := http.Client{Transport: customTransport}
+
+	clusters := []apiTypes.Cluster{}
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/proxy?url=/cluster", ConsoleIngresUrl), nil)
+	if err != nil {
+		log.Info().Msgf("error %s", err)
+		return clusters, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json")
+
+	res, err := httpClient.Do(req)
+	if err != nil {
+		log.Info().Msgf("error %s", err)
+		return clusters, err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		log.Info().Msgf("unable to get clusters %s, continuing", res.Status)
+		return clusters, err
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Info().Msgf("unable to get clusters %s", err)
+		return clusters, err
+	}
+
+	err = json.Unmarshal(body, &clusters)
+	if err != nil {
+		log.Info().Msgf("unable to cast clusters object %s", err)
+		return clusters, err
+	}
+
+	return clusters, nil
+}

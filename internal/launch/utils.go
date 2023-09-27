@@ -8,29 +8,30 @@ package launch
 
 import (
 	"fmt"
-	"os"
-	"text/tabwriter"
+
+	"github.com/kubefirst/kubefirst-api/pkg/types"
+	"github.com/kubefirst/kubefirst/internal/progress"
 )
 
 // displayFormattedClusterInfo uses tabwriter to pretty print information on clusters using
 // the specified formatting
-func displayFormattedClusterInfo(clusters []map[string]interface{}) error {
-	// A friendly warning before we proceed
-	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 2, '\t', tabwriter.AlignRight)
-	fmt.Fprintln(writer, "NAME\tCREATED AT\tSTATUS\tTYPE\tPROVIDER")
+func displayFormattedClusterInfo(clusters []types.Cluster) error {
+	header := `
+| NAME | CREATED AT | STATUS | TYPE | PROVIDER |
+| --- | --- | --- | --- | --- |
+	`
+	content := ""
 	for _, cluster := range clusters {
-		fmt.Fprintf(writer, "%s\t%s\t%s\t%s\t%s\n",
-			cluster["cluster_name"],
-			cluster["creation_timestamp"],
-			cluster["status"],
-			cluster["cluster_type"],
-			cluster["cloud_provider"],
+		content = content + fmt.Sprintf("|%s|%s|%s|%s|%s\n",
+			cluster.ClusterName,
+			cluster.CreationTimestamp,
+			cluster.Status,
+			cluster.ClusterType,
+			cluster.CloudProvider,
 		)
 	}
-	err := writer.Flush()
-	if err != nil {
-		return fmt.Errorf("error closing buffer: %s", err)
-	}
+
+	progress.Success(header + content)
 
 	return nil
 }

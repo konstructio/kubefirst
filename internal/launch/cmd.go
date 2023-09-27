@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	k3dint "github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/progress"
@@ -623,72 +624,11 @@ func Down(inCluster bool) {
 
 // ListClusters makes a request to the console API to list created clusters
 func ListClusters() {
-	homeDir, err := os.UserHomeDir()
+	clusters, err := cluster.GetClusters()
+
+	err = displayFormattedClusterInfo(clusters)
 	if err != nil {
-		log.Fatal().Msgf("something went wrong getting home path: %s", err)
-	}
-
-	dir := fmt.Sprintf("%s/.k1/%s", homeDir, consoleClusterName)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		log.Info().Msgf(fmt.Sprintf("unable to list clusters - cluster %s directory does not exist", dir))
-	}
-
-	// Port forward to API
-	kubeconfigPath := fmt.Sprintf("%s/.k1/%s/kubeconfig", homeDir, consoleClusterName)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		log.Info().Msgf("unable to list clusters - kubeconfig file does not exist")
-	}
-
-	kcfg := k8s.CreateKubeConfig(false, kubeconfigPath)
-	pods, err := kcfg.Clientset.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=kubefirst-api",
-		Limit:         1,
-	})
-	if err != nil {
-		log.Fatal().Msgf("could not find api pod: %s", err)
-	}
-
-	randPort := rand.Intn(65535-65000) + 65000
-	apiStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(apiStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		kcfg.Clientset,
-		kcfg.RestConfig,
-		pods.Items[0].ObjectMeta.Name,
-		"kubefirst",
-		8081,
-		randPort,
-		apiStopChannel,
-	)
-
-	// Get lister of clusters from API
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%v/api/v1/cluster", randPort), nil)
-	if err != nil {
-		log.Fatal().Msgf("error creating request to api: %s", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	res, getErr := httpClient.Do(req)
-	if getErr != nil {
-		log.Fatal().Msgf("error during api get call: %s", getErr)
-	}
-	if res.Body != nil {
-		defer res.Body.Close()
-	}
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatal().Msgf("error reading api response: %s", err)
-	}
-
-	var objMap []map[string]interface{}
-	if err := json.Unmarshal(body, &objMap); err != nil {
-		log.Fatal().Msgf("error unmarshaling api response: %s", err)
-	}
-
-	err = displayFormattedClusterInfo(objMap)
-	if err != nil {
-		log.Fatal().Msgf("error printing cluster list: %s", err)
+		progress.Error(fmt.Sprintf("error printing cluster list: %s", err))
 	}
 }
 
