@@ -7,7 +7,6 @@ See the LICENSE file for more details.
 package common
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -119,9 +118,6 @@ func Destroy(cmd *cobra.Command, args []string) error {
 	gitProtocol := viper.GetString("flags.git-protocol")
 
 	log.Info().Msg("destroying kubefirst platform")
-
-	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
