@@ -149,6 +149,8 @@ func DisplayCredentials(cluster types.Cluster) {
 	Progress.Send(headerMsg{
 		message: headerMessage,
 	})
+
+	Progress.Quit()
 }
 
 func AddStep(message string) {

@@ -8,10 +8,7 @@ package launch
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -634,73 +631,16 @@ func ListClusters() {
 
 // DeleteCluster makes a request to the console API to delete a single cluster
 func DeleteCluster(managedClusterName string) {
-	homeDir, err := os.UserHomeDir()
+	err := cluster.DeleteCluster(managedClusterName)
+
 	if err != nil {
-		log.Fatal().Msgf("something went wrong getting home path: %s", err)
+		progress.Error(fmt.Sprintf("error: cluster %s not found\n", managedClusterName))
 	}
 
-	dir := fmt.Sprintf("%s/.k1/%s", homeDir, consoleClusterName)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		log.Info().Msgf("unable to delete cluster - cluster %s directory does not exist", dir)
-	}
-
-	// Port forward to API
-	kubeconfigPath := fmt.Sprintf("%s/.k1/%s/kubeconfig", homeDir, consoleClusterName)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		log.Info().Msg("unable to delete cluster - kubeconfig file does not exist")
-	}
-
-	kcfg := k8s.CreateKubeConfig(false, kubeconfigPath)
-	pods, err := kcfg.Clientset.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=kubefirst-api",
-		Limit:         1,
-	})
-	if err != nil {
-		log.Fatal().Msgf("could not find api pod: %s", err)
-	}
-
-	randPort := rand.Intn(65535-65000) + 65000
-	apiStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(apiStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		kcfg.Clientset,
-		kcfg.RestConfig,
-		pods.Items[0].ObjectMeta.Name,
-		"kubefirst",
-		8081,
-		randPort,
-		apiStopChannel,
-	)
-
-	// Delete cluster
-	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("http://localhost:%v/api/v1/cluster/%s", randPort, managedClusterName), nil)
-	if err != nil {
-		log.Fatal().Msgf("error creating request to api: %s", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	res, getErr := httpClient.Do(req)
-	if getErr != nil {
-		log.Fatal().Msgf("error during api delete call: %s", getErr)
-	}
-	if res.Body != nil {
-		defer res.Body.Close()
-	}
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatal().Msgf("error reading api response: %s", err)
-	}
-
-	var objMap map[string]interface{}
-	if err := json.Unmarshal(body, &objMap); err != nil {
-		log.Fatal().Msgf("error unmarshaling api response: %s", err)
-	}
-
-	if objMap["error"] != nil {
-		fmt.Printf("error: cluster %s not found\n", managedClusterName)
-		os.Exit(0)
-	}
-
-	fmt.Printf("Submitted request to delete cluster %s: %s - follow progress with `kubefirst launch cluster list`", managedClusterName, objMap["message"])
+	deleteMessage := `
+##
+### Submitted request to delete cluster` + fmt.Sprintf("`%s`", managedClusterName) + `
+### :bulb: - follow progress with ` + fmt.Sprintf("`%s`", "kubefirst launch cluster list") + `
+`
+	progress.Success(deleteMessage)
 }

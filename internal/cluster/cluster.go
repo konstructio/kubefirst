@@ -8,7 +8,6 @@ package cluster
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -27,7 +26,6 @@ var ConsoleIngresUrl = "https://console.kubefirst.dev"
 
 func CreateCluster(cluster apiTypes.ClusterDefinition) error {
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	httpClient := http.Client{Transport: customTransport}
 
 	requestObject := types.ProxyCreateClusterRequest{
@@ -73,7 +71,6 @@ func CreateCluster(cluster apiTypes.ClusterDefinition) error {
 
 func ResetClusterProgress(clusterName string) error {
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	httpClient := http.Client{Transport: customTransport}
 
 	requestObject := types.ProxyResetClusterRequest{
@@ -118,7 +115,6 @@ func ResetClusterProgress(clusterName string) error {
 
 func GetCluster(clusterName string) (apiTypes.Cluster, error) {
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	httpClient := http.Client{Transport: customTransport}
 
 	cluster := apiTypes.Cluster{}
@@ -158,7 +154,6 @@ func GetCluster(clusterName string) (apiTypes.Cluster, error) {
 
 func GetClusters() ([]apiTypes.Cluster, error) {
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	httpClient := http.Client{Transport: customTransport}
 
 	clusters := []apiTypes.Cluster{}
@@ -194,4 +189,36 @@ func GetClusters() ([]apiTypes.Cluster, error) {
 	}
 
 	return clusters, nil
+}
+
+func DeleteCluster(clusterName string) error {
+	customTransport := http.DefaultTransport.(*http.Transport).Clone()
+	httpClient := http.Client{Transport: customTransport}
+
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/api/proxy?url=/cluster/%s", ConsoleIngresUrl, clusterName), nil)
+	if err != nil {
+		log.Info().Msgf("error %s", err)
+		return err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json")
+
+	res, err := httpClient.Do(req)
+	if err != nil {
+		log.Info().Msgf("error %s", err)
+		return err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		log.Info().Msgf("unable to delete cluster %s, continuing", res.Status)
+		return err
+	}
+
+	_, err = io.ReadAll(res.Body)
+	if err != nil {
+		log.Info().Msgf("unable to delete cluster %s", err)
+		return err
+	}
+
+	return nil
 }
