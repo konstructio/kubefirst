@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 
@@ -19,10 +21,15 @@ import (
 	"github.com/kubefirst/kubefirst/internal/types"
 )
 
-// Uncomment this for debbuging purposes
-// var ConsoleIngresUrl = "http://localhost:3000"
 
-var ConsoleIngresUrl = "https://console.kubefirst.dev"
+func getConsoleIngresUrl() string {
+
+	if strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) != "true" { //allow using local console running on port 3000
+		return "http://localhost:3000"
+	} 
+
+	return "https://console.kubefirst.dev"
+}
 
 func CreateCluster(cluster apiTypes.ClusterDefinition) error {
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
@@ -38,7 +45,7 @@ func CreateCluster(cluster apiTypes.ClusterDefinition) error {
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", ConsoleIngresUrl), bytes.NewReader(payload))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", getConsoleIngresUrl()), bytes.NewReader(payload))
 	if err != nil {
 		log.Info().Msgf("error %s", err)
 		return err
@@ -82,7 +89,7 @@ func ResetClusterProgress(clusterName string) error {
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", ConsoleIngresUrl), bytes.NewReader(payload))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", getConsoleIngresUrl()), bytes.NewReader(payload))
 	if err != nil {
 		log.Info().Msgf("error %s", err)
 		return err
@@ -118,7 +125,7 @@ func GetCluster(clusterName string) (apiTypes.Cluster, error) {
 	httpClient := http.Client{Transport: customTransport}
 
 	cluster := apiTypes.Cluster{}
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/proxy?url=/cluster/%s", ConsoleIngresUrl, clusterName), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/proxy?url=/cluster/%s", getConsoleIngresUrl(), clusterName), nil)
 	if err != nil {
 		log.Info().Msgf("error %s", err)
 		return cluster, err
@@ -157,7 +164,7 @@ func GetClusters() ([]apiTypes.Cluster, error) {
 	httpClient := http.Client{Transport: customTransport}
 
 	clusters := []apiTypes.Cluster{}
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/proxy?url=/cluster", ConsoleIngresUrl), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/proxy?url=/cluster", getConsoleIngresUrl()), nil)
 	if err != nil {
 		log.Info().Msgf("error %s", err)
 		return clusters, err
@@ -195,7 +202,7 @@ func DeleteCluster(clusterName string) error {
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
 	httpClient := http.Client{Transport: customTransport}
 
-	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/api/proxy?url=/cluster/%s", ConsoleIngresUrl, clusterName), nil)
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/api/proxy?url=/cluster/%s", getConsoleIngresUrl(), clusterName), nil)
 	if err != nil {
 		log.Info().Msgf("error %s", err)
 		return err
