@@ -82,7 +82,7 @@ func createGoogle(cmd *cobra.Command, args []string) error {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 
-	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.ConsoleIngresUrl), "kubefirst api")
+	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
 	}
