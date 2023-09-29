@@ -22,7 +22,7 @@ var (
 	clusterTypeFlag          string
 	dnsProviderFlag          string
 	domainNameFlag           string
-	gcpProjectFlag           string
+	googleProjectFlag        string
 	githubOrgFlag            string
 	gitlabGroupFlag          string
 	gitProviderFlag          string
@@ -46,19 +46,19 @@ var (
 )
 
 func NewCommand() *cobra.Command {
-	gcpCmd := &cobra.Command{
+	googleCmd := &cobra.Command{
 		Use:   "google",
 		Short: "kubefirst Google installation",
 		Long:  "kubefirst google",
 	}
 
 	// on error, doesnt show helper/usage
-	gcpCmd.SilenceUsage = true
+	googleCmd.SilenceUsage = true
 
 	// wire up new commands
-	gcpCmd.AddCommand(Create(), Destroy(), RootCredentials())
+	googleCmd.AddCommand(Create(), Destroy(), RootCredentials())
 
-	return gcpCmd
+	return googleCmd
 }
 
 func Create() *cobra.Command {
@@ -80,7 +80,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "google", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the GCP DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
-	createCmd.Flags().StringVar(&gcpProjectFlag, "google-project", "", "gcp project id (required)")
+	createCmd.Flags().StringVar(&googleProjectFlag, "google-project", "", "google project id (required)")
 	createCmd.MarkFlagRequired("google-project")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
 	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %s", supportedGitProtocolOverride))
