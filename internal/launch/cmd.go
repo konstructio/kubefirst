@@ -256,12 +256,6 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		if err != nil {
 			progress.Error(fmt.Sprintf("error waiting for traefik: %s", err))
 		}
-	} else {
-		log.Info().Msg("Kubefirst console has already been deployed. To start over, run `kubefirst launch down` to completely remove the existing console.")
-		log.Info().Msgf("If you have manually removed %s, the k3d cluster must be manually removed by running the following command: ", dir)
-		log.Info().Msg("	k3d cluster delete kubefirst-console")
-		log.Info().Msgf("You will have to install the k3d utility if you do not have it installed if the directory shown above has been deleted.")
-		progress.Error("Kubefirst console has already been deployed. To start over, run `kubefirst launch down` to completely remove the existing console.")
 	}
 
 	progress.CompleteStep("Create k3d cluster")
