@@ -21,6 +21,7 @@ type CliFlags struct {
 	GitlabGroup          string
 	GitopsTemplateBranch string
 	GitopsTemplateURL    string
+	GoogleProject        string
 	UseTelemetry         bool
 	Ecr                  bool
 }

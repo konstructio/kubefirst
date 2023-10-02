@@ -99,6 +99,11 @@ func ValidateProvidedFlags(gitProvider string) error {
 		return fmt.Errorf("your GOOGLE_APPLICATION_CREDENTIALS is not set - please set and re-run your last command")
 	}
 
+	_, err := os.Open(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+	if err != nil {
+		progress.Error("Unable to read GOOGLE_APPLICATION_CREDENTIALS file")
+	}
+
 	switch gitProvider {
 	case "github":
 		key, err := internalssh.GetHostKey("github.com")

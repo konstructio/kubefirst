@@ -102,6 +102,16 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		cliFlags.Ecr = ecrFlag
 	}
 
+	if cloudProvider == "google" {
+		googleProject, err := cmd.Flags().GetString("google-project")
+		if err != nil {
+			progress.Error(err.Error())
+			return cliFlags, err
+		}
+
+		cliFlags.GoogleProject = googleProject
+	}
+
 	cliFlags.AlertsEmail = alertsEmailFlag
 	cliFlags.CloudRegion = cloudRegionFlag
 	cliFlags.ClusterName = clusterNameFlag

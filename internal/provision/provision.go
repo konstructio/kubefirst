@@ -18,11 +18,8 @@ import (
 func CreateMgmtCluster(gitAuth runtimeTypes.GitAuth, cliFlags types.CliFlags) {
 	clusterRecord := utilities.CreateClusterDefinitionRecordFromRaw(
 		gitAuth,
-		cliFlags.GitopsTemplateURL,
-		cliFlags.GitopsTemplateBranch,
+		cliFlags,
 	)
-
-	// clusterRecord.ECR = ecrFlag
 
 	clusterCreated, err := cluster.GetCluster(clusterRecord.ClusterName)
 	if err != nil {

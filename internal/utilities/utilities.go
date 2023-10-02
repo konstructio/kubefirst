@@ -9,11 +9,14 @@ package utilities
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"time"
 
-	"github.com/kubefirst/kubefirst-api/pkg/types"
+	apiTypes "github.com/kubefirst/kubefirst-api/pkg/types"
 	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/kubefirst/kubefirst/internal/types"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -39,7 +42,7 @@ const (
 	exportFilePath = "/tmp/api/cluster/export"
 )
 
-func CreateClusterRecordFromRaw(useTelemetry bool, gitOwner string, gitUser string, gitToken string, gitlabOwnerGroupID int, gitopsTemplateURL string, gitopsTemplateBranch string) types.Cluster {
+func CreateClusterRecordFromRaw(useTelemetry bool, gitOwner string, gitUser string, gitToken string, gitlabOwnerGroupID int, gitopsTemplateURL string, gitopsTemplateBranch string) apiTypes.Cluster {
 	cloudProvider := viper.GetString("kubefirst.cloud-provider")
 	domainName := viper.GetString("flags.domain-name")
 	gitProvider := viper.GetString("flags.git-provider")
@@ -49,7 +52,7 @@ func CreateClusterRecordFromRaw(useTelemetry bool, gitOwner string, gitUser stri
 		kubefirstTeam = "false"
 	}
 
-	cl := types.Cluster{
+	cl := apiTypes.Cluster{
 		ID:                    primitive.NewObjectID(),
 		CreationTimestamp:     fmt.Sprintf("%v", time.Now().UTC()),
 		UseTelemetry:          useTelemetry,
@@ -73,14 +76,14 @@ func CreateClusterRecordFromRaw(useTelemetry bool, gitOwner string, gitUser stri
 		KubefirstTeam:         kubefirstTeam,
 		ArgoCDAuthToken:       viper.GetString("components.argocd.auth-token"),
 		ArgoCDPassword:        viper.GetString("components.argocd.password"),
-		GitAuth: types.GitAuth{
+		GitAuth: apiTypes.GitAuth{
 			Token:      gitToken,
 			User:       gitUser,
 			Owner:      gitOwner,
 			PublicKey:  viper.GetString("kbot.public-key"),
 			PrivateKey: viper.GetString("kbot.private-key"),
 		},
-		CloudflareAuth: types.CloudflareAuth{
+		CloudflareAuth: apiTypes.CloudflareAuth{
 			Token: os.Getenv("CF_API_TOKEN"),
 		},
 	}
@@ -116,7 +119,7 @@ func CreateClusterRecordFromRaw(useTelemetry bool, gitOwner string, gitUser stri
 	return cl
 }
 
-func CreateClusterDefinitionRecordFromRaw(gitAuth types.GitAuth, gitopsTemplateURL string, gitopsTemplateBranch string) types.ClusterDefinition {
+func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags types.CliFlags) apiTypes.ClusterDefinition {
 	cloudProvider := viper.GetString("kubefirst.cloud-provider")
 	domainName := viper.GetString("flags.domain-name")
 	gitProvider := viper.GetString("flags.git-provider")
@@ -126,26 +129,26 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth types.GitAuth, gitopsTemplateU
 		kubefirstTeam = "false"
 	}
 
-	cl := types.ClusterDefinition{
+	cl := apiTypes.ClusterDefinition{
 		AdminEmail:           viper.GetString("flags.alerts-email"),
 		ClusterName:          viper.GetString("flags.cluster-name"),
 		CloudProvider:        cloudProvider,
 		CloudRegion:          viper.GetString("flags.cloud-region"),
 		DomainName:           domainName,
 		Type:                 "mgmt",
-		GitopsTemplateURL:    gitopsTemplateURL,
-		GitopsTemplateBranch: gitopsTemplateBranch,
+		GitopsTemplateURL:    cliFlags.GitopsTemplateURL,
+		GitopsTemplateBranch: cliFlags.GitopsTemplateBranch,
 		GitProvider:          gitProvider,
 		GitProtocol:          viper.GetString("flags.git-protocol"),
 		DnsProvider:          viper.GetString("flags.dns-provider"),
-		GitAuth: types.GitAuth{
+		GitAuth: apiTypes.GitAuth{
 			Token:      gitAuth.Token,
 			User:       gitAuth.User,
 			Owner:      gitAuth.Owner,
 			PublicKey:  viper.GetString("kbot.public-key"),
 			PrivateKey: viper.GetString("kbot.private-key"),
 		},
-		CloudflareAuth: types.CloudflareAuth{
+		CloudflareAuth: apiTypes.CloudflareAuth{
 			Token: os.Getenv("CF_API_TOKEN"),
 		},
 	}
@@ -166,18 +169,31 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth types.GitAuth, gitopsTemplateU
 		cl.AWSAuth.AccessKeyID = viper.GetString("kubefirst.state-store-creds.access-key-id")
 		cl.AWSAuth.SecretAccessKey = viper.GetString("kubefirst.state-store-creds.secret-access-key-id")
 		cl.AWSAuth.SessionToken = viper.GetString("kubefirst.state-store-creds.token")
+		cl.ECR = cliFlags.Ecr
 	case "digitalocean":
 		cl.DigitaloceanAuth.Token = os.Getenv("DO_TOKEN")
 		cl.DigitaloceanAuth.SpacesKey = os.Getenv("DO_SPACES_KEY")
 		cl.DigitaloceanAuth.SpacesSecret = os.Getenv("DO_SPACES_SECRET")
 	case "vultr":
 		cl.VultrAuth.Token = os.Getenv("VULTR_API_KEY")
+	case "google":
+		jsonFilePath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+
+		jsonFile, err := os.Open(jsonFilePath)
+		if err != nil {
+			progress.Error("Unable to read GOOGLE_APPLICATION_CREDENTIALS file")
+		}
+
+		jsonContent, _ := ioutil.ReadAll(jsonFile)
+
+		cl.GoogleAuth.KeyFile = string(jsonContent)
+		cl.GoogleAuth.ProjectId = cliFlags.GoogleProject
 	}
 
 	return cl
 }
 
-func CreateClusterRecordFile(clustername string, cluster types.Cluster) error {
+func CreateClusterRecordFile(clustername string, cluster apiTypes.Cluster) error {
 	var localFilePath = fmt.Sprintf("%s/%s.json", exportFilePath, clustername)
 
 	log.Info().Msgf("creating export file %s", localFilePath)
