@@ -7,8 +7,10 @@ See the LICENSE file for more details.
 package cmd
 
 import (
+	"fmt"
+
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/runtime/pkg/vault"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -45,10 +47,17 @@ func terraformSetEnv() *cobra.Command {
 
 			err := v.IterSecrets(vaultURLFlag, vaultTokenFlag, outputFileFlag)
 			if err != nil {
-				log.Fatalf("error during vault read: %s", err)
+				progress.Error(fmt.Sprintf("error during vault read: %s", err))
 			}
 
-			log.Infof("Generated env file at %s - run `source %s` to set environment variables", outputFileFlag, outputFileFlag)
+			message := `
+##
+### Generated env file at` + fmt.Sprintf("`%s`", outputFileFlag) + `
+
+:bulb: Run` + fmt.Sprintf("`source %s`", outputFileFlag) + ` to set environment variables
+
+`
+			progress.Success(message)
 		},
 	}
 

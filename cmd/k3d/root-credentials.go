@@ -9,7 +9,7 @@ package k3d
 import (
 	"fmt"
 
-	"github.com/kubefirst/runtime/pkg/credentials"
+	"github.com/kubefirst/kubefirst-api/pkg/credentials"
 	"github.com/kubefirst/runtime/pkg/k3d"
 	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/spf13/cobra"

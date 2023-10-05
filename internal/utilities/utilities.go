@@ -7,24 +7,20 @@ See the LICENSE file for more details.
 package utilities
 
 import (
-	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
+	"io/ioutil"
 	"os"
 	"time"
 
-	"github.com/kubefirst/runtime/pkg/types"
+	apiTypes "github.com/kubefirst/kubefirst-api/pkg/types"
+	"github.com/kubefirst/kubefirst/configs"
+	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/kubefirst/kubefirst/internal/types"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
-
-// Uncomment this for debbuging purposes
-// var ConsoleIngresUrl = "http://localhost:3000"
-var ConsoleIngresUrl = "https://console.kubefirst.dev"
 
 // CreateK1ClusterDirectory
 func CreateK1ClusterDirectory(clusterName string) {
@@ -46,7 +42,7 @@ const (
 	exportFilePath = "/tmp/api/cluster/export"
 )
 
-func CreateClusterRecordFromRaw(useTelemetry bool, gitOwner string, gitUser string, gitToken string, gitlabOwnerGroupID int, gitopsTemplateURL string, gitopsTemplateBranch string) types.Cluster {
+func CreateClusterRecordFromRaw(useTelemetry bool, gitOwner string, gitUser string, gitToken string, gitlabOwnerGroupID int, gitopsTemplateURL string, gitopsTemplateBranch string) apiTypes.Cluster {
 	cloudProvider := viper.GetString("kubefirst.cloud-provider")
 	domainName := viper.GetString("flags.domain-name")
 	gitProvider := viper.GetString("flags.git-provider")
@@ -56,7 +52,7 @@ func CreateClusterRecordFromRaw(useTelemetry bool, gitOwner string, gitUser stri
 		kubefirstTeam = "false"
 	}
 
-	cl := types.Cluster{
+	cl := apiTypes.Cluster{
 		ID:                    primitive.NewObjectID(),
 		CreationTimestamp:     fmt.Sprintf("%v", time.Now().UTC()),
 		UseTelemetry:          useTelemetry,
@@ -80,14 +76,14 @@ func CreateClusterRecordFromRaw(useTelemetry bool, gitOwner string, gitUser stri
 		KubefirstTeam:         kubefirstTeam,
 		ArgoCDAuthToken:       viper.GetString("components.argocd.auth-token"),
 		ArgoCDPassword:        viper.GetString("components.argocd.password"),
-		GitAuth: types.GitAuth{
+		GitAuth: apiTypes.GitAuth{
 			Token:      gitToken,
 			User:       gitUser,
 			Owner:      gitOwner,
 			PublicKey:  viper.GetString("kbot.public-key"),
 			PrivateKey: viper.GetString("kbot.private-key"),
 		},
-		CloudflareAuth: types.CloudflareAuth{
+		CloudflareAuth: apiTypes.CloudflareAuth{
 			Token: os.Getenv("CF_API_TOKEN"),
 		},
 	}
@@ -123,7 +119,7 @@ func CreateClusterRecordFromRaw(useTelemetry bool, gitOwner string, gitUser stri
 	return cl
 }
 
-func CreateClusterDefinitionRecordFromRaw(gitAuth types.GitAuth, gitopsTemplateURL string, gitopsTemplateBranch string) types.ClusterDefinition {
+func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags types.CliFlags) apiTypes.ClusterDefinition {
 	cloudProvider := viper.GetString("kubefirst.cloud-provider")
 	domainName := viper.GetString("flags.domain-name")
 	gitProvider := viper.GetString("flags.git-provider")
@@ -133,28 +129,36 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth types.GitAuth, gitopsTemplateU
 		kubefirstTeam = "false"
 	}
 
-	cl := types.ClusterDefinition{
+	cl := apiTypes.ClusterDefinition{
 		AdminEmail:           viper.GetString("flags.alerts-email"),
 		ClusterName:          viper.GetString("flags.cluster-name"),
 		CloudProvider:        cloudProvider,
 		CloudRegion:          viper.GetString("flags.cloud-region"),
 		DomainName:           domainName,
 		Type:                 "mgmt",
-		GitopsTemplateURL:    gitopsTemplateURL,
-		GitopsTemplateBranch: gitopsTemplateBranch,
+		GitopsTemplateURL:    cliFlags.GitopsTemplateURL,
+		GitopsTemplateBranch: cliFlags.GitopsTemplateBranch,
 		GitProvider:          gitProvider,
 		GitProtocol:          viper.GetString("flags.git-protocol"),
 		DnsProvider:          viper.GetString("flags.dns-provider"),
-		GitAuth: types.GitAuth{
+		GitAuth: apiTypes.GitAuth{
 			Token:      gitAuth.Token,
 			User:       gitAuth.User,
 			Owner:      gitAuth.Owner,
 			PublicKey:  viper.GetString("kbot.public-key"),
 			PrivateKey: viper.GetString("kbot.private-key"),
 		},
-		CloudflareAuth: types.CloudflareAuth{
+		CloudflareAuth: apiTypes.CloudflareAuth{
 			Token: os.Getenv("CF_API_TOKEN"),
 		},
+	}
+
+	if cl.GitopsTemplateBranch == "" {
+		cl.GitopsTemplateBranch = configs.K1Version
+
+		if configs.K1Version == "development" {
+			cl.GitopsTemplateBranch = "main"
+		}
 	}
 
 	switch cloudProvider {
@@ -165,18 +169,31 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth types.GitAuth, gitopsTemplateU
 		cl.AWSAuth.AccessKeyID = viper.GetString("kubefirst.state-store-creds.access-key-id")
 		cl.AWSAuth.SecretAccessKey = viper.GetString("kubefirst.state-store-creds.secret-access-key-id")
 		cl.AWSAuth.SessionToken = viper.GetString("kubefirst.state-store-creds.token")
+		cl.ECR = cliFlags.Ecr
 	case "digitalocean":
 		cl.DigitaloceanAuth.Token = os.Getenv("DO_TOKEN")
 		cl.DigitaloceanAuth.SpacesKey = os.Getenv("DO_SPACES_KEY")
 		cl.DigitaloceanAuth.SpacesSecret = os.Getenv("DO_SPACES_SECRET")
 	case "vultr":
 		cl.VultrAuth.Token = os.Getenv("VULTR_API_KEY")
+	case "google":
+		jsonFilePath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+
+		jsonFile, err := os.Open(jsonFilePath)
+		if err != nil {
+			progress.Error("Unable to read GOOGLE_APPLICATION_CREDENTIALS file")
+		}
+
+		jsonContent, _ := ioutil.ReadAll(jsonFile)
+
+		cl.GoogleAuth.KeyFile = string(jsonContent)
+		cl.GoogleAuth.ProjectId = cliFlags.GoogleProject
 	}
 
 	return cl
 }
 
-func CreateClusterRecordFile(clustername string, cluster types.Cluster) error {
+func CreateClusterRecordFile(clustername string, cluster apiTypes.Cluster) error {
 	var localFilePath = fmt.Sprintf("%s/%s.json", exportFilePath, clustername)
 
 	log.Info().Msgf("creating export file %s", localFilePath)
@@ -195,136 +212,4 @@ func CreateClusterRecordFile(clustername string, cluster types.Cluster) error {
 	log.Info().Msgf("file created %s", localFilePath)
 
 	return nil
-}
-
-func CreateCluster(cluster types.ClusterDefinition) error {
-	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	httpClient := http.Client{Transport: customTransport}
-
-	requestObject := types.ProxyCreateClusterRequest{
-		Body: cluster,
-		Url:  fmt.Sprintf("/cluster/%s", cluster.ClusterName),
-	}
-
-	payload, err := json.Marshal(requestObject)
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", ConsoleIngresUrl), bytes.NewReader(payload))
-	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return err
-	}
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Accept", "application/json")
-
-	res, err := httpClient.Do(req)
-	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		log.Info().Msgf("unable to create cluster %s", res.Status)
-		return err
-	}
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		log.Info().Msgf("unable to create cluster %s", err)
-
-		return err
-	}
-
-	log.Info().Msgf("Created cluster: %s", string(body))
-
-	return nil
-}
-
-func ResetClusterProgress(clusterName string) error {
-	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	httpClient := http.Client{Transport: customTransport}
-
-	requestObject := types.ProxyResetClusterRequest{
-		Url: fmt.Sprintf("/cluster/%s/reset_progress", clusterName),
-	}
-
-	payload, err := json.Marshal(requestObject)
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", ConsoleIngresUrl), bytes.NewReader(payload))
-	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return err
-	}
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Accept", "application/json")
-
-	res, err := httpClient.Do(req)
-	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		log.Info().Msgf("unable to create cluster %s", res.Status)
-		return err
-	}
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		log.Info().Msgf("unable to create cluster %s", err)
-
-		return err
-	}
-
-	log.Info().Msgf("Import: %s", string(body))
-
-	return nil
-}
-
-func GetCluster(clusterName string) (types.Cluster, error) {
-	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	httpClient := http.Client{Transport: customTransport}
-
-	cluster := types.Cluster{}
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/proxy?url=/cluster/%s", ConsoleIngresUrl, clusterName), nil)
-	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return cluster, err
-	}
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Accept", "application/json")
-
-	res, err := httpClient.Do(req)
-	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return cluster, err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		log.Info().Msgf("unable to get cluster %s", res.Status)
-		return cluster, err
-	}
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		log.Info().Msgf("unable to get cluster %s", err)
-
-		return cluster, err
-	}
-
-	err = json.Unmarshal(body, &cluster)
-	if err != nil {
-		log.Info().Msgf("unable to cast cluster object %s", err)
-		return cluster, err
-	}
-
-	return cluster, nil
 }

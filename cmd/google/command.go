@@ -4,11 +4,12 @@ Copyright (C) 2021-2023, Kubefirst
 This program is licensed under MIT.
 See the LICENSE file for more details.
 */
-package gcp
+package google
 
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst/internal/common"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +22,7 @@ var (
 	clusterTypeFlag          string
 	dnsProviderFlag          string
 	domainNameFlag           string
-	gcpProjectFlag           string
+	googleProjectFlag        string
 	githubOrgFlag            string
 	gitlabGroupFlag          string
 	gitProviderFlag          string
@@ -45,19 +46,19 @@ var (
 )
 
 func NewCommand() *cobra.Command {
-	gcpCmd := &cobra.Command{
-		Use:   "gcp",
-		Short: "kubefirst GCP installation",
-		Long:  "kubefirst gcp",
+	googleCmd := &cobra.Command{
+		Use:   "google",
+		Short: "kubefirst Google installation",
+		Long:  "kubefirst google",
 	}
 
 	// on error, doesnt show helper/usage
-	gcpCmd.SilenceUsage = true
+	googleCmd.SilenceUsage = true
 
 	// wire up new commands
-	gcpCmd.AddCommand(Create(), Destroy(), RootCredentials())
+	googleCmd.AddCommand(Create(), Destroy(), RootCredentials())
 
-	return gcpCmd
+	return googleCmd
 }
 
 func Create() *cobra.Command {
@@ -65,7 +66,8 @@ func Create() *cobra.Command {
 		Use:              "create",
 		Short:            "create the kubefirst platform running on GCP kubernetes",
 		TraverseChildren: true,
-		RunE:             createGCP,
+		RunE:             createGoogle,
+		PreRun:           common.CheckDocker,
 	}
 
 	// todo review defaults and update descriptions
@@ -78,8 +80,8 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "google", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the GCP DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
-	createCmd.Flags().StringVar(&gcpProjectFlag, "gcp-project", "", "gcp project id (required)")
-	createCmd.MarkFlagRequired("gcp-project")
+	createCmd.Flags().StringVar(&googleProjectFlag, "google-project", "", "google project id (required)")
+	createCmd.MarkFlagRequired("google-project")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
 	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %s", supportedGitProtocolOverride))
 	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - required if using github")
@@ -93,10 +95,11 @@ func Create() *cobra.Command {
 
 func Destroy() *cobra.Command {
 	destroyCmd := &cobra.Command{
-		Use:   "destroy",
-		Short: "destroy the kubefirst platform",
-		Long:  "destroy the kubefirst platform running in GCP and remove all resources",
-		RunE:  destroyGCP,
+		Use:    "destroy",
+		Short:  "destroy the kubefirst platform",
+		Long:   "destroy the kubefirst platform running in Goole and remove all resources",
+		RunE:   common.Destroy,
+		PreRun: common.CheckDocker,
 	}
 
 	return destroyCmd
@@ -107,7 +110,7 @@ func RootCredentials() *cobra.Command {
 		Use:   "root-credentials",
 		Short: "retrieve root authentication information for platform components",
 		Long:  "retrieve root authentication information for platform components",
-		RunE:  getGCPRootCredentials,
+		RunE:  common.GetRootCredentials,
 	}
 
 	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the argocd password to the clipboard (optional)")

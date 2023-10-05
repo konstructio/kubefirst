@@ -4,11 +4,13 @@ Copyright (C) 2021-2023, Kubefirst
 This program is licensed under MIT.
 See the LICENSE file for more details.
 */
-package civo
+package google
 
 import (
 	"fmt"
 	"os"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
@@ -18,19 +20,19 @@ import (
 	"github.com/kubefirst/kubefirst/internal/utilities"
 	"github.com/kubefirst/runtime/pkg"
 	internalssh "github.com/kubefirst/runtime/pkg/ssh"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-func createCivo(cmd *cobra.Command, args []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "civo")
+func createGoogle(cmd *cobra.Command, args []string) error {
+	cliFlags, err := utilities.GetFlags(cmd, "google")
 	if err != nil {
 		progress.Error(err.Error())
 		return nil
 	}
 
-	progress.DisplayLogHints(15)
+	progress.DisplayLogHints(20)
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
@@ -49,26 +51,23 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
-
 	if err != nil {
 		progress.Error(err.Error())
 		return nil
 	}
 
-	// Validate git
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider))
 	if !executionControl {
 		newRepositoryNames := []string{"gitops", "metaphor"}
 		newTeamNames := []string{"admins", "developers"}
 
 		initGitParameters := gitShim.GitInitParameters{
-			GitProvider:  cliFlags.GitProvider,
+			GitProvider:  gitProviderFlag,
 			GitToken:     gitAuth.Token,
 			GitOwner:     gitAuth.Owner,
 			Repositories: newRepositoryNames,
 			Teams:        newTeamNames,
 		}
-
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
 			progress.Error(err.Error())
@@ -96,16 +95,13 @@ func createCivo(cmd *cobra.Command, args []string) error {
 func ValidateProvidedFlags(gitProvider string) error {
 	progress.AddStep("Validate provided flags")
 
-	if os.Getenv("CIVO_TOKEN") == "" {
-		// telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudCredentialsCheckFailed, "CIVO_TOKEN environment variable was not set")
-		return fmt.Errorf("your CIVO_TOKEN is not set - please set and re-run your last command")
+	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
+		return fmt.Errorf("your GOOGLE_APPLICATION_CREDENTIALS is not set - please set and re-run your last command")
 	}
 
-	// Validate required environment variables for dns provider
-	if dnsProviderFlag == "cloudflare" {
-		if os.Getenv("CF_API_TOKEN") == "" {
-			return fmt.Errorf("your CF_API_TOKEN environment variable is not set. Please set and try again")
-		}
+	_, err := os.Open(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+	if err != nil {
+		progress.Error("Unable to read GOOGLE_APPLICATION_CREDENTIALS file")
 	}
 
 	switch gitProvider {

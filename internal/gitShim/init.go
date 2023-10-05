@@ -11,11 +11,12 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/kubefirst/kubefirst-api/pkg/handlers"
+	"github.com/kubefirst/kubefirst-api/pkg/types"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/runtime/pkg/github"
 	"github.com/kubefirst/runtime/pkg/gitlab"
-	"github.com/kubefirst/runtime/pkg/handlers"
 	"github.com/kubefirst/runtime/pkg/services"
-	"github.com/kubefirst/runtime/pkg/types"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
@@ -30,6 +31,8 @@ type GitInitParameters struct {
 
 // InitializeGitProvider
 func InitializeGitProvider(p *GitInitParameters) error {
+	progress.AddStep("Validate git environment")
+
 	switch p.GitProvider {
 	case "github":
 		githubSession := github.New(p.GitToken)
@@ -111,10 +114,13 @@ func InitializeGitProvider(p *GitInitParameters) error {
 		}
 	}
 
+	progress.CompleteStep("Validate git environment")
+
 	return nil
 }
 
 func ValidateGitCredentials(gitProviderFlag string, githubOrgFlag string, gitlabGroupFlag string) (types.GitAuth, error) {
+	progress.AddStep("Validate git credentials")
 	gitAuth := types.GitAuth{}
 
 	// Switch based on git provider, set params
@@ -198,6 +204,8 @@ func ValidateGitCredentials(gitProviderFlag string, githubOrgFlag string, gitlab
 	default:
 		log.Error().Msgf("invalid git provider option")
 	}
+
+	progress.CompleteStep("Validate git credentials")
 
 	return gitAuth, nil
 }

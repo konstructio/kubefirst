@@ -1,6 +1,6 @@
 {
   "document": {
-    "block_prefix": "\n",
+    "block_prefix": "",
     "block_suffix": "",
     "color": "252",
     "margin": 2
@@ -26,16 +26,23 @@
     "bold": true
   },
   "h2": {
-    "prefix": ""
+    "prefix": "",
+    "color": "99"
   },
   "h3": {
-    "prefix": "### "
+    "prefix": "",
+    "color": "244",
+    "bold": true,
+    "margin": 0
   },
   "h4": {
-    "prefix": "#### "
+    "prefix": "",
+    "color" : "70"
   },
   "h5": {
-    "prefix": "##### "
+    "prefix": "",
+    "color": "15",
+    "margin": 0
   },
   "h6": {
     "prefix": "###### ",
@@ -67,8 +74,8 @@
     "unticked": "[ ] "
   },
   "link": {
-    "color": "30",
-    "underline": true
+    "color": "15",
+    "underline": false
   },
   "link_text": {
     "color": "35",
@@ -85,8 +92,9 @@
   "code": {
     "prefix": " ",
     "suffix": " ",
-    "color": "#FFFFFF",
-    "background_color": ""
+    "color": "15",
+    "background_color": "",
+    "bold": true
   },
   "code_block": {
     "color": "244",
