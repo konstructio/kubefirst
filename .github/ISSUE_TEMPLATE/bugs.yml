@@ -29,6 +29,17 @@ body:
     validations:
       required: true
   - type: dropdown
+    id: dns
+    attributes:
+      label: Which DNS?
+      multiple: true
+      options:
+        - None specific
+        - Cloud ones (default)
+        - Cloudflare
+    validations:
+      required: true
+  - type: dropdown
     id: type
     attributes:
       label: Which installation type?
