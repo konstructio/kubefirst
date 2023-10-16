@@ -34,7 +34,6 @@ import (
 	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/argocd"
-	"github.com/kubefirst/runtime/pkg/docker"
 	"github.com/kubefirst/runtime/pkg/gitClient"
 	"github.com/kubefirst/runtime/pkg/github"
 	gitlab "github.com/kubefirst/runtime/pkg/gitlab"
@@ -151,13 +150,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	// Verify Docker is running
-	dcli := docker.DockerClientWrapper{
-		Client: docker.NewDockerClient(),
-	}
-	_, err = dcli.CheckDockerReady()
-	if err != nil {
-		return err
-	}
+	// dcli := docker.DockerClientWrapper{
+	// 	Client: docker.NewDockerClient(),
+	// }
+	// _, err = dcli.CheckDockerReady()
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Global context
 	var ctx context.Context
