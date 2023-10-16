@@ -366,6 +366,10 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 			"--set",
 			"kubefirst-api.installMethod=kubefirst-launch",
 			"--set",
+			"kubefirst-api.env[0].name=IS_CLUSTER_ZERO",
+			"--set",
+			"kubefirst-api.env[0].value='true'",
+			"--set",
 			fmt.Sprintf("kubefirst-api.kubefirstTeam=%s", kubefirstTeam),
 			"--set",
 			fmt.Sprintf("kubefirst-api.kubefirstTeamInfo=%s", kubefirstTeamInfo),
@@ -569,7 +573,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 // Down destroys a k3d cluster for Kubefirst console and API
 func Down(inCluster bool) {
 	if !inCluster {
-		progress.DisplayLogHints(2)
+		progress.DisplayLogHints(1)
 	}
 
 	homeDir, err := os.UserHomeDir()
