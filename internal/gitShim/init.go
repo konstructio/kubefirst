@@ -31,7 +31,12 @@ type GitInitParameters struct {
 
 // InitializeGitProvider
 func InitializeGitProvider(p *GitInitParameters) error {
-	progress.AddStep("Validate git environment")
+	cloudProvider := viper.Get("kubefirst.cloud-provider")
+	showProgress := cloudProvider != "k3d"
+
+	if showProgress {
+		progress.AddStep("Validate git environment")
+	}
 
 	switch p.GitProvider {
 	case "github":
@@ -114,7 +119,9 @@ func InitializeGitProvider(p *GitInitParameters) error {
 		}
 	}
 
-	progress.CompleteStep("Validate git environment")
+	if showProgress {
+		progress.CompleteStep("Validate git environment")
+	}
 
 	return nil
 }
