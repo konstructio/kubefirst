@@ -8,6 +8,7 @@ package utilities
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -17,9 +18,12 @@ import (
 	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/kubefirst/internal/types"
+	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	v1secret "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CreateK1ClusterDirectory
@@ -193,23 +197,31 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 	return cl
 }
 
-func CreateClusterRecordFile(clustername string, cluster apiTypes.Cluster) error {
-	var localFilePath = fmt.Sprintf("%s/%s.json", exportFilePath, clustername)
+func ExportCluster(cluster apiTypes.Cluster, kcfg *k8s.KubernetesClient) error {
+	cluster.Status = "provisioned"
+	cluster.InProgress = false
 
-	log.Info().Msgf("creating export file %s", localFilePath)
+	time.Sleep(time.Second * 10)
 
-	if _, err := os.Stat(exportFilePath); os.IsNotExist(err) {
-		log.Info().Msgf("cluster exports directory does not exist, creating")
-		err := os.MkdirAll(exportFilePath, 0777)
-		if err != nil {
-			return err
-		}
+	payload, err := json.Marshal(cluster)
+	if err != nil {
+		log.Error().Msg(err.Error())
+		return err
 	}
 
-	file, _ := json.MarshalIndent(cluster, "", " ")
-	_ = os.WriteFile(localFilePath, file, 0644)
+	secret := &v1secret.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "mongodb-state", Namespace: "kubefirst"},
+		Data: map[string][]byte{
+			"cluster-0":    []byte(payload),
+			"cluster-name": []byte(cluster.ClusterName),
+		},
+	}
 
-	log.Info().Msgf("file created %s", localFilePath)
+	err = k8s.CreateSecretV2(kcfg.Clientset, secret)
+
+	if err != nil {
+		return errors.New(fmt.Sprintf("unable to save secret to management cluster. %s", err))
+	}
 
 	return nil
 }

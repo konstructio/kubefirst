@@ -25,8 +25,6 @@ import (
 	githttps "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/kubefirst-api/pkg/handlers"
 	"github.com/kubefirst/kubefirst-api/pkg/reports"
-	runtimetypes "github.com/kubefirst/kubefirst-api/pkg/types"
-	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
 	"github.com/kubefirst/kubefirst-api/pkg/wrappers"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/telemetryShim"
@@ -176,7 +174,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	viper.Set("flags.domain-name", k3d.DomainName)
 	viper.Set("flags.git-provider", gitProviderFlag)
 	viper.Set("flags.git-protocol", gitProtocolFlag)
-
+	viper.Set("kubefirst.cloud-provider", "k3d")
 	viper.WriteConfig()
 
 	// Switch based on git provider, set params
@@ -1336,39 +1334,22 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.IncrementTracker("wrapping-up", 1)
 
 	// Wait for console Deployment Pods to transition to Running
-	consoleDeployment, err := k8s.ReturnDeploymentObject(
+	argoDeployment, err := k8s.ReturnDeploymentObject(
 		kcfg.Clientset,
 		"app.kubernetes.io/instance",
-		"kubefirst",
-		"kubefirst",
+		"argo",
+		"argo",
 		600,
 	)
 	if err != nil {
-		log.Error().Msgf("Error finding console Deployment: %s", err)
+		log.Error().Msgf("Error finding argo workflows Deployment: %s", err)
 		return err
 	}
-	_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, consoleDeployment, 120)
+	_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, argoDeployment, 120)
 	if err != nil {
-		log.Error().Msgf("Error waiting for console Deployment ready state: %s", err)
+		log.Error().Msgf("Error waiting for argo workflows Deployment ready state: %s", err)
 		return err
 	}
-
-	// * console port-forward
-	consoleStopChannel := make(chan struct{}, 1)
-	defer func() {
-		close(consoleStopChannel)
-	}()
-	k8s.OpenPortForwardPodWrapper(
-		kcfg.Clientset,
-		kcfg.RestConfig,
-		"kubefirst-console",
-		"kubefirst",
-		8080,
-		9094,
-		consoleStopChannel,
-	)
-
-	progressPrinter.IncrementTracker("wrapping-up", 1)
 
 	// Mark cluster install as complete
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallCompleted, "")
@@ -1378,25 +1359,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// Set flags used to track status of active options
 	helpers.SetClusterStatusFlags(k3d.CloudProvider, config.GitProvider)
 
-	//Export and Import Cluster
-	cl := utilities.CreateClusterRecordFromRaw(useTelemetryFlag, cGitOwner, cGitUser, cGitToken, cGitlabOwnerGroupID, gitopsTemplateURLFlag, gitopsTemplateBranchFlag)
+	cluster := utilities.CreateClusterRecordFromRaw(useTelemetryFlag, cGitOwner, cGitUser, cGitToken, cGitlabOwnerGroupID, gitopsTemplateURLFlag, gitopsTemplateBranchFlag)
 
-	var localFilePath = fmt.Sprintf("%s/%s.json", "/tmp/api/cluster/export", clusterNameFlag)
-	utilities.CreateClusterRecordFile(clusterNameFlag, cl)
-
-	// Upload the zip file with FPutObject
-	info, err = minioClient.FPutObject(ctx, bucketName, fmt.Sprintf("%s.json", clusterNameFlag), localFilePath, minio.PutObjectOptions{ContentType: "application/json"})
-	if err != nil {
-		log.Info().Msgf("Error uploading to Minio bucket: %s", err)
-	}
-
-	kubernetesConfig := runtimetypes.KubernetesClient{
-		Clientset:      kcfg.Clientset,
-		KubeConfigPath: kcfg.KubeConfigPath,
-		RestConfig:     kcfg.RestConfig,
-	}
-
-	err = utils.ExportCluster(kubernetesConfig, cl)
+	err = utilities.ExportCluster(cluster, kcfg)
 	if err != nil {
 		log.Error().Err(err).Msg("error exporting cluster object")
 		viper.Set("kubefirst.setup-complete", false)
@@ -1404,7 +1369,25 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 		return err
 	} else {
-		err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLCloud)
+		kubefirstDeployment, err := k8s.ReturnDeploymentObject(
+			kcfg.Clientset,
+			"app.kubernetes.io/instance",
+			"kubefirst",
+			"kubefirst",
+			600,
+		)
+		if err != nil {
+			log.Error().Msgf("Error finding kubefirst Deployment: %s", err)
+			return err
+		}
+		_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, kubefirstDeployment, 120)
+		if err != nil {
+			log.Error().Msgf("Error waiting for kubefirst Deployment ready state: %s", err)
+			return err
+		}
+		progressPrinter.IncrementTracker("wrapping-up", 1)
+
+		err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLTLS)
 		if err != nil {
 			log.Error().Err(err).Msg("")
 		}
