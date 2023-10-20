@@ -1334,7 +1334,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.IncrementTracker("wrapping-up", 1)
 
 	// Wait for console Deployment Pods to transition to Running
-	consoleDeployment, err := k8s.ReturnDeploymentObject(
+	argoDeployment, err := k8s.ReturnDeploymentObject(
 		kcfg.Clientset,
 		"app.kubernetes.io/instance",
 		"argo",
@@ -1345,12 +1345,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Error().Msgf("Error finding argo workflows Deployment: %s", err)
 		return err
 	}
-	_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, consoleDeployment, 120)
+	_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, argoDeployment, 120)
 	if err != nil {
 		log.Error().Msgf("Error waiting for argo workflows Deployment ready state: %s", err)
 		return err
 	}
-	progressPrinter.IncrementTracker("wrapping-up", 1)
 
 	// Mark cluster install as complete
 	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallCompleted, "")
@@ -1370,6 +1369,24 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 		return err
 	} else {
+		kubefirstDeployment, err := k8s.ReturnDeploymentObject(
+			kcfg.Clientset,
+			"app.kubernetes.io/instance",
+			"kubefirst",
+			"kubefirst",
+			600,
+		)
+		if err != nil {
+			log.Error().Msgf("Error finding kubefirst Deployment: %s", err)
+			return err
+		}
+		_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, kubefirstDeployment, 120)
+		if err != nil {
+			log.Error().Msgf("Error waiting for kubefirst Deployment ready state: %s", err)
+			return err
+		}
+		progressPrinter.IncrementTracker("wrapping-up", 1)
+
 		err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLTLS)
 		if err != nil {
 			log.Error().Err(err).Msg("")
