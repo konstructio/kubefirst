@@ -27,8 +27,9 @@ import (
 	"github.com/kubefirst/kubefirst-api/pkg/reports"
 	"github.com/kubefirst/kubefirst-api/pkg/wrappers"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
-	"github.com/kubefirst/kubefirst/internal/telemetryShim"
+	"github.com/kubefirst/kubefirst/internal/segment"
 	"github.com/kubefirst/kubefirst/internal/utilities"
+	"github.com/kubefirst/metrics-client/pkg/telemetry"
 	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/argocd"
@@ -40,7 +41,6 @@ import (
 	"github.com/kubefirst/runtime/pkg/k3d"
 	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/kubefirst/runtime/pkg/progressPrinter"
-	"github.com/kubefirst/runtime/pkg/segment"
 	"github.com/kubefirst/runtime/pkg/services"
 	internalssh "github.com/kubefirst/runtime/pkg/ssh"
 	"github.com/kubefirst/runtime/pkg/terraform"
@@ -328,26 +328,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 
-	// Segment Client
-	segmentClient := &segment.SegmentClient{
-		CliVersion:        configs.K1Version,
-		CloudProvider:     k3d.CloudProvider,
-		ClusterID:         clusterId,
-		ClusterType:       clusterTypeFlag,
-		DomainName:        k3d.DomainName,
-		GitProvider:       gitProviderFlag,
-		KubefirstClient:   "cli",
-		KubefirstTeam:     kubefirstTeam,
-		KubefirstTeamInfo: os.Getenv("KUBEFIRST_TEAM_INFO"),
-	}
-	segmentClient.SetupClient()
-	defer func(c segment.SegmentClient) {
-		err := c.Client.Close()
-		if err != nil {
-			log.Info().Msgf("error closing segment client %s", err.Error())
-		}
-	}(*segmentClient)
-	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitStarted, "")
+	segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+	defer segClient.Client.Close()
+	telemetry.SendEvent(segClient, telemetry.InitStarted, "")
 
 	// Progress output
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 5)
@@ -415,13 +398,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// Check git credentials
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider))
 	if !executionControl {
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitCredentialsCheckStarted, "")
+		segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+		defer segClient.Client.Close()
+		telemetry.SendEvent(segClient, telemetry.GitCredentialsCheckStarted, "")
 		if len(cGitToken) == 0 {
 			msg := fmt.Sprintf(
 				"please set a %s_TOKEN environment variable to continue",
 				strings.ToUpper(config.GitProvider),
 			)
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitCredentialsCheckFailed, msg)
+			telemetry.SendEvent(segClient, telemetry.GitCredentialsCheckFailed, msg)
 			return fmt.Errorf(msg)
 		}
 
@@ -439,7 +424,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider), true)
 		viper.WriteConfig()
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitCredentialsCheckCompleted, "")
+		telemetry.SendEvent(segClient, telemetry.GitCredentialsCheckCompleted, "")
 		progressPrinter.IncrementTracker("preflight-checks", 1)
 	} else {
 		log.Info().Msg(fmt.Sprintf("already completed %s checks - continuing", config.GitProvider))
@@ -449,12 +434,16 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	var gitopsRepoURL string
 	executionControl = viper.GetBool("kubefirst-checks.kbot-setup")
 	if !executionControl {
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricKbotSetupStarted, "")
+		segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+		defer segClient.Client.Close()
+		telemetry.SendEvent(segClient, telemetry.KbotSetupStarted, "")
 
 		log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
 		sshPrivateKey, sshPublicKey, err = internalssh.CreateSshKeyPair()
 		if err != nil {
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricKbotSetupFailed, err.Error())
+			segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+			defer segClient.Client.Close()
+			telemetry.SendEvent(segClient, telemetry.KbotSetupFailed, err.Error())
 			return err
 		}
 		log.Info().Msg("ssh key pair creation complete")
@@ -464,7 +453,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("kbot.username", "kbot")
 		viper.Set("kubefirst-checks.kbot-setup", true)
 		viper.WriteConfig()
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricKbotSetupCompleted, "")
+		telemetry.SendEvent(segClient, telemetry.KbotSetupCompleted, err.Error())
 		log.Info().Msg("kbot-setup complete")
 		progressPrinter.IncrementTracker("preflight-checks", 1)
 	} else {
@@ -474,8 +463,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
-	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricInitCompleted, "")
-	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallStarted, "")
+	telemetry.SendEvent(segClient, telemetry.InitCompleted, "")
+	telemetry.SendEvent(segClient, telemetry.InitCompleted, "")
 
 	// Swap tokens for git protocol
 	switch config.GitProtocol {
@@ -602,7 +591,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		// //* create teams and repositories in github
 		executionControl = viper.GetBool("kubefirst-checks.terraform-apply-github")
 		if !executionControl {
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyStarted, "")
+			segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+			defer segClient.Client.Close()
+			telemetry.SendEvent(segClient, telemetry.GitTerraformApplyStarted, "")
 
 			log.Info().Msg("Creating GitHub resources with Terraform")
 
@@ -623,15 +614,17 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			}
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
+				segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+				defer segClient.Client.Close()
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
-				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
+				telemetry.SendEvent(segClient, telemetry.GitTerraformApplyFailed, msg)
 				return fmt.Errorf(msg)
 			}
 
 			log.Info().Msgf("created git repositories for github.com/%s", cGitOwner)
 			viper.Set("kubefirst-checks.terraform-apply-github", true)
 			viper.WriteConfig()
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyCompleted, "")
+			telemetry.SendEvent(segClient, telemetry.GitTerraformApplyCompleted, "")
 			progressPrinter.IncrementTracker("applying-git-terraform", 1)
 		} else {
 			log.Info().Msg("already created GitHub Terraform resources")
@@ -641,7 +634,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		// //* create teams and repositories in gitlab
 		executionControl = viper.GetBool("kubefirst-checks.terraform-apply-gitlab")
 		if !executionControl {
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyStarted, "")
+			segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+			defer segClient.Client.Close()
+			telemetry.SendEvent(segClient, telemetry.GitTerraformApplyStarted, "")
 
 			log.Info().Msg("Creating GitLab resources with Terraform")
 
@@ -663,14 +658,16 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
-				telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyFailed, msg)
+				segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+				defer segClient.Client.Close()
+				telemetry.SendEvent(segClient, telemetry.GitTerraformApplyFailed, msg)
 				return fmt.Errorf(msg)
 			}
 
 			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabGroupFlag)
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", true)
 			viper.WriteConfig()
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitTerraformApplyCompleted, "")
+			telemetry.SendEvent(segClient, telemetry.GitTerraformApplyCompleted, "")
 			progressPrinter.IncrementTracker("applying-git-terraform", 1)
 		} else {
 			log.Info().Msg("already created GitLab Terraform resources")
@@ -687,7 +684,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.gitops-repo-pushed")
 	if !executionControl {
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushStarted, "")
+		segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+		defer segClient.Client.Close()
+		telemetry.SendEvent(segClient, telemetry.GitopsRepoPushStarted, "")
 
 		gitopsRepo, err := git.PlainOpen(config.GitopsDir)
 		if err != nil {
@@ -718,7 +717,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		)
 		if err != nil {
 			msg := fmt.Sprintf("error pushing detokenized gitops repository to remote %s: %s", config.DestinationGitopsRepoGitURL, err)
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
+			segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+			defer segClient.Client.Close()
+			telemetry.SendEvent(segClient, telemetry.GitopsRepoPushFailed, msg)
 			if !strings.Contains(msg, "already up-to-date") {
 				log.Panic().Msg(msg)
 			}
@@ -733,7 +734,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		)
 		if err != nil {
 			msg := fmt.Sprintf("error pushing detokenized metaphor repository to remote %s: %s", config.DestinationMetaphorRepoURL, err)
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushFailed, msg)
+			segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+			defer segClient.Client.Close()
+			telemetry.SendEvent(segClient, telemetry.GitopsRepoPushFailed, msg)
 			if !strings.Contains(msg, "already up-to-date") {
 				log.Panic().Msg(msg)
 			}
@@ -744,7 +747,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		// todo that way we can stop worrying about which origin we're going to push to
 		viper.Set("kubefirst-checks.gitops-repo-pushed", true)
 		viper.WriteConfig()
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricGitopsRepoPushCompleted, "")
+		telemetry.SendEvent(segClient, telemetry.GitopsRepoPushCompleted, "")
 		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1) // todo verify this tracker didnt lose one
 	} else {
 		log.Info().Msg("already pushed detokenized gitops repository content")
@@ -757,7 +760,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	if !viper.GetBool("kubefirst-checks.create-k3d-cluster") {
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudTerraformApplyStarted, "")
+		segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+		defer segClient.Client.Close()
+		telemetry.SendEvent(segClient, telemetry.CloudTerraformApplyStarted, "")
 
 		log.Info().Msg("Creating k3d cluster")
 
@@ -766,14 +771,16 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			msg := fmt.Sprintf("error creating k3d resources with k3d client %s: %s", config.K3dClient, err)
 			viper.Set("kubefirst-checks.create-k3d-cluster-failed", true)
 			viper.WriteConfig()
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudTerraformApplyFailed, msg)
+			segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+			defer segClient.Client.Close()
+			telemetry.SendEvent(segClient, telemetry.CloudTerraformApplyFailed, msg)
 			return fmt.Errorf(msg)
 		}
 
 		log.Info().Msg("successfully created k3d cluster")
 		viper.Set("kubefirst-checks.create-k3d-cluster", true)
 		viper.WriteConfig()
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudTerraformApplyCompleted, "")
+		telemetry.SendEvent(segClient, telemetry.CloudTerraformApplyCompleted, "")
 		progressPrinter.IncrementTracker("creating-k3d-cluster", 1)
 	} else {
 		log.Info().Msg("already created k3d cluster resources")
@@ -904,7 +911,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	//* install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricArgoCDInstallStarted, "")
+		segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+		defer segClient.Client.Close()
+		telemetry.SendEvent(segClient, telemetry.ArgoCDInstallStarted, "")
 
 		log.Info().Msgf("installing argocd")
 
@@ -919,13 +928,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 		err = kcfg.ApplyObjects("", output)
 		if err != nil {
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricArgoCDInstallFailed, err.Error())
+			segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+			defer segClient.Client.Close()
+			telemetry.SendEvent(segClient, telemetry.ArgoCDInstallFailed, err.Error())
 			return err
 		}
 
 		viper.Set("kubefirst-checks.argocd-install", true)
 		viper.WriteConfig()
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricArgoCDInstallCompleted, "")
+		telemetry.SendEvent(segClient, telemetry.ArgoCDInstallCompleted, "")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	} else {
 		log.Info().Msg("argo cd already installed, continuing")
@@ -1021,7 +1032,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	//* argocd sync registry and start sync waves
 	executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
 	if !executionControl {
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCreateRegistryStarted, "")
+		segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+		defer segClient.Client.Close()
+		telemetry.SendEvent(segClient, telemetry.CreateRegistryStarted, "")
 		argocdClient, err := argocdapi.NewForConfig(kcfg.RestConfig)
 		if err != nil {
 			return err
@@ -1033,7 +1046,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCreateRegistryCompleted, "")
+		telemetry.SendEvent(segClient, telemetry.CreateRegistryCompleted, "")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
 	} else {
 		log.Info().Msg("argocd registry create already done, continuing")
@@ -1070,7 +1083,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.vault-initialized")
 	if !executionControl {
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultInitializationStarted, "")
+		segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+		defer segClient.Client.Close()
+		telemetry.SendEvent(segClient, telemetry.VaultInitializationStarted, "")
 
 		// Initialize and unseal Vault
 		vaultHandlerPath := "github.com:kubefirst/manifests.git/vault-handler/replicas-1"
@@ -1097,13 +1112,15 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		_, err = k8s.WaitForJobComplete(kcfg.Clientset, job, 240)
 		if err != nil {
 			msg := fmt.Sprintf("could not run vault unseal job: %s", err)
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultInitializationFailed, msg)
+			segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+			defer segClient.Client.Close()
+			telemetry.SendEvent(segClient, telemetry.VaultInitializationFailed, msg)
 			log.Fatal().Msg(msg)
 		}
 
 		viper.Set("kubefirst-checks.vault-initialized", true)
 		viper.WriteConfig()
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultInitializationCompleted, "")
+		telemetry.SendEvent(segClient, telemetry.VaultInitializationCompleted, "")
 		progressPrinter.IncrementTracker("configuring-vault", 1)
 	} else {
 		log.Info().Msg("vault is already initialized - skipping")
@@ -1200,7 +1217,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	//* configure vault with terraform
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
 	if !executionControl {
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyStarted, "")
+		segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+		defer segClient.Client.Close()
+		telemetry.SendEvent(segClient, telemetry.VaultTerraformApplyStarted, "")
 
 		tfEnvs := map[string]string{}
 		var usernamePasswordString, base64DockerAuth string
@@ -1241,14 +1260,16 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyFailed, err.Error())
+			segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+			defer segClient.Client.Close()
+			telemetry.SendEvent(segClient, telemetry.VaultTerraformApplyStarted, err.Error())
 			return err
 		}
 
 		log.Info().Msg("vault terraform executed successfully")
 		viper.Set("kubefirst-checks.terraform-apply-vault", true)
 		viper.WriteConfig()
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricVaultTerraformApplyCompleted, "")
+		telemetry.SendEvent(segClient, telemetry.VaultTerraformApplyCompleted, "")
 		progressPrinter.IncrementTracker("configuring-vault", 1)
 	} else {
 		log.Info().Msg("already executed vault terraform")
@@ -1261,7 +1282,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-users")
 	if !executionControl {
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyStarted, "")
+		segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+		defer segClient.Client.Close()
+		telemetry.SendEvent(segClient, telemetry.UsersTerraformApplyStarted, "")
 
 		log.Info().Msg("applying users terraform")
 
@@ -1278,14 +1301,16 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEntrypoint := config.GitopsDir + "/terraform/users"
 		err := terraform.InitApplyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 		if err != nil {
-			telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyStarted, err.Error())
+			segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+			defer segClient.Client.Close()
+			telemetry.SendEvent(segClient, telemetry.UsersTerraformApplyStarted, err.Error())
 			return err
 		}
 		log.Info().Msg("executed users terraform successfully")
 		// progressPrinter.IncrementTracker("step-users", 1)
 		viper.Set("kubefirst-checks.terraform-apply-users", true)
 		viper.WriteConfig()
-		telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricUsersTerraformApplyCompleted, "")
+		telemetry.SendEvent(segClient, telemetry.UsersTerraformApplyCompleted, "")
 		progressPrinter.IncrementTracker("creating-users", 1)
 	} else {
 		log.Info().Msg("already created users with terraform")
@@ -1352,7 +1377,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	// Mark cluster install as complete
-	telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricClusterInstallCompleted, "")
+	telemetry.SendEvent(segClient, telemetry.ClusterInstallCompleted, "")
 	viper.Set("kubefirst-checks.cluster-install-complete", true)
 	viper.WriteConfig()
 
@@ -1400,13 +1425,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, false)
 		}
 	}
-
-	defer func(c segment.SegmentClient) {
-		err := c.Client.Close()
-		if err != nil {
-			log.Info().Msgf("error closing segment client %s", err.Error())
-		}
-	}(*segmentClient)
 
 	return nil
 }
