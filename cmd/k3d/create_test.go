@@ -1,6 +1,7 @@
 package k3d
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -11,9 +12,9 @@ func mockCommandComplete() *cobra.Command {
 	cmd.Flags().Bool("ci", false, "ci flag")
 	cmd.Flags().String("cluster-name", "default", "cluster-name flag")
 	cmd.Flags().String("cluster-type", "default", "cluster-type flag")
-	cmd.Flags().String("github-org", "default", "github-org flag")
-	cmd.Flags().String("github-user", "default", "github-user flag")
-	cmd.Flags().String("gitlab-group", "default", "gitlab-group flag")
+	cmd.Flags().String("github-org", "", "github-org flag")
+	cmd.Flags().String("github-user", "", "github-user flag")
+	cmd.Flags().String("gitlab-group", "", "gitlab-group flag")
 	cmd.Flags().String("git-provider", "default", "git-provider flag")
 	cmd.Flags().String("git-protocol", "default", "git-protocol flag")
 	cmd.Flags().String("gitops-template-url", "default", "gitops-template-url flag")
@@ -26,6 +27,10 @@ func mockCommandIncomplete() *cobra.Command {
 	cmd := &cobra.Command{}
 	cmd.Flags().Bool("ci", false, "ci flag")
 	return cmd
+}
+
+func mockCheckForExistingPortForwards(ports ...int) error {
+	return errors.New("port 8080 is in use")
 }
 
 func TestRunK3dShouldReturnErrorIfSomeFlagIsNotPresent(t *testing.T) {
@@ -41,10 +46,31 @@ func TestRunK3dShouldReturnErrorIfSomeFlagIsNotPresent(t *testing.T) {
 
 func TestRunK3dShouldReturnErrorIfSomeFlagAreNotValid(t *testing.T) {
 	cmd := mockCommandComplete()
-	args := []string{"create", "--cluster-name", "test", "--cluster-type", "test"}
+	cmd.Flags().Set("github-user", "usertest")
+	cmd.Flags().Set("github-org", "orgtest")
+
+	args := []string{"create"}
 	err := runK3d(cmd, args)
 
 	errorExpected := "only one of --github-user or --github-org can be supplied"
+	if errorExpected != err.Error() {
+		t.Errorf("runK3d(%q) returned an error: %v", args, err)
+	}
+}
+
+func TestShouldReturnErrorWhenSomePortsAreNotOpen(t *testing.T) {
+	cmd := mockCommandComplete()
+	cmd.Flags().Set("github-user", "usertest")
+
+	originalCheckPortsFn := CheckPortsFn
+	defer func() { CheckPortsFn = originalCheckPortsFn }()
+
+	CheckPortsFn = mockCheckForExistingPortForwards
+
+	args := []string{"create"}
+	err := runK3d(cmd, args)
+
+	errorExpected := "port 8080 is in use - this port is required to set up your kubefirst environment - please close any existing port forwards before continuing"
 	if errorExpected != err.Error() {
 		t.Errorf("runK3d(%q) returned an error: %v", args, err)
 	}

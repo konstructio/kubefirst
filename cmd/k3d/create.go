@@ -69,6 +69,8 @@ var FlagsToValidate = []FlagConfig{
 	{"use-telemetry", "bool"},
 }
 
+var CheckPortsFn = k8s.CheckForExistingPortForwards
+
 func runK3d(cmd *cobra.Command, args []string) error {
 
 	flagValues := make(map[string]interface{})
@@ -121,7 +123,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check for existing port forwards before continuing
-	err = k8s.CheckForExistingPortForwards(8080, 8200, 9000, 9094)
+	err = CheckPortsFn(8080, 8200, 9000, 9094)
 	if err != nil {
 		return fmt.Errorf("%s - this port is required to set up your kubefirst environment - please close any existing port forwards before continuing", err.Error())
 	}
