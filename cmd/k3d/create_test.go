@@ -22,18 +22,29 @@ func mockCommandComplete() *cobra.Command {
 	return cmd
 }
 
-func mockCommandIComplete() *cobra.Command {
+func mockCommandIncomplete() *cobra.Command {
 	cmd := &cobra.Command{}
 	cmd.Flags().Bool("ci", false, "ci flag")
 	return cmd
 }
 
 func TestRunK3dShouldReturnErrorIfSomeFlagIsNotPresent(t *testing.T) {
-	cmd := mockCommandIComplete()
+	cmd := mockCommandIncomplete()
 	args := []string{"create"}
 	err := runK3d(cmd, args)
 
 	errorExpected := "flag accessed but not defined: cluster-name"
+	if errorExpected != err.Error() {
+		t.Errorf("runK3d(%q) returned an error: %v", args, err)
+	}
+}
+
+func TestRunK3dShouldReturnErrorIfSomeFlagAreNotValid(t *testing.T) {
+	cmd := mockCommandComplete()
+	args := []string{"create", "--cluster-name", "test", "--cluster-type", "test"}
+	err := runK3d(cmd, args)
+
+	errorExpected := "only one of --github-user or --github-org can be supplied"
 	if errorExpected != err.Error() {
 		t.Errorf("runK3d(%q) returned an error: %v", args, err)
 	}
