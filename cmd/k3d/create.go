@@ -32,7 +32,6 @@ import (
 	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/argocd"
-	"github.com/kubefirst/runtime/pkg/docker"
 	"github.com/kubefirst/runtime/pkg/gitClient"
 	"github.com/kubefirst/runtime/pkg/github"
 	gitlab "github.com/kubefirst/runtime/pkg/gitlab"
@@ -114,7 +113,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// If cluster setup is complete, return
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
-		return fmt.Errorf("this cluster install process has already completed successfully")
+		return fmt.Errorf("the cluster install process from a previous execution has already completed successfully. to reset your local state and create a new cluster, run kubefirst reset.")
 	}
 
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
@@ -148,14 +147,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%s - this port is required to set up your kubefirst environment - please close any existing port forwards before continuing", err.Error())
 	}
 
-	// Verify Docker is running
-	dcli := docker.DockerClientWrapper{
-		Client: docker.NewDockerClient(),
-	}
-	_, err = dcli.CheckDockerReady()
-	if err != nil {
-		return err
-	}
+	// // Verify Docker is running
+	// dcli := docker.DockerClientWrapper{
+	// 	Client: docker.NewDockerClient(),
+	// }
+	// _, err = dcli.CheckDockerReady()
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Global context
 	var ctx context.Context

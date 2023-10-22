@@ -47,14 +47,14 @@ func createErrorLog(message string) errorMsg {
 // Public Progress Functions
 func DisplayLogHints(estimatedTime int) {
 	logFile := viper.GetString("k1-paths.log-file")
-	cloudProvider := viper.GetString("kubefirst.cloud-provider")
 	header := `
 ##
 # Welcome to Kubefirst
 
 ### :bulb: To view verbose logs run below command in new terminal:
 ` + fmt.Sprintf("##### **tail -f -n +1 %s**", logFile) + `
-### :blue_book: Documentation: https://docs.kubefirst.io/` + cloudProvider + `/quick-start/install/cli
+### :blue_book: Documentation: https://docs.kubefirst.io/
+### :family: Community Support: https://kubefirst.io/slack
 
 ### :alarm_clock: Estimated time:` + fmt.Sprintf("`%s minutes` \n\n", strconv.Itoa(estimatedTime))
 

@@ -43,7 +43,7 @@ func createGoogle(cmd *cobra.Command, args []string) error {
 	// If cluster setup is complete, return
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
-		err = fmt.Errorf("this cluster install process has already completed successfully")
+		err = fmt.Errorf("the cluster install process from a previous execution has already completed successfully. to reset your local state and create a new cluster, run kubefirst reset.")
 		progress.Error(err.Error())
 		return nil
 	}
