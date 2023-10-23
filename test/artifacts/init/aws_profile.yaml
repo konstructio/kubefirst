@@ -1,5 +1,0 @@
-config:
-  admin-email:  user@domain.com
-  cloud: aws
-  hosted-zone-name: my.domain.com
-  profile: default
