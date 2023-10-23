@@ -21,12 +21,11 @@ import (
 	"github.com/kubefirst/kubefirst/internal/types"
 )
 
-
 func GetConsoleIngresUrl() string {
 
-	if strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) != "true" { //allow using local console running on port 3000
+	if strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true" { //allow using local console running on port 3000
 		return "http://localhost:3000"
-	} 
+	}
 
 	return "https://console.kubefirst.dev"
 }
