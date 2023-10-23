@@ -32,8 +32,14 @@ The Kubefirst CLI creates instant GitOps platforms that integrate some of the be
 Each of our platforms have install guides that detail the prerequesites, commands, and resulting platform that you'll receive.
 
 - [k3d (local)](https://docs.kubefirst.io/k3d/overview/)
-- [Civo](https://docs.kubefirst.io/civo/overview/)
 - [AWS](https://docs.kubefirst.io/aws/overview/)
+- [Civo](https://docs.kubefirst.io/civo/overview/)
+
+In beta:
+
+- [DigitalOcean](https://docs.kubefirst.io/do/overview/)
+- [Google Cloud](https://docs.kubefirst.io/gcp/overview/)
+- [Vultr](https://docs.kubefirst.io/vultr/overview/)
 
 ## Overview
 
