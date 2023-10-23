@@ -330,7 +330,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
 	defer segClient.Client.Close()
-	telemetry.SendEvent(segClient, telemetry.InitStarted, "")
+	telemetry.SendEvent(segClient, telemetry.ClusterInstallStarted, "")
 
 	// Progress output
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 5)
@@ -453,7 +453,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("kbot.username", "kbot")
 		viper.Set("kubefirst-checks.kbot-setup", true)
 		viper.WriteConfig()
-		telemetry.SendEvent(segClient, telemetry.KbotSetupCompleted, err.Error())
+		telemetry.SendEvent(segClient, telemetry.KbotSetupCompleted, "")
 		log.Info().Msg("kbot-setup complete")
 		progressPrinter.IncrementTracker("preflight-checks", 1)
 	} else {
