@@ -201,6 +201,10 @@ func ExportCluster(cluster apiTypes.Cluster, kcfg *k8s.KubernetesClient) error {
 	cluster.Status = "provisioned"
 	cluster.InProgress = false
 
+	if viper.GetBool("kubefirst-checks.secret-export-state") {
+		return nil
+	}
+
 	time.Sleep(time.Second * 10)
 
 	payload, err := json.Marshal(cluster)
@@ -222,6 +226,9 @@ func ExportCluster(cluster apiTypes.Cluster, kcfg *k8s.KubernetesClient) error {
 	if err != nil {
 		return errors.New(fmt.Sprintf("unable to save secret to management cluster. %s", err))
 	}
+
+	viper.Set("kubefirst-checks.secret-export-state", true)
+	viper.WriteConfig()
 
 	return nil
 }

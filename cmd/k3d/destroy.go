@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/runtime/pkg"
 	gitlab "github.com/kubefirst/runtime/pkg/gitlab"
 	"github.com/kubefirst/runtime/pkg/helpers"
@@ -30,11 +31,13 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
+	clusterName := viper.GetString("flags.cluster-name")
 	gitProtocol := viper.GetString("flags.git-protocol")
-	// _, err := helpers.EvalDestroy(k3d.CloudProvider, gitProvider)
-	// if err != nil {
-	// 	return err
-	// }
+
+	if clusterName == "" {
+		fmt.Printf("Your kubefirst platform running has been already destroyed.")
+		progress.Progress.Quit()
+	}
 
 	// Check for existing port forwards before continuing
 	err := k8s.CheckForExistingPortForwards(9000)
@@ -49,7 +52,6 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("destroying kubefirst platform running in k3d")
 
-	clusterName := viper.GetString("flags.cluster-name")
 	atlantisWebhookURL := fmt.Sprintf("%s/events", viper.GetString("ngrok.host"))
 
 	// Switch based on git provider, set params
@@ -240,6 +242,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("kbot", "")
 		viper.Set("kubefirst-checks", "")
 		viper.Set("kubefirst", "")
+		viper.Set("flags", "")
 		viper.WriteConfig()
 	}
 
@@ -251,6 +254,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	}
 	time.Sleep(time.Millisecond * 200) // allows progress bars to finish
 	fmt.Printf("Your kubefirst platform running in %s has been destroyed.", k3d.CloudProvider)
+	progress.Progress.Quit()
 
 	return nil
 }

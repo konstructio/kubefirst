@@ -1364,7 +1364,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		"app.kubernetes.io/instance",
 		"argo",
 		"argo",
-		600,
+		1200,
 	)
 	if err != nil {
 		log.Error().Msgf("Error finding argo workflows Deployment: %s", err)
@@ -1375,11 +1375,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Error().Msgf("Error waiting for argo workflows Deployment ready state: %s", err)
 		return err
 	}
-
-	// Mark cluster install as complete
-	telemetry.SendEvent(segClient, telemetry.ClusterInstallCompleted, "")
-	viper.Set("kubefirst-checks.cluster-install-complete", true)
-	viper.WriteConfig()
 
 	// Set flags used to track status of active options
 	helpers.SetClusterStatusFlags(k3d.CloudProvider, config.GitProvider)
@@ -1416,6 +1411,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			log.Error().Err(err).Msg("")
 		}
+
+		// Mark cluster install as complete
+		telemetry.SendEvent(segClient, telemetry.ClusterInstallCompleted, "")
+		viper.Set("kubefirst-checks.cluster-install-complete", true)
+		viper.WriteConfig()
 
 		log.Info().Msg("kubefirst installation complete")
 		log.Info().Msg("welcome to your new kubefirst platform running in K3d")
