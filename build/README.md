@@ -26,7 +26,7 @@ Once you have asdf installed, just run the following commands kubefirst will be 
 ```shell
 asdf plugin-add kubefirst https://github.com/Claywd/asdf-kubefirst.git
 asdf install kubefirst latest
-asdf global kubefirst
+asdf global kubefirst latest
 kubefirst version
 ```
 
