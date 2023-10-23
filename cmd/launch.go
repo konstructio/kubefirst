@@ -38,7 +38,7 @@ func launchUp() *cobra.Command {
 		Use:              "up",
 		Short:            "launch new console and api instance",
 		TraverseChildren: true,
-		PreRun:           common.CheckDocker,
+		// PreRun:           common.CheckDocker, // TODO: check runtimes when we can support more runtimes
 		Run: func(cmd *cobra.Command, args []string) {
 			launch.Up(additionalHelmFlags, false, true)
 		},
