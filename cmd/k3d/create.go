@@ -453,7 +453,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("kbot.username", "kbot")
 		viper.Set("kubefirst-checks.kbot-setup", true)
 		viper.WriteConfig()
-		telemetry.SendEvent(segClient, telemetry.KbotSetupCompleted, err.Error())
+		telemetry.SendEvent(segClient, telemetry.KbotSetupCompleted, "")
 		log.Info().Msg("kbot-setup complete")
 		progressPrinter.IncrementTracker("preflight-checks", 1)
 	} else {
