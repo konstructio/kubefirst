@@ -330,7 +330,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
 	defer segClient.Client.Close()
-	telemetry.SendEvent(segClient, telemetry.InitStarted, "")
+	telemetry.SendEvent(segClient, telemetry.ClusterInstallStarted, "")
 
 	// Progress output
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 5)
