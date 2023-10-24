@@ -20,7 +20,7 @@ import (
 
 func renderMessage(message string) string {
 	r, _ := glamour.NewTermRenderer(
-		glamour.WithStylesFromJSONFile("styles.json"),
+		glamour.WithStyles(StyleConfig),
 		glamour.WithEmoji(),
 	)
 
