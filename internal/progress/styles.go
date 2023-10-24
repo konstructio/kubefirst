@@ -111,7 +111,11 @@ var StyleConfig = ansi.StyleConfig{
 	},
 	Code: ansi.StyleBlock{
 		StylePrimitive: ansi.StylePrimitive{
-			Color: stringPtr("15"),
+			Color:           stringPtr("15"),
+			Prefix:          " ",
+			Suffix:          " ",
+			Bold:            boolPtr(true),
+			BackgroundColor: stringPtr(""),
 		},
 	},
 	CodeBlock: ansi.StyleCodeBlock{
