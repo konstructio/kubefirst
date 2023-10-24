@@ -148,14 +148,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%s - this port is required to set up your kubefirst environment - please close any existing port forwards before continuing", err.Error())
 	}
 
-	// Verify Docker is running
-	dcli := docker.DockerClientWrapper{
-		Client: docker.NewDockerClient(),
-	}
-	_, err = dcli.CheckDockerReady()
-	if err != nil {
-		return err
-	}
+	// Verify Docker is running # TODO: reintroduce once we support more runtimes
+	// dcli := docker.DockerClientWrapper{
+	// 	Client: docker.NewDockerClient(),
+	// }
+	// _, err = dcli.CheckDockerReady()
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Global context
 	var ctx context.Context

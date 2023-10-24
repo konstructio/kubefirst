@@ -61,7 +61,7 @@ func Create() *cobra.Command {
 		Short:            "create the kubefirst platform running in aws",
 		TraverseChildren: true,
 		RunE:             createAws,
-		PreRun:           common.CheckDocker,
+		// PreRun:           common.CheckDocker,
 	}
 
 	// todo review defaults and update descriptions
@@ -88,11 +88,11 @@ func Create() *cobra.Command {
 
 func Destroy() *cobra.Command {
 	destroyCmd := &cobra.Command{
-		Use:    "destroy",
-		Short:  "destroy the kubefirst platform",
-		Long:   "deletes the GitHub resources, aws resources, and local content to re-provision",
-		RunE:   common.Destroy,
-		PreRun: common.CheckDocker,
+		Use:   "destroy",
+		Short: "destroy the kubefirst platform",
+		Long:  "deletes the GitHub resources, aws resources, and local content to re-provision",
+		RunE:  common.Destroy,
+		// PreRun: common.CheckDocker,
 	}
 
 	return destroyCmd

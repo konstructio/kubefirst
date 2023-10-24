@@ -64,7 +64,7 @@ func Create() *cobra.Command {
 		Short:            "create the kubefirst platform running on DigitalOcean Kubernetes",
 		TraverseChildren: true,
 		RunE:             createDigitalocean,
-		PreRun:           common.CheckDocker,
+		// PreRun:           common.CheckDocker,
 	}
 
 	// todo review defaults and update descriptions
@@ -90,11 +90,11 @@ func Create() *cobra.Command {
 
 func Destroy() *cobra.Command {
 	destroyCmd := &cobra.Command{
-		Use:    "destroy",
-		Short:  "destroy the kubefirst platform",
-		Long:   "destroy the kubefirst platform running in DigitalOcean and remove all resources",
-		RunE:   common.Destroy,
-		PreRun: common.CheckDocker,
+		Use:   "destroy",
+		Short: "destroy the kubefirst platform",
+		Long:  "destroy the kubefirst platform running in DigitalOcean and remove all resources",
+		RunE:  common.Destroy,
+		// PreRun: common.CheckDocker,
 	}
 
 	return destroyCmd
