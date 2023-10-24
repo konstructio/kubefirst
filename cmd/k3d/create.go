@@ -33,7 +33,6 @@ import (
 	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/argocd"
-	"github.com/kubefirst/runtime/pkg/docker"
 	"github.com/kubefirst/runtime/pkg/gitClient"
 	"github.com/kubefirst/runtime/pkg/github"
 	gitlab "github.com/kubefirst/runtime/pkg/gitlab"
