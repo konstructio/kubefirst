@@ -9,7 +9,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst/internal/common"
 	"github.com/kubefirst/kubefirst/internal/launch"
 	"github.com/spf13/cobra"
 )
@@ -82,7 +81,7 @@ func launchListClusters() *cobra.Command {
 		Use:              "list",
 		Short:            "list clusters created by the kubefirst console",
 		TraverseChildren: true,
-		PreRun:           common.CheckDocker,
+		// PreRun:           common.CheckDocker,
 		Run: func(cmd *cobra.Command, args []string) {
 			launch.ListClusters()
 		},
@@ -97,7 +96,7 @@ func launchDeleteCluster() *cobra.Command {
 		Use:              "delete",
 		Short:            "delete a cluster created by the kubefirst console",
 		TraverseChildren: true,
-		PreRun:           common.CheckDocker,
+		// PreRun:           common.CheckDocker,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return fmt.Errorf("you must provide a cluster name as the only argument to this command")

@@ -11,6 +11,7 @@ package progress
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 
 	"github.com/charmbracelet/glamour"
@@ -20,11 +21,15 @@ import (
 
 func renderMessage(message string) string {
 	r, _ := glamour.NewTermRenderer(
-		glamour.WithStylesFromJSONFile("styles.json"),
+		glamour.WithStyles(StyleConfig),
 		glamour.WithEmoji(),
 	)
 
-	out, _ := r.Render(message)
+	out, err := r.Render(message)
+	if err != nil {
+		log.Println(err.Error())
+		return err.Error()
+	}
 	return out
 }
 
