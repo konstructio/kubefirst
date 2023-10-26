@@ -58,16 +58,16 @@ func CreateCluster(cluster apiTypes.ClusterDefinition) error {
 		return err
 	}
 
-	if res.StatusCode != http.StatusOK {
-		log.Info().Msgf("unable to create cluster %s", res.Status)
-		return err
-	}
-
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Info().Msgf("unable to create cluster %s", err)
 
 		return err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		log.Info().Msgf("unable to create cluster %s %s", res.Status, body)
+		return fmt.Errorf("unable to create cluster %s %s", res.Status, body)
 	}
 
 	log.Info().Msgf("Created cluster: %s", string(body))
