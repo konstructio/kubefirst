@@ -27,9 +27,9 @@ func CreateMgmtCluster(gitAuth runtimeTypes.GitAuth, cliFlags types.CliFlags) {
 	}
 
 	if !clusterCreated.InProgress {
-		err := cluster.CreateCluster(clusterRecord)
+		err = cluster.CreateCluster(clusterRecord)
 		if err != nil {
-			progress.Error("Unable to create the cluster")
+			progress.Error(err.Error())
 		}
 	}
 

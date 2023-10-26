@@ -153,7 +153,7 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 			PrivateKey: viper.GetString("kbot.private-key"),
 		},
 		CloudflareAuth: apiTypes.CloudflareAuth{
-			Token: os.Getenv("CF_API_TOKEN"),
+			APIToken: os.Getenv("CF_API_TOKEN"),
 		},
 	}
 
