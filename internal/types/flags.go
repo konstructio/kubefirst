@@ -28,4 +28,9 @@ type CliFlags struct {
 	NodeType             string
 	NodeCount            string
 	InstallCatalogApps   string
+	K3sSshUser           string
+	K3sSshPrivateKey     string
+	K3sServersPrivateIps []string
+	K3sServersPublicIps  []string
+	K3sServersArgs       []string
 }
