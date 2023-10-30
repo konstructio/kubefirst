@@ -48,6 +48,7 @@ body:
         - None specific
         - UI (Console app)
         - CLI
+        - Civo Marketplace
     validations:
       required: true
   - type: dropdown
@@ -59,6 +60,18 @@ body:
         - None specific
         - GitHub
         - GitLab
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Which Operating System?
+      description: Please add the architecture in the issue description. If you selected "Others", please specify in the textarea.
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other
     validations:
       required: true
   - type: textarea
