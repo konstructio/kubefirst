@@ -48,6 +48,7 @@ body:
         - None specific
         - UI (Console app)
         - CLI
+        - Civo Marketplace
     validations:
       required: true
   - type: dropdown
