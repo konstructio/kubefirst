@@ -68,6 +68,7 @@ body:
       label: Which Operating System?
       description: Please add the architecture in the issue description. If you selected "Others", please specify in the textarea.
       options:
+        - None specific
         - macOS
         - Linux
         - Windows
