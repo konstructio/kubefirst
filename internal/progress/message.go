@@ -79,7 +79,7 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 		break
 
 	case "civo":
-		cloudCliKubeconfig = fmt.Sprintf("civo kubernetes config %s > ~/.kube/config", cluster.ClusterName)
+		cloudCliKubeconfig = fmt.Sprintf("civo kubernetes config %s --save", cluster.ClusterName)
 		break
 
 	case "digitalocean":
