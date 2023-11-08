@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/runtime/pkg"
 	"github.com/kubefirst/runtime/pkg/helpers"
 	"github.com/kubefirst/runtime/pkg/progressPrinter"
@@ -131,6 +132,7 @@ func runReset() error {
 
 	progressPrinter.IncrementTracker("removing-platform-content", 1)
 	time.Sleep(time.Second * 2)
+	progress.Progress.Quit()
 
 	return nil
 }

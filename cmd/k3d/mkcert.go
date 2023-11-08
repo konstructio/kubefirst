@@ -9,6 +9,7 @@ package k3d
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/runtime/pkg/helpers"
 	"github.com/kubefirst/runtime/pkg/k3d"
 	"github.com/kubefirst/runtime/pkg/k8s"
@@ -51,6 +52,7 @@ func mkCert(cmd *cobra.Command, args []string) error {
 	}
 
 	log.Infof("Certificate generated. You can use it with an app by setting `tls.secretName: %s-tls` on a Traefik IngressRoute.", appNameFlag)
+	progress.Progress.Quit()
 
 	return nil
 }

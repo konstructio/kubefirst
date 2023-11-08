@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/kubefirst/kubefirst-api/pkg/certificates"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -41,6 +42,7 @@ func status() *cobra.Command {
 			if err != nil {
 				fmt.Println(err)
 			}
+			progress.Progress.Quit()
 		},
 	}
 
