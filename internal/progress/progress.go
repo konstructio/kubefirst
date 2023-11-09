@@ -59,7 +59,7 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case successMsg:
-		m.successMessage = msg.message
+		m.successMessage = msg.message + "\n\n"
 		return m, tea.Quit
 
 	case startProvision:
@@ -108,11 +108,13 @@ func (m progressModel) View() string {
 			completedSteps = completedSteps + renderMessage(fmt.Sprintf(":white_check_mark: %s", m.completedSteps[i]))
 		}
 
-		return m.header + "\n\n" +
-			completedSteps +
-			m.nextStep + "\n\n" +
-			m.error + "\n\n"
+		if m.header != "" {
+			return m.header + "\n\n" +
+				completedSteps +
+				m.nextStep + "\n\n" +
+				m.error + "\n\n"
+		}
 	}
 
-	return m.successMessage + "\n\n"
+	return m.successMessage
 }

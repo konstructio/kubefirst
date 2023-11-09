@@ -14,6 +14,7 @@ import (
 	"time"
 
 	vaultapi "github.com/hashicorp/vault/api"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/runtime/pkg/helpers"
 	"github.com/kubefirst/runtime/pkg/k3d"
 	"github.com/kubefirst/runtime/pkg/k8s"
@@ -111,6 +112,8 @@ func unsealVault(cmd *cobra.Command, args []string) error {
 	case false:
 		return fmt.Errorf("vault is already unsealed")
 	}
+
+	progress.Progress.Quit()
 
 	return nil
 }

@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/kubefirst/kubefirst-api/pkg/credentials"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/runtime/pkg/k3d"
 	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/spf13/cobra"
@@ -62,6 +63,8 @@ func getK3dRootCredentials(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	progress.Progress.Quit()
 
 	return nil
 }

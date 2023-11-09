@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
+	"golang.org/x/exp/slices"
 
 	"github.com/rs/zerolog/log"
 
@@ -24,6 +25,21 @@ import (
 )
 
 func main() {
+	argsWithProg := os.Args
+
+	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h"}
+	canRunBubbleTea := true
+
+	if argsWithProg != nil {
+		for _, arg := range argsWithProg {
+			isBlackListed := slices.Contains(bubbleTeaBlacklist, arg)
+
+			if isBlackListed {
+				canRunBubbleTea = false
+			}
+		}
+	}
+
 	now := time.Now()
 	epoch := now.Unix()
 
@@ -85,11 +101,16 @@ func main() {
 		stdLog.Panicf("unable to set log-file-location, error is: %s", err)
 	}
 
-	progress.InitializeProgressTerminal()
+	if canRunBubbleTea {
+		progress.InitializeProgressTerminal()
 
-	go func() {
+		go func() {
+			cmd.Execute()
+		}()
+
+		progress.Progress.Run()
+	} else {
 		cmd.Execute()
-	}()
+	}
 
-	progress.Progress.Run()
 }
