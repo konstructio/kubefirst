@@ -570,7 +570,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 	if !inCluster {
 		progress.Success(`
 ###
-#### :tada: Success` + "`Kubefirst Cluster is now up and running`")
+#### :tada: Success` + "`Your kubefirst platform provisioner is ready`")
 	}
 }
 
