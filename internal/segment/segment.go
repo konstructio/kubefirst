@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	kubefirstClient string = "api"
+	kubefirstClient string = "cli"
 )
 
 func InitClient(clusterId, clusterType, gitProvider string) *telemetry.SegmentClient {
@@ -28,7 +28,7 @@ func InitClient(clusterId, clusterType, gitProvider string) *telemetry.SegmentCl
 			ClusterType:       clusterType,
 			DomainName:        k3d.DomainName,
 			GitProvider:       gitProvider,
-			InstallMethod:     "kubefirst-launch",
+			InstallMethod:     "k3d",
 			KubefirstClient:   kubefirstClient,
 			KubefirstTeam:     os.Getenv("KUBEFIRST_TEAM"),
 			KubefirstTeamInfo: os.Getenv("KUBEFIRST_TEAM_INFO"),
