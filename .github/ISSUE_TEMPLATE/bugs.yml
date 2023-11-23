@@ -63,7 +63,7 @@ body:
     validations:
       required: true
   - type: dropdown
-    id: gitops-template
+    id: gitopstemplate
     attributes:
       label: Did you use a fork of `gitops-template`?
       options:
