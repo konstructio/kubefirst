@@ -67,8 +67,8 @@ body:
     attributes:
       label: Did you use a fork of `gitops-template`?
       options:
-        - No
-        - Yes
+        - "No"
+        - "Yes"
     validations:
       required: true
   - type: dropdown
