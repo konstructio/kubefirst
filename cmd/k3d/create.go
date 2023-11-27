@@ -329,7 +329,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
 	defer segClient.Client.Close()
-	telemetry.SendEvent(segClient, telemetry.ClusterInstallStarted, "")
+	//telemetry.SendEvent(segClient, telemetry.ClusterInstallStarted, "")
 
 	// Progress output
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 5)
@@ -462,7 +462,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	log.Info().Msg("validation and kubefirst cli environment check is complete")
 
-	telemetry.SendEvent(segClient, telemetry.InitCompleted, "")
 	telemetry.SendEvent(segClient, telemetry.InitCompleted, "")
 
 	// Swap tokens for git protocol
@@ -1412,7 +1411,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 
 		// Mark cluster install as complete
-		telemetry.SendEvent(segClient, telemetry.ClusterInstallCompleted, "")
 		viper.Set("kubefirst-checks.cluster-install-complete", true)
 		viper.WriteConfig()
 

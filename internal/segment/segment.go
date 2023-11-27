@@ -33,9 +33,10 @@ func InitClient(clusterId, clusterType, gitProvider string) *telemetry.SegmentCl
 			KubefirstTeam:     os.Getenv("KUBEFIRST_TEAM"),
 			KubefirstTeamInfo: os.Getenv("KUBEFIRST_TEAM_INFO"),
 			MachineID:         machineID,
+			ParentClusterId:   clusterId,
 			ErrorMessage:      "",
 			UserId:            machineID,
-			MetricName:        telemetry.ClusterInstallStarted,
+			MetricName:        telemetry.ClusterInstallCompleted,
 		},
 		Client: sc,
 	}
