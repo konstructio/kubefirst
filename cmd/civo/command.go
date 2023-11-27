@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/kubefirst/kubefirst/internal/common"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -47,6 +48,14 @@ func NewCommand() *cobra.Command {
 		Use:   "civo",
 		Short: "kubefirst civo installation",
 		Long:  "kubefirst civo",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("To learn more about civo in kubefirst, run:")
+			fmt.Println("  kubefirst civo --help")
+
+			if progress.Progress != nil {
+				progress.Progress.Quit()
+			}
+		},
 	}
 
 	// wire up new commands

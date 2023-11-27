@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/kubefirst/kubefirst/internal/common"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -47,6 +48,14 @@ func NewCommand() *cobra.Command {
 		Use:   "digitalocean",
 		Short: "kubefirst DigitalOcean installation",
 		Long:  "kubefirst digitalocean",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("To learn more about digital ocean in kubefirst, run:")
+			fmt.Println("  kubefirst beta digitalocean --help")
+
+			if progress.Progress != nil {
+				progress.Progress.Quit()
+			}
+		},
 	}
 
 	// on error, doesnt show helper/usage
