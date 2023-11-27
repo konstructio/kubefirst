@@ -12,6 +12,7 @@ import (
 	"github.com/kubefirst/kubefirst/cmd/digitalocean"
 	"github.com/kubefirst/kubefirst/cmd/google"
 	"github.com/kubefirst/kubefirst/cmd/vultr"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +24,10 @@ var betaCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("To learn more about kubefirst, run:")
 		fmt.Println("  kubefirst help")
+
+		if progress.Progress != nil {
+			progress.Progress.Quit()
+		}
 	},
 }
 
