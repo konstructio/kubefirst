@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/kubefirst/kubefirst/internal/common"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -48,6 +49,14 @@ func NewCommand() *cobra.Command {
 		Use:   "vultr",
 		Short: "kubefirst Vultr installation",
 		Long:  "kubefirst vultr",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("To learn more about vultr in kubefirst, run:")
+			fmt.Println("  kubefirst beta vultr --help")
+
+			if progress.Progress != nil {
+				progress.Progress.Quit()
+			}
+		},
 	}
 
 	// on error, doesnt show helper/usage

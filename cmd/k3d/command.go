@@ -9,6 +9,7 @@ package k3d
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -46,6 +47,14 @@ func NewCommand() *cobra.Command {
 		Use:   "k3d",
 		Short: "kubefirst k3d installation",
 		Long:  "kubefirst k3d",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("To learn more about k3d in kubefirst, run:")
+			fmt.Println("  kubefirst k3d --help")
+
+			if progress.Progress != nil {
+				progress.Progress.Quit()
+			}
+		},
 	}
 
 	// wire up new commands

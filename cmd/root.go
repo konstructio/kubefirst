@@ -14,6 +14,7 @@ import (
 	"github.com/kubefirst/kubefirst/cmd/civo"
 	"github.com/kubefirst/kubefirst/cmd/k3d"
 	"github.com/kubefirst/kubefirst/internal/common"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/runtime/configs"
 
 	"github.com/kubefirst/runtime/pkg/progressPrinter"
@@ -34,6 +35,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("To learn more about kubefirst, run:")
 		fmt.Println("  kubefirst help")
+		progress.Progress.Quit()
 	},
 }
 

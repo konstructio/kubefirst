@@ -63,6 +63,15 @@ body:
     validations:
       required: true
   - type: dropdown
+    id: gitopstemplate
+    attributes:
+      label: Did you use a fork of `gitops-template`?
+      options:
+        - "No"
+        - "Yes"
+    validations:
+      required: true
+  - type: dropdown
     id: os
     attributes:
       label: Which Operating System?

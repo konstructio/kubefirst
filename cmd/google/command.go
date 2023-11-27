@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/kubefirst/kubefirst/internal/common"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -50,6 +51,14 @@ func NewCommand() *cobra.Command {
 		Use:   "google",
 		Short: "kubefirst Google installation",
 		Long:  "kubefirst google",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("To learn more about google in kubefirst, run:")
+			fmt.Println("  kubefirst beta google --help")
+
+			if progress.Progress != nil {
+				progress.Progress.Quit()
+			}
+		},
 	}
 
 	// on error, doesnt show helper/usage
