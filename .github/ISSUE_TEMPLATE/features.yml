@@ -1,5 +1,5 @@
 name: Feature Request
-description: Share which feature you think kubefirst is missing
+description: Share which feature you think kubefirst is missing. Please create one GitHub issue per feature idea!
 labels: ["feature"]
 body:
   - type: markdown
