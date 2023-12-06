@@ -1,5 +1,5 @@
 name: Bug
-description: Report an issue with kubefirst
+description: Report an issue with kubefirst. Please create one GitHub issue per bug!
 labels: ["bug"]
 body:
   - type: markdown
