@@ -19,7 +19,7 @@
 #
 # Change the AWS account ID & role name
 #
-ROLE="arn:aws:iam::126827061464:role/KubernetesAdmin"
+ROLE="arn:aws:iam::111111111111:role/AssumedAdmin"
 
 #
 # You can leave the rest of thre script as is
