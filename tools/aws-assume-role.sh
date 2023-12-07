@@ -61,4 +61,7 @@ then
     echo -e "${BOLD}AWS_ACCESS_KEY_ID:    ${NOFORMAT} ${AWS_ACCESS_KEY_ID}"
     echo -e "${BOLD}AWS_SECRET_ACCESS_KEY:${NOFORMAT} ${AWS_SECRET_ACCESS_KEY}"
     echo -e "${BOLD}AWS_SESSION_TOKEN:    ${NOFORMAT} ${AWS_SESSION_TOKEN}"
+else
+    # The script wasn't successful
+    exit 1
 fi
