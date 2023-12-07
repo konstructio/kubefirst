@@ -17,17 +17,14 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/helm"
-	k3dint "github.com/kubefirst/kubefirst/internal/k3d"
 	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg"
-	"github.com/kubefirst/runtime/pkg/db"
 	"github.com/kubefirst/runtime/pkg/downloadManager"
 	"github.com/kubefirst/runtime/pkg/k3d"
 	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
-	"golang.org/x/term"
 	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,49 +74,9 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 	progress.AddStep("Initialize database")
 
 	if !dbInitialized {
-		dbDestination := k3dint.MongoDestinationChooser(inCluster)
-		switch dbDestination {
-		case "atlas":
-			fmt.Println("MongoDB Atlas Host String: ")
-			fmt.Scanln(&dbHost)
-
-			fmt.Printf("\nMongoDB Atlas Username: ")
-			fmt.Scanln(&dbUser)
-
-			fmt.Printf("\nMongoDB Atlas Password: ")
-			dbPasswordInput, err := term.ReadPassword(0)
-			if err != nil {
-				progress.Error(fmt.Sprintf("error parsing password: %s", err))
-			}
-
-			dbPassword = string(dbPasswordInput)
-			dbHost = strings.Replace(dbHost, "mongodb+srv://", "", -1)
-
-			// Verify database connectivity
-			mdbcl := db.Connect(&db.MongoDBClientParameters{
-				HostType: dbDestination,
-				Host:     dbHost,
-				Username: dbUser,
-				Password: dbPassword,
-			})
-			err = mdbcl.TestDatabaseConnection()
-			if err != nil {
-				progress.Error(fmt.Sprintf("Error validating Mongo credentials: %s", err))
-			}
-			mdbcl.Client.Disconnect(mdbcl.Context)
-
-			log.Info().Msg("MongoDB Atlas credentials verified")
-
-			viper.Set("launch.database-destination", "atlas")
-			viper.Set("launch.database-initialized", true)
-			viper.WriteConfig()
-		case "in-cluster":
-			viper.Set("launch.database-destination", "in-cluster")
-			viper.Set("launch.database-initialized", true)
-			viper.WriteConfig()
-		default:
-			progress.Error(fmt.Sprintf("%s is not a valid option", dbDestination))
-		}
+		viper.Set("launch.database-destination", "in-cluster")
+		viper.Set("launch.database-initialized", true)
+		viper.WriteConfig()
 	} else {
 		log.Info().Msg("Database has already been initialized, skipping")
 	}
