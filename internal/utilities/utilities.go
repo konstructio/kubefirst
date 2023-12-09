@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"time"
 
 	apiTypes "github.com/kubefirst/kubefirst-api/pkg/types"
@@ -133,6 +134,11 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 		kubefirstTeam = "false"
 	}
 
+	stringToIntNodeCount, err := strconv.Atoi(cliFlags.NodeCount)
+	if err != nil {
+		log.Info().Msg("Unable to convert node count to type string")
+	}
+
 	cl := apiTypes.ClusterDefinition{
 		AdminEmail:           viper.GetString("flags.alerts-email"),
 		ClusterName:          viper.GetString("flags.cluster-name"),
@@ -140,6 +146,8 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 		CloudRegion:          viper.GetString("flags.cloud-region"),
 		DomainName:           domainName,
 		Type:                 "mgmt",
+		NodeType:             cliFlags.NodeType,
+		NodeCount:            stringToIntNodeCount,
 		GitopsTemplateURL:    cliFlags.GitopsTemplateURL,
 		GitopsTemplateBranch: cliFlags.GitopsTemplateBranch,
 		GitProvider:          gitProvider,

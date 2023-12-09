@@ -24,4 +24,6 @@ type CliFlags struct {
 	GoogleProject        string
 	UseTelemetry         bool
 	Ecr                  bool
+	NodeType             string
+	NodeCount            string
 }
