@@ -9,8 +9,10 @@ package digitalocean
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst-api/pkg/constants"
 	"github.com/kubefirst/kubefirst/internal/common"
 	"github.com/kubefirst/kubefirst/internal/progress"
+
 	"github.com/spf13/cobra"
 )
 
@@ -30,6 +32,8 @@ var (
 	gitopsTemplateURLFlag    string
 	gitopsTemplateBranchFlag string
 	useTelemetryFlag         bool
+	nodeTypeFlag             string
+	nodeCountFlag            string
 
 	// RootCredentials
 	copyArgoCDPasswordToClipboardFlag bool
@@ -76,6 +80,8 @@ func Create() *cobra.Command {
 		// PreRun:           common.CheckDocker,
 	}
 
+	doDefaults := constants.GetCloudDefaults().DigitalOcean
+
 	// todo review defaults and update descriptions
 	createCmd.Flags().StringVar(&alertsEmailFlag, "alerts-email", "", "email address for let's encrypt certificate notifications (required)")
 	createCmd.MarkFlagRequired("alerts-email")
@@ -83,6 +89,8 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "nyc3", "the DigitalOcean region to provision infrastructure in")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
+	createCmd.Flags().StringVar(&nodeCountFlag, "node-count", doDefaults.NodeCount, "the node count for the cluster")
+	createCmd.Flags().StringVar(&nodeTypeFlag, "node-type", doDefaults.InstanceSize, "the instance size of the cluster to create")
 	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "digitalocean", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the DigitalOcean DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")

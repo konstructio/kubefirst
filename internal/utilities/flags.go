@@ -92,6 +92,18 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		return cliFlags, err
 	}
 
+	nodeTypeFlag, err := cmd.Flags().GetString("node-type")
+	if err != nil {
+		progress.Error(err.Error())
+		return cliFlags, err
+	}
+
+	nodeCountFlag, err := cmd.Flags().GetString("node-count")
+	if err != nil {
+		progress.Error(err.Error())
+		return cliFlags, err
+	}
+
 	if cloudProvider == "aws" {
 		ecrFlag, err := cmd.Flags().GetBool("ecr")
 		if err != nil {
@@ -125,6 +137,8 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 	cliFlags.GitopsTemplateURL = gitopsTemplateURLFlag
 	cliFlags.UseTelemetry = useTelemetryFlag
 	cliFlags.CloudProvider = cloudProvider
+	cliFlags.NodeType = nodeTypeFlag
+	cliFlags.NodeCount = nodeCountFlag
 
 	viper.Set("flags.alerts-email", cliFlags.AlertsEmail)
 	viper.Set("flags.cluster-name", cliFlags.ClusterName)

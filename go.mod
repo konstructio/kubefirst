@@ -9,22 +9,22 @@ require (
 	github.com/charmbracelet/bubbles v0.16.1
 	github.com/charmbracelet/bubbletea v0.24.2
 	github.com/charmbracelet/lipgloss v0.8.0
-	github.com/chromedp/chromedp v0.8.7
-	github.com/civo/civogo v0.3.28
+	github.com/civo/civogo v0.3.53
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/hashicorp/vault/api v1.9.0
-	github.com/kubefirst/kubefirst-api v0.0.4
-	github.com/kubefirst/metrics-client v0.2.1
-	github.com/kubefirst/runtime v0.3.28
+	github.com/kubefirst/kubefirst-api v0.1.8
+	github.com/kubefirst/metrics-client v0.2.8
+	github.com/kubefirst/runtime v0.3.35
 	github.com/rs/zerolog v1.29.1
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 	go.mongodb.org/mongo-driver v1.10.3
-	k8s.io/api v0.26.2
+	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
+	k8s.io/api v0.27.1
 	k8s.io/apimachinery v0.27.1
 	k8s.io/client-go v11.0.1-0.20190816222228-6d55c1b1f1ca+incompatible
 )
@@ -80,8 +80,6 @@ require (
 	github.com/caarlos0/sshmarshal v0.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chai2010/gettext-go v0.1.0 // indirect
-	github.com/chromedp/cdproto v0.0.0-20230109101555-6b041c6303cc // indirect
-	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/cloudflare/circl v1.1.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/digitalocean/godo v1.98.0 // indirect
@@ -106,9 +104,6 @@ require (
 	github.com/go-test/deep v1.1.0 // indirect
 	github.com/go-yaml/yaml v2.1.0+incompatible // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/gobwas/httphead v0.1.0 // indirect
-	github.com/gobwas/pool v0.2.1 // indirect
-	github.com/gobwas/ws v1.1.0 // indirect
 	github.com/gofrs/flock v0.7.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.3 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -179,7 +174,6 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
-	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/tools v0.12.0 // indirect
