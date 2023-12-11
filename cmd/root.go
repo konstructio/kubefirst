@@ -12,6 +12,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/cmd/aws"
 	"github.com/kubefirst/kubefirst/cmd/civo"
+	"github.com/kubefirst/kubefirst/cmd/digitalocean"
 	"github.com/kubefirst/kubefirst/cmd/k3d"
 	"github.com/kubefirst/kubefirst/internal/common"
 	"github.com/kubefirst/kubefirst/internal/progress"
@@ -61,6 +62,7 @@ func init() {
 		betaCmd,
 		aws.NewCommand(),
 		civo.NewCommand(),
+		digitalocean.NewCommand(),
 		k3d.NewCommand(),
 		k3d.LocalCommandAlias(),
 		LaunchCommand(),

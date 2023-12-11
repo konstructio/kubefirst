@@ -54,7 +54,7 @@ func NewCommand() *cobra.Command {
 		Long:  "kubefirst digitalocean",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("To learn more about digital ocean in kubefirst, run:")
-			fmt.Println("  kubefirst beta digitalocean --help")
+			fmt.Println("  kubefirst digitalocean --help")
 
 			if progress.Progress != nil {
 				progress.Progress.Quit()
