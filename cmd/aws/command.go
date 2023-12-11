@@ -9,6 +9,7 @@ package aws
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst-api/pkg/constants"
 	"github.com/kubefirst/kubefirst/internal/common"
 	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
@@ -31,6 +32,8 @@ var (
 	domainNameFlag           string
 	useTelemetryFlag         bool
 	ecrFlag                  bool
+	nodeTypeFlag             string
+	nodeCountFlag            string
 
 	// RootCredentials
 	copyArgoCDPasswordToClipboardFlag bool
@@ -73,6 +76,8 @@ func Create() *cobra.Command {
 		// PreRun:           common.CheckDocker,
 	}
 
+	awsDefaults := constants.GetCloudDefaults().Aws
+
 	// todo review defaults and update descriptions
 	createCmd.Flags().StringVar(&alertsEmailFlag, "alerts-email", "", "email address for let's encrypt certificate notifications (required)")
 	createCmd.MarkFlagRequired("alerts-email")
@@ -80,6 +85,8 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "us-east-1", "the aws region to provision infrastructure in")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
+	createCmd.Flags().StringVar(&nodeCountFlag, "node-count", awsDefaults.NodeCount, "the node count for the cluster")
+	createCmd.Flags().StringVar(&nodeTypeFlag, "node-type", awsDefaults.InstanceSize, "the instance size of the cluster to create")
 	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "aws", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the Route53/Cloudflare hosted zone name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
