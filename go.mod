@@ -15,7 +15,7 @@ require (
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/hashicorp/vault/api v1.9.0
 	github.com/kubefirst/kubefirst-api v0.1.8
-	github.com/kubefirst/metrics-client v0.2.8
+	github.com/kubefirst/metrics-client v0.3.0
 	github.com/kubefirst/runtime v0.3.35
 	github.com/rs/zerolog v1.29.1
 	github.com/segmentio/analytics-go v3.1.0+incompatible

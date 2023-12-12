@@ -725,6 +725,8 @@ github.com/kubefirst/kubefirst-api v0.1.8 h1:+5AT9pDj4AuH2GCW43Z9U/frEEyemqeZOm3
 github.com/kubefirst/kubefirst-api v0.1.8/go.mod h1:Euz7+acib+o9DTkJ3MXRVtPL1rI+vGFZditYG2aXQCY=
 github.com/kubefirst/metrics-client v0.2.8 h1:JfaeiBifZD/DpyYW2QVHcrhH/KWA98OmM+7c7M12qMc=
 github.com/kubefirst/metrics-client v0.2.8/go.mod h1:GR7wsMcyYhd+EU67PeuMCBYFE6OJ7P/j5OI5BLOoRMc=
+github.com/kubefirst/metrics-client v0.3.0 h1:zCug82pEzeWhHhpeYQvdhytRNDxrLxX18dPQ5PSxY3s=
+github.com/kubefirst/metrics-client v0.3.0/go.mod h1:GR7wsMcyYhd+EU67PeuMCBYFE6OJ7P/j5OI5BLOoRMc=
 github.com/kubefirst/runtime v0.3.35 h1:wn430Irf0E1vc3X0WX3lYBpyhQ5TN6xxMcargILA9uI=
 github.com/kubefirst/runtime v0.3.35/go.mod h1:0CnYy+8JTG+/0f3QlkTQJqTT654Su6JXk30OufFVY98=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=

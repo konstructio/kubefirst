@@ -30,7 +30,7 @@ func InitClient(clusterId, clusterType, gitProvider string) telemetry.TelemetryE
 		KubefirstTeamInfo: os.Getenv("KUBEFIRST_TEAM_INFO"),
 		MachineID:         machineID,
 		ErrorMessage:      "",
-		MetricName:        telemetry.ClusterInstallStarted,
+		MetricName:        telemetry.ClusterInstallCompleted,
 		UserId:            machineID,
 	}
 
