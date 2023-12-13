@@ -79,6 +79,12 @@ func DisplayLogHints(estimatedTime int) {
 func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 	cloudCliKubeconfig := ""
 
+	gitProviderLabel := "GitHub"
+
+	if cluster.GitProvider == "gitlab" {
+		gitProviderLabel = "GitLab"
+	}
+
 	switch cluster.CloudProvider {
 	case "aws":
 		cloudCliKubeconfig = fmt.Sprintf("aws eks update-kubeconfig --name %s --region %s", cluster.ClusterName, cluster.CloudRegion)
@@ -111,10 +117,10 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 ### :bulb: To retrieve root credentials for your Kubefirst platform run:
 ##### kubefirst ` + cluster.CloudProvider + ` root-credentials
 
-## GitLab
+## ` + fmt.Sprintf("`%s `", gitProviderLabel) + `
 ### Git Owner   ` + fmt.Sprintf("`%s`", cluster.GitAuth.Owner) + `
 ### Repos       ` + fmt.Sprintf("`https://%s.com/%s/gitops` \n\n", cluster.GitProvider, cluster.GitAuth.Owner) +
-		fmt.Sprintf("`            https://%s.com/%s/gitops`", cluster.GitProvider, cluster.GitAuth.Owner) + `
+		fmt.Sprintf("`            https://%s.com/%s/metaphor`", cluster.GitProvider, cluster.GitAuth.Owner) + `
 ## Kubefirst Console
 ### URL         ` + fmt.Sprintf("`https://kubefirst.%s`", cluster.DomainName) + `
 ## Argo CD
