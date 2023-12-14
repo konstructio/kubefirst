@@ -498,6 +498,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		if err != nil {
 			progress.Error(fmt.Sprintf("error creating kubernetes secret for cert: %s", err))
 		}
+		time.Sleep(5 * time.Second)
 		log.Info().Msg("Created Kubernetes Secret for certificate")
 	}
 
