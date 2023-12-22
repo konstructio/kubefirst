@@ -15,6 +15,7 @@ type CliFlags struct {
 	ClusterType          string
 	DnsProvider          string
 	DomainName           string
+	SubDomainName        string
 	GitProvider          string
 	GitProtocol          string
 	GithubOrg            string

@@ -25,6 +25,7 @@ var (
 	clusterTypeFlag          string
 	dnsProviderFlag          string
 	domainNameFlag           string
+	subdomainNameFlag        string
 	githubOrgFlag            string
 	gitlabGroupFlag          string
 	gitProviderFlag          string
@@ -92,6 +93,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&nodeCountFlag, "node-count", doDefaults.NodeCount, "the node count for the cluster")
 	createCmd.Flags().StringVar(&nodeTypeFlag, "node-type", doDefaults.InstanceSize, "the instance size of the cluster to create")
 	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "digitalocean", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
+	createCmd.Flags().StringVar(&subdomainNameFlag, "subdomain", "", "the subdomain to use for DNS records (Cloudflare)")
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the DigitalOcean DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
