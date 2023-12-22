@@ -145,6 +145,7 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 		CloudProvider:        cloudProvider,
 		CloudRegion:          viper.GetString("flags.cloud-region"),
 		DomainName:           domainName,
+		SubdomainName:        cliFlags.SubDomainName,
 		Type:                 "mgmt",
 		NodeType:             cliFlags.NodeType,
 		NodeCount:            stringToIntNodeCount,

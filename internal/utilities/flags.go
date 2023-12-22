@@ -42,6 +42,12 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		return cliFlags, err
 	}
 
+	subdomainFlag, err := cmd.Flags().GetString("subdomain")
+	if err != nil {
+		progress.Error(err.Error())
+		return cliFlags, err
+	}
+
 	domainNameFlag, err := cmd.Flags().GetString("domain-name")
 	if err != nil {
 		progress.Error(err.Error())
@@ -128,6 +134,7 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 	cliFlags.CloudRegion = cloudRegionFlag
 	cliFlags.ClusterName = clusterNameFlag
 	cliFlags.DnsProvider = dnsProviderFlag
+	cliFlags.SubDomainName = subdomainFlag
 	cliFlags.DomainName = domainNameFlag
 	cliFlags.GitProtocol = gitProtocolFlag
 	cliFlags.GitProvider = gitProviderFlag
