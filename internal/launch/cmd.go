@@ -574,7 +574,7 @@ func Down(inCluster bool) {
 	if !inCluster {
 		successMsg := `
 ###
-#### :tada: Success` + "`Your k3d kubefirst platform has been destroyed.`"
+#### :tada: Success` + "`Your kubefirst platform provisioner has been destroyed.`"
 		progress.Success(successMsg)
 	}
 }
