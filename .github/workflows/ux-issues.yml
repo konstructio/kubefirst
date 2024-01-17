@@ -1,0 +1,20 @@
+name: Add UX issues into the Kubefirst Action project
+
+on:
+  issues:
+    types: [opened, labeled]
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  ux-to-project:
+    runs-on: ubuntu-latest
+    name: Assign to the Kubefirst Action Project
+    steps:
+
+    - name: Assign issues with the UX label to the project and 
+      uses: srggrs/assign-one-project-github-action@1.2.1
+      if: contains(github.event.issue.labels.*.name, 'ux')
+      with:
+        project: 'https://github.com/orgs/kubefirst/projects/7/views/6'
+        column_name: 'No Status'
