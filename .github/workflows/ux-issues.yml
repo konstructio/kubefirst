@@ -2,7 +2,7 @@ name: Add UX issues into the Kubefirst Action project
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [labeled]
 env:
   MY_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
