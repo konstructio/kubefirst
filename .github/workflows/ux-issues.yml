@@ -4,7 +4,7 @@ on:
   issues:
     types: [opened, labeled]
 env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  MY_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   ux-to-project:
@@ -13,7 +13,7 @@ jobs:
     steps:
 
     - name: Assign issues with the UX label to the project and 
-      uses: srggrs/assign-one-project-github-action@1.2.1
+      uses: srggrs/assign-one-project-github-action@1.3.1
       if: contains(github.event.issue.labels.*.name, 'ux')
       with:
         project: 'https://github.com/orgs/kubefirst/projects/7/views/6'
