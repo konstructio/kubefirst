@@ -4,7 +4,7 @@ on:
   issues:
     types: [labeled]
 env:
-  MY_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  MY_GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
 jobs:
   ux-to-project:
