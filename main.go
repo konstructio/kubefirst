@@ -12,9 +12,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/rs/zerolog"
 	"golang.org/x/exp/slices"
 
+	zeroLog "github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/kubefirst/kubefirst/cmd"
@@ -27,7 +27,7 @@ import (
 func main() {
 	argsWithProg := os.Args
 
-	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota"}
+	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs"}
 	canRunBubbleTea := true
 
 	if argsWithProg != nil {
@@ -40,8 +40,39 @@ func main() {
 		}
 	}
 
+	config := configs.ReadConfig()
+	if err := pkg.SetupViper(config, true); err != nil {
+		stdLog.Panic(err)
+	}
+
 	now := time.Now()
 	epoch := now.Unix()
+	logfileName := fmt.Sprintf("log_%d.log", epoch)
+
+	isProvision := slices.Contains(argsWithProg, "create")
+	isLogs := slices.Contains(argsWithProg, "logs")
+
+	// don't create a new log file for logs, using the previous one
+	if isLogs {
+		logfileName = viper.GetString("k1-paths.log-file-name")
+	}
+
+	// use cluster name as filename
+	if isProvision {
+		clusterName := fmt.Sprint(epoch)
+		for i := 1; i < len(os.Args); i++ {
+			arg := os.Args[i]
+
+			// Check if the argument is "--cluster-name"
+			if arg == "--cluster-name" && i+1 < len(os.Args) {
+				// Get the value of the cluster name
+				clusterName = os.Args[i+1]
+				break
+			}
+		}
+
+		logfileName = fmt.Sprintf("log_%s.log", clusterName)
+	}
 
 	homePath, err := os.UserHomeDir()
 	if err != nil {
@@ -66,7 +97,7 @@ func main() {
 	}
 
 	//* create session log file
-	logfile := fmt.Sprintf("%s/log_%d.log", logsFolder, epoch)
+	logfile := fmt.Sprintf("%s/%s", logsFolder, logfileName)
 	logFileObj, err := pkg.OpenLogFile(logfile)
 	if err != nil {
 		stdLog.Panicf("unable to store log location, error is: %s - please verify the current user has write access to this directory", err)
@@ -84,18 +115,14 @@ func main() {
 	// this Go standard log is active to keep compatibility with current code base
 	stdLog.SetOutput(logFileObj)
 	stdLog.SetPrefix("LOG: ")
-	stdLog.SetFlags(stdLog.Ldate | stdLog.Lmicroseconds | stdLog.Llongfile)
+	stdLog.SetFlags(stdLog.Ldate)
 
-	// setup Zerolog
-	log.Logger = pkg.ZerologSetup(logFileObj, zerolog.InfoLevel)
-
-	config := configs.ReadConfig()
-	if err = pkg.SetupViper(config); err != nil {
-		stdLog.Panic(err)
-	}
+	log.Logger = zeroLog.New(logFileObj).With().Timestamp().Logger()
 
 	viper.Set("k1-paths.logs-dir", logsFolder)
-	viper.Set("k1-paths.log-file", fmt.Sprintf("%s/log_%d.log", logsFolder, epoch))
+	viper.Set("k1-paths.log-file", logfile)
+	viper.Set("k1-paths.log-file-name", logfileName)
+
 	err = viper.WriteConfig()
 	if err != nil {
 		stdLog.Panicf("unable to set log-file-location, error is: %s", err)

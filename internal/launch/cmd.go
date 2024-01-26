@@ -186,7 +186,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		log.Info().Msg("Creating k3d cluster for Kubefirst console and API...")
 		err = k3d.ClusterCreateConsoleAPI(
 			consoleClusterName,
-			kubeconfigPath,
+			fmt.Sprintf("%s/.k1", homeDir),
 			k3dClient,
 			fmt.Sprintf("%s/kubeconfig", dir),
 		)
@@ -336,6 +336,8 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 			fmt.Sprintf("global.kubefirstTeamInfo=%s", kubefirstTeamInfo),
 			"--set",
 			fmt.Sprintf("global.useTelemetry=%s", strconv.FormatBool(useTelemetry)),
+			"--set",
+			"kubefirst-api.includeVolume=true",
 		}
 
 		if len(additionalHelmFlags) > 0 {
