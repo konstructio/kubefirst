@@ -65,7 +65,7 @@ func CreateCluster(cluster apiTypes.ClusterDefinition) error {
 		return err
 	}
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusAccepted {
 		log.Info().Msgf("unable to create cluster %s %s", res.Status, body)
 		return fmt.Errorf("unable to create cluster %s %s", res.Status, body)
 	}

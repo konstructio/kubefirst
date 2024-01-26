@@ -161,6 +161,7 @@ func Destroy(cmd *cobra.Command, args []string) error {
 	viper.Set("launch", "")
 	viper.Set("kubefirst", "")
 	viper.Set("flags", "")
+	viper.Set("k1-paths", "")
 	viper.WriteConfig()
 
 	if _, err := os.Stat(config.K1Dir + "/kubeconfig"); !os.IsNotExist(err) {
