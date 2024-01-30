@@ -369,6 +369,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 
+	atlantisNgrokAuthtoken := viper.GetString("secrets.atlantis-ngrok-authtoken")
+	if atlantisNgrokAuthtoken == "" {
+		atlantisNgrokAuthtoken = os.Getenv("NGROK_AUTHTOKEN")
+		viper.Set("secrets.atlantis-ngrok-authtoken", atlantisNgrokAuthtoken)
+		viper.WriteConfig()
+	}
+
 	log.Info().Msg("checking authentication to required providers")
 
 	// check disk
@@ -544,6 +551,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.IncrementTracker("preflight-checks", 1)
 	progressPrinter.AddTracker("cloning-and-formatting-git-repositories", "Cloning and formatting git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+	removeAtlantis := false
+	if viper.GetString("secrets.atlantis-ngrok-authtoken") == "" {
+		removeAtlantis = true
+	}
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 		log.Info().Msg("generating your new gitops repository")
 		err := k3d.PrepareGitRepositories(
@@ -560,6 +571,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			config.MetaphorDir,
 			&metaphorTemplateTokens,
 			gitProtocolFlag,
+			removeAtlantis,
 		)
 		if err != nil {
 			return err
@@ -1216,6 +1228,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
 		tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
 		tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
+		tfEnvs["TF_VAR_ngrok_authtoken"] = viper.GetString("secrets.atlantis-ngrok-authtoken")
 		// tfEnvs["TF_LOG"] = "DEBUG"
 
 		tfEntrypoint := config.GitopsDir + "/terraform/vault"
