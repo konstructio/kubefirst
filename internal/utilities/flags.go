@@ -104,6 +104,12 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		return cliFlags, err
 	}
 
+	installCatalogAppsFlag, err := cmd.Flags().GetString("install-catalog-apps")
+	if err != nil {
+		progress.Error(err.Error())
+		return cliFlags, err
+	}
+
 	nodeCountFlag, err := cmd.Flags().GetString("node-count")
 	if err != nil {
 		progress.Error(err.Error())
@@ -146,6 +152,7 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 	cliFlags.CloudProvider = cloudProvider
 	cliFlags.NodeType = nodeTypeFlag
 	cliFlags.NodeCount = nodeCountFlag
+	cliFlags.InstallCatalogApps = installCatalogAppsFlag
 
 	viper.Set("flags.alerts-email", cliFlags.AlertsEmail)
 	viper.Set("flags.cluster-name", cliFlags.ClusterName)

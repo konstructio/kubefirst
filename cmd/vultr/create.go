@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kubefirst/kubefirst/internal/catalog"
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/launch"
@@ -32,6 +33,11 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	}
 
 	progress.DisplayLogHints(15)
+
+	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	if !isValid {
+		return err
+	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
@@ -89,7 +95,7 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		progress.Error("unable to start kubefirst api")
 	}
 
-	provision.CreateMgmtCluster(gitAuth, cliFlags)
+	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
 
 	return nil
 }

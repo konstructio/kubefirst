@@ -6,11 +6,13 @@ See the LICENSE file for more details.
 */
 package types
 
-import "github.com/kubefirst/kubefirst-api/pkg/types"
+import (
+	apiTypes "github.com/kubefirst/kubefirst-api/pkg/types"
+)
 
 type ProxyCreateClusterRequest struct {
-	Body types.ClusterDefinition `bson:"body" json:"body"`
-	Url  string                  `bson:"url" json:"url"`
+	Body apiTypes.ClusterDefinition `bson:"body" json:"body"`
+	Url  string                     `bson:"url" json:"url"`
 }
 
 type ProxyResetClusterRequest struct {

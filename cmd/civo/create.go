@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kubefirst/kubefirst/internal/catalog"
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/launch"
@@ -32,6 +33,11 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	progress.DisplayLogHints(15)
 
+	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	if !isValid {
+		return err
+	}
+
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
 		progress.Error(err.Error())
@@ -39,12 +45,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	}
 
 	// If cluster setup is complete, return
-	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
-	if clusterSetupComplete {
-		err = fmt.Errorf("this cluster install process has already completed successfully")
-		progress.Error(err.Error())
-		return nil
-	}
 
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 
@@ -88,7 +88,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		progress.Error("unable to start kubefirst api")
 	}
 
-	provision.CreateMgmtCluster(gitAuth, cliFlags)
+	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
 
 	return nil
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/kubefirst/kubefirst-api/pkg/handlers"
 	"github.com/kubefirst/kubefirst-api/pkg/reports"
 	"github.com/kubefirst/kubefirst-api/pkg/wrappers"
+	"github.com/kubefirst/kubefirst/internal/catalog"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/segment"
 	"github.com/kubefirst/kubefirst/internal/utilities"
@@ -105,6 +106,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	installCatalogAppsFlag, err := cmd.Flags().GetString("install-catalog-apps")
+	if err != nil {
+		return err
+	}
+
 	useTelemetryFlag, err := cmd.Flags().GetBool("use-telemetry")
 	if err != nil {
 		return err
@@ -118,6 +124,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 	helpers.DisplayLogHints()
+
+	isValid, catalogApps, err := catalog.ValidateCatalogApps(installCatalogAppsFlag)
+	if !isValid {
+		return err
+	}
 
 	switch gitProviderFlag {
 	case "github":
@@ -1347,7 +1358,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// Set flags used to track status of active options
 	helpers.SetClusterStatusFlags(k3d.CloudProvider, config.GitProvider)
 
-	cluster := utilities.CreateClusterRecordFromRaw(useTelemetryFlag, cGitOwner, cGitUser, cGitToken, cGitlabOwnerGroupID, gitopsTemplateURLFlag, gitopsTemplateBranchFlag)
+	cluster := utilities.CreateClusterRecordFromRaw(useTelemetryFlag, cGitOwner, cGitUser, cGitToken, cGitlabOwnerGroupID, gitopsTemplateURLFlag, gitopsTemplateBranchFlag, catalogApps)
 
 	err = utilities.ExportCluster(cluster, kcfg)
 	if err != nil {

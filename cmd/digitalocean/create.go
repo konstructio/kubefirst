@@ -12,6 +12,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/kubefirst/kubefirst/internal/catalog"
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/launch"
@@ -32,6 +33,11 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	}
 
 	progress.DisplayLogHints(20)
+
+	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	if !isValid {
+		return err
+	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
@@ -89,7 +95,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		progress.Error("unable to start kubefirst api")
 	}
 
-	provision.CreateMgmtCluster(gitAuth, cliFlags)
+	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
 
 	return nil
 }

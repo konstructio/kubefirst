@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/kubefirst/kubefirst/internal/catalog"
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/launch"
@@ -33,6 +34,11 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	progress.DisplayLogHints(40)
+
+	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	if !isValid {
+		return err
+	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
@@ -112,7 +118,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		progress.Error("unable to start kubefirst api")
 	}
 
-	provision.CreateMgmtCluster(gitAuth, cliFlags)
+	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
 
 	return nil
 }
