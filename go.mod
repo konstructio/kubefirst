@@ -14,7 +14,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/hashicorp/vault/api v1.9.0
-	github.com/kubefirst/kubefirst-api v0.1.9
+	github.com/kubefirst/kubefirst-api v0.1.11
 	github.com/kubefirst/metrics-client v0.3.0
 	github.com/kubefirst/runtime v0.4.0
 	github.com/nxadm/tail v1.4.8
@@ -222,6 +222,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/google/go-github/v52 v52.0.0
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect

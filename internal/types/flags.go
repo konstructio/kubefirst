@@ -27,4 +27,5 @@ type CliFlags struct {
 	Ecr                  bool
 	NodeType             string
 	NodeCount            string
+	InstallCatalogApps   string
 }

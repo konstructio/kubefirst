@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package provision
 
 import (
+	apiTypes "github.com/kubefirst/kubefirst-api/pkg/types"
 	runtimeTypes "github.com/kubefirst/kubefirst-api/pkg/types"
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/progress"
@@ -15,10 +16,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func CreateMgmtCluster(gitAuth runtimeTypes.GitAuth, cliFlags types.CliFlags) {
+func CreateMgmtCluster(gitAuth runtimeTypes.GitAuth, cliFlags types.CliFlags, catalogApps []apiTypes.GitopsCatalogApp) {
 	clusterRecord := utilities.CreateClusterDefinitionRecordFromRaw(
 		gitAuth,
 		cliFlags,
+		catalogApps,
 	)
 
 	clusterCreated, err := cluster.GetCluster(clusterRecord.ClusterName)
@@ -38,5 +40,5 @@ func CreateMgmtCluster(gitAuth runtimeTypes.GitAuth, cliFlags types.CliFlags) {
 		cluster.CreateCluster(clusterRecord)
 	}
 
-	progress.StartProvisioning(clusterRecord.ClusterName, 35)
+	progress.StartProvisioning(clusterRecord.ClusterName)
 }

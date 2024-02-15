@@ -35,6 +35,7 @@ var (
 	ecrFlag                  bool
 	nodeTypeFlag             string
 	nodeCountFlag            string
+	installCatalogApps       string
 
 	// RootCredentials
 	copyArgoCDPasswordToClipboardFlag bool
@@ -98,6 +99,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "", "the branch to clone for the gitops-template repository")
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
+	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma seperated values to install after provision")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
 	createCmd.Flags().BoolVar(&ecrFlag, "ecr", false, "whether or not to use ecr vs the git provider")
 
