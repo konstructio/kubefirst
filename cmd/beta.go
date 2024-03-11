@@ -11,6 +11,7 @@ import (
 
 	"github.com/kubefirst/kubefirst/cmd/akamai"
 	"github.com/kubefirst/kubefirst/cmd/google"
+	"github.com/kubefirst/kubefirst/cmd/k3s"
 	"github.com/kubefirst/kubefirst/cmd/vultr"
 	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
@@ -35,6 +36,7 @@ func init() {
 	cobra.OnInitialize()
 	betaCmd.AddCommand(
 		akamai.NewCommand(),
+		k3s.NewCommand(),
 		google.NewCommand(),
 		vultr.NewCommand(),
 	)

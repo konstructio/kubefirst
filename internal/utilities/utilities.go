@@ -109,7 +109,7 @@ func CreateClusterRecordFromRaw(
 	case "civo":
 		cl.CivoAuth.Token = os.Getenv("CIVO_TOKEN")
 	case "aws":
-		//ToDo: where to get credentials?
+		// ToDo: where to get credentials?
 		cl.AWSAuth.AccessKeyID = viper.GetString("kubefirst.state-store-creds.access-key-id")
 		cl.AWSAuth.SecretAccessKey = viper.GetString("kubefirst.state-store-creds.secret-access-key-id")
 		cl.AWSAuth.SessionToken = viper.GetString("kubefirst.state-store-creds.token")
@@ -192,7 +192,7 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 	case "akamai":
 		cl.AkamaiAuth.Token = os.Getenv("LINODE_TOKEN")
 	case "aws":
-		//ToDo: where to get credentials?
+		// ToDo: where to get credentials?
 		cl.AWSAuth.AccessKeyID = viper.GetString("kubefirst.state-store-creds.access-key-id")
 		cl.AWSAuth.SecretAccessKey = viper.GetString("kubefirst.state-store-creds.secret-access-key-id")
 		cl.AWSAuth.SessionToken = viper.GetString("kubefirst.state-store-creds.token")
@@ -205,6 +205,12 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 		cl.DigitaloceanAuth.SpacesSecret = os.Getenv("DO_SPACES_SECRET")
 	case "vultr":
 		cl.VultrAuth.Token = os.Getenv("VULTR_API_KEY")
+	case "k3s":
+		cl.K3sAuth.K3sServersPrivateIps = viper.GetStringSlice("flags.servers-private-ips")
+		cl.K3sAuth.K3sServersPublicIps = viper.GetStringSlice("flags.servers-public-ips")
+		cl.K3sAuth.K3sSshUser = viper.GetString("flags.ssh-user")
+		cl.K3sAuth.K3sSshPrivateKey = viper.GetString("flags.ssh-privatekey")
+		cl.K3sAuth.K3sServersArgs = viper.GetStringSlice("flags.servers-args")
 	case "google":
 		jsonFilePath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
