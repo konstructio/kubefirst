@@ -225,8 +225,6 @@ github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx2
 github.com/bwesterb/go-ristretto v1.2.0/go.mod h1:fUIoIZaG73pV5biE2Blr2xEzDoMj7NFEuV9ekS419A0=
 github.com/caarlos0/env/v6 v6.10.1 h1:t1mPSxNpei6M5yAeu1qtRdPAK29Nbcf/n3G7x+b3/II=
 github.com/caarlos0/env/v6 v6.10.1/go.mod h1:hvp/ryKXKipEkcuYjs9mI4bBCg+UI0Yhgm5Zu0ddvwc=
-github.com/caarlos0/sshmarshal v0.1.0 h1:zTCZrDORFfWh526Tsb7vCm3+Yg/SfW/Ub8aQDeosk0I=
-github.com/caarlos0/sshmarshal v0.1.0/go.mod h1:7Pd/0mmq9x/JCzKauogNjSQEhivBclCQHfr9dlpDIyA=
 github.com/casbin/casbin/v2 v2.1.2/go.mod h1:YcPU1XXisHhLzuxH9coDNf2FbKpjGlbCg3n9yuLkIJQ=
 github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=
 github.com/cenkalti/backoff/v3 v3.2.2 h1:cfUAAO3yvKMYKPrvhDuHSwQnhZNk/RMHKdZqKTxfm6M=
@@ -726,8 +724,8 @@ github.com/kubefirst/kubefirst-api v0.1.11 h1:nRq0y40StwBCL/YwjzHXAURN+/SA63g6pz
 github.com/kubefirst/kubefirst-api v0.1.11/go.mod h1:pAcgIJVYRvRldNMcdIbhcIuHeM+euNlfKVEd/JNS6c8=
 github.com/kubefirst/metrics-client v0.3.0 h1:zCug82pEzeWhHhpeYQvdhytRNDxrLxX18dPQ5PSxY3s=
 github.com/kubefirst/metrics-client v0.3.0/go.mod h1:GR7wsMcyYhd+EU67PeuMCBYFE6OJ7P/j5OI5BLOoRMc=
-github.com/kubefirst/runtime v0.4.1 h1:0aqBZa3bPwHb5pFFA1eaZ5VObNjuVxDO4d8m9VFs4Jo=
-github.com/kubefirst/runtime v0.4.1/go.mod h1:0CnYy+8JTG+/0f3QlkTQJqTT654Su6JXk30OufFVY98=
+github.com/kubefirst/runtime v0.4.2 h1:qFoFEjyv9WSnmmKhclkux++xGA15yPt7/XwQbdQYVDs=
+github.com/kubefirst/runtime v0.4.2/go.mod h1:GWsDhvffBMeJaHFgcCCyQrHIldclwVHwKD/j07UDYk4=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
 github.com/libopenstorage/openstorage v1.0.0/go.mod h1:Sp1sIObHjat1BeXhfMqLZ14wnOzEhNx2YQedreMcUyc=
 github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de h1:9TO3cAIGXtEhnIaL+V+BEER86oLrvS+kWobKpbJuye0=

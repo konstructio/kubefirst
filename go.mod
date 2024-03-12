@@ -16,7 +16,7 @@ require (
 	github.com/hashicorp/vault/api v1.9.0
 	github.com/kubefirst/kubefirst-api v0.1.11
 	github.com/kubefirst/metrics-client v0.3.0
-	github.com/kubefirst/runtime v0.4.1
+	github.com/kubefirst/runtime v0.4.2
 	github.com/nxadm/tail v1.4.8
 	github.com/rs/zerolog v1.29.1
 	github.com/sirupsen/logrus v1.9.0
@@ -77,7 +77,6 @@ require (
 	github.com/bombsimon/logrusr/v2 v2.0.1 // indirect
 	github.com/bradleyfalzon/ghinstallation/v2 v2.1.0 // indirect
 	github.com/caarlos0/env/v6 v6.10.1 // indirect
-	github.com/caarlos0/sshmarshal v0.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chai2010/gettext-go v0.1.0 // indirect
 	github.com/cloudflare/circl v1.1.0 // indirect
