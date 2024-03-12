@@ -189,14 +189,16 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 	}
 
 	switch cloudProvider {
-	case "civo":
-		cl.CivoAuth.Token = os.Getenv("CIVO_TOKEN")
+	case "akamai":
+		cl.AkamaiAuth.Token = os.Getenv("LINODE_TOKEN")
 	case "aws":
 		// ToDo: where to get credentials?
 		cl.AWSAuth.AccessKeyID = viper.GetString("kubefirst.state-store-creds.access-key-id")
 		cl.AWSAuth.SecretAccessKey = viper.GetString("kubefirst.state-store-creds.secret-access-key-id")
 		cl.AWSAuth.SessionToken = viper.GetString("kubefirst.state-store-creds.token")
 		cl.ECR = cliFlags.Ecr
+	case "civo":
+		cl.CivoAuth.Token = os.Getenv("CIVO_TOKEN")
 	case "digitalocean":
 		cl.DigitaloceanAuth.Token = os.Getenv("DO_TOKEN")
 		cl.DigitaloceanAuth.SpacesKey = os.Getenv("DO_SPACES_KEY")

@@ -42,7 +42,6 @@ import (
 	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/kubefirst/runtime/pkg/progressPrinter"
 	"github.com/kubefirst/runtime/pkg/services"
-	internalssh "github.com/kubefirst/runtime/pkg/ssh"
 	"github.com/kubefirst/runtime/pkg/terraform"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -130,22 +129,22 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	switch gitProviderFlag {
-	case "github":
-		key, err := internalssh.GetHostKey("github.com")
-		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "github.com", key.Type())
-		}
-	case "gitlab":
-		key, err := internalssh.GetHostKey("gitlab.com")
-		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
-		}
-	}
+	// switch gitProviderFlag {
+	// case "github":
+	// 	key, err := internalssh.GetHostKey("github.com")
+	// 	if err != nil {
+	// 		return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
+	// 	} else {
+	// 		log.Info().Msgf("%s %s\n", "github.com", key.Type())
+	// 	}
+	// case "gitlab":
+	// 	key, err := internalssh.GetHostKey("gitlab.com")
+	// 	if err != nil {
+	// 		return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
+	// 	} else {
+	// 		log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
+	// 	}
+	// }
 
 	// Either user or org can be specified for github, not both
 	if githubOrgFlag != "" && githubUserFlag != "" {
@@ -450,11 +449,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		telemetry.SendEvent(segClient, telemetry.KbotSetupStarted, "")
 
 		log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
-		sshPrivateKey, sshPublicKey, err = internalssh.CreateSshKeyPair()
-		if err != nil {
-			telemetry.SendEvent(segClient, telemetry.KbotSetupFailed, err.Error())
-			return err
-		}
+		// sshPrivateKey, sshPublicKey, err = internalssh.CreateSshKeyPair()
+		// if err != nil {
+		// 	telemetry.SendEvent(segClient, telemetry.KbotSetupFailed, err.Error())
+		// 	return err
+		// }
 		log.Info().Msg("ssh key pair creation complete")
 
 		viper.Set("kbot.private-key", sshPrivateKey)
@@ -702,14 +701,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
 		}
 
-		err = internalssh.EvalSSHKey(&internalssh.EvalSSHKeyRequest{
-			GitProvider:     gitProviderFlag,
-			GitlabGroupFlag: gitlabGroupFlag,
-			GitToken:        cGitToken,
-		})
-		if err != nil {
-			return err
-		}
+		// err = internalssh.EvalSSHKey(&internalssh.EvalSSHKeyRequest{
+		// 	GitProvider:     gitProviderFlag,
+		// 	GitlabGroupFlag: gitlabGroupFlag,
+		// 	GitToken:        cGitToken,
+		// })
+		// if err != nil {
+		// 	return err
+		// }
 
 		//Push to remotes and use https
 		// Push gitops repo to remote

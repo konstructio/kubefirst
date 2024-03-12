@@ -4,7 +4,7 @@ Copyright (C) 2021-2023, Kubefirst
 This program is licensed under MIT.
 See the LICENSE file for more details.
 */
-package vultr
+package akamai
 
 import (
 	"fmt"
@@ -13,18 +13,16 @@ import (
 	"github.com/kubefirst/kubefirst/internal/catalog"
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
-	"github.com/kubefirst/kubefirst/internal/launch"
 	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/kubefirst/internal/provision"
 	"github.com/kubefirst/kubefirst/internal/utilities"
 	"github.com/kubefirst/runtime/pkg"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-func createVultr(cmd *cobra.Command, args []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "vultr")
+func createAkamai(cmd *cobra.Command, args []string) error {
+	cliFlags, err := utilities.GetFlags(cmd, "akamai")
 	if err != nil {
 		progress.Error(err.Error())
 		return nil
@@ -44,12 +42,6 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	}
 
 	// If cluster setup is complete, return
-	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
-	if clusterSetupComplete {
-		err = fmt.Errorf("this cluster install process has already completed successfully")
-		progress.Error(err.Error())
-		return nil
-	}
 
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 
@@ -83,10 +75,10 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider), true)
 	viper.WriteConfig()
 
-	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
-	if !k3dClusterCreationComplete {
-		launch.Up(nil, true, cliFlags.UseTelemetry)
-	}
+	// k3dClusterCreationComplete := viper.GetBool("launch.deployed")
+	// if !k3dClusterCreationComplete {
+	// 	launch.Up(nil, true, cliFlags.UseTelemetry)
+	// }
 
 	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
 	if err != nil {
@@ -101,8 +93,9 @@ func createVultr(cmd *cobra.Command, args []string) error {
 func ValidateProvidedFlags(gitProvider string) error {
 	progress.AddStep("Validate provided flags")
 
-	if os.Getenv("VULTR_API_KEY") == "" {
-		return fmt.Errorf("your VULTR_API_KEY variable is unset - please set it before continuing")
+	if os.Getenv("LINODE_TOKEN") == "" {
+		// telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudCredentialsCheckFailed, "LINODE_TOKEN environment variable was not set")
+		return fmt.Errorf("your LINODE_TOKEN is not set - please set and re-run your last command")
 	}
 
 	// Validate required environment variables for dns provider
