@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.230
 	github.com/charmbracelet/bubbles v0.16.1
 	github.com/charmbracelet/bubbletea v0.24.2
-	github.com/charmbracelet/lipgloss v0.8.0
+	github.com/charmbracelet/lipgloss v0.9.1
 	github.com/civo/civogo v0.3.53
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/dustin/go-humanize v1.0.1
@@ -16,14 +16,14 @@ require (
 	github.com/hashicorp/vault/api v1.9.0
 	github.com/kubefirst/kubefirst-api v0.1.11
 	github.com/kubefirst/metrics-client v0.3.0
-	github.com/kubefirst/runtime v0.4.1
+	github.com/kubefirst/runtime v0.4.2
 	github.com/nxadm/tail v1.4.8
 	github.com/rs/zerolog v1.29.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 	go.mongodb.org/mongo-driver v1.10.3
-	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
+	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	k8s.io/api v0.27.1
 	k8s.io/apimachinery v0.27.1
 	k8s.io/client-go v11.0.1-0.20190816222228-6d55c1b1f1ca+incompatible
@@ -77,7 +77,6 @@ require (
 	github.com/bombsimon/logrusr/v2 v2.0.1 // indirect
 	github.com/bradleyfalzon/ghinstallation/v2 v2.1.0 // indirect
 	github.com/caarlos0/env/v6 v6.10.1 // indirect
-	github.com/caarlos0/sshmarshal v0.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chai2010/gettext-go v0.1.0 // indirect
 	github.com/cloudflare/circl v1.1.0 // indirect
@@ -169,9 +168,9 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	golang.org/x/crypto v0.20.0 // indirect
-	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/tools v0.12.0 // indirect
+	golang.org/x/mod v0.13.0 // indirect
+	golang.org/x/sync v0.4.0 // indirect
+	golang.org/x/tools v0.14.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.126.0 // indirect
 	google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
@@ -244,7 +243,7 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
-	github.com/mattn/go-runewidth v0.0.14 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/minio/minio-go/v7 v7.0.49
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -331,3 +330,4 @@ replace (
 	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.24.2
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.24.2
 )
+
