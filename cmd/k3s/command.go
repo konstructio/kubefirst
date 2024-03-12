@@ -29,6 +29,7 @@ var (
 	k3sSshPrivateKeyflag     string
 	K3sServersArgsFlags      []string
 	dnsProviderFlag          string
+	subdomainNameFlag        string
 	domainNameFlag           string
 	githubOrgFlag            string
 	gitlabGroupFlag          string
@@ -36,6 +37,7 @@ var (
 	gitProtocolFlag          string
 	gitopsTemplateURLFlag    string
 	gitopsTemplateBranchFlag string
+	installCatalogApps       string
 	useTelemetryFlag         bool
 	forceDestroyFlag         bool
 
@@ -94,6 +96,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&k3sSshPrivateKeyflag, "ssh-privatekey", "", "the private key used to log into servers with ssh connection")
 	createCmd.MarkFlagRequired("ssh-privatekey")
 	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "cloudflare", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
+	createCmd.Flags().StringVar(&subdomainNameFlag, "subdomain", "", "the subdomain to use for DNS records (Cloudflare)")
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the cloudProvider DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
 	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %s", supportedGitProtocolOverride))
@@ -101,6 +104,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "", "the branch to clone for the gitops-template repository")
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
+	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma seperated values to install after provision")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
 	createCmd.Flags().BoolVar(&forceDestroyFlag, "force-destroy", false, "allows force destruction on objects (helpful for test environments, defaults to false)")
 	return createCmd
