@@ -338,6 +338,10 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 			fmt.Sprintf("global.useTelemetry=%s", strconv.FormatBool(useTelemetry)),
 			"--set",
 			"kubefirst-api.includeVolume=true",
+			"--set",
+			"kubefirst-api.extraEnv.IN_CLUSTER=true",
+			"--set",
+			"kubefirst-api-ee.extraEnv.IN_CLUSTER=true",
 		}
 
 		if len(additionalHelmFlags) > 0 {
