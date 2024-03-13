@@ -13,6 +13,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/catalog"
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
+	"github.com/kubefirst/kubefirst/internal/launch"
 	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/kubefirst/internal/provision"
 	"github.com/kubefirst/kubefirst/internal/utilities"
@@ -75,10 +76,10 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider), true)
 	viper.WriteConfig()
 
-	// k3dClusterCreationComplete := viper.GetBool("launch.deployed")
-	// if !k3dClusterCreationComplete {
-	// 	launch.Up(nil, true, cliFlags.UseTelemetry)
-	// }
+	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
+	if !k3dClusterCreationComplete {
+		launch.Up(nil, true, cliFlags.UseTelemetry)
+	}
 
 	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
 	if err != nil {
