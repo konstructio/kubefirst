@@ -16,7 +16,7 @@ require (
 	github.com/hashicorp/vault/api v1.9.0
 	github.com/kubefirst/kubefirst-api v0.1.21
 	github.com/kubefirst/metrics-client v0.3.0
-	github.com/kubefirst/runtime v0.4.2
+	github.com/kubefirst/runtime v0.4.3
 	github.com/nxadm/tail v1.4.8
 	github.com/rs/zerolog v1.29.1
 	github.com/sirupsen/logrus v1.9.0

@@ -724,8 +724,8 @@ github.com/kubefirst/kubefirst-api v0.1.21 h1:sWS/DXNb5EGVg7apwHQl5ANWn905Hv5VBA
 github.com/kubefirst/kubefirst-api v0.1.21/go.mod h1:yk7WiGew7SOAWI9LVhx02l9XEAYTzof/kkxHgkgZBpM=
 github.com/kubefirst/metrics-client v0.3.0 h1:zCug82pEzeWhHhpeYQvdhytRNDxrLxX18dPQ5PSxY3s=
 github.com/kubefirst/metrics-client v0.3.0/go.mod h1:GR7wsMcyYhd+EU67PeuMCBYFE6OJ7P/j5OI5BLOoRMc=
-github.com/kubefirst/runtime v0.4.2 h1:qFoFEjyv9WSnmmKhclkux++xGA15yPt7/XwQbdQYVDs=
-github.com/kubefirst/runtime v0.4.2/go.mod h1:GWsDhvffBMeJaHFgcCCyQrHIldclwVHwKD/j07UDYk4=
+github.com/kubefirst/runtime v0.4.3 h1:36oupCott94GF3qB6xSAq9R6NSRJb93zpQCKNMVB5Eg=
+github.com/kubefirst/runtime v0.4.3/go.mod h1:GWsDhvffBMeJaHFgcCCyQrHIldclwVHwKD/j07UDYk4=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
 github.com/libopenstorage/openstorage v1.0.0/go.mod h1:Sp1sIObHjat1BeXhfMqLZ14wnOzEhNx2YQedreMcUyc=
 github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de h1:9TO3cAIGXtEhnIaL+V+BEER86oLrvS+kWobKpbJuye0=
