@@ -111,6 +111,14 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 
 	}
 
+	var fullDomainName string
+
+	if cluster.SubdomainName != "" {
+		fullDomainName = fmt.Sprintf("%s.%s", cluster.SubdomainName, cluster.DomainName)
+	} else {
+		fullDomainName = cluster.DomainName
+	}
+
 	success := `
 ##
 #### :tada: Success` + "`Cluster " + cluster.ClusterName + " is now up and running`" + `
@@ -125,11 +133,11 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 ### Repos       ` + fmt.Sprintf("`https://%s.com/%s/gitops` \n\n", cluster.GitProvider, cluster.GitAuth.Owner) +
 		fmt.Sprintf("`            https://%s.com/%s/metaphor`", cluster.GitProvider, cluster.GitAuth.Owner) + `
 ## Kubefirst Console
-### URL         ` + fmt.Sprintf("`https://kubefirst.%s`", cluster.DomainName) + `
+### URL         ` + fmt.Sprintf("`https://kubefirst.%s`", fullDomainName) + `
 ## Argo CD
-### URL         ` + fmt.Sprintf("`https://argocd.%s`", cluster.DomainName) + `
+### URL         ` + fmt.Sprintf("`https://argocd.%s`", fullDomainName) + `
 ## Vault 
-### URL         ` + fmt.Sprintf("`https://vault.%s`", cluster.DomainName) + `
+### URL         ` + fmt.Sprintf("`https://vault.%s`", fullDomainName) + `
 
 
 ### :bulb: Quick start examples:

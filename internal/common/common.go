@@ -16,10 +16,10 @@ import (
 	"strings"
 
 	"github.com/kubefirst/kubefirst-api/pkg/providerConfigs"
-	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/launch"
 	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg/docker"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
