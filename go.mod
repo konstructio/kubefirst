@@ -330,3 +330,5 @@ replace (
 	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.24.2
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.24.2
 )
+
+replace github.com/kubefirst/runtime => /Users/jared/git/kubefirst/github/runtime
