@@ -9,7 +9,6 @@ package utilities
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -18,9 +17,9 @@ import (
 	"time"
 
 	apiTypes "github.com/kubefirst/kubefirst-api/pkg/types"
-	"github.com/kubefirst/kubefirst/configs"
 	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/kubefirst/internal/types"
+	"github.com/kubefirst/runtime/configs"
 	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -44,10 +43,6 @@ func CreateK1ClusterDirectory(clusterName string) {
 		}
 	}
 }
-
-const (
-	exportFilePath = "/tmp/api/cluster/export"
-)
 
 func CreateClusterRecordFromRaw(
 	useTelemetry bool,
@@ -238,24 +233,23 @@ func ExportCluster(cluster apiTypes.Cluster, kcfg *k8s.KubernetesClient) error {
 
 	time.Sleep(time.Second * 10)
 
-	payload, err := json.Marshal(cluster)
+	bytes, err := json.Marshal(cluster)
 	if err != nil {
 		log.Error().Msg(err.Error())
 		return err
 	}
 
+	secretValuesMap, _ := ParseJSONToMap(string(bytes))
+
 	secret := &v1secret.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "mongodb-state", Namespace: "kubefirst"},
-		Data: map[string][]byte{
-			"cluster-0":    []byte(payload),
-			"cluster-name": []byte(cluster.ClusterName),
-		},
+		ObjectMeta: metav1.ObjectMeta{Name: "kubefirst-initial-state", Namespace: "kubefirst"},
+		Data:       secretValuesMap,
 	}
 
 	err = k8s.CreateSecretV2(kcfg.Clientset, secret)
 
 	if err != nil {
-		return errors.New(fmt.Sprintf("unable to save secret to management cluster. %s", err))
+		return fmt.Errorf(fmt.Sprintf("unable to save secret to management cluster. %s", err))
 	}
 
 	viper.Set("kubefirst-checks.secret-export-state", true)
@@ -295,4 +289,32 @@ func ConsumeStream(url string) {
 		log.Error().Msgf("Error reading response: %s", err.Error())
 		return
 	}
+}
+
+func ParseJSONToMap(jsonStr string) (map[string][]byte, error) {
+	var result map[string]interface{}
+	err := json.Unmarshal([]byte(jsonStr), &result)
+	if err != nil {
+		return nil, err
+	}
+
+	secretData := make(map[string][]byte)
+	for key, value := range result {
+		switch v := value.(type) {
+		case map[string]interface{}, []interface{}: // For nested structures, marshal back to JSON
+			bytes, err := json.Marshal(v)
+			if err != nil {
+				return nil, err
+			}
+			secretData[key] = bytes
+		default:
+			bytes, err := json.Marshal(v)
+			if err != nil {
+				return nil, err
+			}
+			secretData[key] = bytes
+		}
+	}
+
+	return secretData, nil
 }
