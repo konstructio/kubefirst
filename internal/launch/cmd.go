@@ -342,6 +342,10 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 			"kubefirst-api.extraEnv.IN_CLUSTER=true",
 			"--set",
 			"kubefirst-api-ee.extraEnv.IN_CLUSTER=true",
+			"--set",
+			"kubefirst-api.serviceAccount.createClusterRoleBinding=true",
+			"--set",
+			"kubefirst-api-ee.serviceAccount.createClusterRoleBinding=true",
 		}
 
 		if len(additionalHelmFlags) > 0 {
