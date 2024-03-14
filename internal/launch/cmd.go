@@ -341,7 +341,6 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		}
 
 		installFlags = append(installFlags, "--create-namespace")
-		installFlags = append(installFlags, "--set")
 
 		// Install helm chart
 		a, b, err := pkg.ExecShellReturnStrings(helmClient, installFlags...)
