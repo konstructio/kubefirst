@@ -68,21 +68,6 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		}
 	}
 
-	dbInitialized := viper.GetBool("launch.database-initialized")
-	var dbHost, dbUser, dbPassword string
-
-	progress.AddStep("Initialize database")
-
-	if !dbInitialized {
-		viper.Set("launch.database-destination", "in-cluster")
-		viper.Set("launch.database-initialized", true)
-		viper.WriteConfig()
-	} else {
-		log.Info().Msg("Database has already been initialized, skipping")
-	}
-
-	progress.CompleteStep("Initialize database")
-
 	log.Info().Msgf("%s/%s", k3d.LocalhostOS, k3d.LocalhostARCH)
 
 	progress.AddStep("Download k3d")
@@ -355,63 +340,8 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 			}
 		}
 
-		switch viper.GetString("launch.database-destination") {
-		case "in-cluster":
-			installFlags = append(installFlags, "--create-namespace")
-			installFlags = append(installFlags, "--set")
-			installFlags = append(installFlags, "mongodb.enabled=true")
-
-			if k3d.LocalhostARCH == "arm64" {
-				installFlags = append(installFlags, "--set")
-				installFlags = append(installFlags, "mongodb.image.repository=arm64v8/mongo,mongodb.image.tag=latest,mongodb.persistence.mountPath=/data/db,mongodb.extraEnvVarsSecret=kubefirst-initial-secrets")
-			}
-		case "atlas":
-			installFlags = append(installFlags, "--set")
-			installFlags = append(installFlags, "mongodb.enabled=false")
-			installFlags = append(installFlags, "--set")
-			installFlags = append(installFlags, fmt.Sprintf("kubefirst-api.existingSecret=%s", secretName))
-			installFlags = append(installFlags, "--set")
-			installFlags = append(installFlags, fmt.Sprintf("kubefirst-api.atlasDbHost=%s", dbHost))
-			installFlags = append(installFlags, "--set")
-			installFlags = append(installFlags, fmt.Sprintf("kubefirst-api.atlasDbUsername=%s", dbUser))
-
-			// Create Namespace
-			_, err = kcfg.Clientset.CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
-			if err == nil {
-				log.Info().Msg("kubernetes Namespace already created - skipping")
-			} else if strings.Contains(err.Error(), "not found") {
-				_, err = kcfg.Clientset.CoreV1().Namespaces().Create(context.Background(), &v1.Namespace{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: namespace,
-					},
-				}, metav1.CreateOptions{})
-				if err != nil {
-					progress.Error(fmt.Sprintf("error creating kubernetes secret for initial secret: %s", err))
-				}
-				log.Info().Msg("Created Kubernetes Namespace for kubefirst")
-			}
-
-			// Create Secret
-			_, err = kcfg.Clientset.CoreV1().Secrets(namespace).Get(context.Background(), secretName, metav1.GetOptions{})
-			if err == nil {
-				log.Info().Msg(fmt.Sprintf("kubernetes secret %s/%s already created - skipping", namespace, secretName))
-			} else if strings.Contains(err.Error(), "not found") {
-				_, err = kcfg.Clientset.CoreV1().Secrets(namespace).Create(context.Background(), &v1.Secret{
-					Type: "Opaque",
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      secretName,
-						Namespace: namespace,
-					},
-					Data: map[string][]byte{
-						"mongodb-root-password": []byte(dbPassword),
-					},
-				}, metav1.CreateOptions{})
-				if err != nil {
-					progress.Error(fmt.Sprintf("error creating kubernetes secret for initial secret: %s", err))
-				}
-				log.Info().Msg("Created Kubernetes Secret for database authentication")
-			}
-		}
+		installFlags = append(installFlags, "--create-namespace")
+		installFlags = append(installFlags, "--set")
 
 		// Install helm chart
 		a, b, err := pkg.ExecShellReturnStrings(helmClient, installFlags...)
