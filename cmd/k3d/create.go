@@ -25,6 +25,8 @@ import (
 	githttps "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kubefirst/kubefirst-api/pkg/handlers"
 	"github.com/kubefirst/kubefirst-api/pkg/reports"
+	"github.com/kubefirst/kubefirst-api/pkg/types"
+	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
 	"github.com/kubefirst/kubefirst-api/pkg/wrappers"
 	"github.com/kubefirst/kubefirst/internal/catalog"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
@@ -42,6 +44,7 @@ import (
 	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/kubefirst/runtime/pkg/progressPrinter"
 	"github.com/kubefirst/runtime/pkg/services"
+	internalssh "github.com/kubefirst/runtime/pkg/ssh"
 	"github.com/kubefirst/runtime/pkg/terraform"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -115,11 +118,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// If cluster setup is complete, return
-	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
-	if clusterSetupComplete {
-		return fmt.Errorf("this cluster install process has already completed successfully")
-	}
+	// // If cluster setup is complete, return
+	// clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
+	// if clusterSetupComplete {
+	// 	return fmt.Errorf("this cluster install process has already completed successfully")
+	// }
 
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 	helpers.DisplayLogHints()
@@ -129,22 +132,22 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// switch gitProviderFlag {
-	// case "github":
-	// 	key, err := internalssh.GetHostKey("github.com")
-	// 	if err != nil {
-	// 		return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
-	// 	} else {
-	// 		log.Info().Msgf("%s %s\n", "github.com", key.Type())
-	// 	}
-	// case "gitlab":
-	// 	key, err := internalssh.GetHostKey("gitlab.com")
-	// 	if err != nil {
-	// 		return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
-	// 	} else {
-	// 		log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
-	// 	}
-	// }
+	switch gitProviderFlag {
+	case "github":
+		key, err := internalssh.GetHostKey("github.com")
+		if err != nil {
+			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
+		} else {
+			log.Info().Msgf("%s %s\n", "github.com", key.Type())
+		}
+	case "gitlab":
+		key, err := internalssh.GetHostKey("gitlab.com")
+		if err != nil {
+			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
+		} else {
+			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
+		}
+	}
 
 	// Either user or org can be specified for github, not both
 	if githubOrgFlag != "" && githubUserFlag != "" {
@@ -449,11 +452,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		telemetry.SendEvent(segClient, telemetry.KbotSetupStarted, "")
 
 		log.Info().Msg("creating an ssh key pair for your new cloud infrastructure")
-		// sshPrivateKey, sshPublicKey, err = internalssh.CreateSshKeyPair()
-		// if err != nil {
-		// 	telemetry.SendEvent(segClient, telemetry.KbotSetupFailed, err.Error())
-		// 	return err
-		// }
+		sshPrivateKey, sshPublicKey, err = utils.CreateSshKeyPair()
+		if err != nil {
+			telemetry.SendEvent(segClient, telemetry.KbotSetupFailed, err.Error())
+			return err
+		}
 		log.Info().Msg("ssh key pair creation complete")
 
 		viper.Set("kbot.private-key", sshPrivateKey)
@@ -701,14 +704,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			log.Info().Msgf("error opening repo at: %s", config.MetaphorDir)
 		}
 
-		// err = internalssh.EvalSSHKey(&internalssh.EvalSSHKeyRequest{
-		// 	GitProvider:     gitProviderFlag,
-		// 	GitlabGroupFlag: gitlabGroupFlag,
-		// 	GitToken:        cGitToken,
-		// })
-		// if err != nil {
-		// 	return err
-		// }
+		err = utils.EvalSSHKey(&types.EvalSSHKeyRequest{
+			GitProvider:     gitProviderFlag,
+			GitlabGroupFlag: gitlabGroupFlag,
+			GitToken:        cGitToken,
+		})
+		if err != nil {
+			return err
+		}
 
 		//Push to remotes and use https
 		// Push gitops repo to remote
@@ -1014,7 +1017,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			log.Error().Err(err).Msg("")
 		}
 
-		if os.Getenv("SKIP_ARGOCD_LAUNCH") != "true" {
+		if os.Getenv("SKIP_ARGOCD_LAUNCH") != "true" || !ciFlag {
 			err = pkg.OpenBrowser(pkg.ArgoCDLocalURLTLS)
 			if err != nil {
 				log.Error().Err(err).Msg("")
@@ -1401,8 +1404,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("welcome to your new kubefirst platform running in K3d")
 		time.Sleep(time.Second * 1) // allows progress bars to finish
 
-		if !ciFlag {
-			reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, false)
+		reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, ciFlag)
+
+		if ciFlag {
+			os.Exit(0)
 		}
 	}
 
