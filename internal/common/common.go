@@ -60,6 +60,7 @@ func CheckForVersionUpdate() {
 // versionCheck compares local to remote version
 func versionCheck() (res *CheckResponse, skip bool) {
 	var latestVersion string
+	flatVersion := strings.ReplaceAll(configs.K1Version, "v", "")
 
 	resp, err := http.Get("https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/k/kubefirst.rb")
 
@@ -91,10 +92,10 @@ func versionCheck() (res *CheckResponse, skip bool) {
 	latestVersion = matches[1]
 
 	return &CheckResponse{
-		Current:  configs.K1Version,
-		Outdated: latestVersion < configs.K1Version,
-		Latest:   latestVersion == configs.K1Version,
-		New:      configs.K1Version > latestVersion,
+		Current:  flatVersion,
+		Outdated: latestVersion < flatVersion,
+		Latest:   latestVersion == flatVersion,
+		New:      flatVersion > latestVersion,
 	}, false
 }
 
