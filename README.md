@@ -40,8 +40,8 @@ In beta:
 
 - [Google Cloud](https://docs.kubefirst.io/gcp/overview/)
 - [Vultr](https://docs.kubefirst.io/vultr/overview/)
-- Akamai (docs coming soon)
-- K3s (docs coming soon)
+- Akamai (docs coming soon) `kubefirst beta akamai create --help`
+- K3s (docs coming soon) `kubefirst beta k3s create --help`
 
 ## Overview
 
