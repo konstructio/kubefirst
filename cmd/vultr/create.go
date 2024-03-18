@@ -18,6 +18,8 @@ import (
 	"github.com/kubefirst/kubefirst/internal/provision"
 	"github.com/kubefirst/kubefirst/internal/utilities"
 	"github.com/kubefirst/runtime/pkg"
+	internalssh "github.com/kubefirst/runtime/pkg/ssh"
+	"github.com/rs/zerolog/log"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -112,22 +114,22 @@ func ValidateProvidedFlags(gitProvider string) error {
 		}
 	}
 
-	// switch gitProvider {
-	// case "github":
-	// 	key, err := internalssh.GetHostKey("github.com")
-	// 	if err != nil {
-	// 		return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
-	// 	} else {
-	// 		log.Info().Msgf("%s %s\n", "github.com", key.Type())
-	// 	}
-	// case "gitlab":
-	// 	key, err := internalssh.GetHostKey("gitlab.com")
-	// 	if err != nil {
-	// 		return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
-	// 	} else {
-	// 		log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
-	// 	}
-	// }
+	switch gitProvider {
+	case "github":
+		key, err := internalssh.GetHostKey("github.com")
+		if err != nil {
+			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
+		} else {
+			log.Info().Msgf("%s %s\n", "github.com", key.Type())
+		}
+	case "gitlab":
+		key, err := internalssh.GetHostKey("gitlab.com")
+		if err != nil {
+			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
+		} else {
+			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
+		}
+	}
 
 	progress.CompleteStep("Validate provided flags")
 
