@@ -20,11 +20,13 @@ body:
       multiple: true
       options:
         - None specific
+        - Akamai
         - AWS
         - Civo
         - DigitalOcean
         - Google Cloud
         - k3d (local)
+        - K3s
         - Vultr
     validations:
       required: true
@@ -75,7 +77,7 @@ body:
     id: os
     attributes:
       label: Which Operating System?
-      description: Please add the architecture in the issue description. If you selected "Others", please specify in the textarea.
+      description: Please add the architecture in the issue description. If you selected "Other", please specify in the issue.
       options:
         - None specific
         - macOS
