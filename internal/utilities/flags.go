@@ -11,7 +11,6 @@ import (
 
 	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/kubefirst/internal/types"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
