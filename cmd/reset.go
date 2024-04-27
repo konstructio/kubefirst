@@ -67,10 +67,6 @@ var resetCmd = &cobra.Command{
 	},
 }
 
-func init() {
-	rootCmd.AddCommand(resetCmd)
-}
-
 // parseConfigEntryKubefirstChecks gathers the kubefirst-checks section of the Viper
 // config file and parses as a map[string]bool
 func parseConfigEntryKubefirstChecks(raw interface{}) (map[string]bool, error) {

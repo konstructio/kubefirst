@@ -49,7 +49,3 @@ var infoCmd = &cobra.Command{
 		progress.Success(content)
 	},
 }
-
-func init() {
-	rootCmd.AddCommand(infoCmd)
-}
