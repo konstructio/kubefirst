@@ -116,7 +116,6 @@ func Destroy() *cobra.Command {
 	}
 
 	return destroyCmd
-
 }
 
 func Quota() *cobra.Command {

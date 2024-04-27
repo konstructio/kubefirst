@@ -132,7 +132,7 @@ func returnCivoQuotaEvaluation(cloudRegion string) (string, int, int, error) {
 	}
 
 	// Parse the entire message
-	var messageHeader = fmt.Sprintf("Civo Quota Health\nRegion: %s\n\nNote that if any of these are approaching their limits, you may want to increase them.", cloudRegion)
+	messageHeader := fmt.Sprintf("Civo Quota Health\nRegion: %s\n\nNote that if any of these are approaching their limits, you may want to increase them.", cloudRegion)
 	sort.Strings(output)
 	result := printCivoQuotaWarning(messageHeader, output)
 
@@ -164,7 +164,6 @@ func printCivoQuotaWarning(messageHeader string, output []string) string {
 
 	// Write to logs, but also output to stdout
 	return createCivoQuotaWarning.String()
-
 }
 
 // evalCivoQuota provides an interface to the command-line

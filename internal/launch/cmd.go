@@ -87,7 +87,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		if err != nil {
 			progress.Error(fmt.Sprintf("error while trying to download k3d: %s", err))
 		}
-		err = os.Chmod(k3dClient, 0755)
+		err = os.Chmod(k3dClient, 0o755)
 		if err != nil {
 			log.Fatal().Msg(err.Error())
 		}
@@ -116,14 +116,13 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		helmTarDownload, err := os.Open(helmDownloadTarGzPath)
 		if err != nil {
 			progress.Error(fmt.Sprintf("could not read helm download content"))
-
 		}
 		downloadManager.ExtractFileFromTarGz(
 			helmTarDownload,
 			fmt.Sprintf("%s-%s/helm", k3d.LocalhostOS, k3d.LocalhostARCH),
 			helmClient,
 		)
-		err = os.Chmod(helmClient, 0755)
+		err = os.Chmod(helmClient, 0o755)
 		if err != nil {
 			log.Fatal().Msg(err.Error())
 		}
@@ -148,7 +147,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		if err != nil {
 			progress.Error(fmt.Sprintf("error while trying to download mkcert: %s", err))
 		}
-		err = os.Chmod(mkcertClient, 0755)
+		err = os.Chmod(mkcertClient, 0o755)
 		if err != nil {
 			progress.Error(err.Error())
 		}
@@ -531,7 +530,6 @@ func ListClusters() {
 // DeleteCluster makes a request to the console API to delete a single cluster
 func DeleteCluster(managedClusterName string) {
 	err := cluster.DeleteCluster(managedClusterName)
-
 	if err != nil {
 		progress.Error(fmt.Sprintf("error: cluster %s not found\n", managedClusterName))
 	}

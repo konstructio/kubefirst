@@ -12,7 +12,6 @@ import (
 	"github.com/kubefirst/kubefirst-api/pkg/constants"
 	"github.com/kubefirst/kubefirst/internal/common"
 	"github.com/kubefirst/kubefirst/internal/progress"
-
 	"github.com/spf13/cobra"
 )
 

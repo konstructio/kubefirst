@@ -49,7 +49,6 @@ var (
 )
 
 func NewCommand() *cobra.Command {
-
 	vultrCmd := &cobra.Command{
 		Use:   "vultr",
 		Short: "kubefirst Vultr installation",

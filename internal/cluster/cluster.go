@@ -15,15 +15,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rs/zerolog/log"
-
 	apiTypes "github.com/kubefirst/kubefirst-api/pkg/types"
 	"github.com/kubefirst/kubefirst/internal/types"
+	"github.com/rs/zerolog/log"
 )
 
 func GetConsoleIngresUrl() string {
-
-	if strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true" { //allow using local console running on port 3000
+	if strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true" { // allow using local console running on port 3000
 		return "http://localhost:3000"
 	}
 

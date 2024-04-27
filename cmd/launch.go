@@ -13,10 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	// additionalHelmFlags can optionally pass user-supplied flags to helm
-	additionalHelmFlags []string
-)
+// additionalHelmFlags can optionally pass user-supplied flags to helm
+var additionalHelmFlags []string
 
 func LaunchCommand() *cobra.Command {
 	launchCommand := &cobra.Command{

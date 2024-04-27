@@ -49,7 +49,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
-
 	if err != nil {
 		progress.Error(err.Error())
 		return nil

@@ -61,7 +61,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 		Config: awsinternal.NewAwsV2(cloudRegionFlag),
 	}
 	creds, err := awsClient.Config.Credentials.Retrieve(aws.BackgroundContext())
-
 	if err != nil {
 		progress.Error(err.Error())
 		return nil
@@ -79,7 +78,6 @@ func createAws(cmd *cobra.Command, args []string) error {
 	}
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
-
 	if err != nil {
 		progress.Error(err.Error())
 		return nil

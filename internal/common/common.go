@@ -20,7 +20,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/launch"
 	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/runtime/configs"
-	"github.com/kubefirst/runtime/pkg/docker"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -63,7 +62,6 @@ func versionCheck() (res *CheckResponse, skip bool) {
 	flatVersion := strings.ReplaceAll(configs.K1Version, "v", "")
 
 	resp, err := http.Get("https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/k/kubefirst.rb")
-
 	if err != nil {
 		fmt.Printf("checking for a newer version failed (cannot get Homebrew formula) with: %s", err)
 		return nil, true
@@ -186,16 +184,4 @@ https://docs.kubefirst.io/` + cloudProvider + `/deprovision
 	progress.Success(successMessage)
 
 	return nil
-}
-
-// checkDocker makes sure Docker is running before all commands
-func CheckDocker(cmd *cobra.Command, args []string) {
-	// Verify Docker is running
-	dcli := docker.DockerClientWrapper{
-		Client: docker.NewDockerClient(),
-	}
-	_, err := dcli.CheckDockerReady()
-	if err != nil {
-		progress.Error(fmt.Sprintf("Docker must be running to use this command. Error checking Docker status: %s", err))
-	}
 }

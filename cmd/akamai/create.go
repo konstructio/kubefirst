@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rs/zerolog/log"
 	"github.com/kubefirst/kubefirst/internal/catalog"
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
@@ -20,6 +19,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/utilities"
 	"github.com/kubefirst/runtime/pkg"
 	internalssh "github.com/kubefirst/runtime/pkg/ssh"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -49,7 +49,6 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
-
 	if err != nil {
 		progress.Error(err.Error())
 		return nil

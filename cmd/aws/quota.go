@@ -35,7 +35,6 @@ func printAwsQuotaWarning(messageHeader string, output map[string][]awsinternal.
 
 	// Write to logs, but also output to stdout
 	return createAwsQuotaWarning.String()
-
 }
 
 // evalAwsQuota provides an interface to the command-line
@@ -53,7 +52,7 @@ func evalAwsQuota(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	var messageHeader = fmt.Sprintf(
+	messageHeader := fmt.Sprintf(
 		"AWS Quota Health\nRegion: %s\n\nIf you encounter issues deploying your kubefirst cluster, check these quotas and determine if you need to request a limit increase.",
 		cloudRegionFlag,
 	)

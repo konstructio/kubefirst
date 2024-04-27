@@ -9,8 +9,6 @@ package k3s
 import (
 	"fmt"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/kubefirst/kubefirst/internal/catalog"
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
@@ -20,6 +18,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/utilities"
 	"github.com/kubefirst/runtime/pkg"
 	internalssh "github.com/kubefirst/runtime/pkg/ssh"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
