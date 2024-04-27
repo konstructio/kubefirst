@@ -14,9 +14,7 @@ import (
 	"strings"
 
 	git "github.com/google/go-github/v52/github"
-
 	apiTypes "github.com/kubefirst/kubefirst-api/pkg/types"
-
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v2"
 )
@@ -72,6 +70,7 @@ func ValidateCatalogApps(catalogApps string) (bool, []apiTypes.GitopsCatalogApp,
 	apps, err := ReadActiveApplications()
 	if err != nil {
 		log.Error().Msgf(fmt.Sprintf("Error getting gitops catalag applications: %s", err))
+
 		return false, gitopsCatalogapps, err
 	}
 
