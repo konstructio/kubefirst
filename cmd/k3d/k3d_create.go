@@ -52,6 +52,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	DISABLE_PRECHECKS = "KUBEFIRST_DISABLE_PRECHECKS"
+	GITLAB_TOKEN      = "GITLAB_TOKEN"
+	GITHUB_TOKEN      = "GITHUB_TOKEN"
+	NGROK_AUTH_TOKEN  = "NGROK_AUTHTOKEN"
+)
+
 var (
 	// required portforwarding ports
 	portForwardingPorts = []int{8080, 8200, 9000, 9094}
@@ -129,7 +136,12 @@ func NewK3dCreateCommand() *cobra.Command {
 		SilenceErrors:    true,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// example implementation of a pre check suite where we could validate & verify various required settings (Github access, env vars, commands, ...)
-			fmt.Println("[PRECHECKS] Running prechecks")
+			fmt.Printf("[PRECHECKS] Running prechecks (skip with %s)\n", DISABLE_PRECHECKS)
+
+			// skip if intented
+			if _, ok := os.LookupEnv(DISABLE_PRECHECKS); ok {
+				return nil
+			}
 
 			// invalid git provider
 			if !utilities.StringInSlice(opts.gitProvider, supportedGitProviders) {
@@ -144,8 +156,8 @@ func NewK3dCreateCommand() *cobra.Command {
 			// github specific prechecks
 			if strings.ToLower(opts.gitProvider) == "github" {
 				// enforce for GITHUB_TOKEN
-				if !prechecks.EnvVarExists("GITHUB_TOKEN") {
-					return fmt.Errorf("GITHUB_TOKEN not set, but required when using GitHub (see https://docs.kubefirst.io/common/gitAuth?git_provider=github)")
+				if !prechecks.EnvVarExists(GITHUB_TOKEN) {
+					return fmt.Errorf("%s not set, but required when using GitHub (see https://docs.kubefirst.io/common/gitAuth?git_provider=github)", GITHUB_TOKEN)
 				}
 
 				// github.com is available
@@ -162,8 +174,8 @@ func NewK3dCreateCommand() *cobra.Command {
 			// gitlab specific prechecks
 			if strings.ToLower(opts.gitProvider) == "gitlab" {
 				// enforce GITLAB_TOKEN if provider is gitlab
-				if !prechecks.EnvVarExists("GITLAB_TOKEN") {
-					return fmt.Errorf("GITLAB_TOKEN not set, but required when using GitLab (see https://docs.kubefirst.io/common/gitAuth)")
+				if !prechecks.EnvVarExists(GITLAB_TOKEN) {
+					return fmt.Errorf("%s not set, but required when using GitLab (see https://docs.kubefirst.io/common/gitAuth)", GITLAB_TOKEN)
 				}
 
 				// gitlab.com is available
@@ -183,8 +195,8 @@ func NewK3dCreateCommand() *cobra.Command {
 			}
 
 			// enforce NGROK_AUTH_TOKEN
-			if !prechecks.EnvVarExists("NGROK_AUTHTOKEN") {
-				return fmt.Errorf("NGROK_AUTHTOKEN not set, but required (see https://docs.kubefirst.io/k3d/quick-start/install#local-atlantis-executions-optional)")
+			if !prechecks.EnvVarExists(NGROK_AUTH_TOKEN) {
+				return fmt.Errorf("%s not set, but required (see https://docs.kubefirst.io/k3d/quick-start/install#local-atlantis-executions-optional)", NGROK_AUTH_TOKEN)
 			}
 
 			// docker is installed
@@ -364,7 +376,7 @@ func (o *createOptions) runK3d(cmd *cobra.Command, args []string) error {
 
 	// download dependencies to `$HOME/.k1/tools`
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
-		if err := o.downnloadTools(config); err != nil {
+		if err := o.downloadTools(config); err != nil {
 			return fmt.Errorf("error downloading tools: %s", err.Error())
 		}
 	}
@@ -454,8 +466,6 @@ func (o *createOptions) runK3d(cmd *cobra.Command, args []string) error {
 		if err := o.createK3dCluster(config); err != nil {
 			return fmt.Errorf("error creating k3d cluster: %s", err.Error())
 		}
-
-		return nil
 	}
 
 	log.Info().Msg("k3d cluster created")
@@ -742,7 +752,7 @@ func (o *createOptions) githubAuth() error {
 	gitHubService := services.NewGitHubService(o.httpClient)
 	gitHubHandler := handlers.NewGitHubHandler(gitHubService)
 
-	ghToken := utilities.EnvOrDefault("GITHUB_TOKEN", viper.GetString("github.session_token"))
+	ghToken := utilities.EnvOrDefault(GITHUB_TOKEN, viper.GetString("github.session_token"))
 	gitHubAccessToken, err := wrappers.AuthenticateGitHubUserWrapper(ghToken, gitHubHandler)
 	if err != nil {
 		log.Warn().Msgf(err.Error())
@@ -786,7 +796,7 @@ func (o *createOptions) githubAuth() error {
 }
 
 func (o *createOptions) gitlabAuth() error {
-	o.gitToken = os.Getenv("GITLAB_TOKEN")
+	o.gitToken = os.Getenv(GITLAB_TOKEN)
 
 	// Verify token scopes
 	if err := gitlab.VerifyTokenPermissions(o.gitToken); err != nil {
@@ -900,7 +910,7 @@ func (o *createOptions) setupKbot() error {
 	return nil
 }
 
-func (o *createOptions) downnloadTools(config *k3d.K3dConfig) error {
+func (o *createOptions) downloadTools(config *k3d.K3dConfig) error {
 	log.Info().Msg("installing kubefirst dependencies")
 
 	if err := k3d.DownloadTools(o.clusterName, config.GitProvider, o.gitOwner, config.ToolsDir, config.GitProtocol); err != nil {

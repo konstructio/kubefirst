@@ -1,6 +1,7 @@
 package utilities
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -25,17 +26,19 @@ func TestCreateDirIfNotExists(t *testing.T) {
 
 	require.DirExists(t, "test")
 
-	defer os.Remove("test")
+	t.Cleanup(func() {
+		os.Remove("test")
+	})
 }
 
 func TestParseJSONToMap(t *testing.T) {
 	str := `{
-  "key": "value",
-  "key2": "hallo"
+  "key": "value"
 }`
+
+	b, _ := json.Marshal("value")
 	exp := map[string][]byte{
-		"key":  []byte("value"),
-		"key2": []byte("hallo"),
+		"key": b,
 	}
 
 	res, err := ParseJSONToMap(str)

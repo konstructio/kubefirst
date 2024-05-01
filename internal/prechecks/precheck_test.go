@@ -9,7 +9,7 @@ func TestEnvVarExists(t *testing.T) {
 	if EnvVarExists("TEST") {
 		t.Fatal("TEST env var should not exist")
 	}
-	
+
 	t.Setenv("ENV", "123")
 
 	if !EnvVarExists("ENV") {
@@ -19,7 +19,7 @@ func TestEnvVarExists(t *testing.T) {
 
 // test url is available
 func TestURLIsAvailable(t *testing.T) {
-	if URLIsAvailable("https://www.google.com") != nil {
+	if URLIsAvailable("google.com:443") != nil {
 		t.Fatal("Google should be reachable")
 	}
 }

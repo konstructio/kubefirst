@@ -82,7 +82,7 @@ func Execute() error {
 	}()
 
 	if _, err := progress.Progress.Run(); err != nil {
-		log.Fatal().Msgf("error initializing TUI: %w", err)
+		log.Fatal().Msgf("error initializing TUI: %s", err.Error())
 	}
 
 	return err
