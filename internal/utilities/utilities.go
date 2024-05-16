@@ -213,6 +213,7 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 		if err != nil {
 			progress.Error("Unable to read GOOGLE_APPLICATION_CREDENTIALS file")
 		}
+		defer jsonFile.Close()
 
 		jsonContent, _ := ioutil.ReadAll(jsonFile)
 
