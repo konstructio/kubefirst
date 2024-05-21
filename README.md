@@ -34,12 +34,14 @@ Each of our platforms have install guides that detail the prerequesites, command
 - [k3d (local)](https://docs.kubefirst.io/k3d/overview/)
 - [AWS](https://docs.kubefirst.io/aws/overview/)
 - [Civo](https://docs.kubefirst.io/civo/overview/)
+- [DigitalOcean](https://docs.kubefirst.io/do/overview/)
 
 In beta:
 
-- [DigitalOcean](https://docs.kubefirst.io/do/overview/)
 - [Google Cloud](https://docs.kubefirst.io/gcp/overview/)
 - [Vultr](https://docs.kubefirst.io/vultr/overview/)
+- Akamai (docs coming soon) `kubefirst beta akamai create --help`
+- K3s (docs coming soon) `kubefirst beta k3s create --help`
 
 ## Overview
 
