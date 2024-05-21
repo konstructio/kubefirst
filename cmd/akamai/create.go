@@ -31,7 +31,7 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	progress.DisplayLogHints(15)
+	progress.DisplayLogHints(25)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if !isValid {
