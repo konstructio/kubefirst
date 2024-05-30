@@ -38,10 +38,10 @@ Each of our platforms have install guides that detail the prerequesites, command
 
 In beta:
 
+- [Akamai](https://docs.kubefirst.io/akamai/overview)
 - [Google Cloud](https://docs.kubefirst.io/gcp/overview/)
+- [K3s](https://docs.kubefirst.io/k3s/overview)
 - [Vultr](https://docs.kubefirst.io/vultr/overview/)
-- Akamai (docs coming soon) `kubefirst beta akamai create --help`
-- K3s (docs coming soon) `kubefirst beta k3s create --help`
 
 ## Overview
 
