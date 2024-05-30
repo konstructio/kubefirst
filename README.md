@@ -59,6 +59,6 @@ Feed K-Ray a GitHub star ⭐ above to bookmark our project and keep K-Ray happy!
 
 We want to thank all of our contributors who created a pull request to fix a bug, add a new feature or update the [documentation](https://github.com/kubefirst/docs/). We also value a lot contributions in the form of bug reporting or feature requests: it helps us continuously make kubefirst better. Lastly, helping the users in our Slack community, or helping us share the love on social media are also ways in which you support us tremendously. We know your time is valuable, and we can't thank you enough for everything you do: we wouldn't be where we are without you!
 
-A special thanks to [DrummyFloyd](https://github.com/DrummyFloyd) who, in addition to singly added the K3s support, is a champion all round within our community and the kubefirst project 🫶
+A special thanks to [DrummyFloyd](https://github.com/DrummyFloyd) who, in addition to adding support for k3s, is a champion all around within our community and the kubefirst project 🫶
 
 If you want to help in any capacity, check [CONTRIBUTIONS.md](CONTRIBUTIONS.md).
