@@ -10,6 +10,8 @@ import (
 	"fmt"
 	stdLog "log"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -131,11 +133,21 @@ func main() {
 	if canRunBubbleTea {
 		progress.InitializeProgressTerminal()
 
+		// Handle interrupts to restore terminal settings
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		go func() {
+			<-c
+			progress.Progress.Quit()
+			os.Exit(0)
+		}()
+
 		go func() {
 			cmd.Execute()
 		}()
 
 		progress.Progress.Run()
+
 	} else {
 		cmd.Execute()
 	}
