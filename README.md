@@ -61,4 +61,4 @@ We want to thank all of our contributors who created a pull request to fix a bug
 
 A special thanks to [DrummyFloyd](https://github.com/DrummyFloyd) who, in addition to adding support for k3s, is a champion all around within our community and the kubefirst project 🫶
 
-If you want to help in any capacity, check [CONTRIBUTIONS.md](CONTRIBUTIONS.md).
+If you want to help in any capacity, check [CONTRIBUTING.md](CONTRIBUTING.md).
