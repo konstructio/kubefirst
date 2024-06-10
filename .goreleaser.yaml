@@ -41,3 +41,4 @@ brews:
       name: homebrew-tools
     dependencies:
       - aws-iam-authenticator
+version: 2
