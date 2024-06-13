@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package progress
 
 import (
+	"context"
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -23,8 +24,8 @@ func NewModel() progressModel {
 }
 
 // Bubbletea functions
-func InitializeProgressTerminal() {
-	Progress = tea.NewProgram(NewModel())
+func InitializeProgressTerminal(ctx context.Context) {
+	Progress = tea.NewProgram(NewModel(), tea.WithContext(ctx))
 }
 
 func (m progressModel) Init() tea.Cmd {
