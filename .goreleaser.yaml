@@ -36,8 +36,9 @@ changelog:
 brews:
   - name: kubefirst
     homepage: https://github.com/kubefirst/kubefirst
-    tap:
+    repository:
       owner: kubefirst
       name: homebrew-tools
     dependencies:
       - aws-iam-authenticator
+version: 2
