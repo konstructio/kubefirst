@@ -1407,7 +1407,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, ciFlag)
 
 		if ciFlag {
-			os.Exit(0)
+			progress.Progress.Quit()
 		}
 	}
 
