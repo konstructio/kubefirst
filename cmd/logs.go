@@ -8,7 +8,6 @@ package cmd
 
 import (
 	"fmt"
-
 	"github.com/kubefirst/kubefirst/internal/provisionLogs"
 	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/nxadm/tail"
