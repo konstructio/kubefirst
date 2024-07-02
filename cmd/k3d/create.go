@@ -29,6 +29,7 @@ import (
 	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
 	"github.com/kubefirst/kubefirst-api/pkg/wrappers"
 	"github.com/kubefirst/kubefirst/internal/catalog"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/segment"
 	"github.com/kubefirst/kubefirst/internal/utilities"

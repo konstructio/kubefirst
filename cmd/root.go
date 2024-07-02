@@ -8,7 +8,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/kubefirst/kubefirst/cmd/aws"
 	"github.com/kubefirst/kubefirst/cmd/civo"
