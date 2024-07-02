@@ -11,7 +11,7 @@ import (
 	"io"
 	"os"
 	"strings"
-
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -125,7 +125,7 @@ func MongoDestinationChooser(inCluster bool) string {
 	model, err := tea.NewProgram(m).Run()
 	if err != nil {
 		fmt.Println("Error running program:", err)
-		os.Exit(1)
+		progress.Progress.Quit()
 	}
 
 	var result string

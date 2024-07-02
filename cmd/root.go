@@ -8,7 +8,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/kubefirst/kubefirst/cmd/aws"
 	"github.com/kubefirst/kubefirst/cmd/civo"
@@ -51,7 +50,7 @@ func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
 		fmt.Printf("\nIf a detailed error message was available, please make the necessary corrections before retrying.\nYou can re-run the last command to try the operation again.\n\n")
-		os.Exit(1)
+		progress.Progress.Quit()
 	}
 }
 
