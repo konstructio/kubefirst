@@ -8,9 +8,9 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/kubefirst/kubefirst/internal/provisionLogs"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/nxadm/tail"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -28,7 +28,7 @@ var logsCmd = &cobra.Command{
 			t, err := tail.TailFile(viper.GetString("k1-paths.log-file"), tail.Config{Follow: true, ReOpen: true})
 			if err != nil {
 				fmt.Printf("Error tailing log file: %v\n", err)
-				os.Exit(1)
+				progress.Progress.Quit()
 			}
 
 			for line := range t.Lines {

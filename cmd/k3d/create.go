@@ -31,6 +31,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/catalog"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
 	"github.com/kubefirst/kubefirst/internal/segment"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/kubefirst/internal/utilities"
 	"github.com/kubefirst/metrics-client/pkg/telemetry"
 	"github.com/kubefirst/runtime/configs"
@@ -1407,7 +1408,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, ciFlag)
 
 		if ciFlag {
-			os.Exit(0)
+			progress.Progress.Quit()
 		}
 	}
 
