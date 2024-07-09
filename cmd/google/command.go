@@ -37,6 +37,7 @@ var (
 	nodeTypeFlag             string
 	nodeCountFlag            string
 	installCatalogApps       string
+	installKubefirstProFlag  bool
 
 	// RootCredentials
 	copyArgoCDPasswordToClipboardFlag bool
@@ -110,6 +111,8 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma seperated values to install after provision")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
 	createCmd.Flags().BoolVar(&forceDestroyFlag, "force-destroy", false, "allows force destruction on objects (helpful for test environments, defaults to false)")
+	createCmd.Flags().BoolVar(&installKubefirstProFlag, "install-kubefirst-pro", true, "whether or not to install kubefirst pro")
+
 	return createCmd
 }
 
