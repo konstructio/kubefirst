@@ -12,10 +12,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/kubefirst/kubefirst-api/pkg/progressPrinter"
+	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
 	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/runtime/pkg"
-	"github.com/kubefirst/runtime/pkg/helpers"
-	"github.com/kubefirst/runtime/pkg/progressPrinter"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -92,7 +91,7 @@ func parseConfigEntryKubefirstChecks(raw interface{}) (map[string]bool, error) {
 
 // runReset carries out the reset function
 func runReset() error {
-	helpers.DisplayLogHints()
+	utils.DisplayLogHints()
 
 	progressPrinter.AddTracker("removing-platform-content", "Removing local platform content", 2)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
@@ -105,7 +104,7 @@ func runReset() error {
 	}
 	k1Dir := fmt.Sprintf("%s/.k1", homePath)
 
-	err = pkg.ResetK1Dir(k1Dir)
+	err = utils.ResetK1Dir(k1Dir)
 	if err != nil {
 		return err
 	}

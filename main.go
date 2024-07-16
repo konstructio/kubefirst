@@ -17,10 +17,10 @@ import (
 	zeroLog "github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
+	"github.com/kubefirst/kubefirst-api/pkg/configs"
+	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
 	"github.com/kubefirst/kubefirst/cmd"
 	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/runtime/configs"
-	"github.com/kubefirst/runtime/pkg"
 	"github.com/spf13/viper"
 )
 
@@ -41,7 +41,7 @@ func main() {
 	}
 
 	config := configs.ReadConfig()
-	if err := pkg.SetupViper(config, true); err != nil {
+	if err := utils.SetupViper(config, true); err != nil {
 		stdLog.Panic(err)
 	}
 
@@ -98,7 +98,7 @@ func main() {
 
 	//* create session log file
 	logfile := fmt.Sprintf("%s/%s", logsFolder, logfileName)
-	logFileObj, err := pkg.OpenLogFile(logfile)
+	logFileObj, err := utils.OpenLogFile(logfile)
 	if err != nil {
 		stdLog.Panicf("unable to store log location, error is: %s - please verify the current user has write access to this directory", err)
 	}

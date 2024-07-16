@@ -11,6 +11,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	internalssh "github.com/kubefirst/kubefirst-api/pkg/ssh"
+	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
 	"github.com/kubefirst/kubefirst/internal/catalog"
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
@@ -18,8 +20,6 @@ import (
 	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/kubefirst/internal/provision"
 	"github.com/kubefirst/kubefirst/internal/utilities"
-	"github.com/kubefirst/runtime/pkg"
-	internalssh "github.com/kubefirst/runtime/pkg/ssh"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -88,7 +88,7 @@ func createK3s(cmd *cobra.Command, args []string) error {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 
-	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
+	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
 	}

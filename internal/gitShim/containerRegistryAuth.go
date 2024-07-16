@@ -10,8 +10,8 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/kubefirst/runtime/pkg/gitlab"
-	"github.com/kubefirst/runtime/pkg/k8s"
+	"github.com/kubefirst/kubefirst-api/pkg/gitlab"
+	"github.com/kubefirst/kubefirst-api/pkg/k8s"
 	"github.com/rs/zerolog/log"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
