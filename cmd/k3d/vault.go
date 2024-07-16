@@ -14,10 +14,10 @@ import (
 	"time"
 
 	vaultapi "github.com/hashicorp/vault/api"
+	"github.com/kubefirst/kubefirst-api/pkg/k3d"
+	"github.com/kubefirst/kubefirst-api/pkg/k8s"
+	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
 	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/runtime/pkg/helpers"
-	"github.com/kubefirst/runtime/pkg/k3d"
-	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -35,7 +35,7 @@ const (
 
 // unsealVault will attempt to unseal vaule again if it is currently unsealed
 func unsealVault(cmd *cobra.Command, args []string) error {
-	flags := helpers.GetClusterStatusFlags()
+	flags := utils.GetClusterStatusFlags()
 	if !flags.SetupComplete {
 		return fmt.Errorf("there doesn't appear to be an active k3d cluster")
 	}

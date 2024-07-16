@@ -23,30 +23,30 @@ import (
 	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
 	githttps "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/kubefirst/kubefirst-api/pkg/configs"
+	constants "github.com/kubefirst/kubefirst-api/pkg/constants"
+	"github.com/kubefirst/kubefirst-api/pkg/gitClient"
 	"github.com/kubefirst/kubefirst-api/pkg/handlers"
 	"github.com/kubefirst/kubefirst-api/pkg/reports"
 	"github.com/kubefirst/kubefirst-api/pkg/types"
 	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
+
+	"github.com/kubefirst/kubefirst-api/pkg/argocd"
+	github "github.com/kubefirst/kubefirst-api/pkg/github"
+	gitlab "github.com/kubefirst/kubefirst-api/pkg/gitlab"
+	"github.com/kubefirst/kubefirst-api/pkg/k3d"
+	"github.com/kubefirst/kubefirst-api/pkg/k8s"
+	"github.com/kubefirst/kubefirst-api/pkg/progressPrinter"
+	"github.com/kubefirst/kubefirst-api/pkg/services"
+	internalssh "github.com/kubefirst/kubefirst-api/pkg/ssh"
+	"github.com/kubefirst/kubefirst-api/pkg/terraform"
 	"github.com/kubefirst/kubefirst-api/pkg/wrappers"
 	"github.com/kubefirst/kubefirst/internal/catalog"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
-	"github.com/kubefirst/kubefirst/internal/segment"
 	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/kubefirst/kubefirst/internal/segment"
 	"github.com/kubefirst/kubefirst/internal/utilities"
 	"github.com/kubefirst/metrics-client/pkg/telemetry"
-	"github.com/kubefirst/runtime/configs"
-	"github.com/kubefirst/runtime/pkg"
-	"github.com/kubefirst/runtime/pkg/argocd"
-	"github.com/kubefirst/runtime/pkg/gitClient"
-	"github.com/kubefirst/runtime/pkg/github"
-	gitlab "github.com/kubefirst/runtime/pkg/gitlab"
-	"github.com/kubefirst/runtime/pkg/helpers"
-	"github.com/kubefirst/runtime/pkg/k3d"
-	"github.com/kubefirst/runtime/pkg/k8s"
-	"github.com/kubefirst/runtime/pkg/progressPrinter"
-	"github.com/kubefirst/runtime/pkg/services"
-	internalssh "github.com/kubefirst/runtime/pkg/ssh"
-	"github.com/kubefirst/runtime/pkg/terraform"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/cobra"
@@ -126,7 +126,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// }
 
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
-	helpers.DisplayLogHints()
+	utils.DisplayLogHints()
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(installCatalogAppsFlag)
 	if !isValid {
@@ -336,7 +336,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// todo placed in configmap in kubefirst namespace, included in telemetry
 	clusterId := viper.GetString("kubefirst.cluster-id")
 	if clusterId == "" {
-		clusterId = pkg.GenerateClusterID()
+		clusterId = utils.GenerateClusterID()
 		viper.Set("kubefirst.cluster-id", clusterId)
 		viper.WriteConfig()
 	}
@@ -378,7 +378,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	atlantisWebhookSecret := viper.GetString("secrets.atlantis-webhook")
 	if atlantisWebhookSecret == "" {
-		atlantisWebhookSecret = pkg.Random(20)
+		atlantisWebhookSecret = utils.Random(20)
 		viper.Set("secrets.atlantis-webhook", atlantisWebhookSecret)
 		viper.WriteConfig()
 	}
@@ -393,17 +393,17 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	log.Info().Msg("checking authentication to required providers")
 
 	// check disk
-	free, err := pkg.GetAvailableDiskSize()
+	free, err := utils.GetAvailableDiskSize()
 	if err != nil {
 		return err
 	}
 
 	// convert available disk size to GB format
 	availableDiskSize := float64(free) / humanize.GByte
-	if availableDiskSize < pkg.MinimumAvailableDiskSize {
+	if availableDiskSize < constants.MinimumAvailableDiskSize {
 		return fmt.Errorf(
 			"there is not enough space to proceed with the installation, a minimum of %d GB is required to proceed",
-			pkg.MinimumAvailableDiskSize,
+			constants.MinimumAvailableDiskSize,
 		)
 	}
 	progressPrinter.IncrementTracker("preflight-checks", 1)
@@ -618,10 +618,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["GITHUB_TOKEN"] = cGitToken
 			tfEnvs["GITHUB_OWNER"] = cGitOwner
 			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
-			tfEnvs["AWS_ACCESS_KEY_ID"] = pkg.MinioDefaultUsername
-			tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
-			tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
-			tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
+			tfEnvs["AWS_ACCESS_KEY_ID"] = constants.MinioDefaultUsername
+			tfEnvs["AWS_SECRET_ACCESS_KEY"] = constants.MinioDefaultPassword
+			tfEnvs["TF_VAR_aws_access_key_id"] = constants.MinioDefaultUsername
+			tfEnvs["TF_VAR_aws_secret_access_key"] = constants.MinioDefaultPassword
 			// Erase public key to prevent it from being created if the git protocol argument is set to htps
 			switch config.GitProtocol {
 			case "https":
@@ -657,10 +657,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["GITLAB_OWNER"] = gitlabGroupFlag
 			tfEnvs["TF_VAR_owner_group_id"] = strconv.Itoa(cGitlabOwnerGroupID)
 			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
-			tfEnvs["AWS_ACCESS_KEY_ID"] = pkg.MinioDefaultUsername
-			tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
-			tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
-			tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
+			tfEnvs["AWS_ACCESS_KEY_ID"] = constants.MinioDefaultUsername
+			tfEnvs["AWS_SECRET_ACCESS_KEY"] = constants.MinioDefaultPassword
+			tfEnvs["TF_VAR_aws_access_key_id"] = constants.MinioDefaultUsername
+			tfEnvs["TF_VAR_aws_secret_access_key"] = constants.MinioDefaultPassword
 			// Erase public key to prevent it from being created if the git protocol argument is set to htps
 			switch config.GitProtocol {
 			case "https":
@@ -905,7 +905,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring Argo CD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	argoCDInstallPath := fmt.Sprintf("github.com:kubefirst/manifests/argocd/k3d?ref=%s", pkg.KubefirstManifestRepoRef)
+	argoCDInstallPath := fmt.Sprintf("github.com:kubefirst/manifests/argocd/k3d?ref=%s", constants.KubefirstManifestRepoRef)
 
 	//* install argocd
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
@@ -968,7 +968,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		// Test https to argocd
 		var argoCDToken string
 		// only the host, not the protocol
-		err := helpers.TestEndpointTLS(strings.Replace(k3d.ArgocdURL, "https://", "", 1))
+		err := utils.TestEndpointTLS(strings.Replace(k3d.ArgocdURL, "https://", "", 1))
 		if err != nil {
 			argoCDStopChannel := make(chan struct{}, 1)
 			log.Info().Msgf("argocd not available via https, using http")
@@ -1019,7 +1019,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 
 		if os.Getenv("SKIP_ARGOCD_LAUNCH") != "true" || !ciFlag {
-			err = pkg.OpenBrowser(pkg.ArgoCDLocalURLTLS)
+			err = utils.OpenBrowser(constants.ArgoCDLocalURLTLS)
 			if err != nil {
 				log.Error().Err(err).Msg("")
 			}
@@ -1133,10 +1133,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	)
 
 	// Initialize minio client object.
-	minioClient, err := minio.New(pkg.MinioPortForwardEndpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(pkg.MinioDefaultUsername, pkg.MinioDefaultPassword, ""),
+	minioClient, err := minio.New(constants.MinioPortForwardEndpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(constants.MinioDefaultUsername, constants.MinioDefaultPassword, ""),
 		Secure: false,
-		Region: pkg.MinioRegion,
+		Region: constants.MinioRegion,
 	})
 	if err != nil {
 		log.Info().Msgf("Error creating Minio client: %s", err)
@@ -1151,8 +1151,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	viper.Set("kubefirst.state-store.name", bucketName)
 	viper.Set("kubefirst.state-store.hostname", "minio-console.kubefirst.dev")
-	viper.Set("kubefirst.state-store-creds.access-key-id", pkg.MinioDefaultUsername)
-	viper.Set("kubefirst.state-store-creds.secret-access-key-id", pkg.MinioDefaultPassword)
+	viper.Set("kubefirst.state-store-creds.access-key-id", constants.MinioDefaultUsername)
+	viper.Set("kubefirst.state-store-creds.secret-access-key-id", constants.MinioDefaultPassword)
 
 	// Upload the zip file with FPutObject
 	info, err := minioClient.FPutObject(ctx, bucketName, objectName, filePath, minio.PutObjectOptions{ContentType: contentType})
@@ -1198,7 +1198,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	err = helpers.TestEndpointTLS(strings.Replace(k3d.VaultURL, "https://", "", 1))
+	err = utils.TestEndpointTLS(strings.Replace(k3d.VaultURL, "https://", "", 1))
 	if err != nil {
 		return fmt.Errorf(
 			"unable to reach vault over https - this is likely due to the mkcert certificate store missing. please install it via `%s -install`", config.MkCertClient,
@@ -1240,10 +1240,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
 		tfEnvs["TF_VAR_kubernetes_api_endpoint"] = fmt.Sprintf("https://%s", kubernetesInClusterAPIService.Spec.ClusterIP)
 		tfEnvs[fmt.Sprintf("%s_OWNER", strings.ToUpper(config.GitProvider))] = viper.GetString(fmt.Sprintf("flags.%s-owner", config.GitProvider))
-		tfEnvs["AWS_ACCESS_KEY_ID"] = pkg.MinioDefaultUsername
-		tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
-		tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
-		tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
+		tfEnvs["AWS_ACCESS_KEY_ID"] = constants.MinioDefaultUsername
+		tfEnvs["AWS_SECRET_ACCESS_KEY"] = constants.MinioDefaultPassword
+		tfEnvs["TF_VAR_aws_access_key_id"] = constants.MinioDefaultUsername
+		tfEnvs["TF_VAR_aws_secret_access_key"] = constants.MinioDefaultPassword
 		tfEnvs["TF_VAR_ngrok_authtoken"] = viper.GetString("secrets.atlantis-ngrok-authtoken")
 		// tfEnvs["TF_LOG"] = "DEBUG"
 
@@ -1361,7 +1361,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	// Set flags used to track status of active options
-	helpers.SetClusterStatusFlags(k3d.CloudProvider, config.GitProvider)
+	utils.SetClusterStatusFlags(k3d.CloudProvider, config.GitProvider)
 
 	cluster := utilities.CreateClusterRecordFromRaw(useTelemetryFlag, cGitOwner, cGitUser, cGitToken, cGitlabOwnerGroupID, gitopsTemplateURLFlag, gitopsTemplateBranchFlag, catalogApps)
 
@@ -1391,7 +1391,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 		progressPrinter.IncrementTracker("wrapping-up", 1)
 
-		err = pkg.OpenBrowser(pkg.KubefirstConsoleLocalURLTLS)
+		err = utils.OpenBrowser(constants.KubefirstConsoleLocalURLTLS)
 		if err != nil {
 			log.Error().Err(err).Msg("")
 		}

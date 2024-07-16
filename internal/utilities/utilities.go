@@ -16,11 +16,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/kubefirst/kubefirst-api/pkg/configs"
+	"github.com/kubefirst/kubefirst-api/pkg/k8s"
 	apiTypes "github.com/kubefirst/kubefirst-api/pkg/types"
 	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/kubefirst/internal/types"
-	"github.com/kubefirst/runtime/configs"
-	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"

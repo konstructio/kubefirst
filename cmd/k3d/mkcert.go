@@ -9,10 +9,10 @@ package k3d
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst-api/pkg/k3d"
+	"github.com/kubefirst/kubefirst-api/pkg/k8s"
+	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
 	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/runtime/pkg/helpers"
-	"github.com/kubefirst/runtime/pkg/k3d"
-	"github.com/kubefirst/runtime/pkg/k8s"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -20,7 +20,7 @@ import (
 
 // mkCert creates a single certificate for a host for k3d
 func mkCert(cmd *cobra.Command, args []string) error {
-	helpers.DisplayLogHints()
+	utils.DisplayLogHints()
 
 	appNameFlag, err := cmd.Flags().GetString("application")
 	if err != nil {
@@ -32,7 +32,7 @@ func mkCert(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	flags := helpers.GetClusterStatusFlags()
+	flags := utils.GetClusterStatusFlags()
 	if !flags.SetupComplete {
 		return fmt.Errorf("there doesn't appear to be an active k3d cluster")
 	}

@@ -9,8 +9,8 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst-api/pkg/configs"
 	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/runtime/configs"
 	"github.com/spf13/cobra"
 )
 

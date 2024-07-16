@@ -9,20 +9,21 @@ package launch
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/kubefirst/kubefirst-api/pkg/configs"
+	shell "github.com/kubefirst/kubefirst-api/pkg/shell"
+	pkg "github.com/kubefirst/kubefirst-api/pkg/utils"
+
+	"github.com/kubefirst/kubefirst-api/pkg/downloadManager"
+	"github.com/kubefirst/kubefirst-api/pkg/k3d"
+	"github.com/kubefirst/kubefirst-api/pkg/k8s"
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/helm"
 	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/runtime/configs"
-	"github.com/kubefirst/runtime/pkg"
-	"github.com/kubefirst/runtime/pkg/downloadManager"
-	"github.com/kubefirst/runtime/pkg/k3d"
-	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
@@ -33,10 +34,6 @@ import (
 var (
 	// Describes the local kubefirst console cluster name
 	consoleClusterName = "kubefirst-console"
-	// HTTP client
-	httpClient = http.Client{
-		Timeout: time.Second * 2,
-	}
 )
 
 // Up
@@ -160,7 +157,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 
 	// Create k3d cluster
 	kubeconfigPath := fmt.Sprintf("%s/.k1/%s/kubeconfig", homeDir, consoleClusterName)
-	_, _, err = pkg.ExecShellReturnStrings(
+	_, _, err = shell.ExecShellReturnStrings(
 		k3dClient,
 		"cluster",
 		"get",
@@ -206,7 +203,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 	kcfg := k8s.CreateKubeConfig(false, kubeconfigPath)
 
 	// Determine if helm chart repository has already been added
-	res, _, err := pkg.ExecShellReturnStrings(
+	res, _, err := shell.ExecShellReturnStrings(
 		helmClient,
 		"repo",
 		"list",
@@ -232,7 +229,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 
 	if !repoExists {
 		// Add helm chart repository
-		_, _, err = pkg.ExecShellReturnStrings(
+		_, _, err = shell.ExecShellReturnStrings(
 			helmClient,
 			"repo",
 			"add",
@@ -248,7 +245,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 	}
 
 	// Update helm chart repository locally
-	_, _, err = pkg.ExecShellReturnStrings(
+	_, _, err = shell.ExecShellReturnStrings(
 		helmClient,
 		"repo",
 		"update",
@@ -259,7 +256,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 	log.Info().Msg("Kubefirst helm chart repository updated")
 
 	// Determine if helm release has already been installed
-	res, _, err = pkg.ExecShellReturnStrings(
+	res, _, err = shell.ExecShellReturnStrings(
 		helmClient,
 		"--kubeconfig",
 		kubeconfigPath,
@@ -343,7 +340,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		installFlags = append(installFlags, "--create-namespace")
 
 		// Install helm chart
-		a, b, err := pkg.ExecShellReturnStrings(helmClient, installFlags...)
+		a, b, err := shell.ExecShellReturnStrings(helmClient, installFlags...)
 		if err != nil {
 			progress.Error(fmt.Sprintf("error installing helm chart: %s %s %s", err, a, b))
 		}
@@ -396,7 +393,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 	certFileName := mkcertPemDir + "/" + "kubefirst-console" + "-cert.pem"
 	keyFileName := mkcertPemDir + "/" + "kubefirst-console" + "-key.pem"
 
-	_, _, err = pkg.ExecShellReturnStrings(
+	_, _, err = shell.ExecShellReturnStrings(
 		mkcertClient,
 		"-cert-file",
 		certFileName,
@@ -491,7 +488,7 @@ func Down(inCluster bool) {
 	toolsDir := fmt.Sprintf("%s/tools", dir)
 	k3dClient := fmt.Sprintf("%s/k3d", toolsDir)
 
-	_, _, err = pkg.ExecShellReturnStrings(k3dClient, "cluster", "delete", consoleClusterName)
+	_, _, err = shell.ExecShellReturnStrings(k3dClient, "cluster", "delete", consoleClusterName)
 	if err != nil {
 		progress.Error(fmt.Sprintf("error deleting k3d cluster: %s", err))
 	}

@@ -11,12 +11,12 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/kubefirst/kubefirst-api/pkg/github"
+	"github.com/kubefirst/kubefirst-api/pkg/gitlab"
 	"github.com/kubefirst/kubefirst-api/pkg/handlers"
+	"github.com/kubefirst/kubefirst-api/pkg/services"
 	"github.com/kubefirst/kubefirst-api/pkg/types"
 	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/runtime/pkg/github"
-	"github.com/kubefirst/runtime/pkg/gitlab"
-	"github.com/kubefirst/runtime/pkg/services"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )

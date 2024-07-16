@@ -13,21 +13,22 @@ import (
 	"strings"
 	"time"
 
+	constants "github.com/kubefirst/kubefirst-api/pkg/constants"
+	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
+
+	gitlab "github.com/kubefirst/kubefirst-api/pkg/gitlab"
+	"github.com/kubefirst/kubefirst-api/pkg/k3d"
+	"github.com/kubefirst/kubefirst-api/pkg/k8s"
+	"github.com/kubefirst/kubefirst-api/pkg/progressPrinter"
+	"github.com/kubefirst/kubefirst-api/pkg/terraform"
 	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/runtime/pkg"
-	gitlab "github.com/kubefirst/runtime/pkg/gitlab"
-	"github.com/kubefirst/runtime/pkg/helpers"
-	"github.com/kubefirst/runtime/pkg/k3d"
-	"github.com/kubefirst/runtime/pkg/k8s"
-	"github.com/kubefirst/runtime/pkg/progressPrinter"
-	"github.com/kubefirst/runtime/pkg/terraform"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 func destroyK3d(cmd *cobra.Command, args []string) error {
-	helpers.DisplayLogHints()
+	utils.DisplayLogHints()
 
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
@@ -125,10 +126,10 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 			tfEnvs["TF_VAR_atlantis_repo_webhook_secret"] = viper.GetString("secrets.atlantis-webhook")
 			tfEnvs["TF_VAR_atlantis_repo_webhook_url"] = atlantisWebhookURL
 			tfEnvs["TF_VAR_kbot_ssh_public_key"] = viper.GetString("kbot.public-key")
-			tfEnvs["AWS_ACCESS_KEY_ID"] = pkg.MinioDefaultUsername
-			tfEnvs["AWS_SECRET_ACCESS_KEY"] = pkg.MinioDefaultPassword
-			tfEnvs["TF_VAR_aws_access_key_id"] = pkg.MinioDefaultUsername
-			tfEnvs["TF_VAR_aws_secret_access_key"] = pkg.MinioDefaultPassword
+			tfEnvs["AWS_ACCESS_KEY_ID"] = constants.MinioDefaultUsername
+			tfEnvs["AWS_SECRET_ACCESS_KEY"] = constants.MinioDefaultPassword
+			tfEnvs["TF_VAR_aws_access_key_id"] = constants.MinioDefaultUsername
+			tfEnvs["TF_VAR_aws_secret_access_key"] = constants.MinioDefaultPassword
 
 			err := terraform.InitDestroyAutoApprove(config.TerraformClient, tfEntrypoint, tfEnvs)
 			if err != nil {
@@ -229,7 +230,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.create-k3d-cluster") {
 		log.Info().Msg("removing previous platform content")
 
-		err := pkg.ResetK1Dir(config.K1Dir)
+		err := utils.ResetK1Dir(config.K1Dir)
 		if err != nil {
 			return err
 		}
