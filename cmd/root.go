@@ -9,15 +9,15 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/kubefirst/kubefirst-api/pkg/configs"
 	"github.com/kubefirst/kubefirst/cmd/aws"
 	"github.com/kubefirst/kubefirst/cmd/civo"
 	"github.com/kubefirst/kubefirst/cmd/digitalocean"
 	"github.com/kubefirst/kubefirst/cmd/k3d"
 	"github.com/kubefirst/kubefirst/internal/common"
 	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/runtime/configs"
 
-	"github.com/kubefirst/runtime/pkg/progressPrinter"
+	"github.com/kubefirst/kubefirst-api/pkg/progressPrinter"
 	"github.com/spf13/cobra"
 )
 

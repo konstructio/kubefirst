@@ -10,7 +10,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rs/zerolog/log"
+	internalssh "github.com/kubefirst/kubefirst-api/pkg/ssh"
+	pkg "github.com/kubefirst/kubefirst-api/pkg/utils"
 	"github.com/kubefirst/kubefirst/internal/catalog"
 	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/kubefirst/kubefirst/internal/gitShim"
@@ -18,8 +19,7 @@ import (
 	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/kubefirst/internal/provision"
 	"github.com/kubefirst/kubefirst/internal/utilities"
-	"github.com/kubefirst/runtime/pkg"
-	internalssh "github.com/kubefirst/runtime/pkg/ssh"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

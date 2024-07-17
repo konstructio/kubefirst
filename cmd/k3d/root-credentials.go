@@ -10,9 +10,9 @@ import (
 	"fmt"
 
 	"github.com/kubefirst/kubefirst-api/pkg/credentials"
+	"github.com/kubefirst/kubefirst-api/pkg/k3d"
+	"github.com/kubefirst/kubefirst-api/pkg/k8s"
 	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/runtime/pkg/k3d"
-	"github.com/kubefirst/runtime/pkg/k8s"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
