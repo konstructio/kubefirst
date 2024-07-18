@@ -163,6 +163,7 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 		DnsProvider:            viper.GetString("flags.dns-provider"),
 		LogFileName:            viper.GetString("k1-paths.log-file-name"),
 		PostInstallCatalogApps: catalogApps,
+		InstallKubefirstPro:    cliFlags.InstallKubefirstPro,
 		GitAuth: apiTypes.GitAuth{
 			Token:      gitAuth.Token,
 			User:       gitAuth.User,

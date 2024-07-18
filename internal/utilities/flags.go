@@ -116,6 +116,12 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		return cliFlags, err
 	}
 
+	installKubefirstProFlag, err := cmd.Flags().GetBool("install-kubefirst-pro")
+	if err != nil {
+		progress.Error(err.Error())
+		return cliFlags, err
+	}
+
 	if cloudProvider == "aws" {
 		ecrFlag, err := cmd.Flags().GetBool("ecr")
 		if err != nil {
@@ -191,6 +197,7 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 	cliFlags.NodeType = nodeTypeFlag
 	cliFlags.NodeCount = nodeCountFlag
 	cliFlags.InstallCatalogApps = installCatalogAppsFlag
+	cliFlags.InstallKubefirstPro = installKubefirstProFlag
 
 	viper.Set("flags.alerts-email", cliFlags.AlertsEmail)
 	viper.Set("flags.cluster-name", cliFlags.ClusterName)
