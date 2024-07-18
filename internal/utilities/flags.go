@@ -80,6 +80,30 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		return cliFlags, err
 	}
 
+	gitopsRepoNameFlag, err := cmd.Flags().GetString("gitopsRepoName")
+	if err != nil {
+		progress.Error(err.Error())
+		return cliFlags,err
+	}
+
+	metaphorRepoNameFlag, err := cmd.Flags().GetString("metaphorRepoName")
+	if err != nil {
+		progress.Error(err.Error())
+		return cliFlags,err
+	}
+
+	adminTeamNameFlag, err := cmd.Flags().GetString("adminTeamName")
+	if err != nil {
+		progress.Error(err.Error())
+		return cliFlags,err
+	}
+
+	developerTeamNameFlag, err := cmd.Flags().GetString("developerTeamName")
+	if err != nil {
+		progress.Error(err.Error())
+		return cliFlags,err
+	}
+
 	gitopsTemplateURLFlag, err := cmd.Flags().GetString("gitops-template-url")
 	if err != nil {
 		progress.Error(err.Error())
@@ -187,6 +211,10 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 	cliFlags.GitopsTemplateBranch = gitopsTemplateBranchFlag
 	cliFlags.GitopsTemplateURL = gitopsTemplateURLFlag
 	cliFlags.UseTelemetry = useTelemetryFlag
+	cliFlags.GitopsRepoName = gitopsRepoNameFlag
+	cliFlags.MetaphorRepoName = metaphorRepoNameFlag
+	cliFlags.AdminTeamName = adminTeamNameFlag
+	cliFlags.DeveloperTeamName = developerTeamNameFlag
 	cliFlags.CloudProvider = cloudProvider
 	cliFlags.NodeType = nodeTypeFlag
 	cliFlags.NodeCount = nodeCountFlag

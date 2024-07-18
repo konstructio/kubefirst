@@ -35,6 +35,10 @@ var (
 	nodeTypeFlag             string
 	nodeCountFlag            string
 	installCatalogApps       string
+	gitopsRepoName			 string
+	metaphorRepoName		 string
+	adminTeamName			 string
+	developerTeamName 		 string
 
 	// RootCredentials
 	copyArgoCDPasswordToClipboardFlag bool
@@ -104,6 +108,10 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&subdomainNameFlag, "subdomain", "", "the subdomain to use for DNS records (Cloudflare)")
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the Civo DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
+	createCmd.Flags().StringVar(&gitopsRepoName,"gitopsRepoName","gitops","the custom gitops name")
+	createCmd.Flags().StringVar(&metaphorRepoName,"metaphorRepoName","metaphor","the custom metaphor name")
+	createCmd.Flags().StringVar(&adminTeamName,"adminTeamName","admins","admin team name for this repo")
+	createCmd.Flags().StringVar(&developerTeamName,"developerTeamName","developers","developer team name for this repo")
 	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
 	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %s", supportedGitProtocolOverride))
 	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - required if using github")
