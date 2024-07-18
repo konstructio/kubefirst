@@ -337,3 +337,6 @@ replace (
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.24.2
 )
 
+
+
+replace github.com/kubefirst/kubefirst-api v0.1.25 => /root/kubefirst-api
