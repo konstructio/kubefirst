@@ -9,6 +9,7 @@ package common
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
@@ -112,6 +113,51 @@ func GetRootCredentials(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func getgitmeta(clusterName string) (gitopsRepoName string, metaphorRepoName string) {
+	var gitopsFound, metaphorFound bool
+	homePath, err := os.UserHomeDir()
+	dirs, err := ioutil.ReadDir(fmt.Sprintf("%s/.k1/%s", homePath, clusterName))
+	if err != nil {
+		log.Info().Msg("Error reading directory")
+		return "cantfindgit", "cantfindmeta"
+	}
+
+	for _, direc := range dirs {
+		if direc.IsDir() {
+			parentdir, err := ioutil.ReadDir(fmt.Sprintf("%s/.k1/%s/%s", homePath, clusterName, direc.Name()))
+			if err != nil {
+				log.Printf("Error reading directory %s: %v", direc.Name(), err)
+				continue
+			}
+
+			for _, dir := range parentdir {
+				if dir.IsDir() {
+					if dir.Name() == "registry" {
+						gitopsRepoName = direc.Name()
+						gitopsFound = true
+					} else if dir.Name() == ".github" {
+						metaphorRepoName = direc.Name()
+						metaphorFound = true
+					}
+				}
+			}
+
+		}
+	}
+
+	if !gitopsFound {
+		log.Info().Msg("Gitops Repo not found")
+		return "cantfindgit", "cantfindmeta"
+	}
+
+	if !metaphorFound {
+		log.Info().Msg("Metaphor Repo not found")
+		os.Exit(1)
+	}
+
+	return gitopsRepoName, metaphorRepoName
+}
+
 func Destroy(cmd *cobra.Command, args []string) error {
 	// Determine if there are active instal	ls
 	gitProvider := viper.GetString("flags.git-provider")
@@ -132,6 +178,8 @@ func Destroy(cmd *cobra.Command, args []string) error {
 
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
+
+	gitopsRepoName, metaphorRepoName := getgitmeta(clusterName)
 
 	// Switch based on git provider, set params
 	cGitOwner := ""
