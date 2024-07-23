@@ -32,6 +32,10 @@ var (
 	gitProtocolFlag          string
 	gitopsTemplateURLFlag    string
 	gitopsTemplateBranchFlag string
+	gitopsRepoName			 string
+	metaphorRepoName		 string
+	adminTeamName			 string
+	developerTeamName 		 string
 	useTelemetryFlag         bool
 	forceDestroyFlag         bool
 	nodeTypeFlag             string
@@ -107,6 +111,10 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "", "the branch to clone for the gitops-template repository")
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
+	createCmd.Flags().StringVar(&gitopsRepoName,"gitopsRepoName","gitops","the custom gitops name")
+	createCmd.Flags().StringVar(&metaphorRepoName,"metaphorRepoName","metaphor","the custom metpahor name")
+	createCmd.Flags().StringVar(&adminTeamName,"adminTeamName","admins","admin team name for this repo ")
+	createCmd.Flags().StringVar(&developerTeamName,"developerTeamName","developers"," developer team name for this repo")
 	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma seperated values to install after provision")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
 	createCmd.Flags().BoolVar(&forceDestroyFlag, "force-destroy", false, "allows force destruction on objects (helpful for test environments, defaults to false)")
