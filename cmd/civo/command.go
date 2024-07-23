@@ -35,14 +35,12 @@ var (
 	nodeTypeFlag             string
 	nodeCountFlag            string
 	installCatalogApps       string
-<<<<<<< HEAD
 	installKubefirstProFlag  bool
-=======
 	gitopsRepoName			 string
 	metaphorRepoName		 string
 	adminTeamName			 string
 	developerTeamName 		 string
->>>>>>> 61cb972 (added configs)
+
 
 	// RootCredentials
 	copyArgoCDPasswordToClipboardFlag bool
