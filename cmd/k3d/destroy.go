@@ -230,7 +230,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.create-k3d-cluster") {
 		log.Info().Msg("removing previous platform content")
 
-		err := utils.ResetK1Dir(config.K1Dir)
+		err := utils.ResetK1Dir(config.K1Dir,"gitops","metaphor")
 		if err != nil {
 			return err
 		}
