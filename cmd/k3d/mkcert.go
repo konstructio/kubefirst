@@ -32,6 +32,7 @@ func mkCert(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	gitopsRepoName, metaphorRepoName := common.Getgitmeta(viper.GetString("flags.cluster-name"))
 	flags := utils.GetClusterStatusFlags()
 	if !flags.SetupComplete {
 		return fmt.Errorf("there doesn't appear to be an active k3d cluster")
@@ -41,6 +42,10 @@ func mkCert(cmd *cobra.Command, args []string) error {
 		flags.GitProvider,
 		viper.GetString(fmt.Sprintf("flags.%s-owner", flags.GitProvider)),
 		flags.GitProtocol,
+		gitopsRepoName,
+		metaphorRepoName,
+		viper.GetString("adminTeamName"),
+		viper.GetString("developerTeamName"),
 	)
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 

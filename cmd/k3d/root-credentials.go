@@ -23,7 +23,7 @@ func getK3dRootCredentials(cmd *cobra.Command, args []string) error {
 	gitProvider := viper.GetString("flags.git-provider")
 	gitProtocol := viper.GetString("flags.git-protocol")
 	gitOwner := viper.GetString(fmt.Sprintf("flags.%s-owner", gitProvider))
-
+	gitopsRepoName, metaphorRepoName := common.Getgitmeta(clusterName)
 	// Parse flags
 	a, err := cmd.Flags().GetBool("argocd")
 	if err != nil {
@@ -55,7 +55,7 @@ func getK3dRootCredentials(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate kubernetes client
-	config := k3d.GetConfig(clusterName, gitProvider, gitOwner, gitProtocol)
+	config := k3d.GetConfig(clusterName, gitProvider, gitOwner, gitProtocol, gitopsRepoName, metaphorRepoName, viper.GetString("adminTeamName"), viper.GetString("developerTeamName"))
 
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
