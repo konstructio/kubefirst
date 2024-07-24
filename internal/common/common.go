@@ -114,7 +114,7 @@ func GetRootCredentials(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func getgitmeta(clusterName string) (gitopsRepoName string, metaphorRepoName string) {
+func Getgitmeta(clusterName string) (gitopsRepoName string, metaphorRepoName string) {
 	var gitopsFound, metaphorFound bool
 	homePath,err := os.UserHomeDir()
 	dirs, err := ioutil.ReadDir(fmt.Sprintf("%s/.k1/%s", homePath, clusterName))
@@ -174,7 +174,7 @@ func Destroy(cmd *cobra.Command, args []string) error {
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
 
-	gitopsRepoName,metaphorRepoName := getgitmeta(clusterName)
+	gitopsRepoName,metaphorRepoName := Getgitmeta(clusterName)
 
 	// Switch based on git provider, set params
 	cGitOwner := ""
