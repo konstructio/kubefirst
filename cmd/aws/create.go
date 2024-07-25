@@ -9,6 +9,7 @@ package aws
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	awsinternal "github.com/kubefirst/kubefirst-api/pkg/aws"
@@ -109,7 +110,9 @@ func createAws(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
-	if !k3dClusterCreationComplete {
+	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
+
+	if !k3dClusterCreationComplete && !isK1Debug {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 
