@@ -24,7 +24,7 @@ import (
 func GetConsoleIngresUrl() string {
 
 	if strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true" { //allow using local console running on port 3000
-		return "http://localhost:3000"
+		return os.Getenv("K1_CONSOLE_REMOTE_URL")
 	}
 
 	return "https://console.kubefirst.dev"
