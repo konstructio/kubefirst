@@ -1078,7 +1078,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-
 		retryAttempts := 2
 		for attempt := 1; attempt <= retryAttempts; attempt++ {
 			log.Info().Msgf("Attempt #%d to create Argo CD application...\n", attempt)
