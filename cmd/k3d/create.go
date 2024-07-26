@@ -1067,11 +1067,16 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 		err = k3d.RestartDeployment(context.Background(), kcfg.Clientset, "argocd", "argocd-applicationset-controller")
 		if err != nil {
-			return fmt.Errorf("error in restarting argocd controller %w", err)
+			log.Info().Msgf("Error executing kubectl command: %v\n", err)
+			return err
 		}
 
-		err = wait.PollImmediate(5*time.Second, 20*time.Second, func() (bool, error) {
-			_, err := argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
+
+		retryAttempts := 2
+		for attempt := 1; attempt <= retryAttempts; attempt++ {
+			log.Info().Msgf("Attempt #%d to create Argo CD application...\n", attempt)
+
+			app, err := argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 			if err != nil {
 				if errors.Is(err, syscall.ECONNREFUSED) {
 					return false, nil // retry if we can't connect to it
