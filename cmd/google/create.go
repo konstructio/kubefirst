@@ -63,8 +63,8 @@ func createGoogle(cmd *cobra.Command, args []string) error {
 
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider))
 	if !executionControl {
-		newRepositoryNames := []string{"gitops", "metaphor"}
-		newTeamNames := []string{"admins", "developers"}
+		newRepositoryNames := []string{cliFlags.GitopsRepoName, cliFlags.MetaphorRepoName}
+		newTeamNames := []string{cliFlags.AdminTeamName, cliFlags.DeveloperTeamName}
 
 		initGitParameters := gitShim.GitInitParameters{
 			GitProvider:  gitProviderFlag,
