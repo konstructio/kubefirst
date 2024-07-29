@@ -8,6 +8,8 @@ package k3s
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 
@@ -84,7 +86,9 @@ func createK3s(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
-	if !k3dClusterCreationComplete {
+	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
+
+	if !k3dClusterCreationComplete && !isK1Debug {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 

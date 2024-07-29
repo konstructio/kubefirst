@@ -9,6 +9,7 @@ package digitalocean
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	internalssh "github.com/kubefirst/kubefirst-api/pkg/ssh"
 	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
@@ -85,7 +86,9 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
-	if !k3dClusterCreationComplete {
+	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
+
+	if !k3dClusterCreationComplete && !isK1Debug {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 
