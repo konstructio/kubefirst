@@ -1,18 +1,22 @@
- name: Test CI
+name: Test CI
 
- on:
-   push:
- jobs:
+on:
+  push:
 
-   build:
-
-     runs-on: ubuntu-latest
-
-     steps:
-     - uses: actions/checkout@v3
-       with:
-         ref: ${{ github.ref }}
-     - name: Running Tests
-       run: |
-         docker-compose -f docker-compose-test.yaml build --no-cache \
-         && docker compose -f docker-compose-test.yaml run kubefirst-unit-tests
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{ github.ref }}
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: "go.mod"
+    - name: Running Golang tests
+      run: go test -v ./...
+    - name: Running Docker Compose tests
+      run: |
+        docker-compose -f docker-compose-test.yaml build --no-cache \
+        && docker compose -f docker-compose-test.yaml run kubefirst-unit-tests
