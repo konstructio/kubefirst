@@ -31,7 +31,7 @@ func createK3s(cmd *cobra.Command, args []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "k3s")
 	if err != nil {
 		progress.Error(err.Error())
-		log.Fatal().Msgf("error collecting flags: ", err)
+		log.Fatal().Msgf("error collecting flags: %s", err)
 		return nil
 	}
 
