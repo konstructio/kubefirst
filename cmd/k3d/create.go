@@ -623,7 +623,9 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 		progressPrinter.IncrementTracker("cloning-and-formatting-git-repositories", 1)
 	}
+
 	prep_err := k3d.TerraformPrep(config)
+
 	if prep_err != nil {
 		return prep_err
 	}
