@@ -266,9 +266,9 @@ func StartProvisioning(clusterName string) {
 						done <- true
 					}
 
-					if provisioningCluster.Status != "provisioned" {
-						fmt.Println("cluster has been provisioned via ci")
-						fmt.Printf("kubefirst URL: https://kubefirst.%s", provisioningCluster.DomainName)
+					if provisioningCluster.Status == "provisioned" {
+						fmt.Println("\n cluster has been provisioned via ci")
+						fmt.Println(fmt.Sprintf("\n kubefirst URL: https://kubefirst.%s", provisioningCluster.DomainName))
 						done <- true
 					}
 				}
