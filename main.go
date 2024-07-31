@@ -27,16 +27,14 @@ import (
 func main() {
 	argsWithProg := os.Args
 
-	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs"}
+	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs", "--ci"}
 	canRunBubbleTea := true
 
-	if argsWithProg != nil {
-		for _, arg := range argsWithProg {
-			isBlackListed := slices.Contains(bubbleTeaBlacklist, arg)
+	for _, arg := range argsWithProg {
+		isBlackListed := slices.Contains(bubbleTeaBlacklist, arg)
 
-			if isBlackListed {
-				canRunBubbleTea = false
-			}
+		if isBlackListed {
+			canRunBubbleTea = false
 		}
 	}
 
@@ -122,6 +120,7 @@ func main() {
 	viper.Set("k1-paths.logs-dir", logsFolder)
 	viper.Set("k1-paths.log-file", logfile)
 	viper.Set("k1-paths.log-file-name", logfileName)
+	viper.Set("k1-canRunBubbleTea", canRunBubbleTea)
 
 	err = viper.WriteConfig()
 	if err != nil {
