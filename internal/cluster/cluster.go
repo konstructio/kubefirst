@@ -22,8 +22,7 @@ import (
 )
 
 func GetConsoleIngresUrl() string {
-
-	if strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true" { //allow using local console running on port 3000
+	if strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true" { // allow using local console running on port 3000
 		return os.Getenv("K1_CONSOLE_REMOTE_URL")
 	}
 
@@ -57,6 +56,7 @@ func CreateCluster(cluster apiTypes.ClusterDefinition) error {
 		log.Info().Msgf("error %s", err)
 		return err
 	}
+	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -101,6 +101,7 @@ func ResetClusterProgress(clusterName string) error {
 		log.Info().Msgf("error %s", err)
 		return err
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		log.Info().Msgf("unable to create cluster %s", res.Status)
@@ -137,6 +138,7 @@ func GetCluster(clusterName string) (apiTypes.Cluster, error) {
 		log.Info().Msgf("error %s", err)
 		return cluster, err
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		log.Info().Msgf("unable to get cluster %s, continuing", res.Status)

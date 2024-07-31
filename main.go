@@ -30,13 +30,11 @@ func main() {
 	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs"}
 	canRunBubbleTea := true
 
-	if argsWithProg != nil {
-		for _, arg := range argsWithProg {
-			isBlackListed := slices.Contains(bubbleTeaBlacklist, arg)
+	for _, arg := range argsWithProg {
+		isBlackListed := slices.Contains(bubbleTeaBlacklist, arg)
 
-			if isBlackListed {
-				canRunBubbleTea = false
-			}
+		if isBlackListed {
+			canRunBubbleTea = false
 		}
 	}
 
@@ -91,7 +89,7 @@ func main() {
 
 	//* create log directory
 	logsFolder := fmt.Sprintf("%s/logs", k1Dir)
-	_ = os.Mkdir(logsFolder, 0700)
+	_ = os.Mkdir(logsFolder, 0o700)
 	if err != nil {
 		log.Fatal().Msgf("error creating logs directory: %s", err)
 	}
@@ -139,5 +137,4 @@ func main() {
 	} else {
 		cmd.Execute()
 	}
-
 }

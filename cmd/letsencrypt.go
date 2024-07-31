@@ -14,10 +14,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	// Certificate check
-	domainNameFlag string
-)
+// Certificate check
+var domainNameFlag string
 
 func LetsEncryptCommand() *cobra.Command {
 	letsEncryptCommand := &cobra.Command{

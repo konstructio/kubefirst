@@ -14,7 +14,6 @@ const (
 )
 
 func InitClient(clusterId, clusterType, gitProvider string) telemetry.TelemetryEvent {
-
 	machineID, _ := machineid.ID()
 
 	c := telemetry.TelemetryEvent{

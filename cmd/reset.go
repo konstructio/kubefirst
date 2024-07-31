@@ -30,16 +30,15 @@ var resetCmd = &cobra.Command{
 		cloudProvider := viper.GetString("kubefirst.cloud-provider")
 
 		checksMap := viper.Get("kubefirst-checks")
-		switch checksMap.(type) {
+		switch v := checksMap.(type) {
 		case string:
-			content := checksMap.(string)
-			if content == "" {
+			if v == "" {
 				log.Info().Msg("checks map is empty, continuing")
 			} else {
 				return fmt.Errorf("unable to determine contents of kubefirst-checks")
 			}
-		default:
-			checks, err := parseConfigEntryKubefirstChecks(checksMap)
+		case map[string]interface{}:
+			checks, err := parseConfigEntryKubefirstChecks(v)
 			if err != nil {
 				log.Error().Msgf("error: %s - resetting directory without checks", err)
 			}
@@ -58,10 +57,12 @@ var resetCmd = &cobra.Command{
 					cloudProvider,
 				)
 			}
+		default:
+			return fmt.Errorf("unable to determine contents of kubefirst-checks: unexpected type %T", v)
+
 		}
 
 		runReset()
-
 		return nil
 	},
 }
@@ -72,11 +73,10 @@ func init() {
 
 // parseConfigEntryKubefirstChecks gathers the kubefirst-checks section of the Viper
 // config file and parses as a map[string]bool
-func parseConfigEntryKubefirstChecks(raw interface{}) (map[string]bool, error) {
-	if raw == nil {
+func parseConfigEntryKubefirstChecks(checks map[string]interface{}) (map[string]bool, error) {
+	if checks == nil {
 		return map[string]bool{}, fmt.Errorf("checks configuration is nil")
 	}
-	checks := raw.(map[string]interface{})
 	checksMap := make(map[string]bool, 0)
 	for key, value := range checks {
 		strKey := fmt.Sprintf("%v", key)

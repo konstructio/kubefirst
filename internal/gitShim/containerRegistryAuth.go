@@ -71,7 +71,7 @@ func CreateContainerRegistrySecret(obj *ContainerRegistryAuth) (string, error) {
 		}
 
 		// Create argo workflows pull secret
-		var p = gitlab.DeployTokenCreateParameters{
+		p := gitlab.DeployTokenCreateParameters{
 			Name:     secretName,
 			Username: secretName,
 			Scopes:   []string{"read_registry", "write_registry"},

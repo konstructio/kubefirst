@@ -20,7 +20,6 @@ var infoCmd = &cobra.Command{
 	Short: "provides general Kubefirst setup data",
 	Long:  `Provides machine data, files and folders paths`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		config := configs.ReadConfig()
 
 		content := `

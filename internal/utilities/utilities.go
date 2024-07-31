@@ -249,7 +249,6 @@ func ExportCluster(cluster apiTypes.Cluster, kcfg *k8s.KubernetesClient) error {
 	}
 
 	err = k8s.CreateSecretV2(kcfg.Clientset, secret)
-
 	if err != nil {
 		return fmt.Errorf(fmt.Sprintf("unable to save secret to management cluster. %s", err))
 	}
