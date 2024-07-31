@@ -28,5 +28,6 @@ var versionCmd = &cobra.Command{
 ### kubefirst-cli golang utility version:` + fmt.Sprintf("`%s`", configs.K1Version)
 
 		progress.Success(versionMsg)
+		progress.Progress.Quit()
 	},
 }
