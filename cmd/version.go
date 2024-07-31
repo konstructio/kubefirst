@@ -32,13 +32,7 @@ func Create() *cobra.Command {
 ##
 ### kubefirst-cli golang utility version:` + fmt.Sprintf("`%s`", configs.K1Version)
 
-			// canRunBubbleTea := viper.GetBool("k1-canRunBubbleTea")
-
-			// if canRunBubbleTea {
 			progress.Success(versionMsg)
-			// } else {
-			// 	fmt.Print(versionMsg)
-			// }
 		},
 	}
 

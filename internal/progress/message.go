@@ -13,9 +13,11 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/kubefirst/kubefirst-api/pkg/types"
+	"github.com/kubefirst/kubefirst/internal/cluster"
 	"github.com/spf13/viper"
 )
 
@@ -71,6 +73,11 @@ func DisplayLogHints(estimatedTime int) {
 
 	headerMessage := renderMessage(header)
 
+	if !CanRunBubbleTea {
+		fmt.Print(headerMessage)
+		return
+	}
+
 	Progress.Send(headerMsg{
 		message: headerMessage,
 	})
@@ -107,7 +114,7 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 		break
 
 	case "k3s":
-		cloudCliKubeconfig = fmt.Sprint(("use the kubeconfig file outputed from terraform to acces to the cluster"))
+		cloudCliKubeconfig = "use the kubeconfig file outputed from terraform to acces to the cluster"
 		break
 
 	}
@@ -151,6 +158,11 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 `
 	successMessage := renderMessage(success)
 
+	if !CanRunBubbleTea {
+		fmt.Print(successMessage)
+		return successMsg{}
+	}
+
 	return successMsg{
 		message: successMessage,
 	}
@@ -175,6 +187,11 @@ func DisplayCredentials(cluster types.Cluster) {
 
 	headerMessage := renderMessage(header)
 
+	if !CanRunBubbleTea {
+		fmt.Print(headerMessage)
+		return
+	}
+
 	Progress.Send(headerMsg{
 		message: headerMessage,
 	})
@@ -184,10 +201,20 @@ func DisplayCredentials(cluster types.Cluster) {
 
 func AddStep(message string) {
 	renderedMessage := createStep(fmt.Sprintf("%s %s", ":dizzy:", message))
+	if !CanRunBubbleTea {
+		fmt.Print(renderedMessage)
+		return
+	}
+
 	Progress.Send(renderedMessage)
 }
 
 func CompleteStep(message string) {
+	if !CanRunBubbleTea {
+		fmt.Print(message)
+		return
+	}
+
 	Progress.Send(completeStep{
 		message: message,
 	})
@@ -195,6 +222,11 @@ func CompleteStep(message string) {
 
 func Success(success string) {
 	successMessage := renderMessage(success)
+
+	if !CanRunBubbleTea {
+		fmt.Print(successMessage)
+		return
+	}
 
 	Progress.Send(
 		successMsg{
@@ -204,13 +236,53 @@ func Success(success string) {
 
 func Error(message string) {
 	renderedMessage := createErrorLog(message)
+
+	if !CanRunBubbleTea {
+		fmt.Print(renderedMessage)
+		return
+	}
+
 	Progress.Send(renderedMessage)
 }
 
 func StartProvisioning(clusterName string) {
-	provisioningMessage := startProvision{
-		clusterName: clusterName,
-	}
+	if !CanRunBubbleTea {
+		// Checks cluster status every 10 seconds
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
 
-	Progress.Send(provisioningMessage)
+		done := make(chan bool)
+
+		go func() {
+			for {
+				select {
+				case <-done:
+					return
+				case <-ticker.C:
+					provisioningCluster, _ := cluster.GetCluster(clusterName)
+
+					if provisioningCluster.Status == "error" {
+						fmt.Printf("unable to provision cluster: %s", provisioningCluster.LastCondition)
+						done <- true
+					}
+
+					if provisioningCluster.Status != "provisioned" {
+						fmt.Println("cluster has been provisioned via ci")
+						fmt.Printf("kubefirst URL: https://kubefirst.%s", provisioningCluster.DomainName)
+						done <- true
+					}
+				}
+			}
+		}()
+
+		// waits until the provision is done
+		<-done
+
+	} else {
+		provisioningMessage := startProvision{
+			clusterName: clusterName,
+		}
+
+		Progress.Send(provisioningMessage)
+	}
 }

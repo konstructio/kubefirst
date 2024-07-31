@@ -28,7 +28,7 @@ type progressModel struct {
 
 // Bubbletea messsages
 
-type CusterProvisioningMsg types.Cluster
+type ClusterProvisioningMsg types.Cluster
 
 type startProvision struct {
 	clusterName string

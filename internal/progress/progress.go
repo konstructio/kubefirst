@@ -15,6 +15,7 @@ import (
 )
 
 var Progress *tea.Program
+var CanRunBubbleTea bool = true
 
 func NewModel() progressModel {
 	return progressModel{
@@ -25,6 +26,10 @@ func NewModel() progressModel {
 // Bubbletea functions
 func InitializeProgressTerminal() {
 	Progress = tea.NewProgram(NewModel())
+}
+
+func DisableBubbleTeaExecution() {
+	CanRunBubbleTea = false
 }
 
 func (m progressModel) Init() tea.Cmd {
@@ -66,7 +71,7 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.clusterName = msg.clusterName
 		return m, GetClusterInterval(m.clusterName)
 
-	case CusterProvisioningMsg:
+	case ClusterProvisioningMsg:
 		m.provisioningCluster = types.Cluster(msg)
 		completedSteps, nextStep := BuildCompletedSteps(types.Cluster(msg), m)
 		m.completedSteps = append(m.completedSteps, completedSteps...)
