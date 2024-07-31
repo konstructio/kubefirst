@@ -120,6 +120,7 @@ func main() {
 	viper.Set("k1-paths.logs-dir", logsFolder)
 	viper.Set("k1-paths.log-file", logfile)
 	viper.Set("k1-paths.log-file-name", logfileName)
+	viper.Set("k1-canRunBubbleTea", canRunBubbleTea)
 
 	err = viper.WriteConfig()
 	if err != nil {

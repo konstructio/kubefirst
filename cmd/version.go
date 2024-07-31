@@ -12,6 +12,7 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/configs"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -32,12 +33,15 @@ func Create() *cobra.Command {
 ##
 ### kubefirst-cli golang utility version:` + fmt.Sprintf("`%s`", configs.K1Version)
 
-			progress.Success(versionMsg)
+			canRunBubbleTea := viper.GetBool("k1-canRunBubbleTea")
+
+			if canRunBubbleTea {
+				progress.Success(versionMsg)
+			} else {
+				fmt.Print(versionMsg)
+			}
 		},
 	}
-
-	// todo review defaults and update descriptions
-	versionCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
 
 	return versionCmd
 }
