@@ -12,7 +12,6 @@ import (
 	"github.com/kubefirst/kubefirst-api/pkg/configs"
 	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -33,13 +32,13 @@ func Create() *cobra.Command {
 ##
 ### kubefirst-cli golang utility version:` + fmt.Sprintf("`%s`", configs.K1Version)
 
-			canRunBubbleTea := viper.GetBool("k1-canRunBubbleTea")
+			// canRunBubbleTea := viper.GetBool("k1-canRunBubbleTea")
 
-			if canRunBubbleTea {
-				progress.Success(versionMsg)
-			} else {
-				fmt.Print(versionMsg)
-			}
+			// if canRunBubbleTea {
+			progress.Success(versionMsg)
+			// } else {
+			// 	fmt.Print(versionMsg)
+			// }
 		},
 	}
 

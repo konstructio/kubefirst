@@ -27,7 +27,7 @@ import (
 func main() {
 	argsWithProg := os.Args
 
-	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs", "--ci"}
+	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs"}
 	canRunBubbleTea := true
 
 	for _, arg := range argsWithProg {
@@ -134,7 +134,11 @@ func main() {
 			cmd.Execute()
 		}()
 
-		progress.Progress.Run()
+		_, err := progress.Progress.Run()
+
+		if err != nil {
+			stdLog.Panicf("unable to set log-file-location, error is: %s", err)
+		}
 	} else {
 		cmd.Execute()
 	}
