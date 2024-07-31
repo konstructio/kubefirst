@@ -15,7 +15,7 @@ import (
 
 // displayFormattedClusterInfo uses tabwriter to pretty print information on clusters using
 // the specified formatting
-func displayFormattedClusterInfo(clusters []types.Cluster) error {
+func displayFormattedClusterInfo(clusters []types.Cluster) {
 	header := `
 | NAME | CREATED AT | STATUS | TYPE | PROVIDER |
 | --- | --- | --- | --- | --- |
@@ -32,6 +32,4 @@ func displayFormattedClusterInfo(clusters []types.Cluster) error {
 	}
 
 	progress.Success(header + content)
-
-	return nil
 }

@@ -42,9 +42,9 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	//This will allow all child commands to have informUser available for free.
-	//Refers: https://github.com/kubefirst/runtime/issues/525
-	//Before removing next line, please read ticket above.
+	// This will allow all child commands to have informUser available for free.
+	// Refers: https://github.com/kubefirst/runtime/issues/525
+	// Before removing next line, please read ticket above.
 	common.CheckForVersionUpdate()
 	progressPrinter.GetInstance()
 	err := rootCmd.Execute()
