@@ -108,22 +108,22 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	gitopsRepoName, err := cmd.Flags().GetString("gitopsRepoName")
+	gitopsRepoName, err := cmd.Flags().GetString("gitops-repo-name")
 	if err != nil {
 		return err
 	}
 
-	metaphorRepoName, err := cmd.Flags().GetString("metaphorRepoName")
+	metaphorRepoName, err := cmd.Flags().GetString("metaphor-repo-name")
 	if err != nil {
 		return err
 	}
 
-	adminTeamName, err := cmd.Flags().GetString("adminTeamName")
+	adminTeamName, err := cmd.Flags().GetString("admin-team-name")
 	if err != nil {
 		return err
 	}
 
-	developerTeamName, err := cmd.Flags().GetString("developerTeamName")
+	developerTeamName, err := cmd.Flags().GetString("developer-team-name")
 	if err != nil {
 		return err
 	}
@@ -343,6 +343,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// Instantiate K3d config
 	config := k3d.GetConfig(clusterNameFlag, gitProviderFlag, cGitOwner, gitProtocolFlag, gitopsRepoName, metaphorRepoName, adminTeamName, developerTeamName)
+	config := k3d.GetConfig(clusterNameFlag, gitProviderFlag, cGitOwner, gitProtocolFlag, gitopsRepoName, metaphorRepoName, adminTeamName, developerTeamName)
 	switch gitProviderFlag {
 	case "github":
 		config.GithubToken = cGitToken
@@ -395,6 +396,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	log.Info().Msgf("cloning gitops-template repo url: %s ", gitopsTemplateURLFlag)
 	log.Info().Msgf("cloning gitops-template repo branch: %s ", gitopsTemplateBranchFlag)
 	log.Info().Msgf("branch %s\b", gitopsTemplateBranchFlag)
+	log.Info().Msgf("branch %s ", gitopsTemplateBranchFlag)
 	atlantisWebhookSecret := viper.GetString("secrets.atlantis-webhook")
 	if atlantisWebhookSecret == "" {
 		atlantisWebhookSecret = utils.Random(20)
@@ -555,6 +557,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("installing kubefirst dependencies")
 
 		err := k3d.DownloadTools(clusterNameFlag, config.GitProvider, cGitOwner, config.ToolsDir, config.GitProtocol, config.GitopsRepoName, config.MetaphorRepoName, config.AdminTeamName, config.DeveloperTeamName)
+		err := k3d.DownloadTools(clusterNameFlag, config.GitProvider, cGitOwner, config.ToolsDir, config.GitProtocol, config.GitopsRepoName, config.MetaphorRepoName, config.AdminTeamName, config.DeveloperTeamName)
 		if err != nil {
 			return err
 		}
@@ -570,6 +573,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	metaphorTemplateTokens := k3d.MetaphorTokenValues{
 		ClusterName:                   clusterNameFlag,
 		CloudRegion:                   cloudRegionFlag,
+		ContainerRegistryURL:          fmt.Sprintf("%s/%s/%s", containerRegistryHost, cGitOwner, config.MetaphorRepoName),
 		ContainerRegistryURL:          fmt.Sprintf("%s/%s/%s", containerRegistryHost, cGitOwner, config.MetaphorRepoName),
 		DomainName:                    k3d.DomainName,
 		MetaphorDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", k3d.DomainName),
@@ -614,6 +618,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 		viper.Set("adminTeamName", config.AdminTeamName)
 		viper.Set("developerTeamName", config.DeveloperTeamName)
+		viper.Set("adminTeamName", config.AdminTeamName)
+		viper.Set("developerTeamName", config.DeveloperTeamName)
 
 		// todo emit init telemetry end
 		viper.Set("kubefirst-checks.gitops-ready-to-push", true)
@@ -624,9 +630,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("cloning-and-formatting-git-repositories", 1)
 	}
 
-	prep_err := k3d.TerraformPrep(config)
-
-	if prep_err != nil {
+	log.Info().Msg("Terraform Prep")
+	if prep_err := k3d.TerraformPrep(config); prep_err != nil {
 		return prep_err
 	}
 
@@ -1068,6 +1073,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		registryApplicationObject := argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
 
 		err = k3d.RestartDeployment(context.Background(), kcfg.Clientset, "argocd", "argocd-applicationset-controller")
+		err = k3d.RestartDeployment(context.Background(), kcfg.Clientset, "argocd", "argocd-applicationset-controller")
 		if err != nil {
 			log.Info().Msgf("Error executing kubectl command: %v\n", err)
 			return err
@@ -1079,6 +1085,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			log.Info().Msgf("Attempt #%d to create Argo CD application...\n", attempt)
 
 			app, err := argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
+			return fmt.Errorf("error in restarting argocd controller %w", err)
+		}
+
+		err = wait.PollImmediate(5*time.Second, 20*time.Second, func() (bool, error) {
+			_, err := argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 			if err != nil {
 				if errors.Is(err, syscall.ECONNREFUSED) {
 					return false, nil // retry if we can't connect to it
@@ -1097,10 +1108,22 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 
 		log.Info().Msg("Argo CD application created successfully")
+				return false, nil
+			}
+			return true, nil
+		})
+
+		if err != nil {
+			return fmt.Errorf("error creating argocd application : %w", err)
+		}
+
+		log.Info().Msg("Argo CD application created successfully\n")
+
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
 		telemetry.SendEvent(segClient, telemetry.CreateRegistryCompleted, "")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
+
 	} else {
 		log.Info().Msg("argocd registry create already done, continuing")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
@@ -1202,6 +1225,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// define upload object
 	objectName := fmt.Sprintf("terraform/%s/terraform.tfstate", config.GitProvider)
+	filePath := config.K1Dir + fmt.Sprintf("/%s/%s", objectName, config.GitopsRepoName)
 	filePath := config.K1Dir + fmt.Sprintf("/%s/%s", objectName, config.GitopsRepoName)
 	contentType := "xl.meta"
 	bucketName := "kubefirst-state-store"
@@ -1472,3 +1496,4 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	return nil
 }
+

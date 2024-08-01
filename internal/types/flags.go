@@ -20,9 +20,9 @@ type CliFlags struct {
 	GitProtocol          string
 	GithubOrg            string
 	GitlabGroup          string
-	GitopsRepoName 		 string
+	GitopsRepoName       string
 	MetaphorRepoName     string
-	AdminTeamName		 string
+	AdminTeamName        string
 	DeveloperTeamName    string
 	GitopsTemplateBranch string
 	GitopsTemplateURL    string

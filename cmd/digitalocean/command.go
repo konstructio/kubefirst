@@ -115,6 +115,10 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma seperated values to install after provision")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
 	createCmd.Flags().BoolVar(&installKubefirstProFlag, "install-kubefirst-pro", true, "whether or not to install kubefirst pro")
+	createCmd.Flags().StringVar(&gitopsRepoName, "gitops-repo-name", "gitops", "the custom gitops name")
+	createCmd.Flags().StringVar(&metaphorRepoName, "metaphor-repo-name", "metaphor", "the custom metaphor name")
+	createCmd.Flags().StringVar(&adminTeamName, "admin-team-name", "admins", "admin team name for this repo")
+	createCmd.Flags().StringVar(&developerTeamName, "developer-team-name", "developers", "developer team name for this repo")
 
 	return createCmd
 }

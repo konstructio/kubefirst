@@ -32,7 +32,12 @@ func mkCert(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	gitopsRepoName, metaphorRepoName := common.Getgitmeta(viper.GetString("flags.cluster-name"))
+	gitopsRepoName, metaphorRepoName, err := common.GetGitmeta(viper.GetString("flags.cluster-name"))
+
+	if err != nil {
+		return fmt.Errorf("error in getting repo info: %w", err)
+	}
+
 	flags := utils.GetClusterStatusFlags()
 	if !flags.SetupComplete {
 		return fmt.Errorf("there doesn't appear to be an active k3d cluster")

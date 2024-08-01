@@ -23,7 +23,12 @@ func getK3dRootCredentials(cmd *cobra.Command, args []string) error {
 	gitProvider := viper.GetString("flags.git-provider")
 	gitProtocol := viper.GetString("flags.git-protocol")
 	gitOwner := viper.GetString(fmt.Sprintf("flags.%s-owner", gitProvider))
-	gitopsRepoName, metaphorRepoName := common.Getgitmeta(clusterName)
+	gitopsRepoName, metaphorRepoName, err := common.GetGitmeta(clusterName)
+
+	if err != nil {
+		return fmt.Errorf("error in getting repo info: %w", err)
+	}
+
 	// Parse flags
 	a, err := cmd.Flags().GetBool("argocd")
 	if err != nil {
