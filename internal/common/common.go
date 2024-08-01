@@ -9,12 +9,13 @@ package common
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
-	"io/ioutil"
 
 	"github.com/kubefirst/kubefirst-api/pkg/configs"
 	"github.com/kubefirst/kubefirst-api/pkg/docker"
@@ -114,53 +115,68 @@ func GetRootCredentials(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func Getgitmeta(clusterName string) (gitopsRepoName string, metaphorRepoName string) {
+func GetGitmeta(clusterName string) (string, string, error) {
+
 	var gitopsFound, metaphorFound bool
-	homePath,err := os.UserHomeDir()
-	dirs, err := ioutil.ReadDir(fmt.Sprintf("%s/.k1/%s", homePath, clusterName))
+	var gitopsRepoName, metaphorRepoName string
+
+	homePath, err := os.UserHomeDir()
 	if err != nil {
-		log.Info().Msg("Error reading directory")
-		return "cantfindgit","cantfindmeta"
+		return "", "", fmt.Errorf("unable to get user's home directory: %w", err)
 	}
 
-	for _, direc := range dirs {
-		if direc.IsDir() {
-			parentdir, err := ioutil.ReadDir(fmt.Sprintf("%s/.k1/%s/%s", homePath, clusterName, direc.Name()))
+	basePath := filepath.Join(homePath, ".k1", clusterName)
+
+	err = filepath.WalkDir(basePath, func(path string, info fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			relPath, err := filepath.Rel(basePath, path)
+
 			if err != nil {
-				log.Printf("Error reading directory %s: %v", direc.Name(), err)
-				continue
+				return fmt.Errorf("error while finding repository : %w", err)
 			}
 
-			for _, dir := range parentdir {
-				if dir.IsDir() {
-					if dir.Name() == "registry" {
-						gitopsRepoName = direc.Name()
+			if relPath == "." || strings.Count(relPath, string(os.PathSeparator)) == 1 {
+				if info.Name() == "registry" {
+					if !gitopsFound {
+						gitopsRepoName = filepath.Dir(relPath)
 						gitopsFound = true
-					} else
-					if dir.Name() == ".github" {
-						metaphorRepoName = direc.Name()
+					}
+				}
+				if info.Name() == ".github" {
+					if !metaphorFound {
+						metaphorRepoName = filepath.Dir(relPath)
 						metaphorFound = true
 					}
 				}
 			}
-
-
 		}
+		if metaphorFound && gitopsFound {
+			return fs.SkipDir
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		log.Info().Msg("Error reading directory")
+		return "", "", fmt.Errorf("Error Reading %w", err)
 	}
-	
-	
 
 	if !gitopsFound {
 		log.Info().Msg("Gitops Repo not found")
-		return "cantfindgit","cantfindmeta"
+		return "", "", fmt.Errorf("Gitopsrepo Not Found")
 	}
 
 	if !metaphorFound {
 		log.Info().Msg("Metaphor Repo not found")
-		os.Exit(1)
+		return "", "", fmt.Errorf("MetaphorRepo Not Found")
 	}
 
-	return gitopsRepoName, metaphorRepoName
+	return gitopsRepoName, metaphorRepoName, nil
 }
 
 func Destroy(cmd *cobra.Command, args []string) error {
@@ -168,14 +184,17 @@ func Destroy(cmd *cobra.Command, args []string) error {
 	gitProvider := viper.GetString("flags.git-provider")
 	gitProtocol := viper.GetString("flags.git-protocol")
 	cloudProvider := viper.GetString("kubefirst.cloud-provider")
-	
+
 	log.Info().Msg("destroying kubefirst platform")
 
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
 
-	gitopsRepoName,metaphorRepoName := Getgitmeta(clusterName)
+	gitopsRepoName, metaphorRepoName, err := GetGitmeta(clusterName)
 
+	if err != nil {
+		return err
+	}
 	// Switch based on git provider, set params
 	cGitOwner := ""
 	switch gitProvider {

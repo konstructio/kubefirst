@@ -104,7 +104,7 @@ func runReset() error {
 	}
 	k1Dir := fmt.Sprintf("%s/.k1", homePath)
 
-	err = utils.ResetK1Dir(k1Dir,"gitops","metaphor")
+	err = utils.ResetK1Dir(k1Dir, "gitops", "metaphor")
 	if err != nil {
 		return err
 	}

@@ -21,8 +21,8 @@ import (
 	"github.com/kubefirst/kubefirst-api/pkg/k8s"
 	"github.com/kubefirst/kubefirst-api/pkg/progressPrinter"
 	"github.com/kubefirst/kubefirst-api/pkg/terraform"
-	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/kubefirst/kubefirst/internal/common"
+	"github.com/kubefirst/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -43,9 +43,13 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 	// Check for existing port forwards before continuing
 
-	gitopsRepoName,metaphorRepoName := common.Getgitmeta(clusterName)
-	
-	err := k8s.CheckForExistingPortForwards(9000)
+	gitopsRepoName, metaphorRepoName, err := common.GetGitmeta(clusterName)
+
+	if err != nil {
+		return fmt.Errorf("error in getting repo info: %w", err)
+	}
+
+	err = k8s.CheckForExistingPortForwards(9000)
 	if err != nil {
 		log.Error().Msgf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
 		return fmt.Errorf("%s (maybe the handoff screen is still open in another terminal) - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
@@ -73,7 +77,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate K3d config
-	config := k3d.GetConfig(clusterName, gitProvider, cGitOwner, gitProtocol,gitopsRepoName,metaphorRepoName,viper.GetString("adminTeamName"),viper.GetString("developerTeamName"))
+	config := k3d.GetConfig(clusterName, gitProvider, cGitOwner, gitProtocol, gitopsRepoName, metaphorRepoName, viper.GetString("adminTeamName"), viper.GetString("developerTeamName"))
 	switch gitProvider {
 	case "github":
 		config.GithubToken = cGitToken
@@ -234,7 +238,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.create-k3d-cluster") {
 		log.Info().Msg("removing previous platform content")
 
-		err := utils.ResetK1Dir(config.K1Dir,"gitops","metaphor")
+		err := utils.ResetK1Dir(config.K1Dir, "gitops", "metaphor")
 		if err != nil {
 			return err
 		}

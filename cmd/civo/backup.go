@@ -35,7 +35,7 @@ func backupCivoSSL(cmd *cobra.Command, args []string) error {
 	default:
 		log.Panic().Msgf("invalid git provider option")
 	}
-	
+
 	gitopsRepoName, err := cmd.Flags().GetString("gitopRepoName")
 	if err != nil {
 		return err
@@ -45,7 +45,6 @@ func backupCivoSSL(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
 
 	config := providerConfigs.GetConfig(
 		clusterName,

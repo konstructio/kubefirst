@@ -80,28 +80,28 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		return cliFlags, err
 	}
 
-	gitopsRepoNameFlag, err := cmd.Flags().GetString("gitopsRepoName")
+	gitopsRepoNameFlag, err := cmd.Flags().GetString("gitops-repo-name")
 	if err != nil {
 		progress.Error(err.Error())
-		return cliFlags,err
+		return cliFlags, err
 	}
 
-	metaphorRepoNameFlag, err := cmd.Flags().GetString("metaphorRepoName")
+	metaphorRepoNameFlag, err := cmd.Flags().GetString("metaphor-repo-name")
 	if err != nil {
 		progress.Error(err.Error())
-		return cliFlags,err
+		return cliFlags, err
 	}
 
-	adminTeamNameFlag, err := cmd.Flags().GetString("adminTeamName")
+	adminTeamNameFlag, err := cmd.Flags().GetString("admin-team-name")
 	if err != nil {
 		progress.Error(err.Error())
-		return cliFlags,err
+		return cliFlags, err
 	}
 
-	developerTeamNameFlag, err := cmd.Flags().GetString("developerTeamName")
+	developerTeamNameFlag, err := cmd.Flags().GetString("developer-team-name")
 	if err != nil {
 		progress.Error(err.Error())
-		return cliFlags,err
+		return cliFlags, err
 	}
 
 	gitopsTemplateURLFlag, err := cmd.Flags().GetString("gitops-template-url")
