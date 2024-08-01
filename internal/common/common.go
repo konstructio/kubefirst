@@ -116,6 +116,8 @@ func GetRootCredentials(cmd *cobra.Command, args []string) error {
 
 	fmt.Print(clusterName)
 
+	fmt.Print(clusterName)
+
 	cluster, err := cluster.GetCluster(clusterName)
 	if err != nil {
 		progress.Error(err.Error())
