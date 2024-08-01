@@ -74,7 +74,7 @@ func DisplayLogHints(estimatedTime int) {
 	headerMessage := renderMessage(header)
 
 	if !CanRunBubbleTea {
-		fmt.Print(headerMessage)
+		fmt.Println(headerMessage)
 		return
 	}
 
@@ -159,7 +159,7 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 	successMessage := renderMessage(success)
 
 	if !CanRunBubbleTea {
-		fmt.Print(successMessage)
+		fmt.Println(successMessage)
 		return successMsg{}
 	}
 
@@ -188,7 +188,7 @@ func DisplayCredentials(cluster types.Cluster) {
 	headerMessage := renderMessage(header)
 
 	if !CanRunBubbleTea {
-		fmt.Print(headerMessage)
+		fmt.Println(headerMessage)
 		return
 	}
 
@@ -202,7 +202,7 @@ func DisplayCredentials(cluster types.Cluster) {
 func AddStep(message string) {
 	renderedMessage := createStep(fmt.Sprintf("%s %s", ":dizzy:", message))
 	if !CanRunBubbleTea {
-		fmt.Print(renderedMessage)
+		fmt.Println(renderedMessage)
 		return
 	}
 
@@ -211,7 +211,7 @@ func AddStep(message string) {
 
 func CompleteStep(message string) {
 	if !CanRunBubbleTea {
-		fmt.Print(message)
+		fmt.Println(message)
 		return
 	}
 
@@ -224,7 +224,7 @@ func Success(success string) {
 	successMessage := renderMessage(success)
 
 	if !CanRunBubbleTea {
-		fmt.Print(successMessage)
+		fmt.Println(successMessage)
 		return
 	}
 
@@ -238,7 +238,7 @@ func Error(message string) {
 	renderedMessage := createErrorLog(message)
 
 	if !CanRunBubbleTea {
-		fmt.Print(renderedMessage)
+		fmt.Println(renderedMessage)
 		return
 	}
 
@@ -268,7 +268,7 @@ func StartProvisioning(clusterName string) {
 
 					if provisioningCluster.Status == "provisioned" {
 						fmt.Println("\n cluster has been provisioned via ci")
-						fmt.Println(fmt.Sprintf("\n kubefirst URL: https://kubefirst.%s", provisioningCluster.DomainName))
+						fmt.Printf("\n kubefirst URL: https://kubefirst.%s \n", provisioningCluster.DomainName)
 						done <- true
 					}
 				}

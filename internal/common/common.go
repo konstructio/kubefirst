@@ -102,6 +102,8 @@ func versionCheck() (res *CheckResponse, skip bool) {
 func GetRootCredentials(cmd *cobra.Command, args []string) error {
 	clusterName := viper.GetString("flags.cluster-name")
 
+	fmt.Print(clusterName)
+
 	cluster, err := cluster.GetCluster(clusterName)
 	if err != nil {
 		progress.Error(err.Error())
