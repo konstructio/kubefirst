@@ -116,7 +116,7 @@ func GetRootCredentials(cmd *cobra.Command, args []string) error {
 
 	fmt.Print(clusterName)
 
-	cluster, err := cluster.GetCluster(clusterName)
+	cluster, err := cluster.GetCluster("jd-test-4-axmhv")
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to get cluster: %w", err)
