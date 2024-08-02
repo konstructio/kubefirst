@@ -12,12 +12,10 @@ import (
 	"strings"
 
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
-	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/launch"
 	"github.com/konstructio/kubefirst/internal/progress"
-	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
