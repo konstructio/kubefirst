@@ -100,7 +100,17 @@ func versionCheck() (res *CheckResponse, skip bool) {
 }
 
 func GetRootCredentials(cmd *cobra.Command, args []string) error {
-	clusterName := viper.GetString("flags.cluster-name")
+	clusterNameFromViper := viper.GetString("flags.cluster-name")
+
+	clusteNameFromFlag, err := cmd.Flags().GetString("cluster-name")
+	if err != nil {
+		return err
+	}
+
+	clusterName := clusterNameFromViper
+	if clusteNameFromFlag != "" {
+		clusterName = clusteNameFromFlag
+	}
 
 	cluster, err := cluster.GetCluster(clusterName)
 	if err != nil {
