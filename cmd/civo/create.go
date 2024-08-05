@@ -30,10 +30,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 
 	progress.DisplayLogHints(15)
 
-	// isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
-	// if !isValid {
-	// 	return err
-	// }
+	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	if !isValid {
+		return err
+	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
@@ -86,7 +86,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		progress.Error("unable to start kubefirst api")
 	}
 
-	// provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
+	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
 
 	return nil
 }
