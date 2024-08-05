@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/konstructio/kubefirst/internal/cluster"
+	"github.com/kubefirst/kubefirst/internal/cluster"
 )
 
 func WatchClusterForCi(clusterName string) {
@@ -29,14 +29,8 @@ func WatchClusterForCi(clusterName string) {
 				}
 
 				if provisioningCluster.Status == "provisioned" {
-					fullDomainName := provisioningCluster.DomainName
-
-					if provisioningCluster.SubdomainName != "" {
-						fullDomainName = fmt.Sprintf("%s.%s", provisioningCluster.SubdomainName, provisioningCluster.DomainName)
-					}
-
 					fmt.Println("\n cluster has been provisioned via ci")
-					fmt.Printf("\n kubefirst URL: https://kubefirst.%s \n", fullDomainName)
+					fmt.Printf("\n kubefirst URL: https://kubefirst.%s \n", provisioningCluster.DomainName)
 					done <- true
 				}
 			}
