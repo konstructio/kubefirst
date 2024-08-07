@@ -19,6 +19,12 @@ Before making a code change, first discuss your idea via an [issue](https://gith
 
 ## Getting Started with the Code
 
+### Dev containers
+
+A [.devcontainer](https://containers.dev/) configuration is provided to allow for a full-featured development environment.
+
+### Local development
+
 Kubefirst is created using the [Go Programming Language](https://go.dev). To set up your computer, follow [these steps](https://go.dev/doc/install).
 
 Once Go is installed, you can run Kubefirst from any branch using `go run .`. Go will automatically install the needed modules listed in the [go.mod](go.mod) file. As an example, if you want to create a [local cluster](https://docs.kubefirst.io/kubefirst/local/install.html), the command would be `go run . k3d create`. Note that even if you run kubefirst from `main`, the [gitops-template](https://github.com/kubefirst/gitops-template) version used will be the [latest release](https://github.com/kubefirst/gitops-template/releases). If you also want to use the latest from `main` for the template also, you need to run to use the `--gitops-template-url`, and the `--gitops-template-branch` as follow:
