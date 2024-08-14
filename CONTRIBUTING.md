@@ -43,7 +43,11 @@ go run . civo create --gitops-template-url https://github.com/kubefirst/gitops-t
 
 #### Kubefirst API
 
-If you need to use a specific branch or latest from `main` that wasn't released yet for the [kubefirst-api](https://github.com/kubefirst/kubefirst-api) repository, you will need to first run it locally as described in [its documentation](https://github.com/kubefirst/kubefirst-api#running-locally). You will also need to run the code from [console](https://github.com/kubefirst/console) repository, whether you need to use a specific version of the code or not, as we don't expose the API directly. To do so, follow the [instructions in its README](https://github.com/kubefirst/console#setup-instructions).
+If you need to use a specific branch or latest from `main` that wasn't released yet for the [kubefirst-api](https://github.com/kubefirst/kubefirst-api) repository, you will need to first run it locally as described in [its documentation](https://github.com/kubefirst/kubefirst-api#running-locally). You will also need to run the code from [console](https://github.com/kubefirst/console) repository, whether you need to use a specific version of the code or not, as we don't expose the API directly. To do so, follow the [instructions in its README](https://github.com/kubefirst/console#setup-instructions). Before running the CLI as mentionned "The CLI" section, you need to export a local variable:
+
+```shell
+export K1_CONSOLE_REMOTE_URL="http://localhost:3000"
+```
 
 The previous steps will work for all clouds except k3d which use our runtime for now: we have plan to remove this dependencies completely and use the API also to make the code easier to maintain, and less prone to issues. For that step, instead of running the API, and console locally, you simply need to clone the [kubefirst-api](https://github.com/kubefirst/kubefirst-api) repository locally, and add the following line in the `go.mod` file:
 
