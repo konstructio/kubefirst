@@ -29,8 +29,14 @@ func WatchClusterForCi(clusterName string) {
 				}
 
 				if provisioningCluster.Status == "provisioned" {
+					fullDomainName := provisioningCluster.DomainName
+
+					if provisioningCluster.SubdomainName != "" {
+						fullDomainName = fmt.Sprintf("%s.%s", provisioningCluster.SubdomainName, provisioningCluster.DomainName)
+					}
+
 					fmt.Println("\n cluster has been provisioned via ci")
-					fmt.Printf("\n kubefirst URL: https://kubefirst.%s \n", provisioningCluster.DomainName)
+					fmt.Printf("\n kubefirst URL: https://kubefirst.%s \n", fullDomainName)
 					done <- true
 				}
 			}
