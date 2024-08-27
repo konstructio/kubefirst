@@ -56,7 +56,7 @@ func NewCommand() *cobra.Command {
 		Long:  "kubefirst akamai",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("To learn more about akamai in kubefirst, run:")
-			fmt.Println("  kubefirst akamai --help")
+			fmt.Println("  kubefirst beta akamai --help")
 
 			if progress.Progress != nil {
 				progress.Progress.Quit()
