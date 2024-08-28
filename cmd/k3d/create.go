@@ -15,6 +15,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/atotto/clipboard"
@@ -24,23 +25,22 @@ import (
 	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
 	githttps "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/konstructio/kubefirst-api/pkg/argocd"
 	"github.com/konstructio/kubefirst-api/pkg/configs"
 	constants "github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst-api/pkg/gitClient"
-	"github.com/konstructio/kubefirst-api/pkg/handlers"
-	"github.com/konstructio/kubefirst-api/pkg/reports"
-	"github.com/konstructio/kubefirst-api/pkg/types"
-	utils "github.com/konstructio/kubefirst-api/pkg/utils"
-
-	"github.com/konstructio/kubefirst-api/pkg/argocd"
 	github "github.com/konstructio/kubefirst-api/pkg/github"
 	gitlab "github.com/konstructio/kubefirst-api/pkg/gitlab"
+	"github.com/konstructio/kubefirst-api/pkg/handlers"
 	"github.com/konstructio/kubefirst-api/pkg/k3d"
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
 	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
+	"github.com/konstructio/kubefirst-api/pkg/reports"
 	"github.com/konstructio/kubefirst-api/pkg/services"
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
 	"github.com/konstructio/kubefirst-api/pkg/terraform"
+	"github.com/konstructio/kubefirst-api/pkg/types"
+	utils "github.com/konstructio/kubefirst-api/pkg/utils"
 	"github.com/konstructio/kubefirst-api/pkg/wrappers"
 	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/gitShim"
@@ -52,7 +52,9 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func runK3d(cmd *cobra.Command, args []string) error {
@@ -420,7 +422,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				strings.ToUpper(config.GitProvider),
 			)
 			telemetry.SendEvent(segClient, telemetry.GitCredentialsCheckFailed, msg)
-			return fmt.Errorf(msg)
+			return errors.New(msg)
 		}
 
 		initGitParameters := gitShim.GitInitParameters{
@@ -628,7 +630,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 				telemetry.SendEvent(segClient, telemetry.GitTerraformApplyFailed, msg)
-				return fmt.Errorf(msg)
+				return errors.New(msg)
 			}
 
 			log.Info().Msgf("created git repositories for github.com/%s", cGitOwner)
@@ -667,7 +669,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 				telemetry.SendEvent(segClient, telemetry.GitTerraformApplyFailed, msg)
-				return fmt.Errorf(msg)
+				return errors.New(msg)
 			}
 
 			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabGroupFlag)
@@ -770,7 +772,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			viper.Set("kubefirst-checks.create-k3d-cluster-failed", true)
 			viper.WriteConfig()
 			telemetry.SendEvent(segClient, telemetry.CloudTerraformApplyFailed, msg)
-			return fmt.Errorf(msg)
+			return errors.New(msg)
 		}
 
 		log.Info().Msg("successfully created k3d cluster")
@@ -1034,13 +1036,31 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("applying the registry application to argocd")
 		registryApplicationObject := argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
 
-		_, err = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
+		err = k3d.RestartDeployment(context.Background(), kcfg.Clientset, "argocd", "argocd-applicationset-controller")
+		if err != nil {
+			return fmt.Errorf("error in restarting argocd controller %w", err)
+		}
 
+		err = wait.PollImmediate(5*time.Second, 20*time.Second, func() (bool, error) {
+			_, err := argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
+			if err != nil {
+				if errors.Is(err, syscall.ECONNREFUSED) {
+					return false, nil // retry if we can't connect to it
+				}
+
+				if apierrors.IsAlreadyExists(err) {
+					return true, nil // application already exists
+				}
+
+				return false, fmt.Errorf("error creating argocd application : %w", err)
+			}
+			return true, nil
+		})
 		if err != nil {
 			return fmt.Errorf("error creating argocd application : %w", err)
 		}
 
-		log.Info().Msg("Argo CD application created successfully\n")
+		log.Info().Msg("Argo CD application created successfully")
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
 		telemetry.SendEvent(segClient, telemetry.CreateRegistryCompleted, "")
