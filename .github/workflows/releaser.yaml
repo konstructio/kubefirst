@@ -17,7 +17,7 @@ jobs:
       - name: Update version file
         run: echo $GITHUB_REF_NAME > VERSION.md
       - name: Release kubefirst/gitops-template
-        run: gh release create -R kubefirst/gitops-template ${{ github.REF_NAME }} --notes "${{ env.RELEASE_NOTES }}"
+        run: gh release create -R konstructio/gitops-template ${{ github.REF_NAME }} --generate-notes
   goreleaser:
     runs-on: ubuntu-latest
     steps:
