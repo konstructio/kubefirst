@@ -14,7 +14,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/hashicorp/vault/api v1.9.0
-	github.com/konstructio/kubefirst-api v0.100.0
+	github.com/konstructio/kubefirst-api v0.102.0
 	github.com/kubefirst/metrics-client v0.3.0
 	github.com/nxadm/tail v1.4.8
 	github.com/rs/zerolog v1.29.1
@@ -155,7 +155,6 @@ require (
 	github.com/prometheus/common v0.39.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
-	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/rs/xid v1.4.0 // indirect
 	github.com/russross/blackfriday v1.6.0 // indirect
 	github.com/sahilm/fuzzy v0.1.0 // indirect
