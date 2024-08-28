@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Update version file
         run: echo $GITHUB_REF_NAME > VERSION.md
-      - name: Release kubefirst/gitops-template
+      - name: Release konstructio/gitops-template
         run: gh release create -R konstructio/gitops-template ${{ github.REF_NAME }} --generate-notes
   goreleaser:
     runs-on: ubuntu-latest
