@@ -50,7 +50,7 @@ func CheckForVersionUpdate() {
 				case "darwin":
 					fmt.Printf("A newer version (v%s) is available! Please upgrade with: \"brew update && brew upgrade kubefirst\"\n", res.Current)
 				default:
-					fmt.Printf("A newer version (v%s) is available! \"https://github.com/kubefirst/kubefirst/blob/main/build/README.md\"\n", res.Current)
+					fmt.Printf("A newer version (v%s) is available! \"https://github.com/konstructio/kubefirst/blob/main/build/README.md\"\n", res.Current)
 				}
 			}
 		}
@@ -81,7 +81,7 @@ func versionCheck() (res *CheckResponse, skip bool) {
 	}
 
 	bodyString := string(bodyBytes)
-	if !strings.Contains(bodyString, "url \"https://github.com/kubefirst/kubefirst/archive/refs/tags/") {
+	if !strings.Contains(bodyString, "url \"https://github.com/konstructio/kubefirst/archive/refs/tags/") {
 		fmt.Printf("checking for a newer version failed (no reference to kubefirst release) with: %s", err)
 		return nil, true
 	}

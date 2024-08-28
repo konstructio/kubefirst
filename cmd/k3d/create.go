@@ -351,16 +351,16 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// kubefirst binary for version compatibility
 	switch configs.K1Version {
 	case "development":
-		if strings.Contains(gitopsTemplateURLFlag, "https://github.com/kubefirst/gitops-template.git") && gitopsTemplateBranchFlag == "" {
+		if strings.Contains(gitopsTemplateURLFlag, "https://github.com/konstructio/gitops-template.git") && gitopsTemplateBranchFlag == "" {
 			gitopsTemplateBranchFlag = "main"
 		}
 	default:
 		switch gitopsTemplateURLFlag {
-		case "https://github.com/kubefirst/gitops-template.git": // default value
+		case "https://github.com/konstructio/gitops-template.git": // default value
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
-		case "https://github.com/kubefirst/gitops-template": // edge case for valid but incomplete url
+		case "https://github.com/konstructio/gitops-template": // edge case for valid but incomplete url
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}

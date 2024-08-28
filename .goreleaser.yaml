@@ -14,7 +14,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -X github.com/kubefirst/kubefirst-api/configs.K1Version=v{{.Version}}
+      - -X github.com/konstructio/kubefirst-api/configs.K1Version=v{{.Version}}
 
 #archives:
 #  - replacements:
@@ -35,10 +35,10 @@ changelog:
       - '^test:'
 brews:
   - name: kubefirst
-    homepage: https://github.com/kubefirst/kubefirst
+    homepage: https://github.com/konstructio/kubefirst
     repository:
-      owner: kubefirst
-      name: homebrew-tools
+      owner: konstructio
+      name: homebrew-taps
     dependencies:
       - aws-iam-authenticator
 version: 2
