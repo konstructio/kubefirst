@@ -7,7 +7,7 @@ See the LICENSE file for more details.
 package progress
 
 import (
-	"github.com/kubefirst/kubefirst-api/pkg/types"
+	"github.com/konstructio/kubefirst-api/pkg/types"
 )
 
 // Terminal model

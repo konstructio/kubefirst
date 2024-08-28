@@ -17,8 +17,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	apiTypes "github.com/kubefirst/kubefirst-api/pkg/types"
-	"github.com/kubefirst/kubefirst/internal/types"
+	apiTypes "github.com/konstructio/kubefirst-api/pkg/types"
+	"github.com/konstructio/kubefirst/internal/types"
 )
 
 func GetConsoleIngresUrl() string {

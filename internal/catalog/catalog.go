@@ -15,7 +15,7 @@ import (
 
 	git "github.com/google/go-github/v52/github"
 
-	apiTypes "github.com/kubefirst/kubefirst-api/pkg/types"
+	apiTypes "github.com/konstructio/kubefirst-api/pkg/types"
 
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v2"

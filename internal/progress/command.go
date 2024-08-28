@@ -10,8 +10,8 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/kubefirst/kubefirst-api/pkg/types"
-	"github.com/kubefirst/kubefirst/internal/cluster"
+	"github.com/konstructio/kubefirst-api/pkg/types"
+	"github.com/konstructio/kubefirst/internal/cluster"
 )
 
 // Commands

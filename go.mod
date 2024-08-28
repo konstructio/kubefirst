@@ -1,4 +1,4 @@
-module github.com/kubefirst/kubefirst
+module github.com/konstructio/kubefirst
 
 go 1.18
 
@@ -14,7 +14,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/hashicorp/vault/api v1.9.0
-	github.com/kubefirst/kubefirst-api v0.1.26
+	github.com/konstructio/kubefirst-api v0.100.0
 	github.com/kubefirst/metrics-client v0.3.0
 	github.com/nxadm/tail v1.4.8
 	github.com/rs/zerolog v1.29.1

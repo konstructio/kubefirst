@@ -9,8 +9,8 @@ package launch
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst-api/pkg/types"
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst-api/pkg/types"
+	"github.com/konstructio/kubefirst/internal/progress"
 )
 
 // displayFormattedClusterInfo uses tabwriter to pretty print information on clusters using

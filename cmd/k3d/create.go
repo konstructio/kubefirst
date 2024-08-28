@@ -24,29 +24,29 @@ import (
 	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
 	githttps "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/kubefirst/kubefirst-api/pkg/configs"
-	constants "github.com/kubefirst/kubefirst-api/pkg/constants"
-	"github.com/kubefirst/kubefirst-api/pkg/gitClient"
-	"github.com/kubefirst/kubefirst-api/pkg/handlers"
-	"github.com/kubefirst/kubefirst-api/pkg/reports"
-	"github.com/kubefirst/kubefirst-api/pkg/types"
-	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
+	"github.com/konstructio/kubefirst-api/pkg/configs"
+	constants "github.com/konstructio/kubefirst-api/pkg/constants"
+	"github.com/konstructio/kubefirst-api/pkg/gitClient"
+	"github.com/konstructio/kubefirst-api/pkg/handlers"
+	"github.com/konstructio/kubefirst-api/pkg/reports"
+	"github.com/konstructio/kubefirst-api/pkg/types"
+	utils "github.com/konstructio/kubefirst-api/pkg/utils"
 
-	"github.com/kubefirst/kubefirst-api/pkg/argocd"
-	github "github.com/kubefirst/kubefirst-api/pkg/github"
-	gitlab "github.com/kubefirst/kubefirst-api/pkg/gitlab"
-	"github.com/kubefirst/kubefirst-api/pkg/k3d"
-	"github.com/kubefirst/kubefirst-api/pkg/k8s"
-	"github.com/kubefirst/kubefirst-api/pkg/progressPrinter"
-	"github.com/kubefirst/kubefirst-api/pkg/services"
-	internalssh "github.com/kubefirst/kubefirst-api/pkg/ssh"
-	"github.com/kubefirst/kubefirst-api/pkg/terraform"
-	"github.com/kubefirst/kubefirst-api/pkg/wrappers"
-	"github.com/kubefirst/kubefirst/internal/catalog"
-	"github.com/kubefirst/kubefirst/internal/gitShim"
-	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/kubefirst/internal/segment"
-	"github.com/kubefirst/kubefirst/internal/utilities"
+	"github.com/konstructio/kubefirst-api/pkg/argocd"
+	github "github.com/konstructio/kubefirst-api/pkg/github"
+	gitlab "github.com/konstructio/kubefirst-api/pkg/gitlab"
+	"github.com/konstructio/kubefirst-api/pkg/k3d"
+	"github.com/konstructio/kubefirst-api/pkg/k8s"
+	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
+	"github.com/konstructio/kubefirst-api/pkg/services"
+	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
+	"github.com/konstructio/kubefirst-api/pkg/terraform"
+	"github.com/konstructio/kubefirst-api/pkg/wrappers"
+	"github.com/konstructio/kubefirst/internal/catalog"
+	"github.com/konstructio/kubefirst/internal/gitShim"
+	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/segment"
+	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/kubefirst/metrics-client/pkg/telemetry"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -902,9 +902,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring Argo CD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	argoCDInstallPath := fmt.Sprintf("github.com:kubefirst/manifests/argocd/k3d?ref=%s", constants.KubefirstManifestRepoRef)
-
-	//* install argocd
+	argoCDInstallPath := fmt.Sprintf("github.com:konstructio/manifests/argocd/k3d?ref=%s", constants.KubefirstManifestRepoRef)
+	//* install argo
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		telemetry.SendEvent(segClient, telemetry.ArgoCDInstallStarted, "")
@@ -1035,7 +1034,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("applying the registry application to argocd")
 		registryApplicationObject := argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
 
-		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
+		_, err = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
+
+		if err != nil {
+			return fmt.Errorf("error creating argocd application : %w", err)
+		}
+
+		log.Info().Msg("Argo CD application created successfully\n")
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
 		telemetry.SendEvent(segClient, telemetry.CreateRegistryCompleted, "")

@@ -17,10 +17,10 @@ import (
 	zeroLog "github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/kubefirst/kubefirst-api/pkg/configs"
-	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
-	"github.com/kubefirst/kubefirst/cmd"
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst-api/pkg/configs"
+	utils "github.com/konstructio/kubefirst-api/pkg/utils"
+	"github.com/konstructio/kubefirst/cmd"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/viper"
 )
 
