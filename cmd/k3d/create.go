@@ -53,6 +53,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func runK3d(cmd *cobra.Command, args []string) error {
@@ -1034,11 +1035,24 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("applying the registry application to argocd")
 		registryApplicationObject := argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
 
-		_, err = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
+		err = k3d.RestartDeployment(context.Background(), kcfg.Clientset, "argocd", "argocd-applicationset-controller")
+		if err != nil {
+			return fmt.Errorf("error in restarting argocd controller %w", err)
+		}
+
+		err = wait.PollImmediate(5*time.Second, 20*time.Second, func() (bool, error) {
+			_, err := argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
+			if err != nil {
+				return false, nil
+			}
+			return true, nil
+		})
 
 		if err != nil {
 			return fmt.Errorf("error creating argocd application : %w", err)
 		}
+
+		log.Info().Msg("Argo CD application created successfully\n")
 
 		log.Info().Msg("Argo CD application created successfully\n")
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
