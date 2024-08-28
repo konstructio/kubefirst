@@ -422,7 +422,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				strings.ToUpper(config.GitProvider),
 			)
 			telemetry.SendEvent(segClient, telemetry.GitCredentialsCheckFailed, msg)
-			return fmt.Errorf(msg)
+			return errors.New(msg)
 		}
 
 		initGitParameters := gitShim.GitInitParameters{
@@ -630,7 +630,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 				telemetry.SendEvent(segClient, telemetry.GitTerraformApplyFailed, msg)
-				return fmt.Errorf(msg)
+				return errors.New(msg)
 			}
 
 			log.Info().Msgf("created git repositories for github.com/%s", cGitOwner)
@@ -669,7 +669,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 				telemetry.SendEvent(segClient, telemetry.GitTerraformApplyFailed, msg)
-				return fmt.Errorf(msg)
+				return errors.New(msg)
 			}
 
 			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabGroupFlag)
@@ -772,7 +772,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			viper.Set("kubefirst-checks.create-k3d-cluster-failed", true)
 			viper.WriteConfig()
 			telemetry.SendEvent(segClient, telemetry.CloudTerraformApplyFailed, msg)
-			return fmt.Errorf(msg)
+			return errors.New(msg)
 		}
 
 		log.Info().Msg("successfully created k3d cluster")
