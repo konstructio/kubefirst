@@ -43,7 +43,7 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	// This will allow all child commands to have informUser available for free.
-	// Refers: https://github.com/kubefirst/runtime/issues/525
+	// Refers: https://github.com/konstructio/runtime/issues/525
 	// Before removing next line, please read ticket above.
 	common.CheckForVersionUpdate()
 	progressPrinter.GetInstance()
