@@ -9,10 +9,10 @@ package k3d
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst-api/pkg/credentials"
-	"github.com/kubefirst/kubefirst-api/pkg/k3d"
-	"github.com/kubefirst/kubefirst-api/pkg/k8s"
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst-api/pkg/credentials"
+	"github.com/konstructio/kubefirst-api/pkg/k3d"
+	"github.com/konstructio/kubefirst-api/pkg/k8s"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

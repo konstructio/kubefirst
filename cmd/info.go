@@ -9,8 +9,8 @@ package cmd
 import (
 	"runtime"
 
-	"github.com/kubefirst/kubefirst-api/pkg/configs"
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst-api/pkg/configs"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 

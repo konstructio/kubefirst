@@ -9,7 +9,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst/internal/launch"
+	"github.com/konstructio/kubefirst/internal/launch"
 	"github.com/spf13/cobra"
 )
 

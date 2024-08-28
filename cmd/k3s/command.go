@@ -9,7 +9,7 @@ package k3s
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst/internal/common"
+	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/spf13/cobra"
 )
 

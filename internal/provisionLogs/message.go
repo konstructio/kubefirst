@@ -13,7 +13,7 @@ import (
 	"log"
 
 	"github.com/charmbracelet/glamour"
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/progress"
 )
 
 func renderMessage(message string) string {

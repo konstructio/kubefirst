@@ -4,8 +4,8 @@ import (
 	"os"
 
 	"github.com/denisbrodbeck/machineid"
-	"github.com/kubefirst/kubefirst-api/pkg/configs"
-	"github.com/kubefirst/kubefirst-api/pkg/k3d"
+	"github.com/konstructio/kubefirst-api/pkg/configs"
+	"github.com/konstructio/kubefirst-api/pkg/k3d"
 	"github.com/kubefirst/metrics-client/pkg/telemetry"
 )
 

@@ -9,7 +9,7 @@ package k3d
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 

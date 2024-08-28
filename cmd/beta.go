@@ -9,11 +9,11 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst/cmd/akamai"
-	"github.com/kubefirst/kubefirst/cmd/google"
-	"github.com/kubefirst/kubefirst/cmd/k3s"
-	"github.com/kubefirst/kubefirst/cmd/vultr"
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/cmd/akamai"
+	"github.com/konstructio/kubefirst/cmd/google"
+	"github.com/konstructio/kubefirst/cmd/k3s"
+	"github.com/konstructio/kubefirst/cmd/vultr"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
