@@ -39,6 +39,7 @@ var (
 	nodeTypeFlag             string
 	nodeCountFlag            string
 	installCatalogApps       string
+	installKubefirstProFlag  bool
 
 	// RootCredentials
 	copyArgoCDPasswordToClipboardFlag bool
@@ -59,7 +60,7 @@ func NewCommand() *cobra.Command {
 		Long:  "kubefirst akamai",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("To learn more about akamai in kubefirst, run:")
-			fmt.Println("  kubefirst akamai --help")
+			fmt.Println("  kubefirst beta akamai --help")
 
 			if progress.Progress != nil {
 				progress.Progress.Quit()
@@ -102,8 +103,9 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "", "the branch to clone for the gitops-template repository")
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
-	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma seperated values to install after provision")
+	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma separated values to install after provision")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
+	createCmd.Flags().BoolVar(&installKubefirstProFlag, "install-kubefirst-pro", true, "whether or not to install kubefirst pro")
 	createCmd.Flags().StringVar(&gitopsRepoName, "gitops-repo-name", "gitops", "the custom gitops name")
 	createCmd.Flags().StringVar(&metaphorRepoName, "metaphor-repo-name", "metaphor", "the custom metaphor name")
 	createCmd.Flags().StringVar(&adminTeamName, "admin-team-name", "admins", "admin team name for this repo")

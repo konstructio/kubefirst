@@ -18,9 +18,7 @@ import (
 func GetClusterInterval(clusterName string) tea.Cmd {
 	return tea.Every(time.Second*10, func(t time.Time) tea.Msg {
 		provisioningCluster, err := cluster.GetCluster(clusterName)
-
 		if err != nil {
-
 		}
 
 		return CusterProvisioningMsg(provisioningCluster)

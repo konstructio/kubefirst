@@ -30,8 +30,8 @@ var (
 )
 
 func AddLog(logMsg string) {
-	log := Log{}
-	formatterMsg := ""
+	var log Log
+	var formatterMsg string
 
 	err := json.Unmarshal([]byte(logMsg), &log)
 	if err != nil {

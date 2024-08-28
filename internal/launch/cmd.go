@@ -31,10 +31,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	// Describes the local kubefirst console cluster name
-	consoleClusterName = "kubefirst-console"
-)
+// Describes the local kubefirst console cluster name
+var consoleClusterName = "kubefirst-console"
 
 // Up
 func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
@@ -84,7 +82,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		if err != nil {
 			progress.Error(fmt.Sprintf("error while trying to download k3d: %s", err))
 		}
-		err = os.Chmod(k3dClient, 0755)
+		err = os.Chmod(k3dClient, 0o755)
 		if err != nil {
 			log.Fatal().Msg(err.Error())
 		}
@@ -112,15 +110,14 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		}
 		helmTarDownload, err := os.Open(helmDownloadTarGzPath)
 		if err != nil {
-			progress.Error(fmt.Sprintf("could not read helm download content"))
-
+			progress.Error("could not read helm download content")
 		}
 		downloadManager.ExtractFileFromTarGz(
 			helmTarDownload,
 			fmt.Sprintf("%s-%s/helm", k3d.LocalhostOS, k3d.LocalhostARCH),
 			helmClient,
 		)
-		err = os.Chmod(helmClient, 0755)
+		err = os.Chmod(helmClient, 0o755)
 		if err != nil {
 			log.Fatal().Msg(err.Error())
 		}
@@ -145,7 +142,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		if err != nil {
 			progress.Error(fmt.Sprintf("error while trying to download mkcert: %s", err))
 		}
-		err = os.Chmod(mkcertClient, 0755)
+		err = os.Chmod(mkcertClient, 0o755)
 		if err != nil {
 			progress.Error(err.Error())
 		}
@@ -427,8 +424,8 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 				Namespace: namespace,
 			},
 			Data: map[string][]byte{
-				"tls.crt": []byte(certPem),
-				"tls.key": []byte(keyPem),
+				"tls.crt": certPem,
+				"tls.key": keyPem,
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {
@@ -518,17 +515,17 @@ func Down(inCluster bool) {
 // ListClusters makes a request to the console API to list created clusters
 func ListClusters() {
 	clusters, err := cluster.GetClusters()
-
-	err = displayFormattedClusterInfo(clusters)
 	if err != nil {
-		progress.Error(fmt.Sprintf("error printing cluster list: %s", err))
+		progress.Error(fmt.Sprintf("error getting clusters: %s", err))
+		return
 	}
+
+	displayFormattedClusterInfo(clusters)
 }
 
 // DeleteCluster makes a request to the console API to delete a single cluster
 func DeleteCluster(managedClusterName string) {
 	err := cluster.DeleteCluster(managedClusterName)
-
 	if err != nil {
 		progress.Error(fmt.Sprintf("error: cluster %s not found\n", managedClusterName))
 	}

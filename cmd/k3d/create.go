@@ -9,6 +9,7 @@ package k3d
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -53,10 +54,6 @@ import (
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-)
-
-var (
-	cancelContext context.CancelFunc
 )
 
 func runK3d(cmd *cobra.Command, args []string) error {
@@ -158,14 +155,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	case "github":
 		key, err := internalssh.GetHostKey("github.com")
 		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
+			return errors.New("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
 		} else {
 			log.Info().Msgf("%s %s\n", "github.com", key.Type())
 		}
 	case "gitlab":
 		key, err := internalssh.GetHostKey("gitlab.com")
 		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
+			return errors.New("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
 		} else {
 			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
 		}
@@ -173,7 +170,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// Either user or org can be specified for github, not both
 	if githubOrgFlag != "" && githubUserFlag != "" {
-		return fmt.Errorf("only one of --github-user or --github-org can be supplied")
+		return errors.New("only one of --github-user or --github-org can be supplied")
 	}
 
 	// Check for existing port forwards before continuing
@@ -192,8 +189,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// }
 
 	// Global context
-	var ctx context.Context
-	ctx, cancelContext = context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	// Clients
 	httpClient := http.DefaultClient
@@ -378,7 +375,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 	default:
 		switch gitopsTemplateURLFlag {
-		case "https://github.com/kubefirst/gitops-template.git": //default value
+		case "https://github.com/kubefirst/gitops-template.git": // default value
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
@@ -387,7 +384,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
 		default: // not equal to our defaults
-			if gitopsTemplateBranchFlag == "" { //didn't supply the branch flag but they did supply the  repo flag
+			if gitopsTemplateBranchFlag == "" { // didn't supply the branch flag but they did supply the  repo flag
 				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
 			}
 		}
@@ -597,11 +594,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
-			config.DestinationGitopsRepoURL, //default to https for git interactions when creating remotes
+			config.DestinationGitopsRepoURL, // default to https for git interactions when creating remotes
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
-			config.DestinationMetaphorRepoURL, //default to https for git interactions when creating remotes
+			config.DestinationMetaphorRepoURL, // default to https for git interactions when creating remotes
 			config.K1Dir,
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
@@ -745,7 +742,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		//Push to remotes and use https
+		// Push to remotes and use https
 		// Push gitops repo to remote
 		err = gitopsRepo.Push(
 			&git.PushOptions{
@@ -1192,7 +1189,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("Error creating Minio client: %s", err)
 	}
 
-	//define upload object
+	// define upload object
 	objectName := fmt.Sprintf("terraform/%s/terraform.tfstate", config.GitProvider)
 	filePath := config.K1Dir + fmt.Sprintf("/%s/%s", objectName, config.GitopsRepoName)
 	contentType := "xl.meta"
@@ -1351,7 +1348,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("creating-users", 1)
 	}
 
-	//PostRun string replacement
+	// PostRun string replacement
 	progressPrinter.AddTracker("wrapping-up", "Wrapping up", 2)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
@@ -1366,7 +1363,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
 	}
-	//check if file exists before rename
+	// check if file exists before rename
 	_, err = os.Stat(fmt.Sprintf("%s/terraform/%s/remote-backend.md", config.GitopsDir, config.GitProvider))
 	if err == nil {
 		err = os.Rename(fmt.Sprintf("%s/terraform/%s/remote-backend.md", config.GitopsDir, config.GitProvider), fmt.Sprintf("%s/terraform/%s/remote-backend.tf", config.GitopsDir, config.GitProvider))

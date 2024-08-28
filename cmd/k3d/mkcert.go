@@ -59,7 +59,7 @@ func mkCert(cmd *cobra.Command, args []string) error {
 
 	err = k3d.GenerateSingleTLSSecret(kcfg.Clientset, *config, appNameFlag, appNamespaceFlag)
 	if err != nil {
-		return fmt.Errorf("error generating certificate for %s/%s: %s", appNameFlag, appNamespaceFlag, err)
+		return fmt.Errorf("error generating certificate for %s/%s: %w", appNameFlag, appNamespaceFlag, err)
 	}
 
 	log.Infof("Certificate generated. You can use it with an app by setting `tls.secretName: %s-tls` on a Traefik IngressRoute.", appNameFlag)

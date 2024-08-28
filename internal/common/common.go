@@ -65,7 +65,6 @@ func versionCheck() (res *CheckResponse, skip bool) {
 	flatVersion := strings.ReplaceAll(configs.K1Version, "v", "")
 
 	resp, err := http.Get("https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/k/kubefirst.rb")
-
 	if err != nil {
 		fmt.Printf("checking for a newer version failed (cannot get Homebrew formula) with: %s", err)
 		return nil, true
