@@ -1060,9 +1060,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("error creating argocd application : %w", err)
 		}
 
-		log.Info().Msg("Argo CD application created successfully\n")
-
-		log.Info().Msg("Argo CD application created successfully\n")
+		log.Info().Msg("Argo CD application created successfully")
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
 		telemetry.SendEvent(segClient, telemetry.CreateRegistryCompleted, "")
