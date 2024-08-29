@@ -10,7 +10,7 @@ const (
 	consoleURL        = "https://console.kubefirst.dev"
 	helmChartName     = "kubefirst"
 	helmChartRepoName = "kubefirst"
-	helmChartRepoURL  = "https://charts.kubefirst.com"
+	helmChartRepoURL  = "https://charts.konstruct.io"
 	helmChartVersion  = "2.5.3"
 	namespace         = "kubefirst"
 	secretName        = "kubefirst-initial-secrets"
