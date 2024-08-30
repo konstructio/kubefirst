@@ -9,9 +9,9 @@ package launch
 const (
 	consoleURL        = "https://console.kubefirst.dev"
 	helmChartName     = "kubefirst"
-	helmChartRepoName = "kubefirst"
+	helmChartRepoName = "konstruct"
 	helmChartRepoURL  = "https://charts.konstruct.io"
-	helmChartVersion  = "v2.5.5-rc3"
+	helmChartVersion  = "2.5.7-rc1"
 	namespace         = "kubefirst"
 	secretName        = "kubefirst-initial-secrets"
 )
