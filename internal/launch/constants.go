@@ -9,7 +9,7 @@ package launch
 const (
 	consoleURL        = "https://console.kubefirst.dev"
 	helmChartName     = "kubefirst"
-	helmChartRepoName = "kubefirst"
+	helmChartRepoName = "konstruct"
 	helmChartRepoURL  = "https://charts.konstruct.io"
 	helmChartVersion  = "2.5.11"
 	namespace         = "kubefirst"

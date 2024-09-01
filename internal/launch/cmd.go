@@ -294,7 +294,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 			helmChartName,
 			"--version",
 			helmChartVersion,
-			"kubefirst/kubefirst",
+			"konstruct/kubefirst",
 			"--set",
 			"console.ingress.createTraefikRoute=true",
 			"--set",
@@ -325,6 +325,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 			"kubefirst-api.serviceAccount.createClusterRoleBinding=true",
 			"--set",
 			"kubefirst-api-ee.serviceAccount.createClusterRoleBinding=true",
+			"--devel",
 		}
 
 		if len(additionalHelmFlags) > 0 {
