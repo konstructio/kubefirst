@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/kubefirst/kubefirst/internal/cluster"
+	"github.com/konstructio/kubefirst/internal/cluster"
 )
 
 func WatchClusterForCi(clusterName string) {
