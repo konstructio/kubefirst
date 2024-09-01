@@ -7,7 +7,7 @@ See the LICENSE file for more details.
 package types
 
 import (
-	apiTypes "github.com/kubefirst/kubefirst-api/pkg/types"
+	apiTypes "github.com/konstructio/kubefirst-api/pkg/types"
 )
 
 type ProxyCreateClusterRequest struct {

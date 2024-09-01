@@ -11,14 +11,14 @@ import (
 	"os"
 	"strings"
 
-	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
-	"github.com/kubefirst/kubefirst/internal/catalog"
-	"github.com/kubefirst/kubefirst/internal/cluster"
-	"github.com/kubefirst/kubefirst/internal/gitShim"
-	"github.com/kubefirst/kubefirst/internal/launch"
-	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/kubefirst/internal/provision"
-	"github.com/kubefirst/kubefirst/internal/utilities"
+	utils "github.com/konstructio/kubefirst-api/pkg/utils"
+	"github.com/konstructio/kubefirst/internal/catalog"
+	"github.com/konstructio/kubefirst/internal/cluster"
+	"github.com/konstructio/kubefirst/internal/gitShim"
+	"github.com/konstructio/kubefirst/internal/launch"
+	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/provision"
+	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -48,7 +48,6 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
-
 	if err != nil {
 		progress.Error(err.Error())
 		return nil

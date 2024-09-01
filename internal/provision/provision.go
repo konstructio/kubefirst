@@ -7,16 +7,15 @@ See the LICENSE file for more details.
 package provision
 
 import (
-	apiTypes "github.com/kubefirst/kubefirst-api/pkg/types"
-	runtimeTypes "github.com/kubefirst/kubefirst-api/pkg/types"
-	"github.com/kubefirst/kubefirst/internal/cluster"
-	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/kubefirst/internal/types"
-	"github.com/kubefirst/kubefirst/internal/utilities"
+	apiTypes "github.com/konstructio/kubefirst-api/pkg/types"
+	"github.com/konstructio/kubefirst/internal/cluster"
+	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/types"
+	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/rs/zerolog/log"
 )
 
-func CreateMgmtCluster(gitAuth runtimeTypes.GitAuth, cliFlags types.CliFlags, catalogApps []apiTypes.GitopsCatalogApp) {
+func CreateMgmtCluster(gitAuth apiTypes.GitAuth, cliFlags types.CliFlags, catalogApps []apiTypes.GitopsCatalogApp) {
 	clusterRecord := utilities.CreateClusterDefinitionRecordFromRaw(
 		gitAuth,
 		cliFlags,

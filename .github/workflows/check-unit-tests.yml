@@ -1,0 +1,16 @@
+name: Run unit tests
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: "go.mod"
+    - name: Running Golang tests
+      run: go test -v -short ./...

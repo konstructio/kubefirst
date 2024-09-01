@@ -16,11 +16,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kubefirst/kubefirst-api/pkg/configs"
-	"github.com/kubefirst/kubefirst-api/pkg/k8s"
-	apiTypes "github.com/kubefirst/kubefirst-api/pkg/types"
-	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/kubefirst/internal/types"
+	"github.com/konstructio/kubefirst-api/pkg/configs"
+	"github.com/konstructio/kubefirst-api/pkg/k8s"
+	apiTypes "github.com/konstructio/kubefirst-api/pkg/types"
+	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/types"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -250,7 +250,6 @@ func ExportCluster(cluster apiTypes.Cluster, kcfg *k8s.KubernetesClient) error {
 	}
 
 	err = k8s.CreateSecretV2(kcfg.Clientset, secret)
-
 	if err != nil {
 		return fmt.Errorf(fmt.Sprintf("unable to save secret to management cluster. %s", err))
 	}

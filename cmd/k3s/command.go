@@ -9,7 +9,7 @@ package k3s
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst/internal/common"
+	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/spf13/cobra"
 )
 
@@ -104,8 +104,8 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - required if using github")
 	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "", "the branch to clone for the gitops-template repository")
-	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
-	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma seperated values to install after provision")
+	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/konstructio/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
+	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma separated values to install after provision")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
 	createCmd.Flags().BoolVar(&forceDestroyFlag, "force-destroy", false, "allows force destruction on objects (helpful for test environments, defaults to false)")
 	createCmd.Flags().BoolVar(&installKubefirstProFlag, "install-kubefirst-pro", true, "whether or not to install kubefirst pro")

@@ -10,8 +10,8 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/kubefirst/kubefirst-api/pkg/gitlab"
-	"github.com/kubefirst/kubefirst-api/pkg/k8s"
+	"github.com/konstructio/kubefirst-api/pkg/gitlab"
+	"github.com/konstructio/kubefirst-api/pkg/k8s"
 	"github.com/rs/zerolog/log"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,7 +71,7 @@ func CreateContainerRegistrySecret(obj *ContainerRegistryAuth) (string, error) {
 		}
 
 		// Create argo workflows pull secret
-		var p = gitlab.DeployTokenCreateParameters{
+		p := gitlab.DeployTokenCreateParameters{
 			Name:     secretName,
 			Username: secretName,
 			Scopes:   []string{"read_registry", "write_registry"},

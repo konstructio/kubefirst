@@ -9,7 +9,7 @@ package k3d
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -95,8 +95,8 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - this cannot be used with --github-user")
 	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "", "the branch to clone for the gitops-template repository")
-	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
-	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma seperated values of catalog apps to install after provision")
+	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/konstructio/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
+	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma separated values of catalog apps to install after provision")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
 
 	return createCmd

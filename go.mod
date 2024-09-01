@@ -1,4 +1,4 @@
-module github.com/kubefirst/kubefirst
+module github.com/konstructio/kubefirst
 
 go 1.18
 
@@ -14,7 +14,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/hashicorp/vault/api v1.9.0
-	github.com/kubefirst/kubefirst-api v0.1.26
+	github.com/konstructio/kubefirst-api v0.102.0
 	github.com/kubefirst/metrics-client v0.3.0
 	github.com/nxadm/tail v1.4.8
 	github.com/rs/zerolog v1.29.1
@@ -60,6 +60,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.23 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.91.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.18.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/eks v1.27.10 // indirect
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.15.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/iam v1.19.8 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.11 // indirect
@@ -80,6 +81,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chai2010/gettext-go v0.1.0 // indirect
 	github.com/cloudflare/circl v1.1.0 // indirect
+	github.com/cloudflare/cloudflare-go v0.73.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/digitalocean/godo v1.98.0 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
@@ -100,6 +102,7 @@ require (
 	github.com/go-openapi/swag v0.22.4 // indirect
 	github.com/go-redis/cache/v8 v8.4.2 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
+	github.com/go-resty/resty/v2 v2.11.0 // indirect
 	github.com/go-test/deep v1.1.0 // indirect
 	github.com/go-yaml/yaml v2.1.0+incompatible // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
@@ -124,6 +127,7 @@ require (
 	github.com/klauspost/compress v1.16.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
+	github.com/linode/linodego v1.29.0 // indirect
 	github.com/lixiangzhong/dnsutil v1.4.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
@@ -151,7 +155,6 @@ require (
 	github.com/prometheus/common v0.39.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
-	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/rs/xid v1.4.0 // indirect
 	github.com/russross/blackfriday v1.6.0 // indirect
 	github.com/sahilm/fuzzy v0.1.0 // indirect

@@ -13,15 +13,15 @@ import (
 	"strings"
 	"time"
 
-	constants "github.com/kubefirst/kubefirst-api/pkg/constants"
-	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
+	constants "github.com/konstructio/kubefirst-api/pkg/constants"
+	utils "github.com/konstructio/kubefirst-api/pkg/utils"
 
-	gitlab "github.com/kubefirst/kubefirst-api/pkg/gitlab"
-	"github.com/kubefirst/kubefirst-api/pkg/k3d"
-	"github.com/kubefirst/kubefirst-api/pkg/k8s"
-	"github.com/kubefirst/kubefirst-api/pkg/progressPrinter"
-	"github.com/kubefirst/kubefirst-api/pkg/terraform"
-	"github.com/kubefirst/kubefirst/internal/progress"
+	gitlab "github.com/konstructio/kubefirst-api/pkg/gitlab"
+	"github.com/konstructio/kubefirst-api/pkg/k3d"
+	"github.com/konstructio/kubefirst-api/pkg/k8s"
+	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
+	"github.com/konstructio/kubefirst-api/pkg/terraform"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -151,7 +151,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 			// Before removing Terraform resources, remove any container registry repositories
 			// since failing to remove them beforehand will result in an apply failure
-			var projectsForDeletion = []string{"gitops", "metaphor"}
+			projectsForDeletion := []string{"gitops", "metaphor"}
 			for _, project := range projectsForDeletion {
 				projectExists, err := gitlabClient.CheckProjectExists(project)
 				if err != nil {
@@ -250,7 +250,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 	if _, err := os.Stat(config.K1Dir + "/kubeconfig"); !os.IsNotExist(err) {
 		err = os.Remove(config.K1Dir + "/kubeconfig")
 		if err != nil {
-			return fmt.Errorf("unable to delete %q folder, error: %s", config.K1Dir+"/kubeconfig", err)
+			return fmt.Errorf("unable to delete %q folder, error: %w", config.K1Dir+"/kubeconfig", err)
 		}
 	}
 	time.Sleep(time.Millisecond * 200) // allows progress bars to finish

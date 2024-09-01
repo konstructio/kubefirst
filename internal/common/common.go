@@ -15,12 +15,12 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/kubefirst/kubefirst-api/pkg/configs"
-	"github.com/kubefirst/kubefirst-api/pkg/docker"
-	"github.com/kubefirst/kubefirst-api/pkg/providerConfigs"
-	"github.com/kubefirst/kubefirst/internal/cluster"
-	"github.com/kubefirst/kubefirst/internal/launch"
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst-api/pkg/configs"
+	"github.com/konstructio/kubefirst-api/pkg/docker"
+	"github.com/konstructio/kubefirst-api/pkg/providerConfigs"
+	"github.com/konstructio/kubefirst/internal/cluster"
+	"github.com/konstructio/kubefirst/internal/launch"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -50,7 +50,7 @@ func CheckForVersionUpdate() {
 				case "darwin":
 					fmt.Printf("A newer version (v%s) is available! Please upgrade with: \"brew update && brew upgrade kubefirst\"\n", res.Current)
 				default:
-					fmt.Printf("A newer version (v%s) is available! \"https://github.com/kubefirst/kubefirst/blob/main/build/README.md\"\n", res.Current)
+					fmt.Printf("A newer version (v%s) is available! \"https://github.com/konstructio/kubefirst/blob/main/build/README.md\"\n", res.Current)
 				}
 			}
 		}
@@ -63,7 +63,6 @@ func versionCheck() (res *CheckResponse, skip bool) {
 	flatVersion := strings.ReplaceAll(configs.K1Version, "v", "")
 
 	resp, err := http.Get("https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/k/kubefirst.rb")
-
 	if err != nil {
 		fmt.Printf("checking for a newer version failed (cannot get Homebrew formula) with: %s", err)
 		return nil, true
@@ -82,7 +81,7 @@ func versionCheck() (res *CheckResponse, skip bool) {
 	}
 
 	bodyString := string(bodyBytes)
-	if !strings.Contains(bodyString, "url \"https://github.com/kubefirst/kubefirst/archive/refs/tags/") {
+	if !strings.Contains(bodyString, "url \"https://github.com/konstructio/kubefirst/archive/refs/tags/") {
 		fmt.Printf("checking for a newer version failed (no reference to kubefirst release) with: %s", err)
 		return nil, true
 	}

@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Documentations
-    url: https://github.com/kubefirst/docs/issues/new?assignees=&labels=docs&template=docs.yml&title=%5BDocs%5D%3A+
+    url: https://github.com/konstructio/kubefirst-docs/issues/new?assignees=&labels=docs&template=docs.yml&title=%5BDocs%5D%3A+
     about: Any suggestions related to the documentation, whether it's an issue, missing information, unclear steps or new page that should be created

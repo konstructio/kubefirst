@@ -9,8 +9,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst/internal/provisionLogs"
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/provisionLogs"
 	"github.com/nxadm/tail"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

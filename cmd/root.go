@@ -9,15 +9,15 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst-api/pkg/configs"
-	"github.com/kubefirst/kubefirst/cmd/aws"
-	"github.com/kubefirst/kubefirst/cmd/civo"
-	"github.com/kubefirst/kubefirst/cmd/digitalocean"
-	"github.com/kubefirst/kubefirst/cmd/k3d"
-	"github.com/kubefirst/kubefirst/internal/common"
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst-api/pkg/configs"
+	"github.com/konstructio/kubefirst/cmd/aws"
+	"github.com/konstructio/kubefirst/cmd/civo"
+	"github.com/konstructio/kubefirst/cmd/digitalocean"
+	"github.com/konstructio/kubefirst/cmd/k3d"
+	"github.com/konstructio/kubefirst/internal/common"
+	"github.com/konstructio/kubefirst/internal/progress"
 
-	"github.com/kubefirst/kubefirst-api/pkg/progressPrinter"
+	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
 	"github.com/spf13/cobra"
 )
 
@@ -42,9 +42,9 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	//This will allow all child commands to have informUser available for free.
-	//Refers: https://github.com/kubefirst/runtime/issues/525
-	//Before removing next line, please read ticket above.
+	// This will allow all child commands to have informUser available for free.
+	// Refers: https://github.com/konstructio/runtime/issues/525
+	// Before removing next line, please read ticket above.
 	common.CheckForVersionUpdate()
 	progressPrinter.GetInstance()
 	err := rootCmd.Execute()

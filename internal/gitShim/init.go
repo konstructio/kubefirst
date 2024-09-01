@@ -11,12 +11,12 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/kubefirst/kubefirst-api/pkg/github"
-	"github.com/kubefirst/kubefirst-api/pkg/gitlab"
-	"github.com/kubefirst/kubefirst-api/pkg/handlers"
-	"github.com/kubefirst/kubefirst-api/pkg/services"
-	"github.com/kubefirst/kubefirst-api/pkg/types"
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst-api/pkg/github"
+	"github.com/konstructio/kubefirst-api/pkg/gitlab"
+	"github.com/konstructio/kubefirst-api/pkg/handlers"
+	"github.com/konstructio/kubefirst-api/pkg/services"
+	"github.com/konstructio/kubefirst-api/pkg/types"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )

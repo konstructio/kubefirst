@@ -14,10 +14,10 @@ import (
 	"time"
 
 	vaultapi "github.com/hashicorp/vault/api"
-	"github.com/kubefirst/kubefirst-api/pkg/k3d"
-	"github.com/kubefirst/kubefirst-api/pkg/k8s"
-	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst-api/pkg/k3d"
+	"github.com/konstructio/kubefirst-api/pkg/k8s"
+	utils "github.com/konstructio/kubefirst-api/pkg/utils"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -88,7 +88,7 @@ func unsealVault(cmd *cobra.Command, args []string) error {
 						}
 					}
 					if i == 5 {
-						return fmt.Errorf("error passing unseal shard %v to %s: %s", i+1, node, err)
+						return fmt.Errorf("error passing unseal shard %v to %s: %w", i+1, node, err)
 					}
 				}
 				// Wait for key acceptance
@@ -99,7 +99,7 @@ func unsealVault(cmd *cobra.Command, args []string) error {
 					}
 					if sealStatus.Progress > sealStatusTracking || !sealStatus.Sealed {
 						log.Info().Msgf("shard accepted")
-						sealStatusTracking += 1
+						sealStatusTracking++
 						break
 					}
 					log.Info().Msgf("waiting for node %s to accept unseal shard", node)

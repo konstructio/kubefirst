@@ -1,0 +1,11 @@
+{
+    "name": "devcontainer",
+    "image": "ghcr.io/kubefirst/devcontainers/full",
+    "features": {},
+    "customizations": {
+      "vscode": {
+        "extensions": [],
+        "settings": {}
+      }
+    }
+}

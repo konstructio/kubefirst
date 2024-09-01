@@ -9,14 +9,12 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst/internal/launch"
+	"github.com/konstructio/kubefirst/internal/launch"
 	"github.com/spf13/cobra"
 )
 
-var (
-	// additionalHelmFlags can optionally pass user-supplied flags to helm
-	additionalHelmFlags []string
-)
+// additionalHelmFlags can optionally pass user-supplied flags to helm
+var additionalHelmFlags []string
 
 func LaunchCommand() *cobra.Command {
 	launchCommand := &cobra.Command{

@@ -9,11 +9,13 @@ package k3d
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/atotto/clipboard"
@@ -23,39 +25,36 @@ import (
 	argocdapi "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned"
 	"github.com/go-git/go-git/v5"
 	githttps "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/kubefirst/kubefirst-api/pkg/configs"
-	constants "github.com/kubefirst/kubefirst-api/pkg/constants"
-	"github.com/kubefirst/kubefirst-api/pkg/gitClient"
-	"github.com/kubefirst/kubefirst-api/pkg/handlers"
-	"github.com/kubefirst/kubefirst-api/pkg/reports"
-	"github.com/kubefirst/kubefirst-api/pkg/types"
-	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
-
-	"github.com/kubefirst/kubefirst-api/pkg/argocd"
-	github "github.com/kubefirst/kubefirst-api/pkg/github"
-	gitlab "github.com/kubefirst/kubefirst-api/pkg/gitlab"
-	"github.com/kubefirst/kubefirst-api/pkg/k3d"
-	"github.com/kubefirst/kubefirst-api/pkg/k8s"
-	"github.com/kubefirst/kubefirst-api/pkg/progressPrinter"
-	"github.com/kubefirst/kubefirst-api/pkg/services"
-	internalssh "github.com/kubefirst/kubefirst-api/pkg/ssh"
-	"github.com/kubefirst/kubefirst-api/pkg/terraform"
-	"github.com/kubefirst/kubefirst-api/pkg/wrappers"
-	"github.com/kubefirst/kubefirst/internal/catalog"
-	"github.com/kubefirst/kubefirst/internal/gitShim"
-	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/kubefirst/internal/segment"
-	"github.com/kubefirst/kubefirst/internal/utilities"
+	"github.com/konstructio/kubefirst-api/pkg/argocd"
+	"github.com/konstructio/kubefirst-api/pkg/configs"
+	constants "github.com/konstructio/kubefirst-api/pkg/constants"
+	"github.com/konstructio/kubefirst-api/pkg/gitClient"
+	github "github.com/konstructio/kubefirst-api/pkg/github"
+	gitlab "github.com/konstructio/kubefirst-api/pkg/gitlab"
+	"github.com/konstructio/kubefirst-api/pkg/handlers"
+	"github.com/konstructio/kubefirst-api/pkg/k3d"
+	"github.com/konstructio/kubefirst-api/pkg/k8s"
+	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
+	"github.com/konstructio/kubefirst-api/pkg/reports"
+	"github.com/konstructio/kubefirst-api/pkg/services"
+	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
+	"github.com/konstructio/kubefirst-api/pkg/terraform"
+	"github.com/konstructio/kubefirst-api/pkg/types"
+	utils "github.com/konstructio/kubefirst-api/pkg/utils"
+	"github.com/konstructio/kubefirst-api/pkg/wrappers"
+	"github.com/konstructio/kubefirst/internal/catalog"
+	"github.com/konstructio/kubefirst/internal/gitShim"
+	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/segment"
+	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/kubefirst/metrics-client/pkg/telemetry"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-var (
-	cancelContext context.CancelFunc
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func runK3d(cmd *cobra.Command, args []string) error {
@@ -137,14 +136,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	case "github":
 		key, err := internalssh.GetHostKey("github.com")
 		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
+			return errors.New("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
 		} else {
 			log.Info().Msgf("%s %s\n", "github.com", key.Type())
 		}
 	case "gitlab":
 		key, err := internalssh.GetHostKey("gitlab.com")
 		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
+			return errors.New("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
 		} else {
 			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
 		}
@@ -152,7 +151,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// Either user or org can be specified for github, not both
 	if githubOrgFlag != "" && githubUserFlag != "" {
-		return fmt.Errorf("only one of --github-user or --github-org can be supplied")
+		return errors.New("only one of --github-user or --github-org can be supplied")
 	}
 
 	// Check for existing port forwards before continuing
@@ -171,8 +170,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// }
 
 	// Global context
-	var ctx context.Context
-	ctx, cancelContext = context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	// Clients
 	httpClient := http.DefaultClient
@@ -352,21 +351,21 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	// kubefirst binary for version compatibility
 	switch configs.K1Version {
 	case "development":
-		if strings.Contains(gitopsTemplateURLFlag, "https://github.com/kubefirst/gitops-template.git") && gitopsTemplateBranchFlag == "" {
+		if strings.Contains(gitopsTemplateURLFlag, "https://github.com/konstructio/gitops-template.git") && gitopsTemplateBranchFlag == "" {
 			gitopsTemplateBranchFlag = "main"
 		}
 	default:
 		switch gitopsTemplateURLFlag {
-		case "https://github.com/kubefirst/gitops-template.git": //default value
+		case "https://github.com/konstructio/gitops-template.git": // default value
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
-		case "https://github.com/kubefirst/gitops-template": // edge case for valid but incomplete url
+		case "https://github.com/konstructio/gitops-template": // edge case for valid but incomplete url
 			if gitopsTemplateBranchFlag == "" {
 				gitopsTemplateBranchFlag = configs.K1Version
 			}
 		default: // not equal to our defaults
-			if gitopsTemplateBranchFlag == "" { //didn't supply the branch flag but they did supply the  repo flag
+			if gitopsTemplateBranchFlag == "" { // didn't supply the branch flag but they did supply the  repo flag
 				return fmt.Errorf("must supply gitops-template-branch flag when gitops-template-url is overridden")
 			}
 		}
@@ -423,7 +422,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 				strings.ToUpper(config.GitProvider),
 			)
 			telemetry.SendEvent(segClient, telemetry.GitCredentialsCheckFailed, msg)
-			return fmt.Errorf(msg)
+			return errors.New(msg)
 		}
 
 		initGitParameters := gitShim.GitInitParameters{
@@ -575,11 +574,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			config.GitProvider,
 			clusterNameFlag,
 			clusterTypeFlag,
-			config.DestinationGitopsRepoURL, //default to https for git interactions when creating remotes
+			config.DestinationGitopsRepoURL, // default to https for git interactions when creating remotes
 			config.GitopsDir,
 			gitopsTemplateBranchFlag,
 			gitopsTemplateURLFlag,
-			config.DestinationMetaphorRepoURL, //default to https for git interactions when creating remotes
+			config.DestinationMetaphorRepoURL, // default to https for git interactions when creating remotes
 			config.K1Dir,
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
@@ -631,7 +630,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				msg := fmt.Sprintf("error creating github resources with terraform %s: %s", tfEntrypoint, err)
 				telemetry.SendEvent(segClient, telemetry.GitTerraformApplyFailed, msg)
-				return fmt.Errorf(msg)
+				return errors.New(msg)
 			}
 
 			log.Info().Msgf("created git repositories for github.com/%s", cGitOwner)
@@ -670,7 +669,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				msg := fmt.Sprintf("error creating gitlab resources with terraform %s: %s", tfEntrypoint, err)
 				telemetry.SendEvent(segClient, telemetry.GitTerraformApplyFailed, msg)
-				return fmt.Errorf(msg)
+				return errors.New(msg)
 			}
 
 			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabGroupFlag)
@@ -714,7 +713,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		//Push to remotes and use https
+		// Push to remotes and use https
 		// Push gitops repo to remote
 		err = gitopsRepo.Push(
 			&git.PushOptions{
@@ -773,7 +772,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			viper.Set("kubefirst-checks.create-k3d-cluster-failed", true)
 			viper.WriteConfig()
 			telemetry.SendEvent(segClient, telemetry.CloudTerraformApplyFailed, msg)
-			return fmt.Errorf(msg)
+			return errors.New(msg)
 		}
 
 		log.Info().Msg("successfully created k3d cluster")
@@ -905,9 +904,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.AddTracker("installing-argo-cd", "Installing and configuring Argo CD", 3)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	argoCDInstallPath := fmt.Sprintf("github.com:kubefirst/manifests/argocd/k3d?ref=%s", constants.KubefirstManifestRepoRef)
-
-	//* install argocd
+	argoCDInstallPath := fmt.Sprintf("github.com:konstructio/manifests/argocd/k3d?ref=%s", constants.KubefirstManifestRepoRef)
+	//* install argo
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		telemetry.SendEvent(segClient, telemetry.ArgoCDInstallStarted, "")
@@ -1038,7 +1036,31 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("applying the registry application to argocd")
 		registryApplicationObject := argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
 
-		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
+		err = k3d.RestartDeployment(context.Background(), kcfg.Clientset, "argocd", "argocd-applicationset-controller")
+		if err != nil {
+			return fmt.Errorf("error in restarting argocd controller %w", err)
+		}
+
+		err = wait.PollImmediate(5*time.Second, 20*time.Second, func() (bool, error) {
+			_, err := argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
+			if err != nil {
+				if errors.Is(err, syscall.ECONNREFUSED) {
+					return false, nil // retry if we can't connect to it
+				}
+
+				if apierrors.IsAlreadyExists(err) {
+					return true, nil // application already exists
+				}
+
+				return false, fmt.Errorf("error creating argocd application : %w", err)
+			}
+			return true, nil
+		})
+		if err != nil {
+			return fmt.Errorf("error creating argocd application : %w", err)
+		}
+
+		log.Info().Msg("Argo CD application created successfully")
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
 		telemetry.SendEvent(segClient, telemetry.CreateRegistryCompleted, "")
@@ -1142,7 +1164,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("Error creating Minio client: %s", err)
 	}
 
-	//define upload object
+	// define upload object
 	objectName := fmt.Sprintf("terraform/%s/terraform.tfstate", config.GitProvider)
 	filePath := config.K1Dir + fmt.Sprintf("/gitops/%s", objectName)
 	contentType := "xl.meta"
@@ -1301,7 +1323,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("creating-users", 1)
 	}
 
-	//PostRun string replacement
+	// PostRun string replacement
 	progressPrinter.AddTracker("wrapping-up", "Wrapping up", 2)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
@@ -1316,7 +1338,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Info().Msgf("error opening repo at: %s", config.GitopsDir)
 	}
-	//check if file exists before rename
+	// check if file exists before rename
 	_, err = os.Stat(fmt.Sprintf("%s/terraform/%s/remote-backend.md", config.GitopsDir, config.GitProvider))
 	if err == nil {
 		err = os.Rename(fmt.Sprintf("%s/terraform/%s/remote-backend.md", config.GitopsDir, config.GitProvider), fmt.Sprintf("%s/terraform/%s/remote-backend.tf", config.GitopsDir, config.GitProvider))

@@ -9,10 +9,10 @@ package k3d
 import (
 	"fmt"
 
-	"github.com/kubefirst/kubefirst-api/pkg/k3d"
-	"github.com/kubefirst/kubefirst-api/pkg/k8s"
-	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst-api/pkg/k3d"
+	"github.com/konstructio/kubefirst-api/pkg/k8s"
+	utils "github.com/konstructio/kubefirst-api/pkg/utils"
+	"github.com/konstructio/kubefirst/internal/progress"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -48,7 +48,7 @@ func mkCert(cmd *cobra.Command, args []string) error {
 
 	err = k3d.GenerateSingleTLSSecret(kcfg.Clientset, *config, appNameFlag, appNamespaceFlag)
 	if err != nil {
-		return fmt.Errorf("error generating certificate for %s/%s: %s", appNameFlag, appNamespaceFlag, err)
+		return fmt.Errorf("error generating certificate for %s/%s: %w", appNameFlag, appNamespaceFlag, err)
 	}
 
 	log.Infof("Certificate generated. You can use it with an app by setting `tls.secretName: %s-tls` on a Traefik IngressRoute.", appNameFlag)

@@ -13,15 +13,15 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	internalssh "github.com/kubefirst/kubefirst-api/pkg/ssh"
-	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
-	"github.com/kubefirst/kubefirst/internal/catalog"
-	"github.com/kubefirst/kubefirst/internal/cluster"
-	"github.com/kubefirst/kubefirst/internal/gitShim"
-	"github.com/kubefirst/kubefirst/internal/launch"
-	"github.com/kubefirst/kubefirst/internal/progress"
-	"github.com/kubefirst/kubefirst/internal/provision"
-	"github.com/kubefirst/kubefirst/internal/utilities"
+	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
+	utils "github.com/konstructio/kubefirst-api/pkg/utils"
+	"github.com/konstructio/kubefirst/internal/catalog"
+	"github.com/konstructio/kubefirst/internal/cluster"
+	"github.com/konstructio/kubefirst/internal/gitShim"
+	"github.com/konstructio/kubefirst/internal/launch"
+	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/provision"
+	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -31,7 +31,7 @@ func createK3s(cmd *cobra.Command, args []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "k3s")
 	if err != nil {
 		progress.Error(err.Error())
-		log.Fatal().Msgf("error collecting flags: ", err)
+		log.Fatal().Msgf("error collecting flags: %s", err)
 		return nil
 	}
 

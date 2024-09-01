@@ -17,10 +17,10 @@ import (
 	zeroLog "github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/kubefirst/kubefirst-api/pkg/configs"
-	utils "github.com/kubefirst/kubefirst-api/pkg/utils"
-	"github.com/kubefirst/kubefirst/cmd"
-	"github.com/kubefirst/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst-api/pkg/configs"
+	utils "github.com/konstructio/kubefirst-api/pkg/utils"
+	"github.com/konstructio/kubefirst/cmd"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/viper"
 )
 
@@ -89,7 +89,7 @@ func main() {
 
 	//* create log directory
 	logsFolder := fmt.Sprintf("%s/logs", k1Dir)
-	_ = os.Mkdir(logsFolder, 0700)
+	_ = os.Mkdir(logsFolder, 0o700)
 	if err != nil {
 		log.Fatal().Msgf("error creating logs directory: %s", err)
 	}
