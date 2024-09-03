@@ -42,9 +42,13 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 
 	// Check for existing port forwards before continuing
 
-	gitopsRepoName, metaphorRepoName := common.Getgitmeta(clusterName)
+	gitopsRepoName, metaphorRepoName, err := common.GetGitmeta(clusterName)
 
-	err := k8s.CheckForExistingPortForwards(9000)
+	if err != nil {
+		return fmt.Errorf("error in getting repo info: %w", err)
+	}
+
+	err = k8s.CheckForExistingPortForwards(9000)
 	if err != nil {
 		log.Error().Msgf("%s - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())
 		return fmt.Errorf("%s (maybe the handoff screen is still open in another terminal) - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err.Error())

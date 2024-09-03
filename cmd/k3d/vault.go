@@ -40,7 +40,12 @@ func unsealVault(cmd *cobra.Command, args []string) error {
 	if !flags.SetupComplete {
 		return fmt.Errorf("there doesn't appear to be an active k3d cluster")
 	}
-	gitopsRepoName, metaphorRepoName := common.Getgitmeta(viper.GetString("flags.cluster-name"))
+	gitopsRepoName, metaphorRepoName, err := common.GetGitmeta(viper.GetString("flags.cluster-name"))
+
+	if err != nil {
+		return fmt.Errorf("error in getting repo info: %w", err)
+	}
+
 	config := k3d.GetConfig(
 		viper.GetString("flags.cluster-name"),
 		flags.GitProvider,

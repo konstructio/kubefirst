@@ -114,85 +114,6 @@ func GetRootCredentials(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func GetGitmeta(clusterName string) (string, string, error) {
-
-	var gitopsFound, metaphorFound bool
-	homePath, err := os.UserHomeDir()
-	dirs, err := ioutil.ReadDir(fmt.Sprintf("%s/.k1/%s", homePath, clusterName))
-	var gitopsRepoName, metaphorRepoName string
-
-	homePath, err := os.UserHomeDir()
-	if err != nil {
-		log.Info().Msg("Error reading directory")
-		return "cantfindgit", "cantfindmeta"
-	}
-
-	for _, direc := range dirs {
-		if direc.IsDir() {
-			parentdir, err := ioutil.ReadDir(fmt.Sprintf("%s/.k1/%s/%s", homePath, clusterName, direc.Name()))
-		return "", "", fmt.Errorf("unable to get user's home directory: %w", err)
-	}
-
-	basePath := filepath.Join(homePath, ".k1", clusterName)
-
-	err = filepath.WalkDir(basePath, func(path string, info fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			relPath, err := filepath.Rel(basePath, path)
-
-			if err != nil {
-				return fmt.Errorf("error while finding repository : %w", err)
-			}
-
-			if relPath == "." || strings.Count(relPath, string(os.PathSeparator)) == 1 {
-				if info.Name() == "registry" {
-					if !gitopsFound {
-						gitopsRepoName = filepath.Dir(relPath)
-						gitopsFound = true
-					} else if dir.Name() == ".github" {
-						metaphorRepoName = direc.Name()
-					}
-				}
-				if info.Name() == ".github" {
-					if !metaphorFound {
-						metaphorRepoName = filepath.Dir(relPath)
-						metaphorFound = true
-					}
-				}
-			}
-
-		}
-	}
-		}
-		if metaphorFound && gitopsFound {
-			return fs.SkipDir
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		log.Info().Msg("Error reading directory")
-		return "", "", fmt.Errorf("Error Reading %w", err)
-	}
-
-	if !gitopsFound {
-		log.Info().Msg("Gitops Repo not found")
-		return "cantfindgit", "cantfindmeta"
-		return "", "", fmt.Errorf("Gitopsrepo Not Found")
-	}
-
-	if !metaphorFound {
-		log.Info().Msg("Metaphor Repo not found")
-		return "", "", fmt.Errorf("MetaphorRepo Not Found")
-	}
-
-	return gitopsRepoName, metaphorRepoName, nil
-}
-
 func Destroy(cmd *cobra.Command, args []string) error {
 	// Determine if there are active instal	ls
 	gitProvider := viper.GetString("flags.git-provider")
@@ -204,12 +125,6 @@ func Destroy(cmd *cobra.Command, args []string) error {
 	clusterName := viper.GetString("flags.cluster-name")
 	domainName := viper.GetString("flags.domain-name")
 
-	gitopsRepoName, metaphorRepoName := Getgitmeta(clusterName)
-	gitopsRepoName, metaphorRepoName, err := GetGitmeta(clusterName)
-
-	if err != nil {
-		return err
-	}
 	// Switch based on git provider, set params
 	cGitOwner := ""
 	switch gitProvider {
@@ -230,10 +145,6 @@ func Destroy(cmd *cobra.Command, args []string) error {
 		gitProtocol,
 		os.Getenv("CF_API_TOKEN"),
 		os.Getenv("CF_ORIGIN_CA_ISSUER_API_TOKEN"),
-		gitopsRepoName,
-		metaphorRepoName,
-		gitopsRepoName,
-		metaphorRepoName,
 	)
 
 	progress.AddStep("Destroying k3d")
