@@ -57,7 +57,7 @@ func NewCommand() *cobra.Command {
 		Use:   "google",
 		Short: "kubefirst Google installation",
 		Long:  "kubefirst google",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			fmt.Println("To learn more about google in kubefirst, run:")
 			fmt.Println("  kubefirst beta google --help")
 
@@ -79,7 +79,7 @@ func NewCommand() *cobra.Command {
 func Create() *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:              "create",
-		Short:            "create the kubefirst platform running on GCP kubernetes",
+		Short:            "create the kubefirst platform running on GCP Kubernetes",
 		TraverseChildren: true,
 		RunE:             createGoogle,
 		// PreRun:           common.CheckDocker,
@@ -96,14 +96,14 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
 	createCmd.Flags().StringVar(&nodeCountFlag, "node-count", googleDefaults.NodeCount, "the node count for the cluster")
 	createCmd.Flags().StringVar(&nodeTypeFlag, "node-type", googleDefaults.InstanceSize, "the instance size of the cluster to create")
-	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "google", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
+	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "google", fmt.Sprintf("the dns provider - one of: %q", supportedDNSProviders))
 	createCmd.Flags().StringVar(&subdomainNameFlag, "subdomain", "", "the subdomain to use for DNS records (Cloudflare)")
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the GCP DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
 	createCmd.Flags().StringVar(&googleProjectFlag, "google-project", "", "google project id (required)")
 	createCmd.MarkFlagRequired("google-project")
-	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
-	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %s", supportedGitProtocolOverride))
+	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %q", supportedGitProviders))
+	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %q", supportedGitProtocolOverride))
 	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - required if using github")
 	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "", "the branch to clone for the gitops-template repository")
@@ -120,7 +120,7 @@ func Destroy() *cobra.Command {
 	destroyCmd := &cobra.Command{
 		Use:   "destroy",
 		Short: "destroy the kubefirst platform",
-		Long:  "destroy the kubefirst platform running in Goole and remove all resources",
+		Long:  "destroy the kubefirst platform running in Google and remove all resources",
 		RunE:  common.Destroy,
 		// PreRun: common.CheckDocker,
 	}
@@ -136,7 +136,7 @@ func RootCredentials() *cobra.Command {
 		RunE:  common.GetRootCredentials,
 	}
 
-	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the argocd password to the clipboard (optional)")
+	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the ArgoCD password to the clipboard (optional)")
 	authCmd.Flags().BoolVar(&copyKbotPasswordToClipboardFlag, "kbot", false, "copy the kbot password to the clipboard (optional)")
 	authCmd.Flags().BoolVar(&copyVaultPasswordToClipboardFlag, "vault", false, "copy the vault password to the clipboard (optional)")
 

@@ -29,33 +29,30 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "akamai")
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to get flags: %w", err)
 	}
 
 	progress.DisplayLogHints(25)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if !isValid {
-		return err
+		return fmt.Errorf("catalog validation failed: %w", err)
 	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to validate flags: %w", err)
 	}
-
-	// If cluster setup is complete, return
 
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to validate git credentials: %w", err)
 	}
 
-	// Validate git
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider))
 	if !executionControl {
 		newRepositoryNames := []string{"gitops", "metaphor"}
@@ -72,7 +69,7 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
 			progress.Error(err.Error())
-			return nil
+			return fmt.Errorf("failed to initialize git provider: %w", err)
 		}
 	}
 	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider), true)
@@ -88,10 +85,10 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
+		return fmt.Errorf("kubefirst api is unavailable: %w", err)
 	}
 
 	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
-
 	return nil
 }
 
@@ -99,11 +96,9 @@ func ValidateProvidedFlags(gitProvider string) error {
 	progress.AddStep("Validate provided flags")
 
 	if os.Getenv("LINODE_TOKEN") == "" {
-		// telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudCredentialsCheckFailed, "LINODE_TOKEN environment variable was not set")
 		return fmt.Errorf("your LINODE_TOKEN is not set - please set and re-run your last command")
 	}
 
-	// Validate required environment variables for dns provider
 	if dnsProviderFlag == "cloudflare" {
 		if os.Getenv("CF_API_TOKEN") == "" {
 			return fmt.Errorf("your CF_API_TOKEN environment variable is not set. Please set and try again")
@@ -114,17 +109,15 @@ func ValidateProvidedFlags(gitProvider string) error {
 	case "github":
 		key, err := internalssh.GetHostKey("github.com")
 		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "github.com", key.Type())
+			return fmt.Errorf("failed to fetch github host key: %w", err)
 		}
+		log.Info().Msgf("%q %s", "github.com", key.Type())
 	case "gitlab":
 		key, err := internalssh.GetHostKey("gitlab.com")
 		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
+			return fmt.Errorf("failed to fetch gitlab host key: %w", err)
 		}
+		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
 	progress.CompleteStep("Validate provided flags")

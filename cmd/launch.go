@@ -19,8 +19,8 @@ var additionalHelmFlags []string
 func LaunchCommand() *cobra.Command {
 	launchCommand := &cobra.Command{
 		Use:   "launch",
-		Short: "create a local k3d cluster and launch the kubefirst console and api in it",
-		Long:  "create a local k3d cluster and launch the kubefirst console and api in it",
+		Short: "create a local k3d cluster and launch the Kubefirst console and API in it",
+		Long:  "create a local k3d cluster and launch the Kubefirst console and API in it",
 	}
 
 	// wire up new commands
@@ -35,8 +35,7 @@ func launchUp() *cobra.Command {
 		Use:              "up",
 		Short:            "launch new console and api instance",
 		TraverseChildren: true,
-		// PreRun:           common.CheckDocker, // TODO: check runtimes when we can support more runtimes
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			launch.Up(additionalHelmFlags, false, true)
 		},
 	}
@@ -52,7 +51,7 @@ func launchDown() *cobra.Command {
 		Use:              "down",
 		Short:            "remove console and api instance",
 		TraverseChildren: true,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			launch.Down(false)
 		},
 	}
@@ -64,7 +63,7 @@ func launchDown() *cobra.Command {
 func launchCluster() *cobra.Command {
 	launchClusterCmd := &cobra.Command{
 		Use:              "cluster",
-		Short:            "interact with clusters created by the kubefirst console",
+		Short:            "interact with clusters created by the Kubefirst console",
 		TraverseChildren: true,
 	}
 
@@ -77,10 +76,9 @@ func launchCluster() *cobra.Command {
 func launchListClusters() *cobra.Command {
 	launchListClustersCmd := &cobra.Command{
 		Use:              "list",
-		Short:            "list clusters created by the kubefirst console",
+		Short:            "list clusters created by the Kubefirst console",
 		TraverseChildren: true,
-		// PreRun:           common.CheckDocker,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			launch.ListClusters()
 		},
 	}
@@ -92,9 +90,8 @@ func launchListClusters() *cobra.Command {
 func launchDeleteCluster() *cobra.Command {
 	launchDeleteClusterCmd := &cobra.Command{
 		Use:              "delete",
-		Short:            "delete a cluster created by the kubefirst console",
+		Short:            "delete a cluster created by the Kubefirst console",
 		TraverseChildren: true,
-		// PreRun:           common.CheckDocker,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return fmt.Errorf("you must provide a cluster name as the only argument to this command")

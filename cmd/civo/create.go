@@ -29,20 +29,20 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "civo")
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to get CLI flags: %w", err)
 	}
 
 	progress.DisplayLogHints(15)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if !isValid {
-		return err
+		return fmt.Errorf("catalog apps validation failed: %w", err)
 	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to validate provided flags: %w", err)
 	}
 
 	// If cluster setup is complete, return
@@ -52,7 +52,7 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to validate git credentials: %w", err)
 	}
 
 	// Validate git
@@ -72,11 +72,13 @@ func createCivo(cmd *cobra.Command, args []string) error {
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
 			progress.Error(err.Error())
-			return nil
+			return fmt.Errorf("failed to initialize Git provider: %w", err)
 		}
 	}
 	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider), true)
-	viper.WriteConfig()
+	if err = viper.WriteConfig(); err != nil {
+		return fmt.Errorf("failed to write viper config: %w", err)
+	}
 
 	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
 	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
@@ -88,10 +90,10 @@ func createCivo(cmd *cobra.Command, args []string) error {
 	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
+		return fmt.Errorf("API availability check failed: %w", err)
 	}
 
 	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
-
 	return nil
 }
 
@@ -99,7 +101,6 @@ func ValidateProvidedFlags(gitProvider string) error {
 	progress.AddStep("Validate provided flags")
 
 	if os.Getenv("CIVO_TOKEN") == "" {
-		// telemetryShim.Transmit(useTelemetryFlag, segmentClient, segment.MetricCloudCredentialsCheckFailed, "CIVO_TOKEN environment variable was not set")
 		return fmt.Errorf("your CIVO_TOKEN is not set - please set and re-run your last command")
 	}
 
@@ -115,16 +116,14 @@ func ValidateProvidedFlags(gitProvider string) error {
 		key, err := internalssh.GetHostKey("github.com")
 		if err != nil {
 			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "github.com", key.Type())
 		}
+		log.Info().Msgf("github.com %q", key.Type())
 	case "gitlab":
 		key, err := internalssh.GetHostKey("gitlab.com")
 		if err != nil {
 			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
 		}
+		log.Info().Msgf("gitlab.com %q", key.Type())
 	}
 
 	progress.CompleteStep("Validate provided flags")

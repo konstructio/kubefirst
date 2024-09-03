@@ -1,0 +1,121 @@
+run:
+  tests: false
+  concurrency: 5
+  timeout: 5m
+
+linters:
+  disable-all: true
+  enable:
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - contextcheck
+    - decorder
+    - dogsled
+    - dupl
+    - dupword
+    - durationcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
+    - copyloopvar
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - gochecksumtype
+    - gocritic
+    - gocyclo
+    - gofmt
+    - gofumpt
+    - goheader
+    - goimports
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosmopolitan
+    - grouper
+    - importas
+    - inamedparam
+    - interfacebloat
+    - ireturn
+    - loggercheck
+    - makezero
+    - mirror
+    - misspell
+    - nakedret
+    - nilerr
+    - nilnil
+    - nonamedreturns
+    - nosprintfhostport
+    - paralleltest
+    - prealloc
+    - predeclared
+    - promlinter
+    - protogetter
+    - reassign
+    - revive
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - stylecheck
+    - tenv
+    - testableexamples
+    - testifylint
+    - testpackage
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - wastedassign
+    - whitespace
+    - wrapcheck
+    - zerologlint
+
+linters-settings:
+  perfsprint:
+    int-conversion: false
+    err-error: false
+    errorf: true
+    sprintf1: true
+    strconcat: false
+
+  ireturn:
+    allow:
+      - anon
+      - error
+      - empty
+      - stdlib
+      - ssh.PublicKey
+      - tea.Model
+
+  gosec:
+    confidence: medium
+    excludes:
+      - G107 # Potential HTTP request made with variable url: these are often false positives or intentional
+      - G110 # Decompression bombs: we can check these manually when submitting code
+      - G306 # Poor file permissions used when creating a directory: we can check these manually when submitting code
+      - G404 # Use of weak random number generator (math/rand instead of crypto/rand): we can live with these
+
+  stylecheck:
+    checks:
+      - "all"
+      - "-ST1003" # this is covered by a different linter
+
+  gocyclo:
+    min-complexity: 60
+
+  exhaustive:
+    check-generated: false
+    explicit-exhaustive-switch: false
+    explicit-exhaustive-map: false
+    default-case-required: false
+    default-signifies-exhaustive: true
+    package-scope-only: false

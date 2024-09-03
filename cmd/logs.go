@@ -21,7 +21,7 @@ var logsCmd = &cobra.Command{
 	Use:   "logs",
 	Short: "kubefirst real time logs",
 	Long:  `kubefirst real time logs`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		provisionLogs.InitializeProvisionLogsTerminal()
 
 		go func() {
@@ -29,6 +29,7 @@ var logsCmd = &cobra.Command{
 			if err != nil {
 				fmt.Printf("Error tailing log file: %v\n", err)
 				progress.Progress.Quit()
+				return
 			}
 
 			for line := range t.Lines {
@@ -36,7 +37,9 @@ var logsCmd = &cobra.Command{
 			}
 		}()
 
-		provisionLogs.ProvisionLogs.Run()
+		if _, err := provisionLogs.ProvisionLogs.Run(); err != nil {
+			return fmt.Errorf("failed to run provision logs: %w", err)
+		}
 
 		return nil
 	},
