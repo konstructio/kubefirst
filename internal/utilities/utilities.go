@@ -293,7 +293,7 @@ func ConsumeStream(url string) {
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		data := scanner.Text()
-		log.Info().Msgf(data)
+		log.Info().Msg(data)
 	}
 
 	if err := scanner.Err(); err != nil {
