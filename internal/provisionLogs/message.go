@@ -10,6 +10,7 @@ Color definition https://www.ditig.com/256-colors-cheat-sheet
 package provisionLogs
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/charmbracelet/glamour"
@@ -24,8 +25,9 @@ func renderMessage(message string) string {
 
 	out, err := r.Render(message)
 	if err != nil {
-		log.Println(err.Error())
-		return err.Error()
+		s := fmt.Errorf("rendering message failed: %w", err)
+		log.Println(s)
+		return s.Error()
 	}
 	return out
 }

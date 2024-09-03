@@ -40,37 +40,36 @@ func CreateCluster(cluster apiTypes.ClusterDefinition) error {
 
 	payload, err := json.Marshal(requestObject)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal request object: %w", err)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", GetConsoleIngresUrl()), bytes.NewReader(payload))
 	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return err
+		log.Printf("error creating request: %s", err)
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 
 	res, err := httpClient.Do(req)
 	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return err
+		log.Printf("error executing request: %s", err)
+		return fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Info().Msgf("unable to create cluster %s", err)
-
-		return err
+		log.Printf("unable to create cluster: %v", err)
+		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	if res.StatusCode != http.StatusAccepted {
-		log.Info().Msgf("unable to create cluster %s %s", res.Status, body)
-		return fmt.Errorf("unable to create cluster %s %s", res.Status, body)
+		log.Printf("unable to create cluster: %q %q", res.Status, body)
+		return fmt.Errorf("unable to create cluster: API returned unexpected status code %q: %s", res.Status, body)
 	}
 
-	log.Info().Msgf("Created cluster: %s", string(body))
+	log.Printf("Created cluster: %q", string(body))
 
 	return nil
 }
@@ -85,38 +84,36 @@ func ResetClusterProgress(clusterName string) error {
 
 	payload, err := json.Marshal(requestObject)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal request object: %w", err)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", GetConsoleIngresUrl()), bytes.NewReader(payload))
 	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return err
+		log.Printf("error creating request: %v", err)
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 
 	res, err := httpClient.Do(req)
 	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return err
+		log.Printf("error executing request: %v", err)
+		return fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		log.Info().Msgf("unable to create cluster %s", res.Status)
-		return err
+		log.Printf("unable to reset cluster progress: %q", res.Status)
+		return fmt.Errorf("unable to reset cluster progress: API returned unexpected status %q", res.Status)
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Info().Msgf("unable to create cluster %s", err)
-
-		return err
+		log.Printf("unable to read response body: %v", err)
+		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	log.Info().Msgf("Import: %s", string(body))
-
 	return nil
 }
 
@@ -127,34 +124,34 @@ func GetCluster(clusterName string) (apiTypes.Cluster, error) {
 	cluster := apiTypes.Cluster{}
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/proxy?url=/cluster/%s", GetConsoleIngresUrl(), clusterName), nil)
 	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return cluster, err
+		log.Printf("error creating request: %v", err)
+		return cluster, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 
 	res, err := httpClient.Do(req)
 	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return cluster, err
+		log.Printf("error executing request: %v", err)
+		return cluster, fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		log.Info().Msgf("unable to get cluster %s, continuing", res.Status)
-		return cluster, err
+		log.Printf("unable to get cluster: %q, continuing", res.Status)
+		return cluster, fmt.Errorf("unable to get cluster: %q", res.Status)
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Info().Msgf("unable to get cluster %s", err)
-		return cluster, err
+		log.Printf("unable to read response body: %v", err)
+		return cluster, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	err = json.Unmarshal(body, &cluster)
 	if err != nil {
-		log.Info().Msgf("unable to cast cluster object %s", err)
-		return cluster, err
+		log.Printf("unable to unmarshal cluster object: %v", err)
+		return cluster, fmt.Errorf("failed to unmarshal cluster object: %w", err)
 	}
 
 	return cluster, nil
@@ -167,33 +164,34 @@ func GetClusters() ([]apiTypes.Cluster, error) {
 	clusters := []apiTypes.Cluster{}
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/proxy?url=/cluster", GetConsoleIngresUrl()), nil)
 	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return clusters, err
+		log.Printf("error creating request: %v", err)
+		return clusters, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 
 	res, err := httpClient.Do(req)
 	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return clusters, err
+		log.Printf("error executing request: %v", err)
+		return clusters, fmt.Errorf("failed to execute request: %w", err)
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		log.Info().Msgf("unable to get clusters %s, continuing", res.Status)
-		return clusters, err
+		log.Printf("unable to get clusters: %q", res.Status)
+		return clusters, fmt.Errorf("unable to get clusters: API returned unexpected status code %q", res.Status)
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Info().Msgf("unable to get clusters %s", err)
-		return clusters, err
+		log.Printf("unable to read response body: %v", err)
+		return clusters, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	err = json.Unmarshal(body, &clusters)
 	if err != nil {
-		log.Info().Msgf("unable to cast clusters object %s", err)
-		return clusters, err
+		log.Printf("unable to unmarshal clusters object: %v", err)
+		return clusters, fmt.Errorf("failed to unmarshal clusters object: %w", err)
 	}
 
 	return clusters, nil
@@ -205,27 +203,27 @@ func DeleteCluster(clusterName string) error {
 
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/api/proxy?url=/cluster/%s", GetConsoleIngresUrl(), clusterName), nil)
 	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return err
+		log.Printf("error creating request: %v", err)
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 
 	res, err := httpClient.Do(req)
 	if err != nil {
-		log.Info().Msgf("error %s", err)
-		return err
+		log.Printf("error executing request: %v", err)
+		return fmt.Errorf("failed to execute request: %w", err)
 	}
 
 	if res.StatusCode != http.StatusOK {
-		log.Info().Msgf("unable to delete cluster %s, continuing", res.Status)
-		return err
+		log.Printf("unable to delete cluster: %q, continuing", res.Status)
+		return fmt.Errorf("unable to delete cluster: API returned unexpected status code %q", res.Status)
 	}
 
 	_, err = io.ReadAll(res.Body)
 	if err != nil {
-		log.Info().Msgf("unable to delete cluster %s", err)
-		return err
+		log.Printf("unable to read response body: %v", err)
+		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	return nil

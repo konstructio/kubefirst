@@ -75,7 +75,6 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.provisioningCluster.Status == "error" {
 			errorMessage := createErrorLog(m.provisioningCluster.LastCondition)
 			m.error = errorMessage.message
-
 			return m, tea.Quit
 		}
 

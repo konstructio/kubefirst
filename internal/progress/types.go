@@ -26,7 +26,7 @@ type progressModel struct {
 	successMessage      string
 }
 
-// Bubbletea messsages
+// Bubbletea messages
 
 type CusterProvisioningMsg types.Cluster
 

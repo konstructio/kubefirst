@@ -10,7 +10,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -34,12 +34,14 @@ func CreateK1ClusterDirectory(clusterName string) {
 	homePath, err := os.UserHomeDir()
 	if err != nil {
 		log.Info().Msg(err.Error())
+		return
 	}
+
 	k1Dir := fmt.Sprintf("%s/.k1/%s", homePath, clusterName)
 	if _, err := os.Stat(k1Dir); os.IsNotExist(err) {
 		err := os.MkdirAll(k1Dir, os.ModePerm)
 		if err != nil {
-			log.Info().Msgf("%s directory already exists, continuing", k1Dir)
+			log.Info().Msgf("%q directory already exists, continuing", k1Dir)
 		}
 	}
 }
@@ -104,7 +106,6 @@ func CreateClusterRecordFromRaw(
 	case "civo":
 		cl.CivoAuth.Token = os.Getenv("CIVO_TOKEN")
 	case "aws":
-		// ToDo: where to get credentials?
 		cl.AWSAuth.AccessKeyID = viper.GetString("kubefirst.state-store-creds.access-key-id")
 		cl.AWSAuth.SecretAccessKey = viper.GetString("kubefirst.state-store-creds.secret-access-key-id")
 		cl.AWSAuth.SessionToken = viper.GetString("kubefirst.state-store-creds.token")
@@ -188,7 +189,6 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 	case "akamai":
 		cl.AkamaiAuth.Token = os.Getenv("LINODE_TOKEN")
 	case "aws":
-		// ToDo: where to get credentials?
 		cl.AWSAuth.AccessKeyID = viper.GetString("kubefirst.state-store-creds.access-key-id")
 		cl.AWSAuth.SecretAccessKey = viper.GetString("kubefirst.state-store-creds.secret-access-key-id")
 		cl.AWSAuth.SessionToken = viper.GetString("kubefirst.state-store-creds.token")
@@ -212,11 +212,16 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 
 		jsonFile, err := os.Open(jsonFilePath)
 		if err != nil {
-			progress.Error("Unable to read GOOGLE_APPLICATION_CREDENTIALS file")
+			progress.Error(fmt.Sprintf("unable to read GOOGLE_APPLICATION_CREDENTIALS file: %s", err))
+			return apiTypes.ClusterDefinition{}
 		}
 		defer jsonFile.Close()
 
-		jsonContent, _ := ioutil.ReadAll(jsonFile)
+		jsonContent, err := io.ReadAll(jsonFile)
+		if err != nil {
+			progress.Error(fmt.Sprintf("unable to read GOOGLE_APPLICATION_CREDENTIALS file content: %s", err))
+			return apiTypes.ClusterDefinition{}
+		}
 
 		cl.GoogleAuth.KeyFile = string(jsonContent)
 		cl.GoogleAuth.ProjectId = cliFlags.GoogleProject
@@ -237,11 +242,13 @@ func ExportCluster(cluster apiTypes.Cluster, kcfg *k8s.KubernetesClient) error {
 
 	bytes, err := json.Marshal(cluster)
 	if err != nil {
-		log.Error().Msg(err.Error())
-		return err
+		return fmt.Errorf("error marshaling cluster: %w", err)
 	}
 
-	secretValuesMap, _ := ParseJSONToMap(string(bytes))
+	secretValuesMap, err := ParseJSONToMap(string(bytes))
+	if err != nil {
+		return fmt.Errorf("error parsing JSON to map: %w", err)
+	}
 
 	secret := &v1secret.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "kubefirst-initial-state", Namespace: "kubefirst"},
@@ -250,11 +257,13 @@ func ExportCluster(cluster apiTypes.Cluster, kcfg *k8s.KubernetesClient) error {
 
 	err = k8s.CreateSecretV2(kcfg.Clientset, secret)
 	if err != nil {
-		return fmt.Errorf(fmt.Sprintf("unable to save secret to management cluster. %s", err))
+		return fmt.Errorf("unable to save secret to management cluster: %w", err)
 	}
 
 	viper.Set("kubefirst-checks.secret-export-state", true)
-	viper.WriteConfig()
+	if err := viper.WriteConfig(); err != nil {
+		return fmt.Errorf("error writing config: %w", err)
+	}
 
 	return nil
 }
@@ -264,18 +273,19 @@ func ConsumeStream(url string) {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println("Error creating request:", err)
+		log.Error().Msgf("Error creating request: %s", err)
 		return
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Error making request:", err)
+		log.Error().Msgf("Error making request: %s", err)
 		return
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Println("Error response:", resp.Status)
+		log.Error().Msgf("Unexpected status code: %s", resp.Status)
 		return
 	}
 
@@ -287,16 +297,16 @@ func ConsumeStream(url string) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Error().Msgf("Error reading response: %s", err.Error())
+		log.Error().Msgf("Error reading response: %s", err)
 		return
 	}
 }
 
 func ParseJSONToMap(jsonStr string) (map[string][]byte, error) {
 	var result map[string]interface{}
-	err := json.Unmarshal([]byte(jsonStr), &result)
-	if err != nil {
-		return nil, err
+
+	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
+		return nil, fmt.Errorf("error unmarshaling JSON: %w", err)
 	}
 
 	secretData := make(map[string][]byte)
@@ -305,13 +315,13 @@ func ParseJSONToMap(jsonStr string) (map[string][]byte, error) {
 		case map[string]interface{}, []interface{}: // For nested structures, marshal back to JSON
 			bytes, err := json.Marshal(v)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error marshaling value for key %q: %w", key, err)
 			}
 			secretData[key] = bytes
 		default:
 			bytes, err := json.Marshal(v)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error marshaling value for key %q: %w", key, err)
 			}
 			secretData[key] = bytes
 		}

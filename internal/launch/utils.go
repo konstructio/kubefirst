@@ -7,7 +7,9 @@ See the LICENSE file for more details.
 package launch
 
 import (
+	"bytes"
 	"fmt"
+	"text/tabwriter"
 
 	"github.com/konstructio/kubefirst-api/pkg/types"
 	"github.com/konstructio/kubefirst/internal/progress"
@@ -16,13 +18,12 @@ import (
 // displayFormattedClusterInfo uses tabwriter to pretty print information on clusters using
 // the specified formatting
 func displayFormattedClusterInfo(clusters []types.Cluster) {
-	header := `
-| NAME | CREATED AT | STATUS | TYPE | PROVIDER |
-| --- | --- | --- | --- | --- |
-	`
-	content := ""
+	var buf bytes.Buffer
+	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', tabwriter.Debug)
+
+	fmt.Fprint(tw, "NAME\tCREATED AT\tSTATUS\tTYPE\tPROVIDER\n")
 	for _, cluster := range clusters {
-		content = content + fmt.Sprintf("|%s|%s|%s|%s|%s\n",
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
 			cluster.ClusterName,
 			cluster.CreationTimestamp,
 			cluster.Status,
@@ -31,5 +32,5 @@ func displayFormattedClusterInfo(clusters []types.Cluster) {
 		)
 	}
 
-	progress.Success(header + content)
+	progress.Success(buf.String())
 }

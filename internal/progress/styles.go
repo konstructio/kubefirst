@@ -1,6 +1,8 @@
 package progress
 
-import "github.com/charmbracelet/glamour/ansi"
+import (
+	"github.com/charmbracelet/glamour/ansi"
+)
 
 var StyleConfig = ansi.StyleConfig{
 	Document: ansi.StyleBlock{

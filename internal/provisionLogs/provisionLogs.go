@@ -50,7 +50,7 @@ func (m provisionLogsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m provisionLogsModel) View() string {
 	logs := ""
 	for i := 0; i < len(m.logs); i++ {
-		logs = logs + m.logs[i] + "\n"
+		logs += m.logs[i] + "\n"
 	}
 
 	return logs + "\n" + quitStyle("ctrl+c to quit") + "\n"

@@ -12,7 +12,6 @@ import (
 
 	"github.com/konstructio/kubefirst-api/pkg/gitlab"
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
-	"github.com/rs/zerolog/log"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -42,7 +41,7 @@ func CreateContainerRegistrySecret(obj *ContainerRegistryAuth) (string, error) {
 	case "github":
 		usernamePasswordString := fmt.Sprintf("%s:%s", obj.GitUser, obj.GitToken)
 		usernamePasswordStringB64 := base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
-		dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"username": "%s", "password": "%s", "email": "%s", "auth": "%s"}}}`,
+		dockerConfigString := fmt.Sprintf(`{"auths": {"%s": {"username": %q, "password": %q, "email": %q, "auth": %q}}}`,
 			obj.ContainerRegistryHost,
 			obj.GithubOwner,
 			obj.GitToken,
@@ -50,27 +49,21 @@ func CreateContainerRegistrySecret(obj *ContainerRegistryAuth) (string, error) {
 			usernamePasswordStringB64,
 		)
 
-		// Create argo workflows pull secret
 		argoDeployTokenSecret := &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: "argo"},
 			Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
 			Type:       "Opaque",
 		}
-		err := k8s.CreateSecretV2(obj.Clientset, argoDeployTokenSecret)
-		if err != nil {
-			log.Error().Msgf("error while creating secret for container registry auth: %s", err)
+		if err := k8s.CreateSecretV2(obj.Clientset, argoDeployTokenSecret); err != nil {
+			return "", fmt.Errorf("error while creating secret for GitHub container registry auth: %w", err)
 		}
 
-	// GitLab Deploy Tokens
-	// Project deploy tokens are generated for each member of createTokensForProjects
-	// These deploy tokens are used to authorize against the GitLab container registry
 	case "gitlab":
 		gitlabClient, err := gitlab.NewGitLabClient(obj.GitToken, obj.GitlabGroupFlag)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("error while creating GitLab client: %w", err)
 		}
 
-		// Create argo workflows pull secret
 		p := gitlab.DeployTokenCreateParameters{
 			Name:     secretName,
 			Username: secretName,
@@ -78,7 +71,7 @@ func CreateContainerRegistrySecret(obj *ContainerRegistryAuth) (string, error) {
 		}
 		token, err := gitlabClient.CreateGroupDeployToken(0, &p)
 		if err != nil {
-			log.Error().Msgf("error while creating secret for container registry auth: %s", err)
+			return "", fmt.Errorf("error while creating GitLab group deploy token: %w", err)
 		}
 
 		return token, nil
