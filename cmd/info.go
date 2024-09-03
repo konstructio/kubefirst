@@ -7,7 +7,10 @@ See the LICENSE file for more details.
 package cmd
 
 import (
+	"bytes"
+	"fmt"
 	"runtime"
+	"text/tabwriter"
 
 	"github.com/konstructio/kubefirst-api/pkg/configs"
 	"github.com/konstructio/kubefirst/internal/progress"
@@ -22,30 +25,24 @@ var infoCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		config := configs.ReadConfig()
 
-		content := `
-##
-# Info summary
+		var buf bytes.Buffer
 
-| Name        						| Value                           	|
-| ---         						| ---                             	|
-| Operational System   		|  ` + config.LocalOs + `						|
-| Architecture 						|  ` + config.LocalArchitecture + `|
-| Go Lang version					|  ` + runtime.Version() + `|
-| Kubefirst config file		|  ` + config.KubefirstConfigFilePath + `|
-| Kubefirst config folder	|  ` + config.K1FolderPath + `|
-| Kubefirst Version       |  ` + configs.K1Version + `|
-`
+		tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', tabwriter.Debug)
 
-		// infoSummary.WriteString(fmt.Sprintf("Kubectl path: %s", config.KubectlClientPath))
-		// infoSummary.WriteString(fmt.Sprintf("Terraform path: %s", config.TerraformClientPath))
-		// infoSummary.WriteString(fmt.Sprintf("Kubeconfig path: %s", config.KubeConfigPath))
+		fmt.Fprintln(&buf, "##")
+		fmt.Fprintln(&buf, "# Info summary")
+		fmt.Fprintln(&buf, "")
 
-		// if configs.K1Version == "" {
-		// 	infoSummary.WriteString("\n\nWarning: It seems you are running kubefirst in development mode,")
-		// 	infoSummary.WriteString("  please use LDFLAGS to ensure you use the proper template version and avoid unexpected behavior")
-		// }
+		fmt.Fprintf(tw, "Name\tValue\n")
+		fmt.Fprintf(tw, "---\t---\n")
+		fmt.Fprintf(tw, "Operational System\t%s\n", config.LocalOs)
+		fmt.Fprintf(tw, "Architecture\t%s\n", config.LocalArchitecture)
+		fmt.Fprintf(tw, "Golang version\t%s\n", runtime.Version())
+		fmt.Fprintf(tw, "Kubefirst config file\t%s\n", config.KubefirstConfigFilePath)
+		fmt.Fprintf(tw, "Kubefirst config folder\t%s\n", config.K1FolderPath)
+		fmt.Fprintf(tw, "Kubefirst Version\t%s\n", configs.K1Version)
 
-		progress.Success(content)
+		progress.Success(buf.String())
 	},
 }
 

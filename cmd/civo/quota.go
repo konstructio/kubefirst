@@ -23,19 +23,19 @@ import (
 )
 
 const (
-	// The threshold at which civo quotas will trigger a warning
+	// The threshold at which Civo quotas will trigger a warning
 	quotaObjectThresholdWarning = 80
-	// The threshold at which civo quotas will trigger a critical warning
+	// The threshold at which Civo quotas will trigger a critical warning
 	quotaObjectThresholdCritical = 90
 	// The link to request a quota limit increase within Civo
 	civoQuotaIncreaseLink = "https://dashboard.civo.com/quota/edit"
 )
 
-// checkFields asserts which limits should be checked against the civo quota
+// checkFields asserts which limits should be checked against the Civo quota
 // These fields are the json values of the Quota struct
 // https://github.com/civo/civogo/blob/master/quota.go#L9
 // All values used here must be of type int, excluding the string fields
-var checkFields map[string]string = map[string]string{
+var checkFields = map[string]string{
 	"cpu_core_limit":            "cpu_core_usage",
 	"database_count_limit":      "database_count_usage",
 	"database_cpu_core_limit":   "database_cpu_core_usage",
@@ -68,19 +68,19 @@ type quotaFormattedOutput struct {
 	limitValue       float64
 }
 
-// returnCivoQuotaEvaluation fetches quota from civo and compares limits to usage
+// returnCivoQuotaEvaluation fetches quota from Civo and compares limits to usage
 func returnCivoQuotaEvaluation(cloudRegion string) (string, int, int, error) {
-	// Fetch quota from civo
+	// Fetch quota from Civo
 	client, err := civogo.NewClient(os.Getenv("CIVO_TOKEN"), cloudRegion)
 	if err != nil {
-		log.Info().Msg(err.Error())
-		return "", 0, 0, err
+		log.Printf("failed to create Civo client: %v", err)
+		return "", 0, 0, fmt.Errorf("failed to create Civo client: %w", err)
 	}
 
 	quota, err := client.GetQuota()
 	if err != nil {
-		log.Info().Msgf("failed to fetch civo quota: %s", err)
-		return "", 0, 0, err
+		log.Printf("failed to fetch Civo quota: %v", err)
+		return "", 0, 0, fmt.Errorf("failed to fetch Civo quota: %w", err)
 	}
 
 	// Container for quota response as a map
@@ -89,13 +89,12 @@ func returnCivoQuotaEvaluation(cloudRegion string) (string, int, int, error) {
 	// Marshal quota and unmarshal into map
 	quotaJSON, err := json.Marshal(quota)
 	if err != nil {
-		log.Info().Msgf("failed to marshal civo quota struct: %s", err)
-		return "", 0, 0, err
+		log.Printf("failed to marshal Civo quota struct: %v", err)
+		return "", 0, 0, fmt.Errorf("failed to marshal Civo quota struct: %w", err)
 	}
-	err = json.Unmarshal(quotaJSON, &quotaMap)
-	if err != nil {
-		log.Info().Msgf("failed to unmarshal civo quota struct: %s", err)
-		return "", 0, 0, err
+	if err := json.Unmarshal(quotaJSON, &quotaMap); err != nil {
+		log.Printf("failed to unmarshal Civo quota struct: %v", err)
+		return "", 0, 0, fmt.Errorf("failed to unmarshal Civo quota struct: %w", err)
 	}
 
 	// Compare actual to limit and warn against threshold
@@ -117,11 +116,11 @@ func returnCivoQuotaEvaluation(cloudRegion string) (string, int, int, error) {
 
 		switch {
 		case percentCalc > quotaObjectThresholdWarning && percentCalc < quotaObjectThresholdCritical:
-			quotaWarnings += 1
+			quotaWarnings++
 			outputFormat := checkObj.formatQuotaOutput(yellow(percentExpr))
 			output = append(output, outputFormat)
 		case percentCalc > quotaObjectThresholdCritical:
-			quotaFailures += 1
+			quotaFailures++
 			outputFormat := checkObj.formatQuotaOutput(red(percentExpr))
 			output = append(output, outputFormat)
 		default:
@@ -148,7 +147,7 @@ func (q quotaFormattedOutput) formatQuotaOutput(usageExpression string) string {
 	)
 }
 
-// printCivoQuotaWarning provides visual output detailing quota health for civo
+// printCivoQuotaWarning provides visual output detailing quota health for Civo
 func printCivoQuotaWarning(messageHeader string, output []string) string {
 	var createCivoQuotaWarning bytes.Buffer
 	createCivoQuotaWarning.WriteString(strings.Repeat("-", 70))
@@ -169,17 +168,17 @@ func printCivoQuotaWarning(messageHeader string, output []string) string {
 func evalCivoQuota(cmd *cobra.Command, args []string) error {
 	civoToken := os.Getenv("CIVO_TOKEN")
 	if len(civoToken) == 0 {
-		return fmt.Errorf("\n\nYour CIVO_TOKEN environment variable isn't set,\nvisit this link https://dashboard.civo.com/security and set CIVO_TOKEN")
+		return fmt.Errorf("your CIVO_TOKEN environment variable isn't set, visit this link https://dashboard.civo.com/security and set CIVO_TOKEN")
 	}
 
 	cloudRegionFlag, err := cmd.Flags().GetString("cloud-region")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get cloud region flag: %w", err)
 	}
 
 	message, _, _, err := returnCivoQuotaEvaluation(cloudRegionFlag)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to evaluate Civo quota: %w", err)
 	}
 
 	// Write to logs, but also output to stdout

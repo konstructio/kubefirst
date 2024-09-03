@@ -30,28 +30,27 @@ func createGoogle(cmd *cobra.Command, args []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "google")
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to get flags: %w", err)
 	}
 
 	progress.DisplayLogHints(20)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if !isValid {
-		return err
+		return fmt.Errorf("catalog apps validation failed: %w", err)
 	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("validation of provided flags failed: %w", err)
 	}
 
-	// If cluster setup is complete, return
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
 		err = fmt.Errorf("this cluster install process has already completed successfully")
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("cluster setup is complete: %w", err)
 	}
 
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
@@ -59,7 +58,7 @@ func createGoogle(cmd *cobra.Command, args []string) error {
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("git credentials validation failed: %w", err)
 	}
 
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider))
@@ -77,7 +76,7 @@ func createGoogle(cmd *cobra.Command, args []string) error {
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
 			progress.Error(err.Error())
-			return nil
+			return fmt.Errorf("initialization of git provider failed: %w", err)
 		}
 	}
 	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider), true)
@@ -93,10 +92,10 @@ func createGoogle(cmd *cobra.Command, args []string) error {
 	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
+		return fmt.Errorf("kubefirst api availability check failed: %w", err)
 	}
 
 	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
-
 	return nil
 }
 
@@ -110,23 +109,22 @@ func ValidateProvidedFlags(gitProvider string) error {
 	_, err := os.Open(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
 	if err != nil {
 		progress.Error("Unable to read GOOGLE_APPLICATION_CREDENTIALS file")
+		return fmt.Errorf("could not open GOOGLE_APPLICATION_CREDENTIALS file: %w", err)
 	}
 
 	switch gitProvider {
 	case "github":
 		key, err := internalssh.GetHostKey("github.com")
 		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "github.com", key.Type())
+			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy: %w", err)
 		}
+		log.Info().Msgf("%q %s", "github.com", key.Type())
 	case "gitlab":
 		key, err := internalssh.GetHostKey("gitlab.com")
 		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
+			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy: %w", err)
 		}
+		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
 	progress.CompleteStep("Validate provided flags")

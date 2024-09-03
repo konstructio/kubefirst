@@ -20,10 +20,10 @@ import (
 // betaCmd represents the beta command tree
 var betaCmd = &cobra.Command{
 	Use:   "beta",
-	Short: "access kubefirst beta features",
-	Long:  `access kubefirst beta features`,
+	Short: "access Kubefirst beta features",
+	Long:  `access Kubefirst beta features`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("To learn more about kubefirst, run:")
+		fmt.Println("To learn more about Kubefirst, run:")
 		fmt.Println("  kubefirst help")
 
 		if progress.Progress != nil {

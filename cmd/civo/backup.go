@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package civo
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/konstructio/kubefirst-api/pkg/providerConfigs"
@@ -17,7 +18,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func backupCivoSSL(cmd *cobra.Command, args []string) error {
+func backupCivoSSL(cmd *cobra.Command, _ []string) error {
 	utils.DisplayLogHints()
 
 	clusterName := viper.GetString("flags.cluster-name")
@@ -33,7 +34,7 @@ func backupCivoSSL(cmd *cobra.Command, args []string) error {
 	case "gitlab":
 		cGitOwner = viper.GetString("flags.gitlab-owner")
 	default:
-		log.Panic().Msgf("invalid git provider option")
+		return fmt.Errorf("invalid git provider option: %q", gitProvider)
 	}
 
 	config := providerConfigs.GetConfig(
@@ -52,7 +53,7 @@ func backupCivoSSL(cmd *cobra.Command, args []string) error {
 
 		for _, path := range paths {
 			if _, err := os.Stat(path); os.IsNotExist(err) {
-				log.Info().Msgf("checking path: %s", path)
+				log.Info().Msgf("checking path: %q", path)
 				err := os.MkdirAll(path, os.ModePerm)
 				if err != nil {
 					log.Info().Msg("directory already exists, continuing")
@@ -61,10 +62,9 @@ func backupCivoSSL(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	err := ssl.Backup(config.SSLBackupDir, domainNameFlag, config.K1Dir, config.Kubeconfig)
+	err := ssl.Backup(config.SSLBackupDir, domainName, config.K1Dir, config.Kubeconfig)
 	if err != nil {
-		log.Info().Msg("error backing up ssl resources")
-		return err
+		return fmt.Errorf("error backing up SSL resources: %w", err)
 	}
 	return nil
 }

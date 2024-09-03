@@ -19,17 +19,17 @@ import (
 )
 
 // mkCert creates a single certificate for a host for k3d
-func mkCert(cmd *cobra.Command, args []string) error {
+func mkCert(cmd *cobra.Command, _ []string) error {
 	utils.DisplayLogHints()
 
 	appNameFlag, err := cmd.Flags().GetString("application")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get application flag: %w", err)
 	}
 
 	appNamespaceFlag, err := cmd.Flags().GetString("namespace")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get namespace flag: %w", err)
 	}
 
 	flags := utils.GetClusterStatusFlags()

@@ -48,6 +48,7 @@ func terraformSetEnv() *cobra.Command {
 			err := v.IterSecrets(vaultURLFlag, vaultTokenFlag, outputFileFlag)
 			if err != nil {
 				progress.Error(fmt.Sprintf("error during vault read: %s", err))
+				return
 			}
 
 			message := `

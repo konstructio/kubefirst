@@ -31,7 +31,7 @@ func Create() *cobra.Command {
 			ciFlag, _ := cmd.Flags().GetBool("ci")
 			versionMsg := `
 ##
-### kubefirst-cli golang utility version:` + fmt.Sprintf("`%s`", configs.K1Version)
+### kubefirst-cli golang utility version:` + fmt.Sprintf("%s", configs.K1Version)
 
 			if ciFlag {
 				fmt.Print(versionMsg)

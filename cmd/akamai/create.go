@@ -45,8 +45,6 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to validate provided flags: %w", err)
 	}
 
-	// If cluster setup is complete, return
-
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
@@ -55,7 +53,6 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to validate git credentials: %w", err)
 	}
 
-	// Validate git
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider))
 	if !executionControl {
 		newRepositoryNames := []string{"gitops", "metaphor"}
@@ -104,7 +101,6 @@ func ValidateProvidedFlags(gitProvider string) error {
 		return fmt.Errorf("your LINODE_TOKEN is not set - please set and re-run your last command")
 	}
 
-	// Validate required environment variables for dns provider
 	if dnsProviderFlag == "cloudflare" {
 		if os.Getenv("CF_API_TOKEN") == "" {
 			return fmt.Errorf("your CF_API_TOKEN environment variable is not set. Please set and try again")
@@ -119,6 +115,7 @@ func ValidateProvidedFlags(gitProvider string) error {
 		} else {
 			log.Info().Msgf("%q %s", "github.com", key.Type())
 		}
+		log.Info().Msgf("%q %s", "github.com", key.Type())
 	case "gitlab":
 		key, err := internalssh.GetHostKey("gitlab.com")
 		if err != nil {
@@ -126,6 +123,7 @@ func ValidateProvidedFlags(gitProvider string) error {
 		} else {
 			log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 		}
+		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
 	progress.CompleteStep("Validate provided flags")

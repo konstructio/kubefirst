@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package vultr
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -30,23 +31,26 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "vultr")
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to get flags: %w", err)
 	}
 
 	progress.DisplayLogHints(15)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	if err != nil {
+		return fmt.Errorf("catalog apps validation failed: %w", err)
+	}
+
 	if !isValid {
-		return err
+		return errors.New("catalog validation failed")
 	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("invalid provided flags: %w", err)
 	}
 
-	// If cluster setup is complete, return
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
 		err = fmt.Errorf("this cluster install process has already completed successfully")
@@ -59,10 +63,9 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to validate git credentials: %w", err)
 	}
 
-	// Validate git
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider))
 	if !executionControl {
 		newRepositoryNames := []string{"gitops", "metaphor"}
@@ -79,11 +82,13 @@ func createVultr(cmd *cobra.Command, args []string) error {
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
 			progress.Error(err.Error())
-			return nil
+			return fmt.Errorf("failed to initialize git provider: %w", err)
 		}
 	}
 	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider), true)
-	viper.WriteConfig()
+	if err := viper.WriteConfig(); err != nil {
+		return fmt.Errorf("failed to write config: %w", err)
+	}
 
 	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
 	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
@@ -95,10 +100,10 @@ func createVultr(cmd *cobra.Command, args []string) error {
 	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
+		return fmt.Errorf("kubefirst api availability check failed: %w", err)
 	}
 
 	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
-
 	return nil
 }
 
@@ -109,7 +114,6 @@ func ValidateProvidedFlags(gitProvider string) error {
 		return fmt.Errorf("your VULTR_API_KEY variable is unset - please set it before continuing")
 	}
 
-	// Validate required environment variables for dns provider
 	if dnsProviderFlag == "cloudflare" {
 		if os.Getenv("CF_API_TOKEN") == "" {
 			return fmt.Errorf("your CF_API_TOKEN environment variable is not set. Please set and try again")
@@ -120,20 +124,17 @@ func ValidateProvidedFlags(gitProvider string) error {
 	case "github":
 		key, err := internalssh.GetHostKey("github.com")
 		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "github.com", key.Type())
+			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy: %w", err)
 		}
+		log.Info().Msgf("%q %s", "github.com", key.Type())
 	case "gitlab":
 		key, err := internalssh.GetHostKey("gitlab.com")
 		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
+			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy: %w", err)
 		}
+		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
 	progress.CompleteStep("Validate provided flags")
-
 	return nil
 }
