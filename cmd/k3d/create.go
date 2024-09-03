@@ -56,7 +56,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-func runK3d(cmd *cobra.Command, args []string) error {
+//nolint:gocyclo // this function is complex and needs to be refactored
+func runK3d(cmd *cobra.Command, _ []string) error {
 	ciFlag, err := cmd.Flags().GetBool("ci")
 	if err != nil {
 		return fmt.Errorf("failed to get 'ci' flag: %w", err)
@@ -121,8 +122,12 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	utils.DisplayLogHints()
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(installCatalogAppsFlag)
+	if err != nil {
+		return fmt.Errorf("failed to validate catalog apps: %w", err)
+	}
+
 	if !isValid {
-		return err
+		return errors.New("catalog apps validation failed")
 	}
 
 	switch gitProviderFlag {
@@ -271,14 +276,14 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	var sshPrivateKey, sshPublicKey string
 
 	// todo placed in configmap in kubefirst namespace, included in telemetry
-	clusterId := viper.GetString("kubefirst.cluster-id")
-	if clusterId == "" {
-		clusterId = utils.GenerateClusterID()
-		viper.Set("kubefirst.cluster-id", clusterId)
+	clusterID := viper.GetString("kubefirst.cluster-id")
+	if clusterID == "" {
+		clusterID = utils.GenerateClusterID()
+		viper.Set("kubefirst.cluster-id", clusterID)
 		viper.WriteConfig()
 	}
 
-	segClient, err := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+	segClient, err := segment.InitClient(clusterID, clusterTypeFlag, gitProviderFlag)
 	if err != nil {
 		return fmt.Errorf("failed to initialize segment client: %w", err)
 	}
@@ -438,7 +443,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		KubeconfigPath:                config.Kubeconfig,
 		GitopsRepoURL:                 gitopsRepoURL,
 		GitProvider:                   config.GitProvider,
-		ClusterId:                     clusterId,
+		ClusterId:                     clusterID,
 		CloudProvider:                 k3d.CloudProvider,
 	}
 
@@ -642,7 +647,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			msg := fmt.Errorf("error pushing detokenized gitops repository to remote %q: %w", config.DestinationGitopsRepoGitURL, err)
 			telemetry.SendEvent(segClient, telemetry.GitopsRepoPushFailed, msg.Error())
 			if !strings.Contains(msg.Error(), "already up-to-date") {
-				log.Printf(msg.Error())
+				log.Print(msg.Error())
 				return msg
 			}
 		}
@@ -867,12 +872,12 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			) + ":8080"
 			argoCDToken, err = argocd.GetArgocdTokenV2(httpClient, argoCDHTTPURL, "admin", argocdPassword)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to get ArgoCD token: %w", err)
 			}
 		} else {
 			argoCDToken, err = argocd.GetArgocdTokenV2(httpClient, k3d.ArgocdURL, "admin", argocdPassword)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to get ArgoCD token: %w", err)
 			}
 		}
 
@@ -1228,41 +1233,41 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.Set("kubefirst-checks.cluster-install-complete", false)
 		viper.WriteConfig()
 		return fmt.Errorf("failed to export cluster object: %w", err)
-	} else {
-		kubefirstDeployment, err := k8s.ReturnDeploymentObject(
-			kcfg.Clientset,
-			"app.kubernetes.io/instance",
-			"kubefirst",
-			"kubefirst",
-			600,
-		)
-		if err != nil {
-			return fmt.Errorf("error finding kubefirst Deployment: %w", err)
-		}
-		_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, kubefirstDeployment, 120)
-		if err != nil {
-			return fmt.Errorf("error waiting for kubefirst Deployment ready state: %w", err)
-		}
-		progressPrinter.IncrementTracker("wrapping-up", 1)
+	}
 
-		err = utils.OpenBrowser(constants.KubefirstConsoleLocalURLTLS)
-		if err != nil {
-			log.Error().Err(err).Msg("failed to open Kubefirst console in browser")
-		}
+	kubefirstDeployment, err := k8s.ReturnDeploymentObject(
+		kcfg.Clientset,
+		"app.kubernetes.io/instance",
+		"kubefirst",
+		"kubefirst",
+		600,
+	)
+	if err != nil {
+		return fmt.Errorf("error finding kubefirst Deployment: %w", err)
+	}
+	_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, kubefirstDeployment, 120)
+	if err != nil {
+		return fmt.Errorf("error waiting for kubefirst Deployment ready state: %w", err)
+	}
+	progressPrinter.IncrementTracker("wrapping-up", 1)
 
-		telemetry.SendEvent(segClient, telemetry.ClusterInstallCompleted, "")
-		viper.Set("kubefirst-checks.cluster-install-complete", true)
-		viper.WriteConfig()
+	err = utils.OpenBrowser(constants.KubefirstConsoleLocalURLTLS)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to open Kubefirst console in browser")
+	}
 
-		log.Info().Msg("kubefirst installation complete")
-		log.Info().Msg("welcome to your new Kubefirst platform running in K3D")
-		time.Sleep(1 * time.Second)
+	telemetry.SendEvent(segClient, telemetry.ClusterInstallCompleted, "")
+	viper.Set("kubefirst-checks.cluster-install-complete", true)
+	viper.WriteConfig()
 
-		reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, ciFlag)
+	log.Info().Msg("kubefirst installation complete")
+	log.Info().Msg("welcome to your new Kubefirst platform running in K3D")
+	time.Sleep(1 * time.Second)
 
-		if ciFlag {
-			progress.Progress.Quit()
-		}
+	reports.LocalHandoffScreenV2(viper.GetString("components.argocd.password"), clusterNameFlag, gitDestDescriptor, cGitOwner, config, ciFlag)
+
+	if ciFlag {
+		progress.Progress.Quit()
 	}
 
 	return nil

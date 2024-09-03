@@ -23,10 +23,10 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // required for authentication
 )
 
-func createGoogle(cmd *cobra.Command, args []string) error {
+func createGoogle(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "google")
 	if err != nil {
 		progress.Error(err.Error())
@@ -89,7 +89,7 @@ func createGoogle(cmd *cobra.Command, args []string) error {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 
-	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
+	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresURL()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
 		return fmt.Errorf("kubefirst api availability check failed: %w", err)

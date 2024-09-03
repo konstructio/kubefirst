@@ -7,6 +7,8 @@ See the LICENSE file for more details.
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/konstructio/kubefirst-api/pkg/configs"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"

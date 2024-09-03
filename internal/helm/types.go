@@ -6,12 +6,12 @@ See the LICENSE file for more details.
 */
 package helm
 
-type HelmRepo struct {
+type Repo struct {
 	Name string `yaml:"name"`
 	URL  string `yaml:"url"`
 }
 
-type HelmRelease struct {
+type Release struct {
 	AppVersion string `yaml:"app_version"`
 	Chart      string `yaml:"chart"`
 	Name       string `yaml:"name"`

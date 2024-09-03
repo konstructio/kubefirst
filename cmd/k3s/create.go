@@ -25,10 +25,10 @@ import (
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // required for k8s authentication
 )
 
-func createK3s(cmd *cobra.Command, args []string) error {
+func createK3s(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "k3s")
 	if err != nil {
 		progress.Error(err.Error())
@@ -99,7 +99,7 @@ func createK3s(cmd *cobra.Command, args []string) error {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 
-	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
+	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresURL()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
 		return fmt.Errorf("app availability check failed: %w", err)

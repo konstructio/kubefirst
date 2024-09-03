@@ -26,7 +26,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func createDigitalocean(cmd *cobra.Command, args []string) error {
+func createDigitalocean(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "digitalocean")
 	if err != nil {
 		progress.Error(err.Error())
@@ -96,7 +96,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 
-	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
+	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresURL()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
 		return fmt.Errorf("failed to check app availability for Kubefirst API: %w", err)

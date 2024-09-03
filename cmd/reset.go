@@ -25,7 +25,7 @@ var resetCmd = &cobra.Command{
 	Use:   "reset",
 	Short: "removes local kubefirst content to provision a new platform",
 	Long:  "removes local kubefirst content to provision a new platform",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		gitProvider := viper.GetString("kubefirst.git-provider")
 		cloudProvider := viper.GetString("kubefirst.cloud-provider")
 

@@ -73,13 +73,13 @@ func Up(additionalHelmFlags []string, inCluster, useTelemetry bool) {
 	_, err = os.Stat(k3dClient)
 	if err != nil {
 		log.Info().Msg("Downloading k3d...")
-		k3dDownloadUrl := fmt.Sprintf(
+		k3dDownloadURL := fmt.Sprintf(
 			"https://github.com/k3d-io/k3d/releases/download/%s/k3d-%s-%s",
 			k3d.K3dVersion,
 			k3d.LocalhostOS,
 			k3d.LocalhostARCH,
 		)
-		err = downloadManager.DownloadFile(k3dClient, k3dDownloadUrl)
+		err = downloadManager.DownloadFile(k3dClient, k3dDownloadURL)
 		if err != nil {
 			progress.Error(fmt.Sprintf("error while trying to download k3d: %s", err))
 			return
@@ -100,14 +100,14 @@ func Up(additionalHelmFlags []string, inCluster, useTelemetry bool) {
 	if err != nil {
 		log.Info().Msg("Downloading helm...")
 		helmVersion := "v3.12.0"
-		helmDownloadUrl := fmt.Sprintf(
+		helmDownloadURL := fmt.Sprintf(
 			"https://get.helm.sh/helm-%s-%s-%s.tar.gz",
 			helmVersion,
 			k3d.LocalhostOS,
 			k3d.LocalhostARCH,
 		)
 		helmDownloadTarGzPath := fmt.Sprintf("%s/helm.tar.gz", toolsDir)
-		err = downloadManager.DownloadFile(helmDownloadTarGzPath, helmDownloadUrl)
+		err = downloadManager.DownloadFile(helmDownloadTarGzPath, helmDownloadURL)
 		if err != nil {
 			progress.Error(fmt.Sprintf("error while trying to download helm: %s", err))
 			return
@@ -223,7 +223,7 @@ func Up(additionalHelmFlags []string, inCluster, useTelemetry bool) {
 		return
 	}
 
-	var existingHelmRepositories []helm.HelmRepo
+	var existingHelmRepositories []helm.Repo
 	repoExists := false
 
 	err = yaml.Unmarshal([]byte(res), &existingHelmRepositories)
@@ -283,7 +283,7 @@ func Up(additionalHelmFlags []string, inCluster, useTelemetry bool) {
 		return
 	}
 
-	var existingHelmReleases []helm.HelmRelease
+	var existingHelmReleases []helm.Release
 	chartInstalled := false
 
 	err = yaml.Unmarshal([]byte(res), &existingHelmReleases)

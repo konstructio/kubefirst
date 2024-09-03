@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func createAws(cmd *cobra.Command, args []string) error {
+func createAws(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "aws")
 	if err != nil {
 		progress.Error(err.Error())
@@ -118,7 +118,7 @@ func createAws(cmd *cobra.Command, args []string) error {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 
-	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
+	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresURL()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
 		return fmt.Errorf("failed to check kubefirst API availability: %w", err)

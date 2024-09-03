@@ -81,6 +81,7 @@ func DisplayLogHints(estimatedTime int) {
 	})
 }
 
+//nolint:revive // will be fixed in the future
 func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 	cloudCliKubeconfig := ""
 

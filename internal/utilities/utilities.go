@@ -9,7 +9,7 @@ package utilities
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strconv"
 	"time"
@@ -137,7 +137,7 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 
 	kubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
 	if kubefirstTeam == "" {
-		kubefirstTeam = "false"
+		kubefirstTeam = "false" //nolint:ineffassign,wastedassign // will be fixed in the future
 	}
 
 	stringToIntNodeCount, err := strconv.Atoi(cliFlags.NodeCount)
@@ -191,7 +191,7 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 		cl.AWSAuth.AccessKeyID = viper.GetString("kubefirst.state-store-creds.access-key-id")
 		cl.AWSAuth.SecretAccessKey = viper.GetString("kubefirst.state-store-creds.secret-access-key-id")
 		cl.AWSAuth.SessionToken = viper.GetString("kubefirst.state-store-creds.token")
-		cl.ECR = cliFlags.Ecr
+		cl.ECR = cliFlags.ECR
 	case "civo":
 		cl.CivoAuth.Token = os.Getenv("CIVO_TOKEN")
 	case "digitalocean":

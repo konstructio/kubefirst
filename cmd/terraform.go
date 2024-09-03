@@ -40,7 +40,7 @@ func terraformSetEnv() *cobra.Command {
 		Use:              "set-env",
 		Short:            "retrieve data from a target vault secret and format it for use in the local shell via environment variables",
 		TraverseChildren: true,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			v := vault.VaultConfiguration{
 				Config: vault.NewVault(),
 			}

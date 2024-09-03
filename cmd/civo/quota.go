@@ -165,7 +165,7 @@ func printCivoQuotaWarning(messageHeader string, output []string) string {
 }
 
 // evalCivoQuota provides an interface to the command-line
-func evalCivoQuota(cmd *cobra.Command, args []string) error {
+func evalCivoQuota(cmd *cobra.Command, _ []string) error {
 	civoToken := os.Getenv("CIVO_TOKEN")
 	if len(civoToken) == 0 {
 		return fmt.Errorf("your CIVO_TOKEN environment variable isn't set, visit this link https://dashboard.civo.com/security and set CIVO_TOKEN")

@@ -35,7 +35,7 @@ func status() *cobra.Command {
 		Use:              "status",
 		Short:            "check the usage statistics for a LetsEncrypt certificate",
 		TraverseChildren: true,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			if err := certificates.CheckCertificateUsage(domainNameFlag); err != nil {
 				fmt.Printf("failed to check certificate usage for domain %q: %s\n", domainNameFlag, err)
 			}

@@ -54,7 +54,7 @@ func NewCommand() *cobra.Command {
 		Use:   "civo",
 		Short: "Kubefirst Civo installation",
 		Long:  "Kubefirst Civo",
-		Run: func(cmd *cobra.Command, _ []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about Civo in Kubefirst, run:")
 			fmt.Println("  kubefirst civo --help")
 

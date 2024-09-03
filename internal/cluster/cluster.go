@@ -21,7 +21,7 @@ import (
 	"github.com/konstructio/kubefirst/internal/types"
 )
 
-func GetConsoleIngresUrl() string {
+func GetConsoleIngresURL() string {
 	if strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true" { // allow using local console running on port 3000
 		return os.Getenv("K1_CONSOLE_REMOTE_URL")
 	}
@@ -35,7 +35,7 @@ func CreateCluster(cluster apiTypes.ClusterDefinition) error {
 
 	requestObject := types.ProxyCreateClusterRequest{
 		Body: cluster,
-		Url:  fmt.Sprintf("/cluster/%s", cluster.ClusterName),
+		URL:  fmt.Sprintf("/cluster/%s", cluster.ClusterName),
 	}
 
 	payload, err := json.Marshal(requestObject)
@@ -43,7 +43,7 @@ func CreateCluster(cluster apiTypes.ClusterDefinition) error {
 		return fmt.Errorf("failed to marshal request object: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", GetConsoleIngresUrl()), bytes.NewReader(payload))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", GetConsoleIngresURL()), bytes.NewReader(payload))
 	if err != nil {
 		log.Printf("error creating request: %s", err)
 		return fmt.Errorf("failed to create request: %w", err)
@@ -79,7 +79,7 @@ func ResetClusterProgress(clusterName string) error {
 	httpClient := http.Client{Transport: customTransport}
 
 	requestObject := types.ProxyResetClusterRequest{
-		Url: fmt.Sprintf("/cluster/%s/reset_progress", clusterName),
+		URL: fmt.Sprintf("/cluster/%s/reset_progress", clusterName),
 	}
 
 	payload, err := json.Marshal(requestObject)
@@ -87,7 +87,7 @@ func ResetClusterProgress(clusterName string) error {
 		return fmt.Errorf("failed to marshal request object: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", GetConsoleIngresUrl()), bytes.NewReader(payload))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", GetConsoleIngresURL()), bytes.NewReader(payload))
 	if err != nil {
 		log.Printf("error creating request: %v", err)
 		return fmt.Errorf("failed to create request: %w", err)
@@ -122,7 +122,7 @@ func GetCluster(clusterName string) (apiTypes.Cluster, error) {
 	httpClient := http.Client{Transport: customTransport}
 
 	cluster := apiTypes.Cluster{}
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/proxy?url=/cluster/%s", GetConsoleIngresUrl(), clusterName), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/proxy?url=/cluster/%s", GetConsoleIngresURL(), clusterName), nil)
 	if err != nil {
 		log.Printf("error creating request: %v", err)
 		return cluster, fmt.Errorf("failed to create request: %w", err)
@@ -162,7 +162,7 @@ func GetClusters() ([]apiTypes.Cluster, error) {
 	httpClient := http.Client{Transport: customTransport}
 
 	clusters := []apiTypes.Cluster{}
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/proxy?url=/cluster", GetConsoleIngresUrl()), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/proxy?url=/cluster", GetConsoleIngresURL()), nil)
 	if err != nil {
 		log.Printf("error creating request: %v", err)
 		return clusters, fmt.Errorf("failed to create request: %w", err)
@@ -201,7 +201,7 @@ func DeleteCluster(clusterName string) error {
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
 	httpClient := http.Client{Transport: customTransport}
 
-	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/api/proxy?url=/cluster/%s", GetConsoleIngresUrl(), clusterName), nil)
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/api/proxy?url=/cluster/%s", GetConsoleIngresURL(), clusterName), nil)
 	if err != nil {
 		log.Printf("error creating request: %v", err)
 		return fmt.Errorf("failed to create request: %w", err)
@@ -214,6 +214,7 @@ func DeleteCluster(clusterName string) error {
 		log.Printf("error executing request: %v", err)
 		return fmt.Errorf("failed to execute request: %w", err)
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		log.Printf("unable to delete cluster: %q, continuing", res.Status)

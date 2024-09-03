@@ -130,7 +130,7 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 			return cliFlags, fmt.Errorf("failed to get ecr flag: %w", err)
 		}
 
-		cliFlags.Ecr = ecrFlag
+		cliFlags.ECR = ecrFlag
 	}
 
 	if cloudProvider == "google" {
@@ -149,28 +149,28 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 			progress.Error(err.Error())
 			return cliFlags, fmt.Errorf("failed to get servers-private-ips flag: %w", err)
 		}
-		cliFlags.K3sServersPrivateIps = k3sServersPrivateIps
+		cliFlags.K3sServersPrivateIPs = k3sServersPrivateIps
 
 		k3sServersPublicIps, err := cmd.Flags().GetStringSlice("servers-public-ips")
 		if err != nil {
 			progress.Error(err.Error())
 			return cliFlags, fmt.Errorf("failed to get servers-public-ips flag: %w", err)
 		}
-		cliFlags.K3sServersPublicIps = k3sServersPublicIps
+		cliFlags.K3sServersPublicIPs = k3sServersPublicIps
 
-		k3sSshUserFlag, err := cmd.Flags().GetString("ssh-user")
+		k3sSSHUserFlag, err := cmd.Flags().GetString("ssh-user")
 		if err != nil {
 			progress.Error(err.Error())
 			return cliFlags, fmt.Errorf("failed to get ssh-user flag: %w", err)
 		}
-		cliFlags.K3sSshUser = k3sSshUserFlag
+		cliFlags.K3sSSHUser = k3sSSHUserFlag
 
-		k3sSshPrivateKeyFlag, err := cmd.Flags().GetString("ssh-privatekey")
+		k3sSSHPrivateKeyFlag, err := cmd.Flags().GetString("ssh-privatekey")
 		if err != nil {
 			progress.Error(err.Error())
 			return cliFlags, fmt.Errorf("failed to get ssh-privatekey flag: %w", err)
 		}
-		cliFlags.K3sSshPrivateKey = k3sSshPrivateKeyFlag
+		cliFlags.K3sSSHPrivateKey = k3sSSHPrivateKeyFlag
 
 		K3sServersArgsFlags, err := cmd.Flags().GetStringSlice("servers-args")
 		if err != nil {
@@ -183,7 +183,7 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 	cliFlags.AlertsEmail = alertsEmailFlag
 	cliFlags.CloudRegion = cloudRegionFlag
 	cliFlags.ClusterName = clusterNameFlag
-	cliFlags.DnsProvider = dnsProviderFlag
+	cliFlags.DNSProvider = dnsProviderFlag
 	cliFlags.SubDomainName = subdomainFlag
 	cliFlags.DomainName = domainNameFlag
 	cliFlags.GitProtocol = gitProtocolFlag
@@ -201,17 +201,17 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 
 	viper.Set("flags.alerts-email", cliFlags.AlertsEmail)
 	viper.Set("flags.cluster-name", cliFlags.ClusterName)
-	viper.Set("flags.dns-provider", cliFlags.DnsProvider)
+	viper.Set("flags.dns-provider", cliFlags.DNSProvider)
 	viper.Set("flags.domain-name", cliFlags.DomainName)
 	viper.Set("flags.git-provider", cliFlags.GitProvider)
 	viper.Set("flags.git-protocol", cliFlags.GitProtocol)
 	viper.Set("flags.cloud-region", cliFlags.CloudRegion)
 	viper.Set("kubefirst.cloud-provider", cloudProvider)
 	if cloudProvider == "k3s" {
-		viper.Set("flags.servers-private-ips", cliFlags.K3sServersPrivateIps)
-		viper.Set("flags.servers-public-ips", cliFlags.K3sServersPublicIps)
-		viper.Set("flags.ssh-user", cliFlags.K3sSshUser)
-		viper.Set("flags.ssh-privatekey", cliFlags.K3sSshPrivateKey)
+		viper.Set("flags.servers-private-ips", cliFlags.K3sServersPrivateIPs)
+		viper.Set("flags.servers-public-ips", cliFlags.K3sServersPublicIPs)
+		viper.Set("flags.ssh-user", cliFlags.K3sSSHUser)
+		viper.Set("flags.ssh-privatekey", cliFlags.K3sSSHPrivateKey)
 		viper.Set("flags.servers-args", cliFlags.K3sServersArgs)
 	}
 	if err := viper.WriteConfig(); err != nil {

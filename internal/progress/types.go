@@ -57,18 +57,18 @@ type successMsg struct {
 // Custom
 
 type ProvisionSteps struct {
-	install_tools_check           string
-	domain_liveness_check         string
-	kbot_setup_check              string
-	git_init_check                string
-	gitops_ready_check            string
-	git_terraform_apply_check     string
-	gitops_pushed_check           string
-	cloud_terraform_apply_check   string
-	cluster_secrets_created_check string
-	argocd_install_check          string
-	argocd_initialize_check       string
-	vault_initialized_check       string
-	vault_terraform_apply_check   string
-	users_terraform_apply_check   string
+	installToolsCheck          string
+	domainLivenessCheck        string
+	kbotSetupCheck             string
+	gitInitCheck               string
+	gitopsReadyCheck           string
+	gitTerraformApplyCheck     string
+	gitopsPushedCheck          string
+	cloudTerraformApplyCheck   string
+	clusterSecretsCreatedCheck string
+	argoCDInstallCheck         string
+	argoCDInitializeCheck      string
+	vaultInitializedCheck      string
+	vaultTerraformApplyCheck   string
+	usersTerraformApplyCheck   string
 }
