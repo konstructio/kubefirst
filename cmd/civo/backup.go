@@ -56,6 +56,8 @@ func backupCivoSSL(cmd *cobra.Command, args []string) error {
 		os.Getenv("CF_ORIGIN_CA_ISSUER_API_TOKEN"),
 		gitopsRepoName,
 		metaphorRepoName,
+		adminTeamName,
+		developerTeamName,
 	)
 
 	if _, err := os.Stat(config.SSLBackupDir + "/certificates"); os.IsNotExist(err) {

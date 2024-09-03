@@ -15,7 +15,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/atotto/clipboard"
@@ -52,9 +51,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func runK3d(cmd *cobra.Command, args []string) error {
@@ -342,7 +339,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	//}
 
 	// Instantiate K3d config
-	config := k3d.GetConfig(clusterNameFlag, gitProviderFlag, cGitOwner, gitProtocolFlag)
+	config := k3d.GetConfig(clusterNameFlag, gitProviderFlag, cGitOwner, gitProtocolFlag, gitopsRepoName, metaphorRepoName, adminTeamName, developerTeamName)
 	switch gitProviderFlag {
 	case "github":
 		config.GithubToken = cGitToken
@@ -554,7 +551,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
 
-		err := k3d.DownloadTools(clusterNameFlag, config.GitProvider, cGitOwner, config.ToolsDir, config.GitProtocol)
+		err := k3d.DownloadTools(clusterNameFlag, config.GitProvider, cGitOwner, config.ToolsDir, config.GitProtocol, gitopsRepoName, metaphorRepoName, adminTeamName, developerTeamName)
 		if err != nil {
 			return err
 		}

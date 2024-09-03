@@ -21,6 +21,7 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
 	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
 	"github.com/konstructio/kubefirst-api/pkg/terraform"
+	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"

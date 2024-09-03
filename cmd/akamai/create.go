@@ -9,7 +9,6 @@ package akamai
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
 	pkg "github.com/konstructio/kubefirst-api/pkg/utils"
@@ -50,6 +49,7 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
+
 	if err != nil {
 		progress.Error(err.Error())
 		return nil
@@ -58,8 +58,8 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 	// Validate git
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider))
 	if !executionControl {
-		newRepositoryNames := []string{cliFlags.GitopsRepoName, cliFlags.MetaphorRepoName}
-		newTeamNames := []string{cliFlags.AdminTeamName, cliFlags.DeveloperTeamName}
+		newRepositoryNames := []string{"gitops", "metaphor"}
+		newTeamNames := []string{"admins", "developers"}
 
 		initGitParameters := gitShim.GitInitParameters{
 			GitProvider:  cliFlags.GitProvider,
@@ -79,9 +79,7 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 	viper.WriteConfig()
 
 	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
-	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
-
-	if !k3dClusterCreationComplete && !isK1Debug {
+	if !k3dClusterCreationComplete {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 

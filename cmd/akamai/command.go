@@ -31,15 +31,10 @@ var (
 	gitProtocolFlag          string
 	gitopsTemplateURLFlag    string
 	gitopsTemplateBranchFlag string
-	gitopsRepoName           string
-	metaphorRepoName         string
-	adminTeamName            string
-	developerTeamName        string
 	useTelemetryFlag         bool
 	nodeTypeFlag             string
 	nodeCountFlag            string
 	installCatalogApps       string
-	installKubefirstProFlag  bool
 
 	// RootCredentials
 	copyArgoCDPasswordToClipboardFlag bool
@@ -60,7 +55,7 @@ func NewCommand() *cobra.Command {
 		Long:  "kubefirst akamai",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("To learn more about akamai in kubefirst, run:")
-			fmt.Println("  kubefirst beta akamai --help")
+			fmt.Println("  kubefirst akamai --help")
 
 			if progress.Progress != nil {
 				progress.Progress.Quit()
@@ -105,15 +100,6 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/kubefirst/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
 	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma seperated values to install after provision")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
-	createCmd.Flags().StringVar(&gitopsRepoName, "gitops-repo-name", "gitops", "the custom gitops name")
-	createCmd.Flags().StringVar(&metaphorRepoName, "metaphor-repo-name", "metaphor", "the custom metaphor name")
-	createCmd.Flags().StringVar(&adminTeamName, "admin-team-name", "admins", "admin team name for this repo")
-	createCmd.Flags().StringVar(&developerTeamName, "developer-team-name", "developers", "developer team name for this repo")
-	createCmd.Flags().BoolVar(&installKubefirstProFlag, "install-kubefirst-pro", true, "whether or not to install kubefirst pro")
-	createCmd.Flags().StringVar(&gitopsRepoName, "gitops-repo-name", "gitops", "the custom gitops name")
-	createCmd.Flags().StringVar(&metaphorRepoName, "metaphor-repo-name", "metaphor", "the custom metaphor name")
-	createCmd.Flags().StringVar(&adminTeamName, "admin-team-name", "admins", "admin team name for this repo")
-	createCmd.Flags().StringVar(&developerTeamName, "developer-team-name", "developers", "developer team name for this repo")
 
 	return createCmd
 }
