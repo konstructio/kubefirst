@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package progress
 
 import (
+	"log"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -19,6 +20,8 @@ func GetClusterInterval(clusterName string) tea.Cmd {
 	return tea.Every(time.Second*10, func(t time.Time) tea.Msg {
 		provisioningCluster, err := cluster.GetCluster(clusterName)
 		if err != nil {
+			log.Printf("failed to get cluster %q: %v", clusterName, err)
+			return nil
 		}
 
 		return ClusterProvisioningMsg(provisioningCluster)

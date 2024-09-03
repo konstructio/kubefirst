@@ -11,7 +11,7 @@ type provisionLogsModel struct {
 	logs []string
 }
 
-// Bubbletea messsages
+// Bubbletea messages
 type logMessage struct {
 	message string
 }

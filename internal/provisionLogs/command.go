@@ -39,11 +39,10 @@ func AddLog(logMsg string) {
 	} else {
 		parsedTime, err := time.Parse(time.RFC3339, log.Time)
 		if err != nil {
-			fmt.Println("Error parsing date:", err)
+			fmt.Printf("error parsing date: %v\n", err)
 			return
 		}
 
-		// Format the parsed time into the desired format
 		formattedDateStr := parsedTime.Format("2006-01-02 15:04:05")
 
 		timeLog := timeStyle(formattedDateStr)

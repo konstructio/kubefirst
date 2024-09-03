@@ -29,7 +29,7 @@ type CheckResponse struct {
 	// Current is current latest version on source.
 	Current string
 
-	// Outdate is true when target version is less than Curernt on source.
+	// Outdate is true when target version is less than Current on source.
 	Outdated bool
 
 	// Latest is true when target version is equal to Current on source.
@@ -87,6 +87,10 @@ func versionCheck() (res *CheckResponse, skip bool) {
 
 	re := regexp.MustCompile(`.*/v(.*).tar.gz"`)
 	matches := re.FindStringSubmatch(bodyString)
+	if len(matches) < 2 {
+		fmt.Println("checking for a newer version failed (no version match)")
+		return nil, true
+	}
 	latestVersion = matches[1]
 
 	return &CheckResponse{
@@ -113,7 +117,7 @@ func GetRootCredentials(cmd *cobra.Command, args []string) error {
 	cluster, err := cluster.GetCluster(clusterName)
 	if err != nil {
 		progress.Error(err.Error())
-		return err
+		return fmt.Errorf("failed to get cluster: %w", err)
 	}
 
 	progress.DisplayCredentials(cluster)
@@ -122,7 +126,7 @@ func GetRootCredentials(cmd *cobra.Command, args []string) error {
 }
 
 func Destroy(cmd *cobra.Command, args []string) error {
-	// Determine if there are active instal	ls
+	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
 	gitProtocol := viper.GetString("flags.git-protocol")
 	cloudProvider := viper.GetString("kubefirst.cloud-provider")
@@ -141,6 +145,7 @@ func Destroy(cmd *cobra.Command, args []string) error {
 		cGitOwner = viper.GetString("flags.gitlab-owner")
 	default:
 		progress.Error("invalid git provider option")
+		return fmt.Errorf("invalid git provider: %q", gitProvider)
 	}
 
 	// Instantiate aws config
@@ -171,13 +176,14 @@ func Destroy(cmd *cobra.Command, args []string) error {
 	viper.Set("kubefirst", "")
 	viper.Set("flags", "")
 	viper.Set("k1-paths", "")
-	viper.WriteConfig()
+	if err := viper.WriteConfig(); err != nil {
+		return fmt.Errorf("failed to write config: %w", err)
+	}
 
 	if _, err := os.Stat(config.K1Dir + "/kubeconfig"); !os.IsNotExist(err) {
-		err = os.Remove(config.K1Dir + "/kubeconfig")
-		if err != nil {
+		if err := os.Remove(config.K1Dir + "/kubeconfig"); err != nil {
 			progress.Error(fmt.Sprintf("unable to delete %q folder, error: %s", config.K1Dir+"/kubeconfig", err))
-			return err
+			return fmt.Errorf("unable to delete kubeconfig: %w", err)
 		}
 	}
 

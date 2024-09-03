@@ -43,19 +43,19 @@ func ReadActiveApplications() (apiTypes.GitopsCatalogApps, error) {
 
 	activeContent, err := gh.ReadGitopsCatalogRepoContents()
 	if err != nil {
-		return apiTypes.GitopsCatalogApps{}, fmt.Errorf("error retrieving gitops catalog repository content: %s", err)
+		return apiTypes.GitopsCatalogApps{}, fmt.Errorf("error retrieving gitops catalog repository content: %w", err)
 	}
 
 	index, err := gh.ReadGitopsCatalogIndex(activeContent)
 	if err != nil {
-		return apiTypes.GitopsCatalogApps{}, fmt.Errorf("error retrieving gitops catalog index content: %s", err)
+		return apiTypes.GitopsCatalogApps{}, fmt.Errorf("error retrieving gitops catalog index content: %w", err)
 	}
 
 	var out apiTypes.GitopsCatalogApps
 
 	err = yaml.Unmarshal(index, &out)
 	if err != nil {
-		return apiTypes.GitopsCatalogApps{}, fmt.Errorf("error retrieving gitops catalog applications: %s", err)
+		return apiTypes.GitopsCatalogApps{}, fmt.Errorf("error retrieving gitops catalog applications: %w", err)
 	}
 
 	return out, nil
@@ -71,7 +71,7 @@ func ValidateCatalogApps(catalogApps string) (bool, []apiTypes.GitopsCatalogApp,
 
 	apps, err := ReadActiveApplications()
 	if err != nil {
-		log.Error().Msgf(fmt.Sprintf("Error getting gitops catalag applications: %s", err))
+		log.Error().Msgf("error getting gitops catalog applications: %s", err)
 		return false, gitopsCatalogapps, err
 	}
 
@@ -86,7 +86,7 @@ func ValidateCatalogApps(catalogApps string) (bool, []apiTypes.GitopsCatalogApp,
 						secretValue := os.Getenv(secret.Env)
 
 						if secretValue == "" {
-							return false, gitopsCatalogapps, fmt.Errorf("your %s environment variable is not set for %s catalog application. Please set and try again", secret.Env, app)
+							return false, gitopsCatalogapps, fmt.Errorf("your %q environment variable is not set for %q catalog application. Please set and try again", secret.Env, app)
 						}
 
 						secret.Value = secretValue
@@ -97,7 +97,7 @@ func ValidateCatalogApps(catalogApps string) (bool, []apiTypes.GitopsCatalogApp,
 					for _, config := range catalogApp.ConfigKeys {
 						configValue := os.Getenv(config.Env)
 						if configValue == "" {
-							return false, gitopsCatalogapps, fmt.Errorf("your %s environment variable is not set for %s catalog application. Please set and try again", config.Env, app)
+							return false, gitopsCatalogapps, fmt.Errorf("your %q environment variable is not set for %q catalog application. Please set and try again", config.Env, app)
 						}
 						config.Value = configValue
 					}
@@ -109,7 +109,7 @@ func ValidateCatalogApps(catalogApps string) (bool, []apiTypes.GitopsCatalogApp,
 			}
 		}
 		if !found {
-			return false, gitopsCatalogapps, fmt.Errorf(fmt.Sprintf("catalag app is not supported: %s", app))
+			return false, gitopsCatalogapps, fmt.Errorf("catalog app is not supported: %q", app)
 		}
 	}
 
@@ -125,7 +125,7 @@ func (gh *GitHubClient) ReadGitopsCatalogRepoContents() ([]*git.RepositoryConten
 		nil,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error retrieving gitops catalog repository contents: %w", err)
 	}
 
 	return directoryContent, nil
@@ -134,20 +134,16 @@ func (gh *GitHubClient) ReadGitopsCatalogRepoContents() ([]*git.RepositoryConten
 // ReadGitopsCatalogIndex reads the gitops catalog repository index
 func (gh *GitHubClient) ReadGitopsCatalogIndex(contents []*git.RepositoryContent) ([]byte, error) {
 	for _, content := range contents {
-		switch *content.Type {
-		case "file":
-			switch *content.Name {
-			case "index.yaml":
-				b, err := gh.readFileContents(content)
-				if err != nil {
-					return b, err
-				}
-				return b, nil
+		if *content.Type == "file" && *content.Name == "index.yaml" {
+			b, err := gh.readFileContents(content)
+			if err != nil {
+				return nil, fmt.Errorf("error reading index.yaml file: %w", err)
 			}
+			return b, nil
 		}
 	}
 
-	return []byte{}, fmt.Errorf("index.yaml not found in gitops catalog repository")
+	return nil, fmt.Errorf("index.yaml not found in gitops catalog repository")
 }
 
 // readFileContents parses the contents of a file in a GitHub repository
@@ -160,13 +156,13 @@ func (gh *GitHubClient) readFileContents(content *git.RepositoryContent) ([]byte
 		nil,
 	)
 	if err != nil {
-		return []byte{}, err
+		return nil, fmt.Errorf("error downloading contents of %q: %w", *content.Path, err)
 	}
 	defer rc.Close()
 
 	b, err := io.ReadAll(rc)
 	if err != nil {
-		return []byte{}, err
+		return nil, fmt.Errorf("error reading contents of %q: %w", *content.Path, err)
 	}
 
 	return b, nil

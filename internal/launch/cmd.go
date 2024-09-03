@@ -35,7 +35,7 @@ import (
 var consoleClusterName = "kubefirst-console"
 
 // Up
-func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
+func Up(additionalHelmFlags []string, inCluster, useTelemetry bool) {
 	if viper.GetBool("launch.deployed") {
 		progress.Error("Kubefirst console has already been deployed. To start over, run `kubefirst launch down` to completely remove the existing console.")
 	}
@@ -46,20 +46,21 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		progress.Error(fmt.Sprintf("something went wrong getting home path: %s", err))
+		progress.Error(fmt.Sprintf("unable to get user's home directory: %s", err))
+		return
 	}
 	dir := fmt.Sprintf("%s/.k1/%s", homeDir, consoleClusterName)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err := os.MkdirAll(dir, os.ModePerm)
 		if err != nil {
-			log.Info().Msgf("%s directory already exists, continuing", dir)
+			log.Info().Msgf("%q directory already exists, continuing", dir)
 		}
 	}
 	toolsDir := fmt.Sprintf("%s/tools", dir)
 	if _, err := os.Stat(toolsDir); os.IsNotExist(err) {
 		err := os.MkdirAll(toolsDir, os.ModePerm)
 		if err != nil {
-			log.Info().Msgf("%s directory already exists, continuing", toolsDir)
+			log.Info().Msgf("%q directory already exists, continuing", toolsDir)
 		}
 	}
 
@@ -81,13 +82,15 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		err = downloadManager.DownloadFile(k3dClient, k3dDownloadUrl)
 		if err != nil {
 			progress.Error(fmt.Sprintf("error while trying to download k3d: %s", err))
+			return
 		}
 		err = os.Chmod(k3dClient, 0o755)
 		if err != nil {
-			log.Fatal().Msg(err.Error())
+			progress.Error(fmt.Sprintf("error changing permissions of k3d client: %s", err))
+			return
 		}
 	} else {
-		log.Info().Msgf("k3d is already installed, continuing")
+		log.Info().Msg("k3d is already installed, continuing")
 	}
 	progress.CompleteStep("Download k3d")
 
@@ -107,10 +110,12 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		err = downloadManager.DownloadFile(helmDownloadTarGzPath, helmDownloadUrl)
 		if err != nil {
 			progress.Error(fmt.Sprintf("error while trying to download helm: %s", err))
+			return
 		}
 		helmTarDownload, err := os.Open(helmDownloadTarGzPath)
 		if err != nil {
-			progress.Error("could not read helm download content")
+			progress.Error(fmt.Sprintf("could not read helm download content: %s", err))
+			return
 		}
 		downloadManager.ExtractFileFromTarGz(
 			helmTarDownload,
@@ -119,7 +124,8 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		)
 		err = os.Chmod(helmClient, 0o755)
 		if err != nil {
-			log.Fatal().Msg(err.Error())
+			progress.Error(fmt.Sprintf("error changing permissions of helm client: %s", err))
+			return
 		}
 		os.Remove(helmDownloadTarGzPath)
 	} else {
@@ -141,10 +147,12 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		err = downloadManager.DownloadFile(mkcertClient, mkcertDownloadURL)
 		if err != nil {
 			progress.Error(fmt.Sprintf("error while trying to download mkcert: %s", err))
+			return
 		}
 		err = os.Chmod(mkcertClient, 0o755)
 		if err != nil {
-			progress.Error(err.Error())
+			progress.Error(fmt.Sprintf("error changing permissions of mkcert client: %s", err))
+			return
 		}
 	} else {
 		log.Info().Msg("mkcert is already installed, continuing")
@@ -170,9 +178,10 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 			fmt.Sprintf("%s/kubeconfig", dir),
 		)
 		if err != nil {
-			msg := fmt.Sprintf("error creating k3d cluster: %s", err)
-			progress.Error(msg)
+			progress.Error(fmt.Sprintf("error creating k3d cluster: %s", err))
+			return
 		}
+
 		log.Info().Msg("k3d cluster for Kubefirst console and API created successfully")
 
 		// Wait for traefik
@@ -187,10 +196,12 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		)
 		if err != nil {
 			progress.Error(fmt.Sprintf("error looking for traefik: %s", err))
+			return
 		}
 		_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, traefikDeployment, 120)
 		if err != nil {
 			progress.Error(fmt.Sprintf("error waiting for traefik: %s", err))
+			return
 		}
 	}
 
@@ -208,7 +219,8 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		"yaml",
 	)
 	if err != nil {
-		log.Fatal().Msgf("error listing current helm repositories: %s", err)
+		progress.Error(fmt.Sprintf("error listing current helm repositories: %s", err))
+		return
 	}
 
 	var existingHelmRepositories []helm.HelmRepo
@@ -217,7 +229,9 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 	err = yaml.Unmarshal([]byte(res), &existingHelmRepositories)
 	if err != nil {
 		progress.Error(fmt.Sprintf("could not get existing helm repositories: %s", err))
+		return
 	}
+
 	for _, repo := range existingHelmRepositories {
 		if repo.Name == helmChartRepoName && repo.URL == helmChartRepoURL {
 			repoExists = true
@@ -234,7 +248,8 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 			helmChartRepoURL,
 		)
 		if err != nil {
-			log.Error().Msgf("error adding helm chart repository: %s", err)
+			progress.Error(fmt.Sprintf("error adding helm chart repository: %s", err))
+			return
 		}
 		log.Info().Msg("Added Kubefirst helm chart repository")
 	} else {
@@ -248,7 +263,8 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		"update",
 	)
 	if err != nil {
-		log.Error().Msgf("error updating helm chart repository: %s", err)
+		progress.Error(fmt.Sprintf("error updating helm chart repository: %s", err))
+		return
 	}
 	log.Info().Msg("Kubefirst helm chart repository updated")
 
@@ -263,7 +279,8 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		"-A",
 	)
 	if err != nil {
-		log.Error().Msgf("error listing current helm repositories: %s", err)
+		progress.Error(fmt.Sprintf("error listing current helm releases: %s", err))
+		return
 	}
 
 	var existingHelmReleases []helm.HelmRelease
@@ -272,6 +289,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 	err = yaml.Unmarshal([]byte(res), &existingHelmReleases)
 	if err != nil {
 		progress.Error(fmt.Sprintf("could not get existing helm releases: %s", err))
+		return
 	}
 	for _, release := range existingHelmReleases {
 		if release.Name == helmChartName {
@@ -341,6 +359,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		a, b, err := shell.ExecShellReturnStrings(helmClient, installFlags...)
 		if err != nil {
 			progress.Error(fmt.Sprintf("error installing helm chart: %s %s %s", err, a, b))
+			return
 		}
 
 		log.Info().Msg("Kubefirst console helm chart installed successfully")
@@ -363,10 +382,13 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 	)
 	if err != nil {
 		progress.Error(fmt.Sprintf("error looking for kubefirst api: %s", err))
+		return
 	}
+
 	_, err = k8s.WaitForDeploymentReady(kcfg.Clientset, apiDeployment, 300)
 	if err != nil {
 		progress.Error(fmt.Sprintf("error waiting for kubefirst api: %s", err))
+		return
 	}
 
 	// Generate certificate for console
@@ -374,7 +396,8 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 	if _, err := os.Stat(sslPemDir); os.IsNotExist(err) {
 		err := os.MkdirAll(sslPemDir, os.ModePerm)
 		if err != nil {
-			log.Warn().Msgf("%s directory already exists, continuing", sslPemDir)
+			progress.Error(fmt.Sprintf("error creating directory for certificates: %s", err))
+			return
 		}
 	}
 	log.Info().Msg("Certificate directory created")
@@ -383,7 +406,8 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 	if _, err := os.Stat(mkcertPemDir); os.IsNotExist(err) {
 		err := os.MkdirAll(mkcertPemDir, os.ModePerm)
 		if err != nil {
-			log.Warn().Msgf("%s directory already exists, continuing", mkcertPemDir)
+			progress.Error(fmt.Sprintf("error creating directory for certificates: %s", err))
+			return
 		}
 	}
 
@@ -402,21 +426,24 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 	)
 	if err != nil {
 		progress.Error(fmt.Sprintf("error generating certificate for console: %s", err))
+		return
 	}
 
 	// * read certificate files
 	certPem, err := os.ReadFile(fmt.Sprintf("%s/%s-cert.pem", mkcertPemDir, "kubefirst-console"))
 	if err != nil {
-		progress.Error(fmt.Sprintf("error generating certificate for console: %s", err))
+		progress.Error(fmt.Sprintf("error reading certificate for console: %s", err))
+		return
 	}
 	keyPem, err := os.ReadFile(fmt.Sprintf("%s/%s-key.pem", mkcertPemDir, "kubefirst-console"))
 	if err != nil {
-		progress.Error(fmt.Sprintf("error generating certificate for console: %s", err))
+		progress.Error(fmt.Sprintf("error reading key for console: %s", err))
+		return
 	}
 
 	_, err = kcfg.Clientset.CoreV1().Secrets(namespace).Get(context.Background(), "kubefirst-console-tls", metav1.GetOptions{})
 	if err == nil {
-		log.Info().Msg(fmt.Sprintf("kubernetes secret %s/%s already created - skipping", namespace, "kubefirst-console"))
+		log.Info().Msg(fmt.Sprintf("kubernetes secret %q already created - skipping", "kubefirst-console"))
 	} else if strings.Contains(err.Error(), "not found") {
 		_, err = kcfg.Clientset.CoreV1().Secrets(namespace).Create(context.Background(), &v1.Secret{
 			Type: "kubernetes.io/tls",
@@ -431,6 +458,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		}, metav1.CreateOptions{})
 		if err != nil {
 			progress.Error(fmt.Sprintf("error creating kubernetes secret for cert: %s", err))
+			return
 		}
 		time.Sleep(5 * time.Second)
 		log.Info().Msg("Created Kubernetes Secret for certificate")
@@ -439,20 +467,19 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 	progress.CompleteStep("Waiting for kubefirst Deployment")
 
 	if !inCluster {
-		log.Info().Msg(fmt.Sprintf("Kubefirst Console is now available! %s", consoleURL))
+		log.Info().Msg(fmt.Sprintf("Kubefirst Console is now available! %q", consoleURL))
 
-		log.Warn().Msgf("Kubefirst has generated local certificates for use with the console using `mkcert`.")
-		log.Warn().Msgf("If you experience certificate errors when accessing the console, please run the following command: ")
-		log.Warn().Msgf("	%s -install", mkcertClient)
-		log.Warn().Msgf("")
-		log.Warn().Msgf("For more information on `mkcert`, check out: https://github.com/FiloSottile/mkcert")
+		log.Warn().Msg("Kubefirst has generated local certificates for use with the console using `mkcert`.")
+		log.Warn().Msg("If you experience certificate errors when accessing the console, please run the following command:")
+		log.Warn().Msg(fmt.Sprintf("	%q -install", mkcertClient))
+		log.Warn().Msg("For more information on `mkcert`, check out: https://github.com/FiloSottile/mkcert")
 
-		log.Info().Msg("To remove Kubefirst Console and the k3d cluster it runs in, please run the following command: ")
+		log.Info().Msg("To remove Kubefirst Console and the k3d cluster it runs in, please run the following command:")
 		log.Info().Msg("kubefirst launch down")
 
 		err = pkg.OpenBrowser(consoleURL)
 		if err != nil {
-			log.Error().Msgf("error attempting to open console in browser: %s", err)
+			log.Printf("error attempting to open console in browser: %v", err)
 		}
 	}
 
@@ -475,13 +502,15 @@ func Down(inCluster bool) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		progress.Error(fmt.Sprintf("something went wrong getting home path: %s", err))
+		return
 	}
 
 	log.Info().Msg("Deleting k3d cluster for Kubefirst console and API")
 
 	dir := fmt.Sprintf("%s/.k1/%s", homeDir, consoleClusterName)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		progress.Error(fmt.Sprintf("cluster %s directory does not exist", dir))
+		progress.Error(fmt.Sprintf("cluster %q directory does not exist", dir))
+		return
 	}
 	toolsDir := fmt.Sprintf("%s/tools", dir)
 	k3dClient := fmt.Sprintf("%s/k3d", toolsDir)
@@ -489,14 +518,15 @@ func Down(inCluster bool) {
 	_, _, err = shell.ExecShellReturnStrings(k3dClient, "cluster", "delete", consoleClusterName)
 	if err != nil {
 		progress.Error(fmt.Sprintf("error deleting k3d cluster: %s", err))
+		return
 	}
 
 	log.Info().Msg("k3d cluster for Kubefirst console and API deleted successfully")
 
-	log.Info().Msg(fmt.Sprintf("Deleting cluster directory at %s", dir))
+	log.Info().Msg(fmt.Sprintf("Deleting cluster directory at %q", dir))
 	err = os.RemoveAll(dir)
 	if err != nil {
-		log.Warn().Msgf("unable to remove directory at %s", dir)
+		log.Warn().Msgf("unable to remove directory at %q", dir)
 	}
 
 	viper.Set("kubefirst", "")
@@ -528,7 +558,8 @@ func ListClusters() {
 func DeleteCluster(managedClusterName string) {
 	err := cluster.DeleteCluster(managedClusterName)
 	if err != nil {
-		progress.Error(fmt.Sprintf("error: cluster %s not found\n", managedClusterName))
+		progress.Error(fmt.Sprintf("error: cluster %q not found", managedClusterName))
+		return
 	}
 
 	deleteMessage := `
