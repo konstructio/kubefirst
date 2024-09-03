@@ -16,7 +16,6 @@ import (
 	"strings"
 
 	"github.com/konstructio/kubefirst-api/pkg/configs"
-	"github.com/konstructio/kubefirst-api/pkg/docker"
 	"github.com/konstructio/kubefirst-api/pkg/providerConfigs"
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/launch"
@@ -185,16 +184,4 @@ https://docs.kubefirst.io/` + cloudProvider + `/deprovision
 	progress.Success(successMessage)
 
 	return nil
-}
-
-// checkDocker makes sure Docker is running before all commands
-func CheckDocker(cmd *cobra.Command, args []string) {
-	// Verify Docker is running
-	dcli := docker.DockerClientWrapper{
-		Client: docker.NewDockerClient(),
-	}
-	_, err := dcli.CheckDockerReady()
-	if err != nil {
-		progress.Error(fmt.Sprintf("Docker must be running to use this command. Error checking Docker status: %s", err))
-	}
 }
