@@ -7,8 +7,6 @@ See the LICENSE file for more details.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/konstructio/kubefirst-api/pkg/configs"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
@@ -31,7 +29,7 @@ func Create() *cobra.Command {
 			ciFlag, _ := cmd.Flags().GetBool("ci")
 			versionMsg := `
 ##
-### kubefirst-cli golang utility version:` + fmt.Sprintf("%s", configs.K1Version)
+### kubefirst-cli golang utility version: ` + configs.K1Version
 
 			if ciFlag {
 				fmt.Print(versionMsg)
