@@ -278,7 +278,10 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		viper.WriteConfig()
 	}
 
-	segClient := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+	segClient, err := segment.InitClient(clusterId, clusterTypeFlag, gitProviderFlag)
+	if err != nil {
+		return fmt.Errorf("failed to initialize segment client: %w", err)
+	}
 
 	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 5)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
