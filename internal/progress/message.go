@@ -112,9 +112,8 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 		break
 
 	case "k3s":
-		cloudCliKubeconfig = "use the kubeconfig file outputed from terraform to acces to the cluster"
+		cloudCliKubeconfig = fmt.Sprint(("use the kubeconfig file outputted from terraform to acces to the cluster"))
 		break
-
 	}
 
 	var fullDomainName string

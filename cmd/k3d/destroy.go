@@ -226,7 +226,7 @@ func destroyK3d(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	//* remove local content and kubefirst config file for re-execution
+	// * remove local content and kubefirst config file for re-execution
 	if !viper.GetBool(fmt.Sprintf("kubefirst-checks.terraform-apply-%s", gitProvider)) && !viper.GetBool("kubefirst-checks.create-k3d-cluster") {
 		log.Info().Msg("removing previous platform content")
 

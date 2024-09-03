@@ -81,7 +81,6 @@ func returnCivoQuotaEvaluation(cloudRegion string) (string, int, int, error) {
 	if err != nil {
 		log.Info().Msgf("failed to fetch civo quota: %s", err)
 		return "", 0, 0, err
-
 	}
 
 	// Container for quota response as a map

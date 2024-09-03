@@ -35,7 +35,6 @@ type ContainerRegistryAuth struct {
 func CreateContainerRegistrySecret(obj *ContainerRegistryAuth) (string, error) {
 	// Handle secret creation for container registry authentication
 	switch obj.GitProvider {
-
 	// GitHub docker auth secret
 	// kaniko requires a specific format for Docker auth created as a secret
 	// For GitHub, this becomes the provided token (pat)

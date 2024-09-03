@@ -404,7 +404,7 @@ func Up(additionalHelmFlags []string, inCluster bool, useTelemetry bool) {
 		progress.Error(fmt.Sprintf("error generating certificate for console: %s", err))
 	}
 
-	//* read certificate files
+	// * read certificate files
 	certPem, err := os.ReadFile(fmt.Sprintf("%s/%s-cert.pem", mkcertPemDir, "kubefirst-console"))
 	if err != nil {
 		progress.Error(fmt.Sprintf("error generating certificate for console: %s", err))
