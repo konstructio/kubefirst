@@ -7,7 +7,7 @@ See the LICENSE file for more details.
 package cmd
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/certificates"
 	"github.com/konstructio/kubefirst/internal/progress"
@@ -37,7 +37,7 @@ func status() *cobra.Command {
 		TraverseChildren: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := certificates.CheckCertificateUsage(domainNameFlag); err != nil {
-				log.Printf("failed to check certificate usage for domain %q: %w", domainNameFlag, err)
+				fmt.Printf("failed to check certificate usage for domain %q: %s\n", domainNameFlag, err)
 			}
 			progress.Progress.Quit()
 		},

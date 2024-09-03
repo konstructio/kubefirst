@@ -11,6 +11,10 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version-file: "go.mod"
-    - name: Running Golang tests
-      run: go test -v -short ./...
+        go-version-file: go.mod
+    - name: Run GolangCI-Lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: v1.60.3
+    - name: Test application
+      run: go test -short -v ./...
