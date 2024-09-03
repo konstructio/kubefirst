@@ -4,7 +4,7 @@ Copyright (C) 2021-2023, Kubefirst
 This program is licensed under MIT.
 See the LICENSE file for more details.
 */
-package gitShim
+package gitShim //nolint:revive // allowed during refactoring
 
 import (
 	"encoding/base64"
@@ -34,7 +34,6 @@ type ContainerRegistryAuth struct {
 func CreateContainerRegistrySecret(obj *ContainerRegistryAuth) (string, error) {
 	// Handle secret creation for container registry authentication
 	switch obj.GitProvider {
-
 	// GitHub docker auth secret
 	// kaniko requires a specific format for Docker auth created as a secret
 	// For GitHub, this becomes the provided token (pat)

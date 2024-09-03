@@ -35,7 +35,7 @@ func launchUp() *cobra.Command {
 		Use:              "up",
 		Short:            "launch new console and api instance",
 		TraverseChildren: true,
-		Run: func(cmd *cobra.Command, _ []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			launch.Up(additionalHelmFlags, false, true)
 		},
 	}
@@ -51,7 +51,7 @@ func launchDown() *cobra.Command {
 		Use:              "down",
 		Short:            "remove console and api instance",
 		TraverseChildren: true,
-		Run: func(cmd *cobra.Command, _ []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			launch.Down(false)
 		},
 	}
@@ -78,7 +78,7 @@ func launchListClusters() *cobra.Command {
 		Use:              "list",
 		Short:            "list clusters created by the Kubefirst console",
 		TraverseChildren: true,
-		Run: func(cmd *cobra.Command, _ []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			launch.ListClusters()
 		},
 	}
@@ -98,7 +98,7 @@ func launchDeleteCluster() *cobra.Command {
 			}
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, args []string) {
 			launch.DeleteCluster(args[0])
 		},
 	}

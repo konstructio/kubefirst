@@ -20,7 +20,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "print the version number for kubefirst-cli",
 	Long:  `All software has versions. This is kubefirst's`,
-	Run: func(cmd *cobra.Command, _ []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		versionMsg := `
 ##
 ### kubefirst-cli golang utility version: ` + configs.K1Version

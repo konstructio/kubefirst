@@ -33,7 +33,7 @@ const (
 	secretThreshold = 3
 )
 
-func unsealVault(cmd *cobra.Command, args []string) error {
+func unsealVault(_ *cobra.Command, _ []string) error {
 	flags := utils.GetClusterStatusFlags()
 	if !flags.SetupComplete {
 		return fmt.Errorf("failed to unseal vault: there doesn't appear to be an active k3d cluster")

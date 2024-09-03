@@ -12,16 +12,14 @@ import (
 	"os"
 	"time"
 
-	"golang.org/x/exp/slices"
-
-	zeroLog "github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
 	"github.com/konstructio/kubefirst-api/pkg/configs"
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
 	"github.com/konstructio/kubefirst/cmd"
 	"github.com/konstructio/kubefirst/internal/progress"
+	zeroLog "github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
+	"golang.org/x/exp/slices"
 )
 
 func main() {
@@ -40,7 +38,8 @@ func main() {
 
 	config := configs.ReadConfig()
 	if err := utils.SetupViper(config, true); err != nil {
-		stdLog.Panic(err)
+		log.Error().Msgf("failed to setup Viper: %v", err)
+		return
 	}
 
 	now := time.Now()
@@ -74,38 +73,39 @@ func main() {
 
 	homePath, err := os.UserHomeDir()
 	if err != nil {
-		log.Info().Msg(err.Error())
+		log.Error().Msgf("failed to get user home directory: %v", err)
+		return
 	}
 
 	k1Dir := fmt.Sprintf("%s/.k1", homePath)
 
-	//* create k1Dir if it doesn't exist
+	// * create k1Dir if it doesn't exist
 	if _, err := os.Stat(k1Dir); os.IsNotExist(err) {
-		err := os.MkdirAll(k1Dir, os.ModePerm)
-		if err != nil {
-			log.Info().Msgf("%s directory already exists, continuing", k1Dir)
+		if err := os.MkdirAll(k1Dir, os.ModePerm); err != nil {
+			log.Error().Msgf("error creating directory %q: %v", k1Dir, err)
+			return
 		}
 	}
 
-	//* create log directory
+	// * create log directory
 	logsFolder := fmt.Sprintf("%s/logs", k1Dir)
-	_ = os.Mkdir(logsFolder, 0o700)
-	if err != nil {
-		log.Fatal().Msgf("error creating logs directory: %s", err)
+	if err := os.Mkdir(logsFolder, 0o700); err != nil {
+		log.Error().Msgf("error creating logs directory: %v", err)
+		return
 	}
 
-	//* create session log file
+	// * create session log file
 	logfile := fmt.Sprintf("%s/%s", logsFolder, logfileName)
 	logFileObj, err := utils.OpenLogFile(logfile)
 	if err != nil {
-		stdLog.Panicf("unable to store log location, error is: %s - please verify the current user has write access to this directory", err)
+		log.Error().Msgf("unable to store log location, error is: %v - please verify the current user has write access to this directory", err)
+		return
 	}
 
 	// handle file close request
 	defer func(logFileObj *os.File) {
-		err = logFileObj.Close()
-		if err != nil {
-			log.Print(err)
+		if err := logFileObj.Close(); err != nil {
+			log.Error().Msgf("error closing log file: %v", err)
 		}
 	}(logFileObj)
 
@@ -121,9 +121,9 @@ func main() {
 	viper.Set("k1-paths.log-file", logfile)
 	viper.Set("k1-paths.log-file-name", logfileName)
 
-	err = viper.WriteConfig()
-	if err != nil {
-		stdLog.Panicf("unable to set log-file-location, error is: %s", err)
+	if err := viper.WriteConfig(); err != nil {
+		log.Error().Msgf("failed to write config: %v", err)
+		return
 	}
 
 	if canRunBubbleTea {

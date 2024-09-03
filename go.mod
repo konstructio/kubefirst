@@ -1,6 +1,6 @@
 module github.com/konstructio/kubefirst
 
-go 1.18
+go 1.23
 
 require (
 	github.com/argoproj/argo-cd/v2 v2.6.7

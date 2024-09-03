@@ -22,7 +22,7 @@ var betaCmd = &cobra.Command{
 	Use:   "beta",
 	Short: "access Kubefirst beta features",
 	Long:  `access Kubefirst beta features`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		fmt.Println("To learn more about Kubefirst, run:")
 		fmt.Println("  kubefirst help")
 

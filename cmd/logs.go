@@ -21,7 +21,7 @@ var logsCmd = &cobra.Command{
 	Use:   "logs",
 	Short: "kubefirst real time logs",
 	Long:  `kubefirst real time logs`,
-	RunE: func(cmd *cobra.Command, _ []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		provisionLogs.InitializeProvisionLogsTerminal()
 
 		go func() {

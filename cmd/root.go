@@ -31,7 +31,7 @@ var rootCmd = &cobra.Command{
 		// wire viper config for flags for all commands
 		return configs.InitializeViperConfig(cmd)
 	},
-	Run: func(cmd *cobra.Command, _ []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		fmt.Println("To learn more about kubefirst, run:")
 		fmt.Println("  kubefirst help")
 		progress.Progress.Quit()

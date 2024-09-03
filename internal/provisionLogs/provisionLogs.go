@@ -4,7 +4,7 @@ Copyright (C) 2021-2023, Kubefirst
 This program is licensed under MIT.
 See the LICENSE file for more details.
 */
-package provisionLogs
+package provisionLogs //nolint:revive // allowed during refactoring
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,6 +15,7 @@ var quitStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render
 
 var ProvisionLogs *tea.Program
 
+//nolint:revive // will be removed after refactoring
 func NewModel() provisionLogsModel {
 	return provisionLogsModel{}
 }

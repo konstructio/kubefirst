@@ -37,9 +37,9 @@ func (i Item) FilterValue() string { return "" }
 
 type ItemDelegate struct{}
 
-func (d ItemDelegate) Height() int                               { return 1 }
-func (d ItemDelegate) Spacing() int                              { return 0 }
-func (d ItemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+func (d ItemDelegate) Height() int                             { return 1 }
+func (d ItemDelegate) Spacing() int                            { return 0 }
+func (d ItemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 func (d ItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
 	i, ok := listItem.(Item)
 	if !ok {
@@ -104,7 +104,7 @@ func (m Model) View() string {
 	return "\n" + m.List.View()
 }
 
-func MongoDestinationChooser(inCluster bool) (result string, err error) {
+func MongoDestinationChooser(inCluster bool) (string, error) {
 	if inCluster {
 		return "in-cluster", nil
 	}

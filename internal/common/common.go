@@ -58,7 +58,7 @@ func CheckForVersionUpdate() {
 }
 
 // versionCheck compares local to remote version
-func versionCheck() (res *CheckResponse, skip bool) {
+func versionCheck() (*CheckResponse, bool) {
 	var latestVersion string
 	flatVersion := strings.ReplaceAll(configs.K1Version, "v", "")
 
@@ -116,7 +116,7 @@ func GetRootCredentials(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func Destroy(cmd *cobra.Command, args []string) error {
+func Destroy(_ *cobra.Command, _ []string) error {
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
 	gitProtocol := viper.GetString("flags.git-protocol")
@@ -128,7 +128,7 @@ func Destroy(cmd *cobra.Command, args []string) error {
 	domainName := viper.GetString("flags.domain-name")
 
 	// Switch based on git provider, set params
-	cGitOwner := ""
+	var cGitOwner string
 	switch gitProvider {
 	case "github":
 		cGitOwner = viper.GetString("flags.github-owner")

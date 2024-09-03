@@ -13,7 +13,7 @@ type CliFlags struct {
 	CloudProvider        string
 	ClusterName          string
 	ClusterType          string
-	DnsProvider          string
+	DNSProvider          string
 	DomainName           string
 	SubDomainName        string
 	GitProvider          string
@@ -24,14 +24,14 @@ type CliFlags struct {
 	GitopsTemplateURL    string
 	GoogleProject        string
 	UseTelemetry         bool
-	Ecr                  bool
+	ECR                  bool
 	NodeType             string
 	NodeCount            string
 	InstallCatalogApps   string
-	K3sSshUser           string
-	K3sSshPrivateKey     string
-	K3sServersPrivateIps []string
-	K3sServersPublicIps  []string
+	K3sSSHUser           string
+	K3sSSHPrivateKey     string
+	K3sServersPrivateIPs []string
+	K3sServersPublicIPs  []string
 	K3sServersArgs       []string
 	InstallKubefirstPro  bool
 }

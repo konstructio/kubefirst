@@ -16,6 +16,7 @@ import (
 
 var Progress *tea.Program
 
+//nolint:revive // will be removed after refactoring
 func NewModel() progressModel {
 	return progressModel{
 		isProvisioned: false,
@@ -68,7 +69,7 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case CusterProvisioningMsg:
 		m.provisioningCluster = types.Cluster(msg)
-		completedSteps, nextStep := BuildCompletedSteps(types.Cluster(msg), m)
+		completedSteps, nextStep := BuildCompletedSteps(types.Cluster(msg))
 		m.completedSteps = append(m.completedSteps, completedSteps...)
 		m.nextStep = renderMessage(fmt.Sprintf(":dizzy: %s", nextStep))
 
@@ -104,7 +105,7 @@ func (m progressModel) View() string {
 
 		completedSteps := ""
 		for i := index; i < len(m.completedSteps); i++ {
-			completedSteps = completedSteps + renderMessage(fmt.Sprintf(":white_check_mark: %s", m.completedSteps[i]))
+			completedSteps += renderMessage(fmt.Sprintf(":white_check_mark: %s", m.completedSteps[i]))
 		}
 
 		if m.header != "" {

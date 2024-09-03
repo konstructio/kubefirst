@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func backupCivoSSL(cmd *cobra.Command, _ []string) error {
+func backupCivoSSL(_ *cobra.Command, _ []string) error {
 	utils.DisplayLogHints()
 
 	clusterName := viper.GetString("flags.cluster-name")

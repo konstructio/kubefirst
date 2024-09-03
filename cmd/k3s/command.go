@@ -25,8 +25,8 @@ var (
 	clusterTypeFlag          string
 	k3sServersPrivateIpsFlag []string
 	k3sServersPublicIpsFlag  []string
-	k3sSshUserflag           string
-	k3sSshPrivateKeyflag     string
+	k3sSSHUserflag           string
+	k3sSSHPrivateKeyflag     string
 	K3sServersArgsFlags      []string
 	dnsProviderFlag          string
 	subdomainNameFlag        string
@@ -93,8 +93,8 @@ func Create() *cobra.Command {
 	createCmd.MarkFlagRequired("servers-private-ips")
 	createCmd.Flags().StringSliceVar(&k3sServersPublicIpsFlag, "servers-public-ips", []string{}, "the list of k3s (servers) public ip x.x.x.x,y.y.y.y comma separated  (required)")
 	createCmd.Flags().StringSliceVar(&K3sServersArgsFlags, "servers-args", []string{"--disable traefik", "--write-kubeconfig-mode 644"}, "list of k3s extras args to add to the k3s server installation,comma separated in between quote, if --servers-public-ips <VALUES> --tls-san <VALUES> is added to default --servers-args")
-	createCmd.Flags().StringVar(&k3sSshUserflag, "ssh-user", "root", "the user used to log into servers with ssh connection")
-	createCmd.Flags().StringVar(&k3sSshPrivateKeyflag, "ssh-privatekey", "", "the private key used to log into servers with ssh connection")
+	createCmd.Flags().StringVar(&k3sSSHUserflag, "ssh-user", "root", "the user used to log into servers with ssh connection")
+	createCmd.Flags().StringVar(&k3sSSHPrivateKeyflag, "ssh-privatekey", "", "the private key used to log into servers with ssh connection")
 	createCmd.MarkFlagRequired("ssh-privatekey")
 	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "cloudflare", fmt.Sprintf("the dns provider - one of: %q", supportedDNSProviders))
 	createCmd.Flags().StringVar(&subdomainNameFlag, "subdomain", "", "the subdomain to use for DNS records (Cloudflare)")

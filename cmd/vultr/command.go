@@ -54,7 +54,7 @@ func NewCommand() *cobra.Command {
 		Use:   "vultr",
 		Short: "Kubefirst Vultr installation",
 		Long:  "kubefirst vultr",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about Vultr in Kubefirst, run:")
 			fmt.Println("  kubefirst beta vultr --help")
 

@@ -49,7 +49,7 @@ func NewCommand() *cobra.Command {
 		Use:   "aws",
 		Short: "kubefirst aws installation",
 		Long:  "kubefirst aws",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about aws in kubefirst, run:")
 			fmt.Println("  kubefirst help")
 

@@ -14,7 +14,7 @@ const (
 	kubefirstClient string = "api"
 )
 
-func InitClient(clusterId, clusterType, gitProvider string) (telemetry.TelemetryEvent, error) {
+func InitClient(clusterID, clusterType, gitProvider string) (telemetry.TelemetryEvent, error) {
 	machineID, err := machineid.ID()
 	if err != nil {
 		return telemetry.TelemetryEvent{}, fmt.Errorf("failed to get machine ID: %w", err)
@@ -23,7 +23,7 @@ func InitClient(clusterId, clusterType, gitProvider string) (telemetry.Telemetry
 	c := telemetry.TelemetryEvent{
 		CliVersion:        configs.K1Version,
 		CloudProvider:     k3d.CloudProvider,
-		ClusterID:         clusterId,
+		ClusterID:         clusterID,
 		ClusterType:       clusterType,
 		DomainName:        k3d.DomainName,
 		GitProvider:       gitProvider,

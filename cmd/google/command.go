@@ -57,7 +57,7 @@ func NewCommand() *cobra.Command {
 		Use:   "google",
 		Short: "kubefirst Google installation",
 		Long:  "kubefirst google",
-		Run: func(cmd *cobra.Command, _ []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about google in kubefirst, run:")
 			fmt.Println("  kubefirst beta google --help")
 

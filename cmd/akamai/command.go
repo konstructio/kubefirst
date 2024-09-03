@@ -54,7 +54,7 @@ func NewCommand() *cobra.Command {
 		Use:   "akamai",
 		Short: "kubefirst akamai installation",
 		Long:  "kubefirst akamai",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about akamai in kubefirst, run:")
 			fmt.Println("  kubefirst beta akamai --help")
 
