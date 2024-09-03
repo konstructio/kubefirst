@@ -1186,8 +1186,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.IncrementTracker("configuring-vault", 1)
 
-	// * configure vault with terraform
-	// * vault port-forward
+	//* configure vault with terraform
+	//* vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(vaultStopChannel)
