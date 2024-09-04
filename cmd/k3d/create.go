@@ -303,7 +303,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// todo
 	// Since it's possible to stop and restart, cGitOwner may need to be reset
-	//if cGitOwner == "" {
+	// if cGitOwner == "" {
 	//	switch gitProviderFlag {
 	//	case "github":
 	//		cGitOwner = viper.GetString("flags.github-owner")
@@ -312,7 +312,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	//	}
 	//}
 	//
-	//model, err := presentRecap(gitProviderFlag, gitDestDescriptor, cGitOwner)
+	// model, err := presentRecap(gitProviderFlag, gitDestDescriptor, cGitOwner)
 	//if err != nil {
 	//	return err
 	//}
@@ -520,7 +520,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		gitopsDirectoryTokens.UseTelemetry = "false"
 	}
 
-	//* generate http credentials for git auth over https
+	// * generate http credentials for git auth over https
 	httpAuth := &githttps.BasicAuth{
 		Username: cGitUser,
 		Password: cGitToken,
@@ -530,7 +530,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msgf("generate public keys failed: %s\n", err.Error())
 	}
 
-	//* download dependencies to `$HOME/.k1/tools`
+	// * download dependencies to `$HOME/.k1/tools`
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
 
@@ -557,7 +557,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		MetaphorProductionIngressURL:  fmt.Sprintf("metaphor-production.%s", k3d.DomainName),
 	}
 
-	//* git clone and detokenize the gitops repository
+	// * git clone and detokenize the gitops repository
 	// todo improve this logic for removing `kubefirst clean`
 	// if !viper.GetBool("template-repo.gitops.cloned") || viper.GetBool("template-repo.gitops.removed") {
 	progressPrinter.IncrementTracker("preflight-checks", 1)
@@ -683,7 +683,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	//* push detokenized gitops-template repository content to new remote
+	// * push detokenized gitops-template repository content to new remote
 	progressPrinter.AddTracker("pushing-gitops-repos-upstream", "Pushing git repositories", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
@@ -756,7 +756,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("pushing-gitops-repos-upstream", 1)
 	}
 
-	//* create k3d resources
+	// * create k3d resources
 
 	progressPrinter.AddTracker("creating-k3d-cluster", "Creating k3d cluster", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
@@ -905,7 +905,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	argoCDInstallPath := fmt.Sprintf("github.com:konstructio/manifests/argocd/k3d?ref=%s", constants.KubefirstManifestRepoRef)
-	//* install argo
+	// * install argo
 	executionControl = viper.GetBool("kubefirst-checks.argocd-install")
 	if !executionControl {
 		telemetry.SendEvent(segClient, telemetry.ArgoCDInstallStarted, "")
@@ -944,7 +944,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	var argocdPassword string
-	//* argocd pods are ready, get and set credentials
+	// * argocd pods are ready, get and set credentials
 	executionControl = viper.GetBool("kubefirst-checks.argocd-credentials-set")
 	if !executionControl {
 		log.Info().Msg("Setting argocd username and password credentials")
@@ -1024,7 +1024,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	//* argocd sync registry and start sync waves
+	// * argocd sync registry and start sync waves
 	executionControl = viper.GetBool("kubefirst-checks.argocd-create-registry")
 	if !executionControl {
 		telemetry.SendEvent(segClient, telemetry.CreateRegistryStarted, "")
@@ -1186,8 +1186,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	progressPrinter.IncrementTracker("configuring-vault", 1)
 
-	//* configure vault with terraform
-	//* vault port-forward
+	// * configure vault with terraform
+	// * vault port-forward
 	vaultStopChannel := make(chan struct{}, 1)
 	defer func() {
 		close(vaultStopChannel)
@@ -1227,7 +1227,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		)
 	}
 
-	//* configure vault with terraform
+	// * configure vault with terraform
 	executionControl = viper.GetBool("kubefirst-checks.terraform-apply-vault")
 	if !executionControl {
 		telemetry.SendEvent(segClient, telemetry.VaultTerraformApplyStarted, "")
@@ -1244,7 +1244,6 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		} else {
 			usernamePasswordString = fmt.Sprintf("%s:%s", cGitUser, cGitToken)
 			base64DockerAuth = base64.StdEncoding.EncodeToString([]byte(usernamePasswordString))
-
 		}
 
 		log.Info().Msg("configuring vault with terraform")
@@ -1286,7 +1285,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		progressPrinter.IncrementTracker("configuring-vault", 1)
 	}
 
-	//* create users
+	// * create users
 	progressPrinter.AddTracker("creating-users", "Creating users", 1)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 

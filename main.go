@@ -79,7 +79,7 @@ func main() {
 
 	k1Dir := fmt.Sprintf("%s/.k1", homePath)
 
-	//* create k1Dir if it doesn't exist
+	// * create k1Dir if it doesn't exist
 	if _, err := os.Stat(k1Dir); os.IsNotExist(err) {
 		err := os.MkdirAll(k1Dir, os.ModePerm)
 		if err != nil {
@@ -87,14 +87,14 @@ func main() {
 		}
 	}
 
-	//* create log directory
+	// * create log directory
 	logsFolder := fmt.Sprintf("%s/logs", k1Dir)
 	_ = os.Mkdir(logsFolder, 0o700)
 	if err != nil {
 		log.Fatal().Msgf("error creating logs directory: %s", err)
 	}
 
-	//* create session log file
+	// * create session log file
 	logfile := fmt.Sprintf("%s/%s", logsFolder, logfileName)
 	logFileObj, err := utils.OpenLogFile(logfile)
 	if err != nil {
