@@ -27,7 +27,7 @@ import (
 func main() {
 	argsWithProg := os.Args
 
-	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs"}
+	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs", "--ci"}
 	canRunBubbleTea := true
 
 	for _, arg := range argsWithProg {
@@ -120,7 +120,6 @@ func main() {
 	viper.Set("k1-paths.logs-dir", logsFolder)
 	viper.Set("k1-paths.log-file", logfile)
 	viper.Set("k1-paths.log-file-name", logfileName)
-	viper.Set("k1-canRunBubbleTea", canRunBubbleTea)
 
 	err = viper.WriteConfig()
 	if err != nil {
@@ -137,7 +136,7 @@ func main() {
 		_, err := progress.Progress.Run()
 
 		if err != nil {
-			stdLog.Panicf("unable to set log-file-location, error is: %s", err)
+			stdLog.Panicf("unable to run bubbletea program, error is: %s", err)
 		}
 	} else {
 		progress.DisableBubbleTeaExecution()
