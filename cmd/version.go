@@ -28,11 +28,16 @@ func Create() *cobra.Command {
 		Short: "print the version number for kubefirst-cli",
 		Long:  `All software has versions. This is kubefirst's`,
 		Run: func(cmd *cobra.Command, args []string) {
+			ciFlag, _ := cmd.Flags().GetBool("ci")
 			versionMsg := `
 ##
 ### kubefirst-cli golang utility version:` + fmt.Sprintf("`%s`", configs.K1Version)
 
-			progress.Success(versionMsg)
+			if ciFlag {
+				fmt.Print(versionMsg)
+			} else {
+				progress.Success(versionMsg)
+			}
 		},
 	}
 

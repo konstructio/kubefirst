@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/konstructio/kubefirst/internal/launch"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -96,12 +97,17 @@ func launchDeleteCluster() *cobra.Command {
 		TraverseChildren: true,
 		// PreRun:           common.CheckDocker,
 		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
-				return fmt.Errorf("you must provide a cluster name as the only argument to this command")
+			if len(args) < 1 {
+				return fmt.Errorf("you must provide a cluster name as the first argument")
 			}
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			ciFlag, _ := cmd.Flags().GetBool("ci")
+			if ciFlag {
+				progress.DisableBubbleTeaExecution()
+			}
+			// args[0] is the cluster name
 			launch.DeleteCluster(args[0])
 		},
 	}
