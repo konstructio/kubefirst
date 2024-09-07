@@ -7,10 +7,12 @@ See the LICENSE file for more details.
 package cmd
 
 import (
+	// "fmt"
+
 	"fmt"
 
 	"github.com/konstructio/kubefirst/internal/launch"
-	"github.com/konstructio/kubefirst/internal/progress"
+	// "github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -100,9 +102,6 @@ func launchDeleteCluster() *cobra.Command {
 			if len(args) < 1 {
 				return fmt.Errorf("you must provide a cluster name as the first argument")
 			}
-			if len(args) == 2 && args[1] == "ci" {
-				progress.DisableBubbleTeaExecution()
-			}
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -110,6 +109,6 @@ func launchDeleteCluster() *cobra.Command {
 			launch.DeleteCluster(args[0])
 		},
 	}
-
+	launchDeleteClusterCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
 	return launchDeleteClusterCmd
 }
