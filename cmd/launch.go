@@ -100,13 +100,12 @@ func launchDeleteCluster() *cobra.Command {
 			if len(args) < 1 {
 				return fmt.Errorf("you must provide a cluster name as the first argument")
 			}
+			if len(args) == 2 && args[1] == "ci" {
+				progress.DisableBubbleTeaExecution()
+			}
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			ciFlag, _ := cmd.Flags().GetBool("ci")
-			if ciFlag {
-				progress.DisableBubbleTeaExecution()
-			}
 			// args[0] is the cluster name
 			launch.DeleteCluster(args[0])
 		},
