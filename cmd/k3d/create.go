@@ -15,7 +15,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/atotto/clipboard"
@@ -52,9 +51,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func runK3d(cmd *cobra.Command, args []string) error {
@@ -104,6 +101,26 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	}
 
 	gitopsTemplateBranchFlag, err := cmd.Flags().GetString("gitops-template-branch")
+	if err != nil {
+		return err
+	}
+
+	gitopsRepoName, err := cmd.Flags().GetString("gitops-repo-name")
+	if err != nil {
+		return err
+	}
+
+	metaphorRepoName, err := cmd.Flags().GetString("metaphor-repo-name")
+	if err != nil {
+		return err
+	}
+
+	adminTeamName, err := cmd.Flags().GetString("admin-team-name")
+	if err != nil {
+		return err
+	}
+
+	developerTeamName, err := cmd.Flags().GetString("developer-team-name")
 	if err != nil {
 		return err
 	}
@@ -322,7 +339,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	//}
 
 	// Instantiate K3d config
-	config := k3d.GetConfig(clusterNameFlag, gitProviderFlag, cGitOwner, gitProtocolFlag)
+	config := k3d.GetConfig(clusterNameFlag, gitProviderFlag, cGitOwner, gitProtocolFlag, gitopsRepoName, metaphorRepoName, adminTeamName, developerTeamName)
 	switch gitProviderFlag {
 	case "github":
 		config.GithubToken = cGitToken
@@ -409,8 +426,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	// Objects to check for
 	// Repositories that will be created throughout the initialization process
-	newRepositoryNames := []string{"gitops", "metaphor"}
-	newTeamNames := []string{"admins", "developers"}
+	newRepositoryNames := []string{gitopsRepoName, metaphorRepoName}
+	newTeamNames := []string{adminTeamName, developerTeamName}
 
 	// Check git credentials
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", config.GitProvider))
@@ -534,7 +551,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
 
-		err := k3d.DownloadTools(clusterNameFlag, config.GitProvider, cGitOwner, config.ToolsDir, config.GitProtocol)
+		err := k3d.DownloadTools(clusterNameFlag, config.GitProvider, cGitOwner, config.ToolsDir, config.GitProtocol, gitopsRepoName, metaphorRepoName, adminTeamName, developerTeamName)
 		if err != nil {
 			return err
 		}
@@ -568,6 +585,7 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	if viper.GetString("secrets.atlantis-ngrok-authtoken") == "" {
 		removeAtlantis = true
 	}
+
 	if !viper.GetBool("kubefirst-checks.gitops-ready-to-push") {
 		log.Info().Msg("generating your new gitops repository")
 		err := k3d.PrepareGitRepositories(
@@ -585,6 +603,8 @@ func runK3d(cmd *cobra.Command, args []string) error {
 			&metaphorTemplateTokens,
 			gitProtocolFlag,
 			removeAtlantis,
+			config.GitopsRepoName,
+			config.MetaphorRepoName,
 		)
 		if err != nil {
 			return err
@@ -597,6 +617,11 @@ func runK3d(cmd *cobra.Command, args []string) error {
 	} else {
 		log.Info().Msg("already completed gitops repo generation - continuing")
 		progressPrinter.IncrementTracker("cloning-and-formatting-git-repositories", 1)
+	}
+
+	log.Info().Msg("Terraform Prep")
+	if prep_err := k3d.TerraformPrep(config); prep_err != nil {
+		return prep_err
 	}
 
 	progressPrinter.AddTracker("applying-git-terraform", fmt.Sprintf("Applying %s Terraform", config.GitProvider), 1)
@@ -1036,35 +1061,12 @@ func runK3d(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("applying the registry application to argocd")
 		registryApplicationObject := argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
 
-		err = k3d.RestartDeployment(context.Background(), kcfg.Clientset, "argocd", "argocd-applicationset-controller")
-		if err != nil {
-			return fmt.Errorf("error in restarting argocd controller %w", err)
-		}
-
-		err = wait.PollImmediate(5*time.Second, 20*time.Second, func() (bool, error) {
-			_, err := argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
-			if err != nil {
-				if errors.Is(err, syscall.ECONNREFUSED) {
-					return false, nil // retry if we can't connect to it
-				}
-
-				if apierrors.IsAlreadyExists(err) {
-					return true, nil // application already exists
-				}
-
-				return false, fmt.Errorf("error creating argocd application : %w", err)
-			}
-			return true, nil
-		})
-		if err != nil {
-			return fmt.Errorf("error creating argocd application : %w", err)
-		}
-
-		log.Info().Msg("Argo CD application created successfully")
+		_, _ = argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
 		viper.Set("kubefirst-checks.argocd-create-registry", true)
 		viper.WriteConfig()
 		telemetry.SendEvent(segClient, telemetry.CreateRegistryCompleted, "")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)
+
 	} else {
 		log.Info().Msg("argocd registry create already done, continuing")
 		progressPrinter.IncrementTracker("installing-argo-cd", 1)

@@ -12,6 +12,7 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/k3d"
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
+	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -32,6 +33,12 @@ func mkCert(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	gitopsRepoName, metaphorRepoName, err := common.GetGitmeta(viper.GetString("flags.cluster-name"))
+
+	if err != nil {
+		return fmt.Errorf("error in getting repo info: %w", err)
+	}
+
 	flags := utils.GetClusterStatusFlags()
 	if !flags.SetupComplete {
 		return fmt.Errorf("there doesn't appear to be an active k3d cluster")
@@ -41,6 +48,10 @@ func mkCert(cmd *cobra.Command, args []string) error {
 		flags.GitProvider,
 		viper.GetString(fmt.Sprintf("flags.%s-owner", flags.GitProvider)),
 		flags.GitProtocol,
+		gitopsRepoName,
+		metaphorRepoName,
+		viper.GetString("adminTeamName"),
+		viper.GetString("developerTeamName"),
 	)
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 

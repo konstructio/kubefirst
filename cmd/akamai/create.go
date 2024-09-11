@@ -9,7 +9,6 @@ package akamai
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
 	pkg "github.com/konstructio/kubefirst-api/pkg/utils"
@@ -50,6 +49,7 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
+
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate git credentials: %w", err)
@@ -81,9 +81,7 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 	}
 
 	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
-	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
-
-	if !k3dClusterCreationComplete && !isK1Debug {
+	if !k3dClusterCreationComplete {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 

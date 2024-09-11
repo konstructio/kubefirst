@@ -17,6 +17,7 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/k3d"
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
+	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -39,11 +40,21 @@ func unsealVault(cmd *cobra.Command, args []string) error {
 	if !flags.SetupComplete {
 		return fmt.Errorf("there doesn't appear to be an active k3d cluster")
 	}
+	gitopsRepoName, metaphorRepoName, err := common.GetGitmeta(viper.GetString("flags.cluster-name"))
+
+	if err != nil {
+		return fmt.Errorf("error in getting repo info: %w", err)
+	}
+
 	config := k3d.GetConfig(
 		viper.GetString("flags.cluster-name"),
 		flags.GitProvider,
 		viper.GetString(fmt.Sprintf("flags.%s-owner", flags.GitProvider)),
 		flags.GitProtocol,
+		gitopsRepoName,
+		metaphorRepoName,
+		viper.GetString("adminTeamName"),
+		viper.GetString("developerTeamName"),
 	)
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 

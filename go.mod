@@ -14,7 +14,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/hashicorp/vault/api v1.9.0
-	github.com/konstructio/kubefirst-api v0.102.0
+	github.com/konstructio/kubefirst-api v0.105.0
 	github.com/kubefirst/metrics-client v0.3.0
 	github.com/nxadm/tail v1.4.8
 	github.com/rs/zerolog v1.29.1
@@ -24,7 +24,7 @@ require (
 	go.mongodb.org/mongo-driver v1.10.3
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	k8s.io/api v0.27.1
-	k8s.io/apimachinery v0.27.1
+	k8s.io/apimachinery v0.31.0
 	k8s.io/client-go v11.0.1-0.20190816222228-6d55c1b1f1ca+incompatible
 )
 
@@ -332,3 +332,4 @@ replace (
 	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.24.2
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.24.2
 )
+

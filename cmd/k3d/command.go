@@ -30,6 +30,10 @@ var (
 	gitopsTemplateBranchFlag string
 	useTelemetryFlag         bool
 	installCatalogApps       string
+	gitopsRepoName           string
+	metaphorRepoName         string
+	adminTeamName            string
+	developerTeamName        string
 
 	// RootCredentials
 	copyArgoCDPasswordToClipboardFlag bool
@@ -98,6 +102,10 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/konstructio/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
 	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma separated values of catalog apps to install after provision")
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
+	createCmd.Flags().StringVar(&gitopsRepoName, "gitops-repo-name", "gitops", "the custom gitops name")
+	createCmd.Flags().StringVar(&metaphorRepoName, "metaphor-repo-name", "metaphor", "the custom metaphor name")
+	createCmd.Flags().StringVar(&adminTeamName, "admin-team-name", "admins", "admin team name for this repo")
+	createCmd.Flags().StringVar(&developerTeamName, "developer-team-name", "developers", "developer team name for this repo")
 
 	return createCmd
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/credentials"
 	"github.com/konstructio/kubefirst-api/pkg/k3d"
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
+	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -23,6 +24,11 @@ func getK3dRootCredentials(cmd *cobra.Command, args []string) error {
 	gitProvider := viper.GetString("flags.git-provider")
 	gitProtocol := viper.GetString("flags.git-protocol")
 	gitOwner := viper.GetString(fmt.Sprintf("flags.%s-owner", gitProvider))
+	gitopsRepoName, metaphorRepoName, err := common.GetGitmeta(clusterName)
+
+	if err != nil {
+		return fmt.Errorf("error in getting repo info: %w", err)
+	}
 
 	// Parse flags
 	a, err := cmd.Flags().GetBool("argocd")
@@ -55,7 +61,7 @@ func getK3dRootCredentials(cmd *cobra.Command, args []string) error {
 	}
 
 	// Instantiate kubernetes client
-	config := k3d.GetConfig(clusterName, gitProvider, gitOwner, gitProtocol)
+	config := k3d.GetConfig(clusterName, gitProvider, gitOwner, gitProtocol, gitopsRepoName, metaphorRepoName, viper.GetString("adminTeamName"), viper.GetString("developerTeamName"))
 
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 

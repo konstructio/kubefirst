@@ -36,6 +36,16 @@ func backupCivoSSL(cmd *cobra.Command, args []string) error {
 		log.Panic().Msgf("invalid git provider option")
 	}
 
+	gitopsRepoName, err := cmd.Flags().GetString("gitopRepoName")
+	if err != nil {
+		return err
+	}
+
+	metaphorRepoName, err := cmd.Flags().GetString("metaphorRepoName")
+	if err != nil {
+		return err
+	}
+
 	config := providerConfigs.GetConfig(
 		clusterName,
 		domainName,
@@ -44,6 +54,10 @@ func backupCivoSSL(cmd *cobra.Command, args []string) error {
 		gitProtocol,
 		os.Getenv("CF_API_TOKEN"),
 		os.Getenv("CF_ORIGIN_CA_ISSUER_API_TOKEN"),
+		gitopsRepoName,
+		metaphorRepoName,
+		adminTeamName,
+		developerTeamName,
 	)
 
 	if _, err := os.Stat(config.SSLBackupDir + "/certificates"); os.IsNotExist(err) {
@@ -61,7 +75,7 @@ func backupCivoSSL(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	err := ssl.Backup(config.SSLBackupDir, domainNameFlag, config.K1Dir, config.Kubeconfig)
+	err = ssl.Backup(config.SSLBackupDir, domainNameFlag, config.K1Dir, config.Kubeconfig)
 	if err != nil {
 		log.Info().Msg("error backing up ssl resources")
 		return err
