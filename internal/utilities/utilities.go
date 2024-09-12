@@ -7,11 +7,9 @@ See the LICENSE file for more details.
 package utilities
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -266,40 +264,6 @@ func ExportCluster(cluster apiTypes.Cluster, kcfg *k8s.KubernetesClient) error {
 	}
 
 	return nil
-}
-
-func ConsumeStream(url string) {
-	client := &http.Client{}
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		log.Error().Msgf("Error creating request: %s", err)
-		return
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Error().Msgf("Error making request: %s", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		log.Error().Msgf("Unexpected status code: %s", resp.Status)
-		return
-	}
-
-	// Read and print the streamed data until done signal is received
-	scanner := bufio.NewScanner(resp.Body)
-	for scanner.Scan() {
-		data := scanner.Text()
-		log.Info().Msg(data)
-	}
-
-	if err := scanner.Err(); err != nil {
-		log.Error().Msgf("Error reading response: %s", err)
-		return
-	}
 }
 
 func ParseJSONToMap(jsonStr string) (map[string][]byte, error) {

@@ -73,7 +73,9 @@ func createAkamai(cmd *cobra.Command, _ []string) error {
 		}
 	}
 	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider), true)
-	viper.WriteConfig()
+	if err := viper.WriteConfig(); err != nil {
+		return fmt.Errorf("failed to write viper config: %w", err)
+	}
 
 	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
 	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
@@ -85,7 +87,7 @@ func createAkamai(cmd *cobra.Command, _ []string) error {
 	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresURL()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
-		return fmt.Errorf("kubefirst api is unavailable: %w", err)
+		return fmt.Errorf("failed to check kubefirst api availability: %w", err)
 	}
 
 	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
