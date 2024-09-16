@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/charmbracelet/glamour"
 	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
 	"github.com/konstructio/kubefirst/internal/progress"
@@ -34,10 +33,8 @@ var resetCmd = &cobra.Command{
 		switch v := checksMap.(type) {
 		case nil:
 			// Handle the nil case explicitly
-			in := `# Successfully reset`
-			out, _ := glamour.Render(in, "dark")
-			fmt.Print(out)
-			progress.Progress.Quit()
+			message := `# Succesfully reset`
+			progress.Success(message)
 			return nil
 		case string:
 			if v == "" {
