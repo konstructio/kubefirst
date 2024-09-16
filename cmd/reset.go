@@ -31,14 +31,14 @@ var resetCmd = &cobra.Command{
 		cloudProvider := viper.GetString("kubefirst.cloud-provider")
 
 		checksMap := viper.Get("kubefirst-checks")
-		if checksMap == nil {
-			in := `# Succesfully reset`
+		switch v := checksMap.(type) {
+		case nil:
+			// Handle the nil case explicitly
+			in := `# Successfully reset`
 			out, _ := glamour.Render(in, "dark")
 			fmt.Print(out)
 			progress.Progress.Quit()
 			return nil
-		}
-		switch v := checksMap.(type) {
 		case string:
 			if v == "" {
 				log.Info().Msg("checks map is empty, continuing")
