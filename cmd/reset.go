@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/charmbracelet/glamour"
 	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
 	"github.com/konstructio/kubefirst/internal/progress"
@@ -30,6 +31,13 @@ var resetCmd = &cobra.Command{
 		cloudProvider := viper.GetString("kubefirst.cloud-provider")
 
 		checksMap := viper.Get("kubefirst-checks")
+		if checksMap == nil {
+			in := `# Succesfully reset`
+			out, _ := glamour.Render(in, "dark")
+			fmt.Print(out)
+			progress.Progress.Quit()
+			return nil
+		}
 		switch v := checksMap.(type) {
 		case string:
 			if v == "" {
