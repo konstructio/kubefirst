@@ -17,6 +17,7 @@ import (
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
 	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/cluster"
+	"github.com/konstructio/kubefirst/internal/docker"
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/launch"
 	"github.com/konstructio/kubefirst/internal/progress"
@@ -33,6 +34,13 @@ func createK3s(cmd *cobra.Command, args []string) error {
 		progress.Error(err.Error())
 		log.Fatal().Msgf("error collecting flags: %s", err)
 		return nil
+	}
+
+	log.Info().Msg("Check Docker status")
+	err = docker.Checkstatus()
+	if err != nil {
+		log.Info().Msgf("%s", err)
+		return err
 	}
 
 	progress.DisplayLogHints(20)

@@ -43,6 +43,7 @@ import (
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
 	"github.com/konstructio/kubefirst-api/pkg/wrappers"
 	"github.com/konstructio/kubefirst/internal/catalog"
+	docker "github.com/konstructio/kubefirst/internal/docker"
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/segment"
@@ -129,6 +130,13 @@ func runK3d(cmd *cobra.Command, args []string) error {
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(installCatalogAppsFlag)
 	if !isValid {
+		return err
+	}
+
+	log.Info().Msg("Check Docker status")
+	err = docker.Checkstatus()
+	if err != nil {
+		log.Info().Msgf("%s", err)
 		return err
 	}
 
