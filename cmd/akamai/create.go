@@ -84,7 +84,7 @@ func createAkamai(cmd *cobra.Command, _ []string) error {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 
-	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresURL()), "kubefirst api")
+	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
 		return fmt.Errorf("failed to check kubefirst api availability: %w", err)
