@@ -31,6 +31,11 @@ var resetCmd = &cobra.Command{
 
 		checksMap := viper.Get("kubefirst-checks")
 		switch v := checksMap.(type) {
+		case nil:
+			// Handle the nil case explicitly
+			message := `# Succesfully reset`
+			progress.Success(message)
+			return nil
 		case string:
 			if v == "" {
 				log.Info().Msg("checks map is empty, continuing")
