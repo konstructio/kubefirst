@@ -117,6 +117,8 @@ func ResetClusterProgress(clusterName string) error {
 	return nil
 }
 
+var ErrNotFound = fmt.Errorf("cluster not found")
+
 func GetCluster(clusterName string) (apiTypes.Cluster, error) {
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
 	httpClient := http.Client{Transport: customTransport}
@@ -137,8 +139,13 @@ func GetCluster(clusterName string) (apiTypes.Cluster, error) {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		log.Printf("unable to get cluster: %q, continuing", res.Status)
+	switch res.StatusCode {
+	case http.StatusNotFound:
+		return cluster, ErrNotFound
+	case http.StatusOK:
+		// continue with the rest
+	default:
+		log.Printf("unable to get cluster: %q", res.Status)
 		return cluster, fmt.Errorf("unable to get cluster: %q", res.Status)
 	}
 

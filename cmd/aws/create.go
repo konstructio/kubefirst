@@ -124,7 +124,11 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to check kubefirst API availability: %w", err)
 	}
 
-	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
+	if err := provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps); err != nil {
+		progress.Error(err.Error())
+		return fmt.Errorf("failed to create management cluster: %w", err)
+	}
+
 	return nil
 }
 
