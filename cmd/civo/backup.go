@@ -37,7 +37,7 @@ func backupCivoSSL(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("invalid git provider option: %q", gitProvider)
 	}
 
-	config := providerConfigs.GetConfig(
+	config, err := providerConfigs.GetConfig(
 		clusterName,
 		domainName,
 		gitProvider,
@@ -46,6 +46,9 @@ func backupCivoSSL(_ *cobra.Command, _ []string) error {
 		os.Getenv("CF_API_TOKEN"),
 		os.Getenv("CF_ORIGIN_CA_ISSUER_API_TOKEN"),
 	)
+	if err != nil {
+		return fmt.Errorf("failed to get config: %w", err)
+	}
 
 	if _, err := os.Stat(config.SSLBackupDir + "/certificates"); os.IsNotExist(err) {
 		// path/to/whatever does not exist
@@ -62,7 +65,7 @@ func backupCivoSSL(_ *cobra.Command, _ []string) error {
 		}
 	}
 
-	err := ssl.Backup(config.SSLBackupDir, domainName, config.K1Dir, config.Kubeconfig)
+	err = ssl.Backup(config.SSLBackupDir, config.Kubeconfig)
 	if err != nil {
 		return fmt.Errorf("error backing up SSL resources: %w", err)
 	}

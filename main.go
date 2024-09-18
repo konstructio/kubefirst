@@ -36,7 +36,12 @@ func main() {
 		}
 	}
 
-	config := configs.ReadConfig()
+	config, err := configs.ReadConfig()
+	if err != nil {
+		log.Error().Msgf("failed to read config: %v", err)
+		return
+	}
+
 	if err := utils.SetupViper(config, true); err != nil {
 		log.Error().Msgf("failed to setup Viper: %v", err)
 		return

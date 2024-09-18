@@ -62,7 +62,11 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("invalid git provider option: %q", gitProvider)
 	}
 
-	config := k3d.GetConfig(clusterName, gitProvider, cGitOwner, gitProtocol)
+	config, err := k3d.GetConfig(clusterName, gitProvider, cGitOwner, gitProtocol)
+	if err != nil {
+		return fmt.Errorf("failed to get config: %w", err)
+	}
+
 	switch gitProvider {
 	case "github":
 		config.GithubToken = cGitToken
@@ -70,7 +74,10 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 		config.GitlabToken = cGitToken
 	}
 
-	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
+	kcfg, err := k8s.CreateKubeConfig(false, config.Kubeconfig)
+	if err != nil {
+		return fmt.Errorf("unable to create kubeconfig: %w", err)
+	}
 
 	if len(cGitToken) == 0 {
 		return fmt.Errorf(
@@ -91,7 +98,7 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 		k8s.OpenPortForwardPodWrapper(kcfg.Clientset, kcfg.RestConfig, "minio", "minio", 9000, 9000, minioStopChannel)
 	}
 
-	progressPrinter.IncrementTracker("preflight-checks", 1)
+	progressPrinter.IncrementTracker("preflight-checks")
 
 	switch gitProvider {
 	case "github":
@@ -117,7 +124,7 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 			viper.Set("kubefirst-checks.terraform-apply-github", false)
 			viper.WriteConfig()
 			log.Info().Msg("github resources terraform destroyed")
-			progressPrinter.IncrementTracker("platform-destroy", 1)
+			progressPrinter.IncrementTracker("platform-destroy")
 		}
 	case "gitlab":
 		if viper.GetBool("kubefirst-checks.terraform-apply-gitlab") {
@@ -169,7 +176,7 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", false)
 			viper.WriteConfig()
 			log.Info().Msg("gitlab resources terraform destroyed")
-			progressPrinter.IncrementTracker("platform-destroy", 1)
+			progressPrinter.IncrementTracker("platform-destroy")
 		}
 	}
 
@@ -183,7 +190,7 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 		viper.Set("kubefirst-checks.create-k3d-cluster", false)
 		viper.WriteConfig()
 		log.Info().Msg("k3d resources terraform destroyed")
-		progressPrinter.IncrementTracker("platform-destroy", 1)
+		progressPrinter.IncrementTracker("platform-destroy")
 	}
 
 	if viper.GetString("kbot.gitlab-user-based-ssh-key-title") != "" {

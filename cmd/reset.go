@@ -112,7 +112,7 @@ func runReset() error {
 		return fmt.Errorf("error resetting k1 directory: %w", err)
 	}
 	log.Info().Msg("previous platform content removed")
-	progressPrinter.IncrementTracker("removing-platform-content", 1)
+	progressPrinter.IncrementTracker("removing-platform-content")
 
 	log.Info().Msg("resetting $HOME/.kubefirst config")
 	viper.Set("argocd", "")
@@ -133,7 +133,7 @@ func runReset() error {
 		}
 	}
 
-	progressPrinter.IncrementTracker("removing-platform-content", 1)
+	progressPrinter.IncrementTracker("removing-platform-content")
 	time.Sleep(time.Second * 2)
 	progress.Progress.Quit()
 

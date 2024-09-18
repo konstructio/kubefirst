@@ -80,7 +80,7 @@ func CreateClusterRecordFromRaw(
 		GitProvider:            gitProvider,
 		GitHost:                fmt.Sprintf("%s.com", gitProvider),
 		GitProtocol:            viper.GetString("flags.git-protocol"),
-		DnsProvider:            viper.GetString("flags.dns-provider"),
+		DNSProvider:            viper.GetString("flags.dns-provider"),
 		GitlabOwnerGroupID:     gitlabOwnerGroupID,
 		AtlantisWebhookSecret:  viper.GetString("secrets.atlantis-webhook"),
 		AtlantisWebhookURL:     fmt.Sprintf("https://atlantis.%s/events", domainName),
@@ -159,7 +159,7 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 		GitopsTemplateBranch:   cliFlags.GitopsTemplateBranch,
 		GitProvider:            gitProvider,
 		GitProtocol:            viper.GetString("flags.git-protocol"),
-		DnsProvider:            viper.GetString("flags.dns-provider"),
+		DNSProvider:            viper.GetString("flags.dns-provider"),
 		LogFileName:            viper.GetString("k1-paths.log-file-name"),
 		PostInstallCatalogApps: catalogApps,
 		InstallKubefirstPro:    cliFlags.InstallKubefirstPro,
@@ -202,8 +202,8 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 	case "k3s":
 		cl.K3sAuth.K3sServersPrivateIps = viper.GetStringSlice("flags.servers-private-ips")
 		cl.K3sAuth.K3sServersPublicIps = viper.GetStringSlice("flags.servers-public-ips")
-		cl.K3sAuth.K3sSshUser = viper.GetString("flags.ssh-user")
-		cl.K3sAuth.K3sSshPrivateKey = viper.GetString("flags.ssh-privatekey")
+		cl.K3sAuth.K3sSSHUser = viper.GetString("flags.ssh-user")
+		cl.K3sAuth.K3sSSHPrivateKey = viper.GetString("flags.ssh-privatekey")
 		cl.K3sAuth.K3sServersArgs = viper.GetStringSlice("flags.servers-args")
 	case "google":
 		jsonFilePath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
@@ -222,7 +222,7 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 		}
 
 		cl.GoogleAuth.KeyFile = string(jsonContent)
-		cl.GoogleAuth.ProjectId = cliFlags.GoogleProject
+		cl.GoogleAuth.ProjectID = cliFlags.GoogleProject
 	}
 
 	return cl

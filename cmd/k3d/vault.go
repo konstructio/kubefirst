@@ -38,13 +38,20 @@ func unsealVault(_ *cobra.Command, _ []string) error {
 	if !flags.SetupComplete {
 		return fmt.Errorf("failed to unseal vault: there doesn't appear to be an active k3d cluster")
 	}
-	config := k3d.GetConfig(
+	config, err := k3d.GetConfig(
 		viper.GetString("flags.cluster-name"),
 		flags.GitProvider,
 		viper.GetString(fmt.Sprintf("flags.%s-owner", flags.GitProvider)),
 		flags.GitProtocol,
 	)
-	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to get config: %w", err)
+	}
+
+	kcfg, err := k8s.CreateKubeConfig(false, config.Kubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to create kubeconfig: %w", err)
+	}
 
 	vaultClient, err := api.NewClient(&api.Config{
 		Address: "https://vault.kubefirst.dev",
@@ -110,7 +117,7 @@ func unsealVault(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func parseExistingVaultInitSecret(clientset *kubernetes.Clientset) (*api.InitResponse, error) {
+func parseExistingVaultInitSecret(clientset kubernetes.Interface) (*api.InitResponse, error) {
 	secret, err := k8s.ReadSecretV2(clientset, vaultNamespace, vaultSecretName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read secret: %w", err)
