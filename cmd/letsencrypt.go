@@ -7,7 +7,7 @@ See the LICENSE file for more details.
 package cmd
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/certificates"
 	"github.com/konstructio/kubefirst/internal/progress"

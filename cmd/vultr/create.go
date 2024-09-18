@@ -102,15 +102,11 @@ func createVultr(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("kubefirst api availability check failed: %w", err)
 	}
 
-<<<<<<< HEAD
 	if err := provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps); err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to create management cluster: %w", err)
 	}
 
-=======
-	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
->>>>>>> bb91e1c (Clean up code using GolangCI-Lint)
 	return nil
 }
 
