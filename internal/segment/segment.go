@@ -1,6 +1,7 @@
 package segment
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/denisbrodbeck/machineid"
@@ -13,13 +14,16 @@ const (
 	kubefirstClient string = "api"
 )
 
-func InitClient(clusterId, clusterType, gitProvider string) telemetry.TelemetryEvent {
-	machineID, _ := machineid.ID()
+func InitClient(clusterID, clusterType, gitProvider string) (telemetry.TelemetryEvent, error) {
+	machineID, err := machineid.ID()
+	if err != nil {
+		return telemetry.TelemetryEvent{}, fmt.Errorf("failed to get machine ID: %w", err)
+	}
 
 	c := telemetry.TelemetryEvent{
 		CliVersion:        configs.K1Version,
 		CloudProvider:     k3d.CloudProvider,
-		ClusterID:         clusterId,
+		ClusterID:         clusterID,
 		ClusterType:       clusterType,
 		DomainName:        k3d.DomainName,
 		GitProvider:       gitProvider,
@@ -33,5 +37,5 @@ func InitClient(clusterId, clusterType, gitProvider string) telemetry.TelemetryE
 		UserId:            machineID,
 	}
 
-	return c
+	return c, nil
 }

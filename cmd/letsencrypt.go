@@ -20,8 +20,8 @@ var domainNameFlag string
 func LetsEncryptCommand() *cobra.Command {
 	letsEncryptCommand := &cobra.Command{
 		Use:   "letsencrypt",
-		Short: "interact with letsencrypt certificates for a domain",
-		Long:  "interact with letsencrypt certificates for a domain",
+		Short: "interact with LetsEncrypt certificates for a domain",
+		Long:  "interact with LetsEncrypt certificates for a domain",
 	}
 
 	// wire up new commands
@@ -33,12 +33,11 @@ func LetsEncryptCommand() *cobra.Command {
 func status() *cobra.Command {
 	statusCmd := &cobra.Command{
 		Use:              "status",
-		Short:            "check the usage statistics for a letsencrypt certificate",
+		Short:            "check the usage statistics for a LetsEncrypt certificate",
 		TraverseChildren: true,
-		Run: func(cmd *cobra.Command, args []string) {
-			err := certificates.CheckCertificateUsage(domainNameFlag)
-			if err != nil {
-				fmt.Println(err)
+		Run: func(_ *cobra.Command, _ []string) {
+			if err := certificates.CheckCertificateUsage(domainNameFlag); err != nil {
+				fmt.Printf("failed to check certificate usage for domain %q: %s\n", domainNameFlag, err)
 			}
 			progress.Progress.Quit()
 		},

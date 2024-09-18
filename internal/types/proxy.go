@@ -12,9 +12,9 @@ import (
 
 type ProxyCreateClusterRequest struct {
 	Body apiTypes.ClusterDefinition `bson:"body" json:"body"`
-	Url  string                     `bson:"url" json:"url"`
+	URL  string                     `bson:"url" json:"url"`
 }
 
 type ProxyResetClusterRequest struct {
-	Url string `bson:"url" json:"url"`
+	URL string `bson:"url" json:"url"`
 }

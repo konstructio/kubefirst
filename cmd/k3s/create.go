@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package k3s
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -24,34 +25,37 @@ import (
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // required for k8s authentication
 )
 
-func createK3s(cmd *cobra.Command, args []string) error {
+func createK3s(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "k3s")
 	if err != nil {
 		progress.Error(err.Error())
-		log.Fatal().Msgf("error collecting flags: %s", err)
-		return nil
+		return fmt.Errorf("error collecting flags: %w", err)
 	}
 
 	progress.DisplayLogHints(20)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	if err != nil {
+		return fmt.Errorf("validation of catalog apps failed: %w", err)
+	}
+
 	if !isValid {
-		return err
+		return errors.New("catalog validation failed")
 	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("provided flags validation failed: %w", err)
 	}
 
 	// If cluster setup is complete, return
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
-		err = fmt.Errorf("this cluster install process has already completed successfully")
+		err = errors.New("this cluster install process has already completed successfully")
 		progress.Error(err.Error())
 		return nil
 	}
@@ -61,7 +65,7 @@ func createK3s(cmd *cobra.Command, args []string) error {
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("git credentials validation failed: %w", err)
 	}
 
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider))
@@ -79,11 +83,14 @@ func createK3s(cmd *cobra.Command, args []string) error {
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
 			progress.Error(err.Error())
-			return nil
+			return fmt.Errorf("initialization of git provider failed: %w", err)
 		}
 	}
 	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider), true)
-	viper.WriteConfig()
+
+	if err := viper.WriteConfig(); err != nil {
+		return fmt.Errorf("writing config failed: %w", err)
+	}
 
 	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
 	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
@@ -92,12 +99,16 @@ func createK3s(cmd *cobra.Command, args []string) error {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 
-	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
+	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
+		return fmt.Errorf("app availability check failed: %w", err)
 	}
 
-	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
+	if err := provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps); err != nil {
+		progress.Error(err.Error())
+		return fmt.Errorf("failed to create management cluster: %w", err)
+	}
 
 	return nil
 }
@@ -110,16 +121,14 @@ func ValidateProvidedFlags(gitProvider string) error {
 		key, err := internalssh.GetHostKey("github.com")
 		if err != nil {
 			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "github.com", key.Type())
 		}
+		log.Info().Msgf("%q %s", "github.com", key.Type())
 	case "gitlab":
 		key, err := internalssh.GetHostKey("gitlab.com")
 		if err != nil {
 			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
 		}
+		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
 	progress.CompleteStep("Validate provided flags")

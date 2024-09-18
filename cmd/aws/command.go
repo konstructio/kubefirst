@@ -49,7 +49,7 @@ func NewCommand() *cobra.Command {
 		Use:   "aws",
 		Short: "kubefirst aws installation",
 		Long:  "kubefirst aws",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about aws in kubefirst, run:")
 			fmt.Println("  kubefirst help")
 
@@ -85,12 +85,12 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
 	createCmd.Flags().StringVar(&nodeCountFlag, "node-count", awsDefaults.NodeCount, "the node count for the cluster")
 	createCmd.Flags().StringVar(&nodeTypeFlag, "node-type", awsDefaults.InstanceSize, "the instance size of the cluster to create")
-	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "aws", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
+	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "aws", fmt.Sprintf("the dns provider - one of: %q", supportedDNSProviders))
 	createCmd.Flags().StringVar(&subdomainNameFlag, "subdomain", "", "the subdomain to use for DNS records (Cloudflare)")
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the Route53/Cloudflare hosted zone name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
-	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
-	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %s", supportedGitProtocolOverride))
+	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %q", supportedGitProviders))
+	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %q", supportedGitProtocolOverride))
 	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - required if using github")
 	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "", "the branch to clone for the gitops-template repository")

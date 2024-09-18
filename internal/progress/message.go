@@ -56,7 +56,7 @@ func DisplayLogHints(estimatedTime int) {
 
 	documentationLink := "https://docs.kubefirst.io/"
 	if cloudProvider != "" {
-		documentationLink = documentationLink + cloudProvider + `/quick-start/install/cli`
+		documentationLink += cloudProvider + `/quick-start/install/cli`
 	}
 
 	header := `
@@ -76,43 +76,31 @@ func DisplayLogHints(estimatedTime int) {
 	})
 }
 
+//nolint:revive // will be fixed in the future
 func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 	cloudCliKubeconfig := ""
 
 	gitProviderLabel := "GitHub"
-
 	if cluster.GitProvider == "gitlab" {
 		gitProviderLabel = "GitLab"
 	}
 
 	switch cluster.CloudProvider {
 	case "aws":
-		cloudCliKubeconfig = fmt.Sprintf("aws eks update-kubeconfig --name %s --region %s", cluster.ClusterName, cluster.CloudRegion)
-		break
-
+		cloudCliKubeconfig = fmt.Sprintf("aws eks update-kubeconfig --name %q --region %q", cluster.ClusterName, cluster.CloudRegion)
 	case "civo":
-		cloudCliKubeconfig = fmt.Sprintf("civo kubernetes config %s --save", cluster.ClusterName)
-		break
-
+		cloudCliKubeconfig = fmt.Sprintf("civo kubernetes config %q --save", cluster.ClusterName)
 	case "digitalocean":
 		cloudCliKubeconfig = "doctl kubernetes cluster kubeconfig save " + cluster.ClusterName
-		break
-
 	case "google":
-		cloudCliKubeconfig = fmt.Sprintf("gcloud container clusters get-credentials %s --region=%s", cluster.ClusterName, cluster.CloudRegion)
-		break
-
+		cloudCliKubeconfig = fmt.Sprintf("gcloud container clusters get-credentials %q --region=%q", cluster.ClusterName, cluster.CloudRegion)
 	case "vultr":
-		cloudCliKubeconfig = fmt.Sprintf("vultr-cli kubernetes config %s", cluster.ClusterName)
-		break
-
+		cloudCliKubeconfig = fmt.Sprintf("vultr-cli kubernetes config %q", cluster.ClusterName)
 	case "k3s":
-		cloudCliKubeconfig = fmt.Sprint(("use the kubeconfig file outputted from terraform to acces to the cluster"))
-		break
+		cloudCliKubeconfig = "use the kubeconfig file outputted from terraform to access the cluster"
 	}
 
 	var fullDomainName string
-
 	if cluster.SubdomainName != "" {
 		fullDomainName = fmt.Sprintf("%s.%s", cluster.SubdomainName, cluster.DomainName)
 	} else {
@@ -123,7 +111,7 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 ##
 #### :tada: Success` + "`Cluster " + cluster.ClusterName + " is now up and running`" + `
 
-# Cluster ` + cluster.ClusterName + `” details:
+# Cluster ` + cluster.ClusterName + ` details:
 
 ### :bulb: To retrieve root credentials for your Kubefirst platform run:
 ##### kubefirst ` + cluster.CloudProvider + ` root-credentials
@@ -136,7 +124,7 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 ### URL         ` + fmt.Sprintf("`https://kubefirst.%s`", fullDomainName) + `
 ## Argo CD
 ### URL         ` + fmt.Sprintf("`https://argocd.%s`", fullDomainName) + `
-## Vault 
+## Vault
 ### URL         ` + fmt.Sprintf("`https://vault.%s`", fullDomainName) + `
 
 
@@ -148,6 +136,7 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 ### To view all cluster pods run:
 ##### kubectl get pods -A
 `
+
 	successMessage := renderMessage(success)
 
 	return successMsg{

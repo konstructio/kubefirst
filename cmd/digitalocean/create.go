@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package digitalocean
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -25,24 +26,28 @@ import (
 	"github.com/spf13/viper"
 )
 
-func createDigitalocean(cmd *cobra.Command, args []string) error {
+func createDigitalocean(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "digitalocean")
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to get CLI flags: %w", err)
 	}
 
 	progress.DisplayLogHints(20)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	if err != nil {
+		return fmt.Errorf("catalog validation error: %w", err)
+	}
+
 	if !isValid {
-		return err
+		return errors.New("catalog did not pass a validation check")
 	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to validate provided flags: %w", err)
 	}
 
 	// If cluster setup is complete, return
@@ -50,7 +55,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	if clusterSetupComplete {
 		err = fmt.Errorf("this cluster install process has already completed successfully")
 		progress.Error(err.Error())
-		return nil
+		return err
 	}
 
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
@@ -58,7 +63,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
 		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to validate git credentials: %w", err)
 	}
 
 	// Validate git
@@ -78,7 +83,7 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
 			progress.Error(err.Error())
-			return nil
+			return fmt.Errorf("failed to initialize git provider: %w", err)
 		}
 	}
 	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider), true)
@@ -91,12 +96,16 @@ func createDigitalocean(cmd *cobra.Command, args []string) error {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 
-	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
+	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
+		return fmt.Errorf("failed to check app availability for Kubefirst API: %w", err)
 	}
 
-	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
+	if err := provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps); err != nil {
+		progress.Error(err.Error())
+		return fmt.Errorf("failed to create management cluster: %w", err)
+	}
 
 	return nil
 }
@@ -113,7 +122,7 @@ func ValidateProvidedFlags(gitProvider string) error {
 
 	for _, env := range []string{"DO_TOKEN", "DO_SPACES_KEY", "DO_SPACES_SECRET"} {
 		if os.Getenv(env) == "" {
-			return fmt.Errorf("your %s variable is unset - please set it before continuing", env)
+			return fmt.Errorf("your %q variable is unset - please set it before continuing", env)
 		}
 	}
 
@@ -122,16 +131,14 @@ func ValidateProvidedFlags(gitProvider string) error {
 		key, err := internalssh.GetHostKey("github.com")
 		if err != nil {
 			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "github.com", key.Type())
 		}
+		log.Info().Msgf("%q %s", "github.com", key.Type())
 	case "gitlab":
 		key, err := internalssh.GetHostKey("gitlab.com")
 		if err != nil {
 			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy")
-		} else {
-			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
 		}
+		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
 	progress.CompleteStep("Validate provided flags")

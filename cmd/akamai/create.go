@@ -25,7 +25,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func createAkamai(cmd *cobra.Command, args []string) error {
+func createAkamai(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "akamai")
 	if err != nil {
 		progress.Error(err.Error())
@@ -42,10 +42,8 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
 		progress.Error(err.Error())
-		return fmt.Errorf("failed to validate provided flags: %w", err)
+		return fmt.Errorf("failed to validate flags: %w", err)
 	}
-
-	// If cluster setup is complete, return
 
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
 
@@ -55,7 +53,6 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to validate git credentials: %w", err)
 	}
 
-	// Validate git
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider))
 	if !executionControl {
 		newRepositoryNames := []string{"gitops", "metaphor"}
@@ -87,13 +84,17 @@ func createAkamai(cmd *cobra.Command, args []string) error {
 		launch.Up(nil, true, cliFlags.UseTelemetry)
 	}
 
-	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngresUrl()), "kubefirst api")
+	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")
 	if err != nil {
 		progress.Error("unable to start kubefirst api")
 		return fmt.Errorf("failed to check kubefirst api availability: %w", err)
 	}
 
-	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
+	if err := provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps); err != nil {
+		progress.Error(err.Error())
+		return fmt.Errorf("failed to create management cluster: %w", err)
+	}
+
 	return nil
 }
 
@@ -104,7 +105,6 @@ func ValidateProvidedFlags(gitProvider string) error {
 		return fmt.Errorf("your LINODE_TOKEN is not set - please set and re-run your last command")
 	}
 
-	// Validate required environment variables for dns provider
 	if dnsProviderFlag == "cloudflare" {
 		if os.Getenv("CF_API_TOKEN") == "" {
 			return fmt.Errorf("your CF_API_TOKEN environment variable is not set. Please set and try again")
@@ -115,17 +115,15 @@ func ValidateProvidedFlags(gitProvider string) error {
 	case "github":
 		key, err := internalssh.GetHostKey("github.com")
 		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy: %w", err)
-		} else {
-			log.Info().Msgf("%q %s", "github.com", key.Type())
+			return fmt.Errorf("failed to fetch github host key: %w", err)
 		}
+		log.Info().Msgf("%q %s", "github.com", key.Type())
 	case "gitlab":
 		key, err := internalssh.GetHostKey("gitlab.com")
 		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy: %w", err)
-		} else {
-			log.Info().Msgf("%q %s", "gitlab.com", key.Type())
+			return fmt.Errorf("failed to fetch gitlab host key: %w", err)
 		}
+		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
 	progress.CompleteStep("Validate provided flags")

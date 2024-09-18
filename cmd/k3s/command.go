@@ -25,8 +25,8 @@ var (
 	clusterTypeFlag          string
 	k3sServersPrivateIpsFlag []string
 	k3sServersPublicIpsFlag  []string
-	k3sSshUserflag           string
-	k3sSshPrivateKeyflag     string
+	k3sSSHUserflag           string
+	k3sSSHPrivateKeyflag     string
 	K3sServersArgsFlags      []string
 	dnsProviderFlag          string
 	subdomainNameFlag        string
@@ -92,15 +92,15 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringSliceVar(&k3sServersPrivateIpsFlag, "servers-private-ips", []string{}, "the list of k3s (servers) private ip x.x.x.x,y.y.y.y comma separated  (required)")
 	createCmd.MarkFlagRequired("servers-private-ips")
 	createCmd.Flags().StringSliceVar(&k3sServersPublicIpsFlag, "servers-public-ips", []string{}, "the list of k3s (servers) public ip x.x.x.x,y.y.y.y comma separated  (required)")
-	createCmd.Flags().StringSliceVar(&K3sServersArgsFlags, "servers-args", []string{"--disable traefik", "--write-kubeconfig-mode 644"}, "list of k3s extras args to add to the k3s server installation,comma separated in between quote, if --servers-publis-ips <VALUES> --tls-san <VALUES> is added to default --servers-args")
-	createCmd.Flags().StringVar(&k3sSshUserflag, "ssh-user", "root", "the user used to log into servers with ssh connection")
-	createCmd.Flags().StringVar(&k3sSshPrivateKeyflag, "ssh-privatekey", "", "the private key used to log into servers with ssh connection")
+	createCmd.Flags().StringSliceVar(&K3sServersArgsFlags, "servers-args", []string{"--disable traefik", "--write-kubeconfig-mode 644"}, "list of k3s extras args to add to the k3s server installation,comma separated in between quote, if --servers-public-ips <VALUES> --tls-san <VALUES> is added to default --servers-args")
+	createCmd.Flags().StringVar(&k3sSSHUserflag, "ssh-user", "root", "the user used to log into servers with ssh connection")
+	createCmd.Flags().StringVar(&k3sSSHPrivateKeyflag, "ssh-privatekey", "", "the private key used to log into servers with ssh connection")
 	createCmd.MarkFlagRequired("ssh-privatekey")
-	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "cloudflare", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
+	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "cloudflare", fmt.Sprintf("the dns provider - one of: %q", supportedDNSProviders))
 	createCmd.Flags().StringVar(&subdomainNameFlag, "subdomain", "", "the subdomain to use for DNS records (Cloudflare)")
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the cloudProvider DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
-	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %s", supportedGitProviders))
-	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %s", supportedGitProtocolOverride))
+	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %q", supportedGitProviders))
+	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %q", supportedGitProtocolOverride))
 	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - required if using github")
 	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
 	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "", "the branch to clone for the gitops-template repository")
@@ -133,7 +133,7 @@ func RootCredentials() *cobra.Command {
 		RunE:  common.GetRootCredentials,
 	}
 
-	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the argocd password to the clipboard (optional)")
+	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the ArgoCD password to the clipboard (optional)")
 	authCmd.Flags().BoolVar(&copyKbotPasswordToClipboardFlag, "kbot", false, "copy the kbot password to the clipboard (optional)")
 	authCmd.Flags().BoolVar(&copyVaultPasswordToClipboardFlag, "vault", false, "copy the vault password to the clipboard (optional)")
 

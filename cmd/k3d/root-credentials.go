@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package k3d
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/credentials"
@@ -17,7 +18,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func getK3dRootCredentials(cmd *cobra.Command, args []string) error {
+func getK3dRootCredentials(cmd *cobra.Command, _ []string) error {
 	domainName := k3d.DomainName
 	clusterName := viper.GetString("flags.cluster-name")
 	gitProvider := viper.GetString("flags.git-provider")
@@ -27,15 +28,15 @@ func getK3dRootCredentials(cmd *cobra.Command, args []string) error {
 	// Parse flags
 	a, err := cmd.Flags().GetBool("argocd")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get ArgoCD flag: %w", err)
 	}
 	k, err := cmd.Flags().GetBool("kbot")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get kbot flag: %w", err)
 	}
 	v, err := cmd.Flags().GetBool("vault")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get vault flag: %w", err)
 	}
 	opts := credentials.CredentialOptions{
 		CopyArgoCDPasswordToClipboard: a,
@@ -46,25 +47,23 @@ func getK3dRootCredentials(cmd *cobra.Command, args []string) error {
 	// Determine if there are eligible installs
 	_, err = credentials.EvalAuth(k3d.CloudProvider, gitProvider)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to evaluate auth: %w", err)
 	}
 
 	// Determine if the Kubernetes cluster is available
 	if !viper.GetBool("kubefirst-checks.create-k3d-cluster") {
-		return fmt.Errorf("it looks like a kubernetes cluster has not been created yet - try again")
+		return errors.New("it looks like a Kubernetes cluster has not been created yet - try again")
 	}
 
 	// Instantiate kubernetes client
 	config := k3d.GetConfig(clusterName, gitProvider, gitOwner, gitProtocol)
-
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
 	err = credentials.ParseAuthData(kcfg.Clientset, k3d.CloudProvider, gitProvider, domainName, &opts)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse auth data: %w", err)
 	}
 
 	progress.Progress.Quit()
-
 	return nil
 }

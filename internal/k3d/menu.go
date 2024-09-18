@@ -9,12 +9,12 @@ package k3d
 import (
 	"fmt"
 	"io"
+	"log"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/konstructio/kubefirst/internal/progress"
 )
 
 const (
@@ -37,9 +37,9 @@ func (i Item) FilterValue() string { return "" }
 
 type ItemDelegate struct{}
 
-func (d ItemDelegate) Height() int                               { return 1 }
-func (d ItemDelegate) Spacing() int                              { return 0 }
-func (d ItemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+func (d ItemDelegate) Height() int                             { return 1 }
+func (d ItemDelegate) Spacing() int                            { return 0 }
+func (d ItemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 func (d ItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
 	i, ok := listItem.(Item)
 	if !ok {
@@ -104,9 +104,9 @@ func (m Model) View() string {
 	return "\n" + m.List.View()
 }
 
-func MongoDestinationChooser(inCluster bool) string {
+func MongoDestinationChooser(inCluster bool) (string, error) {
 	if inCluster {
-		return "in-cluster"
+		return "in-cluster", nil
 	}
 
 	items := []list.Item{
@@ -126,18 +126,15 @@ func MongoDestinationChooser(inCluster bool) string {
 
 	model, err := tea.NewProgram(m).Run()
 	if err != nil {
-		fmt.Println("Error running program:", err)
-		progress.Progress.Quit()
+		log.Printf("Error running program: %v", err)
+		return "", fmt.Errorf("failed to run the program: %w", err)
 	}
-
-	var result string
 
 	if strings.Contains(model.View(), "atlas") {
-		result = "atlas"
-	} else if strings.Contains(model.View(), "in-cluster") {
-		result = "in-cluster"
-	} else {
-		result = "error"
+		return "atlas", nil
 	}
-	return result
+	if strings.Contains(model.View(), "in-cluster") {
+		return "in-cluster", nil
+	}
+	return "error", nil
 }

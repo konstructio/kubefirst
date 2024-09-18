@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package progress
 
 import (
+	"log"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -16,9 +17,11 @@ import (
 
 // Commands
 func GetClusterInterval(clusterName string) tea.Cmd {
-	return tea.Every(time.Second*10, func(t time.Time) tea.Msg {
+	return tea.Every(time.Second*10, func(_ time.Time) tea.Msg {
 		provisioningCluster, err := cluster.GetCluster(clusterName)
 		if err != nil {
+			log.Printf("failed to get cluster %q: %v", clusterName, err)
+			return nil
 		}
 
 		return CusterProvisioningMsg(provisioningCluster)
@@ -26,70 +29,70 @@ func GetClusterInterval(clusterName string) tea.Cmd {
 }
 
 func AddSuccesMessage(cluster types.Cluster) tea.Cmd {
-	return tea.Tick(0, func(t time.Time) tea.Msg {
+	return tea.Tick(0, func(_ time.Time) tea.Msg {
 		successMessage := DisplaySuccessMessage(cluster)
 
-		return successMsg(successMessage)
+		return successMessage
 	})
 }
 
-func BuildCompletedSteps(cluster types.Cluster, model progressModel) ([]string, string) {
+func BuildCompletedSteps(cluster types.Cluster) ([]string, string) {
 	completedSteps := []string{}
 	nextStep := ""
 	if cluster.InstallToolsCheck {
-		completedSteps = append(completedSteps, CompletedStepsLabels.install_tools_check)
-		nextStep = CompletedStepsLabels.domain_liveness_check
+		completedSteps = append(completedSteps, CompletedStepsLabels.installToolsCheck)
+		nextStep = CompletedStepsLabels.domainLivenessCheck
 	}
 	if cluster.DomainLivenessCheck {
-		completedSteps = append(completedSteps, CompletedStepsLabels.domain_liveness_check)
-		nextStep = CompletedStepsLabels.kbot_setup_check
+		completedSteps = append(completedSteps, CompletedStepsLabels.domainLivenessCheck)
+		nextStep = CompletedStepsLabels.kbotSetupCheck
 	}
 	if cluster.KbotSetupCheck {
-		completedSteps = append(completedSteps, CompletedStepsLabels.kbot_setup_check)
-		nextStep = CompletedStepsLabels.git_init_check
+		completedSteps = append(completedSteps, CompletedStepsLabels.kbotSetupCheck)
+		nextStep = CompletedStepsLabels.gitInitCheck
 	}
 	if cluster.GitInitCheck {
-		completedSteps = append(completedSteps, CompletedStepsLabels.git_init_check)
-		nextStep = CompletedStepsLabels.gitops_ready_check
+		completedSteps = append(completedSteps, CompletedStepsLabels.gitInitCheck)
+		nextStep = CompletedStepsLabels.gitopsReadyCheck
 	}
 	if cluster.GitopsReadyCheck {
-		completedSteps = append(completedSteps, CompletedStepsLabels.gitops_ready_check)
-		nextStep = CompletedStepsLabels.git_terraform_apply_check
+		completedSteps = append(completedSteps, CompletedStepsLabels.gitopsReadyCheck)
+		nextStep = CompletedStepsLabels.gitTerraformApplyCheck
 	}
 	if cluster.GitTerraformApplyCheck {
-		completedSteps = append(completedSteps, CompletedStepsLabels.git_terraform_apply_check)
-		nextStep = CompletedStepsLabels.gitops_pushed_check
+		completedSteps = append(completedSteps, CompletedStepsLabels.gitTerraformApplyCheck)
+		nextStep = CompletedStepsLabels.gitopsPushedCheck
 	}
 	if cluster.GitopsPushedCheck {
-		completedSteps = append(completedSteps, CompletedStepsLabels.gitops_pushed_check)
-		nextStep = CompletedStepsLabels.cloud_terraform_apply_check
+		completedSteps = append(completedSteps, CompletedStepsLabels.gitopsPushedCheck)
+		nextStep = CompletedStepsLabels.cloudTerraformApplyCheck
 	}
 	if cluster.CloudTerraformApplyCheck {
-		completedSteps = append(completedSteps, CompletedStepsLabels.cloud_terraform_apply_check)
-		nextStep = CompletedStepsLabels.cluster_secrets_created_check
+		completedSteps = append(completedSteps, CompletedStepsLabels.cloudTerraformApplyCheck)
+		nextStep = CompletedStepsLabels.clusterSecretsCreatedCheck
 	}
 	if cluster.ClusterSecretsCreatedCheck {
-		completedSteps = append(completedSteps, CompletedStepsLabels.cluster_secrets_created_check)
-		nextStep = CompletedStepsLabels.argocd_install_check
+		completedSteps = append(completedSteps, CompletedStepsLabels.clusterSecretsCreatedCheck)
+		nextStep = CompletedStepsLabels.argoCDInstallCheck
 	}
 	if cluster.ArgoCDInstallCheck {
-		completedSteps = append(completedSteps, CompletedStepsLabels.argocd_install_check)
-		nextStep = CompletedStepsLabels.argocd_initialize_check
+		completedSteps = append(completedSteps, CompletedStepsLabels.argoCDInstallCheck)
+		nextStep = CompletedStepsLabels.argoCDInitializeCheck
 	}
 	if cluster.ArgoCDInitializeCheck {
-		completedSteps = append(completedSteps, CompletedStepsLabels.argocd_initialize_check)
-		nextStep = CompletedStepsLabels.vault_initialized_check
+		completedSteps = append(completedSteps, CompletedStepsLabels.argoCDInitializeCheck)
+		nextStep = CompletedStepsLabels.vaultInitializedCheck
 	}
 	if cluster.VaultInitializedCheck {
-		completedSteps = append(completedSteps, CompletedStepsLabels.vault_initialized_check)
-		nextStep = CompletedStepsLabels.vault_terraform_apply_check
+		completedSteps = append(completedSteps, CompletedStepsLabels.vaultInitializedCheck)
+		nextStep = CompletedStepsLabels.vaultTerraformApplyCheck
 	}
 	if cluster.VaultTerraformApplyCheck {
-		completedSteps = append(completedSteps, CompletedStepsLabels.vault_terraform_apply_check)
-		nextStep = CompletedStepsLabels.users_terraform_apply_check
+		completedSteps = append(completedSteps, CompletedStepsLabels.vaultTerraformApplyCheck)
+		nextStep = CompletedStepsLabels.usersTerraformApplyCheck
 	}
 	if cluster.UsersTerraformApplyCheck {
-		completedSteps = append(completedSteps, CompletedStepsLabels.users_terraform_apply_check)
+		completedSteps = append(completedSteps, CompletedStepsLabels.usersTerraformApplyCheck)
 		nextStep = "Wrapping up"
 	}
 

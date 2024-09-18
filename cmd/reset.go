@@ -25,7 +25,7 @@ var resetCmd = &cobra.Command{
 	Use:   "reset",
 	Short: "removes local kubefirst content to provision a new platform",
 	Long:  "removes local kubefirst content to provision a new platform",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		gitProvider := viper.GetString("kubefirst.git-provider")
 		cloudProvider := viper.GetString("kubefirst.cloud-provider")
 
@@ -40,34 +40,33 @@ var resetCmd = &cobra.Command{
 			if v == "" {
 				log.Info().Msg("checks map is empty, continuing")
 			} else {
-				return fmt.Errorf("unable to determine contents of kubefirst-checks")
+				return fmt.Errorf("unable to determine contents of kubefirst-checks: unexpected type %T", v)
 			}
 		case map[string]interface{}:
 			checks, err := parseConfigEntryKubefirstChecks(v)
 			if err != nil {
-				log.Error().Msgf("error: %s - resetting directory without checks", err)
+				log.Error().Msgf("error occurred during check parsing: %s - resetting directory without checks", err)
 			}
 			// If destroy hasn't been run yet, reset should fail to avoid orphaned resources
 			switch {
 			case checks[fmt.Sprintf("terraform-apply-%s", gitProvider)]:
 				return fmt.Errorf(
-					"it looks like there's an active %s resource deployment - please run %s destroy before continuing",
-					gitProvider,
-					cloudProvider,
+					"it looks like there's an active %s resource deployment - please run `%s destroy` before continuing",
+					gitProvider, cloudProvider,
 				)
 			case checks[fmt.Sprintf("terraform-apply-%s", cloudProvider)]:
 				return fmt.Errorf(
 					"it looks like there's an active %s installation - please run `%s destroy` before continuing",
-					cloudProvider,
-					cloudProvider,
+					cloudProvider, cloudProvider,
 				)
 			}
 		default:
 			return fmt.Errorf("unable to determine contents of kubefirst-checks: unexpected type %T", v)
-
 		}
 
-		runReset()
+		if err := runReset(); err != nil {
+			return fmt.Errorf("error during reset operation: %w", err)
+		}
 		return nil
 	},
 }
@@ -105,18 +104,17 @@ func runReset() error {
 
 	homePath, err := os.UserHomeDir()
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to get user home directory: %w", err)
 	}
 	k1Dir := fmt.Sprintf("%s/.k1", homePath)
 
-	err = utils.ResetK1Dir(k1Dir)
-	if err != nil {
-		return err
+	if err := utils.ResetK1Dir(k1Dir); err != nil {
+		return fmt.Errorf("error resetting k1 directory: %w", err)
 	}
 	log.Info().Msg("previous platform content removed")
 	progressPrinter.IncrementTracker("removing-platform-content", 1)
 
-	log.Info().Msg("resetting `$HOME/.kubefirst` config")
+	log.Info().Msg("resetting $HOME/.kubefirst config")
 	viper.Set("argocd", "")
 	viper.Set("github", "")
 	viper.Set("gitlab", "")
@@ -125,12 +123,13 @@ func runReset() error {
 	viper.Set("kubefirst-checks", "")
 	viper.Set("kubefirst", "")
 	viper.Set("secrets", "")
-	viper.WriteConfig()
+	if err := viper.WriteConfig(); err != nil {
+		return fmt.Errorf("error writing viper config: %w", err)
+	}
 
 	if _, err := os.Stat(k1Dir + "/kubeconfig"); !os.IsNotExist(err) {
-		err = os.Remove(k1Dir + "/kubeconfig")
-		if err != nil {
-			return fmt.Errorf("unable to delete %q folder, error: %s", k1Dir+"/kubeconfig", err)
+		if err := os.Remove(k1Dir + "/kubeconfig"); err != nil {
+			return fmt.Errorf("unable to delete %q folder, error: %w", k1Dir+"/kubeconfig", err)
 		}
 	}
 

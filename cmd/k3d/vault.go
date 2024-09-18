@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	vaultapi "github.com/hashicorp/vault/api"
+	"github.com/hashicorp/vault/api"
 	"github.com/konstructio/kubefirst-api/pkg/k3d"
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
@@ -26,18 +26,17 @@ import (
 
 const (
 	// Name for the Secret that gets created that contains root auth data
-	vaultSecretName string = "vault-unseal-secret"
+	vaultSecretName = "vault-unseal-secret"
 	// Namespace that Vault runs in
-	vaultNamespace string = "vault"
+	vaultNamespace = "vault"
 	// number of secret threshold Vault unseal
 	secretThreshold = 3
 )
 
-// unsealVault will attempt to unseal vaule again if it is currently unsealed
-func unsealVault(cmd *cobra.Command, args []string) error {
+func unsealVault(_ *cobra.Command, _ []string) error {
 	flags := utils.GetClusterStatusFlags()
 	if !flags.SetupComplete {
-		return fmt.Errorf("there doesn't appear to be an active k3d cluster")
+		return fmt.Errorf("failed to unseal vault: there doesn't appear to be an active k3d cluster")
 	}
 	config := k3d.GetConfig(
 		viper.GetString("flags.cluster-name"),
@@ -47,70 +46,63 @@ func unsealVault(cmd *cobra.Command, args []string) error {
 	)
 	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
 
-	// Vault api client
-	vaultClient, err := vaultapi.NewClient(&vaultapi.Config{
+	vaultClient, err := api.NewClient(&api.Config{
 		Address: "https://vault.kubefirst.dev",
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create vault client: %w", err)
 	}
-	vaultClient.CloneConfig().ConfigureTLS(&vaultapi.TLSConfig{
+	vaultClient.CloneConfig().ConfigureTLS(&api.TLSConfig{
 		Insecure: true,
 	})
 
-	// Determine vault health
 	health, err := vaultClient.Sys().Health()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check vault health: %w", err)
 	}
 
-	switch health.Sealed {
-	case true:
+	if health.Sealed {
 		node := "vault-0"
 		existingInitResponse, err := parseExistingVaultInitSecret(kcfg.Clientset)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to parse existing vault init secret: %w", err)
 		}
 
 		sealStatusTracking := 0
 		for i, shard := range existingInitResponse.Keys {
 			if i < secretThreshold {
-				log.Info().Msgf("passing unseal shard %v to %s", i+1, node)
+				log.Info().Msgf("passing unseal shard %d to %q", i+1, node)
 				deadline := time.Now().Add(60 * time.Second)
 				ctx, cancel := context.WithDeadline(context.Background(), deadline)
 				defer cancel()
-				// Try 5 times to pass unseal shard
-				for i := 0; i < 5; i++ {
+				for j := 0; j < 5; j++ {
 					_, err := vaultClient.Sys().UnsealWithContext(ctx, shard)
 					if err != nil {
 						if errors.Is(err, context.DeadlineExceeded) {
 							continue
 						}
-					}
-					if i == 5 {
-						return fmt.Errorf("error passing unseal shard %v to %s: %w", i+1, node, err)
+						return fmt.Errorf("error passing unseal shard %d to %q: %w", i+1, node, err)
 					}
 				}
-				// Wait for key acceptance
-				for i := 0; i < 10; i++ {
+				for j := 0; j < 10; j++ {
 					sealStatus, err := vaultClient.Sys().SealStatus()
 					if err != nil {
-						return fmt.Errorf("error retrieving health of %s: %s", node, err)
+						return fmt.Errorf("error retrieving health of %q: %w", node, err)
 					}
 					if sealStatus.Progress > sealStatusTracking || !sealStatus.Sealed {
-						log.Info().Msgf("shard accepted")
+						log.Info().Msg("shard accepted")
 						sealStatusTracking++
 						break
 					}
-					log.Info().Msgf("waiting for node %s to accept unseal shard", node)
-					time.Sleep(time.Second * 6)
+					log.Info().Msgf("waiting for node %q to accept unseal shard", node)
+					time.Sleep(6 * time.Second)
 				}
 			}
 		}
 
-		fmt.Printf("vault unsealed\n")
-	case false:
-		return fmt.Errorf("vault is already unsealed")
+		log.Printf("vault unsealed")
+	} else {
+		return fmt.Errorf("failed to unseal vault: vault is already unsealed")
 	}
 
 	progress.Progress.Quit()
@@ -118,16 +110,12 @@ func unsealVault(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// parseExistingVaultInitSecret returns the value of a vault initialization secret if it exists
-func parseExistingVaultInitSecret(clientset *kubernetes.Clientset) (*vaultapi.InitResponse, error) {
-	// If vault has already been initialized, the response is formatted to contain the value
-	// of the initialization secret
+func parseExistingVaultInitSecret(clientset *kubernetes.Clientset) (*api.InitResponse, error) {
 	secret, err := k8s.ReadSecretV2(clientset, vaultNamespace, vaultSecretName)
 	if err != nil {
-		return &vaultapi.InitResponse{}, err
+		return nil, fmt.Errorf("failed to read secret: %w", err)
 	}
 
-	// Add root-unseal-key entries to slice
 	var rkSlice []string
 	for key, value := range secret {
 		if strings.Contains(key, "root-unseal-key-") {
@@ -135,7 +123,7 @@ func parseExistingVaultInitSecret(clientset *kubernetes.Clientset) (*vaultapi.In
 		}
 	}
 
-	existingInitResponse := &vaultapi.InitResponse{
+	existingInitResponse := &api.InitResponse{
 		Keys:      rkSlice,
 		RootToken: secret["root-token"],
 	}
