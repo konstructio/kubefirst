@@ -25,7 +25,7 @@ var infoCmd = &cobra.Command{
 	RunE: func(_ *cobra.Command, _ []string) error {
 		config, err := configs.ReadConfig()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read config: %w", err)
 		}
 
 		var buf bytes.Buffer
