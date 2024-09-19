@@ -102,6 +102,6 @@ func launchDeleteCluster() *cobra.Command {
 			launch.DeleteCluster(args[0])
 		},
 	}
-
+	// launchDeleteClusterCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
 	return launchDeleteClusterCmd
 }

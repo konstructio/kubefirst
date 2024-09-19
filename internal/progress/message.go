@@ -71,6 +71,11 @@ func DisplayLogHints(estimatedTime int) {
 
 	headerMessage := renderMessage(header)
 
+	if !CanRunBubbleTea {
+		fmt.Println(headerMessage)
+		return
+	}
+
 	Progress.Send(headerMsg{
 		message: headerMessage,
 	})
@@ -139,6 +144,11 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 
 	successMessage := renderMessage(success)
 
+	if !CanRunBubbleTea {
+		fmt.Println(successMessage)
+		return successMsg{}
+	}
+
 	return successMsg{
 		message: successMessage,
 	}
@@ -163,6 +173,11 @@ func DisplayCredentials(cluster types.Cluster) {
 
 	headerMessage := renderMessage(header)
 
+	if !CanRunBubbleTea {
+		fmt.Println(headerMessage)
+		return
+	}
+
 	Progress.Send(headerMsg{
 		message: headerMessage,
 	})
@@ -184,6 +199,11 @@ func CompleteStep(message string) {
 func Success(success string) {
 	successMessage := renderMessage(success)
 
+	if !CanRunBubbleTea {
+		fmt.Println(successMessage)
+		return
+	}
+
 	Progress.Send(
 		successMsg{
 			message: successMessage,
@@ -192,13 +212,25 @@ func Success(success string) {
 
 func Error(message string) {
 	renderedMessage := createErrorLog(message)
+
+	if !CanRunBubbleTea {
+		fmt.Println(renderedMessage)
+		return
+	}
+
 	Progress.Send(renderedMessage)
 }
 
 func StartProvisioning(clusterName string) {
-	provisioningMessage := startProvision{
-		clusterName: clusterName,
+
+	if !CanRunBubbleTea {
+		WatchClusterForCi(clusterName)
+	} else {
+		provisioningMessage := startProvision{
+			clusterName: clusterName,
+		}
+
+		Progress.Send(provisioningMessage)
 	}
 
-	Progress.Send(provisioningMessage)
 }

@@ -15,6 +15,7 @@ import (
 )
 
 var Progress *tea.Program
+var CanRunBubbleTea bool = true
 
 //nolint:revive // will be removed after refactoring
 func NewModel() progressModel {
@@ -26,6 +27,10 @@ func NewModel() progressModel {
 // Bubbletea functions
 func InitializeProgressTerminal() {
 	Progress = tea.NewProgram(NewModel())
+}
+
+func DisableBubbleTeaExecution() {
+	CanRunBubbleTea = false
 }
 
 func (m progressModel) Init() tea.Cmd {

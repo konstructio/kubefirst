@@ -30,6 +30,7 @@ var resetCmd = &cobra.Command{
 		cloudProvider := viper.GetString("kubefirst.cloud-provider")
 
 		checksMap := viper.Get("kubefirst-checks")
+		fmt.Print(checksMap)
 		switch v := checksMap.(type) {
 		case nil:
 			// Handle the nil case explicitly

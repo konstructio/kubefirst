@@ -25,7 +25,7 @@ import (
 func main() {
 	argsWithProg := os.Args
 
-	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs"}
+	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs", "ci"}
 	canRunBubbleTea := true
 
 	for _, arg := range argsWithProg {
@@ -78,8 +78,6 @@ func main() {
 	}
 
 	k1Dir := fmt.Sprintf("%s/.k1", homePath)
-
-	// * create k1Dir if it doesn't exist
 	if _, err := os.Stat(k1Dir); os.IsNotExist(err) {
 		if err := os.MkdirAll(k1Dir, os.ModePerm); err != nil {
 			log.Error().Msgf("error creating directory %q: %v", k1Dir, err)
@@ -137,6 +135,7 @@ func main() {
 
 		progress.Progress.Run()
 	} else {
+		progress.DisableBubbleTeaExecution()
 		cmd.Execute()
 	}
 }
