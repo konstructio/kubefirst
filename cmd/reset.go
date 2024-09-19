@@ -33,7 +33,7 @@ var resetCmd = &cobra.Command{
 		switch v := checksMap.(type) {
 		case nil:
 			// Handle the nil case explicitly
-			message := `# Succesfully reset`
+			message := `# Successfully reset`
 			progress.Success(message)
 			return nil
 		case string:
