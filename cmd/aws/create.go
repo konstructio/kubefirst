@@ -133,7 +133,10 @@ func createAws(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(gitProvider string) error {
-	progress.AddStep("Validate provided flags")
+
+	if progress.CanRunBubbleTea {
+		progress.AddStep("Validate provided flags")
+	}
 
 	// Validate required environment variables for dns provider
 	if dnsProviderFlag == "cloudflare" {
@@ -142,22 +145,24 @@ func ValidateProvidedFlags(gitProvider string) error {
 		}
 	}
 
-	switch gitProvider {
-	case "github":
-		key, err := internalssh.GetHostKey("github.com")
-		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy: %w", err)
+	if progress.CanRunBubbleTea {
+		switch gitProvider {
+		case "github":
+			key, err := internalssh.GetHostKey("github.com")
+			if err != nil {
+				return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy: %w", err)
+			}
+			log.Info().Msgf("%q %s", "github.com", key.Type())
+		case "gitlab":
+			key, err := internalssh.GetHostKey("gitlab.com")
+			if err != nil {
+				return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy: %w", err)
+			}
+			log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 		}
-		log.Info().Msgf("%q %s", "github.com", key.Type())
-	case "gitlab":
-		key, err := internalssh.GetHostKey("gitlab.com")
-		if err != nil {
-			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy: %w", err)
-		}
-		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
-	}
+		progress.CompleteStep("Validate provided flags")
 
-	progress.CompleteStep("Validate provided flags")
+	}
 
 	return nil
 }

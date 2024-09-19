@@ -25,7 +25,7 @@ import (
 func main() {
 	argsWithProg := os.Args
 
-	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs", "ci"}
+	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs", "--ci"}
 	canRunBubbleTea := true
 
 	for _, arg := range argsWithProg {

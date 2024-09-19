@@ -187,6 +187,12 @@ func DisplayCredentials(cluster types.Cluster) {
 
 func AddStep(message string) {
 	renderedMessage := createStep(fmt.Sprintf("%s %s", ":dizzy:", message))
+
+	if !CanRunBubbleTea {
+		fmt.Println(renderedMessage)
+		return
+	}
+
 	Progress.Send(renderedMessage)
 }
 
