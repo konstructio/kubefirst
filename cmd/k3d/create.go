@@ -977,7 +977,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 	if !executionControl {
 		telemetry.SendEvent(segClient, telemetry.VaultInitializationStarted, "")
 
-		vaultHandlerPath := "github.com:kubefirst/manifests.git/vault-handler/replicas-1"
+		vaultHandlerPath := "github.com:konstructio/manifests.git/vault-handler/replicas-1"
 
 		yamlData, err := kcfg.KustomizeBuild(vaultHandlerPath)
 		if err != nil {
