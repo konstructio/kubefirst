@@ -197,6 +197,12 @@ func AddStep(message string) {
 }
 
 func CompleteStep(message string) {
+
+	if !CanRunBubbleTea {
+		fmt.Println(renderMessage)
+		return
+	}
+
 	Progress.Send(completeStep{
 		message: message,
 	})
