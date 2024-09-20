@@ -152,7 +152,6 @@ func RootCredentials() *cobra.Command {
 	}
 
 	authCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
-	authCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "", "cluster name (optional)")
 	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "Copy the ArgoCD password to the clipboard (optional)")
 	authCmd.Flags().BoolVar(&copyKbotPasswordToClipboardFlag, "kbot", false, "Copy the Kbot password to the clipboard (optional)")
 	authCmd.Flags().BoolVar(&copyVaultPasswordToClipboardFlag, "vault", false, "Copy the Vault password to the clipboard (optional)")
