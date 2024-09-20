@@ -136,5 +136,7 @@ func RootCredentials() *cobra.Command {
 		RunE:  common.GetRootCredentials,
 	}
 
+	authCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
+	authCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "", "cluster name (optional)")
 	return authCmd
 }
