@@ -92,11 +92,13 @@ func main() {
 		}
 	}
 
-	// * create log directory
+	// * create log directory if it doesn't exist
 	logsFolder := fmt.Sprintf("%s/logs", k1Dir)
-	if err := os.Mkdir(logsFolder, 0o700); err != nil {
-		log.Error().Msgf("error creating logs directory: %v", err)
-		return
+	if _, err := os.Stat(logsFolder); os.IsNotExist(err) {
+		if err := os.Mkdir(logsFolder, 0o700); err != nil {
+			log.Error().Msgf("error creating logs directory: %v", err)
+			return
+		}
 	}
 
 	// * create session log file
