@@ -86,6 +86,8 @@ require (
 	github.com/digitalocean/godo v1.98.0 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
+	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/go-units v0.4.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
@@ -141,6 +143,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799 // indirect
 	github.com/otiai10/copy v1.7.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
@@ -215,6 +218,7 @@ require (
 	github.com/charmbracelet/glamour v0.6.0
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/docker/docker v27.2.1+incompatible
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.13.0
 	github.com/fsnotify/fsnotify v1.6.0 // indirect

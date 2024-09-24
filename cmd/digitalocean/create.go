@@ -16,6 +16,7 @@ import (
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
 	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/cluster"
+	"github.com/konstructio/kubefirst/internal/docker"
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/launch"
 	"github.com/konstructio/kubefirst/internal/progress"
@@ -31,6 +32,13 @@ func createDigitalocean(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to get CLI flags: %w", err)
+	}
+
+	log.Info().Msg("Check Docker status")
+	err = docker.Checkstatus()
+	if err != nil {
+		log.Info().Msgf("%s", err)
+		return err
 	}
 
 	progress.DisplayLogHints(20)
