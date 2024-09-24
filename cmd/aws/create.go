@@ -58,9 +58,13 @@ func createAws(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Validate aws region
-	awsClient := &awsinternal.AWSConfiguration{
-		Config: awsinternal.NewAwsV2(cloudRegionFlag),
+	config, err := awsinternal.NewAwsV2(cloudRegionFlag)
+	if err != nil {
+		progress.Error(err.Error())
+		return fmt.Errorf("failed to validate AWS region: %w", err)
 	}
+
+	awsClient := &awsinternal.Configuration{Config: config}
 	creds, err := awsClient.Config.Credentials.Retrieve(aws.BackgroundContext())
 	if err != nil {
 		progress.Error(err.Error())

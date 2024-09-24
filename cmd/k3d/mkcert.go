@@ -36,13 +36,21 @@ func mkCert(cmd *cobra.Command, _ []string) error {
 	if !flags.SetupComplete {
 		return fmt.Errorf("there doesn't appear to be an active k3d cluster")
 	}
-	config := k3d.GetConfig(
+
+	config, err := k3d.GetConfig(
 		viper.GetString("flags.cluster-name"),
 		flags.GitProvider,
 		viper.GetString(fmt.Sprintf("flags.%s-owner", flags.GitProvider)),
 		flags.GitProtocol,
 	)
-	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to get config: %w", err)
+	}
+
+	kcfg, err := k8s.CreateKubeConfig(false, config.Kubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to create kubeconfig: %w", err)
+	}
 
 	log.Infof("Generating certificate for %s.%s...", appNameFlag, k3d.DomainName)
 

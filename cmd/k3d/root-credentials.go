@@ -56,10 +56,17 @@ func getK3dRootCredentials(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Instantiate kubernetes client
-	config := k3d.GetConfig(clusterName, gitProvider, gitOwner, gitProtocol)
-	kcfg := k8s.CreateKubeConfig(false, config.Kubeconfig)
+	config, err := k3d.GetConfig(clusterName, gitProvider, gitOwner, gitProtocol)
+	if err != nil {
+		return fmt.Errorf("failed to get config: %w", err)
+	}
 
-	err = credentials.ParseAuthData(kcfg.Clientset, k3d.CloudProvider, gitProvider, domainName, &opts)
+	kcfg, err := k8s.CreateKubeConfig(false, config.Kubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to create kubeconfig: %w", err)
+	}
+
+	err = credentials.ParseAuthData(kcfg.Clientset, k3d.CloudProvider, domainName, &opts)
 	if err != nil {
 		return fmt.Errorf("failed to parse auth data: %w", err)
 	}

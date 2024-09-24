@@ -22,8 +22,11 @@ var infoCmd = &cobra.Command{
 	Use:   "info",
 	Short: "provides general Kubefirst setup data",
 	Long:  `Provides machine data, files and folders paths`,
-	Run: func(_ *cobra.Command, _ []string) {
-		config := configs.ReadConfig()
+	RunE: func(_ *cobra.Command, _ []string) error {
+		config, err := configs.ReadConfig()
+		if err != nil {
+			return fmt.Errorf("failed to read config: %w", err)
+		}
 
 		var buf bytes.Buffer
 
@@ -43,6 +46,7 @@ var infoCmd = &cobra.Command{
 		fmt.Fprintf(tw, "Kubefirst Version\t%s\n", configs.K1Version)
 
 		progress.Success(buf.String())
+		return nil
 	},
 }
 

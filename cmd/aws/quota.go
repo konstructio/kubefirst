@@ -47,9 +47,12 @@ func evalAwsQuota(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to get cloud region flag: %w", err)
 	}
 
-	awsClient := &awsinternal.AWSConfiguration{
-		Config: awsinternal.NewAwsV2(cloudRegionFlag),
+	config, err := awsinternal.NewAwsV2(cloudRegionFlag)
+	if err != nil {
+		return fmt.Errorf("failed to create new aws config: %w", err)
 	}
+
+	awsClient := &awsinternal.Configuration{Config: config}
 	quotaDetails, err := awsClient.GetServiceQuotas([]string{"eks", "vpc"})
 	if err != nil {
 		return fmt.Errorf("failed to get service quotas: %w", err)

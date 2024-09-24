@@ -185,7 +185,12 @@ func Up(additionalHelmFlags []string, inCluster, useTelemetry bool) {
 		log.Info().Msg("k3d cluster for Kubefirst console and API created successfully")
 
 		// Wait for traefik
-		kcfg := k8s.CreateKubeConfig(false, kubeconfigPath)
+		kcfg, err := k8s.CreateKubeConfig(false, kubeconfigPath)
+		if err != nil {
+			progress.Error(fmt.Sprintf("error creating kubernetes client: %s", err))
+			return
+		}
+
 		log.Info().Msg("Waiting for traefik...")
 		traefikDeployment, err := k8s.ReturnDeploymentObject(
 			kcfg.Clientset,
@@ -208,7 +213,11 @@ func Up(additionalHelmFlags []string, inCluster, useTelemetry bool) {
 	progress.CompleteStep("Create k3d cluster")
 
 	// Establish Kubernetes client for console cluster
-	kcfg := k8s.CreateKubeConfig(false, kubeconfigPath)
+	kcfg, err := k8s.CreateKubeConfig(false, kubeconfigPath)
+	if err != nil {
+		progress.Error(fmt.Sprintf("error creating kubernetes client: %s", err))
+		return
+	}
 
 	// Determine if helm chart repository has already been added
 	res, _, err := shell.ExecShellReturnStrings(
