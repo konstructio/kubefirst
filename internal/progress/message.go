@@ -88,6 +88,8 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 	switch cluster.CloudProvider {
 	case "aws":
 		cloudCliKubeconfig = fmt.Sprintf("aws eks update-kubeconfig --name %q --region %q", cluster.ClusterName, cluster.CloudRegion)
+	case "azure":
+		cloudCliKubeconfig = fmt.Sprintf("az aks get-credentials --resource-group %q --name %q", cluster.ClusterName, cluster.ClusterName)
 	case "civo":
 		cloudCliKubeconfig = fmt.Sprintf("civo kubernetes config %q --save", cluster.ClusterName)
 	case "digitalocean":

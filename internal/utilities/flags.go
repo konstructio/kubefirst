@@ -55,6 +55,12 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		return cliFlags, fmt.Errorf("failed to get domain-name flag: %w", err)
 	}
 
+	dnsAzureResourceGroup, err := cmd.Flags().GetString("dns-azure-resource-group")
+	if err != nil {
+		progress.Error(err.Error())
+		return cliFlags, fmt.Errorf("failed to get dns-azure-resource-group flag: %w", err)
+	}
+
 	githubOrgFlag, err := cmd.Flags().GetString("github-org")
 	if err != nil {
 		progress.Error(err.Error())
@@ -186,6 +192,7 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 	cliFlags.DNSProvider = dnsProviderFlag
 	cliFlags.SubDomainName = subdomainFlag
 	cliFlags.DomainName = domainNameFlag
+	cliFlags.DNSAzureRG = dnsAzureResourceGroup
 	cliFlags.GitProtocol = gitProtocolFlag
 	cliFlags.GitProvider = gitProviderFlag
 	cliFlags.GithubOrg = githubOrgFlag
