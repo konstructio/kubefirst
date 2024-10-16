@@ -9,11 +9,14 @@ package aws
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	awsinternal "github.com/konstructio/kubefirst-api/pkg/aws"
+	"github.com/konstructio/kubefirst-api/pkg/gitClient"
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
+	"github.com/konstructio/kubefirst-api/pkg/terraform"
 	pkg "github.com/konstructio/kubefirst-api/pkg/utils"
 	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/cluster"
@@ -163,5 +166,71 @@ func ValidateProvidedFlags(gitProvider string) error {
 
 	progress.CompleteStep("Validate provided flags")
 
+	return nil
+}
+
+func ConnectAWS(cmd *cobra.Command, _ []string) error {
+	flags, err := utilities.GetConnectFlags(cmd, "aws")
+	if err != nil {
+		progress.Error(err.Error())
+		return nil
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Error().Msgf("something went wrong getting home path: %s", err)
+		return fmt.Errorf("unable to get home path: %w", err)
+	}
+	clusterName := viper.GetString("flags.cluster-name")
+	terraformClient := fmt.Sprintf("%s/.k1/%s/tools/terraform", homeDir, clusterName)
+	arnDir := fmt.Sprintf("%s/.k1/%s/aws-arn", homeDir, clusterName)
+	arnRepoURL := "https://github.com/jokestax/aws-arn"
+	if _, err := os.Stat(arnDir); err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("error creating aws-arn directory : %w", err)
+		}
+
+		_, err = gitClient.Clone("main", arnDir, arnRepoURL)
+		if err != nil {
+			return fmt.Errorf("error cloning repository : %w", err)
+		}
+	}
+
+	tfEnvs := map[string]string{
+		"AWS_ACCESS_KEY_ID":     flags.AWS_ACCESS_KEY_ID,
+		"AWS_SECRET_ACCESS_KEY": flags.AWS_SECRET_ACCESS_KEY,
+		"TF_VAR_oidc_endpoint":  flags.OIDC_ENDPOINT,
+		"TF_VAR_cluster_name":   clusterName,
+	}
+
+	tfstateFile := filepath.Join(arnDir, "terraform.tfstate")
+
+	if _, err := os.Stat(tfstateFile); err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("error reading tfstate file: %w", err)
+		}
+	} else {
+		err = terraform.InitDestroyAutoApprove(terraformClient, arnDir, tfEnvs)
+		if err != nil {
+			msg := fmt.Errorf("error destroying policy resources with terraform in directory %q: %w", arnDir, err)
+			return msg
+		}
+	}
+
+	err = terraform.InitApplyAutoApprove(terraformClient, arnDir, tfEnvs)
+	if err != nil {
+		msg := fmt.Errorf("error creating policy resources with terraform %q: %w", arnDir, err)
+		return msg
+	}
+	txtFile := filepath.Join(arnDir, "modules", "kubefirst-pro", "iam_role_arn.txt")
+	role_arn, err := os.ReadFile(txtFile)
+
+	if err != nil {
+		return fmt.Errorf("error retrieving role arn : %w", err)
+	}
+
+	fmt.Println(" \n Role ARN is \n ")
+	message := fmt.Sprintf("# %s", role_arn)
+	progress.Success(message)
 	return nil
 }

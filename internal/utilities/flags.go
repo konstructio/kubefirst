@@ -220,3 +220,32 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 
 	return cliFlags, nil
 }
+
+func GetConnectFlags(cmd *cobra.Command, cloudProvider string) (types.AWSConnect, error) {
+	connectFlags := types.AWSConnect{}
+
+	accesskeyId, err := cmd.Flags().GetString("accesskey-id")
+	if err != nil {
+		progress.Error(err.Error())
+		return connectFlags, fmt.Errorf("failed to get accesskey-id flag: %w", err)
+	}
+
+	secretAccessKey, err := cmd.Flags().GetString("secretaccess-key")
+	if err != nil {
+		progress.Error(err.Error())
+		return connectFlags, fmt.Errorf("failed to get secretaccess-key flag: %w", err)
+	}
+
+	oidcEndpoint, err := cmd.Flags().GetString("oidc-endpoint")
+	if err != nil {
+		progress.Error(err.Error())
+		return connectFlags, fmt.Errorf("failed to get oidc-endpoint flag: %w", err)
+	}
+
+	connectFlags.AWS_ACCESS_KEY_ID = accesskeyId
+	connectFlags.AWS_SECRET_ACCESS_KEY = secretAccessKey
+	connectFlags.OIDC_ENDPOINT = oidcEndpoint
+
+	return connectFlags, nil
+
+}

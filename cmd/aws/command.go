@@ -42,6 +42,12 @@ var (
 	supportedDNSProviders        = []string{"aws", "cloudflare"}
 	supportedGitProviders        = []string{"github", "gitlab"}
 	supportedGitProtocolOverride = []string{"https", "ssh"}
+
+	//AWS_CONNECT
+	accountId       string
+	accesskeyId     string
+	secretAccessKey string
+	oidcEndpoint    string
 )
 
 func NewCommand() *cobra.Command {
@@ -60,7 +66,7 @@ func NewCommand() *cobra.Command {
 	}
 
 	// wire up new commands
-	awsCmd.AddCommand(Create(), Destroy(), Quota(), RootCredentials())
+	awsCmd.AddCommand(Create(), Destroy(), Quota(), RootCredentials(), Connect())
 
 	return awsCmd
 }
@@ -137,4 +143,22 @@ func RootCredentials() *cobra.Command {
 	}
 
 	return authCmd
+}
+
+func Connect() *cobra.Command {
+	connectCmd := &cobra.Command{
+		Use:   "connect",
+		Short: "connect to downstream accounts with mgmt cluster",
+		Long:  "connect to downstream accounts with mgmt cluster",
+		RunE:  ConnectAWS,
+	}
+
+	connectCmd.Flags().StringVar(&accesskeyId, "accesskey-id", "", "account_id to provision the cluster to")
+	connectCmd.Flags().StringVar(&secretAccessKey, "secretaccess-key", "", "account_id to provision the cluster to")
+	connectCmd.Flags().StringVar(&oidcEndpoint, "oidc-endpoint", "", "account_id to provision the cluster to")
+	connectCmd.MarkFlagRequired("accesskey-id")
+	connectCmd.MarkFlagRequired("secretaccess-key")
+	connectCmd.MarkFlagRequired("oidc-endpoint")
+
+	return connectCmd
 }
