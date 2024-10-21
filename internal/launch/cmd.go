@@ -37,7 +37,11 @@ var consoleClusterName = "kubefirst-console"
 // Up
 func Up(additionalHelmFlags []string, inCluster, useTelemetry bool) {
 	if viper.GetBool("launch.deployed") {
-		progress.Error("Kubefirst console has already been deployed. To start over, run `kubefirst launch down` to completely remove the existing console.")
+		message := `##
+Kubefirst console has already been deployed. To start over, run` + "`" + `kubefirst launch down` + "`" + `to completely remove the existing console.`
+
+		progress.Success(message)
+		return
 	}
 
 	if !inCluster {
