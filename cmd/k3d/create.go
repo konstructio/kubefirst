@@ -723,7 +723,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		}
 
 		err = k3d.AddK3DSecrets(
-			config.DestinationGitopsRepoURL,
+			gitopsRepoURL,
 			viper.GetString("kbot.private-key"),
 			config.GitProvider,
 			cGitUser,
