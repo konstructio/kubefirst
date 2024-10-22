@@ -31,7 +31,7 @@ Kubefirst is created using the [Go Programming Language](https://go.dev). To set
 
 Once Go is installed, you can run Kubefirst from any branch using `go run .`. Go will automatically install the needed modules listed in the [go.mod](go.mod) file. Since Go is a compiled programming language, every time you use the `run` command, Go will compile the code before running it. If you want to save time, you can compile your code using `go build`, which will generate a file named `kubefirst`. You will then be able to run your compiled version with the `./kubefirst` command.
 
-If you want to create a [Civo cluster](https://docs.kubefirst.io/kubefirst/local/install.html), the command would be `go run . civo create`.
+If you want to create a [Civo cluster](https://kubefirst.konstruct.io/docs/civo/quick-start/install/cli), the command would be `go run . civo create`.
 
 #### GitOps Template
 

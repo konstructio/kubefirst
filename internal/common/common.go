@@ -188,7 +188,7 @@ func Destroy(_ *cobra.Command, _ []string) error {
 #### :tada: Success` + "`Your k3d kubefirst platform has been destroyed.`" + `
 
 ### :blue_book: To delete a management cluster please see documentation:
-https://docs.kubefirst.io/` + cloudProvider + `/deprovision
+https://kubefirst.konstruct.io/docs/` + cloudProvider + `/deprovision
 `
 
 	progress.Success(successMessage)

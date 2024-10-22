@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://docs.kubefirst.io/">Install</a>&nbsp;|&nbsp;
+  <a href="https://kubefirst.konstruct.io/docs/">Install</a>&nbsp;|&nbsp;
   <a href="https://twitter.com/kubefirst">Twitter</a>&nbsp;|&nbsp;
   <a href="https://www.linkedin.com/company/kubefirst">LinkedIn</a>&nbsp;|&nbsp;
   <a href="https://join.slack.com/t/kubefirst/shared_invite/zt-r0r9cfts-OVnH0ooELDLm9n9p2aU7fw">Slack</a>&nbsp;|&nbsp;
@@ -31,21 +31,21 @@ The Kubefirst CLI creates instant GitOps platforms that integrate some of the be
 
 Each of our platforms have install guides that detail the prerequesites, commands, and resulting platform that you'll receive.
 
-- [k3d (local)](https://docs.kubefirst.io/k3d/overview/)
-- [AWS](https://docs.kubefirst.io/aws/overview/)
-- [Civo](https://docs.kubefirst.io/civo/overview/)
-- [DigitalOcean](https://docs.kubefirst.io/do/overview/)
+- [k3d (local)](https://kubefirst.konstruct.io/docs/k3d/overview)
+- [AWS](https://kubefirst.konstruct.io/docs/aws/overview)
+- [Civo](https://kubefirst.konstruct.io/docs/civo/overview)
+- [DigitalOcean](https://kubefirst.konstruct.io/docs/do/overview)
 
 In beta:
 
 - [Akamai](https://docs.kubefirst.io/akamai/overview)
-- [Google Cloud](https://docs.kubefirst.io/gcp/overview/)
-- [K3s](https://docs.kubefirst.io/k3s/overview)
-- [Vultr](https://docs.kubefirst.io/vultr/overview/)
+- [Google Cloud](https://kubefirst.konstruct.io/docs/gcp/overview)
+- [K3s](https://kubefirst.konstruct.io/docs/k3s/overview)
+- [Vultr](https://kubefirst.konstruct.io/docs/vultr/overview)
 
 ## Overview
 
-<https://docs.kubefirst.io>
+<https://kubefirst.konstruct.io/docs/>
 
 ![kubefirst architecture diagram](images/kubefirst-arch.png)
 
