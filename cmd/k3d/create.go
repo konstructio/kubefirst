@@ -1189,7 +1189,6 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 
 	executionControl = viper.GetBool("kubefirst-checks.post-detokenize")
 	if !executionControl {
-
 		if err := k3d.PostRunPrepareGitopsRepository(config.GitopsDir); err != nil {
 			return fmt.Errorf("error detokenizing post run: %w", err)
 		}
