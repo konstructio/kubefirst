@@ -1197,12 +1197,12 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("error opening repo at %q: %w", config.GitopsDir, err)
 		}
-		_, err = os.Stat(fmt.Sprintf("%s/terraform/%s/remote-backend.md", config.GitopsDir, config.GitProvider))
-		if err == nil {
-			err = os.Rename(fmt.Sprintf("%s/terraform/%s/remote-backend.md", config.GitopsDir, config.GitProvider), fmt.Sprintf("%s/terraform/%s/remote-backend.tf", config.GitopsDir, config.GitProvider))
-			if err != nil {
-				return fmt.Errorf("failed to rename remote-backend.md to remote-backend.tf: %w", err)
-			}
+
+		oldPath := fmt.Sprintf("%s/terraform/%s/remote-backend.md", config.GitopsDir, config.GitProvider)
+		newPath := fmt.Sprintf("%s/terraform/%s/remote-backend.tf", config.GitopsDir, config.GitProvider)
+
+		if err = os.Rename(oldPath, newPath); err != nil {
+			return fmt.Errorf("failed to rename remote-backend.md to remote-backend.tf: %w", err)
 		}
 
 		err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content post run")
