@@ -62,7 +62,7 @@ func CreateContainerRegistrySecret(obj *ContainerRegistryAuth) (string, error) {
 			}
 		}
 
-		if err != nil && !errors.IsAlreadyExists(err) {
+		if err != nil {
 			return "", fmt.Errorf("error while creating secret for GitHub container registry auth: %w", err)
 		}
 
