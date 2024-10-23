@@ -13,6 +13,7 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/gitlab"
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -48,12 +49,20 @@ func CreateContainerRegistrySecret(obj *ContainerRegistryAuth) (string, error) {
 			usernamePasswordStringB64,
 		)
 
+		data := map[string][]byte{"config.json": []byte(dockerConfigString)}
 		argoDeployTokenSecret := &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: "argo"},
-			Data:       map[string][]byte{"config.json": []byte(dockerConfigString)},
+			Data:       data,
 			Type:       "Opaque",
 		}
-		if err := k8s.CreateSecretV2(obj.Clientset, argoDeployTokenSecret); err != nil {
+		err := k8s.CreateSecretV2(obj.Clientset, argoDeployTokenSecret)
+		if errors.IsAlreadyExists(err) {
+			if err := k8s.UpdateSecretV2(obj.Clientset, "argo", secretName, data); err != nil {
+				return "", fmt.Errorf("error while updating secret for GitHub container registry auth: %w", err)
+			}
+		}
+
+		if err != nil && !errors.IsAlreadyExists(err) {
 			return "", fmt.Errorf("error while creating secret for GitHub container registry auth: %w", err)
 		}
 
