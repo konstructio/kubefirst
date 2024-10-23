@@ -1187,34 +1187,40 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 	progressPrinter.AddTracker("wrapping-up", "Wrapping up", 2)
 	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
-	if err := k3d.PostRunPrepareGitopsRepository(config.GitopsDir); err != nil {
-		return fmt.Errorf("error detokenizing post run: %w", err)
-	}
+	executionControl = viper.GetBool("kubefirst-checks.post-detokenize")
+	if !executionControl {
 
-	gitopsRepo, err := git.PlainOpen(config.GitopsDir)
-	if err != nil {
-		return fmt.Errorf("error opening repo at %q: %w", config.GitopsDir, err)
-	}
-	_, err = os.Stat(fmt.Sprintf("%s/terraform/%s/remote-backend.md", config.GitopsDir, config.GitProvider))
-	if err == nil {
-		err = os.Rename(fmt.Sprintf("%s/terraform/%s/remote-backend.md", config.GitopsDir, config.GitProvider), fmt.Sprintf("%s/terraform/%s/remote-backend.tf", config.GitopsDir, config.GitProvider))
-		if err != nil {
-			return fmt.Errorf("failed to rename remote-backend.md to remote-backend.tf: %w", err)
+		if err := k3d.PostRunPrepareGitopsRepository(config.GitopsDir); err != nil {
+			return fmt.Errorf("error detokenizing post run: %w", err)
 		}
-	}
-	viper.Set("kubefirst-checks.post-detokenize", true)
-	viper.WriteConfig()
 
-	err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content post run")
-	if err != nil {
-		return fmt.Errorf("failed to commit initial detokenized gitops-template repo content: %w", err)
-	}
-	err = gitopsRepo.Push(&git.PushOptions{
-		RemoteName: config.GitProvider,
-		Auth:       httpAuth,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to push initial detokenized gitops-template repo content: %w", err)
+		gitopsRepo, err := git.PlainOpen(config.GitopsDir)
+		if err != nil {
+			return fmt.Errorf("error opening repo at %q: %w", config.GitopsDir, err)
+		}
+		_, err = os.Stat(fmt.Sprintf("%s/terraform/%s/remote-backend.md", config.GitopsDir, config.GitProvider))
+		if err == nil {
+			err = os.Rename(fmt.Sprintf("%s/terraform/%s/remote-backend.md", config.GitopsDir, config.GitProvider), fmt.Sprintf("%s/terraform/%s/remote-backend.tf", config.GitopsDir, config.GitProvider))
+			if err != nil {
+				return fmt.Errorf("failed to rename remote-backend.md to remote-backend.tf: %w", err)
+			}
+		}
+
+		err = gitClient.Commit(gitopsRepo, "committing initial detokenized gitops-template repo content post run")
+		if err != nil {
+			return fmt.Errorf("failed to commit initial detokenized gitops-template repo content: %w", err)
+		}
+		err = gitopsRepo.Push(&git.PushOptions{
+			RemoteName: config.GitProvider,
+			Auth:       httpAuth,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to push initial detokenized gitops-template repo content: %w", err)
+		}
+		viper.Set("kubefirst-checks.post-detokenize", true)
+		viper.WriteConfig()
+	} else {
+		log.Info().Msg("already detokenized post run")
 	}
 
 	progressPrinter.IncrementTracker("wrapping-up")
