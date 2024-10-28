@@ -14,7 +14,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/hashicorp/vault/api v1.9.0
-	github.com/konstructio/kubefirst-api v0.111.0
+	github.com/konstructio/kubefirst-api v0.113.0
 	github.com/kubefirst/metrics-client v0.3.0
 	github.com/nxadm/tail v1.4.8
 	github.com/rs/zerolog v1.29.1
