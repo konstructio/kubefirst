@@ -11,7 +11,7 @@ const (
 	helmChartName     = "kubefirst"
 	helmChartRepoName = "konstruct"
 	helmChartRepoURL  = "https://charts.konstruct.io"
-	helmChartVersion  = "2.7.1-rc2"
+	helmChartVersion  = "2.7.1-rc3"
 	namespace         = "kubefirst"
 	secretName        = "kubefirst-initial-secrets"
 )
