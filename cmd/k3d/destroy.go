@@ -223,9 +223,9 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 		viper.WriteConfig()
 	}
 
-	if _, err := os.Stat(config.K1Dir + "/kubeconfig"); !os.IsNotExist(err) {
-		if err := os.Remove(config.K1Dir + "/kubeconfig"); err != nil {
-			return fmt.Errorf("unable to delete %q: %w", config.K1Dir+"/kubeconfig", err)
+	if _, err := os.Stat(config.K1Dir); !os.IsNotExist(err) {
+		if err := os.RemoveAll(config.K1Dir); err != nil {
+			return fmt.Errorf("unable to delete %q: %w", config.K1Dir, err)
 		}
 	}
 	time.Sleep(200 * time.Millisecond)
