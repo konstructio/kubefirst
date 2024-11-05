@@ -133,6 +133,15 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		cliFlags.ECR = ecrFlag
 	}
 
+	if cloudProvider == "azure" {
+		dnsAzureResourceGroup, err := cmd.Flags().GetString("dns-azure-resource-group")
+		if err != nil {
+			progress.Error(err.Error())
+			return cliFlags, fmt.Errorf("failed to get dns-azure-resource-group flag: %w", err)
+		}
+		cliFlags.DNSAzureRG = dnsAzureResourceGroup
+	}
+
 	if cloudProvider == "google" {
 		googleProject, err := cmd.Flags().GetString("google-project")
 		if err != nil {
