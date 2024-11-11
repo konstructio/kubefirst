@@ -44,10 +44,12 @@ func createDigitalocean(cmd *cobra.Command, _ []string) error {
 		return errors.New("catalog did not pass a validation check")
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to validate provided flags: %w", err)
+	if progress.CanRunBubbleTea {
+		err = ValidateProvidedFlags(cliFlags.GitProvider)
+		if err != nil {
+			progress.Error(err.Error())
+			return fmt.Errorf("failed to validate provided flags: %w", err)
+		}
 	}
 
 	// If cluster setup is complete, return
@@ -111,9 +113,8 @@ func createDigitalocean(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(gitProvider string) error {
-	if progress.CanRunBubbleTea {
-		progress.AddStep("Validate provided flags")
-	}
+	progress.AddStep("Validate provided flags")
+
 	// Validate required environment variables for dns provider
 	if dnsProviderFlag == "cloudflare" {
 		if os.Getenv("CF_API_TOKEN") == "" {
@@ -142,8 +143,7 @@ func ValidateProvidedFlags(gitProvider string) error {
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
-	if progress.CanRunBubbleTea {
-		progress.CompleteStep("Validate provided flags")
-	}
+	progress.CompleteStep("Validate provided flags")
+
 	return nil
 }

@@ -51,10 +51,12 @@ func createAzure(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider, cliFlags.DNSAzureRG)
-	if err != nil {
-		progress.Error(err.Error())
-		return nil
+	if progress.CanRunBubbleTea {
+		err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider, cliFlags.DNSAzureRG)
+		if err != nil {
+			progress.Error(err.Error())
+			return nil
+		}
 	}
 
 	// If cluster setup is complete, return

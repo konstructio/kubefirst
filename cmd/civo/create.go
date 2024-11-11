@@ -39,10 +39,12 @@ func createCivo(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("catalog apps validation failed: %w", err)
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to validate provided flags: %w", err)
+	if progress.CanRunBubbleTea {
+		err = ValidateProvidedFlags(cliFlags.GitProvider)
+		if err != nil {
+			progress.Error(err.Error())
+			return fmt.Errorf("failed to validate provided flags: %w", err)
+		}
 	}
 
 	// If cluster setup is complete, return
@@ -102,9 +104,7 @@ func createCivo(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(gitProvider string) error {
-	if progress.CanRunBubbleTea {
-		progress.AddStep("Validate provided flags")
-	}
+	progress.AddStep("Validate provided flags")
 
 	if os.Getenv("CIVO_TOKEN") == "" {
 		return fmt.Errorf("your CIVO_TOKEN is not set - please set and re-run your last command")
@@ -132,9 +132,7 @@ func ValidateProvidedFlags(gitProvider string) error {
 		log.Info().Msgf("gitlab.com %q", key.Type())
 	}
 
-	if progress.CanRunBubbleTea {
-		progress.CompleteStep("Validate provided flags")
-	}
+	progress.CompleteStep("Validate provided flags")
 
 	return nil
 }

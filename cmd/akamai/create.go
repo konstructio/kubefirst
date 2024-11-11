@@ -39,10 +39,12 @@ func createAkamai(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("catalog validation failed: %w", err)
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to validate flags: %w", err)
+	if progress.CanRunBubbleTea {
+		err = ValidateProvidedFlags(cliFlags.GitProvider)
+		if err != nil {
+			progress.Error(err.Error())
+			return fmt.Errorf("failed to validate flags: %w", err)
+		}
 	}
 
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)
@@ -99,9 +101,7 @@ func createAkamai(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(gitProvider string) error {
-	if progress.CanRunBubbleTea {
-		progress.AddStep("Validate provided flags")
-	}
+	progress.AddStep("Validate provided flags")
 
 	if os.Getenv("LINODE_TOKEN") == "" {
 		return fmt.Errorf("your LINODE_TOKEN is not set - please set and re-run your last command")
@@ -128,9 +128,7 @@ func ValidateProvidedFlags(gitProvider string) error {
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
-	if progress.CanRunBubbleTea {
-		progress.CompleteStep("Validate provided flags")
-	}
+	progress.CompleteStep("Validate provided flags")
 
 	return nil
 }

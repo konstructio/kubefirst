@@ -44,10 +44,12 @@ func createVultr(cmd *cobra.Command, _ []string) error {
 		return errors.New("catalog validation failed")
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("invalid provided flags: %w", err)
+	if progress.CanRunBubbleTea {
+		err = ValidateProvidedFlags(cliFlags.GitProvider)
+		if err != nil {
+			progress.Error(err.Error())
+			return fmt.Errorf("invalid provided flags: %w", err)
+		}
 	}
 
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
@@ -111,9 +113,7 @@ func createVultr(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(gitProvider string) error {
-	if progress.CanRunBubbleTea {
-		progress.AddStep("Validate provided flags")
-	}
+	progress.AddStep("Validate provided flags")
 
 	if os.Getenv("VULTR_API_KEY") == "" {
 		return fmt.Errorf("your VULTR_API_KEY variable is unset - please set it before continuing")
@@ -140,8 +140,7 @@ func ValidateProvidedFlags(gitProvider string) error {
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
-	if progress.CanRunBubbleTea {
-		progress.CompleteStep("Validate provided flags")
-	}
+	progress.CompleteStep("Validate provided flags")
+
 	return nil
 }
