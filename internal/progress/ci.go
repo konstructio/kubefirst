@@ -2,14 +2,12 @@ package progress
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/konstructio/kubefirst/internal/cluster"
 )
 
 func WatchClusterForCi(clusterName string) {
-
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
@@ -24,7 +22,7 @@ func WatchClusterForCi(clusterName string) {
 				provisioningCluster, _ := cluster.GetCluster(clusterName)
 
 				if provisioningCluster.Status == "error" {
-					log.Fatalf("unable to provision cluster: %s", provisioningCluster.LastCondition)
+					fmt.Printf("unable to provision cluster: %s", provisioningCluster.LastCondition)
 					done <- true
 				}
 

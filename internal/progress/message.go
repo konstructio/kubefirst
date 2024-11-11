@@ -199,7 +199,6 @@ func AddStep(message string) {
 }
 
 func CompleteStep(message string) {
-
 	if !CanRunBubbleTea {
 		fmt.Println(message)
 		return
@@ -236,7 +235,6 @@ func Error(message string) {
 }
 
 func StartProvisioning(clusterName string) {
-
 	if !CanRunBubbleTea {
 		WatchClusterForCi(clusterName)
 	} else {
