@@ -113,8 +113,9 @@ func createAzure(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(gitProvider, dnsProvider, dnsAzureResourceGroup string) error {
-	progress.AddStep("Validate provided flags")
-
+	if progress.CanRunBubbleTea {
+		progress.AddStep("Validate provided flags")
+	}
 	for _, env := range envvarSecrets {
 		if os.Getenv(env) == "" {
 			return fmt.Errorf("your %s is not set - please set and re-run your last command", env)

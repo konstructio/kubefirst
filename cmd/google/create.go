@@ -104,7 +104,9 @@ func createGoogle(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(gitProvider string) error {
-	progress.AddStep("Validate provided flags")
+	if progress.CanRunBubbleTea {
+		progress.AddStep("Validate provided flags")
+	}
 
 	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
 		return fmt.Errorf("your GOOGLE_APPLICATION_CREDENTIALS is not set - please set and re-run your last command")
@@ -131,7 +133,8 @@ func ValidateProvidedFlags(gitProvider string) error {
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
-	progress.CompleteStep("Validate provided flags")
-
+	if progress.CanRunBubbleTea {
+		progress.CompleteStep("Validate provided flags")
+	}
 	return nil
 }

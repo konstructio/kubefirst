@@ -137,8 +137,9 @@ func createAws(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(gitProvider string) error {
-	progress.AddStep("Validate provided flags")
-
+	if progress.CanRunBubbleTea {
+		progress.AddStep("Validate provided flags")
+	}
 	// Validate required environment variables for dns provider
 	if dnsProviderFlag == "cloudflare" {
 		if os.Getenv("CF_API_TOKEN") == "" {
@@ -161,7 +162,9 @@ func ValidateProvidedFlags(gitProvider string) error {
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
-	progress.CompleteStep("Validate provided flags")
+	if progress.CanRunBubbleTea {
+		progress.CompleteStep("Validate provided flags")
+	}
 
 	return nil
 }

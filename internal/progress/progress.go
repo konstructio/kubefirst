@@ -14,13 +14,20 @@ import (
 	"github.com/spf13/viper"
 )
 
-var Progress *tea.Program
+var (
+	Progress        *tea.Program
+	CanRunBubbleTea bool
+)
 
 //nolint:revive // will be removed after refactoring
 func NewModel() progressModel {
 	return progressModel{
 		isProvisioned: false,
 	}
+}
+
+func DiableBubbleTeaExecution() {
+	CanRunBubbleTea = false
 }
 
 // Bubbletea functions
