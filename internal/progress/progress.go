@@ -20,6 +20,7 @@ var (
 	isCiExecution bool
 )
 
+//nolint:revive // will be removed after refactoring
 func NewModel() progressModel {
 	return progressModel{
 		isProvisioned: false,

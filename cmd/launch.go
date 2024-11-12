@@ -14,8 +14,10 @@ import (
 )
 
 // additionalHelmFlags can optionally pass user-supplied flags to helm
-var additionalHelmFlags []string
-var ciFlag bool
+var (
+	additionalHelmFlags []string
+	ciFlag              bool
+)
 
 func LaunchCommand() *cobra.Command {
 	launchCommand := &cobra.Command{
