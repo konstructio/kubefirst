@@ -25,7 +25,8 @@ import (
 func main() {
 	argsWithProg := os.Args
 
-	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs", "--ci"}
+	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs"}
+	isCiExecution := slices.Contains(argsWithProg, "--ci")
 	canRunBubbleTea := true
 
 	for _, arg := range argsWithProg {
@@ -134,7 +135,7 @@ func main() {
 	}
 
 	if canRunBubbleTea {
-		progress.InitializeProgressTerminal()
+		progress.InitializeProgressTerminal(isCiExecution)
 
 		go func() {
 			cmd.Execute()
@@ -143,6 +144,5 @@ func main() {
 		progress.Progress.Run()
 	} else {
 		cmd.Execute()
-		progress.DiableBubbleTeaExecution()
 	}
 }

@@ -8,6 +8,7 @@ package progress
 
 import (
 	"fmt"
+	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/konstructio/kubefirst-api/pkg/types"
@@ -15,27 +16,23 @@ import (
 )
 
 var (
-	Progress        *tea.Program
-	CanRunBubbleTea bool
+	Progress      *tea.Program
+	isCiExecution bool
 )
 
-//nolint:revive // will be removed after refactoring
 func NewModel() progressModel {
 	return progressModel{
 		isProvisioned: false,
 	}
 }
 
-func DiableBubbleTeaExecution() {
-	CanRunBubbleTea = false
-}
-
 // Bubbletea functions
-func InitializeProgressTerminal() {
-	if CanRunBubbleTea {
+func InitializeProgressTerminal(isCi bool) {
+	isCiExecution = isCi
+	if !isCiExecution {
 		Progress = tea.NewProgram(NewModel())
 	} else {
-		Progress = tea.NewProgram(NewModel(), tea.WithoutRenderer())
+		Progress = tea.NewProgram(NewModel(), tea.WithOutput(os.Stdout), tea.WithoutRenderer())
 	}
 }
 
@@ -54,10 +51,12 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case headerMsg:
+		printLine(msg.message)
 		m.header = msg.message
 		return m, nil
 
 	case addStep:
+		printLine(msg.message)
 		m.nextStep = msg.message
 		return m, nil
 
@@ -67,10 +66,12 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case errorMsg:
+		printLine(msg.message)
 		m.error = msg.message
 		return m, tea.Quit
 
 	case successMsg:
+		printLine(msg.message)
 		m.successMessage = msg.message + "\n\n"
 		return m, tea.Quit
 
@@ -86,6 +87,7 @@ func (m progressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.provisioningCluster.Status == "error" {
 			errorMessage := createErrorLog(m.provisioningCluster.LastCondition)
+			printLine(errorMessage.message)
 			m.error = errorMessage.message
 			return m, tea.Quit
 		}
@@ -128,4 +130,10 @@ func (m progressModel) View() string {
 	}
 
 	return m.successMessage
+}
+
+func printLine(message string) {
+	if isCiExecution {
+		fmt.Fprintln(os.Stdout, message)
+	}
 }
