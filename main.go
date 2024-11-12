@@ -25,7 +25,7 @@ import (
 func main() {
 	argsWithProg := os.Args
 
-	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs"}
+	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs", "--ci"}
 	canRunBubbleTea := true
 
 	for _, arg := range argsWithProg {
@@ -143,5 +143,6 @@ func main() {
 		progress.Progress.Run()
 	} else {
 		cmd.Execute()
+		progress.DiableBubbleTeaExecution()
 	}
 }

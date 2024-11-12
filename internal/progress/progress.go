@@ -14,7 +14,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-var Progress *tea.Program
+var (
+	Progress        *tea.Program
+	CanRunBubbleTea bool
+)
 
 //nolint:revive // will be removed after refactoring
 func NewModel() progressModel {
@@ -23,9 +26,17 @@ func NewModel() progressModel {
 	}
 }
 
+func DiableBubbleTeaExecution() {
+	CanRunBubbleTea = false
+}
+
 // Bubbletea functions
 func InitializeProgressTerminal() {
-	Progress = tea.NewProgram(NewModel())
+	if CanRunBubbleTea {
+		Progress = tea.NewProgram(NewModel())
+	} else {
+		Progress = tea.NewProgram(NewModel(), tea.WithoutRenderer())
+	}
 }
 
 func (m progressModel) Init() tea.Cmd {
