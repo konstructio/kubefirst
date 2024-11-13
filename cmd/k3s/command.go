@@ -17,7 +17,6 @@ var (
 	// Create
 	// TODO: add ssh key flag to connect on k3s targets
 	alertsEmailFlag          string
-	ciFlag                   bool
 	cloudRegionFlag          string
 	nodeTypeFlag             string
 	nodeCountFlag            string
@@ -83,7 +82,6 @@ func Create() *cobra.Command {
 	// todo review defaults and update descriptions
 	createCmd.Flags().StringVar(&alertsEmailFlag, "alerts-email", "", "email address for let's encrypt certificate notifications (required)")
 	createCmd.MarkFlagRequired("alerts-email")
-	createCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
 	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "on-premise", "NOT USED, PRESENT FOR COMPATIBILITY ISSUE")
 	createCmd.Flags().StringVar(&nodeTypeFlag, "node-type", "on-premise", "NOT USED, PRESENT FOR COMPATIBILITY ISSUE")
 	createCmd.Flags().StringVar(&nodeCountFlag, "node-count", "3", "NOT USED, PRESENT FOR COMPATIBILITY ISSUE")
@@ -136,7 +134,6 @@ func RootCredentials() *cobra.Command {
 	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the ArgoCD password to the clipboard (optional)")
 	authCmd.Flags().BoolVar(&copyKbotPasswordToClipboardFlag, "kbot", false, "copy the kbot password to the clipboard (optional)")
 	authCmd.Flags().BoolVar(&copyVaultPasswordToClipboardFlag, "vault", false, "copy the vault password to the clipboard (optional)")
-	authCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
 
 	return authCmd
 }

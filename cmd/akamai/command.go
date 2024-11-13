@@ -18,7 +18,6 @@ import (
 var (
 	// Create
 	alertsEmailFlag          string
-	ciFlag                   bool
 	cloudRegionFlag          string
 	clusterNameFlag          string
 	clusterTypeFlag          string
@@ -83,7 +82,6 @@ func Create() *cobra.Command {
 	// todo review defaults and update descriptions
 	createCmd.Flags().StringVar(&alertsEmailFlag, "alerts-email", "", "email address for let's encrypt certificate notifications (required)")
 	createCmd.MarkFlagRequired("alerts-email")
-	createCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
 	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "us-central", "the akamai region to provision infrastructure in")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
@@ -128,7 +126,6 @@ func RootCredentials() *cobra.Command {
 	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the ArgoCD password to the clipboard (optional)")
 	authCmd.Flags().BoolVar(&copyKbotPasswordToClipboardFlag, "kbot", false, "copy the kbot password to the clipboard (optional)")
 	authCmd.Flags().BoolVar(&copyVaultPasswordToClipboardFlag, "vault", false, "copy the vault password to the clipboard (optional)")
-	authCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
 
 	return authCmd
 }
