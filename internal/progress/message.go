@@ -71,6 +71,8 @@ func DisplayLogHints(estimatedTime int) {
 
 	headerMessage := renderMessage(header)
 
+	printLine(headerMessage)
+
 	Progress.Send(headerMsg{
 		message: headerMessage,
 	})
@@ -141,6 +143,8 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 
 	successMessage := renderMessage(success)
 
+	printLine(successMessage)
+
 	return successMsg{
 		message: successMessage,
 	}
@@ -165,6 +169,8 @@ func DisplayCredentials(cluster types.Cluster) {
 
 	headerMessage := renderMessage(header)
 
+	printLine(headerMessage)
+
 	Progress.Send(headerMsg{
 		message: headerMessage,
 	})
@@ -178,6 +184,7 @@ func AddStep(message string) {
 }
 
 func CompleteStep(message string) {
+	printLine(message)
 	Progress.Send(completeStep{
 		message: message,
 	})
@@ -185,6 +192,7 @@ func CompleteStep(message string) {
 
 func Success(success string) {
 	successMessage := renderMessage(success)
+	printLine(successMessage)
 
 	Progress.Send(
 		successMsg{
@@ -193,6 +201,8 @@ func Success(success string) {
 }
 
 func Error(message string) {
+	printLine(message)
+
 	renderedMessage := createErrorLog(message)
 	Progress.Send(renderedMessage)
 }
@@ -203,4 +213,10 @@ func StartProvisioning(clusterName string) {
 	}
 
 	Progress.Send(provisioningMessage)
+}
+
+func printLine(message string) {
+	if isCiExecution {
+		fmt.Println(message)
+	}
 }
