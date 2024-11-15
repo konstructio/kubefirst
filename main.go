@@ -136,6 +136,9 @@ func main() {
 		return
 	}
 
+	fmt.Println("canRunBubbleTea", canRunBubbleTea)
+	fmt.Println("isCiExecution", isCiExecution)
+
 	if canRunBubbleTea {
 		progress.InitializeProgressTerminal(isCiExecution)
 
