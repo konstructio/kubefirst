@@ -25,7 +25,7 @@ import (
 func main() {
 	argsWithProg := os.Args
 
-	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs"}
+	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs", "--ci"}
 	isCiExecution := slices.Contains(argsWithProg, "--ci")
 	canRunBubbleTea := true
 
