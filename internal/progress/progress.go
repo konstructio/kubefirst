@@ -31,6 +31,7 @@ func NewModel() progressModel {
 func InitializeProgressTerminal(isCi bool) {
 	isCiExecution = isCi
 	if !isCiExecution {
+		fmt.Println("isCiExecution", isCiExecution)
 		Progress = tea.NewProgram(NewModel())
 	} else {
 		Progress = tea.NewProgram(NewModel(), tea.WithOutput(os.Stdout), tea.WithoutRenderer())

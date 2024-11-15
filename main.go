@@ -25,7 +25,7 @@ import (
 func main() {
 	argsWithProg := os.Args
 
-	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs", "--ci"}
+	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs"}
 	isCiExecution := slices.Contains(argsWithProg, "--ci")
 	canRunBubbleTea := true
 
@@ -146,7 +146,12 @@ func main() {
 			cmd.Execute()
 		}()
 
-		progress.Progress.Run()
+		_, err := progress.Progress.Run()
+		if err != nil {
+			log.Error().Msgf("error running progress: %v", err)
+		}
+
+		fmt.Println("finished")
 	} else {
 		cmd.Execute()
 	}
