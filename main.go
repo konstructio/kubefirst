@@ -119,9 +119,11 @@ func main() {
 
 	// setup default logging
 	// this Go standard log is active to keep compatibility with current code base
-	stdLog.SetOutput(logFileObj)
-	stdLog.SetPrefix("LOG: ")
-	stdLog.SetFlags(stdLog.Ldate)
+	if !isCiExecution {
+		stdLog.SetOutput(logFileObj)
+		stdLog.SetPrefix("LOG: ")
+		stdLog.SetFlags(stdLog.Ldate)
+	}
 
 	log.Logger = zeroLog.New(logFileObj).With().Timestamp().Logger()
 
