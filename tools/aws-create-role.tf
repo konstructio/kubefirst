@@ -28,7 +28,7 @@ provider "aws" {
 resource "aws_iam_role" "assumed_admin" {
 
   # The role name
-  name = "AssumedAdmin"
+  name = "KubernetesAdmin"
 
   # The default session time is 1 hour, this set it to 12 hours for convenience. It's less annoying, but less secure, feel free to remove or change!
   max_session_duration = 43200
@@ -36,7 +36,7 @@ resource "aws_iam_role" "assumed_admin" {
   #
   # Below is a permissive role not intended for long-term use.
   #
-  # It grants all IAM users of the AWS account the ability to assume the role `AssumedAdmin` (or whatever name you gave it), which we created and give the `AdministratorAccess` policy.
+  # It grants all IAM users of the AWS account the ability to assume the role `KubernetesAdmin`, which we created and give the `AdministratorAccess` policy.
   #
   # The value `:root` grants assume to the whole account but you can replace it with your individual IAM ARN, or your role if appropriate.
   #
