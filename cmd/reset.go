@@ -127,10 +127,8 @@ func runReset() error {
 		return fmt.Errorf("error writing viper config: %w", err)
 	}
 
-	if _, err := os.Stat(k1Dir + "/kubeconfig"); !os.IsNotExist(err) {
-		if err := os.Remove(k1Dir + "/kubeconfig"); err != nil {
-			return fmt.Errorf("unable to delete %q folder, error: %w", k1Dir+"/kubeconfig", err)
-		}
+	if err := os.RemoveAll(k1Dir); err != nil {
+		return fmt.Errorf("unable to delete %q folder, error: %w", k1Dir, err)
 	}
 
 	progressPrinter.IncrementTracker("removing-platform-content")
