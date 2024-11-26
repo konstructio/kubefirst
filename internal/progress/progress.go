@@ -26,7 +26,7 @@ func NewModel() progressModel {
 	}
 }
 
-func DiableBubbleTeaExecution() {
+func DisableBubbleTeaExecution() {
 	CanRunBubbleTea = false
 }
 

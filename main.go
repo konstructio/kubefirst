@@ -143,6 +143,6 @@ func main() {
 		progress.Progress.Run()
 	} else {
 		cmd.Execute()
-		progress.DiableBubbleTeaExecution()
+		progress.DisableBubbleTeaExecution()
 	}
 }

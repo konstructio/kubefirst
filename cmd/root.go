@@ -68,4 +68,7 @@ func init() {
 		LetsEncryptCommand(),
 		TerraformCommand(),
 	)
+
+	rootCmd.PersistentFlags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
+
 }
