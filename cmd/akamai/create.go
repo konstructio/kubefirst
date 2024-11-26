@@ -39,10 +39,12 @@ func createAkamai(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("catalog validation failed: %w", err)
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to validate flags: %w", err)
+	if progress.CanRunBubbleTea {
+		err = ValidateProvidedFlags(cliFlags.GitProvider)
+		if err != nil {
+			progress.Error(err.Error())
+			return fmt.Errorf("failed to validate flags: %w", err)
+		}
 	}
 
 	utilities.CreateK1ClusterDirectory(clusterNameFlag)

@@ -39,10 +39,12 @@ func createCivo(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("catalog apps validation failed: %w", err)
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to validate provided flags: %w", err)
+	if progress.CanRunBubbleTea {
+		err = ValidateProvidedFlags(cliFlags.GitProvider)
+		if err != nil {
+			progress.Error(err.Error())
+			return fmt.Errorf("failed to validate provided flags: %w", err)
+		}
 	}
 
 	// If cluster setup is complete, return

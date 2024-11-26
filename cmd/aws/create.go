@@ -41,10 +41,12 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("invalid catalog apps: %w", err)
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to validate provided flags: %w", err)
+	if progress.CanRunBubbleTea {
+		err = ValidateProvidedFlags(cliFlags.GitProvider)
+		if err != nil {
+			progress.Error(err.Error())
+			return fmt.Errorf("failed to validate provided flags: %w", err)
+		}
 	}
 
 	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)

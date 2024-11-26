@@ -44,10 +44,12 @@ func createVultr(cmd *cobra.Command, _ []string) error {
 		return errors.New("catalog validation failed")
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("invalid provided flags: %w", err)
+	if progress.CanRunBubbleTea {
+		err = ValidateProvidedFlags(cliFlags.GitProvider)
+		if err != nil {
+			progress.Error(err.Error())
+			return fmt.Errorf("invalid provided flags: %w", err)
+		}
 	}
 
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
@@ -139,5 +141,6 @@ func ValidateProvidedFlags(gitProvider string) error {
 	}
 
 	progress.CompleteStep("Validate provided flags")
+
 	return nil
 }

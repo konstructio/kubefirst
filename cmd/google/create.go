@@ -40,10 +40,12 @@ func createGoogle(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("catalog apps validation failed: %w", err)
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("validation of provided flags failed: %w", err)
+	if progress.CanRunBubbleTea {
+		err = ValidateProvidedFlags(cliFlags.GitProvider)
+		if err != nil {
+			progress.Error(err.Error())
+			return fmt.Errorf("validation of provided flags failed: %w", err)
+		}
 	}
 
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
