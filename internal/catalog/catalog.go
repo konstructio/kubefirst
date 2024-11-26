@@ -18,7 +18,7 @@ import (
 	apiTypes "github.com/konstructio/kubefirst-api/pkg/types"
 
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
