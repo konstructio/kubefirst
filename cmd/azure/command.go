@@ -97,7 +97,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&nodeCountFlag, "node-count", azureDefaults.NodeCount, "the node count for the cluster")
 	createCmd.Flags().StringVar(&nodeTypeFlag, "node-type", azureDefaults.InstanceSize, "the instance size of the cluster to create")
 	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "azure", fmt.Sprintf("the dns provider - one of: %s", supportedDNSProviders))
-	createCmd.Flags().StringVar(&dnsAzureResourceGroup, "dns-azure-resource-group", "", "the resource group where the Azure DNS Zone is hosted")
+	createCmd.Flags().StringVar(&dnsAzureResourceGroup, "dns-azure-resource-group", "", "the name of the resource group where the DNS Zone exists. If not set, the first matching zone will be used")
 	createCmd.Flags().StringVar(&subdomainNameFlag, "subdomain", "", "the subdomain to use for DNS records (Cloudflare)")
 	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the Azure/Cloudflare DNS hosted zone name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
