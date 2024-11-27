@@ -8,13 +8,18 @@ package progress
 
 import (
 	"fmt"
+	"os"
+	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/konstructio/kubefirst-api/pkg/types"
 	"github.com/spf13/viper"
 )
 
-var Progress *tea.Program
+var (
+	Progress *tea.Program
+	prOnce   sync.Once
+)
 
 //nolint:revive // will be removed after refactoring
 func NewModel() progressModel {
@@ -25,7 +30,13 @@ func NewModel() progressModel {
 
 // Bubbletea functions
 func InitializeProgressTerminal() {
-	Progress = tea.NewProgram(NewModel())
+	prOnce.Do(func() {
+		if os.Getenv("CI") == "true" {
+			Progress = tea.NewProgram(NewModel(), tea.WithoutRenderer(), tea.WithOutput(os.Stdout))
+		} else {
+			Progress = tea.NewProgram(NewModel())
+		}
+	})
 }
 
 func (m progressModel) Init() tea.Cmd {
