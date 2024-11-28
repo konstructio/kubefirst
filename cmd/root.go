@@ -16,7 +16,7 @@ import (
 	"github.com/konstructio/kubefirst/cmd/digitalocean"
 	"github.com/konstructio/kubefirst/cmd/k3d"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/teawrapper"
 	"github.com/spf13/cobra"
 )
 
@@ -35,11 +35,11 @@ checkout the docs at https://kubefirst.konstruct.io/docs/.`,
 			return configs.InitializeViperConfig(cmd)
 		},
 		SilenceUsage: true,
-		Run: func(_ *cobra.Command, _ []string) {
+		RunE: teawrapper.WrapBubbleTea(func(_ *cobra.Command, _ []string) error {
 			fmt.Println("To learn more about kubefirst, run:")
 			fmt.Println("  kubefirst help")
-			progress.Progress.Quit()
-		},
+			return nil
+		}),
 	}
 
 	cobra.OnInitialize()

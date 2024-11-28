@@ -32,7 +32,7 @@ func NewModel() progressModel {
 func InitializeProgressTerminal() {
 	prOnce.Do(func() {
 		if os.Getenv("CI") == "true" {
-			Progress = tea.NewProgram(NewModel(), tea.WithoutRenderer(), tea.WithOutput(os.Stdout))
+			Progress = tea.NewProgram(NewModel(), tea.WithoutRenderer())
 		} else {
 			Progress = tea.NewProgram(NewModel())
 		}
