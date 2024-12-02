@@ -51,7 +51,7 @@ func createAzure(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider, cliFlags.DNSAzureRG)
+	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
 		progress.Error(err.Error())
 		return nil
@@ -112,7 +112,7 @@ func createAzure(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func ValidateProvidedFlags(gitProvider, dnsProvider, dnsAzureResourceGroup string) error {
+func ValidateProvidedFlags(gitProvider string) error {
 	progress.AddStep("Validate provided flags")
 
 	for _, env := range envvarSecrets {
@@ -138,9 +138,7 @@ func ValidateProvidedFlags(gitProvider, dnsProvider, dnsAzureResourceGroup strin
 		}
 	}
 
-	if dnsProvider == "azure" && dnsAzureResourceGroup == "" {
-		return fmt.Errorf("the resource group for the azure dns zone is required when using azure dns")
-	}
+	progress.CompleteStep("Validate provided flags")
 
 	return nil
 }
