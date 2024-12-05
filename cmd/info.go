@@ -14,6 +14,7 @@ import (
 
 	"github.com/konstructio/kubefirst-api/pkg/configs"
 	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/teawrapper"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +23,7 @@ var infoCmd = &cobra.Command{
 	Use:   "info",
 	Short: "provides general Kubefirst setup data",
 	Long:  `Provides machine data, files and folders paths`,
-	RunE: func(_ *cobra.Command, _ []string) error {
+	RunE: teawrapper.WrapBubbleTea(func(_ *cobra.Command, _ []string) error {
 		config, err := configs.ReadConfig()
 		if err != nil {
 			return fmt.Errorf("failed to read config: %w", err)
@@ -44,12 +45,9 @@ var infoCmd = &cobra.Command{
 		fmt.Fprintf(tw, "Kubefirst config file\t%s\n", config.KubefirstConfigFilePath)
 		fmt.Fprintf(tw, "Kubefirst config folder\t%s\n", config.K1FolderPath)
 		fmt.Fprintf(tw, "Kubefirst Version\t%s\n", configs.K1Version)
+		tw.Flush()
 
 		progress.Success(buf.String())
 		return nil
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(infoCmd)
+	}),
 }
