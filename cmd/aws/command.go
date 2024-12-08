@@ -9,6 +9,7 @@ package aws
 import (
 	"fmt"
 
+
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
@@ -37,11 +38,20 @@ var (
 	nodeCountFlag            string
 	installCatalogApps       string
 	installKubefirstProFlag  bool
+	amiType                  string
 
 	// Supported argument arrays
 	supportedDNSProviders        = []string{"aws", "cloudflare"}
 	supportedGitProviders        = []string{"github", "gitlab"}
 	supportedGitProtocolOverride = []string{"https", "ssh"}
+	supportedAMITypes            = []string{
+		"AL2_x86_64",
+		"AL2_ARM_64",
+		"BOTTLEROCKET_ARM_64",
+		"BOTTLEROCKET_x86_64",
+		"BOTTLEROCKET_ARM_64_NVIDIA",
+		"BOTTLEROCKET_x86_64_NVIDIA",
+	}
 )
 
 func NewCommand() *cobra.Command {
@@ -99,6 +109,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
 	createCmd.Flags().BoolVar(&ecrFlag, "ecr", false, "whether or not to use ecr vs the git provider")
 	createCmd.Flags().BoolVar(&installKubefirstProFlag, "install-kubefirst-pro", true, "whether or not to install kubefirst pro")
+	createCmd.Flags().StringVar(&amiType, "ami-type", "AL2_x86_64", fmt.Sprintf("the ami type for node group - one of: %q", supportedAMITypes))
 
 	return createCmd
 }
