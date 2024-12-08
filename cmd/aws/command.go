@@ -9,7 +9,6 @@ package aws
 import (
 	"fmt"
 
-
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"

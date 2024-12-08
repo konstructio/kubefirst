@@ -17,7 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	bl "github.com/charmbracelet/log"
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
 	pkg "github.com/konstructio/kubefirst-api/pkg/utils"
 	"github.com/konstructio/kubefirst/internal/catalog"
@@ -46,7 +45,12 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("invalid catalog apps: %w", err)
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.AmiType, cliFlags.CloudRegion)
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(cliFlags.CloudRegion))
+	if err != nil {
+		return fmt.Errorf("unable to load AWS SDK config: %w", err)
+	}
+
+	err = ValidateProvidedFlags(cfg, cliFlags.GitProvider, cliFlags.AmiType, cliFlags.NodeType)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate provided flags: %w", err)
@@ -62,7 +66,7 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	creds, err := ValidateAWSRegionAndRetrieveCredentials(cloudRegionFlag)
+	creds, err := ValidateAWSRegionAndRetrieveCredentials(cfg)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
@@ -127,7 +131,7 @@ func createAws(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func ValidateProvidedFlags(gitProvider, amiType, cloudRegion string) error {
+func ValidateProvidedFlags(cfg aws.Config, gitProvider, amiType, nodeType string) error {
 	progress.AddStep("Validate provided flags")
 
 	// Validate required environment variables for dns provider
@@ -152,7 +156,7 @@ func ValidateProvidedFlags(gitProvider, amiType, cloudRegion string) error {
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
-	if err := ValidateAMIType(amiType, cloudRegion); err != nil {
+	if err := ValidateAMIType(cfg, amiType, nodeType); err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to validte ami type for node group: %w", err)
 	}
@@ -162,18 +166,10 @@ func ValidateProvidedFlags(gitProvider, amiType, cloudRegion string) error {
 	return nil
 }
 
-func ValidateAWSRegionAndRetrieveCredentials(cloudRegion string) (*aws.Credentials, error) {
-	// Load AWS configuration
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(cloudRegion),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load AWS configuration: %w", err)
-	}
-
+func ValidateAWSRegionAndRetrieveCredentials(cfg aws.Config) (*aws.Credentials, error) {
 	// Validate region by creating a client
 	stsClient := sts.NewFromConfig(cfg)
-	_, err = stsClient.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
+	_, err := stsClient.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate AWS region: %w", err)
 	}
@@ -187,8 +183,8 @@ func ValidateAWSRegionAndRetrieveCredentials(cloudRegion string) (*aws.Credentia
 	return &creds, nil
 }
 
-func ValidateAMIType(amiType, region string) error {
-	ssm_types := map[string]string{
+func ValidateAMIType(cfg aws.Config, amiType, nodeType string) error {
+	ssmTypes := map[string]string{
 		"AL2_x86_64":                 "/aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id",
 		"AL2_ARM_64":                 "/aws/service/eks/optimized-ami/1.29/amazon-linux-2-arm64/recommended/image_id",
 		"BOTTLEROCKET_ARM_64":        "/aws/service/bottlerocket/aws-k8s-1.29/arm64/latest/image_id",
@@ -197,63 +193,59 @@ func ValidateAMIType(amiType, region string) error {
 		"BOTTLEROCKET_x86_64_NVIDIA": "/aws/service/bottlerocket/aws-k8s-1.29-nvidia/x86_64/latest/image_id",
 	}
 
-	_, ok := ssm_types[amiType]
+	_, ok := ssmTypes[amiType]
 	if !ok {
 		return fmt.Errorf("not a valid ami type")
 	}
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
-	if err != nil {
-		return fmt.Errorf("unable to load AWS SDK config: %w", err)
-	}
-	ec2Client := ec2.NewFromConfig(cfg)
+
 	ssmClient := ssm.NewFromConfig(cfg)
-	ssmParameterName := ssm_types["BOTTLEROCKET_x86_64_NVIDIA"]
+	ssmParameterName := ssmTypes[amiType]
 
 	amiID, err := GetLatestAMIFromSSM(ssmClient, ssmParameterName)
 	if err != nil {
 		return fmt.Errorf("failed to get AMI ID from SSM: %w", err)
 	}
-	bl.Info("Retrieved AMI ID: %s\n", amiID)
+	log.Info().Msgf("ami type is  %s", amiType)
 
-	architecture, err := GetAMIArchitecture(ec2Client, amiID)
+	architecture, err := GetAMIArchitecture(cfg, amiID)
 	if err != nil {
 		return fmt.Errorf("failed to get AMI architecture: %w", err)
 	}
-	fmt.Printf("AMI Architecture: %s\n", architecture)
 
-	instanceTypes, err := GetSupportedInstanceTypes(ec2Client, architecture)
+	instanceTypes, err := GetSupportedInstanceTypes(cfg, architecture)
 	if err != nil {
 		return fmt.Errorf("failed to get supported instance types: %w", err)
 	}
 
-	fmt.Println("Supported Instance Types:")
 	for _, instanceType := range instanceTypes {
-		fmt.Println(instanceType)
+		if instanceType == nodeType {
+			return nil
+		}
 	}
 
-	return nil
+	return fmt.Errorf("node type %s not supported for %s", nodeType, amiType)
 }
 
 func GetLatestAMIFromSSM(ssmClient *ssm.Client, parameterName string) (string, error) {
-
 	input := &ssm.GetParameterInput{
 		Name: aws.String(parameterName),
 	}
 	output, err := ssmClient.GetParameter(context.TODO(), input)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to initialise ssm client: %w", err)
 	}
 
 	return *output.Parameter.Value, nil
 }
 
-func GetAMIArchitecture(ec2Client *ec2.Client, amiID string) (string, error) {
+func GetAMIArchitecture(cfg aws.Config, amiID string) (string, error) {
+	ec2Client := ec2.NewFromConfig(cfg)
 	input := &ec2.DescribeImagesInput{
 		ImageIds: []string{amiID},
 	}
 	output, err := ec2Client.DescribeImages(context.TODO(), input)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to describe images: %w", err)
 	}
 
 	if len(output.Images) == 0 {
@@ -264,7 +256,8 @@ func GetAMIArchitecture(ec2Client *ec2.Client, amiID string) (string, error) {
 	return string(val.Architecture), nil
 }
 
-func GetSupportedInstanceTypes(ec2Client *ec2.Client, architecture string) ([]string, error) {
+func GetSupportedInstanceTypes(cfg aws.Config, architecture string) ([]string, error) {
+	ec2Client := ec2.NewFromConfig(cfg)
 	input := &ec2.DescribeInstanceTypesInput{}
 
 	var instanceTypes []string
@@ -273,7 +266,7 @@ func GetSupportedInstanceTypes(ec2Client *ec2.Client, architecture string) ([]st
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(context.TODO())
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to load next pages for instance types: %w", err)
 		}
 
 		for _, instanceType := range page.InstanceTypes {
