@@ -31,6 +31,7 @@ func GetClusterInterval(clusterName string) tea.Cmd {
 func AddSuccesMessage(cluster types.Cluster) tea.Cmd {
 	return tea.Tick(0, func(_ time.Time) tea.Msg {
 		successMessage := DisplaySuccessMessage(cluster)
+		printLine(successMessage.message)
 
 		return successMessage
 	})
