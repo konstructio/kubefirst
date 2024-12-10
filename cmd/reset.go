@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -132,13 +133,18 @@ func runReset() error {
 		return fmt.Errorf("unable to delete %q folder, error: %w", k1Dir, err)
 	}
 
-	if err := os.Remove(kubefirstConfig); err != nil {
+	if _, err := os.Stat(kubefirstConfig); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			log.Info().Msgf("%q does not exist, continuing", kubefirstConfig)
+		} else {
+			return fmt.Errorf("error checking %q: %w", kubefirstConfig, err)
+		}
+	} else if err := os.Remove(kubefirstConfig); err != nil {
 		return fmt.Errorf("unable to remove %q, error: %w", kubefirstConfig, err)
 	}
 
 	progressPrinter.IncrementTracker("removing-platform-content")
 	time.Sleep(time.Second * 2)
 	progress.Progress.Quit()
-
 	return nil
 }
