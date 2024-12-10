@@ -8,13 +8,17 @@ package progress
 
 import (
 	"fmt"
+	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/konstructio/kubefirst-api/pkg/types"
 	"github.com/spf13/viper"
 )
 
-var Progress *tea.Program
+var (
+	Progress      *tea.Program
+	isCiExecution bool
+)
 
 //nolint:revive // will be removed after refactoring
 func NewModel() progressModel {
@@ -24,8 +28,14 @@ func NewModel() progressModel {
 }
 
 // Bubbletea functions
-func InitializeProgressTerminal() {
-	Progress = tea.NewProgram(NewModel())
+func InitializeProgressTerminal(isCi bool) {
+	isCiExecution = isCi
+	if !isCiExecution {
+		fmt.Println("isCiExecution", isCiExecution)
+		Progress = tea.NewProgram(NewModel())
+	} else {
+		Progress = tea.NewProgram(NewModel(), tea.WithOutput(os.Stdout), tea.WithoutRenderer())
+	}
 }
 
 func (m progressModel) Init() tea.Cmd {

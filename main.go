@@ -26,6 +26,7 @@ func main() {
 	argsWithProg := os.Args
 
 	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs"}
+	isCiExecution := slices.Contains(argsWithProg, "--ci")
 	canRunBubbleTea := true
 
 	for _, arg := range argsWithProg {
@@ -118,9 +119,11 @@ func main() {
 
 	// setup default logging
 	// this Go standard log is active to keep compatibility with current code base
-	stdLog.SetOutput(logFileObj)
-	stdLog.SetPrefix("LOG: ")
-	stdLog.SetFlags(stdLog.Ldate)
+	if !isCiExecution {
+		stdLog.SetOutput(logFileObj)
+		stdLog.SetPrefix("LOG: ")
+		stdLog.SetFlags(stdLog.Ldate)
+	}
 
 	log.Logger = zeroLog.New(logFileObj).With().Timestamp().Logger()
 
@@ -133,14 +136,22 @@ func main() {
 		return
 	}
 
+	fmt.Println("canRunBubbleTea", canRunBubbleTea)
+	fmt.Println("isCiExecution", isCiExecution)
+
 	if canRunBubbleTea {
-		progress.InitializeProgressTerminal()
+		progress.InitializeProgressTerminal(isCiExecution)
 
 		go func() {
 			cmd.Execute()
 		}()
 
-		progress.Progress.Run()
+		_, err := progress.Progress.Run()
+		if err != nil {
+			log.Error().Msgf("error running progress: %v", err)
+		}
+
+		fmt.Println("finished")
 	} else {
 		cmd.Execute()
 	}
