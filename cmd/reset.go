@@ -7,7 +7,6 @@ See the LICENSE file for more details.
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -65,7 +64,12 @@ var resetCmd = &cobra.Command{
 			return fmt.Errorf("unable to determine contents of kubefirst-checks: unexpected type %T", v)
 		}
 
-		if err := runReset(); err != nil {
+		homePath, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("unable to get user home directory: %w", err)
+		}
+
+		if err := runReset(homePath); err != nil {
 			return fmt.Errorf("error during reset operation: %w", err)
 		}
 		return nil
@@ -95,7 +99,7 @@ func parseConfigEntryKubefirstChecks(checks map[string]interface{}) (map[string]
 }
 
 // runReset carries out the reset function
-func runReset() error {
+func runReset(homePath string) error {
 	utils.DisplayLogHints()
 
 	progressPrinter.AddTracker("removing-platform-content", "Removing local platform content", 2)
@@ -103,10 +107,6 @@ func runReset() error {
 
 	log.Info().Msg("removing previous platform content")
 
-	homePath, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("unable to get user home directory: %w", err)
-	}
 	k1Dir := fmt.Sprintf("%s/.k1", homePath)
 	kubefirstConfig := fmt.Sprintf("%s/.kubefirst", homePath)
 
@@ -133,13 +133,7 @@ func runReset() error {
 		return fmt.Errorf("unable to delete %q folder, error: %w", k1Dir, err)
 	}
 
-	if _, err := os.Stat(kubefirstConfig); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			log.Info().Msgf("%q does not exist, continuing", kubefirstConfig)
-		} else {
-			return fmt.Errorf("error checking %q: %w", kubefirstConfig, err)
-		}
-	} else if err := os.Remove(kubefirstConfig); err != nil {
+	if err := os.RemoveAll(kubefirstConfig); err != nil {
 		return fmt.Errorf("unable to remove %q, error: %w", kubefirstConfig, err)
 	}
 
