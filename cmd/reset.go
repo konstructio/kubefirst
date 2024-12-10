@@ -107,6 +107,7 @@ func runReset() error {
 		return fmt.Errorf("unable to get user home directory: %w", err)
 	}
 	k1Dir := fmt.Sprintf("%s/.k1", homePath)
+	kubefirstConfig := fmt.Sprintf("%s/.kubefirst", homePath)
 
 	if err := utils.ResetK1Dir(k1Dir); err != nil {
 		return fmt.Errorf("error resetting k1 directory: %w", err)
@@ -129,6 +130,10 @@ func runReset() error {
 
 	if err := os.RemoveAll(k1Dir); err != nil {
 		return fmt.Errorf("unable to delete %q folder, error: %w", k1Dir, err)
+	}
+
+	if err := os.Remove(kubefirstConfig); err != nil {
+		return fmt.Errorf("unable to remove %q, error: %w", kubefirstConfig, err)
 	}
 
 	progressPrinter.IncrementTracker("removing-platform-content")
