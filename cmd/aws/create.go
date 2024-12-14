@@ -50,7 +50,7 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("unable to load AWS SDK config: %w", err)
 	}
 
-	err = ValidateProvidedFlags(cfg, cliFlags.GitProvider, cliFlags.AmiType, cliFlags.NodeType)
+	err = ValidateProvidedFlags(cfg, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate provided flags: %w", err)

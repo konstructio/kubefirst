@@ -35,5 +35,5 @@ type CliFlags struct {
 	K3sServersPublicIPs  []string
 	K3sServersArgs       []string
 	InstallKubefirstPro  bool
-	AmiType              string
+	AMIType              string
 }
