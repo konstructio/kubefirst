@@ -49,7 +49,3 @@ var infoCmd = &cobra.Command{
 		return nil
 	},
 }
-
-func init() {
-	rootCmd.AddCommand(infoCmd)
-}
