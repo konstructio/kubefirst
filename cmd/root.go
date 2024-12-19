@@ -44,7 +44,8 @@ func Execute() {
 		SilenceErrors: true,
 	}
 
-	printer := os.Stderr
+	rootCmd.SetErr(os.Stderr)
+	rootCmd.SetOut(os.Stdout)
 
 	rootCmd.AddCommand(
 		betaCmd,
@@ -67,9 +68,9 @@ func Execute() {
 	common.CheckForVersionUpdate()
 	progressPrinter.GetInstance()
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(printer, "Error occurred during command execution: %v\n", err)
-		fmt.Fprintln(printer, "If a detailed error message was available, please make the necessary corrections before retrying.")
-		fmt.Fprintln(printer, "You can re-run the last command to try the operation again.")
+		fmt.Printf("Error occurred during command execution: %v\n", err)
+		fmt.Println("If a detailed error message was available, please make the necessary corrections before retrying.")
+		fmt.Println("You can re-run the last command to try the operation again.")
 		os.Exit(1)
 	}
 }
