@@ -8,10 +8,11 @@ package aws
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -44,6 +45,23 @@ var (
 	supportedGitProtocolOverride = []string{"https", "ssh"}
 )
 
+type Printer interface {
+	AddWriter(w io.Writer)
+	Print(s string) error
+}
+
+type awsCommand struct {
+	logger  logger.Logger
+	printer Printer
+}
+
+func NewAwsCommand(logger logger.Logger, printer Printer) *awsCommand {
+	return &awsCommand{
+		logger,
+		printer,
+	}
+}
+
 func NewCommand() *cobra.Command {
 	awsCmd := &cobra.Command{
 		Use:   "aws",
@@ -51,11 +69,7 @@ func NewCommand() *cobra.Command {
 		Long:  "kubefirst aws",
 		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about aws in kubefirst, run:")
-			fmt.Println("  kubefirst help")
-
-			if progress.Progress != nil {
-				progress.Progress.Quit()
-			}
+			fmt.Println("  kubefirst aws help")
 		},
 	}
 
