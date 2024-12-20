@@ -8,10 +8,10 @@ package aws
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -44,34 +44,34 @@ var (
 	supportedGitProtocolOverride = []string{"https", "ssh"}
 )
 
-func NewCommand() *cobra.Command {
-	awsCmd := &cobra.Command{
+func NewCommand(logger common.Logger, writer io.Writer) *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "aws",
 		Short: "kubefirst aws installation",
 		Long:  "kubefirst aws",
 		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about aws in kubefirst, run:")
-			fmt.Println("  kubefirst help")
-
-			if progress.Progress != nil {
-				progress.Progress.Quit()
-			}
+			fmt.Println("  kubefirst aws help")
 		},
 	}
 
-	// wire up new commands
-	awsCmd.AddCommand(Create(), Destroy(), Quota(), RootCredentials())
+	service := AwsService{
+		logger,
+		writer,
+	}
 
-	return awsCmd
+	// wire up new commands
+	cmd.AddCommand(Create(service), Destroy(), Quota(), RootCredentials())
+
+	return cmd
 }
 
-func Create() *cobra.Command {
+func Create(service AwsService) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:              "create",
 		Short:            "create the kubefirst platform running in aws",
 		TraverseChildren: true,
-		RunE:             createAws,
-		// PreRun:           common.CheckDocker,
+		RunE:             service.createAws,
 	}
 
 	awsDefaults := constants.GetCloudDefaults().Aws
