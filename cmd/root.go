@@ -23,7 +23,7 @@ import (
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
+func Execute(logger common.Logger) {
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd := &cobra.Command{
 		Use:   "kubefirst",
@@ -48,8 +48,7 @@ func Execute() {
 	rootCmd.SetOut(os.Stdout)
 
 	rootCmd.AddCommand(
-		betaCmd,
-		aws.NewCommand(),
+		aws.NewCommand(logger, os.Stderr),
 		civo.NewCommand(),
 		digitalocean.NewCommand(),
 		k3d.NewCommand(),
@@ -57,6 +56,7 @@ func Execute() {
 		LaunchCommand(),
 		LetsEncryptCommand(),
 		TerraformCommand(),
+		betaCmd,
 		infoCmd,
 		versionCmd,
 		resetCmd,

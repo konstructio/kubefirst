@@ -9,6 +9,7 @@ package main
 import (
 	"fmt"
 	stdLog "log"
+	"log/slog"
 	"os"
 	"time"
 
@@ -117,10 +118,16 @@ func main() {
 	}(logFileObj)
 
 	// setup default logging
-	// this Go standard log is active to keep compatibility with current code base
 	stdLog.SetOutput(logFileObj)
 	stdLog.SetPrefix("LOG: ")
 	stdLog.SetFlags(stdLog.Ldate)
+
+	// Configure slog to write to the logfile
+	slogHandler := slog.NewTextHandler(logFileObj, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	})
+
+	logger := slog.New(slogHandler)
 
 	log.Logger = zeroLog.New(logFileObj).With().Timestamp().Logger()
 
@@ -137,11 +144,11 @@ func main() {
 		progress.InitializeProgressTerminal()
 
 		go func() {
-			cmd.Execute()
+			cmd.Execute(logger)
 		}()
 
 		progress.Progress.Run()
 	} else {
-		cmd.Execute()
+		cmd.Execute(logger)
 	}
 }

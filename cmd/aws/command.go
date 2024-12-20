@@ -12,7 +12,6 @@ import (
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -45,25 +44,8 @@ var (
 	supportedGitProtocolOverride = []string{"https", "ssh"}
 )
 
-type Printer interface {
-	AddWriter(w io.Writer)
-	Print(s string) error
-}
-
-type awsCommand struct {
-	logger  logger.Logger
-	printer Printer
-}
-
-func NewAwsCommand(logger logger.Logger, printer Printer) *awsCommand {
-	return &awsCommand{
-		logger,
-		printer,
-	}
-}
-
-func NewCommand() *cobra.Command {
-	awsCmd := &cobra.Command{
+func NewCommand(logger common.Logger, writer io.Writer) *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "aws",
 		Short: "kubefirst aws installation",
 		Long:  "kubefirst aws",
@@ -73,19 +55,23 @@ func NewCommand() *cobra.Command {
 		},
 	}
 
-	// wire up new commands
-	awsCmd.AddCommand(Create(), Destroy(), Quota(), RootCredentials())
+	service := AwsService{
+		logger,
+		writer,
+	}
 
-	return awsCmd
+	// wire up new commands
+	cmd.AddCommand(Create(service), Destroy(), Quota(), RootCredentials())
+
+	return cmd
 }
 
-func Create() *cobra.Command {
+func Create(service AwsService) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:              "create",
 		Short:            "create the kubefirst platform running in aws",
 		TraverseChildren: true,
-		RunE:             createAws,
-		// PreRun:           common.CheckDocker,
+		RunE:             service.createAws,
 	}
 
 	awsDefaults := constants.GetCloudDefaults().Aws

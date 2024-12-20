@@ -35,13 +35,34 @@ func CreateK1ClusterDirectory(clusterName string) {
 		return
 	}
 
+	err = CreateK1ClusterDirectoryE(homePath, clusterName)
+
+	if err != nil {
+		log.Info().Msg(err.Error())
+	}
+
+	log.Info().Msg("K1 cluster directory created")
+
+}
+
+func CreateK1ClusterDirectoryE(homePath, clusterName string) error {
+
 	k1Dir := fmt.Sprintf("%s/.k1/%s", homePath, clusterName)
-	if _, err := os.Stat(k1Dir); os.IsNotExist(err) {
-		err := os.MkdirAll(k1Dir, os.ModePerm)
-		if err != nil {
-			log.Info().Msgf("%q directory already exists, continuing", k1Dir)
+
+	_, err := os.Stat(k1Dir)
+
+	if err != nil {
+		if os.IsNotExist(err) {
+			err := os.MkdirAll(k1Dir, os.ModePerm)
+			if err != nil {
+				return fmt.Errorf("error creating directory: %w", err)
+			}
+		} else {
+			return fmt.Errorf("error checking directory: %w", err)
 		}
 	}
+
+	return nil
 }
 
 func CreateClusterRecordFromRaw(
