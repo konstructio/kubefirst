@@ -14,7 +14,9 @@ import (
 	"github.com/konstructio/kubefirst/cmd/aws"
 	"github.com/konstructio/kubefirst/cmd/civo"
 	"github.com/konstructio/kubefirst/cmd/digitalocean"
+	"github.com/konstructio/kubefirst/cmd/google"
 	"github.com/konstructio/kubefirst/cmd/k3d"
+	"github.com/konstructio/kubefirst/cmd/vultr"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
@@ -64,6 +66,8 @@ func init() {
 		digitalocean.NewCommand(),
 		k3d.NewCommand(),
 		k3d.LocalCommandAlias(),
+		google.NewCommand(),
+		vultr.NewCommand(),
 		LaunchCommand(),
 		LetsEncryptCommand(),
 		TerraformCommand(),
