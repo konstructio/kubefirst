@@ -51,7 +51,6 @@ func TestAwsCommand_Print(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			printer := NewPrinter(tt.writers...)
 
 			err := printer.Print(tt.input)

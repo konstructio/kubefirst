@@ -36,7 +36,6 @@ func CreateK1ClusterDirectory(clusterName string) {
 	}
 
 	err = CreateK1ClusterDirectoryE(homePath, clusterName)
-
 	if err != nil {
 		log.Info().Msg(err.Error())
 	}
@@ -48,7 +47,6 @@ func CreateK1ClusterDirectoryE(homePath, clusterName string) error {
 	k1Dir := fmt.Sprintf("%s/.k1/%s", homePath, clusterName)
 
 	_, err := os.Stat(k1Dir)
-
 	if err != nil {
 		if os.IsNotExist(err) {
 			err := os.MkdirAll(k1Dir, os.ModePerm)

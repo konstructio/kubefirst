@@ -53,14 +53,12 @@ func (s *Service) createAws(cmd *cobra.Command, _ []string) error {
 
 	// Create k1 cluster directory
 	homePath, err := os.UserHomeDir()
-
 	if err != nil {
 		s.logger.Error("failed to get user home directory", "error", err)
 		return fmt.Errorf("failed to get user home directory: %w", err)
 	}
 
 	err = utilities.CreateK1ClusterDirectoryE(homePath, cliFlags.ClusterName)
-
 	if err != nil {
 		s.logger.Error("failed to create k1 cluster directory", "error", err)
 		return fmt.Errorf("failed to create k1 cluster directory: %w", err)
