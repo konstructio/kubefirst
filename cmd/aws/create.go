@@ -49,7 +49,9 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("unable to load AWS SDK config: %w", err)
 	}
 
-	err = ValidateProvidedFlags(cfg, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
+	ctx := context.Background()
+
+	err = ValidateProvidedFlags(ctx, cfg, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate provided flags: %w", err)
@@ -65,7 +67,6 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	ctx := context.Background()
 	creds, err := getSessionCredentials(ctx, cfg.Credentials)
 	if err != nil {
 		progress.Error(err.Error())
@@ -131,7 +132,7 @@ func createAws(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func ValidateProvidedFlags(cfg aws.Config, gitProvider, amiType, nodeType string) error {
+func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, amiType, nodeType string) error {
 	progress.AddStep("Validate provided flags")
 
 	// Validate required environment variables for dns provider
@@ -156,7 +157,7 @@ func ValidateProvidedFlags(cfg aws.Config, gitProvider, amiType, nodeType string
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
-	if err := ValidateAMIType(cfg, amiType, nodeType); err != nil {
+	if err := ValidateAMIType(ctx, cfg, amiType, nodeType); err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to validte ami type for node group: %w", err)
 	}
@@ -177,7 +178,7 @@ func getSessionCredentials(ctx context.Context, cfg aws.CredentialsProvider) (*a
 	return &creds, nil
 }
 
-func ValidateAMIType(cfg aws.Config, amiType, nodeType string) error {
+func ValidateAMIType(ctx context.Context, cfg aws.Config, amiType, nodeType string) error {
 	ssmTypes := map[string]string{
 		"AL2_x86_64":                 "/aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id",
 		"AL2_ARM_64":                 "/aws/service/eks/optimized-ami/1.29/amazon-linux-2-arm64/recommended/image_id",
@@ -193,20 +194,22 @@ func ValidateAMIType(cfg aws.Config, amiType, nodeType string) error {
 	}
 
 	ssmClient := ssm.NewFromConfig(cfg)
+	ec2Client := ec2.NewFromConfig(cfg)
+
 	ssmParameterName := ssmTypes[amiType]
 
-	amiID, err := GetLatestAMIFromSSM(ssmClient, ssmParameterName)
+	amiID, err := GetLatestAMIFromSSM(ctx, ssmClient, ssmParameterName)
 	if err != nil {
 		return fmt.Errorf("failed to get AMI ID from SSM: %w", err)
 	}
 	log.Info().Msgf("ami type is  %s", amiType)
 
-	architecture, err := GetAMIArchitecture(cfg, amiID)
+	architecture, err := GetAMIArchitecture(ctx, ec2Client, amiID)
 	if err != nil {
 		return fmt.Errorf("failed to get AMI architecture: %w", err)
 	}
 
-	instanceTypes, err := GetSupportedInstanceTypes(cfg, architecture)
+	instanceTypes, err := GetSupportedInstanceTypes(cfg, string(architecture))
 	if err != nil {
 		return fmt.Errorf("failed to get supported instance types: %w", err)
 	}
@@ -220,11 +223,15 @@ func ValidateAMIType(cfg aws.Config, amiType, nodeType string) error {
 	return fmt.Errorf("node type %s not supported for %s", nodeType, amiType)
 }
 
-func GetLatestAMIFromSSM(ssmClient *ssm.Client, parameterName string) (string, error) {
+type ssmClienter interface {
+	GetParameter(ctx context.Context, params *ssm.GetParameterInput, optFns ...func(*ssm.Options)) (*ssm.GetParameterOutput, error)
+}
+
+func GetLatestAMIFromSSM(ctx context.Context, ssmClient ssmClienter, parameterName string) (string, error) {
 	input := &ssm.GetParameterInput{
 		Name: aws.String(parameterName),
 	}
-	output, err := ssmClient.GetParameter(context.TODO(), input)
+	output, err := ssmClient.GetParameter(ctx, input)
 	if err != nil {
 		return "", fmt.Errorf("failed to initialise ssm client: %w", err)
 	}
@@ -232,12 +239,15 @@ func GetLatestAMIFromSSM(ssmClient *ssm.Client, parameterName string) (string, e
 	return *output.Parameter.Value, nil
 }
 
-func GetAMIArchitecture(cfg aws.Config, amiID string) (string, error) {
-	ec2Client := ec2.NewFromConfig(cfg)
+type ec2Clienter interface {
+	DescribeImages(ctx context.Context, params *ec2.DescribeImagesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error)
+}
+
+func GetAMIArchitecture(ctx context.Context, ec2Client ec2Clienter, amiID string) (string, error) {
 	input := &ec2.DescribeImagesInput{
 		ImageIds: []string{amiID},
 	}
-	output, err := ec2Client.DescribeImages(context.TODO(), input)
+	output, err := ec2Client.DescribeImages(ctx, input)
 	if err != nil {
 		return "", fmt.Errorf("failed to describe images: %w", err)
 	}
@@ -246,8 +256,7 @@ func GetAMIArchitecture(cfg aws.Config, amiID string) (string, error) {
 		return "", fmt.Errorf("no images found for AMI ID: %s", amiID)
 	}
 
-	val := output.Images[0]
-	return string(val.Architecture), nil
+	return string(output.Images[0].Architecture), nil
 }
 
 func GetSupportedInstanceTypes(cfg aws.Config, architecture string) ([]string, error) {
