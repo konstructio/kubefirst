@@ -170,6 +170,99 @@ func TestGetAMIArchitecture(t *testing.T) {
 	}
 }
 
+func TestGetSupportedInstanceTypes(t *testing.T) {
+	tests := []struct {
+		name          string
+		architecture  string
+		instanceTypes []ec2Types.InstanceTypeInfo
+		paginateErr   error
+		expected      []string
+		expectedErr   error
+	}{
+		{
+			name:         "successful instance types retrieval",
+			architecture: "x86_64",
+			instanceTypes: []ec2Types.InstanceTypeInfo{
+				{
+					InstanceType: ec2Types.InstanceTypeT2Micro,
+					ProcessorInfo: &ec2Types.ProcessorInfo{
+						SupportedArchitectures: []ec2Types.ArchitectureType{ec2Types.ArchitectureTypeX8664},
+					},
+				},
+				{
+					InstanceType: ec2Types.InstanceTypeT2Small,
+					ProcessorInfo: &ec2Types.ProcessorInfo{
+						SupportedArchitectures: []ec2Types.ArchitectureType{ec2Types.ArchitectureTypeX8664},
+					},
+				},
+			},
+			paginateErr: nil,
+			expected:    []string{"t2.micro", "t2.small"},
+			expectedErr: nil,
+		},
+		{
+			name:         "pagination error",
+			architecture: "x86_64",
+			paginateErr:  errors.New("pagination failed"),
+			expected:     nil,
+			expectedErr:  fmt.Errorf("failed to load next pages for instance types: pagination failed"),
+		},
+		{
+			name:         "no matching instance types",
+			architecture: "arm64",
+			instanceTypes: []ec2Types.InstanceTypeInfo{
+				{
+					InstanceType: ec2Types.InstanceTypeT2Micro,
+					ProcessorInfo: &ec2Types.ProcessorInfo{
+						SupportedArchitectures: []ec2Types.ArchitectureType{ec2Types.ArchitectureTypeX8664},
+					},
+				},
+			},
+			paginateErr: nil,
+			expected:    []string(nil),
+			expectedErr: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			paginator := &mockInstanceTypesPaginator{
+				instanceTypes: tt.instanceTypes,
+				err:           tt.paginateErr,
+			}
+
+			got, err := GetSupportedInstanceTypes(context.Background(), paginator, tt.architecture)
+			if tt.expectedErr != nil {
+				assert.EqualError(t, err, tt.expectedErr.Error())
+				assert.Nil(t, got)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, got)
+			}
+		})
+	}
+}
+
+type mockInstanceTypesPaginator struct {
+	instanceTypes []ec2Types.InstanceTypeInfo
+	err           error
+	called        bool
+}
+
+func (m *mockInstanceTypesPaginator) HasMorePages() bool {
+	return !m.called
+}
+
+func (m *mockInstanceTypesPaginator) NextPage(ctx context.Context, opts ...func(*ec2.Options)) (*ec2.DescribeInstanceTypesOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	m.called = true
+	return &ec2.DescribeInstanceTypesOutput{
+		InstanceTypes: m.instanceTypes,
+	}, nil
+}
+
 type mockSSMClient struct {
 	ssm.Client
 	parameterValue string

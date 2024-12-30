@@ -197,6 +197,7 @@ func ValidateAMIType(ctx context.Context, cfg aws.Config, amiType, nodeType stri
 
 	ssmClient := ssm.NewFromConfig(cfg)
 	ec2Client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeInstanceTypesPaginator(ec2Client, &ec2.DescribeInstanceTypesInput{})
 
 	ssmParameterName := ssmTypes[amiType]
 
@@ -210,7 +211,7 @@ func ValidateAMIType(ctx context.Context, cfg aws.Config, amiType, nodeType stri
 		return fmt.Errorf("failed to get AMI architecture: %w", err)
 	}
 
-	instanceTypes, err := GetSupportedInstanceTypes(cfg, string(architecture))
+	instanceTypes, err := GetSupportedInstanceTypes(ctx, paginator, architecture)
 	if err != nil {
 		return fmt.Errorf("failed to get supported instance types: %w", err)
 	}
@@ -260,15 +261,16 @@ func GetAMIArchitecture(ctx context.Context, ec2Client ec2Clienter, amiID string
 	return string(output.Images[0].Architecture), nil
 }
 
-func GetSupportedInstanceTypes(cfg aws.Config, architecture string) ([]string, error) {
-	ec2Client := ec2.NewFromConfig(cfg)
-	input := &ec2.DescribeInstanceTypesInput{}
+type paginater interface {
+	HasMorePages() bool
+	NextPage(ctx context.Context, optFns ...func(*ec2.Options)) (*ec2.DescribeInstanceTypesOutput, error)
+}
+
+func GetSupportedInstanceTypes(ctx context.Context, paginator paginater, architecture string) ([]string, error) {
 
 	var instanceTypes []string
-	paginator := ec2.NewDescribeInstanceTypesPaginator(ec2Client, input)
-
 	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(context.TODO())
+		page, err := paginator.NextPage(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load next pages for instance types: %w", err)
 		}
@@ -279,6 +281,5 @@ func GetSupportedInstanceTypes(cfg aws.Config, architecture string) ([]string, e
 			}
 		}
 	}
-
 	return instanceTypes, nil
 }
