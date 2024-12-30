@@ -37,7 +37,7 @@ func (s *Service) createAws(cmd *cobra.Command, _ []string) error {
 	}
 
 	// TODO - Add progress steps
-	//progress.DisplayLogHints(40)
+	// progress.DisplayLogHints(40)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if !isValid {

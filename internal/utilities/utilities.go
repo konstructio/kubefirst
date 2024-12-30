@@ -42,11 +42,9 @@ func CreateK1ClusterDirectory(clusterName string) {
 	}
 
 	log.Info().Msg("K1 cluster directory created")
-
 }
 
 func CreateK1ClusterDirectoryE(homePath, clusterName string) error {
-
 	k1Dir := fmt.Sprintf("%s/.k1/%s", homePath, clusterName)
 
 	_, err := os.Stat(k1Dir)
