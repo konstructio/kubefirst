@@ -36,7 +36,7 @@ func (s *AwsService) createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to get flags: %w", err)
 	}
 
-	//TODO - Add progress steps
+	// TODO - Add progress steps
 	//progress.DisplayLogHints(40)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
