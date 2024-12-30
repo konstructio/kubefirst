@@ -16,7 +16,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
 	pkg "github.com/konstructio/kubefirst-api/pkg/utils"
 	"github.com/konstructio/kubefirst/internal/catalog"
@@ -66,7 +65,8 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	creds, err := ValidateAWSRegionAndRetrieveCredentials(cfg)
+	ctx := context.Background()
+	creds, err := getSessionCredentials(ctx, cfg.Credentials)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
@@ -166,16 +166,10 @@ func ValidateProvidedFlags(cfg aws.Config, gitProvider, amiType, nodeType string
 	return nil
 }
 
-func ValidateAWSRegionAndRetrieveCredentials(cfg aws.Config) (*aws.Credentials, error) {
-	// Validate region by creating a client
-	stsClient := sts.NewFromConfig(cfg)
-	_, err := stsClient.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to validate AWS region: %w", err)
-	}
+func getSessionCredentials(ctx context.Context, cfg aws.CredentialsProvider) (*aws.Credentials, error) {
 
 	// Retrieve credentials
-	creds, err := cfg.Credentials.Retrieve(context.TODO())
+	creds, err := cfg.Retrieve(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve AWS credentials: %w", err)
 	}
