@@ -19,7 +19,7 @@ require (
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/google/go-github/v52 v52.0.0
 	github.com/hashicorp/vault/api v1.15.0
-	github.com/konstructio/kubefirst-api v0.119.0
+	github.com/konstructio/kubefirst-api v0.121.0
 	github.com/kubefirst/metrics-client v0.3.0
 	github.com/minio/minio-go/v7 v7.0.81
 	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a
@@ -31,7 +31,7 @@ require (
 	go.mongodb.org/mongo-driver v1.17.1
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.31.0
+	k8s.io/api v0.31.3
 	k8s.io/apimachinery v0.31.3
 	k8s.io/client-go v11.0.1-0.20190816222228-6d55c1b1f1ca+incompatible
 )
@@ -376,5 +376,3 @@ replace (
 	sigs.k8s.io/kustomize/cmd/config => sigs.k8s.io/kustomize/cmd/config v0.14.1
 	sigs.k8s.io/kustomize/kyaml => sigs.k8s.io/kustomize/kyaml v0.17.1
 )
-
-replace github.com/konstructio/kubefirst-api => /Users/mrrishi/Documents/Konstruct/kubefirst-api
