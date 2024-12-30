@@ -168,7 +168,6 @@ func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, ami
 }
 
 func getSessionCredentials(ctx context.Context, cfg aws.CredentialsProvider) (*aws.Credentials, error) {
-
 	// Retrieve credentials
 	creds, err := cfg.Retrieve(ctx)
 	if err != nil {
@@ -267,7 +266,6 @@ type paginater interface {
 }
 
 func GetSupportedInstanceTypes(ctx context.Context, paginator paginater, architecture string) ([]string, error) {
-
 	var instanceTypes []string
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
