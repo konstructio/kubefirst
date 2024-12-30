@@ -193,6 +193,8 @@ func ValidateAMIType(ctx context.Context, cfg aws.Config, amiType, nodeType stri
 		return fmt.Errorf("not a valid ami type")
 	}
 
+	log.Info().Msgf("ami type is  %s", amiType)
+
 	ssmClient := ssm.NewFromConfig(cfg)
 	ec2Client := ec2.NewFromConfig(cfg)
 
@@ -202,7 +204,6 @@ func ValidateAMIType(ctx context.Context, cfg aws.Config, amiType, nodeType stri
 	if err != nil {
 		return fmt.Errorf("failed to get AMI ID from SSM: %w", err)
 	}
-	log.Info().Msgf("ami type is  %s", amiType)
 
 	architecture, err := GetAMIArchitecture(ctx, ec2Client, amiID)
 	if err != nil {
