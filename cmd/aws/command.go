@@ -55,7 +55,7 @@ func NewCommand(logger common.Logger, writer io.Writer) *cobra.Command {
 		},
 	}
 
-	service := AwsService{
+	service := Service{
 		logger,
 		writer,
 	}
@@ -66,7 +66,7 @@ func NewCommand(logger common.Logger, writer io.Writer) *cobra.Command {
 	return cmd
 }
 
-func Create(service AwsService) *cobra.Command {
+func Create(service Service) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:              "create",
 		Short:            "create the kubefirst platform running in aws",

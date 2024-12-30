@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func (s *AwsService) createAws(cmd *cobra.Command, _ []string) error {
+func (s *Service) createAws(cmd *cobra.Command, _ []string) error {
 	fmt.Fprintln(s.writer, "Starting to create AWS cluster")
 
 	cliFlags, err := utilities.GetFlags(cmd, "aws")

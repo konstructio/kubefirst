@@ -6,7 +6,7 @@ import (
 	"github.com/konstructio/kubefirst/internal/common"
 )
 
-type AwsService struct {
+type Service struct {
 	logger common.Logger
 	writer io.Writer
 }
