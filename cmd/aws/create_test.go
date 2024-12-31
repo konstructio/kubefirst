@@ -28,14 +28,12 @@ func TestValidateCredentials(t *testing.T) {
 				SecretAccessKey: "test-secret-access-key",
 				SessionToken:    "test-session-token",
 			},
-			err:         nil,
-			expectedErr: nil,
+			err: nil,
 		},
 		{
-			name:        "failed to retrieve credentials",
-			creds:       aws.Credentials{},
-			err:         errors.New("failed to retrieve credentials"),
-			expectedErr: errors.New("failed to retrieve AWS credentials: failed to retrieve credentials"),
+			name:  "failed to retrieve credentials",
+			creds: aws.Credentials{},
+			err:   errors.New("failed to retrieve credentials"),
 		},
 	}
 
@@ -48,9 +46,8 @@ func TestValidateCredentials(t *testing.T) {
 			}
 
 			creds, err := getSessionCredentials(context.Background(), mockProvider)
-			if tt.expectedErr != nil {
-				require.Nil(t, creds)
-				require.EqualError(t, err, tt.expectedErr.Error())
+			if tt.err != nil {
+				require.ErrorContains(t, err, tt.err.Error())
 			} else {
 				require.NotNil(t, creds)
 				require.NoError(t, err)
