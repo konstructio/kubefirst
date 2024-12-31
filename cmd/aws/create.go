@@ -166,7 +166,11 @@ func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, ami
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
-	if err := ValidateAMIType(ctx, cfg, amiType, nodeType); err != nil {
+	ssmClient := ssm.NewFromConfig(cfg)
+	ec2Client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeInstanceTypesPaginator(ec2Client, &ec2.DescribeInstanceTypesInput{})
+
+	if err := ValidateAMIType(ctx, amiType, nodeType, ssmClient, ec2Client, paginator); err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to validte ami type for node group: %w", err)
 	}
@@ -186,17 +190,13 @@ func getSessionCredentials(ctx context.Context, cfg aws.CredentialsProvider) (*a
 	return &creds, nil
 }
 
-func ValidateAMIType(ctx context.Context, cfg aws.Config, amiType, nodeType string) error {
+func ValidateAMIType(ctx context.Context, amiType, nodeType string, ssmClient ssmClienter, ec2Client ec2Clienter, paginator paginater) error {
 	ssmParameterName, ok := ssmTypesID[amiType]
 	if !ok {
 		return fmt.Errorf("not a valid ami type: %q", amiType)
 	}
 
 	log.Info().Msgf("ami type is  %s", amiType)
-
-	ssmClient := ssm.NewFromConfig(cfg)
-	ec2Client := ec2.NewFromConfig(cfg)
-	paginator := ec2.NewDescribeInstanceTypesPaginator(ec2Client, &ec2.DescribeInstanceTypesInput{})
 
 	amiID, err := GetLatestAMIFromSSM(ctx, ssmClient, ssmParameterName)
 	if err != nil {
@@ -212,6 +212,8 @@ func ValidateAMIType(ctx context.Context, cfg aws.Config, amiType, nodeType stri
 	if err != nil {
 		return fmt.Errorf("failed to get supported instance types: %w", err)
 	}
+
+	fmt.Println("Supported instance types: ", instanceTypes)
 
 	for _, instanceType := range instanceTypes {
 		if instanceType == nodeType {
