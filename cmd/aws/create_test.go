@@ -88,7 +88,7 @@ func TestGetLatestAMIFromSSM(t *testing.T) {
 			parameterName:  "/aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id",
 			parameterValue: "",
 			err:            errors.New("parameter not found"),
-			expectedErr:    errors.New("failed to initialise ssm client: parameter not found"),
+			expectedErr:    errors.New("failed to initialize ssm client: parameter not found"),
 		},
 	}
 
