@@ -206,15 +206,13 @@ func validateAMIType(ctx context.Context, amiType, nodeType string, ssmClient ss
 		return fmt.Errorf("failed to get supported instance types: %w", err)
 	}
 
-	fmt.Println("Supported instance types: ", instanceTypes)
-
 	for _, instanceType := range instanceTypes {
 		if instanceType == nodeType {
 			return nil
 		}
 	}
 
-	return fmt.Errorf("node type %s not supported for %s", nodeType, amiType)
+	return fmt.Errorf("node type %s not supported for %s\nSupported instance types: %s", nodeType, amiType, instanceTypes)
 }
 
 type ssmClienter interface {
