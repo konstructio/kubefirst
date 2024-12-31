@@ -165,7 +165,7 @@ func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, ami
 
 	if err := validateAMIType(ctx, amiType, nodeType, ssmClient, ec2Client, paginator); err != nil {
 		progress.Error(err.Error())
-		return fmt.Errorf("failed to validte ami type for node group: %w", err)
+		return fmt.Errorf("failed to validate ami type for node group: %w", err)
 	}
 
 	progress.CompleteStep("Validate provided flags")
