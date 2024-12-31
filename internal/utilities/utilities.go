@@ -199,6 +199,7 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 		cl.AWSAuth.SecretAccessKey = viper.GetString("kubefirst.state-store-creds.secret-access-key-id")
 		cl.AWSAuth.SessionToken = viper.GetString("kubefirst.state-store-creds.token")
 		cl.ECR = cliFlags.ECR
+		cl.AMIType = cliFlags.AMIType
 	case "azure":
 		cl.AzureAuth.ClientID = os.Getenv("ARM_CLIENT_ID")
 		cl.AzureAuth.ClientSecret = os.Getenv("ARM_CLIENT_SECRET")

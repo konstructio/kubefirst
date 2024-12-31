@@ -131,6 +131,12 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		}
 
 		cliFlags.ECR = ecrFlag
+
+		amiType, err := cmd.Flags().GetString("ami-type")
+		if err != nil {
+			return cliFlags, fmt.Errorf("failed to get ami type: %w", err)
+		}
+		cliFlags.AMIType = amiType
 	}
 
 	if cloudProvider == "azure" {

@@ -38,6 +38,7 @@ var rootCmd = &cobra.Command{
 		fmt.Println("  kubefirst help")
 		progress.Progress.Quit()
 	},
+	SilenceErrors: true,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
