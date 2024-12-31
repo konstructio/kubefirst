@@ -21,6 +21,62 @@ import (
 	"github.com/konstructio/kubefirst/internal/types"
 )
 
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+type ClusterClient struct {
+	hostURL    string
+	httpClient HttpClient
+}
+
+func (c *ClusterClient) getProxyURL() string {
+	return fmt.Sprintf("%s/api/proxy", c.hostURL)
+}
+
+func NewClusterClient(hostURL string, client HttpClient) *ClusterClient {
+	return &ClusterClient{
+		hostURL:    hostURL,
+		httpClient: client,
+	}
+}
+
+func (c *ClusterClient) CreateCluster(cluster apiTypes.ClusterDefinition) error {
+	requestObject := types.ProxyCreateClusterRequest{
+		Body: cluster,
+		URL:  fmt.Sprintf("/cluster/%s", cluster.ClusterName),
+	}
+
+	payload, err := json.Marshal(requestObject)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request object: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, c.getProxyURL(), bytes.NewReader(payload))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json")
+
+	res, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if res.StatusCode != http.StatusAccepted {
+		return fmt.Errorf("unable to create cluster: API returned unexpected status code %q: %s", res.Status, body)
+	}
+
+	return nil
+}
+
 func GetConsoleIngressURL() string {
 	if strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true" { // allow using local console running on port 3000
 		return os.Getenv("K1_CONSOLE_REMOTE_URL")
@@ -33,43 +89,15 @@ func CreateCluster(cluster apiTypes.ClusterDefinition) error {
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
 	httpClient := http.Client{Transport: customTransport}
 
-	requestObject := types.ProxyCreateClusterRequest{
-		Body: cluster,
-		URL:  fmt.Sprintf("/cluster/%s", cluster.ClusterName),
-	}
+	clusterClient := NewClusterClient(GetConsoleIngressURL(), &httpClient)
 
-	payload, err := json.Marshal(requestObject)
+	err := clusterClient.CreateCluster(cluster)
 	if err != nil {
-		return fmt.Errorf("failed to marshal request object: %w", err)
+		log.Printf("error creating cluster: %v", err)
+		return fmt.Errorf("failed to create cluster: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/proxy", GetConsoleIngressURL()), bytes.NewReader(payload))
-	if err != nil {
-		log.Printf("error creating request: %s", err)
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Accept", "application/json")
-
-	res, err := httpClient.Do(req)
-	if err != nil {
-		log.Printf("error executing request: %s", err)
-		return fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		log.Printf("unable to create cluster: %v", err)
-		return fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	if res.StatusCode != http.StatusAccepted {
-		log.Printf("unable to create cluster: %q %q", res.Status, body)
-		return fmt.Errorf("unable to create cluster: API returned unexpected status code %q: %s", res.Status, body)
-	}
-
-	log.Printf("Created cluster: %q", string(body))
+	log.Printf("successfully initiated cluster creation: %q", cluster.ClusterName)
 
 	return nil
 }
