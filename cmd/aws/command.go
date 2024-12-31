@@ -43,13 +43,13 @@ var (
 	supportedDNSProviders        = []string{"aws", "cloudflare"}
 	supportedGitProviders        = []string{"github", "gitlab"}
 	supportedGitProtocolOverride = []string{"https", "ssh"}
-	supportedAMITypes            = []string{
-		"AL2_x86_64",
-		"AL2_ARM_64",
-		"BOTTLEROCKET_ARM_64",
-		"BOTTLEROCKET_x86_64",
-		"BOTTLEROCKET_ARM_64_NVIDIA",
-		"BOTTLEROCKET_x86_64_NVIDIA",
+	supportedAMITypes            = map[string]string{
+		"AL2_x86_64":                 "/aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id",
+		"AL2_ARM_64":                 "/aws/service/eks/optimized-ami/1.29/amazon-linux-2-arm64/recommended/image_id",
+		"BOTTLEROCKET_ARM_64":        "/aws/service/bottlerocket/aws-k8s-1.29/arm64/latest/image_id",
+		"BOTTLEROCKET_x86_64":        "/aws/service/bottlerocket/aws-k8s-1.29/x86_64/latest/image_id",
+		"BOTTLEROCKET_ARM_64_NVIDIA": "/aws/service/bottlerocket/aws-k8s-1.29-nvidia/arm64/latest/image_id",
+		"BOTTLEROCKET_x86_64_NVIDIA": "/aws/service/bottlerocket/aws-k8s-1.29-nvidia/x86_64/latest/image_id",
 	}
 )
 
@@ -108,9 +108,17 @@ func Create() *cobra.Command {
 	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
 	createCmd.Flags().BoolVar(&ecrFlag, "ecr", false, "whether or not to use ecr vs the git provider")
 	createCmd.Flags().BoolVar(&installKubefirstProFlag, "install-kubefirst-pro", true, "whether or not to install kubefirst pro")
-	createCmd.Flags().StringVar(&amiType, "ami-type", "AL2_x86_64", fmt.Sprintf("the ami type for node group - one of: %q", supportedAMITypes))
+	createCmd.Flags().StringVar(&amiType, "ami-type", "AL2_x86_64", fmt.Sprintf("the ami type for node group - one of: %q", getSupportedAMITypes()))
 
 	return createCmd
+}
+
+func getSupportedAMITypes() []string {
+	var amiTypes []string
+	for k := range supportedAMITypes {
+		amiTypes = append(amiTypes, k)
+	}
+	return amiTypes
 }
 
 func Destroy() *cobra.Command {

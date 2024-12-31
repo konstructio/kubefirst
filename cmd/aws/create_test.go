@@ -173,7 +173,7 @@ func TestGetLatestAMIFromSSM(t *testing.T) {
 				err:            tt.err,
 			}
 
-			amiID, err := GetLatestAMIFromSSM(context.Background(), mockSSM, tt.parameterName)
+			amiID, err := getLatestAMIFromSSM(context.Background(), mockSSM, tt.parameterName)
 			if tt.expectedErr != nil {
 				require.EqualError(t, err, tt.expectedErr.Error())
 				require.Empty(t, amiID)
@@ -231,7 +231,7 @@ func TestGetAMIArchitecture(t *testing.T) {
 				err:    tt.err,
 			}
 
-			architecture, err := GetAMIArchitecture(context.Background(), mockEC2, tt.amiID)
+			architecture, err := getAMIArchitecture(context.Background(), mockEC2, tt.amiID)
 			fmt.Printf("arch is %s\n", string(architecture))
 			if tt.expectedErr != "" {
 				require.EqualError(t, err, tt.expectedErr)
@@ -305,7 +305,7 @@ func TestGetSupportedInstanceTypes(t *testing.T) {
 				err:           tt.paginateErr,
 			}
 
-			got, err := GetSupportedInstanceTypes(context.Background(), paginator, tt.architecture)
+			got, err := getSupportedInstanceTypes(context.Background(), paginator, tt.architecture)
 			if tt.expectedErr != nil {
 				require.EqualError(t, err, tt.expectedErr.Error())
 				require.Nil(t, got)
@@ -389,7 +389,7 @@ func TestValidateAMIType(t *testing.T) {
 				err:          tt.ec2Err,
 			}
 
-			err := ValidateAMIType(context.Background(), tt.amiType, tt.nodeType, mockSSM, mockEC2, &mockInstanceTypesPaginator{
+			err := validateAMIType(context.Background(), tt.amiType, tt.nodeType, mockSSM, mockEC2, &mockInstanceTypesPaginator{
 				instanceTypes: []ec2Types.InstanceTypeInfo{
 					{
 						InstanceType: ec2Types.InstanceTypeT2Micro,
