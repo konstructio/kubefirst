@@ -465,18 +465,4 @@ func (m *mockEC2Client) DescribeImages(ctx context.Context, input *ec2.DescribeI
 	}
 
 	return nil, errors.New("not implemented")
-	// if m.err != nil {
-	// 	return nil, m.err
-	// }
-	// if m.architecture == "x86_64" {
-	// 	return &ec2.DescribeImagesOutput{
-	// 		Images: []ec2Types.Image{
-	// 			{
-	// 				Architecture: ec2Types.ArchitectureValues("x86_64"),
-	// 			},
-	// 		},
-	// 	}, nil
-	// } else {
-	// 	return nil, errors.New("unexpected architecture")
-	// }
 }
