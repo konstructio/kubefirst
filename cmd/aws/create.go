@@ -10,11 +10,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
 	pkg "github.com/konstructio/kubefirst-api/pkg/utils"
@@ -274,7 +276,7 @@ func GetSupportedInstanceTypes(ctx context.Context, paginator paginater, archite
 		}
 
 		for _, instanceType := range page.InstanceTypes {
-			if string(instanceType.ProcessorInfo.SupportedArchitectures[0]) == architecture {
+			if slices.Contains(instanceType.ProcessorInfo.SupportedArchitectures, ec2Types.ArchitectureType(architecture)) {
 				instanceTypes = append(instanceTypes, string(instanceType.InstanceType))
 			}
 		}
