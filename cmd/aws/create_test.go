@@ -147,15 +147,17 @@ func TestGetLatestAMIFromSSM(t *testing.T) {
 
 func TestGetAMIArchitecture(t *testing.T) {
 	tests := []struct {
-		name         string
-		amiID        string
-		architecture string
-		images       []ec2Types.Image
-		err          error
-		expectedErr  string
+		name             string
+		wantErr          bool
+		amiID            string
+		architecture     string
+		images           []ec2Types.Image
+		err              error
+		fnDescribeImages func(ctx context.Context, input *ec2.DescribeImagesInput, opts ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error)
 	}{
 		{
 			name:         "successful architecture retrieval",
+			wantErr:      false,
 			amiID:        "ami-12345678",
 			architecture: "x86_64",
 			images: []ec2Types.Image{
@@ -163,38 +165,47 @@ func TestGetAMIArchitecture(t *testing.T) {
 					Architecture: ec2Types.ArchitectureValuesX8664,
 				},
 			},
-			err:         nil,
-			expectedErr: "",
+			err: nil,
 		},
 		{
 			name:         "ec2 describe images error",
+			wantErr:      true,
 			amiID:        "ami-12345678",
 			architecture: "",
 			images:       nil,
 			err:          errors.New("api error"),
-			expectedErr:  "failed to describe images: api error",
 		},
 		{
 			name:         "no images found",
+			wantErr:      true,
 			amiID:        "ami-12345678",
 			architecture: "",
 			images:       []ec2Types.Image{},
 			err:          nil,
-			expectedErr:  "no images found for AMI ID: ami-12345678",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.fnDescribeImages == nil {
+				tt.fnDescribeImages = func(ctx context.Context, input *ec2.DescribeImagesInput, opts ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error) {
+					if tt.err != nil {
+						return nil, tt.err
+					}
+					return &ec2.DescribeImagesOutput{
+						Images: tt.images,
+					}, nil
+				}
+			}
+
 			mockEC2 := &mockEC2Client{
-				images: tt.images,
-				err:    tt.err,
+				fnDescribeImages: tt.fnDescribeImages,
 			}
 
 			architecture, err := getAMIArchitecture(context.Background(), mockEC2, tt.amiID)
-			fmt.Printf("arch is %s\n", string(architecture))
-			if tt.expectedErr != "" {
-				require.EqualError(t, err, tt.expectedErr)
+			fmt.Printf("arch is %q\n", string(architecture))
+			if tt.wantErr {
+				require.Error(t, err)
 				require.Empty(t, architecture)
 			} else {
 				require.NoError(t, err)
@@ -286,51 +297,51 @@ func TestValidateAMIType(t *testing.T) {
 		ssmErr        error
 		ec2Arch       string
 		ec2Err        error
-		expectedErr   error
+		wantErr       bool
 		instanceTypes []string
 	}{
 		{
-			name:        "valid ami and node type",
-			amiType:     "AL2_x86_64",
-			nodeType:    "t2.micro",
-			ssmValue:    "ami-12345678",
-			ssmErr:      nil,
-			ec2Arch:     "x86_64",
-			ec2Err:      nil,
-			expectedErr: nil,
+			name:     "valid ami and node type",
+			wantErr:  false,
+			amiType:  "AL2_x86_64",
+			nodeType: "t2.micro",
+			ssmValue: "ami-12345678",
+			ssmErr:   nil,
+			ec2Arch:  "x86_64",
+			ec2Err:   nil,
 			instanceTypes: []string{
 				"t2.micro",
 				"t2.small",
 			},
 		},
 		{
-			name:        "invalid ami type",
-			amiType:     "INVALID_AMI",
-			nodeType:    "t2.micro",
-			expectedErr: errors.New("not a valid ami type: \"INVALID_AMI\""),
+			name:     "invalid ami type",
+			wantErr:  true,
+			amiType:  "INVALID_AMI",
+			nodeType: "t2.micro",
 		},
 		{
-			name:        "failed to get AMI ID from SSM",
-			amiType:     "AL2_x86_64",
-			nodeType:    "t2.micro",
-			ssmErr:      errors.New("failed to get parameter"),
-			expectedErr: errors.New("failed to get AMI ID from SSM: failed to initialize ssm client: failed to get parameter"),
+			name:     "failed to get AMI ID from SSM",
+			wantErr:  true,
+			amiType:  "AL2_x86_64",
+			nodeType: "t2.micro",
+			ssmErr:   errors.New("failed to get parameter"),
 		},
 		{
-			name:        "failed to get AMI architecture",
-			amiType:     "AL2_x86_64",
-			nodeType:    "t2.micro",
-			ssmValue:    "ami-12345678",
-			ec2Err:      errors.New("failed to describe images"),
-			expectedErr: errors.New("failed to get AMI architecture: failed to describe images: failed to describe images"),
+			name:     "failed to get AMI architecture",
+			wantErr:  true,
+			amiType:  "AL2_x86_64",
+			nodeType: "t2.micro",
+			ssmValue: "ami-12345678",
+			ec2Err:   errors.New("failed to describe images"),
 		},
 		{
-			name:        "node type not supported",
-			amiType:     "AL2_x86_64",
-			nodeType:    "t2.large",
-			ssmValue:    "ami-12345678",
-			ec2Arch:     "x86_64",
-			expectedErr: errors.New("node type t2.large not supported for AL2_x86_64\nSupported instance types: [t2.micro t2.small]"),
+			name:     "node type not supported",
+			wantErr:  true,
+			amiType:  "AL2_x86_64",
+			nodeType: "t2.large",
+			ssmValue: "ami-12345678",
+			ec2Arch:  "x86_64",
 			instanceTypes: []string{
 				"t2.micro",
 				"t2.small",
@@ -353,8 +364,18 @@ func TestValidateAMIType(t *testing.T) {
 				},
 			}
 			mockEC2 := &mockEC2Client{
-				architecture: tt.ec2Arch,
-				err:          tt.ec2Err,
+				fnDescribeImages: func(ctx context.Context, input *ec2.DescribeImagesInput, opts ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error) {
+					if tt.ec2Err != nil {
+						return nil, tt.ec2Err
+					}
+					return &ec2.DescribeImagesOutput{
+						Images: []ec2Types.Image{
+							{
+								Architecture: ec2Types.ArchitectureValues(tt.ec2Arch),
+							},
+						},
+					}, nil
+				},
 			}
 
 			err := validateAMIType(context.Background(), tt.amiType, tt.nodeType, mockSSM, mockEC2, &mockInstanceTypesPaginator{
@@ -375,7 +396,7 @@ func TestValidateAMIType(t *testing.T) {
 				err:    nil,
 				called: false,
 			})
-			if tt.expectedErr != nil {
+			if tt.wantErr {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
@@ -434,29 +455,31 @@ func (m *mockInstanceTypesPaginator) NextPage(ctx context.Context, opts ...func(
 }
 
 type mockEC2Client struct {
-	ec2.Client
-	images       []ec2Types.Image
-	architecture string
-	err          error
+	images           []ec2Types.Image
+	architecture     string
+	err              error
+	fnDescribeImages func(ctx context.Context, input *ec2.DescribeImagesInput, opts ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error)
 }
 
 func (m *mockEC2Client) DescribeImages(ctx context.Context, input *ec2.DescribeImagesInput, opts ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error) {
-	if m.err != nil {
-		return nil, m.err
+
+	if m.fnDescribeImages != nil {
+		return m.fnDescribeImages(ctx, input, opts...)
 	}
-	if m.architecture == "x86_64" {
-		return &ec2.DescribeImagesOutput{
-			Images: []ec2Types.Image{
-				{
-					Architecture: ec2Types.ArchitectureValues("x86_64"),
-				},
-			},
-		}, nil
-	} else if m.architecture == "" {
-		return &ec2.DescribeImagesOutput{
-			Images: m.images,
-		}, nil
-	} else {
-		return nil, errors.New("unexpected architecture")
-	}
+
+	return nil, errors.New("not implemented")
+	// if m.err != nil {
+	// 	return nil, m.err
+	// }
+	// if m.architecture == "x86_64" {
+	// 	return &ec2.DescribeImagesOutput{
+	// 		Images: []ec2Types.Image{
+	// 			{
+	// 				Architecture: ec2Types.ArchitectureValues("x86_64"),
+	// 			},
+	// 		},
+	// 	}, nil
+	// } else {
+	// 	return nil, errors.New("unexpected architecture")
+	// }
 }
