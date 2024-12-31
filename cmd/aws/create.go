@@ -30,6 +30,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+var ssmTypesID = map[string]string{
+	"AL2_x86_64":                 "/aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id",
+	"AL2_ARM_64":                 "/aws/service/eks/optimized-ami/1.29/amazon-linux-2-arm64/recommended/image_id",
+	"BOTTLEROCKET_ARM_64":        "/aws/service/bottlerocket/aws-k8s-1.29/arm64/latest/image_id",
+	"BOTTLEROCKET_x86_64":        "/aws/service/bottlerocket/aws-k8s-1.29/x86_64/latest/image_id",
+	"BOTTLEROCKET_ARM_64_NVIDIA": "/aws/service/bottlerocket/aws-k8s-1.29-nvidia/arm64/latest/image_id",
+	"BOTTLEROCKET_x86_64_NVIDIA": "/aws/service/bottlerocket/aws-k8s-1.29-nvidia/x86_64/latest/image_id",
+}
+
 func createAws(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "aws")
 	if err != nil {
@@ -44,12 +53,12 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("invalid catalog apps: %w", err)
 	}
 
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(cliFlags.CloudRegion))
+	ctx := context.Background()
+
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cliFlags.CloudRegion))
 	if err != nil {
 		return fmt.Errorf("unable to load AWS SDK config: %w", err)
 	}
-
-	ctx := context.Background()
 
 	err = ValidateProvidedFlags(ctx, cfg, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
 	if err != nil {
@@ -178,18 +187,9 @@ func getSessionCredentials(ctx context.Context, cfg aws.CredentialsProvider) (*a
 }
 
 func ValidateAMIType(ctx context.Context, cfg aws.Config, amiType, nodeType string) error {
-	ssmTypes := map[string]string{
-		"AL2_x86_64":                 "/aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id",
-		"AL2_ARM_64":                 "/aws/service/eks/optimized-ami/1.29/amazon-linux-2-arm64/recommended/image_id",
-		"BOTTLEROCKET_ARM_64":        "/aws/service/bottlerocket/aws-k8s-1.29/arm64/latest/image_id",
-		"BOTTLEROCKET_x86_64":        "/aws/service/bottlerocket/aws-k8s-1.29/x86_64/latest/image_id",
-		"BOTTLEROCKET_ARM_64_NVIDIA": "/aws/service/bottlerocket/aws-k8s-1.29-nvidia/arm64/latest/image_id",
-		"BOTTLEROCKET_x86_64_NVIDIA": "/aws/service/bottlerocket/aws-k8s-1.29-nvidia/x86_64/latest/image_id",
-	}
-
-	_, ok := ssmTypes[amiType]
+	ssmParameterName, ok := ssmTypesID[amiType]
 	if !ok {
-		return fmt.Errorf("not a valid ami type")
+		return fmt.Errorf("not a valid ami type: %q", amiType)
 	}
 
 	log.Info().Msgf("ami type is  %s", amiType)
@@ -197,8 +197,6 @@ func ValidateAMIType(ctx context.Context, cfg aws.Config, amiType, nodeType stri
 	ssmClient := ssm.NewFromConfig(cfg)
 	ec2Client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeInstanceTypesPaginator(ec2Client, &ec2.DescribeInstanceTypesInput{})
-
-	ssmParameterName := ssmTypes[amiType]
 
 	amiID, err := GetLatestAMIFromSSM(ctx, ssmClient, ssmParameterName)
 	if err != nil {
@@ -234,7 +232,7 @@ func GetLatestAMIFromSSM(ctx context.Context, ssmClient ssmClienter, parameterNa
 	}
 	output, err := ssmClient.GetParameter(ctx, input)
 	if err != nil {
-		return "", fmt.Errorf("failed to initialise ssm client: %w", err)
+		return "", fmt.Errorf("failed to initialize ssm client: %w", err)
 	}
 
 	return *output.Parameter.Value, nil
