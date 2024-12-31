@@ -21,21 +21,14 @@ import (
 	"github.com/konstructio/kubefirst/internal/launch"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
+	"github.com/konstructio/kubefirst/internal/types"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-func (s *Service) createAws(cmd *cobra.Command, _ []string) error {
-	fmt.Fprintln(s.writer, "Starting to create AWS cluster")
-
-	cliFlags, err := utilities.GetFlags(cmd, "aws")
-	if err != nil {
-		s.logger.Error("failed to get flags", "error", err)
-		return fmt.Errorf("failed to get flags: %w", err)
-	}
-
+func (s *Service) createAwsCluster(cliFlags types.CliFlags) error {
 	// TODO - Add progress steps
 	// progress.DisplayLogHints(40)
 
@@ -43,33 +36,6 @@ func (s *Service) createAws(cmd *cobra.Command, _ []string) error {
 	if !isValid {
 		s.logger.Error("invalid catalog apps", "error", err)
 		return fmt.Errorf("invalid catalog apps: %w", err)
-	}
-
-	err = ValidateProvidedFlags(cliFlags.GitProvider)
-	if err != nil {
-		s.logger.Error("failed to validate provided flags", "error", err)
-		return fmt.Errorf("failed to validate provided flags: %w", err)
-	}
-
-	// Create k1 cluster directory
-	homePath, err := os.UserHomeDir()
-	if err != nil {
-		s.logger.Error("failed to get user home directory", "error", err)
-		return fmt.Errorf("failed to get user home directory: %w", err)
-	}
-
-	err = utilities.CreateK1ClusterDirectoryE(homePath, cliFlags.ClusterName)
-	if err != nil {
-		s.logger.Error("failed to create k1 cluster directory", "error", err)
-		return fmt.Errorf("failed to create k1 cluster directory: %w", err)
-	}
-
-	// If cluster setup is complete, return
-	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
-	if clusterSetupComplete {
-		s.logger.Info("cluster install process has already completed successfully")
-		fmt.Fprintln(s.writer, "Cluster install process has already completed successfully")
-		return nil
 	}
 
 	// Validate aws region
@@ -150,6 +116,53 @@ func (s *Service) createAws(cmd *cobra.Command, _ []string) error {
 		s.logger.Error("failed to create management cluster", "error", err)
 		return fmt.Errorf("failed to create management cluster: %w", err)
 	}
+
+	return nil
+}
+
+func (s *Service) createAws(cmd *cobra.Command, _ []string) error {
+	fmt.Fprintln(s.writer, "Starting to create AWS cluster")
+
+	cliFlags, err := utilities.GetFlags(cmd, "aws")
+	if err != nil {
+		s.logger.Error("failed to get flags", "error", err)
+		return fmt.Errorf("failed to get flags: %w", err)
+	}
+
+	err = ValidateProvidedFlags(cliFlags.GitProvider)
+	if err != nil {
+		s.logger.Error("failed to validate provided flags", "error", err)
+		return fmt.Errorf("failed to validate provided flags: %w", err)
+	}
+
+	// Create k1 cluster directory
+	homePath, err := os.UserHomeDir()
+	if err != nil {
+		s.logger.Error("failed to get user home directory", "error", err)
+		return fmt.Errorf("failed to get user home directory: %w", err)
+	}
+
+	err = utilities.CreateK1ClusterDirectoryE(homePath, cliFlags.ClusterName)
+	if err != nil {
+		s.logger.Error("failed to create k1 cluster directory", "error", err)
+		return fmt.Errorf("failed to create k1 cluster directory: %w", err)
+	}
+
+	// If cluster setup is complete, return
+	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
+	if clusterSetupComplete {
+		s.logger.Info("cluster install process has already completed successfully")
+		fmt.Fprintln(s.writer, "Cluster install process has already completed successfully")
+		return nil
+	}
+
+	err = s.createAwsCluster(cliFlags)
+	if err != nil {
+		s.logger.Error("failed to create AWS cluster", "error", err)
+		return fmt.Errorf("failed to create AWS cluster: %w", err)
+	}
+
+	fmt.Fprintln(s.writer, "AWS cluster creation complete")
 
 	return nil
 }
