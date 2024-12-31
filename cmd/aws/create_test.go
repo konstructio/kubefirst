@@ -455,9 +455,6 @@ func (m *mockInstanceTypesPaginator) NextPage(ctx context.Context, opts ...func(
 }
 
 type mockEC2Client struct {
-	images           []ec2Types.Image
-	architecture     string
-	err              error
 	fnDescribeImages func(ctx context.Context, input *ec2.DescribeImagesInput, opts ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error)
 }
 
