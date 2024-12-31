@@ -114,7 +114,7 @@ func Create() *cobra.Command {
 }
 
 func getSupportedAMITypes() []string {
-	var amiTypes []string
+	amiTypes := make([]string, 0, len(supportedAMITypes))
 	for k := range supportedAMITypes {
 		amiTypes = append(amiTypes, k)
 	}
