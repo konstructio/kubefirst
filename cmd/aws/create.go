@@ -225,7 +225,11 @@ func getLatestAMIFromSSM(ctx context.Context, ssmClient ssmClienter, parameterNa
 	}
 	output, err := ssmClient.GetParameter(ctx, input)
 	if err != nil {
-		return "", fmt.Errorf("failed to initialize ssm client: %w", err)
+		return "", fmt.Errorf("failure when fetching parameters: %w", err)
+	}
+
+	if output == nil || output.Parameter == nil || output.Parameter.Value == nil {
+		return "", fmt.Errorf("invalid parameter value found for %q", parameterName)
 	}
 
 	return *output.Parameter.Value, nil

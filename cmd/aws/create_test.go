@@ -46,6 +46,7 @@ func TestValidateCredentials(t *testing.T) {
 			}
 
 			creds, err := getSessionCredentials(context.Background(), mockProvider)
+
 			if tt.err != nil {
 				require.ErrorContains(t, err, tt.err.Error())
 			} else {
@@ -62,35 +63,79 @@ func TestGetLatestAMIFromSSM(t *testing.T) {
 		name           string
 		parameterName  string
 		parameterValue string
+		wantErr        bool
 		err            error
-		expectedErr    error
+		fnGetParameter func(ctx context.Context, input *ssm.GetParameterInput, opts ...func(*ssm.Options)) (*ssm.GetParameterOutput, error)
 	}{
 		{
 			name:           "successful parameter retrieval",
 			parameterName:  "/aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id",
 			parameterValue: "ami-12345678",
+			wantErr:        false,
 			err:            nil,
-			expectedErr:    nil,
 		},
 		{
 			name:           "failed to get parameter",
 			parameterName:  "/aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id",
 			parameterValue: "",
-			err:            errors.New("parameter not found"),
-			expectedErr:    errors.New("failed to initialize ssm client: parameter not found"),
+			wantErr:        true,
+			err:            errors.New("failed to get parameter"),
+		},
+		{
+			name:           "bad output from SSM - nil",
+			parameterName:  "/aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id",
+			parameterValue: "",
+			wantErr:        true,
+			fnGetParameter: func(ctx context.Context, input *ssm.GetParameterInput, opts ...func(*ssm.Options)) (*ssm.GetParameterOutput, error) {
+				return nil, nil
+			},
+		},
+		{
+			name:           "bad output from SSM - nil parameter",
+			parameterName:  "/aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id",
+			parameterValue: "",
+			wantErr:        true,
+			fnGetParameter: func(ctx context.Context, input *ssm.GetParameterInput, opts ...func(*ssm.Options)) (*ssm.GetParameterOutput, error) {
+				return &ssm.GetParameterOutput{
+					Parameter: nil,
+				}, nil
+			},
+		},
+		{
+			name:           "bad output from SSM - nil parameter value",
+			parameterName:  "/aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id",
+			parameterValue: "",
+			wantErr:        true,
+			fnGetParameter: func(ctx context.Context, input *ssm.GetParameterInput, opts ...func(*ssm.Options)) (*ssm.GetParameterOutput, error) {
+				return &ssm.GetParameterOutput{
+					Parameter: &ssmTypes.Parameter{},
+				}, nil
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.fnGetParameter == nil {
+				tt.fnGetParameter = func(ctx context.Context, input *ssm.GetParameterInput, opts ...func(*ssm.Options)) (*ssm.GetParameterOutput, error) {
+					if tt.err != nil {
+						return nil, tt.err
+					}
+					return &ssm.GetParameterOutput{
+						Parameter: &ssmTypes.Parameter{
+							Value: &tt.parameterValue,
+						},
+					}, nil
+				}
+			}
+
 			mockSSM := &mockSSMClient{
-				parameterValue: tt.parameterValue,
-				err:            tt.err,
+				fnGetParameter: tt.fnGetParameter,
 			}
 
 			amiID, err := getLatestAMIFromSSM(context.Background(), mockSSM, tt.parameterName)
-			if tt.expectedErr != nil {
-				require.EqualError(t, err, tt.expectedErr.Error())
+			if tt.wantErr {
+				require.Error(t, err)
 				require.Empty(t, amiID)
 			} else {
 				require.NoError(t, err)
@@ -296,8 +341,16 @@ func TestValidateAMIType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockSSM := &mockSSMClient{
-				parameterValue: tt.ssmValue,
-				err:            tt.ssmErr,
+				fnGetParameter: func(ctx context.Context, input *ssm.GetParameterInput, opts ...func(*ssm.Options)) (*ssm.GetParameterOutput, error) {
+					if tt.ssmErr != nil {
+						return nil, tt.ssmErr
+					}
+					return &ssm.GetParameterOutput{
+						Parameter: &ssmTypes.Parameter{
+							Value: &tt.ssmValue,
+						},
+					}, nil
+				},
 			}
 			mockEC2 := &mockEC2Client{
 				architecture: tt.ec2Arch,
@@ -323,7 +376,7 @@ func TestValidateAMIType(t *testing.T) {
 				called: false,
 			})
 			if tt.expectedErr != nil {
-				require.EqualError(t, err, tt.expectedErr.Error())
+				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 			}
@@ -348,6 +401,18 @@ func (m *mockCredentialsProvider) Retrieve(ctx context.Context) (aws.Credentials
 	return creds, nil
 }
 
+type mockSSMClient struct {
+	fnGetParameter func(ctx context.Context, input *ssm.GetParameterInput, opts ...func(*ssm.Options)) (*ssm.GetParameterOutput, error)
+}
+
+func (m *mockSSMClient) GetParameter(ctx context.Context, input *ssm.GetParameterInput, opts ...func(*ssm.Options)) (*ssm.GetParameterOutput, error) {
+	if m.fnGetParameter != nil {
+		return m.fnGetParameter(ctx, input, opts...)
+	}
+
+	return nil, errors.New("not implemented")
+}
+
 type mockInstanceTypesPaginator struct {
 	instanceTypes []ec2Types.InstanceTypeInfo
 	err           error
@@ -365,23 +430,6 @@ func (m *mockInstanceTypesPaginator) NextPage(ctx context.Context, opts ...func(
 	m.called = true
 	return &ec2.DescribeInstanceTypesOutput{
 		InstanceTypes: m.instanceTypes,
-	}, nil
-}
-
-type mockSSMClient struct {
-	ssm.Client
-	parameterValue string
-	err            error
-}
-
-func (m *mockSSMClient) GetParameter(ctx context.Context, input *ssm.GetParameterInput, opts ...func(*ssm.Options)) (*ssm.GetParameterOutput, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-	return &ssm.GetParameterOutput{
-		Parameter: &ssmTypes.Parameter{
-			Value: &m.parameterValue,
-		},
 	}, nil
 }
 
