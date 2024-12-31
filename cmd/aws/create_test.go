@@ -370,7 +370,7 @@ func TestValidateAMIType(t *testing.T) {
 			nodeType:    "t2.large",
 			ssmValue:    "ami-12345678",
 			ec2Arch:     "x86_64",
-			expectedErr: errors.New("node type t2.large not supported for AL2_x86_64"),
+			expectedErr: errors.New("node type t2.large not supported for AL2_x86_64\nSupported instance types: [t2.micro t2.small]"),
 			instanceTypes: []string{
 				"t2.micro",
 				"t2.small",
