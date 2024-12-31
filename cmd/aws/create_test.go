@@ -14,88 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Mock definitions
-type mockCredentialsProvider struct {
-	fnRetrieve func(ctx context.Context) (*aws.Credentials, error)
-}
-
-func (m *mockCredentialsProvider) Retrieve(ctx context.Context) (aws.Credentials, error) {
-	if m.fnRetrieve == nil {
-		return aws.Credentials{}, errors.New("not implemented")
-	}
-
-	creds, err := m.fnRetrieve(ctx)
-	if err != nil {
-		return aws.Credentials{}, err
-	}
-	return *creds, nil
-}
-
-type mockInstanceTypesPaginator struct {
-	instanceTypes []ec2Types.InstanceTypeInfo
-	err           error
-	called        bool
-}
-
-func (m *mockInstanceTypesPaginator) HasMorePages() bool {
-	return !m.called
-}
-
-func (m *mockInstanceTypesPaginator) NextPage(ctx context.Context, opts ...func(*ec2.Options)) (*ec2.DescribeInstanceTypesOutput, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-	m.called = true
-	return &ec2.DescribeInstanceTypesOutput{
-		InstanceTypes: m.instanceTypes,
-	}, nil
-}
-
-type mockSSMClient struct {
-	ssm.Client
-	parameterValue string
-	err            error
-}
-
-func (m *mockSSMClient) GetParameter(ctx context.Context, input *ssm.GetParameterInput, opts ...func(*ssm.Options)) (*ssm.GetParameterOutput, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-	return &ssm.GetParameterOutput{
-		Parameter: &ssmTypes.Parameter{
-			Value: &m.parameterValue,
-		},
-	}, nil
-}
-
-type mockEC2Client struct {
-	ec2.Client
-	images       []ec2Types.Image
-	architecture string
-	err          error
-}
-
-func (m *mockEC2Client) DescribeImages(ctx context.Context, input *ec2.DescribeImagesInput, opts ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-	if m.architecture == "x86_64" {
-		return &ec2.DescribeImagesOutput{
-			Images: []ec2Types.Image{
-				{
-					Architecture: ec2Types.ArchitectureValues("x86_64"),
-				},
-			},
-		}, nil
-	} else if m.architecture == "" {
-		return &ec2.DescribeImagesOutput{
-			Images: m.images,
-		}, nil
-	} else {
-		return nil, errors.New("unexpected architecture")
-	}
-}
-
 func TestValidateCredentials(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -124,8 +42,8 @@ func TestValidateCredentials(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockProvider := &mockCredentialsProvider{
-				fnRetrieve: func(ctx context.Context) (*aws.Credentials, error) {
-					return &tt.creds, tt.err
+				fnRetrieve: func(ctx context.Context) (aws.Credentials, error) {
+					return tt.creds, tt.err
 				},
 			}
 
@@ -413,5 +331,87 @@ func TestValidateAMIType(t *testing.T) {
 				require.NoError(t, err)
 			}
 		})
+	}
+}
+
+// Begin Mock definitions
+type mockCredentialsProvider struct {
+	fnRetrieve func(ctx context.Context) (aws.Credentials, error)
+}
+
+func (m *mockCredentialsProvider) Retrieve(ctx context.Context) (aws.Credentials, error) {
+	if m.fnRetrieve == nil {
+		return aws.Credentials{}, errors.New("not implemented")
+	}
+
+	creds, err := m.fnRetrieve(ctx)
+	if err != nil {
+		return aws.Credentials{}, err
+	}
+	return creds, nil
+}
+
+type mockInstanceTypesPaginator struct {
+	instanceTypes []ec2Types.InstanceTypeInfo
+	err           error
+	called        bool
+}
+
+func (m *mockInstanceTypesPaginator) HasMorePages() bool {
+	return !m.called
+}
+
+func (m *mockInstanceTypesPaginator) NextPage(ctx context.Context, opts ...func(*ec2.Options)) (*ec2.DescribeInstanceTypesOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	m.called = true
+	return &ec2.DescribeInstanceTypesOutput{
+		InstanceTypes: m.instanceTypes,
+	}, nil
+}
+
+type mockSSMClient struct {
+	ssm.Client
+	parameterValue string
+	err            error
+}
+
+func (m *mockSSMClient) GetParameter(ctx context.Context, input *ssm.GetParameterInput, opts ...func(*ssm.Options)) (*ssm.GetParameterOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &ssm.GetParameterOutput{
+		Parameter: &ssmTypes.Parameter{
+			Value: &m.parameterValue,
+		},
+	}, nil
+}
+
+type mockEC2Client struct {
+	ec2.Client
+	images       []ec2Types.Image
+	architecture string
+	err          error
+}
+
+func (m *mockEC2Client) DescribeImages(ctx context.Context, input *ec2.DescribeImagesInput, opts ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	if m.architecture == "x86_64" {
+		return &ec2.DescribeImagesOutput{
+			Images: []ec2Types.Image{
+				{
+					Architecture: ec2Types.ArchitectureValues("x86_64"),
+				},
+			},
+		}, nil
+	} else if m.architecture == "" {
+		return &ec2.DescribeImagesOutput{
+			Images: m.images,
+		}, nil
+	} else {
+		return nil, errors.New("unexpected architecture")
 	}
 }
