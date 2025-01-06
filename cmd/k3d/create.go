@@ -927,8 +927,8 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 			return fmt.Errorf("error in restarting ArgoCD controller: %w", err)
 		}
 
-		err = wait.PollImmediate(5*time.Second, 20*time.Second, func() (bool, error) {
-			_, err := argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(context.Background(), registryApplicationObject, metav1.CreateOptions{})
+		err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 20*time.Second, true, func(ctx context.Context) (bool, error) {
+			_, err := argocdClient.ArgoprojV1alpha1().Applications("argocd").Create(ctx, registryApplicationObject, metav1.CreateOptions{})
 			if err != nil {
 				if errors.Is(err, syscall.ECONNREFUSED) {
 					return false, nil

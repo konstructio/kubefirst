@@ -7,12 +7,17 @@ See the LICENSE file for more details.
 package aws
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	awsinternal "github.com/konstructio/kubefirst-api/pkg/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
 	pkg "github.com/konstructio/kubefirst-api/pkg/utils"
 	"github.com/konstructio/kubefirst/internal/catalog"
@@ -41,7 +46,14 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("invalid catalog apps: %w", err)
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider)
+	ctx := cmd.Context()
+
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cliFlags.CloudRegion))
+	if err != nil {
+		return fmt.Errorf("unable to load AWS SDK config: %w", err)
+	}
+
+	err = ValidateProvidedFlags(ctx, cfg, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate provided flags: %w", err)
@@ -57,15 +69,7 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	// Validate aws region
-	config, err := awsinternal.NewAwsV2(cloudRegionFlag)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to validate AWS region: %w", err)
-	}
-
-	awsClient := &awsinternal.Configuration{Config: config}
-	creds, err := awsClient.Config.Credentials.Retrieve(aws.BackgroundContext())
+	creds, err := getSessionCredentials(ctx, cfg.Credentials)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
@@ -76,12 +80,6 @@ func createAws(cmd *cobra.Command, _ []string) error {
 	viper.Set("kubefirst.state-store-creds.token", creds.SessionToken)
 	if err := viper.WriteConfig(); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
-	}
-
-	_, err = awsClient.CheckAvailabilityZones(cliFlags.CloudRegion)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to check availability zones: %w", err)
 	}
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
@@ -136,7 +134,7 @@ func createAws(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func ValidateProvidedFlags(gitProvider string) error {
+func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, amiType, nodeType string) error {
 	progress.AddStep("Validate provided flags")
 
 	// Validate required environment variables for dns provider
@@ -161,7 +159,118 @@ func ValidateProvidedFlags(gitProvider string) error {
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
+	ssmClient := ssm.NewFromConfig(cfg)
+	ec2Client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeInstanceTypesPaginator(ec2Client, &ec2.DescribeInstanceTypesInput{})
+
+	if err := validateAMIType(ctx, amiType, nodeType, ssmClient, ec2Client, paginator); err != nil {
+		progress.Error(err.Error())
+		return fmt.Errorf("failed to validate ami type for node group: %w", err)
+	}
+
 	progress.CompleteStep("Validate provided flags")
 
 	return nil
+}
+
+func getSessionCredentials(ctx context.Context, cp aws.CredentialsProvider) (*aws.Credentials, error) {
+	// Retrieve credentials
+	creds, err := cp.Retrieve(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve AWS credentials: %w", err)
+	}
+
+	return &creds, nil
+}
+
+func validateAMIType(ctx context.Context, amiType, nodeType string, ssmClient ssmClienter, ec2Client ec2Clienter, paginator paginator) error {
+	ssmParameterName, ok := supportedAMITypes[amiType]
+	if !ok {
+		return fmt.Errorf("not a valid ami type: %q", amiType)
+	}
+
+	amiID, err := getLatestAMIFromSSM(ctx, ssmClient, ssmParameterName)
+	if err != nil {
+		return fmt.Errorf("failed to get AMI ID from SSM: %w", err)
+	}
+
+	architecture, err := getAMIArchitecture(ctx, ec2Client, amiID)
+	if err != nil {
+		return fmt.Errorf("failed to get AMI architecture: %w", err)
+	}
+
+	instanceTypes, err := getSupportedInstanceTypes(ctx, paginator, architecture)
+	if err != nil {
+		return fmt.Errorf("failed to get supported instance types: %w", err)
+	}
+
+	for _, instanceType := range instanceTypes {
+		if instanceType == nodeType {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("node type %q not supported for %q\nSupported instance types: %s", nodeType, amiType, instanceTypes)
+}
+
+type ssmClienter interface {
+	GetParameter(ctx context.Context, params *ssm.GetParameterInput, optFns ...func(*ssm.Options)) (*ssm.GetParameterOutput, error)
+}
+
+func getLatestAMIFromSSM(ctx context.Context, ssmClient ssmClienter, parameterName string) (string, error) {
+	input := &ssm.GetParameterInput{
+		Name: aws.String(parameterName),
+	}
+	output, err := ssmClient.GetParameter(ctx, input)
+	if err != nil {
+		return "", fmt.Errorf("failure when fetching parameters: %w", err)
+	}
+
+	if output == nil || output.Parameter == nil || output.Parameter.Value == nil {
+		return "", fmt.Errorf("invalid parameter value found for %q", parameterName)
+	}
+
+	return *output.Parameter.Value, nil
+}
+
+type ec2Clienter interface {
+	DescribeImages(ctx context.Context, params *ec2.DescribeImagesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error)
+}
+
+func getAMIArchitecture(ctx context.Context, ec2Client ec2Clienter, amiID string) (string, error) {
+	input := &ec2.DescribeImagesInput{
+		ImageIds: []string{amiID},
+	}
+	output, err := ec2Client.DescribeImages(ctx, input)
+	if err != nil {
+		return "", fmt.Errorf("failed to describe images: %w", err)
+	}
+
+	if len(output.Images) == 0 {
+		return "", fmt.Errorf("no images found for AMI ID: %s", amiID)
+	}
+
+	return string(output.Images[0].Architecture), nil
+}
+
+type paginator interface {
+	HasMorePages() bool
+	NextPage(ctx context.Context, optFns ...func(*ec2.Options)) (*ec2.DescribeInstanceTypesOutput, error)
+}
+
+func getSupportedInstanceTypes(ctx context.Context, p paginator, architecture string) ([]string, error) {
+	var instanceTypes []string
+	for p.HasMorePages() {
+		page, err := p.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load next pages for instance types: %w", err)
+		}
+
+		for _, instanceType := range page.InstanceTypes {
+			if slices.Contains(instanceType.ProcessorInfo.SupportedArchitectures, ec2Types.ArchitectureType(architecture)) {
+				instanceTypes = append(instanceTypes, string(instanceType.InstanceType))
+			}
+		}
+	}
+	return instanceTypes, nil
 }
