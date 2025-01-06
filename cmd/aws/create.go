@@ -46,7 +46,7 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("invalid catalog apps: %w", err)
 	}
 
-	ctx := context.Background()
+	ctx := cmd.Context()
 
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cliFlags.CloudRegion))
 	if err != nil {
@@ -173,9 +173,9 @@ func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, ami
 	return nil
 }
 
-func getSessionCredentials(ctx context.Context, cfg aws.CredentialsProvider) (*aws.Credentials, error) {
+func getSessionCredentials(ctx context.Context, cp aws.CredentialsProvider) (*aws.Credentials, error) {
 	// Retrieve credentials
-	creds, err := cfg.Retrieve(ctx)
+	creds, err := cp.Retrieve(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve AWS credentials: %w", err)
 	}
@@ -189,7 +189,6 @@ func validateAMIType(ctx context.Context, amiType, nodeType string, ssmClient ss
 		return fmt.Errorf("not a valid ami type: %q", amiType)
 	}
 
-	log.Info().Msgf("ami type is  %s", amiType)
 
 	amiID, err := getLatestAMIFromSSM(ctx, ssmClient, ssmParameterName)
 	if err != nil {
