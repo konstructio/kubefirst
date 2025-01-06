@@ -91,7 +91,7 @@ func Create() *cobra.Command {
 	createCmd.Flags().StringVar(&alertsEmailFlag, "alerts-email", "", "email address for let's encrypt certificate notifications (required)")
 	createCmd.MarkFlagRequired("alerts-email")
 	createCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
-	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "eastus", "the GCP region to provision infrastructure in")
+	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "eastus", "the Azure region to provision infrastructure in")
 	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
 	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
 	createCmd.Flags().StringVar(&nodeCountFlag, "node-count", azureDefaults.NodeCount, "the node count for the cluster")
