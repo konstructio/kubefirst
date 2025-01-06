@@ -215,77 +215,88 @@ func TestGetAMIArchitecture(t *testing.T) {
 	}
 }
 
-func TestGetSupportedInstanceTypes(t *testing.T) {
-	tests := []struct {
-		name          string
-		architecture  string
-		instanceTypes []ec2Types.InstanceTypeInfo
-		paginateErr   error
-		expected      []string
-		expectedErr   error
-	}{
+func TestGetSupportedInstanceTypesSuccessful(t *testing.T) {
+	instanceTypes := []ec2Types.InstanceTypeInfo{
 		{
-			name:         "successful instance types retrieval",
-			architecture: "x86_64",
-			instanceTypes: []ec2Types.InstanceTypeInfo{
-				{
-					InstanceType: ec2Types.InstanceTypeT2Micro,
-					ProcessorInfo: &ec2Types.ProcessorInfo{
-						SupportedArchitectures: []ec2Types.ArchitectureType{ec2Types.ArchitectureTypeX8664},
-					},
-				},
-				{
-					InstanceType: ec2Types.InstanceTypeT2Small,
-					ProcessorInfo: &ec2Types.ProcessorInfo{
-						SupportedArchitectures: []ec2Types.ArchitectureType{ec2Types.ArchitectureTypeX8664},
-					},
-				},
+			InstanceType: ec2Types.InstanceTypeT2Micro,
+			ProcessorInfo: &ec2Types.ProcessorInfo{
+				SupportedArchitectures: []ec2Types.ArchitectureType{ec2Types.ArchitectureTypeX8664},
 			},
-			paginateErr: nil,
-			expected:    []string{"t2.micro", "t2.small"},
-			expectedErr: nil,
 		},
 		{
-			name:         "pagination error",
-			architecture: "x86_64",
-			paginateErr:  errors.New("pagination failed"),
-			expected:     nil,
-			expectedErr:  fmt.Errorf("failed to load next pages for instance types: pagination failed"),
-		},
-		{
-			name:         "no matching instance types",
-			architecture: "arm64",
-			instanceTypes: []ec2Types.InstanceTypeInfo{
-				{
-					InstanceType: ec2Types.InstanceTypeT2Micro,
-					ProcessorInfo: &ec2Types.ProcessorInfo{
-						SupportedArchitectures: []ec2Types.ArchitectureType{ec2Types.ArchitectureTypeX8664},
-					},
-				},
+			InstanceType: ec2Types.InstanceTypeT2Small,
+			ProcessorInfo: &ec2Types.ProcessorInfo{
+				SupportedArchitectures: []ec2Types.ArchitectureType{ec2Types.ArchitectureTypeX8664},
 			},
-			paginateErr: nil,
-			expected:    []string(nil),
-			expectedErr: nil,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			paginator := &mockInstanceTypesPaginator{
-				instanceTypes: tt.instanceTypes,
-				err:           tt.paginateErr,
-			}
+	hasMorePages := true
 
-			got, err := getSupportedInstanceTypes(context.Background(), paginator, tt.architecture)
-			if tt.expectedErr != nil {
-				require.EqualError(t, err, tt.expectedErr.Error())
-				require.Nil(t, got)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.expected, got)
-			}
-		})
+	paginator := &mockInstanceTypesPaginator{
+		instanceTypes: instanceTypes,
+		fnNextPage: func(ctx context.Context, opts ...func(*ec2.Options)) (*ec2.DescribeInstanceTypesOutput, error) {
+			hasMorePages = false
+			return &ec2.DescribeInstanceTypesOutput{
+				InstanceTypes: instanceTypes,
+			}, nil
+		},
+		fnHasMorePages: func() bool {
+			return hasMorePages
+		},
 	}
+
+	got, err := getSupportedInstanceTypes(context.Background(), paginator, "x86_64")
+	require.NoError(t, err)
+	require.Equal(t, []string{"t2.micro", "t2.small"}, got)
+}
+
+func TestGetSupportedInstanceTypesPaginationError(t *testing.T) {
+	hasMorePages := true
+	paginator := &mockInstanceTypesPaginator{
+		err: errors.New("pagination failed"),
+		fnNextPage: func(ctx context.Context, opts ...func(*ec2.Options)) (*ec2.DescribeInstanceTypesOutput, error) {
+			hasMorePages = false
+			return nil, errors.New("pagination failed")
+		},
+		fnHasMorePages: func() bool {
+			return hasMorePages
+		},
+	}
+
+	got, err := getSupportedInstanceTypes(context.Background(), paginator, "x86_64")
+	require.EqualError(t, err, "failed to load next pages for instance types: pagination failed")
+	require.Nil(t, got)
+}
+
+func TestGetSupportedInstanceTypesNoMatching(t *testing.T) {
+	instanceTypes := []ec2Types.InstanceTypeInfo{
+		{
+			InstanceType: ec2Types.InstanceTypeT2Micro,
+			ProcessorInfo: &ec2Types.ProcessorInfo{
+				SupportedArchitectures: []ec2Types.ArchitectureType{ec2Types.ArchitectureTypeX8664},
+			},
+		},
+	}
+
+	hasMorePages := true
+
+	paginator := &mockInstanceTypesPaginator{
+		instanceTypes: instanceTypes,
+		fnNextPage: func(ctx context.Context, opts ...func(*ec2.Options)) (*ec2.DescribeInstanceTypesOutput, error) {
+			hasMorePages = false
+			return &ec2.DescribeInstanceTypesOutput{
+				InstanceTypes: instanceTypes,
+			}, nil
+		},
+		fnHasMorePages: func() bool {
+			return hasMorePages
+		},
+	}
+
+	got, err := getSupportedInstanceTypes(context.Background(), paginator, "arm64")
+	require.NoError(t, err)
+	require.Equal(t, []string(nil), got)
 }
 
 func TestValidateAMIType(t *testing.T) {
@@ -351,6 +362,22 @@ func TestValidateAMIType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			instanceTypes := []ec2Types.InstanceTypeInfo{
+				{
+					InstanceType: ec2Types.InstanceTypeT2Micro,
+					ProcessorInfo: &ec2Types.ProcessorInfo{
+						SupportedArchitectures: []ec2Types.ArchitectureType{ec2Types.ArchitectureTypeX8664},
+					},
+				},
+				{
+					InstanceType: ec2Types.InstanceTypeT2Small,
+					ProcessorInfo: &ec2Types.ProcessorInfo{
+						SupportedArchitectures: []ec2Types.ArchitectureType{ec2Types.ArchitectureTypeX8664},
+					},
+				},
+			}
+
 			mockSSM := &mockSSMClient{
 				fnGetParameter: func(ctx context.Context, input *ssm.GetParameterInput, opts ...func(*ssm.Options)) (*ssm.GetParameterOutput, error) {
 					if tt.ssmErr != nil {
@@ -378,24 +405,22 @@ func TestValidateAMIType(t *testing.T) {
 				},
 			}
 
-			err := validateAMIType(context.Background(), tt.amiType, tt.nodeType, mockSSM, mockEC2, &mockInstanceTypesPaginator{
-				instanceTypes: []ec2Types.InstanceTypeInfo{
-					{
-						InstanceType: ec2Types.InstanceTypeT2Micro,
-						ProcessorInfo: &ec2Types.ProcessorInfo{
-							SupportedArchitectures: []ec2Types.ArchitectureType{ec2Types.ArchitectureTypeX8664},
-						},
-					},
-					{
-						InstanceType: ec2Types.InstanceTypeT2Small,
-						ProcessorInfo: &ec2Types.ProcessorInfo{
-							SupportedArchitectures: []ec2Types.ArchitectureType{ec2Types.ArchitectureTypeX8664},
-						},
-					},
+			hasMorePages := true
+
+			mockPaginator := &mockInstanceTypesPaginator{
+				instanceTypes: instanceTypes,
+				fnNextPage: func(ctx context.Context, opts ...func(*ec2.Options)) (*ec2.DescribeInstanceTypesOutput, error) {
+					hasMorePages = false
+					return &ec2.DescribeInstanceTypesOutput{
+						InstanceTypes: instanceTypes,
+					}, nil
 				},
-				err:    nil,
-				called: false,
-			})
+				fnHasMorePages: func() bool {
+					return hasMorePages
+				},
+			}
+
+			err := validateAMIType(context.Background(), tt.amiType, tt.nodeType, mockSSM, mockEC2, mockPaginator)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
@@ -435,23 +460,28 @@ func (m *mockSSMClient) GetParameter(ctx context.Context, input *ssm.GetParamete
 }
 
 type mockInstanceTypesPaginator struct {
-	instanceTypes []ec2Types.InstanceTypeInfo
-	err           error
-	called        bool
+	instanceTypes  []ec2Types.InstanceTypeInfo
+	err            error
+	called         bool
+	fnHasMorePages func() bool
+	fnNextPage     func(ctx context.Context, opts ...func(*ec2.Options)) (*ec2.DescribeInstanceTypesOutput, error)
 }
 
 func (m *mockInstanceTypesPaginator) HasMorePages() bool {
-	return !m.called
+	if m.fnHasMorePages != nil {
+		return m.fnHasMorePages()
+	}
+
+	return false
 }
 
 func (m *mockInstanceTypesPaginator) NextPage(ctx context.Context, opts ...func(*ec2.Options)) (*ec2.DescribeInstanceTypesOutput, error) {
-	if m.err != nil {
-		return nil, m.err
+
+	if m.fnNextPage != nil {
+		return m.fnNextPage(ctx, opts...)
 	}
-	m.called = true
-	return &ec2.DescribeInstanceTypesOutput{
-		InstanceTypes: m.instanceTypes,
-	}, nil
+
+	return nil, errors.New("not implemented")
 }
 
 type mockEC2Client struct {

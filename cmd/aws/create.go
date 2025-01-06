@@ -212,7 +212,7 @@ func validateAMIType(ctx context.Context, amiType, nodeType string, ssmClient ss
 		}
 	}
 
-	return fmt.Errorf("node type %s not supported for %s\nSupported instance types: %s", nodeType, amiType, instanceTypes)
+	return fmt.Errorf("node type %q not supported for %q\nSupported instance types: %s", nodeType, amiType, instanceTypes)
 }
 
 type ssmClienter interface {
