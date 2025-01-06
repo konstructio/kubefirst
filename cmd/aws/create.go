@@ -189,7 +189,6 @@ func validateAMIType(ctx context.Context, amiType, nodeType string, ssmClient ss
 		return fmt.Errorf("not a valid ami type: %q", amiType)
 	}
 
-
 	amiID, err := getLatestAMIFromSSM(ctx, ssmClient, ssmParameterName)
 	if err != nil {
 		return fmt.Errorf("failed to get AMI ID from SSM: %w", err)
