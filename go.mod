@@ -19,7 +19,7 @@ require (
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/google/go-github/v52 v52.0.0
 	github.com/hashicorp/vault/api v1.15.0
-	github.com/konstructio/kubefirst-api v0.121.0
+	github.com/konstructio/kubefirst-api v0.122.0
 	github.com/kubefirst/metrics-client v0.3.0
 	github.com/minio/minio-go/v7 v7.0.81
 	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a

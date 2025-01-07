@@ -389,7 +389,7 @@ Kubefirst console has already been deployed. To start over, run` + "`" + `kubefi
 	apiDeployment, err := k8s.ReturnDeploymentObject(
 		kcfg.Clientset,
 		"app.kubernetes.io/name",
-		"api",
+		"kubefirst-api",
 		"kubefirst",
 		240,
 	)
