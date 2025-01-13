@@ -27,7 +27,7 @@ import (
 )
 
 func createGoogle(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "google")
+	cliFlags, err := utilities.GetFlags(cmd, utilities.CloudProviderGoogle)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to get flags: %w", err)

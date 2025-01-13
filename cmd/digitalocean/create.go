@@ -26,7 +26,7 @@ import (
 )
 
 func createDigitalocean(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "digitalocean")
+	cliFlags, err := utilities.GetFlags(cmd, utilities.CloudProviderDigitalOcean)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to get CLI flags: %w", err)

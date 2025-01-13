@@ -26,7 +26,7 @@ import (
 )
 
 func createAkamai(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "akamai")
+	cliFlags, err := utilities.GetFlags(cmd, utilities.CloudProviderAkamai)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to get flags: %w", err)

@@ -28,6 +28,14 @@ func (c cloudProvider) String() string {
 		return "google"
 	case CloudProviderK3s:
 		return "k3s"
+	case CloudProviderAkamai:
+		return "akamai"
+	case CloudProviderCivo:
+		return "civo"
+	case CloudProviderDigitalOcean:
+		return "digitalocean"
+	case CloudProviderVultr:
+		return "vultr"
 	default:
 		return ""
 	}
@@ -38,6 +46,10 @@ const (
 	CloudProviderAzure
 	CloudProviderGoogle
 	CloudProviderK3s
+	CloudProviderAkamai
+	CloudProviderCivo
+	CloudProviderDigitalOcean
+	CloudProviderVultr
 )
 
 func GetFlags(cmd *cobra.Command, cloudProvider cloudProvider) (types.CliFlags, error) {

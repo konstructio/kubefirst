@@ -476,23 +476,6 @@ func TestValidateAMIType(t *testing.T) {
 	}
 }
 
-// Begin Mock definitions
-type mockCredentialsProvider struct {
-	fnRetrieve func(ctx context.Context) (aws.Credentials, error)
-}
-
-func (m *mockCredentialsProvider) Retrieve(ctx context.Context) (aws.Credentials, error) {
-	if m.fnRetrieve == nil {
-		return aws.Credentials{}, errors.New("not implemented")
-	}
-
-	creds, err := m.fnRetrieve(ctx)
-	if err != nil {
-		return aws.Credentials{}, err
-	}
-	return creds, nil
-}
-
 type mockSSMClient struct {
 	fnGetParameter func(ctx context.Context, input *ssm.GetParameterInput, opts ...func(*ssm.Options)) (*ssm.GetParameterOutput, error)
 }

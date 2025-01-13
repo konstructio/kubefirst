@@ -29,7 +29,7 @@ import (
 )
 
 func createK3s(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "k3s")
+	cliFlags, err := utilities.GetFlags(cmd, utilities.CloudProviderK3s)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("error collecting flags: %w", err)

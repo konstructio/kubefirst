@@ -37,7 +37,7 @@ var envvarSecrets = []string{
 }
 
 func createAzure(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "azure")
+	cliFlags, err := utilities.GetFlags(cmd, utilities.CloudProviderAzure)
 	if err != nil {
 		progress.Error(err.Error())
 		return nil
