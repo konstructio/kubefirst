@@ -192,7 +192,7 @@ type stsClienter interface {
 }
 
 func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, checker *internalaws.AWSChecker, roleArn string) (*types.Credentials, error) {
-	// Check if the currently provided role can perform EC2 cluster creation
+	// Check if the currently provided role can perform EKS cluster creation
 	canCreateCluster, err := checker.CheckIfRoleCan(ctx, roleArn, []string{"eks:CreateCluster"})
 	if err != nil {
 		return nil, fmt.Errorf("failed to check if role %q can create EKS cluster: %w", roleArn, err)
