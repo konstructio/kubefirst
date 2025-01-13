@@ -79,8 +79,8 @@ func TestCheckIfRoleCan(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			checker := &AWSChecker{IAMClient: tt.mockIamClient}
-			result, err := checker.CheckIfRoleCan(ctx, roleArn, actions)
+			checker := &Checker{IAMClient: tt.mockIamClient}
+			result, err := checker.CanRoleDoAction(ctx, roleArn, actions)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {

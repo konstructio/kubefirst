@@ -191,9 +191,9 @@ type stsClienter interface {
 	AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
 }
 
-func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, checker *internalaws.AWSChecker, roleArn string) (*types.Credentials, error) {
+func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, checker *internalaws.Checker, roleArn string) (*types.Credentials, error) {
 	// Check if the currently provided role can perform EKS cluster creation
-	canCreateCluster, err := checker.CheckIfRoleCan(ctx, roleArn, []string{"eks:CreateCluster"})
+	canCreateCluster, err := checker.CanRoleDoAction(ctx, roleArn, []string{"eks:CreateCluster"})
 	if err != nil {
 		return nil, fmt.Errorf("failed to check if role %q can create EKS cluster: %w", roleArn, err)
 	}

@@ -161,7 +161,7 @@ func TestValidateCredentials(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			checker := &internalaws.AWSChecker{
+			checker := &internalaws.Checker{
 				IAMClient: &mockAWSSimulator{
 					FnSimulatePrincipalPolicy: fnGenerateSimulator(tt.simulator.actionName, tt.simulator.decision, tt.simulator.err),
 				},
