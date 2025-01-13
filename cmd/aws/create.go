@@ -23,6 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
 	pkg "github.com/konstructio/kubefirst-api/pkg/utils"
+	internalaws "github.com/konstructio/kubefirst/internal/aws"
 	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/gitShim"
@@ -62,7 +63,12 @@ func createAws(cmd *cobra.Command, _ []string) error {
 	}
 
 	stsClient := sts.NewFromConfig(cfg)
-	creds, err := convertLocalCredsToSession(ctx, stsClient, cliFlags.KubeAdminRoleARN)
+	checker, err := internalaws.NewChecker(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to perform aws checks: %w", err)
+	}
+
+	creds, err := convertLocalCredsToSession(ctx, stsClient, checker, cliFlags.KubeAdminRoleARN)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
@@ -185,7 +191,16 @@ type stsClienter interface {
 	AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
 }
 
-func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, roleArn string) (*types.Credentials, error) {
+func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, checker *internalaws.AWSChecker, roleArn string) (*types.Credentials, error) {
+	// Check if the currently provided role can perform EC2 cluster creation
+	canCreateCluster, err := checker.CheckIfRoleCan(ctx, roleArn, []string{"eks:CreateCluster"})
+	if err != nil {
+		return nil, fmt.Errorf("failed to check if role %q can create EKS cluster: %w", roleArn, err)
+	}
+	if !canCreateCluster {
+		return nil, fmt.Errorf("role %q does not have permission to create EKS clusters", roleArn)
+	}
+
 	// Check who we are currently (to ensure you're properly authenticated)
 	callerIdentity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {

@@ -8,10 +8,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	iamTypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	ssmTypes "github.com/aws/aws-sdk-go-v2/service/ssm/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
+	internalaws "github.com/konstructio/kubefirst/internal/aws"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,13 +39,49 @@ func (m *mockStsClient) AssumeRole(ctx context.Context, params *sts.AssumeRoleIn
 	return nil, errors.New("not implemented")
 }
 
+type mockAWSSimulator struct {
+	FnSimulatePrincipalPolicy func(ctx context.Context, params *iam.SimulatePrincipalPolicyInput, optFns ...func(*iam.Options)) (*iam.SimulatePrincipalPolicyOutput, error)
+}
+
+func (m *mockAWSSimulator) SimulatePrincipalPolicy(ctx context.Context, params *iam.SimulatePrincipalPolicyInput, optFns ...func(*iam.Options)) (*iam.SimulatePrincipalPolicyOutput, error) {
+	if m.FnSimulatePrincipalPolicy != nil {
+		return m.FnSimulatePrincipalPolicy(ctx, params, optFns...)
+	}
+
+	return nil, errors.New("not implemented")
+}
+
 func TestValidateCredentials(t *testing.T) {
 	ctx := context.Background()
 	roleArn := "arn:aws:iam::123456789012:role/example-role"
 
+	fnGenerateSimulator := func(actionName, decision string, err error) func(ctx context.Context, params *iam.SimulatePrincipalPolicyInput, optFns ...func(*iam.Options)) (*iam.SimulatePrincipalPolicyOutput, error) {
+		return func(ctx context.Context, params *iam.SimulatePrincipalPolicyInput, optFns ...func(*iam.Options)) (*iam.SimulatePrincipalPolicyOutput, error) {
+			if err != nil {
+				return nil, err
+			}
+
+			return &iam.SimulatePrincipalPolicyOutput{
+				EvaluationResults: []iamTypes.EvaluationResult{
+					{
+						EvalActionName: aws.String(actionName),
+						EvalDecision:   iamTypes.PolicyEvaluationDecisionType(decision),
+					},
+				},
+			}, nil
+		}
+	}
+
+	type simulator struct {
+		actionName string
+		decision   string
+		err        error
+	}
+
 	tests := []struct {
 		name              string
 		mockStsClient     *mockStsClient
+		simulator         simulator
 		wantErr           bool
 		expectedUserId    string
 		expectedSessionId string
@@ -65,6 +104,10 @@ func TestValidateCredentials(t *testing.T) {
 					}, nil
 				},
 			},
+			simulator: simulator{
+				actionName: "eks:CreateCluster",
+				decision:   "allowed",
+			},
 			expectedUserId:    "user-123",
 			expectedSessionId: "kubefirst-session-user-123",
 		},
@@ -74,6 +117,10 @@ func TestValidateCredentials(t *testing.T) {
 				FnGetCallerIdentity: func(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
 					return nil, errors.New("failed to get caller identity")
 				},
+			},
+			simulator: simulator{
+				actionName: "eks:CreateCluster",
+				decision:   "allowed",
 			},
 			wantErr: true,
 		},
@@ -89,13 +136,38 @@ func TestValidateCredentials(t *testing.T) {
 					return nil, errors.New("failed to assume role")
 				},
 			},
+			simulator: simulator{
+				actionName: "eks:CreateCluster",
+				decision:   "allowed",
+			},
+			wantErr: true,
+		},
+		{
+			name: "role does not have create cluster permission",
+			simulator: simulator{
+				actionName: "eks:CreateCluster",
+				decision:   "explicitDeny",
+			},
+			wantErr: true,
+		},
+		{
+			name: "simulator verification failed",
+			simulator: simulator{
+				err: errors.New("failed to simulate"),
+			},
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			credentials, err := convertLocalCredsToSession(ctx, tt.mockStsClient, roleArn)
+			checker := &internalaws.AWSChecker{
+				IAMClient: &mockAWSSimulator{
+					FnSimulatePrincipalPolicy: fnGenerateSimulator(tt.simulator.actionName, tt.simulator.decision, tt.simulator.err),
+				},
+			}
+
+			credentials, err := convertLocalCredsToSession(ctx, tt.mockStsClient, checker, roleArn)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {

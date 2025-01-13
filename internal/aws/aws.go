@@ -16,7 +16,7 @@ type iamClienter interface {
 // AWSChecker is a struct that holds an IAM client
 // to check if a role can perform a given action
 type AWSChecker struct {
-	iamClient iamClienter
+	IAMClient iamClienter
 }
 
 // NewChecker creates a new AWSChecker instance
@@ -26,7 +26,7 @@ func NewChecker(ctx context.Context) (*AWSChecker, error) {
 		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
 	iamClient := iam.NewFromConfig(cfg)
-	return &AWSChecker{iamClient: iamClient}, nil
+	return &AWSChecker{IAMClient: iamClient}, nil
 }
 
 // CheckIfRoleCan calls the IAM Policy Simulator for a given set of permissions
@@ -35,7 +35,7 @@ func NewChecker(ctx context.Context) (*AWSChecker, error) {
 //
 //	canCreateCluster, err := CheckIfRoleCan(ctx, "arn:aws:iam::123456789012:role/MyRole", []string{"eks:CreateCluster"})
 func (a *AWSChecker) CheckIfRoleCan(ctx context.Context, roleArn string, actions []string) (bool, error) {
-	simulateOutput, err := a.iamClient.SimulatePrincipalPolicy(ctx, &iam.SimulatePrincipalPolicyInput{
+	simulateOutput, err := a.IAMClient.SimulatePrincipalPolicy(ctx, &iam.SimulatePrincipalPolicyInput{
 		PolicySourceArn: aws.String(roleArn),
 		ActionNames:     actions,
 		ResourceArns:    []string{"*"}, // or a more specific ARN if you want
