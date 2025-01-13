@@ -8,6 +8,7 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -18,6 +19,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
 	pkg "github.com/konstructio/kubefirst-api/pkg/utils"
 	"github.com/konstructio/kubefirst/internal/catalog"
@@ -33,10 +36,9 @@ import (
 )
 
 func createAws(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "aws")
+	cliFlags, err := utilities.GetFlags(cmd, utilities.CloudProviderAWS)
 	if err != nil {
-		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to get flags: %w", err)
 	}
 
 	progress.DisplayLogHints(40)
@@ -53,10 +55,24 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("unable to load AWS SDK config: %w", err)
 	}
 
-	err = ValidateProvidedFlags(ctx, cfg, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
+	err = ValidateProvidedFlags(ctx, cfg, cliFlags.DNSProvider, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate provided flags: %w", err)
+	}
+
+	stsClient := sts.NewFromConfig(cfg)
+	creds, err := convertLocalCredsToSession(ctx, stsClient, cliFlags.KubeAdminRoleARN)
+	if err != nil {
+		progress.Error(err.Error())
+		return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
+	}
+
+	viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyId)
+	viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKey)
+	viper.Set("kubefirst.state-store-creds.token", creds.SessionToken)
+	if err := viper.WriteConfig(); err != nil {
+		return fmt.Errorf("failed to write config: %w", err)
 	}
 
 	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
@@ -64,22 +80,9 @@ func createAws(cmd *cobra.Command, _ []string) error {
 	// If cluster setup is complete, return
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
-		err = fmt.Errorf("this cluster install process has already completed successfully")
+		err = errors.New("this cluster install process has already completed successfully")
 		progress.Error(err.Error())
 		return nil
-	}
-
-	creds, err := getSessionCredentials(ctx, cfg.Credentials)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
-	}
-
-	viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyID)
-	viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKey)
-	viper.Set("kubefirst.state-store-creds.token", creds.SessionToken)
-	if err := viper.WriteConfig(); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
 	}
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
@@ -134,11 +137,11 @@ func createAws(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, amiType, nodeType string) error {
+func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, dnsProvider, gitProvider, amiType, nodeType string) error {
 	progress.AddStep("Validate provided flags")
 
 	// Validate required environment variables for dns provider
-	if dnsProviderFlag == "cloudflare" {
+	if dnsProvider == "cloudflare" {
 		if os.Getenv("CF_API_TOKEN") == "" {
 			return fmt.Errorf("your CF_API_TOKEN environment variable is not set. Please set and try again")
 		}
@@ -173,14 +176,38 @@ func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, ami
 	return nil
 }
 
-func getSessionCredentials(ctx context.Context, cp aws.CredentialsProvider) (*aws.Credentials, error) {
-	// Retrieve credentials
-	creds, err := cp.Retrieve(ctx)
+const (
+	sessionDuration = int32(21600) // We want at least 6 hours (21,600 seconds)
+)
+
+type stsClienter interface {
+	GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error)
+	AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
+}
+
+func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, roleArn string) (*types.Credentials, error) {
+	// Check who we are currently (to ensure you're properly authenticated)
+	callerIdentity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve AWS credentials: %w", err)
+		return nil, fmt.Errorf("failed to get caller identity: %w", err)
 	}
 
-	return &creds, nil
+	// Create a session name (some unique identifier)
+	sessionName := fmt.Sprintf("kubefirst-session-%s", *callerIdentity.UserId)
+
+	// Assume the role
+	output, err := stsClient.AssumeRole(ctx, &sts.AssumeRoleInput{
+		RoleArn:         aws.String(roleArn),
+		RoleSessionName: aws.String(sessionName),
+		DurationSeconds: aws.Int32(sessionDuration),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to assume role %s: %w", roleArn, err)
+	}
+
+	// Return the credentials
+	credentials := output.Credentials
+	return credentials, nil
 }
 
 func validateAMIType(ctx context.Context, amiType, nodeType string, ssmClient ssmClienter, ec2Client ec2Clienter, paginator paginator) error {

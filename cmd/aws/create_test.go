@@ -10,48 +10,100 @@ import (
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	ssmTypes "github.com/aws/aws-sdk-go-v2/service/ssm/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/stretchr/testify/require"
 )
 
+type mockStsClient struct {
+	FnGetCallerIdentity func(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error)
+	FnAssumeRole        func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
+}
+
+func (m *mockStsClient) GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
+	if m.FnGetCallerIdentity != nil {
+		return m.FnGetCallerIdentity(ctx, params, optFns...)
+	}
+
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockStsClient) AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+	if m.FnAssumeRole != nil {
+		return m.FnAssumeRole(ctx, params, optFns...)
+	}
+
+	return nil, errors.New("not implemented")
+}
+
 func TestValidateCredentials(t *testing.T) {
+	ctx := context.Background()
+	roleArn := "arn:aws:iam::123456789012:role/example-role"
+
 	tests := []struct {
-		name        string
-		creds       aws.Credentials
-		err         error
-		expectedErr error
+		name              string
+		mockStsClient     *mockStsClient
+		wantErr           bool
+		expectedUserId    string
+		expectedSessionId string
 	}{
 		{
-			name: "valid credentials",
-			creds: aws.Credentials{
-				AccessKeyID:     "test-access-key-id",
-				SecretAccessKey: "test-secret-access-key",
-				SessionToken:    "test-session-token",
+			name: "successful conversion",
+			mockStsClient: &mockStsClient{
+				FnGetCallerIdentity: func(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
+					return &sts.GetCallerIdentityOutput{
+						UserId: aws.String("user-123"),
+					}, nil
+				},
+				FnAssumeRole: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+					return &sts.AssumeRoleOutput{
+						Credentials: &types.Credentials{
+							AccessKeyId:     aws.String("access-key-id"),
+							SecretAccessKey: aws.String("secret-access-key"),
+							SessionToken:    aws.String("session-token"),
+						},
+					}, nil
+				},
 			},
-			err: nil,
+			expectedUserId:    "user-123",
+			expectedSessionId: "kubefirst-session-user-123",
 		},
 		{
-			name:  "failed to retrieve credentials",
-			creds: aws.Credentials{},
-			err:   errors.New("failed to retrieve credentials"),
+			name: "failed to get caller identity",
+			mockStsClient: &mockStsClient{
+				FnGetCallerIdentity: func(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
+					return nil, errors.New("failed to get caller identity")
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "failed to assume role",
+			mockStsClient: &mockStsClient{
+				FnGetCallerIdentity: func(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
+					return &sts.GetCallerIdentityOutput{
+						UserId: aws.String("user-123"),
+					}, nil
+				},
+				FnAssumeRole: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+					return nil, errors.New("failed to assume role")
+				},
+			},
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockProvider := &mockCredentialsProvider{
-				fnRetrieve: func(ctx context.Context) (aws.Credentials, error) {
-					return tt.creds, tt.err
-				},
-			}
-
-			creds, err := getSessionCredentials(context.Background(), mockProvider)
-
-			if tt.err != nil {
-				require.ErrorContains(t, err, tt.err.Error())
+			credentials, err := convertLocalCredsToSession(ctx, tt.mockStsClient, roleArn)
+			if tt.wantErr {
+				require.Error(t, err)
 			} else {
-				require.NotNil(t, creds)
 				require.NoError(t, err)
-				require.Equal(t, tt.creds, *creds)
+				require.NotNil(t, credentials)
+				require.Equal(t, "access-key-id", *credentials.AccessKeyId)
+				require.Equal(t, "secret-access-key", *credentials.SecretAccessKey)
+				require.Equal(t, "session-token", *credentials.SessionToken)
 			}
 		})
 	}

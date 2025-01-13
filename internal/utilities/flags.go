@@ -16,7 +16,31 @@ import (
 	"github.com/spf13/viper"
 )
 
-func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) {
+type cloudProvider int
+
+func (c cloudProvider) String() string {
+	switch c {
+	case CloudProviderAWS:
+		return "aws"
+	case CloudProviderAzure:
+		return "azure"
+	case CloudProviderGoogle:
+		return "google"
+	case CloudProviderK3s:
+		return "k3s"
+	default:
+		return ""
+	}
+}
+
+const (
+	CloudProviderAWS cloudProvider = iota + 1
+	CloudProviderAzure
+	CloudProviderGoogle
+	CloudProviderK3s
+)
+
+func GetFlags(cmd *cobra.Command, cloudProvider cloudProvider) (types.CliFlags, error) {
 	cliFlags := types.CliFlags{}
 
 	alertsEmailFlag, err := cmd.Flags().GetString("alerts-email")
@@ -123,7 +147,7 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		return cliFlags, fmt.Errorf("failed to get install-kubefirst-pro flag: %w", err)
 	}
 
-	if cloudProvider == "aws" {
+	if cloudProvider == CloudProviderAWS {
 		ecrFlag, err := cmd.Flags().GetBool("ecr")
 		if err != nil {
 			progress.Error(err.Error())
@@ -137,9 +161,15 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 			return cliFlags, fmt.Errorf("failed to get ami type: %w", err)
 		}
 		cliFlags.AMIType = amiType
+
+		kubernetesAdminRoleArn, err := cmd.Flags().GetString("kubernetes-admin-role-arn")
+		if err != nil {
+			return cliFlags, fmt.Errorf("failed to get kubernetes-admin-role-arn flag: %w", err)
+		}
+		cliFlags.KubeAdminRoleARN = kubernetesAdminRoleArn
 	}
 
-	if cloudProvider == "azure" {
+	if cloudProvider == CloudProviderAzure {
 		dnsAzureResourceGroup, err := cmd.Flags().GetString("dns-azure-resource-group")
 		if err != nil {
 			progress.Error(err.Error())
@@ -148,7 +178,7 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		cliFlags.DNSAzureRG = dnsAzureResourceGroup
 	}
 
-	if cloudProvider == "google" {
+	if cloudProvider == CloudProviderGoogle {
 		googleProject, err := cmd.Flags().GetString("google-project")
 		if err != nil {
 			progress.Error(err.Error())
@@ -158,7 +188,7 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		cliFlags.GoogleProject = googleProject
 	}
 
-	if cloudProvider == "k3s" {
+	if cloudProvider == CloudProviderK3s {
 		k3sServersPrivateIps, err := cmd.Flags().GetStringSlice("servers-private-ips")
 		if err != nil {
 			progress.Error(err.Error())
@@ -208,7 +238,7 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 	cliFlags.GitopsTemplateBranch = gitopsTemplateBranchFlag
 	cliFlags.GitopsTemplateURL = gitopsTemplateURLFlag
 	cliFlags.UseTelemetry = useTelemetryFlag
-	cliFlags.CloudProvider = cloudProvider
+	cliFlags.CloudProvider = cloudProvider.String()
 	cliFlags.NodeType = nodeTypeFlag
 	cliFlags.NodeCount = nodeCountFlag
 	cliFlags.InstallCatalogApps = installCatalogAppsFlag
@@ -222,13 +252,15 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 	viper.Set("flags.git-protocol", cliFlags.GitProtocol)
 	viper.Set("flags.cloud-region", cliFlags.CloudRegion)
 	viper.Set("kubefirst.cloud-provider", cloudProvider)
-	if cloudProvider == "k3s" {
+
+	if cloudProvider == CloudProviderK3s {
 		viper.Set("flags.servers-private-ips", cliFlags.K3sServersPrivateIPs)
 		viper.Set("flags.servers-public-ips", cliFlags.K3sServersPublicIPs)
 		viper.Set("flags.ssh-user", cliFlags.K3sSSHUser)
 		viper.Set("flags.ssh-privatekey", cliFlags.K3sSSHPrivateKey)
 		viper.Set("flags.servers-args", cliFlags.K3sServersArgs)
 	}
+
 	if err := viper.WriteConfig(); err != nil {
 		return cliFlags, fmt.Errorf("failed to write configuration: %w", err)
 	}

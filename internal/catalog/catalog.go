@@ -14,9 +14,7 @@ import (
 	"strings"
 
 	git "github.com/google/go-github/v52/github"
-
 	apiTypes "github.com/konstructio/kubefirst-api/pkg/types"
-
 	"gopkg.in/yaml.v3"
 )
 
