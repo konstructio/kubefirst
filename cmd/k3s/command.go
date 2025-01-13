@@ -14,39 +14,6 @@ import (
 )
 
 var (
-	// Create
-	// TODO: add ssh key flag to connect on k3s targets
-	alertsEmailFlag          string
-	ciFlag                   bool
-	cloudRegionFlag          string
-	nodeTypeFlag             string
-	nodeCountFlag            string
-	clusterNameFlag          string
-	clusterTypeFlag          string
-	k3sServersPrivateIpsFlag []string
-	k3sServersPublicIpsFlag  []string
-	k3sSSHUserflag           string
-	k3sSSHPrivateKeyflag     string
-	K3sServersArgsFlags      []string
-	dnsProviderFlag          string
-	subdomainNameFlag        string
-	domainNameFlag           string
-	githubOrgFlag            string
-	gitlabGroupFlag          string
-	gitProviderFlag          string
-	gitProtocolFlag          string
-	gitopsTemplateURLFlag    string
-	gitopsTemplateBranchFlag string
-	installCatalogApps       string
-	useTelemetryFlag         bool
-	forceDestroyFlag         bool
-	installKubefirstProFlag  bool
-
-	// RootCredentials
-	copyArgoCDPasswordToClipboardFlag bool
-	copyKbotPasswordToClipboardFlag   bool
-	copyVaultPasswordToClipboardFlag  bool
-
 	// Supported providers
 	supportedDNSProviders = []string{"cloudflare"}
 	supportedGitProviders = []string{"github", "gitlab"}
@@ -81,34 +48,34 @@ func Create() *cobra.Command {
 	}
 
 	// todo review defaults and update descriptions
-	createCmd.Flags().StringVar(&alertsEmailFlag, "alerts-email", "", "email address for let's encrypt certificate notifications (required)")
+	createCmd.Flags().String("alerts-email", "", "email address for let's encrypt certificate notifications (required)")
 	createCmd.MarkFlagRequired("alerts-email")
-	createCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
-	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "on-premise", "NOT USED, PRESENT FOR COMPATIBILITY ISSUE")
-	createCmd.Flags().StringVar(&nodeTypeFlag, "node-type", "on-premise", "NOT USED, PRESENT FOR COMPATIBILITY ISSUE")
-	createCmd.Flags().StringVar(&nodeCountFlag, "node-count", "3", "NOT USED, PRESENT FOR COMPATIBILITY ISSUE")
-	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
-	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
-	createCmd.Flags().StringSliceVar(&k3sServersPrivateIpsFlag, "servers-private-ips", []string{}, "the list of k3s (servers) private ip x.x.x.x,y.y.y.y comma separated  (required)")
+	createCmd.Flags().Bool("ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
+	createCmd.Flags().String("cloud-region", "on-premise", "NOT USED, PRESENT FOR COMPATIBILITY ISSUE")
+	createCmd.Flags().String("node-type", "on-premise", "NOT USED, PRESENT FOR COMPATIBILITY ISSUE")
+	createCmd.Flags().String("node-count", "3", "NOT USED, PRESENT FOR COMPATIBILITY ISSUE")
+	createCmd.Flags().String("cluster-name", "kubefirst", "the name of the cluster to create")
+	createCmd.Flags().String("cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
+	createCmd.Flags().StringSlice("servers-private-ips", []string{}, "the list of k3s (servers) private ip x.x.x.x,y.y.y.y comma separated  (required)")
 	createCmd.MarkFlagRequired("servers-private-ips")
-	createCmd.Flags().StringSliceVar(&k3sServersPublicIpsFlag, "servers-public-ips", []string{}, "the list of k3s (servers) public ip x.x.x.x,y.y.y.y comma separated  (required)")
-	createCmd.Flags().StringSliceVar(&K3sServersArgsFlags, "servers-args", []string{"--disable traefik", "--write-kubeconfig-mode 644"}, "list of k3s extras args to add to the k3s server installation,comma separated in between quote, if --servers-public-ips <VALUES> --tls-san <VALUES> is added to default --servers-args")
-	createCmd.Flags().StringVar(&k3sSSHUserflag, "ssh-user", "root", "the user used to log into servers with ssh connection")
-	createCmd.Flags().StringVar(&k3sSSHPrivateKeyflag, "ssh-privatekey", "", "the private key used to log into servers with ssh connection")
+	createCmd.Flags().StringSlice("servers-public-ips", []string{}, "the list of k3s (servers) public ip x.x.x.x,y.y.y.y comma separated  (required)")
+	createCmd.Flags().StringSlice("servers-args", []string{"--disable traefik", "--write-kubeconfig-mode 644"}, "list of k3s extras args to add to the k3s server installation,comma separated in between quote, if --servers-public-ips <VALUES> --tls-san <VALUES> is added to default --servers-args")
+	createCmd.Flags().String("ssh-user", "root", "the user used to log into servers with ssh connection")
+	createCmd.Flags().String("ssh-privatekey", "", "the private key used to log into servers with ssh connection")
 	createCmd.MarkFlagRequired("ssh-privatekey")
-	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "cloudflare", fmt.Sprintf("the dns provider - one of: %q", supportedDNSProviders))
-	createCmd.Flags().StringVar(&subdomainNameFlag, "subdomain", "", "the subdomain to use for DNS records (Cloudflare)")
-	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the cloudProvider DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
-	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %q", supportedGitProviders))
-	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %q", supportedGitProtocolOverride))
-	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - required if using github")
-	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
-	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "", "the branch to clone for the gitops-template repository")
-	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/konstructio/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
-	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma separated values to install after provision")
-	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
-	createCmd.Flags().BoolVar(&forceDestroyFlag, "force-destroy", false, "allows force destruction on objects (helpful for test environments, defaults to false)")
-	createCmd.Flags().BoolVar(&installKubefirstProFlag, "install-kubefirst-pro", true, "whether or not to install kubefirst pro")
+	createCmd.Flags().String("dns-provider", "cloudflare", fmt.Sprintf("the dns provider - one of: %q", supportedDNSProviders))
+	createCmd.Flags().String("subdomain", "", "the subdomain to use for DNS records (Cloudflare)")
+	createCmd.Flags().String("domain-name", "", "the cloudProvider DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
+	createCmd.Flags().String("git-provider", "github", fmt.Sprintf("the git provider - one of: %q", supportedGitProviders))
+	createCmd.Flags().String("git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %q", supportedGitProtocolOverride))
+	createCmd.Flags().String("github-org", "", "the GitHub organization for the new gitops and metaphor repositories - required if using github")
+	createCmd.Flags().String("gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
+	createCmd.Flags().String("gitops-template-branch", "", "the branch to clone for the gitops-template repository")
+	createCmd.Flags().String("gitops-template-url", "https://github.com/konstructio/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
+	createCmd.Flags().String("install-catalog-apps", "", "comma separated values to install after provision")
+	createCmd.Flags().Bool("use-telemetry", true, "whether to emit telemetry")
+	createCmd.Flags().Bool("force-destroy", false, "allows force destruction on objects (helpful for test environments, defaults to false)")
+	createCmd.Flags().Bool("install-kubefirst-pro", true, "whether or not to install kubefirst pro")
 
 	return createCmd
 }
@@ -133,9 +100,9 @@ func RootCredentials() *cobra.Command {
 		RunE:  common.GetRootCredentials,
 	}
 
-	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the ArgoCD password to the clipboard (optional)")
-	authCmd.Flags().BoolVar(&copyKbotPasswordToClipboardFlag, "kbot", false, "copy the kbot password to the clipboard (optional)")
-	authCmd.Flags().BoolVar(&copyVaultPasswordToClipboardFlag, "vault", false, "copy the vault password to the clipboard (optional)")
+	authCmd.Flags().Bool("argocd", false, "copy the ArgoCD password to the clipboard (optional)")
+	authCmd.Flags().Bool("kbot", false, "copy the kbot password to the clipboard (optional)")
+	authCmd.Flags().Bool("vault", false, "copy the vault password to the clipboard (optional)")
 
 	return authCmd
 }

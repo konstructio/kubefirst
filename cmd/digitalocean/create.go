@@ -44,7 +44,7 @@ func createDigitalocean(cmd *cobra.Command, _ []string) error {
 		return errors.New("catalog did not pass a validation check")
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider)
+	err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate provided flags: %w", err)
@@ -58,7 +58,7 @@ func createDigitalocean(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	utilities.CreateK1ClusterDirectory(clusterNameFlag)
+	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
@@ -110,11 +110,11 @@ func createDigitalocean(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func ValidateProvidedFlags(gitProvider string) error {
+func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
 	progress.AddStep("Validate provided flags")
 
 	// Validate required environment variables for dns provider
-	if dnsProviderFlag == "cloudflare" {
+	if dnsProvider == "cloudflare" {
 		if os.Getenv("CF_API_TOKEN") == "" {
 			return fmt.Errorf("your CF_API_TOKEN environment variable is not set. Please set and try again")
 		}
