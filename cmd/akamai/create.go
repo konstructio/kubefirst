@@ -34,9 +34,9 @@ func createAkamai(cmd *cobra.Command, _ []string) error {
 
 	progress.DisplayLogHints(25)
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
-	if !isValid {
-		return fmt.Errorf("catalog validation failed: %w", err)
+	catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	if err != nil {
+		return fmt.Errorf("failed to validate catalog apps: %w", err)
 	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
