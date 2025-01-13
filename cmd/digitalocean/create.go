@@ -7,7 +7,6 @@ See the LICENSE file for more details.
 package digitalocean
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -35,13 +34,9 @@ func createDigitalocean(cmd *cobra.Command, _ []string) error {
 
 	progress.DisplayLogHints(20)
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if err != nil {
-		return fmt.Errorf("catalog validation error: %w", err)
-	}
-
-	if !isValid {
-		return errors.New("catalog did not pass a validation check")
+		return fmt.Errorf("failed to validate catalog apps: %w", err)
 	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)

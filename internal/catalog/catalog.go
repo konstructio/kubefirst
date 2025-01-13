@@ -17,7 +17,6 @@ import (
 
 	apiTypes "github.com/konstructio/kubefirst-api/pkg/types"
 
-	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -36,71 +35,69 @@ func NewGitHub() *git.Client {
 	return git.NewClient(nil)
 }
 
-func ReadActiveApplications() (apiTypes.GitopsCatalogApps, error) {
+func ReadActiveApplications() (*apiTypes.GitopsCatalogApps, error) {
 	gh := GitHubClient{
 		Client: NewGitHub(),
 	}
 
 	activeContent, err := gh.ReadGitopsCatalogRepoContents()
 	if err != nil {
-		return apiTypes.GitopsCatalogApps{}, fmt.Errorf("error retrieving gitops catalog repository content: %w", err)
+		return nil, fmt.Errorf("error retrieving gitops catalog repository content: %w", err)
 	}
 
 	index, err := gh.ReadGitopsCatalogIndex(activeContent)
 	if err != nil {
-		return apiTypes.GitopsCatalogApps{}, fmt.Errorf("error retrieving gitops catalog index content: %w", err)
+		return nil, fmt.Errorf("error retrieving gitops catalog index content: %w", err)
 	}
 
 	var out apiTypes.GitopsCatalogApps
 
 	err = yaml.Unmarshal(index, &out)
 	if err != nil {
-		return apiTypes.GitopsCatalogApps{}, fmt.Errorf("error retrieving gitops catalog applications: %w", err)
+		return nil, fmt.Errorf("error retrieving gitops catalog applications: %w", err)
 	}
 
-	return out, nil
+	return &out, nil
 }
 
-func ValidateCatalogApps(catalogApps string) (bool, []apiTypes.GitopsCatalogApp, error) {
-	items := strings.Split(catalogApps, ",")
-
-	gitopsCatalogapps := []apiTypes.GitopsCatalogApp{}
+func ValidateCatalogApps(catalogApps string) ([]apiTypes.GitopsCatalogApp, error) {
 	if catalogApps == "" {
-		return true, gitopsCatalogapps, nil
+		// No catalog apps to install
+		return nil, nil
 	}
 
 	apps, err := ReadActiveApplications()
 	if err != nil {
-		log.Error().Msgf("error getting gitops catalog applications: %s", err)
-		return false, gitopsCatalogapps, err
+		return nil, err
 	}
 
+	items := strings.Split(catalogApps, ",")
+	gitopsCatalogapps := make([]apiTypes.GitopsCatalogApp, 0, len(items))
 	for _, app := range items {
 		found := false
+
 		for _, catalogApp := range apps.Apps {
 			if app == catalogApp.Name {
 				found = true
 
-				if catalogApp.SecretKeys != nil {
-					for _, secret := range catalogApp.SecretKeys {
-						secretValue := os.Getenv(secret.Env)
-
-						if secretValue == "" {
-							return false, gitopsCatalogapps, fmt.Errorf("your %q environment variable is not set for %q catalog application. Please set and try again", secret.Env, app)
-						}
-
-						secret.Value = secretValue
+				for pos, secret := range catalogApp.SecretKeys {
+					secretValue := os.Getenv(secret.Env)
+					if secretValue == "" {
+						return nil, fmt.Errorf("your %q environment variable is not set for %q catalog application. Please set and try again", secret.Env, app)
 					}
+
+					secret.Value = secretValue
+					catalogApp.SecretKeys[pos] = secret
 				}
 
-				if catalogApp.ConfigKeys != nil {
-					for _, config := range catalogApp.ConfigKeys {
-						configValue := os.Getenv(config.Env)
-						if configValue == "" {
-							return false, gitopsCatalogapps, fmt.Errorf("your %q environment variable is not set for %q catalog application. Please set and try again", config.Env, app)
-						}
-						config.Value = configValue
+				for pos, config := range catalogApp.ConfigKeys {
+					configValue := os.Getenv(config.Env)
+					if configValue == "" {
+						return nil, fmt.Errorf("your %q environment variable is not set for %q catalog application. Please set and try again", config.Env, app)
 					}
+
+					config.Value = configValue
+					catalogApp.ConfigKeys[pos] = config
 				}
 
 				gitopsCatalogapps = append(gitopsCatalogapps, catalogApp)
@@ -108,12 +105,13 @@ func ValidateCatalogApps(catalogApps string) (bool, []apiTypes.GitopsCatalogApp,
 				break
 			}
 		}
+
 		if !found {
-			return false, gitopsCatalogapps, fmt.Errorf("catalog app is not supported: %q", app)
+			return nil, fmt.Errorf("catalog app is not supported: %q", app)
 		}
 	}
 
-	return true, gitopsCatalogapps, nil
+	return gitopsCatalogapps, nil
 }
 
 func (gh *GitHubClient) ReadGitopsCatalogRepoContents() ([]*git.RepositoryContent, error) {
