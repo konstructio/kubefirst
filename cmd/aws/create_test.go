@@ -51,9 +51,29 @@ func (m *mockAWSSimulator) SimulatePrincipalPolicy(ctx context.Context, params *
 	return nil, errors.New("not implemented")
 }
 
+type mockIamClient struct {
+	FnCreateRole       func(ctx context.Context, params *iam.CreateRoleInput, optFns ...func(*iam.Options)) (*iam.CreateRoleOutput, error)
+	FnAttachRolePolicy func(ctx context.Context, params *iam.AttachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.AttachRolePolicyOutput, error)
+}
+
+func (m *mockIamClient) CreateRole(ctx context.Context, params *iam.CreateRoleInput, optFns ...func(*iam.Options)) (*iam.CreateRoleOutput, error) {
+	if m.FnCreateRole != nil {
+		return m.FnCreateRole(ctx, params, optFns...)
+	}
+
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockIamClient) AttachRolePolicy(ctx context.Context, params *iam.AttachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.AttachRolePolicyOutput, error) {
+	if m.FnAttachRolePolicy != nil {
+		return m.FnAttachRolePolicy(ctx, params, optFns...)
+	}
+
+	return nil, errors.New("not implemented")
+}
+
 func TestValidateCredentials(t *testing.T) {
 	ctx := context.Background()
-	roleArn := "arn:aws:iam::123456789012:role/example-role"
 
 	fnGenerateSimulator := func(actionName, decision string, err error) func(ctx context.Context, params *iam.SimulatePrincipalPolicyInput, optFns ...func(*iam.Options)) (*iam.SimulatePrincipalPolicyOutput, error) {
 		return func(ctx context.Context, params *iam.SimulatePrincipalPolicyInput, optFns ...func(*iam.Options)) (*iam.SimulatePrincipalPolicyOutput, error) {
@@ -80,14 +100,17 @@ func TestValidateCredentials(t *testing.T) {
 
 	tests := []struct {
 		name              string
+		roleARN           string
 		mockStsClient     *mockStsClient
+		mockIamClient     *mockIamClient // only required if roleARN is empty
 		simulator         simulator
 		wantErr           bool
 		expectedUserId    string
 		expectedSessionId string
 	}{
 		{
-			name: "successful conversion",
+			name:    "successful conversion",
+			roleARN: "arn:aws:iam::123456789012:role/example-role",
 			mockStsClient: &mockStsClient{
 				FnGetCallerIdentity: func(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
 					return &sts.GetCallerIdentityOutput{
@@ -95,6 +118,10 @@ func TestValidateCredentials(t *testing.T) {
 					}, nil
 				},
 				FnAssumeRole: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+					if *params.RoleArn != "arn:aws:iam::123456789012:role/example-role" {
+						t.Fatalf("unexpected role ARN: %s", *params.RoleArn)
+					}
+
 					return &sts.AssumeRoleOutput{
 						Credentials: &types.Credentials{
 							AccessKeyId:     aws.String("access-key-id"),
@@ -112,7 +139,8 @@ func TestValidateCredentials(t *testing.T) {
 			expectedSessionId: "kubefirst-session-user-123",
 		},
 		{
-			name: "failed to get caller identity",
+			name:    "failed to get caller identity",
+			roleARN: "arn:aws:iam::123456789012:role/example-role",
 			mockStsClient: &mockStsClient{
 				FnGetCallerIdentity: func(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
 					return nil, errors.New("failed to get caller identity")
@@ -125,7 +153,8 @@ func TestValidateCredentials(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "failed to assume role",
+			name:    "failed to assume role",
+			roleARN: "arn:aws:iam::123456789012:role/example-role",
 			mockStsClient: &mockStsClient{
 				FnGetCallerIdentity: func(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
 					return &sts.GetCallerIdentityOutput{
@@ -143,7 +172,15 @@ func TestValidateCredentials(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "role does not have create cluster permission",
+			name:    "role does not have create cluster permission",
+			roleARN: "arn:aws:iam::123456789012:role/example-role",
+			mockStsClient: &mockStsClient{
+				FnGetCallerIdentity: func(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
+					return &sts.GetCallerIdentityOutput{
+						UserId: aws.String("user-123"),
+					}, nil
+				},
+			},
 			simulator: simulator{
 				actionName: "eks:CreateCluster",
 				decision:   "explicitDeny",
@@ -151,11 +188,61 @@ func TestValidateCredentials(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "simulator verification failed",
+			name:    "simulator verification failed",
+			roleARN: "arn:aws:iam::123456789012:role/example-role",
+			mockStsClient: &mockStsClient{
+				FnGetCallerIdentity: func(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
+					return &sts.GetCallerIdentityOutput{
+						UserId: aws.String("user-123"),
+					}, nil
+				},
+			},
 			simulator: simulator{
 				err: errors.New("failed to simulate"),
 			},
 			wantErr: true,
+		},
+		{
+			name:    "role ARN is empty",
+			roleARN: "",
+			mockIamClient: &mockIamClient{
+				FnCreateRole: func(ctx context.Context, params *iam.CreateRoleInput, optFns ...func(*iam.Options)) (*iam.CreateRoleOutput, error) {
+					return &iam.CreateRoleOutput{
+						Role: &iamTypes.Role{
+							Arn: aws.String("arn:aws:iam::123456789012:role/example-role"),
+						},
+					}, nil
+				},
+				FnAttachRolePolicy: func(ctx context.Context, params *iam.AttachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.AttachRolePolicyOutput, error) {
+					return &iam.AttachRolePolicyOutput{}, nil
+				},
+			},
+			mockStsClient: &mockStsClient{
+				FnGetCallerIdentity: func(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
+					return &sts.GetCallerIdentityOutput{
+						UserId: aws.String("user-123"),
+					}, nil
+				},
+				FnAssumeRole: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+					if *params.RoleArn != "arn:aws:iam::123456789012:role/example-role" {
+						t.Fatalf("unexpected role ARN: %s", *params.RoleArn)
+					}
+
+					return &sts.AssumeRoleOutput{
+						Credentials: &types.Credentials{
+							AccessKeyId:     aws.String("access-key-id"),
+							SecretAccessKey: aws.String("secret-access-key"),
+							SessionToken:    aws.String("session-token"),
+						},
+					}, nil
+				},
+			},
+			simulator: simulator{
+				actionName: "eks:CreateCluster",
+				decision:   "allowed",
+			},
+			expectedUserId:    "user-123",
+			expectedSessionId: "kubefirst-session-user-123",
 		},
 	}
 
@@ -167,7 +254,7 @@ func TestValidateCredentials(t *testing.T) {
 				},
 			}
 
-			credentials, err := convertLocalCredsToSession(ctx, tt.mockStsClient, checker, roleArn)
+			credentials, err := convertLocalCredsToSession(ctx, tt.mockStsClient, tt.mockIamClient, checker, tt.roleARN)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
