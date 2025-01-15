@@ -64,7 +64,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to get ci flag: %w", err)
 	}
 
-	cliFlags, err := utilities.GetFlags(cmd, "google")
+	cliFlags, err := utilities.GetFlags(cmd, "k3d")
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to get flags: %w", err)
