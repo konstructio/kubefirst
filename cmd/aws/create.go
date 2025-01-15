@@ -189,6 +189,19 @@ const (
 	sessionDuration = int32(21600) // We want at least 6 hours (21,600 seconds)
 )
 
+var wantedPermissions = []string{
+	"eks:CreateCluster",
+	"eks:DescribeCluster",
+	// "cloudformation:CreateStack",
+	// "cloudformation:DescribeStacks",
+	"ec2:CreateSecurityGroup",
+	"ec2:AuthorizeSecurityGroupIngress",
+	"ec2:DescribeVpcs",
+	"ec2:DescribeSubnets",
+	"ec2:DescribeSecurityGroups",
+	"iam:PassRole",
+}
+
 type stsClienter interface {
 	GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error)
 	AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
@@ -196,6 +209,7 @@ type stsClienter interface {
 
 // iamClienter is an interface for IAM operations (CreateRole, AttachRolePolicy, etc.).
 type iamClienter interface {
+	CreatePolicy(ctx context.Context, params *iam.CreatePolicyInput, optFns ...func(*iam.Options)) (*iam.CreatePolicyOutput, error)
 	CreateRole(ctx context.Context, params *iam.CreateRoleInput, optFns ...func(*iam.Options)) (*iam.CreateRoleOutput, error)
 	AttachRolePolicy(ctx context.Context, params *iam.AttachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.AttachRolePolicyOutput, error)
 }
@@ -217,12 +231,13 @@ func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamC
 	}
 
 	// Check if the currently provided role can perform EKS cluster creation
-	canCreateCluster, err := checker.CanRoleDoAction(ctx, roleArn, []string{"eks:CreateCluster"})
+	// with all the sub-requirements to actually make a cluster.
+	canCreateCluster, err := checker.CanRoleDoAction(ctx, roleArn, wantedPermissions)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check if role %q can create EKS cluster: %w", roleArn, err)
 	}
 	if !canCreateCluster {
-		return nil, fmt.Errorf("role %q does not have permission to create EKS clusters", roleArn)
+		return nil, fmt.Errorf("role %q does not have permission to create EKS clusters; required permissions: %s", roleArn, wantedPermissions)
 	}
 
 	// Create a session name (some unique identifier)
@@ -246,25 +261,10 @@ func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamC
 // AdditionalRolePolicies is a slice of policy ARNs you want to attach
 // to every new "Kubernetes Admin" role created by the function below.
 var AdditionalRolePolicies = []string{
+	"arn:aws:iam::aws:policy/AmazonEKSServicePolicy",
+	"arn:aws:iam::aws:policy/AmazonEKSVPCResourceController",
 	// Put your extra policies here, e.g.:
-	// "arn:aws:iam::aws:policy/AmazonEKSServicePolicy",
-	// "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController",
 	// "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
-}
-
-type trustPolicyPrincipal struct {
-	AWS string
-}
-
-type trustPolicyStatement struct {
-	Effect    string
-	Principal trustPolicyPrincipal
-	Action    string
-}
-
-type trustPolicy struct {
-	Version   string
-	Statement []trustPolicyStatement
 }
 
 func createKubernetesAdminRole(ctx context.Context, iamClient iamClienter, checker *internalaws.Checker, callerIdentity *sts.GetCallerIdentityOutput) (string, error) {
@@ -277,18 +277,45 @@ func createKubernetesAdminRole(ctx context.Context, iamClient iamClienter, check
 		return "", fmt.Errorf("caller %q does not have permission to create IAM roles", aws.ToString(callerIdentity.Arn))
 	}
 
+	// Build a custom policy that allows EKS operations
+	permissionPolicy := map[string]interface{}{
+		"Version": "2012-10-17",
+		"Statement": []map[string]interface{}{{
+			"Effect":   "Allow",
+			"Action":   wantedPermissions,
+			"Resource": "*",
+		}},
+	}
+
+	// Encode the policy as JSON
+	permissionPolicyBytes, err := json.Marshal(permissionPolicy)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal permission policy JSON: %w", err)
+	}
+
+	// Create the policy in IAM
+	policyName := "KubefirstKubernetesAdminPolicy"
+	cpo, err := iamClient.CreatePolicy(ctx, &iam.CreatePolicyInput{
+		PolicyName:     aws.String(policyName),
+		PolicyDocument: aws.String(string(permissionPolicyBytes)),
+		Description:    aws.String("Policy that allows creating EKS clusters"),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create policy %q: %w", policyName, err)
+	}
+
 	// Build a trust policy that allows the current caller to assume the new role.
-	trustPolicy := trustPolicy{
-		Version: "2012-10-17",
-		Statement: []trustPolicyStatement{{
-			Effect: "Allow",
-			Principal: trustPolicyPrincipal{
+	trustPolicy := map[string]interface{}{
+		"Version": "2012-10-17",
+		"Statement": []map[string]interface{}{{
+			"Effect": "Allow",
+			"Principal": map[string]interface{}{
 				// Instead of callerIdentity.Arn, we could do:
 				//   "AWS": fmt.Sprintf("arn:aws:iam::%s:root", accountId)
 				// to allow any principal in your account to assume.
-				AWS: aws.ToString(callerIdentity.Arn),
+				"AWS": aws.ToString(callerIdentity.Arn),
 			},
-			Action: "sts:AssumeRole",
+			"Action": "sts:AssumeRole",
 		}},
 	}
 
@@ -318,6 +345,15 @@ func createKubernetesAdminRole(ctx context.Context, iamClient iamClienter, check
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to attach AmazonEKSClusterPolicy to role %q: %w", roleName, err)
+	}
+
+	// Attach a custom policy that allows EKS operations
+	_, err = iamClient.AttachRolePolicy(ctx, &iam.AttachRolePolicyInput{
+		RoleName:  createOut.Role.RoleName,
+		PolicyArn: cpo.Policy.Arn,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to attach custom policy %q to role %q: %w", policyName, roleName, err)
 	}
 
 	// Attach any additional role policies from the package-level slice
