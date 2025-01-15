@@ -60,68 +60,20 @@ import (
 func runK3d(cmd *cobra.Command, _ []string) error {
 	ciFlag, err := cmd.Flags().GetBool("ci")
 	if err != nil {
-		return fmt.Errorf("failed to get 'ci' flag: %w", err)
+		progress.Error(err.Error())
+		return fmt.Errorf("failed to get ci flag: %w", err)
 	}
 
-	clusterNameFlag, err := cmd.Flags().GetString("cluster-name")
+	cliFlags, err := utilities.GetFlags(cmd, "k3d")
 	if err != nil {
-		return fmt.Errorf("failed to get 'cluster-name' flag: %w", err)
+		progress.Error(err.Error())
+		return fmt.Errorf("failed to get flags: %w", err)
 	}
 
-	clusterTypeFlag, err := cmd.Flags().GetString("cluster-type")
-	if err != nil {
-		return fmt.Errorf("failed to get 'cluster-type' flag: %w", err)
-	}
-
-	githubOrgFlag, err := cmd.Flags().GetString("github-org")
-	if err != nil {
-		return fmt.Errorf("failed to get 'github-org' flag: %w", err)
-	}
-
-	githubUserFlag, err := cmd.Flags().GetString("github-user")
-	if err != nil {
-		return fmt.Errorf("failed to get 'github-user' flag: %w", err)
-	}
-
-	gitlabGroupFlag, err := cmd.Flags().GetString("gitlab-group")
-	if err != nil {
-		return fmt.Errorf("failed to get 'gitlab-group' flag: %w", err)
-	}
-
-	gitProviderFlag, err := cmd.Flags().GetString("git-provider")
-	if err != nil {
-		return fmt.Errorf("failed to get 'git-provider' flag: %w", err)
-	}
-
-	gitProtocolFlag, err := cmd.Flags().GetString("git-protocol")
-	if err != nil {
-		return fmt.Errorf("failed to get 'git-protocol' flag: %w", err)
-	}
-
-	gitopsTemplateURLFlag, err := cmd.Flags().GetString("gitops-template-url")
-	if err != nil {
-		return fmt.Errorf("failed to get 'gitops-template-url' flag: %w", err)
-	}
-
-	gitopsTemplateBranchFlag, err := cmd.Flags().GetString("gitops-template-branch")
-	if err != nil {
-		return fmt.Errorf("failed to get 'gitops-template-branch' flag: %w", err)
-	}
-
-	installCatalogAppsFlag, err := cmd.Flags().GetString("install-catalog-apps")
-	if err != nil {
-		return fmt.Errorf("failed to get 'install-catalog-apps' flag: %w", err)
-	}
-
-	useTelemetryFlag, err := cmd.Flags().GetBool("use-telemetry")
-	if err != nil {
-		return fmt.Errorf("failed to get 'use-telemetry' flag: %w", err)
-	}
-
-	utilities.CreateK1ClusterDirectory(clusterNameFlag)
+	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
 	utils.DisplayLogHints()
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(installCatalogAppsFlag)
+	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if err != nil {
 		return fmt.Errorf("failed to validate catalog apps: %w", err)
 	}
@@ -130,7 +82,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		return errors.New("catalog apps validation failed")
 	}
 
-	switch gitProviderFlag {
+	switch cliFlags.GitProvider {
 	case "github":
 		key, err := internalssh.GetHostKey("github.com")
 		if err != nil {
@@ -143,10 +95,6 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan gitlab.com >> ~/.ssh/known_hosts` to remedy: %w", err)
 		}
 		log.Info().Msgf("Host key for gitlab.com: %q", key.Type())
-	}
-
-	if githubOrgFlag != "" && githubUserFlag != "" {
-		return errors.New("only one of --github-user or --github-org can be supplied")
 	}
 
 	err = k8s.CheckForExistingPortForwards(8080, 8200, 9000, 9094)
@@ -164,16 +112,16 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		kubefirstTeam = "false"
 	}
 
-	viper.Set("flags.cluster-name", clusterNameFlag)
+	viper.Set("flags.cluster-name", cliFlags.ClusterName)
 	viper.Set("flags.domain-name", k3d.DomainName)
-	viper.Set("flags.git-provider", gitProviderFlag)
-	viper.Set("flags.git-protocol", gitProtocolFlag)
+	viper.Set("flags.git-provider", cliFlags.GitProvider)
+	viper.Set("flags.git-protocol", cliFlags.GitProtocol)
 	viper.Set("kubefirst.cloud-provider", "k3d")
 	viper.WriteConfig()
 
 	var cGitHost, cGitOwner, cGitUser, cGitToken, containerRegistryHost string
 	var cGitlabOwnerGroupID int
-	switch gitProviderFlag {
+	switch cliFlags.GitProvider {
 	case "github":
 		cGitHost = k3d.GithubHost
 		containerRegistryHost = "ghcr.io"
@@ -205,8 +153,8 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 			return fmt.Errorf("failed to get GitHub user: %w", err)
 		}
 
-		if githubOrgFlag != "" {
-			cGitOwner = githubOrgFlag
+		if cliFlags.GithubOrg != "" {
+			cGitOwner = cliFlags.GithubOrg
 		} else {
 			cGitOwner = githubUser
 		}
@@ -216,7 +164,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		viper.Set("github.session_token", cGitToken)
 		viper.WriteConfig()
 	case "gitlab":
-		if gitlabGroupFlag == "" {
+		if cliFlags.GitlabGroup == "" {
 			return errors.New("please provide a gitlab group using the --gitlab-group flag")
 		}
 
@@ -230,7 +178,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 			return fmt.Errorf("failed to verify GitLab token permissions: %w", err)
 		}
 
-		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, gitlabGroupFlag)
+		gitlabClient, err := gitlab.NewGitLabClient(cGitToken, cliFlags.GitlabGroup)
 		if err != nil {
 			return fmt.Errorf("failed to create GitLab client: %w", err)
 		}
@@ -245,18 +193,18 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 			return fmt.Errorf("unable to get authenticated user info - please make sure GITLAB_TOKEN env var is set: %w", err)
 		}
 		cGitUser = user.Username
-		viper.Set("flags.gitlab-owner", gitlabGroupFlag)
+		viper.Set("flags.gitlab-owner", cliFlags.GitlabGroup)
 		viper.Set("flags.gitlab-owner-group-id", cGitlabOwnerGroupID)
 		viper.Set("gitlab.session_token", cGitToken)
 		viper.WriteConfig()
 	default:
-		return fmt.Errorf("invalid git provider option %q", gitProviderFlag)
+		return fmt.Errorf("invalid git provider option %q", cliFlags.GitProvider)
 	}
 
 	var gitDestDescriptor string
-	switch gitProviderFlag {
+	switch cliFlags.GitProvider {
 	case "github":
-		if githubOrgFlag != "" {
+		if cliFlags.GithubOrg != "" {
 			gitDestDescriptor = "Organization"
 		} else {
 			gitDestDescriptor = "User"
@@ -265,12 +213,12 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		gitDestDescriptor = "Group"
 	}
 
-	config, err := k3d.GetConfig(clusterNameFlag, gitProviderFlag, cGitOwner, gitProtocolFlag)
+	config, err := k3d.GetConfig(cliFlags.ClusterName, cliFlags.GitProvider, cGitOwner, cliFlags.GitProtocol)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	switch gitProviderFlag {
+	switch cliFlags.GitProvider {
 	case "github":
 		config.GithubToken = cGitToken
 	case "gitlab":
@@ -287,7 +235,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		viper.WriteConfig()
 	}
 
-	segClient, err := segment.InitClient(clusterID, clusterTypeFlag, gitProviderFlag)
+	segClient, err := segment.InitClient(clusterID, cliFlags.ClusterType, cliFlags.GitProvider)
 	if err != nil {
 		return fmt.Errorf("failed to initialize segment client: %w", err)
 	}
@@ -298,29 +246,29 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 
 	switch configs.K1Version {
 	case "development":
-		if strings.Contains(gitopsTemplateURLFlag, "https://github.com/konstructio/gitops-template.git") && gitopsTemplateBranchFlag == "" {
-			gitopsTemplateBranchFlag = "main"
+		if strings.Contains(cliFlags.GitopsTemplateURL, "https://github.com/konstructio/gitops-template.git") && cliFlags.GitopsTemplateBranch == "" {
+			cliFlags.GitopsTemplateBranch = "main"
 		}
 	default:
-		switch gitopsTemplateURLFlag {
+		switch cliFlags.GitopsTemplateURL {
 		case "https://github.com/konstructio/gitops-template.git":
-			if gitopsTemplateBranchFlag == "" {
-				gitopsTemplateBranchFlag = configs.K1Version
+			if cliFlags.GitopsTemplateBranch == "" {
+				cliFlags.GitopsTemplateBranch = configs.K1Version
 			}
 		case "https://github.com/konstructio/gitops-template":
-			if gitopsTemplateBranchFlag == "" {
-				gitopsTemplateBranchFlag = configs.K1Version
+			if cliFlags.GitopsTemplateBranch == "" {
+				cliFlags.GitopsTemplateBranch = configs.K1Version
 			}
 		default:
-			if gitopsTemplateBranchFlag == "" {
+			if cliFlags.GitopsTemplateBranch == "" {
 				return errors.New("must supply gitops-template-branch flag when gitops-template-url is overridden")
 			}
 		}
 	}
 
 	log.Info().Msgf("kubefirst version configs.K1Version: %q", configs.K1Version)
-	log.Info().Msgf("cloning gitops-template repo url: %q", gitopsTemplateURLFlag)
-	log.Info().Msgf("cloning gitops-template repo branch: %q", gitopsTemplateBranchFlag)
+	log.Info().Msgf("cloning gitops-template repo url: %q", cliFlags.GitopsTemplateURL)
+	log.Info().Msgf("cloning gitops-template repo branch: %q", cliFlags.GitopsTemplateBranch)
 
 	atlantisWebhookSecret := viper.GetString("secrets.atlantis-webhook")
 	if atlantisWebhookSecret == "" {
@@ -365,7 +313,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		}
 
 		initGitParameters := gitShim.GitInitParameters{
-			GitProvider:  gitProviderFlag,
+			GitProvider:  cliFlags.GitProvider,
 			GitToken:     cGitToken,
 			GitOwner:     cGitOwner,
 			Repositories: newRepositoryNames,
@@ -431,8 +379,8 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		DomainName:                    k3d.DomainName,
 		AtlantisAllowList:             fmt.Sprintf("%s/%s/*", cGitHost, cGitOwner),
 		AlertsEmail:                   "REMOVE_THIS_VALUE",
-		ClusterName:                   clusterNameFlag,
-		ClusterType:                   clusterTypeFlag,
+		ClusterName:                   cliFlags.ClusterName,
+		ClusterType:                   cliFlags.ClusterType,
 		GithubHost:                    k3d.GithubHost,
 		GitlabHost:                    k3d.GitlabHost,
 		ArgoWorkflowsIngressURL:       fmt.Sprintf("https://argo.%s", k3d.DomainName),
@@ -451,7 +399,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		CloudProvider:                 k3d.CloudProvider,
 	}
 
-	if useTelemetryFlag {
+	if cliFlags.UseTelemetry {
 		gitopsDirectoryTokens.UseTelemetry = "true"
 	} else {
 		gitopsDirectoryTokens.UseTelemetry = "false"
@@ -470,7 +418,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 	if !viper.GetBool("kubefirst-checks.tools-downloaded") {
 		log.Info().Msg("installing kubefirst dependencies")
 
-		err := k3d.DownloadTools(clusterNameFlag, config.GitProvider, cGitOwner, config.ToolsDir, config.GitProtocol)
+		err := k3d.DownloadTools(cliFlags.ClusterName, config.GitProvider, cGitOwner, config.ToolsDir, config.GitProtocol)
 		if err != nil {
 			return fmt.Errorf("failed to download tools: %w", err)
 		}
@@ -484,8 +432,8 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 	progressPrinter.IncrementTracker("preflight-checks")
 
 	metaphorTemplateTokens := k3d.MetaphorTokenValues{
-		ClusterName:                   clusterNameFlag,
-		CloudRegion:                   cloudRegionFlag,
+		ClusterName:                   cliFlags.ClusterName,
+		CloudRegion:                   cliFlags.CloudRegion,
 		ContainerRegistryURL:          fmt.Sprintf("%s/%s/metaphor", containerRegistryHost, cGitOwner),
 		DomainName:                    k3d.DomainName,
 		MetaphorDevelopmentIngressURL: fmt.Sprintf("metaphor-development.%s", k3d.DomainName),
@@ -505,18 +453,18 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		log.Info().Msg("generating your new gitops repository")
 		err := k3d.PrepareGitRepositories(
 			config.GitProvider,
-			clusterNameFlag,
-			clusterTypeFlag,
+			cliFlags.ClusterName,
+			cliFlags.ClusterType,
 			config.DestinationGitopsRepoURL,
 			config.GitopsDir,
-			gitopsTemplateBranchFlag,
-			gitopsTemplateURLFlag,
+			cliFlags.GitopsTemplateBranch,
+			cliFlags.GitopsTemplateURL,
 			config.DestinationMetaphorRepoURL,
 			config.K1Dir,
 			&gitopsDirectoryTokens,
 			config.MetaphorDir,
 			&metaphorTemplateTokens,
-			gitProtocolFlag,
+			cliFlags.GitProtocol,
 			removeAtlantis,
 		)
 		if err != nil {
@@ -582,7 +530,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 			tfEntrypoint := config.GitopsDir + "/terraform/gitlab"
 			tfEnvs := map[string]string{
 				"GITLAB_TOKEN":                 cGitToken,
-				"GITLAB_OWNER":                 gitlabGroupFlag,
+				"GITLAB_OWNER":                 cliFlags.GitlabGroup,
 				"TF_VAR_owner_group_id":        strconv.Itoa(cGitlabOwnerGroupID),
 				"TF_VAR_kbot_ssh_public_key":   viper.GetString("kbot.public-key"),
 				"AWS_ACCESS_KEY_ID":            constants.MinioDefaultUsername,
@@ -601,7 +549,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 				return msg
 			}
 
-			log.Info().Msgf("created git projects and groups for gitlab.com/%s", gitlabGroupFlag)
+			log.Info().Msgf("created git projects and groups for gitlab.com/%s", cliFlags.GitlabGroup)
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", true)
 			viper.WriteConfig()
 			telemetry.SendEvent(segClient, telemetry.GitTerraformApplyCompleted, "")
@@ -633,8 +581,8 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		}
 
 		err = utils.EvalSSHKey(&types.EvalSSHKeyRequest{
-			GitProvider:     gitProviderFlag,
-			GitlabGroupFlag: gitlabGroupFlag,
+			GitProvider:     cliFlags.GitProvider,
+			GitlabGroupFlag: cliFlags.GitlabGroup,
 			GitToken:        cGitToken,
 		})
 		if err != nil {
@@ -688,7 +636,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 
 		log.Info().Msg("Creating k3d cluster")
 
-		err := k3d.ClusterCreate(clusterNameFlag, config.K1Dir, config.K3dClient, config.Kubeconfig)
+		err := k3d.ClusterCreate(cliFlags.ClusterName, config.K1Dir, config.K3dClient, config.Kubeconfig)
 		if err != nil {
 			msg := fmt.Errorf("error creating k3d resources with k3d client %q: %w", config.K3dClient, err)
 			viper.Set("kubefirst-checks.create-k3d-cluster-failed", true)
@@ -743,10 +691,10 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 	}
 
 	containerRegistryAuth := gitShim.ContainerRegistryAuth{
-		GitProvider:           gitProviderFlag,
+		GitProvider:           cliFlags.GitProvider,
 		GitUser:               cGitUser,
 		GitToken:              cGitToken,
-		GitlabGroupFlag:       gitlabGroupFlag,
+		GitlabGroupFlag:       cliFlags.GitlabGroup,
 		GithubOwner:           cGitOwner,
 		ContainerRegistryHost: containerRegistryHost,
 		Clientset:             kcfg.Clientset,
@@ -920,7 +868,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		}
 
 		log.Info().Msg("applying the registry application to ArgoCD")
-		registryApplicationObject := argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/%s", clusterNameFlag))
+		registryApplicationObject := argocd.GetArgoCDApplicationObject(gitopsRepoURL, fmt.Sprintf("registry/%s", cliFlags.ClusterName))
 
 		err = k3d.RestartDeployment(context.Background(), kcfg.Clientset, "argocd", "argocd-applicationset-controller")
 		if err != nil {
@@ -1235,7 +1183,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 
 	utils.SetClusterStatusFlags(k3d.CloudProvider, config.GitProvider)
 
-	cluster := utilities.CreateClusterRecordFromRaw(useTelemetryFlag, cGitOwner, cGitUser, cGitToken, cGitlabOwnerGroupID, gitopsTemplateURLFlag, gitopsTemplateBranchFlag, catalogApps)
+	cluster := utilities.CreateClusterRecordFromRaw(cliFlags.UseTelemetry, cGitOwner, cGitUser, cGitToken, cGitlabOwnerGroupID, cliFlags.GitopsTemplateURL, cliFlags.GitopsTemplateBranch, catalogApps)
 
 	err = utilities.ExportCluster(cluster, kcfg)
 	if err != nil {
@@ -1275,7 +1223,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 	log.Info().Msg("welcome to your new Kubefirst platform running in K3D")
 	time.Sleep(1 * time.Second)
 
-	reports.LocalHandoffScreenV2(clusterNameFlag, gitDestDescriptor, cGitOwner, config, ciFlag)
+	reports.LocalHandoffScreenV2(cliFlags.ClusterName, gitDestDescriptor, cGitOwner, config, ciFlag)
 
 	if ciFlag {
 		progress.Progress.Quit()
