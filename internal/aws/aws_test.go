@@ -53,6 +53,27 @@ func TestCanRoleDoAction(t *testing.T) {
 			expectedError:  nil,
 		},
 		{
+			name: "missing action",
+			mockFn: func(ctx context.Context, params *iam.SimulatePrincipalPolicyInput, optFns ...func(*iam.Options)) (*iam.SimulatePrincipalPolicyOutput, error) {
+				return &iam.SimulatePrincipalPolicyOutput{
+					EvaluationResults: []types.EvaluationResult{
+						{
+							EvalActionName: aws.String("eks:CreateCluster"),
+							EvalDecision:   "allowed",
+						},
+						{
+							EvalActionName: aws.String("s3:PutObject"),
+							EvalDecision:   "allowed",
+						},
+					},
+				}, nil
+			},
+			roleArn:        "arn:aws:iam::123456789012:role/MyRole",
+			actions:        []string{"eks:CreateCluster", "s3:PutObject", "s3:GetObject"},
+			expectedResult: false,
+			expectedError:  nil,
+		},
+		{
 			name: "some actions not allowed",
 			mockFn: func(ctx context.Context, params *iam.SimulatePrincipalPolicyInput, optFns ...func(*iam.Options)) (*iam.SimulatePrincipalPolicyOutput, error) {
 				return &iam.SimulatePrincipalPolicyOutput{
