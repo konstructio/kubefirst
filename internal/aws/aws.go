@@ -44,13 +44,20 @@ func (a *Checker) CanRoleDoAction(ctx context.Context, roleArn string, actions [
 		return false, fmt.Errorf("policy simulation error: %w", err)
 	}
 
-	// Evaluate simulation results
+	// Track allowed actions
+	allowedActions := make(map[string]bool)
+
+	// Evaluate simulation results for each action
 	for _, res := range simulateOutput.EvaluationResults {
-		if res.EvalActionName != nil && *res.EvalActionName == "eks:CreateCluster" {
-			// res.EvalDecision is one of: allowed / explicitDeny / implicitDeny
-			if res.EvalDecision == "allowed" {
-				return true, nil
-			}
+		if res.EvalActionName != nil && res.EvalDecision == "allowed" {
+			allowedActions[*res.EvalActionName] = true
+		}
+	}
+
+	// Ensure all actions are allowed
+	for _, action := range actions {
+		if !allowedActions[action] {
+			return false, nil
 		}
 	}
 
