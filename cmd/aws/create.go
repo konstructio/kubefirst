@@ -8,6 +8,7 @@ package aws
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -18,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
@@ -63,12 +65,13 @@ func createAws(cmd *cobra.Command, _ []string) error {
 	}
 
 	stsClient := sts.NewFromConfig(cfg)
+	iamClient := iam.NewFromConfig(cfg)
 	checker, err := internalaws.NewChecker(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to perform aws checks: %w", err)
 	}
 
-	creds, err := convertLocalCredsToSession(ctx, stsClient, checker, cliFlags.KubeAdminRoleARN)
+	creds, err := convertLocalCredsToSession(ctx, stsClient, iamClient, checker, cliFlags.KubeAdminRoleARN)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
@@ -191,7 +194,28 @@ type stsClienter interface {
 	AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
 }
 
-func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, checker *internalaws.Checker, roleArn string) (*types.Credentials, error) {
+// iamClienter is an interface for IAM operations (CreateRole, AttachRolePolicy, etc.).
+type iamClienter interface {
+	CreateRole(ctx context.Context, params *iam.CreateRoleInput, optFns ...func(*iam.Options)) (*iam.CreateRoleOutput, error)
+	AttachRolePolicy(ctx context.Context, params *iam.AttachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.AttachRolePolicyOutput, error)
+}
+
+func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamClient iamClienter, checker *internalaws.Checker, roleArn string) (*types.Credentials, error) {
+	// Check who we are currently (to ensure you're properly authenticated)
+	callerIdentity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get caller identity: %w", err)
+	}
+
+	// If ARN is empty, create a new role with kubernetes admin permissions
+	if roleArn == "" {
+		createdArn, err := createKubernetesAdminRole(ctx, iamClient, checker, callerIdentity)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create a new role for EKS clusters: %w", err)
+		}
+		roleArn = createdArn
+	}
+
 	// Check if the currently provided role can perform EKS cluster creation
 	canCreateCluster, err := checker.CanRoleDoAction(ctx, roleArn, []string{"eks:CreateCluster"})
 	if err != nil {
@@ -199,12 +223,6 @@ func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, chec
 	}
 	if !canCreateCluster {
 		return nil, fmt.Errorf("role %q does not have permission to create EKS clusters", roleArn)
-	}
-
-	// Check who we are currently (to ensure you're properly authenticated)
-	callerIdentity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get caller identity: %w", err)
 	}
 
 	// Create a session name (some unique identifier)
@@ -223,6 +241,98 @@ func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, chec
 	// Return the credentials
 	credentials := output.Credentials
 	return credentials, nil
+}
+
+// AdditionalRolePolicies is a slice of policy ARNs you want to attach
+// to every new "Kubernetes Admin" role created by the function below.
+var AdditionalRolePolicies = []string{
+	// Put your extra policies here, e.g.:
+	// "arn:aws:iam::aws:policy/AmazonEKSServicePolicy",
+	// "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController",
+	// "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
+}
+
+type trustPolicyPrincipal struct {
+	AWS string
+}
+
+type trustPolicyStatement struct {
+	Effect    string
+	Principal trustPolicyPrincipal
+	Action    string
+}
+
+type trustPolicy struct {
+	Version   string
+	Statement []trustPolicyStatement
+}
+
+func createKubernetesAdminRole(ctx context.Context, iamClient iamClienter, checker *internalaws.Checker, callerIdentity *sts.GetCallerIdentityOutput) (string, error) {
+	// Verify that the current caller has permission to create IAM roles
+	canCreateRole, err := checker.CanRoleDoAction(ctx, aws.ToString(callerIdentity.Arn), []string{"iam:CreateRole"})
+	if err != nil {
+		return "", fmt.Errorf("failed to check permission to create a new role: %w", err)
+	}
+	if !canCreateRole {
+		return "", fmt.Errorf("caller %q does not have permission to create IAM roles", aws.ToString(callerIdentity.Arn))
+	}
+
+	// Build a trust policy that allows the current caller to assume the new role.
+	trustPolicy := trustPolicy{
+		Version: "2012-10-17",
+		Statement: []trustPolicyStatement{{
+			Effect: "Allow",
+			Principal: trustPolicyPrincipal{
+				// Instead of callerIdentity.Arn, we could do:
+				//   "AWS": fmt.Sprintf("arn:aws:iam::%s:root", accountId)
+				// to allow any principal in your account to assume.
+				AWS: aws.ToString(callerIdentity.Arn),
+			},
+			Action: "sts:AssumeRole",
+		}},
+	}
+
+	// Encode the trust policy as JSON
+	trustPolicyBytes, err := json.Marshal(trustPolicy)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal trust policy JSON: %w", err)
+	}
+
+	// Create the IAM role
+	roleName := "KubefirstKubernetesAdmin"
+	createOut, err := iamClient.CreateRole(ctx, &iam.CreateRoleInput{
+		RoleName:                 aws.String(roleName),
+		AssumeRolePolicyDocument: aws.String(string(trustPolicyBytes)),
+		Description:              aws.String("Role that can create EKS clusters"),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create role %q: %w", roleName, err)
+	}
+
+	// Attach a policy that lets this role create EKS clusters.
+	// The AWS-managed policy "AmazonEKSClusterPolicy" covers cluster creation & management.
+	// Real usage often requires more policies for VPC, node groups, etc.
+	_, err = iamClient.AttachRolePolicy(ctx, &iam.AttachRolePolicyInput{
+		RoleName:  createOut.Role.RoleName,
+		PolicyArn: aws.String("arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to attach AmazonEKSClusterPolicy to role %q: %w", roleName, err)
+	}
+
+	// Attach any additional role policies from the package-level slice
+	for _, policyArn := range AdditionalRolePolicies {
+		_, err := iamClient.AttachRolePolicy(ctx, &iam.AttachRolePolicyInput{
+			RoleName:  createOut.Role.RoleName,
+			PolicyArn: aws.String(policyArn),
+		})
+		if err != nil {
+			return "", fmt.Errorf("failed to attach policy %q to role %q: %w", policyArn, roleName, err)
+		}
+	}
+
+	// Return the new role ARN
+	return aws.ToString(createOut.Role.Arn), nil
 }
 
 func validateAMIType(ctx context.Context, amiType, nodeType string, ssmClient ssmClienter, ec2Client ec2Clienter, paginator paginator) error {
