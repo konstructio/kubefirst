@@ -61,5 +61,5 @@ func (a *Checker) CanRoleDoAction(ctx context.Context, roleArn string, actions [
 		}
 	}
 
-	return false, nil
+	return true, nil
 }
