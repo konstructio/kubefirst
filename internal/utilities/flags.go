@@ -46,6 +46,7 @@ const (
 	CloudProviderAzure
 	CloudProviderGoogle
 	CloudProviderK3s
+	CloudProviderK3d
 	CloudProviderAkamai
 	CloudProviderCivo
 	CloudProviderDigitalOcean

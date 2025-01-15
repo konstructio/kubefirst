@@ -64,7 +64,7 @@ func createAzure(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	utilities.CreateK1ClusterDirectory(clusterNameFlag)
+	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
@@ -78,7 +78,7 @@ func createAzure(cmd *cobra.Command, _ []string) error {
 		newTeamNames := []string{"admins", "developers"}
 
 		initGitParameters := gitShim.GitInitParameters{
-			GitProvider:  gitProviderFlag,
+			GitProvider:  cliFlags.GitProvider,
 			GitToken:     gitAuth.Token,
 			GitOwner:     gitAuth.Owner,
 			Repositories: newRepositoryNames,
