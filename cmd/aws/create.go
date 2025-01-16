@@ -251,7 +251,7 @@ func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamC
 	output, err := stsClient.AssumeRole(ctx, &sts.AssumeRoleInput{
 		RoleArn:         aws.String(roleArn),
 		RoleSessionName: aws.String(sessionName),
-		DurationSeconds: aws.Int32(sessionDuration),
+		// DurationSeconds: aws.Int32(sessionDuration),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to assume role %s: %w", roleArn, err)
@@ -304,7 +304,7 @@ func createKubernetesAdminRole(ctx context.Context, clusterName string, iamClien
 	// Check if the IAM policy exists
 	cp, err := iamClient.GetPolicy(ctx, &iam.GetPolicyInput{PolicyArn: aws.String(fmt.Sprintf("arn:aws:iam::%s:policy/%s", *callerIdentity.Account, policyName))})
 	if err != nil {
-		var newError awshttp.ResponseError
+		var newError *awshttp.ResponseError
 		if errors.As(err, &newError) && newError.HTTPStatusCode() == http.StatusNotFound {
 			// Policy does not exist, continue
 		} else {
@@ -312,7 +312,7 @@ func createKubernetesAdminRole(ctx context.Context, clusterName string, iamClien
 		}
 	}
 
-	if cp.Policy != nil {
+	if err == nil && cp.Policy != nil {
 		return "", fmt.Errorf("policy %q already exists: please delete the policy and try again", policyName)
 	}
 
@@ -353,7 +353,7 @@ func createKubernetesAdminRole(ctx context.Context, clusterName string, iamClien
 	// Check if a role with this name already exists
 	role, err := iamClient.GetRole(ctx, &iam.GetRoleInput{RoleName: aws.String(roleName)})
 	if err != nil {
-		var newError awshttp.ResponseError
+		var newError *awshttp.ResponseError
 		if errors.As(err, &newError) && newError.HTTPStatusCode() == http.StatusNotFound {
 			// Role does not exist, continue
 		} else {
@@ -361,7 +361,7 @@ func createKubernetesAdminRole(ctx context.Context, clusterName string, iamClien
 		}
 	}
 
-	if role.Role != nil {
+	if err == nil && role.Role != nil {
 		return "", fmt.Errorf("role %q already exists: please delete the role and try again", roleName)
 	}
 
