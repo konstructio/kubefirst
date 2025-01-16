@@ -271,9 +271,10 @@ func TestValidateCredentials(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			clusterName := "foobar"
 			checker := &internalaws.Checker{IAMClient: &mockAWSSimulator{FnSimulatePrincipalPolicy: fnGenerateSimulator(tt.simulator)}}
 
-			credentials, err := convertLocalCredsToSession(ctx, tt.mockStsClient, tt.mockIamClient, checker, tt.roleARN)
+			credentials, err := convertLocalCredsToSession(ctx, tt.mockStsClient, tt.mockIamClient, checker, tt.roleARN, clusterName)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
