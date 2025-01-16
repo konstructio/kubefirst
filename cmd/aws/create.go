@@ -342,7 +342,7 @@ func createKubernetesAdminRole(ctx context.Context, clusterName string, iamClien
 	// Check if a role with this name already exists
 	role, err := iamClient.GetRole(ctx, &iam.GetRoleInput{RoleName: aws.String(roleName)})
 	if err != nil {
-		return "", fmt.Errorf("failed to get role %q: %w", roleName, err)
+		return "", fmt.Errorf("failed to get role %q: %w %T %#v", roleName, err, err, err)
 	}
 
 	if role.Role != nil {
