@@ -304,8 +304,7 @@ func createKubernetesAdminRole(ctx context.Context, clusterName string, iamClien
 	// Check if the IAM policy exists
 	cp, err := iamClient.GetPolicy(ctx, &iam.GetPolicyInput{PolicyArn: aws.String(fmt.Sprintf("arn:aws:iam::%s:policy/%s", *callerIdentity.Account, policyName))})
 	if err != nil {
-		var newError *awshttp.ResponseError
-		if errors.As(err, newError) && newError.HTTPStatusCode() == http.StatusNotFound {
+		if newError := (&awshttp.ResponseError{}); errors.As(err, newError) && newError.HTTPStatusCode() == http.StatusNotFound {
 			// Policy does not exist, continue
 		} else {
 			return "", fmt.Errorf("failed to get policy %q: %w", policyName, err)
@@ -353,8 +352,7 @@ func createKubernetesAdminRole(ctx context.Context, clusterName string, iamClien
 	// Check if a role with this name already exists
 	role, err := iamClient.GetRole(ctx, &iam.GetRoleInput{RoleName: aws.String(roleName)})
 	if err != nil {
-		var newError *awshttp.ResponseError
-		if errors.As(err, newError) && newError.HTTPStatusCode() == http.StatusNotFound {
+		if newError := (&awshttp.ResponseError{}); errors.As(err, newError) && newError.HTTPStatusCode() == http.StatusNotFound {
 			// Role does not exist, continue
 		} else {
 			return "", fmt.Errorf("failed to get role %q: %w", roleName, err)
