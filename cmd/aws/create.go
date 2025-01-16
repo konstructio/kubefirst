@@ -218,7 +218,7 @@ type iamClienter interface {
 	GetPolicy(ctx context.Context, params *iam.GetPolicyInput, optFns ...func(*iam.Options)) (*iam.GetPolicyOutput, error)
 }
 
-func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamClient iamClienter, checker *internalaws.Checker, roleArn, clusterName string) (*types.Credentials, error) {
+func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamClient *iam.Client, checker *internalaws.Checker, roleArn, clusterName string) (*types.Credentials, error) {
 	// Check who we are currently (to ensure you're properly authenticated)
 	callerIdentity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
@@ -242,6 +242,16 @@ func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamC
 	}
 	if !canCreateCluster {
 		return nil, fmt.Errorf("role %q does not have permission to create EKS clusters; required permissions: %s", roleArn, wantedPermissions)
+	}
+
+	// Check if the currently provided role can perform EKS cluster creation
+	// with all the sub-requirements to actually make a cluster.
+	canCreateCluster, err = checker.CanRoleDoAction(ctx, *callerIdentity.Arn, []string{"iam:AssumeRole"})
+	if err != nil {
+		return nil, fmt.Errorf("failed to check if user %q can assume role: %w", roleArn, err)
+	}
+	if !canCreateCluster {
+		return nil, fmt.Errorf("user %q does not have permission to assume roles", roleArn)
 	}
 
 	// Create a session name (some unique identifier)
