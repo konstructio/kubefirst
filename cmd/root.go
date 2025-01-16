@@ -11,6 +11,7 @@ import (
 
 	"github.com/konstructio/kubefirst-api/pkg/configs"
 	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
+	"github.com/konstructio/kubefirst/cmd/akamai"
 	"github.com/konstructio/kubefirst/cmd/aws"
 	"github.com/konstructio/kubefirst/cmd/azure"
 	"github.com/konstructio/kubefirst/cmd/civo"
@@ -71,6 +72,7 @@ func init() {
 		k3d.LocalCommandAlias(),
 		google.NewCommand(),
 		vultr.NewCommand(),
+		akamai.NewCommand(),
 		GenerateCommand(),
 		LaunchCommand(),
 		LetsEncryptCommand(),
