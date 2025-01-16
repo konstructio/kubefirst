@@ -71,7 +71,7 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to perform aws checks: %w", err)
 	}
 
-	creds, err := convertLocalCredsToSession(ctx, stsClient, iamClient, checker, cliFlags.KubeAdminRoleARN)
+	creds, err := convertLocalCredsToSession(ctx, stsClient, iamClient, checker, cliFlags.KubeAdminRoleARN, cliFlags.ClusterName)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
@@ -212,9 +212,11 @@ type iamClienter interface {
 	CreatePolicy(ctx context.Context, params *iam.CreatePolicyInput, optFns ...func(*iam.Options)) (*iam.CreatePolicyOutput, error)
 	CreateRole(ctx context.Context, params *iam.CreateRoleInput, optFns ...func(*iam.Options)) (*iam.CreateRoleOutput, error)
 	AttachRolePolicy(ctx context.Context, params *iam.AttachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.AttachRolePolicyOutput, error)
+	GetRole(ctx context.Context, params *iam.GetRoleInput, optFns ...func(*iam.Options)) (*iam.GetRoleOutput, error)
+	GetPolicy(ctx context.Context, params *iam.GetPolicyInput, optFns ...func(*iam.Options)) (*iam.GetPolicyOutput, error)
 }
 
-func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamClient iamClienter, checker *internalaws.Checker, roleArn string) (*types.Credentials, error) {
+func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamClient iamClienter, checker *internalaws.Checker, roleArn, clusterName string) (*types.Credentials, error) {
 	// Check who we are currently (to ensure you're properly authenticated)
 	callerIdentity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
@@ -223,7 +225,7 @@ func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamC
 
 	// If ARN is empty, create a new role with kubernetes admin permissions
 	if roleArn == "" {
-		createdArn, err := createKubernetesAdminRole(ctx, iamClient, checker, callerIdentity)
+		createdArn, err := createKubernetesAdminRole(ctx, clusterName, iamClient, checker, callerIdentity)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create a new role for EKS clusters: %w", err)
 		}
@@ -267,14 +269,15 @@ var AdditionalRolePolicies = []string{
 	// "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
 }
 
-func createKubernetesAdminRole(ctx context.Context, iamClient iamClienter, checker *internalaws.Checker, callerIdentity *sts.GetCallerIdentityOutput) (string, error) {
+func createKubernetesAdminRole(ctx context.Context, clusterName string, iamClient iamClienter, checker *internalaws.Checker, callerIdentity *sts.GetCallerIdentityOutput) (string, error) {
 	// Verify that the current caller has permission to create IAM roles
-	canCreateRole, err := checker.CanRoleDoAction(ctx, aws.ToString(callerIdentity.Arn), []string{"iam:CreateRole"})
+	wantedRolePermissions := []string{"iam:CreateRole", "iam:AssumeRole", "iam:AttachRolePolicy"}
+	canPerformActions, err := checker.CanRoleDoAction(ctx, aws.ToString(callerIdentity.Arn), wantedRolePermissions)
 	if err != nil {
 		return "", fmt.Errorf("failed to check permission to create a new role: %w", err)
 	}
-	if !canCreateRole {
-		return "", fmt.Errorf("caller %q does not have permission to create IAM roles", aws.ToString(callerIdentity.Arn))
+	if !canPerformActions {
+		return "", fmt.Errorf("caller %q does not have the required permissions: %s", aws.ToString(callerIdentity.Arn), wantedRolePermissions)
 	}
 
 	// Build a custom policy that allows EKS operations
@@ -293,8 +296,16 @@ func createKubernetesAdminRole(ctx context.Context, iamClient iamClienter, check
 		return "", fmt.Errorf("failed to marshal permission policy JSON: %w", err)
 	}
 
+	// Policy name
+	policyName := fmt.Sprintf("KubefirstKubernetesAdminPolicy-%s", clusterName)
+
+	// Check if the IAM policy exists
+	cp, err := iamClient.GetPolicy(ctx, &iam.GetPolicyInput{PolicyArn: aws.String(fmt.Sprintf("arn:aws:iam::%s:policy/%s", *callerIdentity.Account, policyName))})
+	if err == nil && cp.Policy != nil {
+		return "", fmt.Errorf("policy %q already exists: please delete the policy and try again", policyName)
+	}
+
 	// Create the policy in IAM
-	policyName := "KubefirstKubernetesAdminPolicy"
 	cpo, err := iamClient.CreatePolicy(ctx, &iam.CreatePolicyInput{
 		PolicyName:     aws.String(policyName),
 		PolicyDocument: aws.String(string(permissionPolicyBytes)),
@@ -325,8 +336,20 @@ func createKubernetesAdminRole(ctx context.Context, iamClient iamClienter, check
 		return "", fmt.Errorf("failed to marshal trust policy JSON: %w", err)
 	}
 
+	// Check if the IAM role exists
+	roleName := fmt.Sprintf("KubefirstKubernetesAdminRole-%s", clusterName)
+
+	// Check if a role with this name already exists
+	role, err := iamClient.GetRole(ctx, &iam.GetRoleInput{RoleName: aws.String(roleName)})
+	if err != nil {
+		return "", fmt.Errorf("failed to get role %q: %w", roleName, err)
+	}
+
+	if role.Role != nil {
+		return "", fmt.Errorf("role %q already exists: please delete the role and try again", roleName)
+	}
+
 	// Create the IAM role
-	roleName := "KubefirstKubernetesAdmin"
 	createOut, err := iamClient.CreateRole(ctx, &iam.CreateRoleInput{
 		RoleName:                 aws.String(roleName),
 		AssumeRolePolicyDocument: aws.String(string(trustPolicyBytes)),
