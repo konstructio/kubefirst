@@ -11,7 +11,9 @@ import (
 	"os"
 
 	"github.com/konstructio/kubefirst-api/pkg/configs"
+	"github.com/konstructio/kubefirst/cmd/akamai"
 	"github.com/konstructio/kubefirst/cmd/aws"
+	"github.com/konstructio/kubefirst/cmd/azure"
 	"github.com/konstructio/kubefirst/cmd/civo"
 	"github.com/konstructio/kubefirst/cmd/digitalocean"
 	"github.com/konstructio/kubefirst/cmd/google"
@@ -45,12 +47,14 @@ func Execute() {
 	// Add subcommands
 	rootCmd.AddCommand(
 		aws.NewCommand(),
+		azure.NewCommand(),
 		civo.NewCommand(),
 		digitalocean.NewCommand(),
 		k3d.NewCommand(),
 		k3d.LocalCommandAlias(),
 		google.NewCommand(),
 		vultr.NewCommand(),
+		akamai.NewCommand(),
 		NewBetaCommands(),
 		NewLaunchCommand(),
 		NewLetsEncryptCommand(),
