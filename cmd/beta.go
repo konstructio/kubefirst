@@ -10,7 +10,6 @@ import (
 	"fmt"
 
 	"github.com/konstructio/kubefirst/cmd/akamai"
-	"github.com/konstructio/kubefirst/cmd/azure"
 	"github.com/konstructio/kubefirst/cmd/k3s"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
@@ -35,7 +34,6 @@ func init() {
 	cobra.OnInitialize()
 	betaCmd.AddCommand(
 		akamai.NewCommand(),
-		azure.NewCommand(),
 		k3s.NewCommand(),
 	)
 }

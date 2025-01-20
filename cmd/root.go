@@ -12,6 +12,7 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/configs"
 	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
 	"github.com/konstructio/kubefirst/cmd/aws"
+	"github.com/konstructio/kubefirst/cmd/azure"
 	"github.com/konstructio/kubefirst/cmd/civo"
 	"github.com/konstructio/kubefirst/cmd/digitalocean"
 	"github.com/konstructio/kubefirst/cmd/google"
@@ -63,6 +64,7 @@ func init() {
 	rootCmd.AddCommand(
 		betaCmd,
 		aws.NewCommand(),
+		azure.NewCommand(),
 		civo.NewCommand(),
 		digitalocean.NewCommand(),
 		k3d.NewCommand(),

@@ -28,11 +28,11 @@ var (
 func NewCommand() *cobra.Command {
 	azureCmd := &cobra.Command{
 		Use:   "azure",
-		Short: "kubefirst Azure installation",
-		Long:  "kubefirst azure",
+		Short: "Kubefirst Azure installation",
+		Long:  "Kubefirst Azure",
 		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about azure in kubefirst, run:")
-			fmt.Println("  kubefirst beta azure --help")
+			fmt.Println("  kubefirst azure --help")
 
 			if progress.Progress != nil {
 				progress.Progress.Quit()
