@@ -1,0 +1,9 @@
+apiVersion: v2
+description: "some-app example application"
+name: "some-app"
+type: application
+version: 1.0.0
+dependencies:
+  - name: "some-app"
+    repository: http://chartmuseum.chartmuseum.svc.cluster.local:8080
+    version: 0.0.1-rc.awaiting-ci

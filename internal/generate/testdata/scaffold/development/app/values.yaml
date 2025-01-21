@@ -1,0 +1,29 @@
+# This is a generated file. These values may not correspond to your own chart's values
+
+"app":
+  annotations: |
+    linkerd.io/inject: "enabled"
+  labels: |
+    mirror.linkerd.io/exported: "true"
+  image:
+    repository: "<CONTAINER_REGISTRY_URL>/app"
+  imagePullSecrets:
+    - name: docker-config
+  ingress:
+    className: nginx
+    enabled: true
+    annotations:
+      <CERT_MANAGER_ISSUER_ANNOTATION_1>
+      <CERT_MANAGER_ISSUER_ANNOTATION_2>
+      <CERT_MANAGER_ISSUER_ANNOTATION_3>
+      <CERT_MANAGER_ISSUER_ANNOTATION_4>
+      nginx.ingress.kubernetes.io/service-upstream: "true"
+    hosts:
+      - host: "app-development.<DOMAIN_NAME>"
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: "app-tls"
+        hosts:
+          - "app-development.<DOMAIN_NAME>"
