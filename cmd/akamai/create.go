@@ -77,7 +77,10 @@ func createAkamai(cmd *cobra.Command, _ []string) error {
 	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
 
 	if !k3dClusterCreationComplete && !isK1Debug {
-		launch.Up(nil, true, cliFlags.UseTelemetry)
+		err = launch.Up(nil, true, cliFlags.UseTelemetry)
+		if err != nil {
+			return fmt.Errorf("failed to setup k3d cluster: %w", err)
+		}
 	}
 
 	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")

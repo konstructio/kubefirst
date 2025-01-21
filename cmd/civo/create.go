@@ -7,56 +7,61 @@ See the LICENSE file for more details.
 package civo
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
+	apiTypes "github.com/konstructio/kubefirst-api/pkg/types"
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
-	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/launch"
 	"github.com/konstructio/kubefirst/internal/provision"
+	"github.com/konstructio/kubefirst/internal/step"
+	"github.com/konstructio/kubefirst/internal/types"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-func createCivo(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "civo")
+type KubefirstCivoClient struct {
+	stepper  step.Stepper
+	cliFlags types.CliFlags
+}
+
+func (kc *KubefirstCivoClient) CreateCivoManagementCluster(ctx context.Context, catalogApps []apiTypes.GitopsCatalogApp) error {
+
+	initializeConfigStep := kc.stepper.NewStep("Initialize Config")
+
+	err := ValidateProvidedFlags(kc.cliFlags.GitProvider, kc.cliFlags.DNSProvider)
 	if err != nil {
-		return fmt.Errorf("failed to get CLI flags: %w", err)
+		wrerr := fmt.Errorf("failed to validate provided flags: %w", err)
+		initializeConfigStep.Complete(wrerr)
+		return wrerr
 	}
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
-	if !isValid {
-		return fmt.Errorf("catalog apps validation failed: %w", err)
-	}
+	utilities.CreateK1ClusterDirectory(kc.cliFlags.ClusterName)
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
+	gitAuth, err := gitShim.ValidateGitCredentials(kc.cliFlags.GitProvider, kc.cliFlags.GithubOrg, kc.cliFlags.GitlabGroup)
 	if err != nil {
-		return fmt.Errorf("failed to validate provided flags: %w", err)
+		wrerr := fmt.Errorf("failed to validate git credentials: %w", err)
+		initializeConfigStep.Complete(wrerr)
+		return wrerr
 	}
 
-	// If cluster setup is complete, return
-
-	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
-
-	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
-	if err != nil {
-		return fmt.Errorf("failed to validate git credentials: %w", err)
-	}
+	initializeConfigStep.Complete(nil)
+	validateGitStep := kc.stepper.NewStep("Setup Gitops Repository")
 
 	// Validate git
-	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider))
+	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", kc.cliFlags.GitProvider))
 	if !executionControl {
 		newRepositoryNames := []string{"gitops", "metaphor"}
 		newTeamNames := []string{"admins", "developers"}
 
 		initGitParameters := gitShim.GitInitParameters{
-			GitProvider:  cliFlags.GitProvider,
+			GitProvider:  kc.cliFlags.GitProvider,
 			GitToken:     gitAuth.Token,
 			GitOwner:     gitAuth.Owner,
 			Repositories: newRepositoryNames,
@@ -65,29 +70,50 @@ func createCivo(cmd *cobra.Command, _ []string) error {
 
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
-			return fmt.Errorf("failed to initialize Git provider: %w", err)
+			wrerr := fmt.Errorf("failed to initialize Git provider: %w", err)
+			validateGitStep.Complete(wrerr)
+			return wrerr
 		}
 	}
-	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider), true)
+	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", kc.cliFlags.GitProvider), true)
 	if err = viper.WriteConfig(); err != nil {
-		return fmt.Errorf("failed to write viper config: %w", err)
+		wrerr := fmt.Errorf("failed to write viper config: %w", err)
+		validateGitStep.Complete(wrerr)
+		return wrerr
 	}
+
+	validateGitStep.Complete(nil)
+	setupK3dClusterStep := kc.stepper.NewStep("Setup k3d Cluster")
 
 	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
 	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
 
 	if !k3dClusterCreationComplete && !isK1Debug {
-		launch.Up(nil, true, cliFlags.UseTelemetry)
+		err = launch.Up(nil, true, kc.cliFlags.UseTelemetry)
+		if err != nil {
+			wrerr := fmt.Errorf("failed to setup k3d cluster: %w", err)
+			setupK3dClusterStep.Complete(wrerr)
+			return wrerr
+		}
 	}
 
 	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")
 	if err != nil {
-		return fmt.Errorf("API availability check failed: %w", err)
+		wrerr := fmt.Errorf("API availability check failed: %w", err)
+		setupK3dClusterStep.Complete(wrerr)
+		return wrerr
 	}
 
-	if err := provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps); err != nil {
-		return fmt.Errorf("failed to create management cluster: %w", err)
+	setupK3dClusterStep.Complete(nil)
+	createMgmtClusterStep := kc.stepper.NewStep("Create Management Cluster")
+
+	if err := provision.CreateMgmtCluster(gitAuth, kc.cliFlags, catalogApps); err != nil {
+		wrerr := fmt.Errorf("failed to create management cluster: %w", err)
+		createMgmtClusterStep.Complete(wrerr)
+		return wrerr
 	}
+
+	createMgmtClusterStep.Complete(nil)
 
 	return nil
 }

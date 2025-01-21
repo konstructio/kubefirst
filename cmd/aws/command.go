@@ -10,7 +10,10 @@ import (
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
+	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/common"
+	"github.com/konstructio/kubefirst/internal/step"
+	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
 
@@ -74,7 +77,31 @@ func Create() *cobra.Command {
 		Use:              "create",
 		Short:            "create the kubefirst platform running in aws",
 		TraverseChildren: true,
-		RunE:             createAws,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliFlags, err := utilities.GetFlags(cmd, "aws")
+			if err != nil {
+				return fmt.Errorf("failed to get flags: %w", err)
+			}
+
+			// TODO: Handle for non-bubbletea
+			// progress.DisplayLogHints(40)
+
+			isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+			if !isValid {
+				return fmt.Errorf("invalid catalog apps: %w", err)
+			}
+
+			ctx := cmd.Context()
+
+			k1Client := KubefirstAWSClient{
+				stepper:  step.NewStepFactory(cmd.ErrOrStderr()),
+				cliFlags: cliFlags,
+			}
+
+			return k1Client.CreateManagementCluster(ctx, catalogApps)
+		},
+		SilenceErrors: true,
+		SilenceUsage:  true,
 		// PreRun:           common.CheckDocker,
 	}
 

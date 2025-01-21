@@ -19,77 +19,85 @@ import (
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
+	apiTypes "github.com/konstructio/kubefirst-api/pkg/types"
 	pkg "github.com/konstructio/kubefirst-api/pkg/utils"
-	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/launch"
 	"github.com/konstructio/kubefirst/internal/provision"
+	"github.com/konstructio/kubefirst/internal/step"
+	"github.com/konstructio/kubefirst/internal/types"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-func createAws(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "aws")
+type KubefirstAWSClient struct {
+	stepper  step.Stepper
+	cliFlags types.CliFlags
+}
+
+func (c *KubefirstAWSClient) CreateManagementCluster(ctx context.Context, catalogApps []apiTypes.GitopsCatalogApp) error {
+
+	initializeConfigStep := c.stepper.NewStep("Initialize Config")
+
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(c.cliFlags.CloudRegion))
 	if err != nil {
-		return fmt.Errorf("failed to get flags: %w", err)
+		wrerr := fmt.Errorf("unable to load AWS SDK config: %w", err)
+		initializeConfigStep.Complete(wrerr)
+		return wrerr
 	}
 
-	// TODO: Handle for non-bubbletea
-	// progress.DisplayLogHints(40)
-
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
-	if !isValid {
-		return fmt.Errorf("invalid catalog apps: %w", err)
-	}
-
-	ctx := cmd.Context()
-
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cliFlags.CloudRegion))
+	err = ValidateProvidedFlags(ctx, cfg, c.cliFlags.GitProvider, c.cliFlags.AMIType, c.cliFlags.NodeType)
 	if err != nil {
-		return fmt.Errorf("unable to load AWS SDK config: %w", err)
+		wrerr := fmt.Errorf("failed to validate provided flags: %w", err)
+		initializeConfigStep.Complete(wrerr)
+		return wrerr
 	}
 
-	err = ValidateProvidedFlags(ctx, cfg, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
-	if err != nil {
-		return fmt.Errorf("failed to validate provided flags: %w", err)
-	}
-
-	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
+	utilities.CreateK1ClusterDirectory(c.cliFlags.ClusterName)
 
 	// If cluster setup is complete, return
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
-		err = fmt.Errorf("this cluster install process has already completed successfully")
-		return err
+		err = fmt.Errorf("this cluster install process has already completed successfully, no need to run again")
+		return initializeConfigStep.Complete(err)
 	}
 
 	creds, err := getSessionCredentials(ctx, cfg.Credentials)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
+		wrerr := fmt.Errorf("failed to retrieve AWS credentials: %w", err)
+		initializeConfigStep.Complete(wrerr)
+		return wrerr
 	}
 
 	viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyID)
 	viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKey)
 	viper.Set("kubefirst.state-store-creds.token", creds.SessionToken)
 	if err := viper.WriteConfig(); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
+		wrerr := fmt.Errorf("failed to write config: %w", err)
+		initializeConfigStep.Complete(wrerr)
+		return wrerr
 	}
 
-	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
+	initializeConfigStep.Complete(nil)
+
+	validateGitStep := c.stepper.NewStep("Setup Gitops Repository")
+
+	gitAuth, err := gitShim.ValidateGitCredentials(c.cliFlags.GitProvider, c.cliFlags.GithubOrg, c.cliFlags.GitlabGroup)
 	if err != nil {
-		return fmt.Errorf("failed to validate Git credentials: %w", err)
+		wrerr := fmt.Errorf("failed to validate Git credentials: %w", err)
+		validateGitStep.Complete(wrerr)
+		return wrerr
 	}
 
-	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider))
+	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", c.cliFlags.GitProvider))
 	if !executionControl {
 		newRepositoryNames := []string{"gitops", "metaphor"}
 		newTeamNames := []string{"admins", "developers"}
 
 		initGitParameters := gitShim.GitInitParameters{
-			GitProvider:  cliFlags.GitProvider,
+			GitProvider:  c.cliFlags.GitProvider,
 			GitToken:     gitAuth.Token,
 			GitOwner:     gitAuth.Owner,
 			Repositories: newRepositoryNames,
@@ -98,30 +106,52 @@ func createAws(cmd *cobra.Command, _ []string) error {
 
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
-			return fmt.Errorf("failed to initialize Git provider: %w", err)
+			wrerr := fmt.Errorf("failed to initialize Git provider: %w", err)
+			validateGitStep.Complete(wrerr)
+			return wrerr
 		}
 	}
 
-	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider), true)
+	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", c.cliFlags.GitProvider), true)
 	if err := viper.WriteConfig(); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
+		wrerr := fmt.Errorf("failed to write config: %w", err)
+		validateGitStep.Complete(wrerr)
+		return wrerr
 	}
+
+	validateGitStep.Complete(nil)
+	setupK3dClusterStep := c.stepper.NewStep("Setup k3d Cluster")
 
 	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
 	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
 
 	if !k3dClusterCreationComplete && !isK1Debug {
-		launch.Up(nil, true, cliFlags.UseTelemetry)
+		err = launch.Up(nil, true, c.cliFlags.UseTelemetry)
+
+		if err != nil {
+			wrerr := fmt.Errorf("failed to setup k3d cluster: %w", err)
+			setupK3dClusterStep.Complete(wrerr)
+			return wrerr
+		}
 	}
 
 	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")
 	if err != nil {
-		return fmt.Errorf("failed to check kubefirst API availability: %w", err)
+		wrerr := fmt.Errorf("failed to check kubefirst api health: %w", err)
+		setupK3dClusterStep.Complete(wrerr)
+		return wrerr
 	}
 
-	if err := provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps); err != nil {
-		return fmt.Errorf("failed to create management cluster: %w", err)
+	setupK3dClusterStep.Complete(nil)
+	createMgmtClusterStep := c.stepper.NewStep("Create Management Cluster")
+
+	if err := provision.CreateMgmtCluster(gitAuth, c.cliFlags, catalogApps); err != nil {
+		wrerr := fmt.Errorf("failed to create management cluster: %w", err)
+		createMgmtClusterStep.Complete(wrerr)
+		return wrerr
 	}
+
+	createMgmtClusterStep.Complete(nil)
 
 	return nil
 }

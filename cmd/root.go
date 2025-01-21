@@ -71,7 +71,7 @@ func Execute() {
 	// Before removing next line, please read ticket above.
 	common.CheckForVersionUpdate()
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error occurred during command execution: %v\n", err)
+		fmt.Fprintln(os.Stderr, "\n\nError occurred during command execution")
 		fmt.Fprintln(os.Stderr, "If a detailed error message was available, please make the necessary corrections before retrying.")
 		fmt.Fprintln(os.Stderr, "You can re-run the last command to try the operation again.")
 
