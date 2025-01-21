@@ -63,6 +63,7 @@ func Execute() {
 		NewLogsCommand(),
 		NewResetCommand(),
 		NewVersionCommand(),
+		GenerateCommand(),
 	)
 
 	// This will allow all child commands to have informUser available for free.
