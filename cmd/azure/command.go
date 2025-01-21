@@ -31,15 +31,7 @@ func NewCommand() *cobra.Command {
 		Long:  "Kubefirst Azure",
 		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about azure in kubefirst, run:")
-<<<<<<< HEAD
 			fmt.Println("  kubefirst beta azure --help")
-=======
-			fmt.Println("  kubefirst azure --help")
-
-			if progress.Progress != nil {
-				progress.Progress.Quit()
-			}
->>>>>>> f595bb9 (feat(azure): promote azure to general availability (#2367))
 		},
 	}
 
