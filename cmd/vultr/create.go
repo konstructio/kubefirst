@@ -18,7 +18,6 @@ import (
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/launch"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/rs/zerolog/log"
@@ -29,11 +28,11 @@ import (
 func createVultr(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "vultr")
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to get flags: %w", err)
 	}
 
-	progress.DisplayLogHints(15)
+	// TODO: Handle for non-bubbletea
+	// progress.DisplayLogHints(15)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if err != nil {
@@ -46,22 +45,19 @@ func createVultr(cmd *cobra.Command, _ []string) error {
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("invalid provided flags: %w", err)
 	}
 
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
-		err = fmt.Errorf("this cluster install process has already completed successfully")
-		progress.Error(err.Error())
-		return nil
+		err = fmt.Errorf("cluster install process has already completed successfully")
+		return err
 	}
 
 	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate git credentials: %w", err)
 	}
 
@@ -80,7 +76,6 @@ func createVultr(cmd *cobra.Command, _ []string) error {
 
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
-			progress.Error(err.Error())
 			return fmt.Errorf("failed to initialize git provider: %w", err)
 		}
 	}
@@ -98,12 +93,10 @@ func createVultr(cmd *cobra.Command, _ []string) error {
 
 	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")
 	if err != nil {
-		progress.Error("unable to start kubefirst api")
 		return fmt.Errorf("kubefirst api availability check failed: %w", err)
 	}
 
 	if err := provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps); err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to create management cluster: %w", err)
 	}
 
@@ -111,7 +104,9 @@ func createVultr(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
-	progress.AddStep("Validate provided flags")
+
+	//TODO Handle for non-bubbletea
+	// progress.AddStep("Validating provided flags")
 
 	if os.Getenv("VULTR_API_KEY") == "" {
 		return fmt.Errorf("your VULTR_API_KEY variable is unset - please set it before continuing")
@@ -138,6 +133,8 @@ func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
-	progress.CompleteStep("Validate provided flags")
+	// TODO: Handle for non-bubbletea
+	// progress.CompleteStep("Validating provided flags")
+
 	return nil
 }

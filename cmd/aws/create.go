@@ -24,7 +24,6 @@ import (
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/launch"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/rs/zerolog/log"
@@ -35,11 +34,11 @@ import (
 func createAws(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "aws")
 	if err != nil {
-		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to get flags: %w", err)
 	}
 
-	progress.DisplayLogHints(40)
+	// TODO: Handle for non-bubbletea
+	// progress.DisplayLogHints(40)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if !isValid {
@@ -55,7 +54,6 @@ func createAws(cmd *cobra.Command, _ []string) error {
 
 	err = ValidateProvidedFlags(ctx, cfg, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate provided flags: %w", err)
 	}
 
@@ -65,13 +63,11 @@ func createAws(cmd *cobra.Command, _ []string) error {
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
 		err = fmt.Errorf("this cluster install process has already completed successfully")
-		progress.Error(err.Error())
-		return nil
+		return err
 	}
 
 	creds, err := getSessionCredentials(ctx, cfg.Credentials)
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
 	}
 
@@ -84,7 +80,6 @@ func createAws(cmd *cobra.Command, _ []string) error {
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate Git credentials: %w", err)
 	}
 
@@ -103,7 +98,6 @@ func createAws(cmd *cobra.Command, _ []string) error {
 
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
-			progress.Error(err.Error())
 			return fmt.Errorf("failed to initialize Git provider: %w", err)
 		}
 	}
@@ -122,12 +116,10 @@ func createAws(cmd *cobra.Command, _ []string) error {
 
 	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")
 	if err != nil {
-		progress.Error("unable to start kubefirst api")
 		return fmt.Errorf("failed to check kubefirst API availability: %w", err)
 	}
 
 	if err := provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps); err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to create management cluster: %w", err)
 	}
 
@@ -135,7 +127,9 @@ func createAws(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, amiType, nodeType string) error {
-	progress.AddStep("Validate provided flags")
+
+	// TODO: Handle for non-bubbletea
+	// progress.AddStep("Validate provided flags")
 
 	// Validate required environment variables for dns provider
 	if dnsProviderFlag == "cloudflare" {
@@ -164,11 +158,11 @@ func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, ami
 	paginator := ec2.NewDescribeInstanceTypesPaginator(ec2Client, &ec2.DescribeInstanceTypesInput{})
 
 	if err := validateAMIType(ctx, amiType, nodeType, ssmClient, ec2Client, paginator); err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate ami type for node group: %w", err)
 	}
 
-	progress.CompleteStep("Validate provided flags")
+	// TODO: Handle for non-bubbletea
+	// progress.CompleteStep("Validate provided flags")
 
 	return nil
 }

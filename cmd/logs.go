@@ -8,43 +8,41 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"time"
 
-	"github.com/konstructio/kubefirst/internal/progress"
-	"github.com/konstructio/kubefirst/internal/provisionLogs"
-	"github.com/nxadm/tail"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-// infoCmd represents the info command
-var logsCmd = &cobra.Command{
-	Use:   "logs",
-	Short: "kubefirst real time logs",
-	Long:  `kubefirst real time logs`,
-	RunE: func(_ *cobra.Command, _ []string) error {
-		provisionLogs.InitializeProvisionLogsTerminal()
+func NewLogsCommand() *cobra.Command {
+	logsCmd := &cobra.Command{
+		Use:   "logs",
+		Short: "kubefirst real time logs",
+		Long:  `kubefirst real time logs`,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			fmt.Fprintln(os.Stderr, "### Now tailing kubefirst logs. Press Ctrl+C to stop. ###")
+			logPath := viper.GetString("k1-paths.log-file")
 
-		go func() {
-			t, err := tail.TailFile(viper.GetString("k1-paths.log-file"), tail.Config{Follow: true, ReOpen: true})
+			file, err := os.Open(logPath)
 			if err != nil {
-				fmt.Printf("Error tailing log file: %v\n", err)
-				progress.Progress.Quit()
-				return
+				return fmt.Errorf("failed to open log file: %w", err)
 			}
+			defer file.Close()
 
-			for line := range t.Lines {
-				provisionLogs.AddLog(line.Text)
+			for {
+				data := make([]byte, 1024)
+				n, err := file.Read(data)
+				if err == nil {
+					fmt.Fprint(os.Stdout, string(data[:n]))
+				} else if err != io.EOF {
+					return fmt.Errorf("error reading file: %w", err)
+				}
+
+				time.Sleep(100 * time.Millisecond)
 			}
-		}()
-
-		if _, err := provisionLogs.ProvisionLogs.Run(); err != nil {
-			return fmt.Errorf("failed to run provision logs: %w", err)
-		}
-
-		return nil
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(logsCmd)
+		},
+	}
+	return logsCmd
 }

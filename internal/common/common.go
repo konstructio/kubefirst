@@ -19,7 +19,6 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/providerConfigs"
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/launch"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -104,13 +103,13 @@ func versionCheck() (*CheckResponse, bool) {
 func GetRootCredentials(_ *cobra.Command, _ []string) error {
 	clusterName := viper.GetString("flags.cluster-name")
 
-	cluster, err := cluster.GetCluster(clusterName)
+	_, err := cluster.GetCluster(clusterName)
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to get cluster: %w", err)
 	}
 
-	progress.DisplayCredentials(cluster)
+	// TODO: Handle for non-bubbletea
+	//progress.DisplayCredentials(cluster)
 
 	return nil
 }
@@ -119,7 +118,6 @@ func Destroy(_ *cobra.Command, _ []string) error {
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
 	gitProtocol := viper.GetString("flags.git-protocol")
-	cloudProvider := viper.GetString("kubefirst.cloud-provider")
 
 	log.Info().Msg("destroying kubefirst platform")
 
@@ -134,7 +132,6 @@ func Destroy(_ *cobra.Command, _ []string) error {
 	case "gitlab":
 		cGitOwner = viper.GetString("flags.gitlab-owner")
 	default:
-		progress.Error("invalid git provider option")
 		return fmt.Errorf("invalid git provider: %q", gitProvider)
 	}
 
@@ -149,16 +146,17 @@ func Destroy(_ *cobra.Command, _ []string) error {
 		os.Getenv("CF_ORIGIN_CA_ISSUER_API_TOKEN"),
 	)
 	if err != nil {
-		progress.Error(fmt.Sprintf("failed to get config: %s", err))
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	progress.AddStep("Destroying k3d")
+	// TODO: Handle for non-bubbletea
+	// progress.AddStep("Destroying k3d")
 
 	launch.Down(true)
 
-	progress.CompleteStep("Destroying k3d")
-	progress.AddStep("Cleaning up environment")
+	// TODO: Handle for non-bubbletea
+	// progress.CompleteStep("Destroying k3d")
+	// progress.AddStep("Cleaning up environment")
 
 	log.Info().Msg("resetting `$HOME/.kubefirst` config")
 	viper.Set("argocd", "")
@@ -176,22 +174,22 @@ func Destroy(_ *cobra.Command, _ []string) error {
 
 	if _, err := os.Stat(config.K1Dir + "/kubeconfig"); !os.IsNotExist(err) {
 		if err := os.Remove(config.K1Dir + "/kubeconfig"); err != nil {
-			progress.Error(fmt.Sprintf("unable to delete %q folder, error: %s", config.K1Dir+"/kubeconfig", err))
 			return fmt.Errorf("unable to delete kubeconfig: %w", err)
 		}
 	}
 
-	progress.CompleteStep("Cleaning up environment")
+	//TODO: Handle for non-bubbletea
+	// progress.CompleteStep("Cleaning up environment")
 
-	successMessage := `
-###
-#### :tada: Success` + "`Your k3d kubefirst platform has been destroyed.`" + `
+	// 	successMessage := `
+	// ###
+	// #### :tada: Success` + "`Your k3d kubefirst platform has been destroyed.`" + `
 
-### :blue_book: To delete a management cluster please see documentation:
-https://kubefirst.konstruct.io/docs/` + cloudProvider + `/deprovision
-`
+	// ### :blue_book: To delete a management cluster please see documentation:
+	// https://kubefirst.konstruct.io/docs/` + cloudProvider + `/deprovision
+	// `
 
-	progress.Success(successMessage)
+	// 	progress.Success(successMessage)
 
 	return nil
 }

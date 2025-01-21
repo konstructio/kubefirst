@@ -17,7 +17,6 @@ import (
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/launch"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/rs/zerolog/log"
@@ -28,11 +27,8 @@ import (
 func createCivo(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "civo")
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to get CLI flags: %w", err)
 	}
-
-	progress.DisplayLogHints(15)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if !isValid {
@@ -41,7 +37,6 @@ func createCivo(cmd *cobra.Command, _ []string) error {
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate provided flags: %w", err)
 	}
 
@@ -51,7 +46,6 @@ func createCivo(cmd *cobra.Command, _ []string) error {
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate git credentials: %w", err)
 	}
 
@@ -71,7 +65,6 @@ func createCivo(cmd *cobra.Command, _ []string) error {
 
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
-			progress.Error(err.Error())
 			return fmt.Errorf("failed to initialize Git provider: %w", err)
 		}
 	}
@@ -89,12 +82,10 @@ func createCivo(cmd *cobra.Command, _ []string) error {
 
 	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")
 	if err != nil {
-		progress.Error("unable to start kubefirst api")
 		return fmt.Errorf("API availability check failed: %w", err)
 	}
 
 	if err := provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps); err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to create management cluster: %w", err)
 	}
 
@@ -102,7 +93,6 @@ func createCivo(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
-	progress.AddStep("Validate provided flags")
 
 	if os.Getenv("CIVO_TOKEN") == "" {
 		return fmt.Errorf("your CIVO_TOKEN is not set - please set and re-run your last command")
@@ -129,8 +119,6 @@ func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
 		}
 		log.Info().Msgf("gitlab.com %q", key.Type())
 	}
-
-	progress.CompleteStep("Validate provided flags")
 
 	return nil
 }

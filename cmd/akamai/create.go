@@ -17,7 +17,6 @@ import (
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/launch"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/rs/zerolog/log"
@@ -28,11 +27,11 @@ import (
 func createAkamai(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "akamai")
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to get flags: %w", err)
 	}
 
-	progress.DisplayLogHints(25)
+	//TODO: Handle for non-bubbletea
+	// progress.DisplayLogHints(25)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if !isValid {
@@ -41,7 +40,6 @@ func createAkamai(cmd *cobra.Command, _ []string) error {
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate flags: %w", err)
 	}
 
@@ -49,7 +47,6 @@ func createAkamai(cmd *cobra.Command, _ []string) error {
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate git credentials: %w", err)
 	}
 
@@ -68,7 +65,6 @@ func createAkamai(cmd *cobra.Command, _ []string) error {
 
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
-			progress.Error(err.Error())
 			return fmt.Errorf("failed to initialize git provider: %w", err)
 		}
 	}
@@ -86,12 +82,10 @@ func createAkamai(cmd *cobra.Command, _ []string) error {
 
 	err = pkg.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")
 	if err != nil {
-		progress.Error("unable to start kubefirst api")
 		return fmt.Errorf("failed to check kubefirst api availability: %w", err)
 	}
 
 	if err := provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps); err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to create management cluster: %w", err)
 	}
 
@@ -99,7 +93,9 @@ func createAkamai(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
-	progress.AddStep("Validate provided flags")
+
+	// TODO: Handle for non-bubbletea
+	// progress.AddStep("Validate provided flags")
 
 	if os.Getenv("LINODE_TOKEN") == "" {
 		return fmt.Errorf("your LINODE_TOKEN is not set - please set and re-run your last command")
@@ -126,7 +122,8 @@ func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
-	progress.CompleteStep("Validate provided flags")
+	// TODO: Handle for non-bubbletea
+	// progress.CompleteStep("Validate provided flags")
 
 	return nil
 }

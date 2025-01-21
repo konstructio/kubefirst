@@ -17,7 +17,6 @@ import (
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/launch"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/rs/zerolog/log"
@@ -39,38 +38,34 @@ var envvarSecrets = []string{
 func createAzure(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "azure")
 	if err != nil {
-		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to get flags: %w", err)
 	}
 
-	progress.DisplayLogHints(20)
+	// TODO: Handle for non-bubbletea
+	// progress.DisplayLogHints(20)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if !isValid {
-		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to validate catalog apps")
 	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
-		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to validate flags: %w", err)
 	}
 
 	// If cluster setup is complete, return
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
 		err = fmt.Errorf("this cluster install process has already completed successfully")
-		progress.Error(err.Error())
-		return nil
+		return err
 	}
 
 	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
-		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to validate git credentials: %w", err)
 	}
 
 	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider))
@@ -87,8 +82,7 @@ func createAzure(cmd *cobra.Command, _ []string) error {
 		}
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
-			progress.Error(err.Error())
-			return nil
+			return fmt.Errorf("failed to initialize git provider: %w", err)
 		}
 	}
 
@@ -104,7 +98,7 @@ func createAzure(cmd *cobra.Command, _ []string) error {
 
 	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")
 	if err != nil {
-		progress.Error("unable to start kubefirst api")
+		return fmt.Errorf("unable to start kubefirst api, error: %w", err)
 	}
 
 	provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps)
@@ -113,7 +107,9 @@ func createAzure(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(gitProvider string) error {
-	progress.AddStep("Validate provided flags")
+
+	// TODO: Handle for non-bubbletea
+	// progress.AddStep("Validate provided flags")
 
 	for _, env := range envvarSecrets {
 		if os.Getenv(env) == "" {
@@ -138,7 +134,8 @@ func ValidateProvidedFlags(gitProvider string) error {
 		}
 	}
 
-	progress.CompleteStep("Validate provided flags")
+	// TODO: Handle for non-bubbletea
+	// progress.CompleteStep("Validate provided flags")
 
 	return nil
 }

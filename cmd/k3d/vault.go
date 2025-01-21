@@ -17,7 +17,6 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/k3d"
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -111,8 +110,6 @@ func unsealVault(_ *cobra.Command, _ []string) error {
 	} else {
 		return fmt.Errorf("failed to unseal vault: vault is already unsealed")
 	}
-
-	progress.Progress.Quit()
 
 	return nil
 }

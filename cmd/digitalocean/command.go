@@ -11,7 +11,6 @@ import (
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -31,10 +30,6 @@ func NewCommand() *cobra.Command {
 		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about DigitalOcean in Kubefirst, run:")
 			fmt.Println("  kubefirst digitalocean --help")
-
-			if progress.Progress != nil {
-				progress.Progress.Quit()
-			}
 		},
 	}
 

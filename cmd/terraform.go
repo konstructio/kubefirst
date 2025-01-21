@@ -10,7 +10,6 @@ import (
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/vault"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +19,7 @@ var (
 	outputFileFlag string
 )
 
-func TerraformCommand() *cobra.Command {
+func NewTerraformCommand() *cobra.Command {
 	terraformCommand := &cobra.Command{
 		Use:   "terraform",
 		Short: "interact with terraform",
@@ -40,25 +39,27 @@ func terraformSetEnv() *cobra.Command {
 		Use:              "set-env",
 		Short:            "retrieve data from a target vault secret and format it for use in the local shell via environment variables",
 		TraverseChildren: true,
-		Run: func(_ *cobra.Command, _ []string) {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			v := vault.Configuration{
 				Config: vault.NewVault(),
 			}
 
 			err := v.IterSecrets(vaultURLFlag, vaultTokenFlag, outputFileFlag)
 			if err != nil {
-				progress.Error(fmt.Sprintf("error during vault read: %s", err))
-				return
+				return fmt.Errorf("error during vault read: %w", err)
 			}
 
-			message := `
-##
-### Generated env file at` + fmt.Sprintf("`%s`", outputFileFlag) + `
+			//TODO: Handle for non-bubbletea
+			// 			message := `
+			// ##
+			// ### Generated env file at` + fmt.Sprintf("`%s`", outputFileFlag) + `
 
-:bulb: Run` + fmt.Sprintf("`source %s`", outputFileFlag) + ` to set environment variables
+			// :bulb: Run` + fmt.Sprintf("`source %s`", outputFileFlag) + ` to set environment variables
 
-`
-			progress.Success(message)
+			// `
+			// 			progress.Success(message)
+
+			return nil
 		},
 	}
 

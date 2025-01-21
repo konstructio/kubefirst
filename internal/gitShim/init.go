@@ -17,7 +17,6 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/handlers"
 	"github.com/konstructio/kubefirst-api/pkg/services"
 	"github.com/konstructio/kubefirst-api/pkg/types"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
@@ -32,13 +31,6 @@ type GitInitParameters struct {
 
 // InitializeGitProvider
 func InitializeGitProvider(p *GitInitParameters) error {
-	cloudProvider := viper.Get("kubefirst.cloud-provider")
-	showProgress := cloudProvider != "k3d"
-
-	if showProgress {
-		progress.AddStep("Validate git environment")
-	}
-
 	switch p.GitProvider {
 	case "github":
 		githubSession := github.New(p.GitToken)
@@ -115,15 +107,14 @@ func InitializeGitProvider(p *GitInitParameters) error {
 		}
 	}
 
-	if showProgress {
-		progress.CompleteStep("Validate git environment")
-	}
-
 	return nil
 }
 
 func ValidateGitCredentials(gitProviderFlag, githubOrgFlag, gitlabGroupFlag string) (types.GitAuth, error) {
-	progress.AddStep("Validate git credentials")
+
+	// TODO: Handle for non-bubbletea
+	// progress.AddStep("Validate git credentials")
+
 	gitAuth := types.GitAuth{}
 
 	switch gitProviderFlag {
@@ -203,7 +194,8 @@ func ValidateGitCredentials(gitProviderFlag, githubOrgFlag, gitlabGroupFlag stri
 		return gitAuth, fmt.Errorf("invalid git provider: %q", gitProviderFlag)
 	}
 
-	progress.CompleteStep("Validate git credentials")
+	// TODO: Handle for non-bubbletea
+	// progress.CompleteStep("Validate git credentials")
 
 	return gitAuth, nil
 }

@@ -17,7 +17,6 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/configs"
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
 	apiTypes "github.com/konstructio/kubefirst-api/pkg/types"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/types"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -136,7 +135,7 @@ func CreateClusterRecordFromRaw(
 	return cl
 }
 
-func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags types.CliFlags, catalogApps []apiTypes.GitopsCatalogApp) apiTypes.ClusterDefinition {
+func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags types.CliFlags, catalogApps []apiTypes.GitopsCatalogApp) (*apiTypes.ClusterDefinition, error) {
 	cloudProvider := viper.GetString("kubefirst.cloud-provider")
 	domainName := viper.GetString("flags.domain-name")
 	gitProvider := viper.GetString("flags.git-provider")
@@ -224,22 +223,20 @@ func CreateClusterDefinitionRecordFromRaw(gitAuth apiTypes.GitAuth, cliFlags typ
 
 		jsonFile, err := os.Open(jsonFilePath)
 		if err != nil {
-			progress.Error(fmt.Sprintf("unable to read GOOGLE_APPLICATION_CREDENTIALS file: %s", err))
-			return apiTypes.ClusterDefinition{}
+			return nil, fmt.Errorf("unable to read GOOGLE_APPLICATION_CREDENTIALS file: %w", err)
 		}
 		defer jsonFile.Close()
 
 		jsonContent, err := io.ReadAll(jsonFile)
 		if err != nil {
-			progress.Error(fmt.Sprintf("unable to read GOOGLE_APPLICATION_CREDENTIALS file content: %s", err))
-			return apiTypes.ClusterDefinition{}
+			return nil, fmt.Errorf("unable to read GOOGLE_APPLICATION_CREDENTIALS file content: %w", err)
 		}
 
 		cl.GoogleAuth.KeyFile = string(jsonContent)
 		cl.GoogleAuth.ProjectID = cliFlags.GoogleProject
 	}
 
-	return cl
+	return &cl, nil
 }
 
 func ExportCluster(cluster apiTypes.Cluster, kcfg *k8s.KubernetesClient) error {

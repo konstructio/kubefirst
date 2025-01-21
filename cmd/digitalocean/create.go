@@ -18,7 +18,6 @@ import (
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/launch"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/rs/zerolog/log"
@@ -29,11 +28,11 @@ import (
 func createDigitalocean(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "digitalocean")
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to get CLI flags: %w", err)
 	}
 
-	progress.DisplayLogHints(20)
+	// TODO: Handle for non-bubbletea
+	// progress.DisplayLogHints(20)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if err != nil {
@@ -46,15 +45,13 @@ func createDigitalocean(cmd *cobra.Command, _ []string) error {
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate provided flags: %w", err)
 	}
 
 	// If cluster setup is complete, return
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
-		err = fmt.Errorf("this cluster install process has already completed successfully")
-		progress.Error(err.Error())
+		err = fmt.Errorf("cluster install process has already completed successfully")
 		return err
 	}
 
@@ -62,7 +59,6 @@ func createDigitalocean(cmd *cobra.Command, _ []string) error {
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate git credentials: %w", err)
 	}
 
@@ -82,7 +78,6 @@ func createDigitalocean(cmd *cobra.Command, _ []string) error {
 
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
-			progress.Error(err.Error())
 			return fmt.Errorf("failed to initialize git provider: %w", err)
 		}
 	}
@@ -98,12 +93,10 @@ func createDigitalocean(cmd *cobra.Command, _ []string) error {
 
 	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")
 	if err != nil {
-		progress.Error("unable to start kubefirst api")
 		return fmt.Errorf("failed to check app availability for Kubefirst API: %w", err)
 	}
 
 	if err := provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps); err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to create management cluster: %w", err)
 	}
 
@@ -111,7 +104,6 @@ func createDigitalocean(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
-	progress.AddStep("Validate provided flags")
 
 	// Validate required environment variables for dns provider
 	if dnsProvider == "cloudflare" {
@@ -140,8 +132,6 @@ func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
 		}
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
-
-	progress.CompleteStep("Validate provided flags")
 
 	return nil
 }
