@@ -54,7 +54,6 @@ func Execute() {
 		k3d.LocalCommandAlias(),
 		google.NewCommand(),
 		vultr.NewCommand(),
-<<<<<<< HEAD
 		akamai.NewCommand(),
 		NewBetaCommands(),
 		NewLaunchCommand(),
@@ -64,12 +63,6 @@ func Execute() {
 		NewLogsCommand(),
 		NewResetCommand(),
 		NewVersionCommand(),
-=======
-		GenerateCommand(),
-		LaunchCommand(),
-		LetsEncryptCommand(),
-		TerraformCommand(),
->>>>>>> c1ee027 (Generate app scaffold from CLI (#2364))
 	)
 
 	// This will allow all child commands to have informUser available for free.
