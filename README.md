@@ -33,16 +33,16 @@ Each of our platforms have install guides that detail the prerequesites, command
 
 - [k3d (local)](https://kubefirst.konstruct.io/docs/k3d/overview)
 - [AWS](https://kubefirst.konstruct.io/docs/aws/overview)
+- [Azure](https://docs.kubefirst.io/azure/overview)
 - [Civo](https://kubefirst.konstruct.io/docs/civo/overview)
 - [DigitalOcean](https://kubefirst.konstruct.io/docs/do/overview)
+- [Google Cloud](https://kubefirst.konstruct.io/docs/gcp/overview)
+- [Vultr](https://kubefirst.konstruct.io/docs/vultr/overview)
 
 In beta:
 
 - [Akamai](https://docs.kubefirst.io/akamai/overview)
-- [Azure](https://docs.kubefirst.io/azure/overview)
-- [Google Cloud](https://kubefirst.konstruct.io/docs/gcp/overview)
 - [K3s](https://kubefirst.konstruct.io/docs/k3s/overview)
-- [Vultr](https://kubefirst.konstruct.io/docs/vultr/overview)
 
 ## Overview
 
