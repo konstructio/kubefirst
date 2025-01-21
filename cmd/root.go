@@ -71,6 +71,7 @@ func init() {
 		k3d.LocalCommandAlias(),
 		google.NewCommand(),
 		vultr.NewCommand(),
+		GenerateCommand(),
 		LaunchCommand(),
 		LetsEncryptCommand(),
 		TerraformCommand(),
