@@ -9,7 +9,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/konstructio/kubefirst/cmd/akamai"
 	"github.com/konstructio/kubefirst/cmd/k3s"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
@@ -33,7 +32,6 @@ var betaCmd = &cobra.Command{
 func init() {
 	cobra.OnInitialize()
 	betaCmd.AddCommand(
-		akamai.NewCommand(),
 		k3s.NewCommand(),
 	)
 }
