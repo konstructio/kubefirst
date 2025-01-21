@@ -1,0 +1,9 @@
+apiVersion: v2
+description: "{{ .Description }}"
+name: "{{ .AppName }}"
+type: application
+version: 1.0.0
+dependencies:
+  - name: "{{ .AppName }}"
+    repository: http://chartmuseum.chartmuseum.svc.cluster.local:8080
+    version: 0.0.1-rc.awaiting-ci
