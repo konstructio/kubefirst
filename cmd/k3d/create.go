@@ -64,7 +64,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to get ci flag: %w", err)
 	}
 
-	cliFlags, err := utilities.GetFlags(cmd, "k3d")
+	cliFlags, err := utilities.GetFlags(cmd, utilities.CloudProviderK3d)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to get flags: %w", err)
@@ -73,13 +73,9 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
 	utils.DisplayLogHints()
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if err != nil {
 		return fmt.Errorf("failed to validate catalog apps: %w", err)
-	}
-
-	if !isValid {
-		return errors.New("catalog apps validation failed")
 	}
 
 	switch cliFlags.GitProvider {

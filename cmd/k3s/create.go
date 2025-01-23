@@ -29,7 +29,7 @@ import (
 )
 
 func createK3s(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "k3s")
+	cliFlags, err := utilities.GetFlags(cmd, utilities.CloudProviderK3s)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("error collecting flags: %w", err)
@@ -37,13 +37,9 @@ func createK3s(cmd *cobra.Command, _ []string) error {
 
 	progress.DisplayLogHints(20)
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if err != nil {
-		return fmt.Errorf("validation of catalog apps failed: %w", err)
-	}
-
-	if !isValid {
-		return errors.New("catalog validation failed")
+		return fmt.Errorf("failed to validate catalog apps: %w", err)
 	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
