@@ -17,10 +17,8 @@ import (
 	gitlab "github.com/konstructio/kubefirst-api/pkg/gitlab"
 	"github.com/konstructio/kubefirst-api/pkg/k3d"
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
-	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
 	"github.com/konstructio/kubefirst-api/pkg/terraform"
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -35,16 +33,17 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 
 	if clusterName == "" {
 		fmt.Printf("Your kubefirst platform running has been already destroyed.")
-		progress.Progress.Quit()
+		return nil
 	}
 
 	if err := k8s.CheckForExistingPortForwards(9000); err != nil {
 		return fmt.Errorf("%w - this port is required to tear down your kubefirst environment - please close any existing port forwards before continuing", err)
 	}
 
-	progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
-	progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 2)
-	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
+	// TODO: Handle for non-bubbletea
+	// progressPrinter.AddTracker("preflight-checks", "Running preflight checks", 1)
+	// progressPrinter.AddTracker("platform-destroy", "Destroying your kubefirst platform", 2)
+	// progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	log.Info().Msg("destroying kubefirst platform running in k3d")
 
@@ -98,7 +97,8 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 		k8s.OpenPortForwardPodWrapper(kcfg.Clientset, kcfg.RestConfig, "minio", "minio", 9000, 9000, minioStopChannel)
 	}
 
-	progressPrinter.IncrementTracker("preflight-checks")
+	// TODO: Handle for non-bubbletea
+	// progressPrinter.IncrementTracker("preflight-checks")
 
 	switch gitProvider {
 	case "github":
@@ -124,7 +124,9 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 			viper.Set("kubefirst-checks.terraform-apply-github", false)
 			viper.WriteConfig()
 			log.Info().Msg("github resources terraform destroyed")
-			progressPrinter.IncrementTracker("platform-destroy")
+
+			// TODO: Handle for non-bubbletea
+			// progressPrinter.IncrementTracker("preflight-checks")
 		}
 	case "gitlab":
 		if viper.GetBool("kubefirst-checks.terraform-apply-gitlab") {
@@ -176,7 +178,9 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 			viper.Set("kubefirst-checks.terraform-apply-gitlab", false)
 			viper.WriteConfig()
 			log.Info().Msg("gitlab resources terraform destroyed")
-			progressPrinter.IncrementTracker("platform-destroy")
+
+			// TODO: Handle for non-bubbletea
+			// progressPrinter.IncrementTracker("preflight-checks")
 		}
 	}
 
@@ -190,7 +194,9 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 		viper.Set("kubefirst-checks.create-k3d-cluster", false)
 		viper.WriteConfig()
 		log.Info().Msg("k3d resources terraform destroyed")
-		progressPrinter.IncrementTracker("platform-destroy")
+
+		// TODO: Handle for non-bubbletea
+		// progressPrinter.IncrementTracker("preflight-checks")
 	}
 
 	if viper.GetString("kbot.gitlab-user-based-ssh-key-title") != "" {
@@ -228,7 +234,6 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 	}
 	time.Sleep(200 * time.Millisecond)
 	fmt.Printf("Your kubefirst platform running in %q has been destroyed.", k3d.CloudProvider)
-	progress.Progress.Quit()
 
 	return nil
 }

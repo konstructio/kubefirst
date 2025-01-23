@@ -17,7 +17,6 @@ import (
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/launch"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/rs/zerolog/log"
@@ -29,11 +28,11 @@ import (
 func createGoogle(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, "google")
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to get flags: %w", err)
 	}
 
-	progress.DisplayLogHints(20)
+	// TODO: Handle for non-bubbletea
+	// progress.DisplayLogHints(20)
 
 	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if !isValid {
@@ -42,22 +41,19 @@ func createGoogle(cmd *cobra.Command, _ []string) error {
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider)
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("validation of provided flags failed: %w", err)
 	}
 
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
-		err = fmt.Errorf("this cluster install process has already completed successfully")
-		progress.Error(err.Error())
-		return fmt.Errorf("cluster setup is complete: %w", err)
+
+		return fmt.Errorf("cluster install process has already completed successfully")
 	}
 
 	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("git credentials validation failed: %w", err)
 	}
 
@@ -75,7 +71,6 @@ func createGoogle(cmd *cobra.Command, _ []string) error {
 		}
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
-			progress.Error(err.Error())
 			return fmt.Errorf("initialization of git provider failed: %w", err)
 		}
 	}
@@ -91,12 +86,10 @@ func createGoogle(cmd *cobra.Command, _ []string) error {
 
 	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")
 	if err != nil {
-		progress.Error("unable to start kubefirst api")
 		return fmt.Errorf("kubefirst api availability check failed: %w", err)
 	}
 
 	if err := provision.CreateMgmtCluster(gitAuth, cliFlags, catalogApps); err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to create management cluster: %w", err)
 	}
 
@@ -104,7 +97,9 @@ func createGoogle(cmd *cobra.Command, _ []string) error {
 }
 
 func ValidateProvidedFlags(gitProvider string) error {
-	progress.AddStep("Validate provided flags")
+
+	// TODO: Handle for non-bubbletea
+	// progress.AddStep("Validate provided flags")
 
 	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
 		return fmt.Errorf("your GOOGLE_APPLICATION_CREDENTIALS is not set - please set and re-run your last command")
@@ -112,7 +107,6 @@ func ValidateProvidedFlags(gitProvider string) error {
 
 	_, err := os.Open(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
 	if err != nil {
-		progress.Error("Unable to read GOOGLE_APPLICATION_CREDENTIALS file")
 		return fmt.Errorf("could not open GOOGLE_APPLICATION_CREDENTIALS file: %w", err)
 	}
 
@@ -131,7 +125,8 @@ func ValidateProvidedFlags(gitProvider string) error {
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
 
-	progress.CompleteStep("Validate provided flags")
+	// TODO: Handle for non-bubbletea
+	// progress.CompleteStep("Validate provided flags")
 
 	return nil
 }

@@ -10,14 +10,13 @@ import (
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/certificates"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
 // Certificate check
 var domainNameFlag string
 
-func LetsEncryptCommand() *cobra.Command {
+func NewLetsEncryptCommand() *cobra.Command {
 	letsEncryptCommand := &cobra.Command{
 		Use:   "letsencrypt",
 		Short: "interact with LetsEncrypt certificates for a domain",
@@ -35,11 +34,11 @@ func status() *cobra.Command {
 		Use:              "status",
 		Short:            "check the usage statistics for a LetsEncrypt certificate",
 		TraverseChildren: true,
-		Run: func(_ *cobra.Command, _ []string) {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			if err := certificates.CheckCertificateUsage(domainNameFlag); err != nil {
-				fmt.Printf("failed to check certificate usage for domain %q: %s\n", domainNameFlag, err)
+				return fmt.Errorf("failed to check certificate usage for domain %q: %w", domainNameFlag, err)
 			}
-			progress.Progress.Quit()
+			return nil
 		},
 	}
 

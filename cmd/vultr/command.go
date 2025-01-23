@@ -11,7 +11,6 @@ import (
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -32,9 +31,6 @@ func NewCommand() *cobra.Command {
 			fmt.Println("To learn more about Vultr in Kubefirst, run:")
 			fmt.Println("  kubefirst beta vultr --help")
 
-			if progress.Progress != nil {
-				progress.Progress.Quit()
-			}
 		},
 	}
 

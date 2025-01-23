@@ -11,7 +11,6 @@ import (
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -28,13 +27,11 @@ func NewCommand() *cobra.Command {
 		Use:   "akamai",
 		Short: "kubefirst akamai installation",
 		Long:  "kubefirst akamai",
-		Run: func(_ *cobra.Command, _ []string) {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			fmt.Println("To learn more about akamai in kubefirst, run:")
 			fmt.Println("  kubefirst beta akamai --help")
 
-			if progress.Progress != nil {
-				progress.Progress.Quit()
-			}
+			return nil
 		},
 	}
 

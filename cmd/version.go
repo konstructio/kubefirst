@@ -7,24 +7,22 @@ See the LICENSE file for more details.
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/konstructio/kubefirst-api/pkg/configs"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	rootCmd.AddCommand(versionCmd)
-}
+func NewVersionCommand() *cobra.Command {
+	versionCmd := &cobra.Command{
+		Use:   "version",
+		Short: "print the version number for kubefirst-cli",
+		Long:  `All software has versions. This is kubefirst's`,
+		Run: func(_ *cobra.Command, _ []string) {
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("### kubefirst-cli golang utility version: %q", configs.K1Version))
+		},
+	}
 
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "print the version number for kubefirst-cli",
-	Long:  `All software has versions. This is kubefirst's`,
-	Run: func(_ *cobra.Command, _ []string) {
-		versionMsg := `
-##
-### kubefirst-cli golang utility version: ` + configs.K1Version
-
-		progress.Success(versionMsg)
-	},
+	return versionCmd
 }

@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 
 	"github.com/konstructio/kubefirst/internal/generate"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -38,11 +37,11 @@ func generateApp() *cobra.Command {
 		TraverseChildren: true,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			if err := generate.AppScaffold(name, environments, outputPath); err != nil {
-				progress.Error(err.Error())
 				return fmt.Errorf("error scaffolding app: %w", err)
 			}
 
-			progress.Success(fmt.Sprintf("App successfully scaffolded: %s", name))
+			//TODO: Handle for non-bubbletea
+			// progress.Success(fmt.Sprintf("App successfully scaffolded: %s", name))
 			return nil
 		},
 	}

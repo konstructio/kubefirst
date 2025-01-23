@@ -16,7 +16,7 @@ import (
 // additionalHelmFlags can optionally pass user-supplied flags to helm
 var additionalHelmFlags []string
 
-func LaunchCommand() *cobra.Command {
+func NewLaunchCommand() *cobra.Command {
 	launchCommand := &cobra.Command{
 		Use:   "launch",
 		Short: "create a local k3d cluster and launch the Kubefirst console and API in it",

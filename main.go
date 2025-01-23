@@ -15,7 +15,6 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/configs"
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
 	"github.com/konstructio/kubefirst/cmd"
-	"github.com/konstructio/kubefirst/internal/progress"
 	zeroLog "github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -24,17 +23,6 @@ import (
 
 func main() {
 	argsWithProg := os.Args
-
-	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs"}
-	canRunBubbleTea := true
-
-	for _, arg := range argsWithProg {
-		isBlackListed := slices.Contains(bubbleTeaBlacklist, arg)
-
-		if isBlackListed {
-			canRunBubbleTea = false
-		}
-	}
 
 	config, err := configs.ReadConfig()
 	if err != nil {
@@ -133,15 +121,5 @@ func main() {
 		return
 	}
 
-	if canRunBubbleTea {
-		progress.InitializeProgressTerminal()
-
-		go func() {
-			cmd.Execute()
-		}()
-
-		progress.Progress.Run()
-	} else {
-		cmd.Execute()
-	}
+	cmd.Execute()
 }
