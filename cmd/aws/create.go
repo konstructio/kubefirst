@@ -15,6 +15,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
@@ -192,16 +193,14 @@ const (
 )
 
 var wantedPermissions = []string{
-	"eks:CreateCluster",
-	"eks:DescribeCluster",
-	// "cloudformation:CreateStack",
-	// "cloudformation:DescribeStacks",
-	"ec2:CreateSecurityGroup",
-	"ec2:AuthorizeSecurityGroupIngress",
-	"ec2:DescribeVpcs",
-	"ec2:DescribeSubnets",
-	"ec2:DescribeSecurityGroups",
-	"iam:PassRole",
+	"eks:*",
+	"ec2:*",
+	"s3:*",
+	"iam:*",
+	"dynamodb:*",
+	"kms:*",
+	"logs:*",
+	"application-autoscaling:*",
 }
 
 type stsClienter interface {
@@ -257,6 +256,8 @@ func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamC
 	// Create a session name (some unique identifier)
 	sessionName := fmt.Sprintf("kubefirst-session-%s", *callerIdentity.UserId)
 
+	time.Sleep(5 * time.Second)
+
 	// Assume the role
 	output, err := stsClient.AssumeRole(ctx, &sts.AssumeRoleInput{
 		RoleArn:         aws.String(roleArn),
@@ -267,7 +268,7 @@ func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamC
 		return nil, fmt.Errorf("failed to assume role %s: %w", roleArn, err)
 	}
 
-	// Return the credentials
+	// // Return the credentials
 	credentials := output.Credentials
 	return credentials, nil
 }
