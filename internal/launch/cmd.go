@@ -216,6 +216,21 @@ Kubefirst console has already been deployed. To start over, run` + "`" + `kubefi
 
 	progress.CompleteStep("Create k3d cluster")
 
+	if _, err := os.Stat(kubeconfigPath); os.IsNotExist(err) {
+		_, _, err := shell.ExecShellReturnStrings(
+			k3dClient,
+			"kubeconfig",
+			"get",
+			consoleClusterName,
+			"--output",
+			kubeconfigPath,
+		)
+		if err != nil {
+			progress.Error(fmt.Sprintf("error getting kubeconfig: %s", err))
+			return
+		}
+	}
+
 	// Establish Kubernetes client for console cluster
 	kcfg, err := k8s.CreateKubeConfig(false, kubeconfigPath)
 	if err != nil {
