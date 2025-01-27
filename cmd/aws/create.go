@@ -75,10 +75,10 @@ func createAws(cmd *cobra.Command, _ []string) error {
 	}
 
 	accessKeyID := viper.Get("kubefirst.state-store-creds.access-key-id")
-	secretAccessKeyId := viper.Get("kubefirst.state-store-creds.secret-access-key-id")
+	secretAccessKeyID := viper.Get("kubefirst.state-store-creds.secret-access-key-id")
 	sessionToken := viper.Get("kubefirst.state-store-creds.token")
 
-	if accessKeyID == nil || secretAccessKeyId == nil && sessionToken == nil {
+	if accessKeyID == nil || secretAccessKeyID == nil && sessionToken == nil {
 		creds, err := convertLocalCredsToSession(ctx, stsClient, iamClient, checker, cliFlags.KubeAdminRoleARN, cliFlags.ClusterName)
 		if err != nil {
 			progress.Error(err.Error())
