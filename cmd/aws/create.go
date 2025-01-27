@@ -74,11 +74,11 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to perform aws checks: %w", err)
 	}
 
-	accessKeyId := viper.Get("kubefirst.state-store-creds.access-key-id")
+	accessKeyID := viper.Get("kubefirst.state-store-creds.access-key-id")
 	secretAccessKeyId := viper.Get("kubefirst.state-store-creds.secret-access-key-id")
 	sessionToken := viper.Get("kubefirst.state-store-creds.token")
 
-	if accessKeyId == nil || secretAccessKeyId == nil && sessionToken == nil {
+	if accessKeyID == nil || secretAccessKeyId == nil && sessionToken == nil {
 		creds, err := convertLocalCredsToSession(ctx, stsClient, iamClient, checker, cliFlags.KubeAdminRoleARN, cliFlags.ClusterName)
 		if err != nil {
 			progress.Error(err.Error())
@@ -330,9 +330,7 @@ func createKubernetesAdminRole(ctx context.Context, clusterName string, iamClien
 	cp, err := iamClient.GetPolicy(ctx, &iam.GetPolicyInput{PolicyArn: aws.String(fmt.Sprintf("arn:aws:iam::%s:policy/%s", *callerIdentity.Account, policyName))})
 	if err != nil {
 		var newError *awshttp.ResponseError
-		if errors.As(err, &newError) && newError.HTTPStatusCode() == http.StatusNotFound {
-			// Policy does not exist, continue
-		} else {
+		if errors.As(err, &newError) && newError.HTTPStatusCode() != http.StatusNotFound {
 			return "", fmt.Errorf("failed to get policy %q: %w", policyName, err)
 		}
 	}
@@ -379,9 +377,7 @@ func createKubernetesAdminRole(ctx context.Context, clusterName string, iamClien
 	role, err := iamClient.GetRole(ctx, &iam.GetRoleInput{RoleName: aws.String(roleName)})
 	if err != nil {
 		var newError *awshttp.ResponseError
-		if errors.As(err, &newError) && newError.HTTPStatusCode() == http.StatusNotFound {
-			// Role does not exist, continue
-		} else {
+		if errors.As(err, &newError) && newError.HTTPStatusCode() != http.StatusNotFound {
 			return "", fmt.Errorf("failed to get role %q: %w", roleName, err)
 		}
 	}
