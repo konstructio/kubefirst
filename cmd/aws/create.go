@@ -74,17 +74,23 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to perform aws checks: %w", err)
 	}
 
-	creds, err := convertLocalCredsToSession(ctx, stsClient, iamClient, checker, cliFlags.KubeAdminRoleARN, cliFlags.ClusterName)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
-	}
+	accessKeyId := viper.Get("kubefirst.state-store-creds.access-key-id")
+	secretAccessKeyId := viper.Get("kubefirst.state-store-creds.secret-access-key-id")
+	sessionToken := viper.Get("kubefirst.state-store-creds.token")
 
-	viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyId)
-	viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKey)
-	viper.Set("kubefirst.state-store-creds.token", creds.SessionToken)
-	if err := viper.WriteConfig(); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
+	if accessKeyId == nil || secretAccessKeyId == nil && sessionToken == nil {
+		creds, err := convertLocalCredsToSession(ctx, stsClient, iamClient, checker, cliFlags.KubeAdminRoleARN, cliFlags.ClusterName)
+		if err != nil {
+			progress.Error(err.Error())
+			return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
+		}
+
+		viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyId)
+		viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKey)
+		viper.Set("kubefirst.state-store-creds.token", creds.SessionToken)
+		if err := viper.WriteConfig(); err != nil {
+			return fmt.Errorf("failed to write config: %w", err)
+		}
 	}
 
 	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
@@ -189,7 +195,7 @@ func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, dnsProvider, git
 }
 
 const (
-	sessionDuration = int32(21600) // We want at least 6 hours (21,600 seconds)
+	sessionDuration = int32(43200) // We want at least 6 hours (21,600 seconds)
 )
 
 var wantedPermissions = []string{
@@ -217,7 +223,11 @@ type iamClienter interface {
 	GetPolicy(ctx context.Context, params *iam.GetPolicyInput, optFns ...func(*iam.Options)) (*iam.GetPolicyOutput, error)
 }
 
-func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamClient *iam.Client, checker *internalaws.Checker, roleArn, clusterName string) (*types.Credentials, error) {
+type checkerClienter interface {
+	CanRoleDoAction(ctx context.Context, roleArn string, actions []string) (bool, error)
+}
+
+func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamClient iamClienter, checker checkerClienter, roleArn, clusterName string) (*types.Credentials, error) {
 	// Check who we are currently (to ensure you're properly authenticated)
 	callerIdentity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
@@ -262,7 +272,7 @@ func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamC
 	output, err := stsClient.AssumeRole(ctx, &sts.AssumeRoleInput{
 		RoleArn:         aws.String(roleArn),
 		RoleSessionName: aws.String(sessionName),
-		// DurationSeconds: aws.Int32(sessionDuration),
+		DurationSeconds: aws.Int32(sessionDuration),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to assume role %s: %w", roleArn, err)
@@ -282,7 +292,11 @@ var AdditionalRolePolicies = []string{
 	// "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
 }
 
-func createKubernetesAdminRole(ctx context.Context, clusterName string, iamClient iamClienter, checker *internalaws.Checker, callerIdentity *sts.GetCallerIdentityOutput) (string, error) {
+func createKubernetesAdminRole(ctx context.Context, clusterName string, iamClient iamClienter, checker checkerClienter, callerIdentity *sts.GetCallerIdentityOutput) (string, error) {
+	if callerIdentity.Arn == nil {
+		return "", errors.New("caller identity ARN is nil")
+	}
+
 	// Verify that the current caller has permission to create IAM roles
 	wantedRolePermissions := []string{"iam:CreateRole", "iam:AssumeRole", "iam:AttachRolePolicy"}
 	canPerformActions, err := checker.CanRoleDoAction(ctx, aws.ToString(callerIdentity.Arn), wantedRolePermissions)
