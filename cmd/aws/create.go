@@ -390,6 +390,7 @@ func createKubernetesAdminRole(ctx context.Context, clusterName string, iamClien
 	createOut, err := iamClient.CreateRole(ctx, &iam.CreateRoleInput{
 		RoleName:                 aws.String(roleName),
 		AssumeRolePolicyDocument: aws.String(string(trustPolicyBytes)),
+		MaxSessionDuration:       aws.Int32(sessionDuration),
 		Description:              aws.String("Role that can create EKS clusters"),
 	})
 	if err != nil {
