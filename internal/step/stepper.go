@@ -64,5 +64,4 @@ func (s *Factory) DisplayLogHints(cloudProvider string, estimatedTime int) {
 	estimatedTimeMsg := fmt.Sprintf("%s Estimated time: %d minutes\n\n", emojiAlarm, estimatedTime)
 
 	s.InfoStepString(fmt.Sprintf("%s%s%s", header, verboseLogs, estimatedTimeMsg))
-
 }
