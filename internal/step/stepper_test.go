@@ -48,7 +48,7 @@ func TestStepFactory_DisplayLogHints(t *testing.T) {
 		args   args
 	}{
 		{
-			name: "displays log hints",
+			name: "displays log hints without blowing up",
 			fields: fields{
 				writer: os.Stderr,
 			},
@@ -65,6 +65,8 @@ func TestStepFactory_DisplayLogHints(t *testing.T) {
 				writer: tt.fields.writer,
 			}
 			sf.DisplayLogHints(tt.args.logFile, tt.args.cloudProvider, tt.args.estimatedTime)
+
+			// no assertions, just make sure it doesn't blow up
 		})
 	}
 }

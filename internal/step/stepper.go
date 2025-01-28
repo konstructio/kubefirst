@@ -9,18 +9,18 @@ import (
 )
 
 const (
-	EMOJI_CHECK    = "✅"
-	EMOJI_ERROR    = "🔴"
-	EMOJI_MAGIC    = "✨"
-	EMOJI_HEAD     = "🤕"
-	EMOJI_NO_ENTRY = "⛔"
-	EMOJI_TADA     = "🎉"
-	EMOJI_ALARM    = "⏰"
-	EMOJI_BUG      = "🐛"
-	EMOJI_BULB     = "💡"
-	EMOJI_WARNING  = "⚠️"
-	EMOJI_WRENCH   = "🔧"
-	EMOJI_BOOK     = "📘"
+	emojiCheck   = "✅"
+	emojiError   = "🔴"
+	emojiMagic   = "✨"
+	emojiHead    = "🤕"
+	emojiNoEntry = "⛔"
+	emojiTada    = "🎉"
+	emojiAlarm   = "⏰"
+	emojiBug     = "🐛"
+	emojiBulb    = "💡"
+	emojiWarning = "⚠️"
+	emojiWrench  = "🔧"
+	emojiBook    = "📘"
 )
 
 type Stepper interface {
@@ -60,9 +60,9 @@ func (sf *StepFactory) DisplayLogHints(logFile, cloudProvider string, estimatedT
 # Welcome to Kubefirst
 `
 
-	verboseLogs := fmt.Sprintf("### %s To view verbose logs run below command in new terminal: \"kubefirst logs\"\n%s Documentation: %s\n\n", EMOJI_BULB, EMOJI_BOOK, documentationLink)
+	verboseLogs := fmt.Sprintf("### %s To view verbose logs run below command in new terminal: \"kubefirst logs\"\n%s Documentation: %s\n\n", emojiBulb, emojiBook, documentationLink)
 
-	estimatedTimeMsg := fmt.Sprintf("### %s Estimated time: %d minutes\n\n", EMOJI_ALARM, estimatedTime)
+	estimatedTimeMsg := fmt.Sprintf("### %s Estimated time: %d minutes\n\n", emojiAlarm, estimatedTime)
 
 	sf.InfoStepString(strings.Join([]string{header, verboseLogs, estimatedTimeMsg}, ""))
 
