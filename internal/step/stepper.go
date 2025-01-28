@@ -49,8 +49,8 @@ func (sf *StepFactory) InfoStepString(message string) {
 }
 
 func (sf *StepFactory) DisplayLogHints(logFile, cloudProvider string, estimatedTime int) {
-
 	documentationLink := "https://kubefirst.konstruct.io/docs/"
+
 	if cloudProvider != "" {
 		documentationLink += cloudProvider + `/quick-start/install/cli`
 	}
