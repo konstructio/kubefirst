@@ -38,7 +38,6 @@ func TestStepFactory_DisplayLogHints(t *testing.T) {
 		writer io.Writer
 	}
 	type args struct {
-		logFile       string
 		cloudProvider string
 		estimatedTime int
 	}
@@ -53,7 +52,6 @@ func TestStepFactory_DisplayLogHints(t *testing.T) {
 				writer: os.Stderr,
 			},
 			args: args{
-				logFile:       "test.log",
 				cloudProvider: "test",
 				estimatedTime: 10,
 			},
@@ -64,7 +62,7 @@ func TestStepFactory_DisplayLogHints(t *testing.T) {
 			sf := &Factory{
 				writer: tt.fields.writer,
 			}
-			sf.DisplayLogHints(tt.args.logFile, tt.args.cloudProvider, tt.args.estimatedTime)
+			sf.DisplayLogHints(tt.args.cloudProvider, tt.args.estimatedTime)
 
 			// no assertions, just make sure it doesn't blow up
 		})

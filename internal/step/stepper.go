@@ -3,7 +3,6 @@ package step
 import (
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/konstructio/cli-utils/stepper"
 )
@@ -62,8 +61,8 @@ func (s *Factory) DisplayLogHints(cloudProvider string, estimatedTime int) {
 
 	verboseLogs := fmt.Sprintf("### %s To view verbose logs run below command in new terminal: \"kubefirst logs\"\n%s Documentation: %s\n\n", emojiBulb, emojiBook, documentationLink)
 
-	estimatedTimeMsg := fmt.Sprintf("### %s Estimated time: %d minutes\n\n", emojiAlarm, estimatedTime)
+	estimatedTimeMsg := fmt.Sprintf("%s Estimated time: %d minutes\n\n", emojiAlarm, estimatedTime)
 
-	s.InfoStepString(strings.Join([]string{header, verboseLogs, estimatedTimeMsg}, ""))
+	s.InfoStepString(fmt.Sprintf("%s%s%s", header, verboseLogs, estimatedTimeMsg))
 
 }
