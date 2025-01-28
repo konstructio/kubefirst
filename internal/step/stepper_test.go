@@ -23,7 +23,7 @@ func TestStepFactory_NewStep(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := &bytes.Buffer{}
-			sf := &StepFactory{writer: buf}
+			sf := &Factory{writer: buf}
 
 			step := sf.NewProgressStep(tt.stepName)
 
@@ -61,7 +61,7 @@ func TestStepFactory_DisplayLogHints(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sf := &StepFactory{
+			sf := &Factory{
 				writer: tt.fields.writer,
 			}
 			sf.DisplayLogHints(tt.args.logFile, tt.args.cloudProvider, tt.args.estimatedTime)

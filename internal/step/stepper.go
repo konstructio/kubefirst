@@ -28,27 +28,27 @@ type Stepper interface {
 	InfoStep(emoji, message string)
 }
 
-type StepFactory struct {
+type Factory struct {
 	writer io.Writer
 }
 
-func NewStepFactory(writer io.Writer) *StepFactory {
-	return &StepFactory{writer: writer}
+func NewStepFactory(writer io.Writer) *Factory {
+	return &Factory{writer: writer}
 }
 
-func (sf *StepFactory) NewProgressStep(stepName string) *stepper.Step {
-	return stepper.New(sf.writer, stepName)
+func (s *Factory) NewProgressStep(stepName string) *stepper.Step {
+	return stepper.New(s.writer, stepName)
 }
 
-func (sf *StepFactory) InfoStep(emoji, message string) {
-	fmt.Fprintf(sf.writer, "%s %s\n", emoji, message)
+func (s *Factory) InfoStep(emoji, message string) {
+	fmt.Fprintf(s.writer, "%s %s\n", emoji, message)
 }
 
-func (sf *StepFactory) InfoStepString(message string) {
-	fmt.Fprintf(sf.writer, "%s\n", message)
+func (s *Factory) InfoStepString(message string) {
+	fmt.Fprintf(s.writer, "%s\n", message)
 }
 
-func (sf *StepFactory) DisplayLogHints(logFile, cloudProvider string, estimatedTime int) {
+func (s *Factory) DisplayLogHints(cloudProvider string, estimatedTime int) {
 	documentationLink := "https://kubefirst.konstruct.io/docs/"
 
 	if cloudProvider != "" {
@@ -64,6 +64,6 @@ func (sf *StepFactory) DisplayLogHints(logFile, cloudProvider string, estimatedT
 
 	estimatedTimeMsg := fmt.Sprintf("### %s Estimated time: %d minutes\n\n", emojiAlarm, estimatedTime)
 
-	sf.InfoStepString(strings.Join([]string{header, verboseLogs, estimatedTimeMsg}, ""))
+	s.InfoStepString(strings.Join([]string{header, verboseLogs, estimatedTimeMsg}, ""))
 
 }
