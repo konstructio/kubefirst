@@ -17,39 +17,38 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// infoCmd represents the info command
-var infoCmd = &cobra.Command{
-	Use:   "info",
-	Short: "provides general Kubefirst setup data",
-	Long:  `Provides machine data, files and folders paths`,
-	RunE: func(_ *cobra.Command, _ []string) error {
-		config, err := configs.ReadConfig()
-		if err != nil {
-			return fmt.Errorf("failed to read config: %w", err)
-		}
+func InfoCommand() *cobra.Command {
+	infoCmd := &cobra.Command{
+		Use:   "info",
+		Short: "provides general Kubefirst setup data",
+		Long:  `Provides machine data, files and folders paths`,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			config, err := configs.ReadConfig()
+			if err != nil {
+				return fmt.Errorf("failed to read config: %w", err)
+			}
 
-		var buf bytes.Buffer
+			var buf bytes.Buffer
 
-		tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', tabwriter.Debug)
+			tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', tabwriter.Debug)
 
-		fmt.Fprintln(&buf, "##")
-		fmt.Fprintln(&buf, "# Info summary")
-		fmt.Fprintln(&buf, "")
+			fmt.Fprintln(&buf, "##")
+			fmt.Fprintln(&buf, "# Info summary")
+			fmt.Fprintln(&buf, "")
 
-		fmt.Fprintf(tw, "Name\tValue\n")
-		fmt.Fprintf(tw, "---\t---\n")
-		fmt.Fprintf(tw, "Operational System\t%s\n", config.LocalOs)
-		fmt.Fprintf(tw, "Architecture\t%s\n", config.LocalArchitecture)
-		fmt.Fprintf(tw, "Golang version\t%s\n", runtime.Version())
-		fmt.Fprintf(tw, "Kubefirst config file\t%s\n", config.KubefirstConfigFilePath)
-		fmt.Fprintf(tw, "Kubefirst config folder\t%s\n", config.K1FolderPath)
-		fmt.Fprintf(tw, "Kubefirst Version\t%s\n", configs.K1Version)
+			fmt.Fprintf(tw, "Name\tValue\n")
+			fmt.Fprintf(tw, "---\t---\n")
+			fmt.Fprintf(tw, "Operational System\t%s\n", config.LocalOs)
+			fmt.Fprintf(tw, "Architecture\t%s\n", config.LocalArchitecture)
+			fmt.Fprintf(tw, "Golang version\t%s\n", runtime.Version())
+			fmt.Fprintf(tw, "Kubefirst config file\t%s\n", config.KubefirstConfigFilePath)
+			fmt.Fprintf(tw, "Kubefirst config folder\t%s\n", config.K1FolderPath)
+			fmt.Fprintf(tw, "Kubefirst Version\t%s\n", configs.K1Version)
 
-		progress.Success(buf.String())
-		return nil
-	},
-}
+			progress.Success(buf.String())
+			return nil
+		},
+	}
 
-func init() {
-	rootCmd.AddCommand(infoCmd)
+	return infoCmd
 }

@@ -14,24 +14,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// betaCmd represents the beta command tree
-var betaCmd = &cobra.Command{
-	Use:   "beta",
-	Short: "access Kubefirst beta features",
-	Long:  `access Kubefirst beta features`,
-	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Println("To learn more about Kubefirst, run:")
-		fmt.Println("  kubefirst help")
+func BetaCommands() *cobra.Command {
 
-		if progress.Progress != nil {
-			progress.Progress.Quit()
-		}
-	},
-}
+	betaCmd := &cobra.Command{
+		Use:   "beta",
+		Short: "access Kubefirst beta features",
+		Long:  `access Kubefirst beta features`,
+		Run: func(_ *cobra.Command, _ []string) {
+			fmt.Println("To learn more about Kubefirst, run:")
+			fmt.Println("  kubefirst help")
 
-func init() {
-	cobra.OnInitialize()
+			if progress.Progress != nil {
+				progress.Progress.Quit()
+			}
+		},
+	}
+
 	betaCmd.AddCommand(
 		k3s.NewCommand(),
 	)
+
+	return betaCmd
 }

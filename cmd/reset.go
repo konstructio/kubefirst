@@ -20,64 +20,63 @@ import (
 	"github.com/spf13/viper"
 )
 
-// resetCmd represents the reset command
-var resetCmd = &cobra.Command{
-	Use:   "reset",
-	Short: "removes local kubefirst content to provision a new platform",
-	Long:  "removes local kubefirst content to provision a new platform",
-	RunE: func(_ *cobra.Command, _ []string) error {
-		gitProvider := viper.GetString("kubefirst.git-provider")
-		cloudProvider := viper.GetString("kubefirst.cloud-provider")
+func ResetCommand() *cobra.Command {
+	resetCmd := &cobra.Command{
+		Use:   "reset",
+		Short: "removes local kubefirst content to provision a new platform",
+		Long:  "removes local kubefirst content to provision a new platform",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			gitProvider := viper.GetString("kubefirst.git-provider")
+			cloudProvider := viper.GetString("kubefirst.cloud-provider")
 
-		checksMap := viper.Get("kubefirst-checks")
-		switch v := checksMap.(type) {
-		case nil:
-			// Handle the nil case explicitly
-			message := `# Successfully reset`
-			progress.Success(message)
-			return nil
-		case string:
-			if v == "" {
-				log.Info().Msg("checks map is empty, continuing")
-			} else {
+			checksMap := viper.Get("kubefirst-checks")
+			switch v := checksMap.(type) {
+			case nil:
+				// Handle the nil case explicitly
+				message := `# Successfully reset`
+				progress.Success(message)
+				return nil
+			case string:
+				if v == "" {
+					log.Info().Msg("checks map is empty, continuing")
+				} else {
+					return fmt.Errorf("unable to determine contents of kubefirst-checks: unexpected type %T", v)
+				}
+			case map[string]interface{}:
+				checks, err := parseConfigEntryKubefirstChecks(v)
+				if err != nil {
+					log.Error().Msgf("error occurred during check parsing: %s - resetting directory without checks", err)
+				}
+				// If destroy hasn't been run yet, reset should fail to avoid orphaned resources
+				switch {
+				case checks[fmt.Sprintf("terraform-apply-%s", gitProvider)]:
+					return fmt.Errorf(
+						"it looks like there's an active %s resource deployment - please run `%s destroy` before continuing",
+						gitProvider, cloudProvider,
+					)
+				case checks[fmt.Sprintf("terraform-apply-%s", cloudProvider)]:
+					return fmt.Errorf(
+						"it looks like there's an active %s installation - please run `%s destroy` before continuing",
+						cloudProvider, cloudProvider,
+					)
+				}
+			default:
 				return fmt.Errorf("unable to determine contents of kubefirst-checks: unexpected type %T", v)
 			}
-		case map[string]interface{}:
-			checks, err := parseConfigEntryKubefirstChecks(v)
+
+			homePath, err := os.UserHomeDir()
 			if err != nil {
-				log.Error().Msgf("error occurred during check parsing: %s - resetting directory without checks", err)
+				return fmt.Errorf("unable to get user home directory: %w", err)
 			}
-			// If destroy hasn't been run yet, reset should fail to avoid orphaned resources
-			switch {
-			case checks[fmt.Sprintf("terraform-apply-%s", gitProvider)]:
-				return fmt.Errorf(
-					"it looks like there's an active %s resource deployment - please run `%s destroy` before continuing",
-					gitProvider, cloudProvider,
-				)
-			case checks[fmt.Sprintf("terraform-apply-%s", cloudProvider)]:
-				return fmt.Errorf(
-					"it looks like there's an active %s installation - please run `%s destroy` before continuing",
-					cloudProvider, cloudProvider,
-				)
+
+			if err := runReset(homePath); err != nil {
+				return fmt.Errorf("error during reset operation: %w", err)
 			}
-		default:
-			return fmt.Errorf("unable to determine contents of kubefirst-checks: unexpected type %T", v)
-		}
+			return nil
+		},
+	}
 
-		homePath, err := os.UserHomeDir()
-		if err != nil {
-			return fmt.Errorf("unable to get user home directory: %w", err)
-		}
-
-		if err := runReset(homePath); err != nil {
-			return fmt.Errorf("error during reset operation: %w", err)
-		}
-		return nil
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(resetCmd)
+	return resetCmd
 }
 
 // parseConfigEntryKubefirstChecks gathers the kubefirst-checks section of the Viper
