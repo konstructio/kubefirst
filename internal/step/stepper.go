@@ -25,6 +25,8 @@ const (
 type Stepper interface {
 	NewProgressStep(stepName string) *stepper.Step
 	InfoStep(emoji, message string)
+	InfoStepString(message string)
+	DisplayLogHints(cloudProvider string, estimatedTime int)
 }
 
 type Factory struct {
