@@ -29,6 +29,20 @@ func GetConsoleIngressURL() string {
 	return "https://console.kubefirst.dev"
 }
 
+type ClusterClient struct{}
+
+func (c *ClusterClient) CreateCluster(cluster apiTypes.ClusterDefinition) error {
+	return CreateCluster(cluster)
+}
+
+func (c *ClusterClient) GetCluster(clusterName string) (apiTypes.Cluster, error) {
+	return GetCluster(clusterName)
+}
+
+func (c *ClusterClient) ResetClusterProgress(clusterName string) error {
+	return ResetClusterProgress(clusterName)
+}
+
 func CreateCluster(cluster apiTypes.ClusterDefinition) error {
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
 	httpClient := http.Client{Transport: customTransport}

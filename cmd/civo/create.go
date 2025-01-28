@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
 	apiTypes "github.com/konstructio/kubefirst-api/pkg/types"
@@ -31,20 +32,24 @@ type KubefirstCivoClient struct {
 	cliFlags types.CliFlags
 }
 
-func (kc *KubefirstCivoClient) CreateCivoManagementCluster(ctx context.Context, catalogApps []apiTypes.GitopsCatalogApp) error {
-
-	initializeConfigStep := kc.stepper.NewStep("Initialize Config")
+func (kc *KubefirstCivoClient) CreateManagementCluster(ctx context.Context, catalogApps []apiTypes.GitopsCatalogApp) error {
 
 	err := ValidateProvidedFlags(kc.cliFlags.GitProvider, kc.cliFlags.DNSProvider)
+
 	if err != nil {
-		wrerr := fmt.Errorf("failed to validate provided flags: %w", err)
-		initializeConfigStep.Complete(wrerr)
-		return wrerr
+		return fmt.Errorf("failed to validate provided flags: %w", err)
 	}
 
-	utilities.CreateK1ClusterDirectory(kc.cliFlags.ClusterName)
+	return CreateManagementCluster(kc, catalogApps)
+}
 
-	gitAuth, err := gitShim.ValidateGitCredentials(kc.cliFlags.GitProvider, kc.cliFlags.GithubOrg, kc.cliFlags.GitlabGroup)
+func CreateManagementCluster(c *KubefirstCivoClient, catalogApps []apiTypes.GitopsCatalogApp) error {
+
+	initializeConfigStep := c.stepper.NewProgressStep("Initialize Config")
+
+	utilities.CreateK1ClusterDirectory(c.cliFlags.ClusterName)
+
+	gitAuth, err := gitShim.ValidateGitCredentials(c.cliFlags.GitProvider, c.cliFlags.GithubOrg, c.cliFlags.GitlabGroup)
 	if err != nil {
 		wrerr := fmt.Errorf("failed to validate git credentials: %w", err)
 		initializeConfigStep.Complete(wrerr)
@@ -52,16 +57,17 @@ func (kc *KubefirstCivoClient) CreateCivoManagementCluster(ctx context.Context, 
 	}
 
 	initializeConfigStep.Complete(nil)
-	validateGitStep := kc.stepper.NewStep("Setup Gitops Repository")
+	validateGitStep := c.stepper.NewProgressStep("Setup Gitops Repository")
 
 	// Validate git
-	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", kc.cliFlags.GitProvider))
+	executionControl := viper.GetBool(fmt.Sprintf("kubefirst-checks.%s-credentials", c.cliFlags.GitProvider))
+
 	if !executionControl {
 		newRepositoryNames := []string{"gitops", "metaphor"}
 		newTeamNames := []string{"admins", "developers"}
 
 		initGitParameters := gitShim.GitInitParameters{
-			GitProvider:  kc.cliFlags.GitProvider,
+			GitProvider:  c.cliFlags.GitProvider,
 			GitToken:     gitAuth.Token,
 			GitOwner:     gitAuth.Owner,
 			Repositories: newRepositoryNames,
@@ -75,7 +81,11 @@ func (kc *KubefirstCivoClient) CreateCivoManagementCluster(ctx context.Context, 
 			return wrerr
 		}
 	}
-	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", kc.cliFlags.GitProvider), true)
+
+	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", c.cliFlags.GitProvider), true)
+
+	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", c.cliFlags.GitProvider), true)
+
 	if err = viper.WriteConfig(); err != nil {
 		wrerr := fmt.Errorf("failed to write viper config: %w", err)
 		validateGitStep.Complete(wrerr)
@@ -83,13 +93,14 @@ func (kc *KubefirstCivoClient) CreateCivoManagementCluster(ctx context.Context, 
 	}
 
 	validateGitStep.Complete(nil)
-	setupK3dClusterStep := kc.stepper.NewStep("Setup k3d Cluster")
+	setupK3dClusterStep := c.stepper.NewProgressStep("Setup k3d Cluster")
 
 	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
 	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
 
 	if !k3dClusterCreationComplete && !isK1Debug {
-		err = launch.Up(nil, true, kc.cliFlags.UseTelemetry)
+		err = launch.Up(nil, true, c.cliFlags.UseTelemetry)
+
 		if err != nil {
 			wrerr := fmt.Errorf("failed to setup k3d cluster: %w", err)
 			setupK3dClusterStep.Complete(wrerr)
@@ -105,15 +116,39 @@ func (kc *KubefirstCivoClient) CreateCivoManagementCluster(ctx context.Context, 
 	}
 
 	setupK3dClusterStep.Complete(nil)
-	createMgmtClusterStep := kc.stepper.NewStep("Create Management Cluster")
+	createMgmtClusterStep := c.stepper.NewProgressStep("Create Management Cluster")
 
-	if err := provision.CreateMgmtCluster(gitAuth, kc.cliFlags, catalogApps); err != nil {
+	if err := provision.CreateMgmtCluster(gitAuth, c.cliFlags, catalogApps); err != nil {
 		wrerr := fmt.Errorf("failed to create management cluster: %w", err)
 		createMgmtClusterStep.Complete(wrerr)
 		return wrerr
 	}
 
 	createMgmtClusterStep.Complete(nil)
+
+	clusterClient := cluster.ClusterClient{}
+
+	clusterProvision := provision.NewClusterProvision(c.cliFlags.ClusterName, &clusterClient)
+
+	currentClusterStep := c.stepper.NewProgressStep(clusterProvision.GetCurrentStep())
+
+	for !clusterProvision.IsComplete() {
+
+		if currentClusterStep.GetName() != clusterProvision.GetCurrentStep() {
+			currentClusterStep.Complete(nil)
+			currentClusterStep = c.stepper.NewProgressStep(clusterProvision.GetCurrentStep())
+		}
+
+		err = clusterProvision.UpdateProvisionProgress()
+
+		if err != nil {
+			wrerr := fmt.Errorf("failure provisioning the management cluster: %w", err)
+			currentClusterStep.Complete(wrerr)
+			return wrerr
+		}
+
+		time.Sleep(5 * time.Second)
+	}
 
 	return nil
 }

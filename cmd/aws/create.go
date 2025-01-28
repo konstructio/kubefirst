@@ -39,7 +39,7 @@ type KubefirstAWSClient struct {
 
 func (c *KubefirstAWSClient) CreateManagementCluster(ctx context.Context, catalogApps []apiTypes.GitopsCatalogApp) error {
 
-	initializeConfigStep := c.stepper.NewStep("Initialize Config")
+	initializeConfigStep := c.stepper.NewProgressStep("Initialize Config")
 
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(c.cliFlags.CloudRegion))
 	if err != nil {
@@ -82,7 +82,7 @@ func (c *KubefirstAWSClient) CreateManagementCluster(ctx context.Context, catalo
 
 	initializeConfigStep.Complete(nil)
 
-	validateGitStep := c.stepper.NewStep("Setup Gitops Repository")
+	validateGitStep := c.stepper.NewProgressStep("Setup Gitops Repository")
 
 	gitAuth, err := gitShim.ValidateGitCredentials(c.cliFlags.GitProvider, c.cliFlags.GithubOrg, c.cliFlags.GitlabGroup)
 	if err != nil {
@@ -120,7 +120,7 @@ func (c *KubefirstAWSClient) CreateManagementCluster(ctx context.Context, catalo
 	}
 
 	validateGitStep.Complete(nil)
-	setupK3dClusterStep := c.stepper.NewStep("Setup k3d Cluster")
+	setupK3dClusterStep := c.stepper.NewProgressStep("Setup k3d Cluster")
 
 	k3dClusterCreationComplete := viper.GetBool("launch.deployed")
 	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
@@ -143,7 +143,7 @@ func (c *KubefirstAWSClient) CreateManagementCluster(ctx context.Context, catalo
 	}
 
 	setupK3dClusterStep.Complete(nil)
-	createMgmtClusterStep := c.stepper.NewStep("Create Management Cluster")
+	createMgmtClusterStep := c.stepper.NewProgressStep("Create Management Cluster")
 
 	if err := provision.CreateMgmtCluster(gitAuth, c.cliFlags, catalogApps); err != nil {
 		wrerr := fmt.Errorf("failed to create management cluster: %w", err)

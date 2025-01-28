@@ -23,7 +23,7 @@ func TestStepFactory_NewStep(t *testing.T) {
 			buf := &bytes.Buffer{}
 			sf := &StepFactory{writer: buf}
 
-			step := sf.NewStep(tt.stepName)
+			step := sf.NewProgressStep(tt.stepName)
 
 			assert.NotNil(t, step)
 			assert.Equal(t, tt.stepName, step.GetName())

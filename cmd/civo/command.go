@@ -64,6 +64,10 @@ func Create() *cobra.Command {
 				return fmt.Errorf("failed to get CLI flags: %w", err)
 			}
 
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
+			stepper.InfoStep(step.EMOJI_ALARM, fmt.Sprintf("Estimated time to complete: %s", "15-20 minutes"))
+
 			isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 			if !isValid {
 				return fmt.Errorf("catalog apps validation failed: %w", err)
@@ -74,7 +78,7 @@ func Create() *cobra.Command {
 				cliFlags: cliFlags,
 			}
 
-			return k1Client.CreateCivoManagementCluster(cmd.Context(), catalogApps)
+			return k1Client.CreateManagementCluster(cmd.Context(), catalogApps)
 		},
 		SilenceErrors: true,
 		SilenceUsage:  true,

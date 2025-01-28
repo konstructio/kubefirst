@@ -83,8 +83,10 @@ func Create() *cobra.Command {
 				return fmt.Errorf("failed to get flags: %w", err)
 			}
 
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
 			// TODO: Handle for non-bubbletea
-			// progress.DisplayLogHints(40)
+			stepper.InfoStep(step.EMOJI_ALARM, fmt.Sprintf("Estimated time to complete: %s", "15-20 minutes"))
 
 			isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 			if !isValid {
@@ -94,7 +96,7 @@ func Create() *cobra.Command {
 			ctx := cmd.Context()
 
 			k1Client := KubefirstAWSClient{
-				stepper:  step.NewStepFactory(cmd.ErrOrStderr()),
+				stepper:  stepper,
 				cliFlags: cliFlags,
 			}
 
