@@ -15,7 +15,6 @@ import (
 )
 
 func BetaCommands() *cobra.Command {
-
 	betaCmd := &cobra.Command{
 		Use:   "beta",
 		Short: "access Kubefirst beta features",
