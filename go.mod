@@ -38,6 +38,11 @@ require (
 )
 
 require (
+	github.com/konstructio/cli-utils v0.0.0-20250121163216-a915a9d11340 // indirect
+	github.com/tj/go-spin v1.1.0 // indirect
+)
+
+require (
 	cel.dev/expr v0.16.1 // indirect
 	cloud.google.com/go v0.116.0 // indirect
 	cloud.google.com/go/auth v0.10.2 // indirect
