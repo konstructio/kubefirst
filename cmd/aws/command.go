@@ -12,6 +12,7 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
 
@@ -79,7 +80,23 @@ func Create() *cobra.Command {
 		Use:              "create",
 		Short:            "create the kubefirst platform running in aws",
 		TraverseChildren: true,
-		RunE:             createAws,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliFlags, err := utilities.GetFlags(cmd, "aws")
+			if err != nil {
+				progress.Error(err.Error())
+				return fmt.Errorf("failed to get flags: %w", err)
+			}
+
+			awsService := AwsService{
+				cliFlags: &cliFlags,
+			}
+
+			if err := awsService.CreateCluster(cmd.Context()); err != nil {
+				return fmt.Errorf("failed to create cluster: %w", err)
+			}
+
+			return nil
+		},
 		// PreRun:           common.CheckDocker,
 	}
 

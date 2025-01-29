@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package azure
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -14,9 +15,8 @@ import (
 	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
-	"github.com/konstructio/kubefirst/internal/utilities"
+	"github.com/konstructio/kubefirst/internal/types"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 )
 
 // Environment variables required for authentication. This should be a
@@ -30,28 +30,27 @@ var envvarSecrets = []string{
 	"ARM_SUBSCRIPTION_ID",
 }
 
-func createAzure(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "azure")
-	if err != nil {
-		progress.Error(err.Error())
-		return nil
-	}
+type AzureService struct {
+	cliFlags *types.CliFlags
+}
+
+func (s *AzureService) CreateCluster(_ context.Context) error {
 
 	progress.DisplayLogHints(20)
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	isValid, catalogApps, err := catalog.ValidateCatalogApps(s.cliFlags.InstallCatalogApps)
 	if !isValid {
 		progress.Error(err.Error())
 		return nil
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider)
+	err = ValidateProvidedFlags(s.cliFlags.GitProvider)
 	if err != nil {
 		progress.Error(err.Error())
 		return nil
 	}
 
-	if err := provision.ManagementCluster(cliFlags, catalogApps); err != nil {
+	if err := provision.ManagementCluster(s.cliFlags, catalogApps); err != nil {
 		return fmt.Errorf("failed to provision management cluster: %w", err)
 	}
 

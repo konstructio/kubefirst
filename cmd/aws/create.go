@@ -21,34 +21,30 @@ import (
 	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
-	"github.com/konstructio/kubefirst/internal/utilities"
+	"github.com/konstructio/kubefirst/internal/types"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-func createAws(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "aws")
-	if err != nil {
-		progress.Error(err.Error())
-		return nil
-	}
+type AwsService struct {
+	cliFlags *types.CliFlags
+}
+
+func (s *AwsService) CreateCluster(ctx context.Context) error {
 
 	progress.DisplayLogHints(40)
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	isValid, catalogApps, err := catalog.ValidateCatalogApps(s.cliFlags.InstallCatalogApps)
 	if !isValid {
 		return fmt.Errorf("invalid catalog apps: %w", err)
 	}
 
-	ctx := cmd.Context()
-
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cliFlags.CloudRegion))
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(s.cliFlags.CloudRegion))
 	if err != nil {
 		return fmt.Errorf("unable to load AWS SDK config: %w", err)
 	}
 
-	err = ValidateProvidedFlags(ctx, cfg, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
+	err = ValidateProvidedFlags(ctx, cfg, s.cliFlags.GitProvider, s.cliFlags.AMIType, s.cliFlags.NodeType)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate provided flags: %w", err)
@@ -67,7 +63,7 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
 
-	if err := provision.ManagementCluster(cliFlags, catalogApps); err != nil {
+	if err := provision.ManagementCluster(s.cliFlags, catalogApps); err != nil {
 		return fmt.Errorf("failed to provision management cluster: %w", err)
 	}
 

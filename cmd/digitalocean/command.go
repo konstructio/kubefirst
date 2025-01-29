@@ -12,6 +12,7 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
 
@@ -52,7 +53,23 @@ func Create() *cobra.Command {
 		Use:              "create",
 		Short:            "create the Kubefirst platform running on DigitalOcean Kubernetes",
 		TraverseChildren: true,
-		RunE:             createDigitalocean,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliFlags, err := utilities.GetFlags(cmd, "digitalocean")
+			if err != nil {
+				progress.Error(err.Error())
+				return fmt.Errorf("failed to get flags: %w", err)
+			}
+
+			digitaloceanService := DigitalOceanService{
+				cliFlags: &cliFlags,
+			}
+
+			if err := digitaloceanService.CreateCluster(cmd.Context()); err != nil {
+				return fmt.Errorf("failed to create DigitalOcean management cluster: %w", err)
+			}
+
+			return nil
+		},
 		// PreRun:           common.CheckDocker,
 	}
 
