@@ -18,34 +18,56 @@ import (
 	"github.com/konstructio/kubefirst/cmd/digitalocean"
 	"github.com/konstructio/kubefirst/cmd/google"
 	"github.com/konstructio/kubefirst/cmd/k3d"
+	"github.com/konstructio/kubefirst/cmd/k3s"
 	"github.com/konstructio/kubefirst/cmd/vultr"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "kubefirst",
-	Short: "kubefirst management cluster installer base command",
-	Long: `kubefirst management cluster installer provisions an
-	open source application delivery platform in under an hour.
-	checkout the docs at https://kubefirst.konstruct.io/docs/.`,
-	PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-		// wire viper config for flags for all commands
-		return configs.InitializeViperConfig(cmd)
-	},
-	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Println("To learn more about kubefirst, run:")
-		fmt.Println("  kubefirst help")
-		progress.Progress.Quit()
-	},
-	SilenceErrors: true,
-}
-
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	rootCmd := &cobra.Command{
+		Use:   "kubefirst",
+		Short: "kubefirst management cluster installer base command",
+		Long: `kubefirst management cluster installer provisions an
+		open source application delivery platform in under an hour.
+		checkout the docs at https://kubefirst.konstruct.io/docs/.`,
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			// wire viper config for flags for all commands
+			return configs.InitializeViperConfig(cmd)
+		},
+		Run: func(_ *cobra.Command, _ []string) {
+			fmt.Println("To learn more about kubefirst, run:")
+			fmt.Println("  kubefirst help")
+			progress.Progress.Quit()
+		},
+		SilenceErrors: true,
+		SilenceUsage:  true,
+	}
+
+	rootCmd.AddCommand(
+		aws.NewCommand(),
+		azure.NewCommand(),
+		civo.NewCommand(),
+		digitalocean.NewCommand(),
+		k3d.NewCommand(),
+		k3d.LocalCommandAlias(),
+		k3s.NewCommand(),
+		google.NewCommand(),
+		vultr.NewCommand(),
+		akamai.NewCommand(),
+		GenerateCommand(),
+		LaunchCommand(),
+		LetsEncryptCommand(),
+		TerraformCommand(),
+		ResetCommand(),
+		VersionCommand(),
+		LogsCommand(),
+		InfoCommand(),
+	)
+
 	// This will allow all child commands to have informUser available for free.
 	// Refers: https://github.com/konstructio/runtime/issues/525
 	// Before removing next line, please read ticket above.
@@ -57,25 +79,4 @@ func Execute() {
 		fmt.Println("You can re-run the last command to try the operation again.")
 		progress.Progress.Quit()
 	}
-}
-
-func init() {
-	cobra.OnInitialize()
-	rootCmd.SilenceUsage = true
-	rootCmd.AddCommand(
-		betaCmd,
-		aws.NewCommand(),
-		azure.NewCommand(),
-		civo.NewCommand(),
-		digitalocean.NewCommand(),
-		k3d.NewCommand(),
-		k3d.LocalCommandAlias(),
-		google.NewCommand(),
-		vultr.NewCommand(),
-		akamai.NewCommand(),
-		GenerateCommand(),
-		LaunchCommand(),
-		LetsEncryptCommand(),
-		TerraformCommand(),
-	)
 }

@@ -30,7 +30,7 @@ func NewCommand() *cobra.Command {
 		Long:  "kubefirst vultr",
 		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about Vultr in Kubefirst, run:")
-			fmt.Println("  kubefirst beta vultr --help")
+			fmt.Println("  kubefirst vultr --help")
 
 			if progress.Progress != nil {
 				progress.Progress.Quit()

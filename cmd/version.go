@@ -12,19 +12,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	rootCmd.AddCommand(versionCmd)
-}
+func VersionCommand() *cobra.Command {
+	versionCmd := &cobra.Command{
+		Use:   "version",
+		Short: "print the version number for kubefirst-cli",
+		Long:  `All software has versions. This is kubefirst's`,
+		Run: func(_ *cobra.Command, _ []string) {
+			versionMsg := `
+	##
+	### kubefirst-cli golang utility version: ` + configs.K1Version
 
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "print the version number for kubefirst-cli",
-	Long:  `All software has versions. This is kubefirst's`,
-	Run: func(_ *cobra.Command, _ []string) {
-		versionMsg := `
-##
-### kubefirst-cli golang utility version: ` + configs.K1Version
-
-		progress.Success(versionMsg)
-	},
+			progress.Success(versionMsg)
+		},
+	}
+	return versionCmd
 }
