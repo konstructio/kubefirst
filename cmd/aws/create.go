@@ -522,22 +522,19 @@ func getSupportedInstanceTypes(ctx context.Context, p paginator, architecture st
 }
 
 func assumeRoleWithRetry(ctx context.Context, stsClient stsClienter, roleArn, sessionName string) (*types.Credentials, error) {
-	var lastErr error
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		output, err := stsClient.AssumeRole(ctx, &sts.AssumeRoleInput{
 			RoleArn:         aws.String(roleArn),
 			RoleSessionName: aws.String(sessionName),
+			DurationSeconds: aws.Int32(sessionDuration),
 		})
 		if err == nil {
 			return output.Credentials, nil
 		}
 
-		lastErr = err
-
-		// Exponential backoff
 		delay := time.Duration(attempt*attempt) * baseDelay
 		time.Sleep(delay)
 	}
 
-	return nil, fmt.Errorf("failed to assume role after %d attempts: %w", maxRetries, lastErr)
+	return nil, fmt.Errorf("failed to assume role")
 }

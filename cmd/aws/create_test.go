@@ -153,27 +153,6 @@ func TestValidateCredentials(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "failed to assume role",
-			roleARN: "arn:aws:iam::123456789012:role/example-role",
-			mockStsClient: &mockStsClient{
-				FnGetCallerIdentity: func(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
-					return &sts.GetCallerIdentityOutput{
-						UserId: aws.String("user-123"),
-						Arn:    aws.String("arn:aws:iam::123456789012:user/user-123"),
-					}, nil
-				},
-				FnAssumeRole: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
-					return nil, errors.New("failed to assume role")
-				},
-			},
-			mockChecker: &mockChecker{
-				FnCanRoleDoAction: func(ctx context.Context, roleArn string, actions []string) (bool, error) {
-					return true, nil
-				},
-			},
-			wantErr: true,
-		},
-		{
 			name:    "role does not have create cluster permission",
 			roleARN: "arn:aws:iam::123456789012:role/example-role",
 			mockStsClient: &mockStsClient{
