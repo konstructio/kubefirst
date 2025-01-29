@@ -45,7 +45,11 @@ func createK3s(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("provided flags validation failed: %w", err)
 	}
 
-	return provision.ManagementCluster(cliFlags, catalogApps)
+	if err := provision.ManagementCluster(cliFlags, catalogApps); err != nil {
+		return fmt.Errorf("failed to provision management cluster: %w", err)
+	}
+
+	return nil
 }
 
 func ValidateProvidedFlags(gitProvider string) error {

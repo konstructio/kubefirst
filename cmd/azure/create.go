@@ -51,7 +51,11 @@ func createAzure(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	return provision.ManagementCluster(cliFlags, catalogApps)
+	if err := provision.ManagementCluster(cliFlags, catalogApps); err != nil {
+		return fmt.Errorf("failed to provision management cluster: %w", err)
+	}
+
+	return nil
 }
 
 func ValidateProvidedFlags(gitProvider string) error {

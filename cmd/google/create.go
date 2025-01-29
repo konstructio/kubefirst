@@ -40,7 +40,11 @@ func createGoogle(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("validation of provided flags failed: %w", err)
 	}
 
-	return provision.ManagementCluster(cliFlags, catalogApps)
+	if err := provision.ManagementCluster(cliFlags, catalogApps); err != nil {
+		return fmt.Errorf("failed to provision management cluster: %w", err)
+	}
+
+	return nil
 }
 
 func ValidateProvidedFlags(gitProvider string) error {

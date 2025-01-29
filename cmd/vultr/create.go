@@ -44,7 +44,11 @@ func createVultr(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("invalid provided flags: %w", err)
 	}
 
-	return provision.ManagementCluster(cliFlags, catalogApps)
+	if err := provision.ManagementCluster(cliFlags, catalogApps); err != nil {
+		return fmt.Errorf("failed to provision management cluster: %w", err)
+	}
+
+	return nil
 }
 
 func ValidateProvidedFlags(gitProvider, dnsProvider string) error {

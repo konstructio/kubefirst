@@ -67,7 +67,11 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
 
-	return provision.ManagementCluster(cliFlags, catalogApps)
+	if err := provision.ManagementCluster(cliFlags, catalogApps); err != nil {
+		return fmt.Errorf("failed to provision management cluster: %w", err)
+	}
+
+	return nil
 }
 
 func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, amiType, nodeType string) error {
