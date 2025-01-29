@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package k3s
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -16,21 +17,18 @@ import (
 	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
-	"github.com/konstructio/kubefirst/internal/utilities"
-	"github.com/spf13/cobra"
+	"github.com/konstructio/kubefirst/internal/types"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // required for k8s authentication
 )
 
-func createK3s(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "k3s")
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("error collecting flags: %w", err)
-	}
+type Service struct {
+	cliFlags *types.CliFlags
+}
 
+func (s *Service) CreateCluster(ctx context.Context) error {
 	progress.DisplayLogHints(20)
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, s.cliFlags.InstallCatalogApps)
 	if err != nil {
 		return fmt.Errorf("validation of catalog apps failed: %w", err)
 	}
@@ -39,13 +37,13 @@ func createK3s(cmd *cobra.Command, _ []string) error {
 		return errors.New("catalog validation failed")
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider)
+	err = ValidateProvidedFlags(s.cliFlags.GitProvider)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("provided flags validation failed: %w", err)
 	}
 
-	if err := provision.ManagementCluster(cliFlags, catalogApps); err != nil {
+	if err := provision.ManagementCluster(s.cliFlags, catalogApps); err != nil {
 		return fmt.Errorf("failed to provision management cluster: %w", err)
 	}
 

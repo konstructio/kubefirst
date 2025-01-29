@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/konstructio/kubefirst/internal/common"
+	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
 
@@ -43,7 +44,22 @@ func Create() *cobra.Command {
 		Use:              "create",
 		Short:            "create the kubefirst platform running on premise",
 		TraverseChildren: true,
-		RunE:             createK3s,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			cliFlags, err := utilities.GetFlags(cmd, "k3s")
+			if err != nil {
+				return fmt.Errorf("failed to get flags: %w", err)
+			}
+
+			k3sService := Service{
+				cliFlags: &cliFlags,
+			}
+
+			if err := k3sService.CreateCluster(cmd.Context()); err != nil {
+				return fmt.Errorf("failed to create k3s management cluster: %w", err)
+			}
+
+			return nil
+		},
 		// PreRun:           common.CheckDocker,
 	}
 

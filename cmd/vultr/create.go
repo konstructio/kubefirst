@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package vultr
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -15,21 +16,18 @@ import (
 	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
-	"github.com/konstructio/kubefirst/internal/utilities"
+	"github.com/konstructio/kubefirst/internal/types"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 )
 
-func createVultr(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "vultr")
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to get flags: %w", err)
-	}
+type Service struct {
+	cliFlags *types.CliFlags
+}
 
+func (s *Service) CreateCluster(ctx context.Context) error {
 	progress.DisplayLogHints(15)
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, s.cliFlags.InstallCatalogApps)
 	if err != nil {
 		return fmt.Errorf("catalog apps validation failed: %w", err)
 	}
@@ -38,13 +36,13 @@ func createVultr(cmd *cobra.Command, _ []string) error {
 		return errors.New("catalog validation failed")
 	}
 
-	err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
+	err = ValidateProvidedFlags(s.cliFlags.GitProvider, s.cliFlags.DNSProvider)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("invalid provided flags: %w", err)
 	}
 
-	if err := provision.ManagementCluster(cliFlags, catalogApps); err != nil {
+	if err := provision.ManagementCluster(s.cliFlags, catalogApps); err != nil {
 		return fmt.Errorf("failed to provision management cluster: %w", err)
 	}
 
