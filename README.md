@@ -41,7 +41,6 @@ Each of our platforms have install guides that detail the prerequesites, command
 - [Vultr](https://kubefirst.konstruct.io/docs/vultr/overview)
 - [K3s](https://kubefirst.konstruct.io/docs/k3s/overview)
 
-
 ## Overview
 
 <https://kubefirst.konstruct.io/docs/>
