@@ -39,9 +39,6 @@ Each of our platforms have install guides that detail the prerequesites, command
 - [DigitalOcean](https://kubefirst.konstruct.io/docs/do/overview)
 - [Google Cloud](https://kubefirst.konstruct.io/docs/gcp/overview)
 - [Vultr](https://kubefirst.konstruct.io/docs/vultr/overview)
-
-In beta:
-
 - [K3s](https://kubefirst.konstruct.io/docs/k3s/overview)
 
 ## Overview
