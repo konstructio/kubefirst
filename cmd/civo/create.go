@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package civo
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -22,7 +23,7 @@ type CivoService struct {
 	cliFlags *types.CliFlags
 }
 
-func (s *CivoService) CreateCluster() error {
+func (s *CivoService) CreateCluster(_ context.Context) error {
 
 	progress.DisplayLogHints(15)
 
