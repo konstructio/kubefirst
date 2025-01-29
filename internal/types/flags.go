@@ -36,4 +36,5 @@ type CliFlags struct {
 	K3sServersArgs       []string
 	InstallKubefirstPro  bool
 	AMIType              string
+	KubeAdminRoleARN     string
 }

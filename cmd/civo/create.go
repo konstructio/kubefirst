@@ -26,7 +26,7 @@ import (
 )
 
 func createCivo(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "civo")
+	cliFlags, err := utilities.GetFlags(cmd, utilities.CloudProviderCivo)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to get CLI flags: %w", err)
@@ -34,9 +34,9 @@ func createCivo(cmd *cobra.Command, _ []string) error {
 
 	progress.DisplayLogHints(15)
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
-	if !isValid {
-		return fmt.Errorf("catalog apps validation failed: %w", err)
+	catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	if err != nil {
+		return fmt.Errorf("failed to validate catalog apps: %w", err)
 	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)

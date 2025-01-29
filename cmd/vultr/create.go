@@ -7,7 +7,6 @@ See the LICENSE file for more details.
 package vultr
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -27,7 +26,7 @@ import (
 )
 
 func createVultr(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "vultr")
+	cliFlags, err := utilities.GetFlags(cmd, utilities.CloudProviderVultr)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to get flags: %w", err)
@@ -35,13 +34,9 @@ func createVultr(cmd *cobra.Command, _ []string) error {
 
 	progress.DisplayLogHints(15)
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
 	if err != nil {
-		return fmt.Errorf("catalog apps validation failed: %w", err)
-	}
-
-	if !isValid {
-		return errors.New("catalog validation failed")
+		return fmt.Errorf("failed to validate catalog apps: %w", err)
 	}
 
 	err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)

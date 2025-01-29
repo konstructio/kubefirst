@@ -8,18 +8,27 @@ package aws
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
 	pkg "github.com/konstructio/kubefirst-api/pkg/utils"
+	internalaws "github.com/konstructio/kubefirst/internal/aws"
 	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/gitShim"
@@ -32,18 +41,22 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	maxRetries = 20
+	baseDelay  = 2 * time.Second
+)
+
 func createAws(cmd *cobra.Command, _ []string) error {
-	cliFlags, err := utilities.GetFlags(cmd, "aws")
+	cliFlags, err := utilities.GetFlags(cmd, utilities.CloudProviderAWS)
 	if err != nil {
-		progress.Error(err.Error())
-		return nil
+		return fmt.Errorf("failed to get flags: %w", err)
 	}
 
 	progress.DisplayLogHints(40)
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
-	if !isValid {
-		return fmt.Errorf("invalid catalog apps: %w", err)
+	catalogApps, err := catalog.ValidateCatalogApps(cliFlags.InstallCatalogApps)
+	if err != nil {
+		return fmt.Errorf("failed to validate catalog apps: %w", err)
 	}
 
 	ctx := cmd.Context()
@@ -53,10 +66,36 @@ func createAws(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("unable to load AWS SDK config: %w", err)
 	}
 
-	err = ValidateProvidedFlags(ctx, cfg, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
+	err = ValidateProvidedFlags(ctx, cfg, cliFlags.DNSProvider, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate provided flags: %w", err)
+	}
+
+	stsClient := sts.NewFromConfig(cfg)
+	iamClient := iam.NewFromConfig(cfg)
+	checker, err := internalaws.NewChecker(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to perform aws checks: %w", err)
+	}
+
+	accessKeyID := viper.Get("kubefirst.state-store-creds.access-key-id")
+	secretAccessKeyID := viper.Get("kubefirst.state-store-creds.secret-access-key-id")
+	sessionToken := viper.Get("kubefirst.state-store-creds.token")
+
+	if accessKeyID == nil || secretAccessKeyID == nil && sessionToken == nil {
+		creds, err := convertLocalCredsToSession(ctx, stsClient, iamClient, checker, cliFlags.KubeAdminRoleARN, cliFlags.ClusterName)
+		if err != nil {
+			progress.Error(err.Error())
+			return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
+		}
+
+		viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyId)
+		viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKey)
+		viper.Set("kubefirst.state-store-creds.token", creds.SessionToken)
+		if err := viper.WriteConfig(); err != nil {
+			return fmt.Errorf("failed to write config: %w", err)
+		}
 	}
 
 	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
@@ -64,22 +103,9 @@ func createAws(cmd *cobra.Command, _ []string) error {
 	// If cluster setup is complete, return
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
-		err = fmt.Errorf("this cluster install process has already completed successfully")
+		err = errors.New("this cluster install process has already completed successfully")
 		progress.Error(err.Error())
 		return nil
-	}
-
-	creds, err := getSessionCredentials(ctx, cfg.Credentials)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
-	}
-
-	viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyID)
-	viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKey)
-	viper.Set("kubefirst.state-store-creds.token", creds.SessionToken)
-	if err := viper.WriteConfig(); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
 	}
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
@@ -134,11 +160,11 @@ func createAws(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, amiType, nodeType string) error {
+func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, dnsProvider, gitProvider, amiType, nodeType string) error {
 	progress.AddStep("Validate provided flags")
 
 	// Validate required environment variables for dns provider
-	if dnsProviderFlag == "cloudflare" {
+	if dnsProvider == "cloudflare" {
 		if os.Getenv("CF_API_TOKEN") == "" {
 			return fmt.Errorf("your CF_API_TOKEN environment variable is not set. Please set and try again")
 		}
@@ -173,14 +199,234 @@ func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, ami
 	return nil
 }
 
-func getSessionCredentials(ctx context.Context, cp aws.CredentialsProvider) (*aws.Credentials, error) {
-	// Retrieve credentials
-	creds, err := cp.Retrieve(ctx)
+const (
+	sessionDuration = int32(43200) // We want at least 6 hours (21,600 seconds)
+)
+
+var wantedPermissions = []string{
+	"eks:*",
+	"ec2:*",
+	"s3:*",
+	"iam:*",
+	"dynamodb:*",
+	"kms:*",
+	"logs:*",
+	"application-autoscaling:*",
+}
+
+type stsClienter interface {
+	GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error)
+	AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
+}
+
+// iamClienter is an interface for IAM operations (CreateRole, AttachRolePolicy, etc.).
+type iamClienter interface {
+	CreatePolicy(ctx context.Context, params *iam.CreatePolicyInput, optFns ...func(*iam.Options)) (*iam.CreatePolicyOutput, error)
+	CreateRole(ctx context.Context, params *iam.CreateRoleInput, optFns ...func(*iam.Options)) (*iam.CreateRoleOutput, error)
+	AttachRolePolicy(ctx context.Context, params *iam.AttachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.AttachRolePolicyOutput, error)
+	GetRole(ctx context.Context, params *iam.GetRoleInput, optFns ...func(*iam.Options)) (*iam.GetRoleOutput, error)
+	GetPolicy(ctx context.Context, params *iam.GetPolicyInput, optFns ...func(*iam.Options)) (*iam.GetPolicyOutput, error)
+}
+
+type checkerClienter interface {
+	CanRoleDoAction(ctx context.Context, roleArn string, actions []string) (bool, error)
+}
+
+func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamClient iamClienter, checker checkerClienter, roleArn, clusterName string) (*types.Credentials, error) {
+	// Check who we are currently (to ensure you're properly authenticated)
+	callerIdentity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve AWS credentials: %w", err)
+		return nil, fmt.Errorf("failed to get caller identity: %w", err)
 	}
 
-	return &creds, nil
+	// If ARN is empty, create a new role with kubernetes admin permissions
+	if roleArn == "" {
+		createdArn, err := createKubernetesAdminRole(ctx, clusterName, iamClient, checker, callerIdentity)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create a new role for EKS clusters: %w", err)
+		}
+		roleArn = createdArn
+	}
+
+	// Check if the currently provided role can perform EKS cluster creation
+	// with all the sub-requirements to actually make a cluster.
+	canCreateCluster, err := checker.CanRoleDoAction(ctx, roleArn, wantedPermissions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check if role %q can create EKS cluster: %w", roleArn, err)
+	}
+	if !canCreateCluster {
+		return nil, fmt.Errorf("role %q does not have permission to create EKS clusters; required permissions: %s", roleArn, wantedPermissions)
+	}
+
+	// Check if the currently provided role can perform EKS cluster creation
+	// with all the sub-requirements to actually make a cluster.
+	canCreateCluster, err = checker.CanRoleDoAction(ctx, *callerIdentity.Arn, []string{"iam:AssumeRole"})
+	if err != nil {
+		return nil, fmt.Errorf("failed to check if user %q can assume role: %w", roleArn, err)
+	}
+	if !canCreateCluster {
+		return nil, fmt.Errorf("user %q does not have permission to assume roles", roleArn)
+	}
+
+	// Create a session name (some unique identifier)
+	sessionName := fmt.Sprintf("kubefirst-session-%s", *callerIdentity.UserId)
+
+	creds, err := assumeRoleWithRetry(ctx, stsClient, roleArn, sessionName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to assume role %s: %w", roleArn, err)
+	}
+
+	// // Return the credentials
+	return creds, nil
+}
+
+// AdditionalRolePolicies is a slice of policy ARNs you want to attach
+// to every new "Kubernetes Admin" role created by the function below.
+var AdditionalRolePolicies = []string{
+	"arn:aws:iam::aws:policy/AmazonEKSServicePolicy",
+	"arn:aws:iam::aws:policy/AmazonEKSVPCResourceController",
+	// Put your extra policies here, e.g.:
+	// "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
+}
+
+func createKubernetesAdminRole(ctx context.Context, clusterName string, iamClient iamClienter, checker checkerClienter, callerIdentity *sts.GetCallerIdentityOutput) (string, error) {
+	if callerIdentity.Arn == nil {
+		return "", errors.New("caller identity ARN is nil")
+	}
+
+	// Verify that the current caller has permission to create IAM roles
+	wantedRolePermissions := []string{"iam:CreateRole", "iam:AssumeRole", "iam:AttachRolePolicy"}
+	canPerformActions, err := checker.CanRoleDoAction(ctx, aws.ToString(callerIdentity.Arn), wantedRolePermissions)
+	if err != nil {
+		return "", fmt.Errorf("failed to check permission to create a new role: %w", err)
+	}
+	if !canPerformActions {
+		return "", fmt.Errorf("caller %q does not have the required permissions: %s", aws.ToString(callerIdentity.Arn), wantedRolePermissions)
+	}
+
+	// Build a custom policy that allows EKS operations
+	permissionPolicy := map[string]interface{}{
+		"Version": "2012-10-17",
+		"Statement": []map[string]interface{}{{
+			"Effect":   "Allow",
+			"Action":   wantedPermissions,
+			"Resource": "*",
+		}},
+	}
+
+	// Encode the policy as JSON
+	permissionPolicyBytes, err := json.Marshal(permissionPolicy)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal permission policy JSON: %w", err)
+	}
+
+	// Policy name
+	policyName := fmt.Sprintf("KubefirstKubernetesAdminPolicy-%s", clusterName)
+
+	// Check if the IAM policy exists
+	cp, err := iamClient.GetPolicy(ctx, &iam.GetPolicyInput{PolicyArn: aws.String(fmt.Sprintf("arn:aws:iam::%s:policy/%s", *callerIdentity.Account, policyName))})
+	if err != nil {
+		var newError *awshttp.ResponseError
+		if errors.As(err, &newError) && newError.HTTPStatusCode() != http.StatusNotFound {
+			return "", fmt.Errorf("failed to get policy %q: %w", policyName, err)
+		}
+	}
+
+	if err == nil && cp.Policy != nil {
+		return "", fmt.Errorf("policy %q already exists: please delete the policy and try again", policyName)
+	}
+
+	// Create the policy in IAM
+	cpo, err := iamClient.CreatePolicy(ctx, &iam.CreatePolicyInput{
+		PolicyName:     aws.String(policyName),
+		PolicyDocument: aws.String(string(permissionPolicyBytes)),
+		Description:    aws.String("Policy that allows creating EKS clusters"),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create policy %q: %w", policyName, err)
+	}
+
+	// Build a trust policy that allows the current caller to assume the new role.
+	trustPolicy := map[string]interface{}{
+		"Version": "2012-10-17",
+		"Statement": []map[string]interface{}{{
+			"Effect": "Allow",
+			"Principal": map[string]interface{}{
+				// Instead of callerIdentity.Arn, we could do:
+				//   "AWS": fmt.Sprintf("arn:aws:iam::%s:root", accountId)
+				// to allow any principal in your account to assume.
+				"AWS": aws.ToString(callerIdentity.Arn),
+			},
+			"Action": "sts:AssumeRole",
+		}},
+	}
+
+	// Encode the trust policy as JSON
+	trustPolicyBytes, err := json.Marshal(trustPolicy)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal trust policy JSON: %w", err)
+	}
+
+	// Check if the IAM role exists
+	roleName := fmt.Sprintf("KubefirstKubernetesAdminRole-%s", clusterName)
+
+	// Check if a role with this name already exists
+	role, err := iamClient.GetRole(ctx, &iam.GetRoleInput{RoleName: aws.String(roleName)})
+	if err != nil {
+		var newError *awshttp.ResponseError
+		if errors.As(err, &newError) && newError.HTTPStatusCode() != http.StatusNotFound {
+			return "", fmt.Errorf("failed to get role %q: %w", roleName, err)
+		}
+	}
+
+	if err == nil && role.Role != nil {
+		return "", fmt.Errorf("role %q already exists: please delete the role and try again", roleName)
+	}
+
+	// Create the IAM role
+	createOut, err := iamClient.CreateRole(ctx, &iam.CreateRoleInput{
+		RoleName:                 aws.String(roleName),
+		AssumeRolePolicyDocument: aws.String(string(trustPolicyBytes)),
+		MaxSessionDuration:       aws.Int32(sessionDuration),
+		Description:              aws.String("Role that can create EKS clusters"),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create role %q: %w", roleName, err)
+	}
+
+	// Attach a policy that lets this role create EKS clusters.
+	// The AWS-managed policy "AmazonEKSClusterPolicy" covers cluster creation & management.
+	// Real usage often requires more policies for VPC, node groups, etc.
+	_, err = iamClient.AttachRolePolicy(ctx, &iam.AttachRolePolicyInput{
+		RoleName:  createOut.Role.RoleName,
+		PolicyArn: aws.String("arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to attach AmazonEKSClusterPolicy to role %q: %w", roleName, err)
+	}
+
+	// Attach a custom policy that allows EKS operations
+	_, err = iamClient.AttachRolePolicy(ctx, &iam.AttachRolePolicyInput{
+		RoleName:  createOut.Role.RoleName,
+		PolicyArn: cpo.Policy.Arn,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to attach custom policy %q to role %q: %w", policyName, roleName, err)
+	}
+
+	// Attach any additional role policies from the package-level slice
+	for _, policyArn := range AdditionalRolePolicies {
+		_, err := iamClient.AttachRolePolicy(ctx, &iam.AttachRolePolicyInput{
+			RoleName:  createOut.Role.RoleName,
+			PolicyArn: aws.String(policyArn),
+		})
+		if err != nil {
+			return "", fmt.Errorf("failed to attach policy %q to role %q: %w", policyArn, roleName, err)
+		}
+	}
+
+	// Return the new role ARN
+	return aws.ToString(createOut.Role.Arn), nil
 }
 
 func validateAMIType(ctx context.Context, amiType, nodeType string, ssmClient ssmClienter, ec2Client ec2Clienter, paginator paginator) error {
@@ -273,4 +519,25 @@ func getSupportedInstanceTypes(ctx context.Context, p paginator, architecture st
 		}
 	}
 	return instanceTypes, nil
+}
+
+func assumeRoleWithRetry(ctx context.Context, stsClient stsClienter, roleArn, sessionName string) (*types.Credentials, error) {
+	var lastErr error
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		output, err := stsClient.AssumeRole(ctx, &sts.AssumeRoleInput{
+			RoleArn:         aws.String(roleArn),
+			RoleSessionName: aws.String(sessionName),
+		})
+		if err == nil {
+			return output.Credentials, nil
+		}
+
+		lastErr = err
+
+		// Exponential backoff
+		delay := time.Duration(attempt*attempt) * baseDelay
+		time.Sleep(delay)
+	}
+
+	return nil, fmt.Errorf("failed to assume role after %d attempts: %w", maxRetries, lastErr)
 }
