@@ -73,7 +73,6 @@ func Create() *cobra.Command {
 			}
 
 			err = service.CreateCluster(cmd.Context())
-
 			if err != nil {
 				return fmt.Errorf("failed to create Civo management cluster: %w", err)
 			}
