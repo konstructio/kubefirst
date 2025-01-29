@@ -54,7 +54,7 @@ func Create() *cobra.Command {
 		Use:              "create",
 		Short:            "create the kubefirst platform running on GCP Kubernetes",
 		TraverseChildren: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			cliFlags, err := utilities.GetFlags(cmd, "google")
 			if err != nil {
 				progress.Error(err.Error())

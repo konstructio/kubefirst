@@ -53,7 +53,7 @@ func Create() *cobra.Command {
 		Use:              "create",
 		Short:            "create the Kubefirst platform running on DigitalOcean Kubernetes",
 		TraverseChildren: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			cliFlags, err := utilities.GetFlags(cmd, "digitalocean")
 			if err != nil {
 				progress.Error(err.Error())

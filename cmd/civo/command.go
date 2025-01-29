@@ -61,7 +61,7 @@ func Create() *cobra.Command {
 		Use:              "create",
 		Short:            "Create the Kubefirst platform running on Civo Kubernetes",
 		TraverseChildren: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 
 			cliFlags, err := utilities.GetFlags(cmd, "civo")
 			if err != nil {

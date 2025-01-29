@@ -53,7 +53,7 @@ func Create() *cobra.Command {
 		Use:              "create",
 		Short:            "Create the Kubefirst platform running on Vultr Kubernetes",
 		TraverseChildren: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			cliFlags, err := utilities.GetFlags(cmd, "vultr")
 			if err != nil {
 				progress.Error(err.Error())
