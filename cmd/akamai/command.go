@@ -10,8 +10,10 @@ import (
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
+	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
@@ -51,17 +53,29 @@ func Create() *cobra.Command {
 		Short:            "create the kubefirst platform running on akamai kubernetes",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
 			cliFlags, err := utilities.GetFlags(cmd, "akamai")
 			if err != nil {
 				progress.Error(err.Error())
 				return fmt.Errorf("failed to get flags: %w", err)
 			}
 
-			akamaiService := Service{
-				cliFlags: &cliFlags,
+			progress.DisplayLogHints(25)
+
+			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
+			if !isValid {
+				return fmt.Errorf("catalog validation failed: %w", err)
 			}
 
-			if err := akamaiService.CreateCluster(cmd.Context()); err != nil {
+			err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
+			if err != nil {
+				progress.Error(err.Error())
+				return fmt.Errorf("failed to validate flags: %w", err)
+			}
+
+			provision := provision.Provisioner{}
+
+			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
 				return fmt.Errorf("failed to create cluster: %w", err)
 			}
 

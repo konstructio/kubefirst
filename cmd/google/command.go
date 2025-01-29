@@ -10,8 +10,10 @@ import (
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
+	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
@@ -55,18 +57,29 @@ func Create() *cobra.Command {
 		Short:            "create the kubefirst platform running on GCP Kubernetes",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
 			cliFlags, err := utilities.GetFlags(cmd, "google")
 			if err != nil {
 				progress.Error(err.Error())
 				return fmt.Errorf("failed to get flags: %w", err)
 			}
 
-			googleService := Service{
-				cliFlags: &cliFlags,
+			progress.DisplayLogHints(20)
+
+			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
+			if !isValid {
+				return fmt.Errorf("catalog apps validation failed: %w", err)
 			}
 
-			err = googleService.CreateCluster(cmd.Context())
+			err = ValidateProvidedFlags(cliFlags.GitProvider)
 			if err != nil {
+				progress.Error(err.Error())
+				return fmt.Errorf("validation of provided flags failed: %w", err)
+			}
+
+			provision := provision.Provisioner{}
+
+			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
 				progress.Error(err.Error())
 				return fmt.Errorf("failed to create google management cluster: %w", err)
 			}

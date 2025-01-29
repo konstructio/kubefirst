@@ -11,8 +11,10 @@ import (
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
+	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
@@ -56,17 +58,30 @@ func Create() *cobra.Command {
 		Short:            "create the kubefirst platform running on Azure kubernetes",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
 			cliFlags, err := utilities.GetFlags(cmd, "azure")
 			if err != nil {
 				progress.Error(err.Error())
 				return fmt.Errorf("failed to get flags: %w", err)
 			}
 
-			azureService := Service{
-				cliFlags: &cliFlags,
+			progress.DisplayLogHints(20)
+
+			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
+			if !isValid {
+				progress.Error(err.Error())
+				return nil
 			}
 
-			if err := azureService.CreateCluster(cmd.Context()); err != nil {
+			err = ValidateProvidedFlags(cliFlags.GitProvider)
+			if err != nil {
+				progress.Error(err.Error())
+				return nil
+			}
+
+			provision := provision.Provisioner{}
+
+			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
 				return fmt.Errorf("failed to create Azure management cluster: %w", err)
 			}
 

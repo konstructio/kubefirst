@@ -7,47 +7,13 @@ See the LICENSE file for more details.
 package digitalocean
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"os"
 
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
-	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/progress"
-	"github.com/konstructio/kubefirst/internal/provision"
-	"github.com/konstructio/kubefirst/internal/types"
 	"github.com/rs/zerolog/log"
 )
-
-type Service struct {
-	cliFlags *types.CliFlags
-}
-
-func (s *Service) CreateCluster(ctx context.Context) error {
-	progress.DisplayLogHints(20)
-
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, s.cliFlags.InstallCatalogApps)
-	if err != nil {
-		return fmt.Errorf("catalog validation error: %w", err)
-	}
-
-	if !isValid {
-		return errors.New("catalog did not pass a validation check")
-	}
-
-	err = ValidateProvidedFlags(s.cliFlags.GitProvider, s.cliFlags.DNSProvider)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to validate provided flags: %w", err)
-	}
-
-	if err := provision.ManagementCluster(s.cliFlags, catalogApps); err != nil {
-		return fmt.Errorf("failed to provision management cluster: %w", err)
-	}
-
-	return nil
-}
 
 func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
 	progress.AddStep("Validate provided flags")

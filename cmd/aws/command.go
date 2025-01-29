@@ -9,11 +9,15 @@ package aws
 import (
 	"fmt"
 
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/konstructio/kubefirst-api/pkg/constants"
+	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -81,23 +85,52 @@ func Create() *cobra.Command {
 		Short:            "create the kubefirst platform running in aws",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
 			cliFlags, err := utilities.GetFlags(cmd, "aws")
 			if err != nil {
 				progress.Error(err.Error())
 				return fmt.Errorf("failed to get flags: %w", err)
 			}
 
-			awsService := Service{
-				cliFlags: &cliFlags,
+			progress.DisplayLogHints(40)
+
+			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
+			if !isValid {
+				return fmt.Errorf("invalid catalog apps: %w", err)
 			}
 
-			if err := awsService.CreateCluster(cmd.Context()); err != nil {
-				return fmt.Errorf("failed to create cluster: %w", err)
+			cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cliFlags.CloudRegion))
+			if err != nil {
+				return fmt.Errorf("unable to load AWS SDK config: %w", err)
+			}
+
+			err = ValidateProvidedFlags(ctx, cfg, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
+			if err != nil {
+				progress.Error(err.Error())
+				return fmt.Errorf("failed to validate provided flags: %w", err)
+			}
+
+			creds, err := getSessionCredentials(ctx, cfg.Credentials)
+			if err != nil {
+				progress.Error(err.Error())
+				return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
+			}
+
+			viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyID)
+			viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKey)
+			viper.Set("kubefirst.state-store-creds.token", creds.SessionToken)
+			if err := viper.WriteConfig(); err != nil {
+				return fmt.Errorf("failed to write config: %w", err)
+			}
+
+			provision := provision.Provisioner{}
+
+			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
+				return fmt.Errorf("failed to provision aws management cluster: %w", err)
 			}
 
 			return nil
 		},
-		// PreRun:           common.CheckDocker,
 	}
 
 	awsDefaults := constants.GetCloudDefaults().Aws
