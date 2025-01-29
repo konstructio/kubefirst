@@ -8,7 +8,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/konstructio/kubefirst-api/pkg/configs"
 	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
@@ -78,6 +77,6 @@ func Execute() {
 		fmt.Println("Error occurred during command execution:", err)
 		fmt.Println("If a detailed error message was available, please make the necessary corrections before retrying.")
 		fmt.Println("You can re-run the last command to try the operation again.")
-		os.Exit(1)
+		progress.Progress.Quit()
 	}
 }
