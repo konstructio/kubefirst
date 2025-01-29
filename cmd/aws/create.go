@@ -41,6 +41,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	maxRetries = 20
+	baseDelay  = 2 * time.Second
+)
+
 func createAws(cmd *cobra.Command, _ []string) error {
 	cliFlags, err := utilities.GetFlags(cmd, utilities.CloudProviderAWS)
 	if err != nil {
@@ -266,21 +271,13 @@ func convertLocalCredsToSession(ctx context.Context, stsClient stsClienter, iamC
 	// Create a session name (some unique identifier)
 	sessionName := fmt.Sprintf("kubefirst-session-%s", *callerIdentity.UserId)
 
-	time.Sleep(5 * time.Second)
-
-	// Assume the role
-	output, err := stsClient.AssumeRole(ctx, &sts.AssumeRoleInput{
-		RoleArn:         aws.String(roleArn),
-		RoleSessionName: aws.String(sessionName),
-		DurationSeconds: aws.Int32(sessionDuration),
-	})
+	creds, err := assumeRoleWithRetry(ctx, stsClient, roleArn, sessionName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to assume role %s: %w", roleArn, err)
 	}
 
 	// // Return the credentials
-	credentials := output.Credentials
-	return credentials, nil
+	return creds, nil
 }
 
 // AdditionalRolePolicies is a slice of policy ARNs you want to attach
@@ -522,4 +519,25 @@ func getSupportedInstanceTypes(ctx context.Context, p paginator, architecture st
 		}
 	}
 	return instanceTypes, nil
+}
+
+func assumeRoleWithRetry(ctx context.Context, stsClient stsClienter, roleArn, sessionName string) (*types.Credentials, error) {
+	var lastErr error
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		output, err := stsClient.AssumeRole(ctx, &sts.AssumeRoleInput{
+			RoleArn:         aws.String(roleArn),
+			RoleSessionName: aws.String(sessionName),
+		})
+		if err == nil {
+			return output.Credentials, nil
+		}
+
+		lastErr = err
+
+		// Exponential backoff
+		delay := time.Duration(attempt*attempt) * baseDelay
+		time.Sleep(delay)
+	}
+
+	return nil, fmt.Errorf("failed to assume role after %d attempts: %w", maxRetries, lastErr)
 }
