@@ -57,7 +57,6 @@ func CreateMgmtClusterRequest(gitAuth apiTypes.GitAuth, cliFlags types.CliFlags,
 }
 
 func ManagementCluster(cliFlags types.CliFlags, catalogApps []apiTypes.GitopsCatalogApp) error {
-
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
 		err := fmt.Errorf("this cluster install process has already completed successfully")
