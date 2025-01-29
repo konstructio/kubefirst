@@ -30,11 +30,11 @@ var envvarSecrets = []string{
 	"ARM_SUBSCRIPTION_ID",
 }
 
-type AzureService struct {
+type Service struct {
 	cliFlags *types.CliFlags
 }
 
-func (s *AzureService) CreateCluster(_ context.Context) error {
+func (s *Service) CreateCluster(_ context.Context) error {
 
 	progress.DisplayLogHints(20)
 

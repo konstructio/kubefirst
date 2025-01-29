@@ -19,11 +19,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type CivoService struct {
+type Service struct {
 	cliFlags *types.CliFlags
 }
 
-func (s *CivoService) CreateCluster(_ context.Context) error {
+func (s *Service) CreateCluster(_ context.Context) error {
 
 	progress.DisplayLogHints(15)
 

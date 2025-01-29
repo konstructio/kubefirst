@@ -19,11 +19,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type AkamaiService struct {
+type Service struct {
 	cliFlags *types.CliFlags
 }
 
-func (s *AkamaiService) CreateCluster(_ context.Context) error {
+func (s *Service) CreateCluster(_ context.Context) error {
 
 	progress.DisplayLogHints(25)
 

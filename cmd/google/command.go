@@ -61,7 +61,7 @@ func Create() *cobra.Command {
 				return fmt.Errorf("failed to get flags: %w", err)
 			}
 
-			googleService := GoogleService{
+			googleService := Service{
 				cliFlags: &cliFlags,
 			}
 

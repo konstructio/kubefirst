@@ -20,11 +20,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type VultrService struct {
+type Service struct {
 	cliFlags *types.CliFlags
 }
 
-func (s *VultrService) CreateCluster(_ context.Context) error {
+func (s *Service) CreateCluster(_ context.Context) error {
 
 	progress.DisplayLogHints(15)
 

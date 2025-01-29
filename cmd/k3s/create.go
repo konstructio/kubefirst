@@ -21,11 +21,11 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // required for k8s authentication
 )
 
-type K3sService struct {
+type Service struct {
 	cliFlags *types.CliFlags
 }
 
-func (s *K3sService) CreateCluster(_ context.Context) error {
+func (s *Service) CreateCluster(_ context.Context) error {
 
 	progress.DisplayLogHints(20)
 

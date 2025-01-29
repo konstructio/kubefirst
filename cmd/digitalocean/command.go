@@ -60,7 +60,7 @@ func Create() *cobra.Command {
 				return fmt.Errorf("failed to get flags: %w", err)
 			}
 
-			digitaloceanService := DigitalOceanService{
+			digitaloceanService := Service{
 				cliFlags: &cliFlags,
 			}
 

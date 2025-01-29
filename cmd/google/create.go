@@ -20,11 +20,11 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // required for authentication
 )
 
-type GoogleService struct {
+type Service struct {
 	cliFlags *types.CliFlags
 }
 
-func (s *GoogleService) CreateCluster(_ context.Context) error {
+func (s *Service) CreateCluster(_ context.Context) error {
 
 	progress.DisplayLogHints(20)
 

@@ -20,11 +20,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type DigitalOceanService struct {
+type Service struct {
 	cliFlags *types.CliFlags
 }
 
-func (s *DigitalOceanService) CreateCluster(_ context.Context) error {
+func (s *Service) CreateCluster(_ context.Context) error {
 
 	progress.DisplayLogHints(20)
 

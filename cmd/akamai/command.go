@@ -57,7 +57,7 @@ func Create() *cobra.Command {
 				return fmt.Errorf("failed to get flags: %w", err)
 			}
 
-			akamaiService := AkamaiService{
+			akamaiService := Service{
 				cliFlags: &cliFlags,
 			}
 

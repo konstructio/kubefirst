@@ -62,7 +62,7 @@ func Create() *cobra.Command {
 				return fmt.Errorf("failed to get flags: %w", err)
 			}
 
-			azureService := AzureService{
+			azureService := Service{
 				cliFlags: &cliFlags,
 			}
 

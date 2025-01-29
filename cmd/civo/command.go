@@ -69,7 +69,7 @@ func Create() *cobra.Command {
 				return fmt.Errorf("failed to get CLI flags: %w", err)
 			}
 
-			service := &CivoService{
+			service := &Service{
 				cliFlags: &cliFlags,
 			}
 

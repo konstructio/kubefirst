@@ -26,11 +26,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-type AwsService struct {
+type Service struct {
 	cliFlags *types.CliFlags
 }
 
-func (s *AwsService) CreateCluster(ctx context.Context) error {
+func (s *Service) CreateCluster(ctx context.Context) error {
 
 	progress.DisplayLogHints(40)
 
