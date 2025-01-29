@@ -31,10 +31,9 @@ type Service struct {
 }
 
 func (s *Service) CreateCluster(ctx context.Context) error {
-
 	progress.DisplayLogHints(40)
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(s.cliFlags.InstallCatalogApps)
+	isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, s.cliFlags.InstallCatalogApps)
 	if !isValid {
 		return fmt.Errorf("invalid catalog apps: %w", err)
 	}

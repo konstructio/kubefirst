@@ -36,12 +36,12 @@ func NewGitHub() *git.Client {
 	return git.NewClient(nil)
 }
 
-func ReadActiveApplications() (apiTypes.GitopsCatalogApps, error) {
+func ReadActiveApplications(ctx context.Context) (apiTypes.GitopsCatalogApps, error) {
 	gh := GitHubClient{
 		Client: NewGitHub(),
 	}
 
-	activeContent, err := gh.ReadGitopsCatalogRepoContents()
+	activeContent, err := gh.ReadGitopsCatalogRepoContents(ctx)
 	if err != nil {
 		return apiTypes.GitopsCatalogApps{}, fmt.Errorf("error retrieving gitops catalog repository content: %w", err)
 	}
@@ -61,7 +61,7 @@ func ReadActiveApplications() (apiTypes.GitopsCatalogApps, error) {
 	return out, nil
 }
 
-func ValidateCatalogApps(catalogApps string) (bool, []apiTypes.GitopsCatalogApp, error) {
+func ValidateCatalogApps(ctx context.Context, catalogApps string) (bool, []apiTypes.GitopsCatalogApp, error) {
 	items := strings.Split(catalogApps, ",")
 
 	gitopsCatalogapps := []apiTypes.GitopsCatalogApp{}
@@ -69,7 +69,7 @@ func ValidateCatalogApps(catalogApps string) (bool, []apiTypes.GitopsCatalogApp,
 		return true, gitopsCatalogapps, nil
 	}
 
-	apps, err := ReadActiveApplications()
+	apps, err := ReadActiveApplications(ctx)
 	if err != nil {
 		log.Error().Msgf("error getting gitops catalog applications: %s", err)
 		return false, gitopsCatalogapps, err
@@ -116,9 +116,9 @@ func ValidateCatalogApps(catalogApps string) (bool, []apiTypes.GitopsCatalogApp,
 	return true, gitopsCatalogapps, nil
 }
 
-func (gh *GitHubClient) ReadGitopsCatalogRepoContents() ([]*git.RepositoryContent, error) {
+func (gh *GitHubClient) ReadGitopsCatalogRepoContents(ctx context.Context) ([]*git.RepositoryContent, error) {
 	_, directoryContent, _, err := gh.Client.Repositories.GetContents(
-		context.Background(),
+		ctx,
 		KubefirstGitHubOrganization,
 		KubefirstGitopsCatalogRepository,
 		basePath,

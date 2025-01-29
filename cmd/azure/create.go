@@ -34,11 +34,10 @@ type Service struct {
 	cliFlags *types.CliFlags
 }
 
-func (s *Service) CreateCluster(_ context.Context) error {
-
+func (s *Service) CreateCluster(ctx context.Context) error {
 	progress.DisplayLogHints(20)
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(s.cliFlags.InstallCatalogApps)
+	isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, s.cliFlags.InstallCatalogApps)
 	if !isValid {
 		progress.Error(err.Error())
 		return nil

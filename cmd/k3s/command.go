@@ -59,7 +59,6 @@ func Create() *cobra.Command {
 			}
 
 			return nil
-
 		},
 		// PreRun:           common.CheckDocker,
 	}
