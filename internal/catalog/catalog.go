@@ -46,7 +46,7 @@ func ReadActiveApplications(ctx context.Context) (apiTypes.GitopsCatalogApps, er
 		return apiTypes.GitopsCatalogApps{}, fmt.Errorf("error retrieving gitops catalog repository content: %w", err)
 	}
 
-	index, err := gh.ReadGitopsCatalogIndex(activeContent)
+	index, err := gh.ReadGitopsCatalogIndex(ctx, activeContent)
 	if err != nil {
 		return apiTypes.GitopsCatalogApps{}, fmt.Errorf("error retrieving gitops catalog index content: %w", err)
 	}
@@ -132,10 +132,10 @@ func (gh *GitHubClient) ReadGitopsCatalogRepoContents(ctx context.Context) ([]*g
 }
 
 // ReadGitopsCatalogIndex reads the gitops catalog repository index
-func (gh *GitHubClient) ReadGitopsCatalogIndex(contents []*git.RepositoryContent) ([]byte, error) {
+func (gh *GitHubClient) ReadGitopsCatalogIndex(ctx context.Context, contents []*git.RepositoryContent) ([]byte, error) {
 	for _, content := range contents {
 		if *content.Type == "file" && *content.Name == "index.yaml" {
-			b, err := gh.readFileContents(content)
+			b, err := gh.readFileContents(ctx, content)
 			if err != nil {
 				return nil, fmt.Errorf("error reading index.yaml file: %w", err)
 			}
@@ -147,9 +147,9 @@ func (gh *GitHubClient) ReadGitopsCatalogIndex(contents []*git.RepositoryContent
 }
 
 // readFileContents parses the contents of a file in a GitHub repository
-func (gh *GitHubClient) readFileContents(content *git.RepositoryContent) ([]byte, error) {
+func (gh *GitHubClient) readFileContents(ctx context.Context, content *git.RepositoryContent) ([]byte, error) {
 	rc, _, err := gh.Client.Repositories.DownloadContents(
-		context.Background(),
+		ctx,
 		KubefirstGitHubOrganization,
 		KubefirstGitopsCatalogRepository,
 		*content.Path,
