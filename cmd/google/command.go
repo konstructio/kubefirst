@@ -11,9 +11,11 @@ import (
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/catalog"
+	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
@@ -57,30 +59,42 @@ func Create() *cobra.Command {
 		Short:            "create the kubefirst platform running on GCP Kubernetes",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			cloudProvider := "google"
+			estimatedTimeMin := 20
 			ctx := cmd.Context()
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
+			stepper.DisplayLogHints(cloudProvider, estimatedTimeMin)
+
+			stepper.NewProgressStep("Validate Configuration")
+
 			cliFlags, err := utilities.GetFlags(cmd, "google")
 			if err != nil {
-				progress.Error(err.Error())
-				return fmt.Errorf("failed to get flags: %w", err)
+				wrerr := fmt.Errorf("failed to get flags: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
-			progress.DisplayLogHints(20)
-
-			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
-			if !isValid {
-				return fmt.Errorf("catalog apps validation failed: %w", err)
+			_, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
+			if err != nil {
+				wrerr := fmt.Errorf("failed to validate catalog apps: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
 			err = ValidateProvidedFlags(cliFlags.GitProvider)
 			if err != nil {
-				progress.Error(err.Error())
-				return fmt.Errorf("validation of provided flags failed: %w", err)
+				wrerr := fmt.Errorf("failed to validate provided flags: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
-			provision := provision.Provisioner{}
+			stepper.CompleteCurrentStep()
+			clusterClient := cluster.ClusterClient{}
+
+			provision := provision.NewProvisioner(provision.NewProvisionWatcher(cliFlags.ClusterName, &clusterClient), stepper)
 
 			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
-				progress.Error(err.Error())
 				return fmt.Errorf("failed to create google management cluster: %w", err)
 			}
 

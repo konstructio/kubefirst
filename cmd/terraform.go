@@ -11,6 +11,7 @@ import (
 
 	"github.com/konstructio/kubefirst-api/pkg/vault"
 	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/spf13/cobra"
 )
 
@@ -40,14 +41,18 @@ func terraformSetEnv() *cobra.Command {
 		Use:              "set-env",
 		Short:            "retrieve data from a target vault secret and format it for use in the local shell via environment variables",
 		TraverseChildren: true,
-		Run: func(_ *cobra.Command, _ []string) {
+		RunE: func(cmd *cobra.Command, _ []string) error {
+
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
 			v := vault.Configuration{
 				Config: vault.NewVault(),
 			}
 
 			err := v.IterSecrets(vaultURLFlag, vaultTokenFlag, outputFileFlag)
 			if err != nil {
-				progress.Error(fmt.Sprintf("error during vault read: %s", err))
+				wrerr := fmt.Errorf("error during vault read: %w", err)
+				stepper.FailCurrentStep(wrerr)
 				return
 			}
 
@@ -59,6 +64,8 @@ func terraformSetEnv() *cobra.Command {
 
 `
 			progress.Success(message)
+
+			return nil
 		},
 	}
 

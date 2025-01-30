@@ -7,14 +7,15 @@ See the LICENSE file for more details.
 package vultr
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/catalog"
+	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
@@ -57,34 +58,42 @@ func Create() *cobra.Command {
 		Short:            "Create the Kubefirst platform running on Vultr Kubernetes",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			cloudProvider := "vultr"
+			estimatedTimeMinutes := 15
 			ctx := cmd.Context()
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
+			stepper.DisplayLogHints(cloudProvider, estimatedTimeMinutes)
+
+			stepper.NewProgressStep("Validate Configuration")
+
 			cliFlags, err := utilities.GetFlags(cmd, "vultr")
 			if err != nil {
-				progress.Error(err.Error())
-				return fmt.Errorf("failed to get flags: %w", err)
+				wrerr := fmt.Errorf("failed to get flags: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
-			progress.DisplayLogHints(15)
-
-			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
+			_, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
 			if err != nil {
-				return fmt.Errorf("catalog apps validation failed: %w", err)
-			}
-
-			if !isValid {
-				return errors.New("catalog validation failed")
+				wrerr := fmt.Errorf("catalog validation failed: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
 			err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
 			if err != nil {
-				progress.Error(err.Error())
-				return fmt.Errorf("invalid provided flags: %w", err)
+				wrerr := fmt.Errorf("failed to validate provided flags: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
-			provision := provision.Provisioner{}
+			stepper.CompleteCurrentStep()
+			clusterClient := cluster.ClusterClient{}
+
+			provision := provision.NewProvisioner(provision.NewProvisionWatcher(cliFlags.ClusterName, &clusterClient), stepper)
 
 			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
-				progress.Error(err.Error())
 				return fmt.Errorf("failed to create vultr management cluster: %w", err)
 			}
 

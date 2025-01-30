@@ -44,6 +44,7 @@ import (
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/segment"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/kubefirst/metrics-client/pkg/telemetry"
 	"github.com/minio/minio-go/v7"
@@ -58,28 +59,33 @@ import (
 
 //nolint:gocyclo // this function is complex and needs to be refactored
 func runK3d(cmd *cobra.Command, _ []string) error {
+	cloudProvider := "k3d"
+	stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
+	stepper.NewProgressStep("Validate Configuration")
+
 	ciFlag, err := cmd.Flags().GetBool("ci")
 	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to get ci flag: %w", err)
+		wrerr := fmt.Errorf("failed to get ci flag: %w", err)
+		stepper.FailCurrentStep(wrerr)
+		return wrerr
 	}
 
-	cliFlags, err := utilities.GetFlags(cmd, "k3d")
+	cliFlags, err := utilities.GetFlags(cmd, cloudProvider)
 	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to get flags: %w", err)
+		wrerr := fmt.Errorf("failed to get flags: %w", err)
+		stepper.FailCurrentStep(wrerr)
+		return wrerr
 	}
 
 	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
 	utils.DisplayLogHints()
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cmd.Context(), cliFlags.InstallCatalogApps)
+	_, catalogApps, err := catalog.ValidateCatalogApps(cmd.Context(), cliFlags.InstallCatalogApps)
 	if err != nil {
-		return fmt.Errorf("failed to validate catalog apps: %w", err)
-	}
-
-	if !isValid {
-		return errors.New("catalog apps validation failed")
+		wrerr := fmt.Errorf("validation of catalog apps failed: %w", err)
+		stepper.FailCurrentStep(wrerr)
+		return wrerr
 	}
 
 	switch cliFlags.GitProvider {

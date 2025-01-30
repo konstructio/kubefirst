@@ -8,37 +8,55 @@ import (
 )
 
 const (
-	emojiCheck   = "✅"
-	emojiError   = "🔴"
-	emojiMagic   = "✨"
-	emojiHead    = "🤕"
-	emojiNoEntry = "⛔"
-	emojiTada    = "🎉"
-	emojiAlarm   = "⏰"
-	emojiBug     = "🐛"
-	emojiBulb    = "💡"
-	emojiWarning = "⚠️"
-	emojiWrench  = "🔧"
-	emojiBook    = "📘"
+	EmojiCheck   = "✅"
+	EmojiError   = "🔴"
+	EmojiMagic   = "✨"
+	EmojiHead    = "🤕"
+	EmojiNoEntry = "⛔"
+	EmojiTada    = "🎉"
+	EmojiAlarm   = "⏰"
+	EmojiBug     = "🐛"
+	EmojiBulb    = "💡"
+	EmojiWarning = "⚠️"
+	EmojiWrench  = "🔧"
+	EmojiBook    = "📘"
 )
 
 type Stepper interface {
-	NewProgressStep(stepName string) *stepper.Step
+	NewProgressStep(stepName string)
+	FailCurrentStep(err error)
 	InfoStep(emoji, message string)
 	InfoStepString(message string)
 	DisplayLogHints(cloudProvider string, estimatedTime int)
 }
 
 type Factory struct {
-	writer io.Writer
+	writer      io.Writer
+	currentStep *stepper.Step
 }
 
 func NewStepFactory(writer io.Writer) *Factory {
 	return &Factory{writer: writer}
 }
 
-func (s *Factory) NewProgressStep(stepName string) *stepper.Step {
-	return stepper.New(s.writer, stepName)
+func (s *Factory) NewProgressStep(stepName string) {
+	if s.currentStep != nil && s.currentStep.GetName() != stepName {
+		s.currentStep.Complete(nil)
+	}
+
+	s.currentStep = stepper.New(s.writer, stepName)
+}
+
+func (s *Factory) FailCurrentStep(err error) {
+	s.currentStep.Complete(err)
+}
+
+func (s *Factory) CompleteCurrentStep() {
+	s.currentStep.Complete(nil)
+}
+
+func (s *Factory) GetCurrentStep() string {
+	return s.currentStep.GetName()
 }
 
 func (s *Factory) InfoStep(emoji, message string) {
@@ -61,9 +79,9 @@ func (s *Factory) DisplayLogHints(cloudProvider string, estimatedTime int) {
 # Welcome to Kubefirst
 `
 
-	verboseLogs := fmt.Sprintf("### %s To view verbose logs run below command in new terminal: \"kubefirst logs\"\n%s Documentation: %s\n\n", emojiBulb, emojiBook, documentationLink)
+	verboseLogs := fmt.Sprintf("### %s To view verbose logs run below command in new terminal: \"kubefirst logs\"\n%s Documentation: %s\n\n", EmojiBulb, EmojiBook, documentationLink)
 
-	estimatedTimeMsg := fmt.Sprintf("%s Estimated time: %d minutes\n\n", emojiAlarm, estimatedTime)
+	estimatedTimeMsg := fmt.Sprintf("%s Estimated time: %d minutes\n\n", EmojiAlarm, estimatedTime)
 
 	s.InfoStepString(fmt.Sprintf("%s%s%s", header, verboseLogs, estimatedTimeMsg))
 }

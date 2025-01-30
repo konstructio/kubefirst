@@ -25,7 +25,6 @@ func ValidateProvidedFlags(gitProvider string) error {
 
 	_, err := os.Open(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
 	if err != nil {
-		progress.Error("Unable to read GOOGLE_APPLICATION_CREDENTIALS file")
 		return fmt.Errorf("could not open GOOGLE_APPLICATION_CREDENTIALS file: %w", err)
 	}
 

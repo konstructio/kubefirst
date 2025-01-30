@@ -11,9 +11,10 @@ import (
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/catalog"
+	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
@@ -34,10 +35,6 @@ func NewCommand() *cobra.Command {
 		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about akamai in kubefirst, run:")
 			fmt.Println("  kubefirst akamai --help")
-
-			if progress.Progress != nil {
-				progress.Progress.Quit()
-			}
 		},
 	}
 
@@ -54,26 +51,39 @@ func Create() *cobra.Command {
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
-			cliFlags, err := utilities.GetFlags(cmd, "akamai")
-			if err != nil {
-				progress.Error(err.Error())
-				return fmt.Errorf("failed to get flags: %w", err)
-			}
+			cloudProvider := "akamai"
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
 
-			progress.DisplayLogHints(25)
+			stepper.DisplayLogHints(cloudProvider, 25)
+
+			stepper.NewProgressStep("Validate Configuration")
+
+			cliFlags, err := utilities.GetFlags(cmd, cloudProvider)
+			if err != nil {
+				wrerr := fmt.Errorf("error during flag retrieval: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
+			}
 
 			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
 			if !isValid {
-				return fmt.Errorf("catalog validation failed: %w", err)
+				wrerr := fmt.Errorf("catalog validation failed: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
 			err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
 			if err != nil {
-				progress.Error(err.Error())
-				return fmt.Errorf("failed to validate flags: %w", err)
+				wrerr := fmt.Errorf("error during flag validation: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
-			provision := provision.Provisioner{}
+			stepper.CompleteCurrentStep()
+
+			clusterClient := cluster.ClusterClient{}
+
+			provision := provision.NewProvisioner(provision.NewProvisionWatcher(cliFlags.ClusterName, &clusterClient), stepper)
 
 			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
 				return fmt.Errorf("failed to create cluster: %w", err)

@@ -12,9 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
-	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -25,7 +24,8 @@ func ResetCommand() *cobra.Command {
 		Use:   "reset",
 		Short: "removes local kubefirst content to provision a new platform",
 		Long:  "removes local kubefirst content to provision a new platform",
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
 			gitProvider := viper.GetString("kubefirst.git-provider")
 			cloudProvider := viper.GetString("kubefirst.cloud-provider")
 
@@ -33,44 +33,52 @@ func ResetCommand() *cobra.Command {
 			switch v := checksMap.(type) {
 			case nil:
 				// Handle the nil case explicitly
-				message := `# Successfully reset`
-				progress.Success(message)
+				message := "Successfully reset kubefirst platform"
+				stepper.InfoStep(step.EmojiTada, message)
 				return nil
 			case string:
 				if v == "" {
 					log.Info().Msg("checks map is empty, continuing")
 				} else {
-					return fmt.Errorf("unable to determine contents of kubefirst-checks: unexpected type %T", v)
+					wrerr := fmt.Errorf("unexpected string value in kubefirst-checks: %s", v)
+					stepper.InfoStep(step.EmojiError, wrerr.Error())
+					return wrerr
 				}
 			case map[string]interface{}:
 				checks, err := parseConfigEntryKubefirstChecks(v)
 				if err != nil {
+					wrerr := fmt.Errorf("error parsing kubefirst-checks: %w", err)
+					stepper.InfoStep(step.EmojiError, wrerr.Error())
 					log.Error().Msgf("error occurred during check parsing: %s - resetting directory without checks", err)
 				}
 				// If destroy hasn't been run yet, reset should fail to avoid orphaned resources
 				switch {
 				case checks[fmt.Sprintf("terraform-apply-%s", gitProvider)]:
-					return fmt.Errorf(
-						"it looks like there's an active %s resource deployment - please run `%s destroy` before continuing",
-						gitProvider, cloudProvider,
-					)
+					wrerr := fmt.Errorf("active %s resource deployment detected - please run `%s destroy` before continuing", gitProvider, cloudProvider)
+					stepper.InfoStep(step.EmojiError, wrerr.Error())
+					return wrerr
 				case checks[fmt.Sprintf("terraform-apply-%s", cloudProvider)]:
-					return fmt.Errorf(
-						"it looks like there's an active %s installation - please run `%s destroy` before continuing",
-						cloudProvider, cloudProvider,
-					)
+					wrerr := fmt.Errorf("active %s installation detected - please run `%s destroy` before continuing", cloudProvider, cloudProvider)
+					stepper.InfoStep(step.EmojiError, wrerr.Error())
+					return wrerr
 				}
 			default:
-				return fmt.Errorf("unable to determine contents of kubefirst-checks: unexpected type %T", v)
+				wrerr := fmt.Errorf("unable to determine contents of kubefirst-checks: unexpected type %T", v)
+				stepper.InfoStep(step.EmojiError, wrerr.Error())
+				return wrerr
 			}
 
 			homePath, err := os.UserHomeDir()
 			if err != nil {
-				return fmt.Errorf("unable to get user home directory: %w", err)
+				wrerr := fmt.Errorf("unable to get user home directory: %w", err)
+				stepper.InfoStep(step.EmojiError, wrerr.Error())
+				return wrerr
 			}
 
 			if err := runReset(homePath); err != nil {
-				return fmt.Errorf("error during reset operation: %w", err)
+				wrerr := fmt.Errorf("failed to reset kubefirst platform: %w", err)
+				stepper.InfoStep(step.EmojiError, wrerr.Error())
+				return wrerr
 			}
 			return nil
 		},
@@ -99,10 +107,6 @@ func parseConfigEntryKubefirstChecks(checks map[string]interface{}) (map[string]
 
 // runReset carries out the reset function
 func runReset(homePath string) error {
-	utils.DisplayLogHints()
-
-	progressPrinter.AddTracker("removing-platform-content", "Removing local platform content", 2)
-	progressPrinter.SetupProgress(progressPrinter.TotalOfTrackers(), false)
 
 	log.Info().Msg("removing previous platform content")
 
@@ -113,7 +117,6 @@ func runReset(homePath string) error {
 		return fmt.Errorf("error resetting k1 directory: %w", err)
 	}
 	log.Info().Msg("previous platform content removed")
-	progressPrinter.IncrementTracker("removing-platform-content")
 
 	log.Info().Msg("resetting $HOME/.kubefirst config")
 	viper.Set("argocd", "")
@@ -136,8 +139,6 @@ func runReset(homePath string) error {
 		return fmt.Errorf("unable to remove %q, error: %w", kubefirstConfig, err)
 	}
 
-	progressPrinter.IncrementTracker("removing-platform-content")
 	time.Sleep(time.Second * 2)
-	progress.Progress.Quit()
 	return nil
 }

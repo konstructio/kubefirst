@@ -51,7 +51,6 @@ func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, ami
 	paginator := ec2.NewDescribeInstanceTypesPaginator(ec2Client, &ec2.DescribeInstanceTypesInput{})
 
 	if err := validateAMIType(ctx, amiType, nodeType, ssmClient, ec2Client, paginator); err != nil {
-		progress.Error(err.Error())
 		return fmt.Errorf("failed to validate ami type for node group: %w", err)
 	}
 

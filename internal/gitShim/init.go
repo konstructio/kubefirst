@@ -35,10 +35,6 @@ func InitializeGitProvider(p *GitInitParameters) error {
 	cloudProvider := viper.Get("kubefirst.cloud-provider")
 	showProgress := cloudProvider != "k3d"
 
-	if showProgress {
-		progress.AddStep("Validate git environment")
-	}
-
 	switch p.GitProvider {
 	case "github":
 		githubSession := github.New(p.GitToken)
@@ -115,15 +111,10 @@ func InitializeGitProvider(p *GitInitParameters) error {
 		}
 	}
 
-	if showProgress {
-		progress.CompleteStep("Validate git environment")
-	}
-
 	return nil
 }
 
 func ValidateGitCredentials(gitProviderFlag, githubOrgFlag, gitlabGroupFlag string) (types.GitAuth, error) {
-	progress.AddStep("Validate git credentials")
 	gitAuth := types.GitAuth{}
 
 	switch gitProviderFlag {

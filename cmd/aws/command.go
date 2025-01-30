@@ -12,9 +12,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/catalog"
+	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -85,45 +87,62 @@ func Create() *cobra.Command {
 		Short:            "create the kubefirst platform running in aws",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			cloudProvider := "aws"
+			estimatedDurationMin := 40
 			ctx := cmd.Context()
-			cliFlags, err := utilities.GetFlags(cmd, "aws")
-			if err != nil {
-				progress.Error(err.Error())
-				return fmt.Errorf("failed to get flags: %w", err)
-			}
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
 
-			progress.DisplayLogHints(40)
+			stepper.DisplayLogHints(cloudProvider, estimatedDurationMin)
+
+			stepper.NewProgressStep("Validate Configuration")
+
+			cliFlags, err := utilities.GetFlags(cmd, cloudProvider)
+			if err != nil {
+				wrerr := fmt.Errorf("failed to get flags: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
+			}
 
 			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
 			if !isValid {
-				return fmt.Errorf("invalid catalog apps: %w", err)
+				wrerr := fmt.Errorf("invalid catalog apps: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
 			cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(cliFlags.CloudRegion))
 			if err != nil {
-				return fmt.Errorf("unable to load AWS SDK config: %w", err)
+				wrerr := fmt.Errorf("failed to load AWS SDK config: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
 			err = ValidateProvidedFlags(ctx, cfg, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
 			if err != nil {
-				progress.Error(err.Error())
-				return fmt.Errorf("failed to validate provided flags: %w", err)
+				wrerr := fmt.Errorf("failed to validate provided flags: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
 			creds, err := getSessionCredentials(ctx, cfg.Credentials)
 			if err != nil {
-				progress.Error(err.Error())
-				return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
+				wrerr := fmt.Errorf("failed to get session credentials: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
 			viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyID)
 			viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKey)
 			viper.Set("kubefirst.state-store-creds.token", creds.SessionToken)
 			if err := viper.WriteConfig(); err != nil {
-				return fmt.Errorf("failed to write config: %w", err)
+				wrerr := fmt.Errorf("failed to write config: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
-			provision := provision.Provisioner{}
+			clusterClient := cluster.ClusterClient{}
+
+			provision := provision.NewProvisioner(provision.NewProvisionWatcher(cliFlags.ClusterName, &clusterClient), stepper)
 
 			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
 				return fmt.Errorf("failed to provision aws management cluster: %w", err)

@@ -11,9 +11,11 @@ import (
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/catalog"
+	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
@@ -65,13 +67,12 @@ func Create() *cobra.Command {
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
 			cliFlags, err := utilities.GetFlags(cmd, "civo")
 			if err != nil {
-				progress.Error(err.Error())
 				return fmt.Errorf("failed to get CLI flags: %w", err)
 			}
-
-			progress.DisplayLogHints(15)
 
 			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
 			if !isValid {
@@ -80,13 +81,19 @@ func Create() *cobra.Command {
 
 			err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
 			if err != nil {
-				progress.Error(err.Error())
 				return fmt.Errorf("failed to validate provided flags: %w", err)
 			}
 
-			provision := provision.Provisioner{}
+			stepper.DisplayLogHints(cliFlags.CloudProvider, 15)
 
-			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
+			clusterClient := cluster.ClusterClient{}
+
+			provisioner := provision.NewProvisioner(
+				provision.NewProvisionWatcher(cliFlags.ClusterName, &clusterClient),
+				stepper,
+			)
+
+			if err := provisioner.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
 				return fmt.Errorf("failed to create Civo management cluster: %w", err)
 			}
 
