@@ -141,7 +141,6 @@ func main() {
 		}()
 
 		progress.Progress.Run()
-
 	} else {
 		cmd.Execute()
 	}
