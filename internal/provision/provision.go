@@ -109,7 +109,9 @@ func (p *Provisioner) ProvisionManagementCluster(ctx context.Context, cliFlags *
 	}
 	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider), true)
 	if err = viper.WriteConfig(); err != nil {
-		return fmt.Errorf("failed to write viper config: %w", err)
+		wrerr := fmt.Errorf("failed to write viper config: %w", err)
+		p.stepper.FailCurrentStep(wrerr)
+		return wrerr
 	}
 
 	p.stepper.NewProgressStep("Setup k3d Cluster")
