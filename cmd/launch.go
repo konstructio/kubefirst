@@ -37,7 +37,6 @@ func launchUp() *cobra.Command {
 		Short:            "launch new console and api instance",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-
 			if err := launch.Up(cmd.Context(), additionalHelmFlags, false, true); err != nil {
 				progress.Error(err.Error())
 				return fmt.Errorf("failed to launch console and api: %w", err)

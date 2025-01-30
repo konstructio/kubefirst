@@ -50,8 +50,7 @@ Kubefirst console has already been deployed. To start over, run` + "`" + `kubefi
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		err = fmt.Errorf("unable to get user's home directory: %s", err)
-		return err
+		return fmt.Errorf("error getting user's home directory: %w", err)
 	}
 
 	dir := fmt.Sprintf("%s/.k1/%s", homeDir, consoleClusterName)
@@ -460,7 +459,6 @@ Kubefirst console has already been deployed. To start over, run` + "`" + `kubefi
 		}, metav1.CreateOptions{})
 		if err != nil {
 			return fmt.Errorf("error creating kubernetes secret for cert: %w", err)
-
 		}
 		time.Sleep(5 * time.Second)
 		log.Info().Msg("Created Kubernetes Secret for certificate")
