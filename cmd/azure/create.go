@@ -7,15 +7,11 @@ See the LICENSE file for more details.
 package azure
 
 import (
-	"context"
 	"fmt"
 	"os"
 
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
-	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/progress"
-	"github.com/konstructio/kubefirst/internal/provision"
-	"github.com/konstructio/kubefirst/internal/types"
 	"github.com/rs/zerolog/log"
 )
 
@@ -28,32 +24,6 @@ var envvarSecrets = []string{
 	"ARM_CLIENT_SECRET",
 	"ARM_TENANT_ID",
 	"ARM_SUBSCRIPTION_ID",
-}
-
-type Service struct {
-	cliFlags *types.CliFlags
-}
-
-func (s *Service) CreateCluster(ctx context.Context) error {
-	progress.DisplayLogHints(20)
-
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, s.cliFlags.InstallCatalogApps)
-	if !isValid {
-		progress.Error(err.Error())
-		return nil
-	}
-
-	err = ValidateProvidedFlags(s.cliFlags.GitProvider)
-	if err != nil {
-		progress.Error(err.Error())
-		return nil
-	}
-
-	if err := provision.ManagementCluster(s.cliFlags, catalogApps); err != nil {
-		return fmt.Errorf("failed to provision management cluster: %w", err)
-	}
-
-	return nil
 }
 
 func ValidateProvidedFlags(gitProvider string) error {

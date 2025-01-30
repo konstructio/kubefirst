@@ -7,11 +7,14 @@ See the LICENSE file for more details.
 package vultr
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
+	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
@@ -54,18 +57,33 @@ func Create() *cobra.Command {
 		Short:            "Create the Kubefirst platform running on Vultr Kubernetes",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
 			cliFlags, err := utilities.GetFlags(cmd, "vultr")
 			if err != nil {
 				progress.Error(err.Error())
 				return fmt.Errorf("failed to get flags: %w", err)
 			}
 
-			vultrService := Service{
-				cliFlags: &cliFlags,
+			progress.DisplayLogHints(15)
+
+			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
+			if err != nil {
+				return fmt.Errorf("catalog apps validation failed: %w", err)
 			}
 
-			err = vultrService.CreateCluster(cmd.Context())
+			if !isValid {
+				return errors.New("catalog validation failed")
+			}
+
+			err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
 			if err != nil {
+				progress.Error(err.Error())
+				return fmt.Errorf("invalid provided flags: %w", err)
+			}
+
+			provision := provision.Provisioner{}
+
+			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
 				progress.Error(err.Error())
 				return fmt.Errorf("failed to create vultr management cluster: %w", err)
 			}

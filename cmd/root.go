@@ -47,6 +47,8 @@ func Execute() {
 		SilenceUsage:  true,
 	}
 
+	output := rootCmd.ErrOrStderr()
+
 	rootCmd.AddCommand(
 		aws.NewCommand(),
 		azure.NewCommand(),
@@ -74,9 +76,8 @@ func Execute() {
 	common.CheckForVersionUpdate()
 	progressPrinter.GetInstance()
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println("Error occurred during command execution:", err)
-		fmt.Println("If a detailed error message was available, please make the necessary corrections before retrying.")
-		fmt.Println("You can re-run the last command to try the operation again.")
+		fmt.Fprintln(output, "If a detailed error message was available, please make the necessary corrections before retrying.")
+		fmt.Fprintln(output, "You can re-run the last command to try the operation again.")
 		progress.Progress.Quit()
 	}
 }

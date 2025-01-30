@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/konstructio/kubefirst/internal/launch"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -35,8 +36,13 @@ func launchUp() *cobra.Command {
 		Use:              "up",
 		Short:            "launch new console and api instance",
 		TraverseChildren: true,
-		Run: func(_ *cobra.Command, _ []string) {
-			launch.Up(additionalHelmFlags, false, true)
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := launch.Up(cmd.Context(), additionalHelmFlags, false, true); err != nil {
+				progress.Error(err.Error())
+				return fmt.Errorf("failed to launch console and api: %w", err)
+			}
+
+			return nil
 		},
 	}
 

@@ -7,11 +7,14 @@ See the LICENSE file for more details.
 package digitalocean
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
+	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
@@ -54,17 +57,33 @@ func Create() *cobra.Command {
 		Short:            "create the Kubefirst platform running on DigitalOcean Kubernetes",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
 			cliFlags, err := utilities.GetFlags(cmd, "digitalocean")
 			if err != nil {
 				progress.Error(err.Error())
 				return fmt.Errorf("failed to get flags: %w", err)
 			}
 
-			digitaloceanService := Service{
-				cliFlags: &cliFlags,
+			progress.DisplayLogHints(20)
+
+			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
+			if err != nil {
+				return fmt.Errorf("catalog validation error: %w", err)
 			}
 
-			if err := digitaloceanService.CreateCluster(cmd.Context()); err != nil {
+			if !isValid {
+				return errors.New("catalog did not pass a validation check")
+			}
+
+			err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
+			if err != nil {
+				progress.Error(err.Error())
+				return fmt.Errorf("failed to validate provided flags: %w", err)
+			}
+
+			provision := provision.Provisioner{}
+
+			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
 				return fmt.Errorf("failed to create DigitalOcean management cluster: %w", err)
 			}
 

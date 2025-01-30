@@ -13,61 +13,13 @@ import (
 	"slices"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
-	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/progress"
-	"github.com/konstructio/kubefirst/internal/provision"
-	"github.com/konstructio/kubefirst/internal/types"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 )
-
-type Service struct {
-	cliFlags *types.CliFlags
-}
-
-func (s *Service) CreateCluster(ctx context.Context) error {
-	progress.DisplayLogHints(40)
-
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, s.cliFlags.InstallCatalogApps)
-	if !isValid {
-		return fmt.Errorf("invalid catalog apps: %w", err)
-	}
-
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(s.cliFlags.CloudRegion))
-	if err != nil {
-		return fmt.Errorf("unable to load AWS SDK config: %w", err)
-	}
-
-	err = ValidateProvidedFlags(ctx, cfg, s.cliFlags.GitProvider, s.cliFlags.AMIType, s.cliFlags.NodeType)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to validate provided flags: %w", err)
-	}
-
-	creds, err := getSessionCredentials(ctx, cfg.Credentials)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to retrieve AWS credentials: %w", err)
-	}
-
-	viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyID)
-	viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKey)
-	viper.Set("kubefirst.state-store-creds.token", creds.SessionToken)
-	if err := viper.WriteConfig(); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
-	}
-
-	if err := provision.ManagementCluster(s.cliFlags, catalogApps); err != nil {
-		return fmt.Errorf("failed to provision management cluster: %w", err)
-	}
-
-	return nil
-}
 
 func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, amiType, nodeType string) error {
 	progress.AddStep("Validate provided flags")

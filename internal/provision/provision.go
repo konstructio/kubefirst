@@ -7,6 +7,7 @@ See the LICENSE file for more details.
 package provision
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -56,7 +57,9 @@ func CreateMgmtClusterRequest(gitAuth apiTypes.GitAuth, cliFlags types.CliFlags,
 	return nil
 }
 
-func ManagementCluster(cliFlags *types.CliFlags, catalogApps []apiTypes.GitopsCatalogApp) error {
+type Provisioner struct{}
+
+func (p *Provisioner) ProvisionManagementCluster(ctx context.Context, cliFlags *types.CliFlags, catalogApps []apiTypes.GitopsCatalogApp) error {
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
 		err := fmt.Errorf("this cluster install process has already completed successfully")
@@ -101,7 +104,10 @@ func ManagementCluster(cliFlags *types.CliFlags, catalogApps []apiTypes.GitopsCa
 	isK1Debug := strings.ToLower(os.Getenv("K1_LOCAL_DEBUG")) == "true"
 
 	if !k3dClusterCreationComplete && !isK1Debug {
-		launch.Up(nil, true, cliFlags.UseTelemetry)
+		if err := launch.Up(ctx, nil, true, cliFlags.UseTelemetry); err != nil {
+			progress.Error(err.Error())
+			return fmt.Errorf("failed to launch k3d cluster: %w", err)
+		}
 	}
 
 	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")

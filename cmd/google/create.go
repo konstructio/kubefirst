@@ -7,43 +7,14 @@ See the LICENSE file for more details.
 package google
 
 import (
-	"context"
 	"fmt"
 	"os"
 
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
-	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/progress"
-	"github.com/konstructio/kubefirst/internal/provision"
-	"github.com/konstructio/kubefirst/internal/types"
 	"github.com/rs/zerolog/log"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // required for authentication
 )
-
-type Service struct {
-	cliFlags *types.CliFlags
-}
-
-func (s *Service) CreateCluster(ctx context.Context) error {
-	progress.DisplayLogHints(20)
-
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, s.cliFlags.InstallCatalogApps)
-	if !isValid {
-		return fmt.Errorf("catalog apps validation failed: %w", err)
-	}
-
-	err = ValidateProvidedFlags(s.cliFlags.GitProvider)
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("validation of provided flags failed: %w", err)
-	}
-
-	if err := provision.ManagementCluster(s.cliFlags, catalogApps); err != nil {
-		return fmt.Errorf("failed to provision management cluster: %w", err)
-	}
-
-	return nil
-}
 
 func ValidateProvidedFlags(gitProvider string) error {
 	progress.AddStep("Validate provided flags")
