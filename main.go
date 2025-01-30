@@ -140,7 +140,13 @@ func main() {
 			cmd.Execute()
 		}()
 
-		progress.Progress.Run()
+		_, err := progress.Progress.Run()
+
+		if err != nil {
+			log.Error().Msgf("error running bubble tea: %v", err)
+			os.Exit(1)
+		}
+
 	} else {
 		cmd.Execute()
 	}
