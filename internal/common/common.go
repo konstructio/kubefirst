@@ -102,15 +102,41 @@ func versionCheck() (*CheckResponse, bool) {
 	}, false
 }
 
-func GetRootCredentials(_ *cobra.Command, _ []string) error {
+func GetRootCredentials(cmd *cobra.Command, _ []string) error {
+	stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
+	stepper.NewProgressStep("Fetching Credentials")
+
 	clusterName := viper.GetString("flags.cluster-name")
 
 	cluster, err := cluster.GetCluster(clusterName)
 	if err != nil {
-		return fmt.Errorf("failed to get cluster: %w", err)
+		wrerr := fmt.Errorf("failed to get cluster: %w", err)
+		stepper.FailCurrentStep(wrerr)
+		return wrerr
 	}
 
-	progress.DisplayCredentials(cluster)
+	stepper.CompleteCurrentStep()
+
+	header := `
+##
+# Root Credentials
+
+### ` + fmt.Sprintf("%s Keep this data secure. These passwords can be used to access the following applications in your platform.", step.EmojiBulb)
+	argoMsg := `
+## ArgoCD Admin Password
+##### ` + cluster.ArgoCDPassword
+	kbotMsg := `
+## KBot User Password
+##### ` + cluster.VaultAuth.KbotPassword
+	vaultMsg := `
+## Vault Root Token
+##### ` + cluster.VaultAuth.RootToken
+
+	stepper.InfoStepString(header)
+	stepper.InfoStepString(argoMsg)
+	stepper.InfoStepString(kbotMsg)
+	stepper.InfoStepString(vaultMsg)
 
 	return nil
 }

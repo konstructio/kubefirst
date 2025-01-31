@@ -25,7 +25,7 @@ import (
 func main() {
 	argsWithProg := os.Args
 
-	bubbleTeaAllowlist := []string{"k3d", "root-credentials"}
+	bubbleTeaAllowlist := []string{"k3d"}
 	needsBubbleTea := false
 
 	for _, arg := range argsWithProg {
