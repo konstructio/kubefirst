@@ -10,7 +10,6 @@ import (
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/configs"
-	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
 	"github.com/konstructio/kubefirst/cmd/akamai"
 	"github.com/konstructio/kubefirst/cmd/aws"
 	"github.com/konstructio/kubefirst/cmd/azure"
@@ -72,8 +71,8 @@ func Execute() {
 	// Refers: https://github.com/konstructio/runtime/issues/525
 	// Before removing next line, please read ticket above.
 	common.CheckForVersionUpdate()
-	progressPrinter.GetInstance()
 	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(output, "Error: %v\n", err)
 		fmt.Fprintln(output, "If a detailed error message was available, please make the necessary corrections before retrying.")
 		fmt.Fprintln(output, "You can re-run the last command to try the operation again.")
 	}

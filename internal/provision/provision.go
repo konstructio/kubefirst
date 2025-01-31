@@ -136,8 +136,6 @@ func (p *Provisioner) ProvisionManagementCluster(ctx context.Context, cliFlags *
 		return fmt.Errorf("failed to request management cluster creation: %w", err)
 	}
 
-	p.stepper.NewProgressStep(p.watcher.GetCurrentStep())
-
 	for !p.watcher.IsComplete() {
 		p.stepper.NewProgressStep(p.watcher.GetCurrentStep())
 		if err := p.watcher.UpdateProvisionProgress(); err != nil {
@@ -146,6 +144,10 @@ func (p *Provisioner) ProvisionManagementCluster(ctx context.Context, cliFlags *
 
 		time.Sleep(5 * time.Second)
 	}
+
+	p.stepper.CompleteCurrentStep()
+
+	p.stepper.InfoStep(step.EmojiTada, "Your kubefirst platform has been provisioned!")
 
 	return nil
 }

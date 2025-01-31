@@ -22,7 +22,6 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/k3d"
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
 	"github.com/konstructio/kubefirst/internal/helm"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -35,17 +34,6 @@ var consoleClusterName = "kubefirst-console"
 
 // Up
 func Up(ctx context.Context, additionalHelmFlags []string, inCluster, useTelemetry bool) error {
-	if viper.GetBool("launch.deployed") {
-		message := `##
-Kubefirst console has already been deployed. To start over, run` + "`" + `kubefirst launch down` + "`" + `to completely remove the existing console.`
-
-		progress.Success(message)
-		return nil
-	}
-
-	if !inCluster {
-		progress.DisplayLogHints(10)
-	}
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -469,20 +457,11 @@ Kubefirst console has already been deployed. To start over, run` + "`" + `kubefi
 	viper.Set("launch.deployed", true)
 	viper.WriteConfig()
 
-	if !inCluster {
-		progress.Success(`
-###
-#### :tada: Success` + "`Your kubefirst platform provisioner is ready`")
-	}
-
 	return nil
 }
 
 // Down destroys a k3d cluster for Kubefirst console and API
 func Down(inCluster bool) error {
-	if !inCluster {
-		progress.DisplayLogHints(1)
-	}
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {

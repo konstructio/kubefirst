@@ -9,6 +9,7 @@ package k3d
 import (
 	"fmt"
 
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -28,6 +29,10 @@ func NewCommand() *cobra.Command {
 		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about k3d in kubefirst, run:")
 			fmt.Println("  kubefirst k3d --help")
+
+			if progress.Progress != nil {
+				progress.Progress.Quit()
+			}
 		},
 	}
 

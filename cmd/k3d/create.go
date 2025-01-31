@@ -44,7 +44,6 @@ import (
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/segment"
-	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/kubefirst/metrics-client/pkg/telemetry"
 	"github.com/minio/minio-go/v7"
@@ -59,40 +58,34 @@ import (
 
 //nolint:gocyclo // this function is complex and needs to be refactored
 func runK3d(cmd *cobra.Command, _ []string) error {
-	cloudProvider := "k3d"
-	stepper := step.NewStepFactory(cmd.ErrOrStderr())
-
-	stepper.NewProgressStep("Validate Configuration")
-
 	ciFlag, err := cmd.Flags().GetBool("ci")
 	if err != nil {
-		wrerr := fmt.Errorf("failed to get ci flag: %w", err)
-		stepper.FailCurrentStep(wrerr)
-		return wrerr
+		progress.Error(err.Error())
+		return fmt.Errorf("failed to get ci flag: %w", err)
 	}
 
-	cliFlags, err := utilities.GetFlags(cmd, cloudProvider)
+	cliFlags, err := utilities.GetFlags(cmd, "k3d")
 	if err != nil {
-		wrerr := fmt.Errorf("failed to get flags: %w", err)
-		stepper.FailCurrentStep(wrerr)
-		return wrerr
+		progress.Error(err.Error())
+		return fmt.Errorf("failed to get flags: %w", err)
 	}
 
 	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
 	utils.DisplayLogHints()
 
-	_, catalogApps, err := catalog.ValidateCatalogApps(cmd.Context(), cliFlags.InstallCatalogApps)
+	isValid, catalogApps, err := catalog.ValidateCatalogApps(cmd.Context(), cliFlags.InstallCatalogApps)
 	if err != nil {
-		wrerr := fmt.Errorf("validation of catalog apps failed: %w", err)
-		stepper.FailCurrentStep(wrerr)
-		return wrerr
+		return fmt.Errorf("failed to validate catalog apps: %w", err)
+	}
+
+	if !isValid {
+		return errors.New("catalog apps validation failed")
 	}
 
 	switch cliFlags.GitProvider {
 	case "github":
 		key, err := internalssh.GetHostKey("github.com")
 		if err != nil {
-
 			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy: %w", err)
 		}
 		log.Info().Msgf("Host key for github.com: %q", key.Type())

@@ -25,6 +25,7 @@ const (
 type Stepper interface {
 	NewProgressStep(stepName string)
 	FailCurrentStep(err error)
+	CompleteCurrentStep()
 	InfoStep(emoji, message string)
 	InfoStepString(message string)
 	DisplayLogHints(cloudProvider string, estimatedTime int)
@@ -40,11 +41,12 @@ func NewStepFactory(writer io.Writer) *Factory {
 }
 
 func (s *Factory) NewProgressStep(stepName string) {
-	if s.currentStep != nil && s.currentStep.GetName() != stepName {
+	if s.currentStep == nil {
+		s.currentStep = stepper.New(s.writer, stepName)
+	} else if s.currentStep != nil && s.currentStep.GetName() != stepName {
 		s.currentStep.Complete(nil)
+		s.currentStep = stepper.New(s.writer, stepName)
 	}
-
-	s.currentStep = stepper.New(s.writer, stepName)
 }
 
 func (s *Factory) FailCurrentStep(err error) {

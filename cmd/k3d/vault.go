@@ -17,7 +17,7 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/k3d"
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
 	utils "github.com/konstructio/kubefirst-api/pkg/utils"
-	"github.com/konstructio/kubefirst/internal/step"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -33,18 +33,11 @@ const (
 	secretThreshold = 3
 )
 
-func unsealVault(cmd *cobra.Command, _ []string) error {
-	stepper := step.NewStepFactory(cmd.ErrOrStderr())
-
+func unsealVault(_ *cobra.Command, _ []string) error {
 	flags := utils.GetClusterStatusFlags()
 	if !flags.SetupComplete {
-		wrerr := fmt.Errorf("failed to unseal vault: there doesn't appear to be an active k3d cluster")
-		stepper.InfoStep(step.EmojiError, wrerr.Error())
-		return wrerr
+		return fmt.Errorf("failed to unseal vault: there doesn't appear to be an active k3d cluster")
 	}
-
-	stepper.NewProgressStep("Validate Configuration")
-
 	config, err := k3d.GetConfig(
 		viper.GetString("flags.cluster-name"),
 		flags.GitProvider,
@@ -52,27 +45,19 @@ func unsealVault(cmd *cobra.Command, _ []string) error {
 		flags.GitProtocol,
 	)
 	if err != nil {
-		wrerr := fmt.Errorf("failed to get config: %w", err)
-		stepper.FailCurrentStep(wrerr)
-		return wrerr
+		return fmt.Errorf("failed to get config: %w", err)
 	}
 
 	kcfg, err := k8s.CreateKubeConfig(false, config.Kubeconfig)
 	if err != nil {
-		wrerr := fmt.Errorf("failed to create kubeconfig: %w", err)
-		stepper.FailCurrentStep(wrerr)
-		return wrerr
+		return fmt.Errorf("failed to create kubeconfig: %w", err)
 	}
-
-	stepper.NewProgressStep("Unseal Vault")
 
 	vaultClient, err := api.NewClient(&api.Config{
 		Address: "https://vault.kubefirst.dev",
 	})
 	if err != nil {
-		wrerr := fmt.Errorf("failed to create vault client: %w", err)
-		stepper.FailCurrentStep(wrerr)
-		return wrerr
+		return fmt.Errorf("failed to create vault client: %w", err)
 	}
 	vaultClient.CloneConfig().ConfigureTLS(&api.TLSConfig{
 		Insecure: true,
@@ -80,18 +65,14 @@ func unsealVault(cmd *cobra.Command, _ []string) error {
 
 	health, err := vaultClient.Sys().Health()
 	if err != nil {
-		wrerr := fmt.Errorf("failed to check vault health: %w", err)
-		stepper.FailCurrentStep(wrerr)
-		return wrerr
+		return fmt.Errorf("failed to check vault health: %w", err)
 	}
 
 	if health.Sealed {
 		node := "vault-0"
 		existingInitResponse, err := parseExistingVaultInitSecret(kcfg.Clientset)
 		if err != nil {
-			wrerr := fmt.Errorf("failed to parse existing vault init secret: %w", err)
-			stepper.FailCurrentStep(wrerr)
-			return wrerr
+			return fmt.Errorf("failed to parse existing vault init secret: %w", err)
 		}
 
 		sealStatusTracking := 0
@@ -107,17 +88,13 @@ func unsealVault(cmd *cobra.Command, _ []string) error {
 						if errors.Is(err, context.DeadlineExceeded) {
 							continue
 						}
-						wrerr := fmt.Errorf("error passing unseal shard %d to %q: %w", i+1, node, err)
-						stepper.FailCurrentStep(wrerr)
-						return wrerr
+						return fmt.Errorf("error passing unseal shard %d to %q: %w", i+1, node, err)
 					}
 				}
 				for j := 0; j < 10; j++ {
 					sealStatus, err := vaultClient.Sys().SealStatus()
 					if err != nil {
-						wrerr := fmt.Errorf("error retrieving health of %q: %w", node, err)
-						stepper.FailCurrentStep(wrerr)
-						return wrerr
+						return fmt.Errorf("error retrieving health of %q: %w", node, err)
 					}
 					if sealStatus.Progress > sealStatusTracking || !sealStatus.Sealed {
 						log.Info().Msg("shard accepted")
@@ -130,11 +107,12 @@ func unsealVault(cmd *cobra.Command, _ []string) error {
 			}
 		}
 
-		stepper.InfoStep(step.EmojiTada, "Vault successfully unsealed!")
+		log.Printf("vault unsealed")
 	} else {
-		stepper.InfoStep(step.EmojiCheck, "Vault is already unsealed")
-		return nil
+		return fmt.Errorf("failed to unseal vault: vault is already unsealed")
 	}
+
+	progress.Progress.Quit()
 
 	return nil
 }

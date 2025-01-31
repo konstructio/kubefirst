@@ -25,14 +25,13 @@ import (
 func main() {
 	argsWithProg := os.Args
 
-	bubbleTeaBlacklist := []string{"completion", "help", "--help", "-h", "quota", "logs", "civo"}
-	canRunBubbleTea := true
+	bubbleTeaAllowlist := []string{"k3d", "root-credentials"}
+	needsBubbleTea := false
 
 	for _, arg := range argsWithProg {
-		isBlackListed := slices.Contains(bubbleTeaBlacklist, arg)
 
-		if isBlackListed {
-			canRunBubbleTea = false
+		if slices.Contains(bubbleTeaAllowlist, arg) {
+			needsBubbleTea = true
 		}
 	}
 
@@ -133,7 +132,7 @@ func main() {
 		return
 	}
 
-	if canRunBubbleTea {
+	if needsBubbleTea {
 		progress.InitializeProgressTerminal()
 
 		go func() {
