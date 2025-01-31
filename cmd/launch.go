@@ -157,7 +157,7 @@ func launchDeleteCluster() *cobra.Command {
 			stepper.NewProgressStep("Deleting Cluster")
 
 			if len(args) != 1 {
-				wrerr := fmt.Errorf("expected 1 argument (cluster name), got %d", len)
+				wrerr := fmt.Errorf("expected 1 argument (cluster name)")
 				stepper.FailCurrentStep(wrerr)
 				return wrerr
 			}
