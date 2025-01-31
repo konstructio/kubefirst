@@ -55,115 +55,61 @@ const (
 
 func GetFlags(cmd *cobra.Command, cloudProvider cloudProvider) (types.CliFlags, error) {
 	cliFlags := types.CliFlags{}
+	var err error
 
-	alertsEmailFlag, err := cmd.Flags().GetString("alerts-email")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get alerts-email flag: %w", err)
+	var (
+		alertsEmailFlag, cloudRegionFlag, dnsProviderFlag, subdomainFlag, domainNameFlag      string
+		nodeTypeFlag, nodeCountFlag, installCatalogAppsFlag, gitProviderFlag, gitProtocolFlag string
+		gitopsTemplateURLFlag, gitopsTemplateBranchFlag, githubOrgFlag, gitlabGroupFlag       string
+		installKubefirstProFlag                                                               bool
+	)
+
+	flags := map[string]*string{
+		"cluster-name":           &cliFlags.ClusterName,
+		"github-org":             &githubOrgFlag,
+		"gitlab-group":           &gitlabGroupFlag,
+		"git-provider":           &gitProviderFlag,
+		"git-protocol":           &gitProtocolFlag,
+		"gitops-template-url":    &gitopsTemplateURLFlag,
+		"gitops-template-branch": &gitopsTemplateBranchFlag,
+		"install-catalog-apps":   &installCatalogAppsFlag,
 	}
 
-	cloudRegionFlag, err := cmd.Flags().GetString("cloud-region")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get cloud-region flag: %w", err)
+	for flag, target := range flags {
+		if *target, err = cmd.Flags().GetString(flag); err != nil {
+			return cliFlags, fmt.Errorf("failed to get %s flag: %w", flag, err)
+		}
 	}
 
-	clusterNameFlag, err := cmd.Flags().GetString("cluster-name")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get cluster-name flag: %w", err)
-	}
-
-	dnsProviderFlag, err := cmd.Flags().GetString("dns-provider")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get dns-provider flag: %w", err)
-	}
-
-	subdomainFlag, err := cmd.Flags().GetString("subdomain")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get subdomain flag: %w", err)
-	}
-
-	domainNameFlag, err := cmd.Flags().GetString("domain-name")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get domain-name flag: %w", err)
-	}
-
-	githubOrgFlag, err := cmd.Flags().GetString("github-org")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get github-org flag: %w", err)
-	}
 	githubOrgFlag = strings.ToLower(githubOrgFlag)
-
-	gitlabGroupFlag, err := cmd.Flags().GetString("gitlab-group")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get gitlab-group flag: %w", err)
-	}
 	gitlabGroupFlag = strings.ToLower(gitlabGroupFlag)
 
-	gitProviderFlag, err := cmd.Flags().GetString("git-provider")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get git-provider flag: %w", err)
+	if cloudProvider != CloudProviderK3d {
+		cloudSpecificFlags := map[string]*string{
+			"alerts-email": &alertsEmailFlag,
+			"cloud-region": &cloudRegionFlag,
+			"dns-provider": &dnsProviderFlag,
+			"subdomain":    &subdomainFlag,
+			"domain-name":  &domainNameFlag,
+			"node-type":    &nodeTypeFlag,
+			"node-count":   &nodeCountFlag,
+		}
+
+		for flag, target := range cloudSpecificFlags {
+			if *target, err = cmd.Flags().GetString(flag); err != nil {
+				return cliFlags, fmt.Errorf("failed to get %s flag: %w", flag, err)
+			}
+		}
+
+		if installKubefirstProFlag, err = cmd.Flags().GetBool("install-kubefirst-pro"); err != nil {
+			return cliFlags, fmt.Errorf("failed to get install-kubefirst-pro flag: %w", err)
+		}
 	}
 
-	gitProtocolFlag, err := cmd.Flags().GetString("git-protocol")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get git-protocol flag: %w", err)
-	}
-
-	gitopsTemplateURLFlag, err := cmd.Flags().GetString("gitops-template-url")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get gitops-template-url flag: %w", err)
-	}
-
-	gitopsTemplateBranchFlag, err := cmd.Flags().GetString("gitops-template-branch")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get gitops-template-branch flag: %w", err)
-	}
-
-	useTelemetryFlag, err := cmd.Flags().GetBool("use-telemetry")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get use-telemetry flag: %w", err)
-	}
-
-	nodeTypeFlag, err := cmd.Flags().GetString("node-type")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get node-type flag: %w", err)
-	}
-
-	installCatalogAppsFlag, err := cmd.Flags().GetString("install-catalog-apps")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get install-catalog-apps flag: %w", err)
-	}
-
-	nodeCountFlag, err := cmd.Flags().GetString("node-count")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get node-count flag: %w", err)
-	}
-
-	installKubefirstProFlag, err := cmd.Flags().GetBool("install-kubefirst-pro")
-	if err != nil {
-		progress.Error(err.Error())
-		return cliFlags, fmt.Errorf("failed to get install-kubefirst-pro flag: %w", err)
-	}
-
-	if cloudProvider == CloudProviderAWS {
+	switch cloudProvider {
+	case CloudProviderAWS:
 		ecrFlag, err := cmd.Flags().GetBool("ecr")
 		if err != nil {
-			progress.Error(err.Error())
 			return cliFlags, fmt.Errorf("failed to get ecr flag: %w", err)
 		}
 
@@ -180,28 +126,23 @@ func GetFlags(cmd *cobra.Command, cloudProvider cloudProvider) (types.CliFlags, 
 			return cliFlags, fmt.Errorf("failed to get kubernetes-admin-role-arn flag: %w", err)
 		}
 		cliFlags.KubeAdminRoleARN = kubernetesAdminRoleArn
-	}
 
-	if cloudProvider == CloudProviderAzure {
+	case CloudProviderAzure:
 		dnsAzureResourceGroup, err := cmd.Flags().GetString("dns-azure-resource-group")
 		if err != nil {
-			progress.Error(err.Error())
 			return cliFlags, fmt.Errorf("failed to get dns-azure-resource-group flag: %w", err)
 		}
 		cliFlags.DNSAzureRG = dnsAzureResourceGroup
-	}
 
-	if cloudProvider == CloudProviderGoogle {
+	case CloudProviderGoogle:
 		googleProject, err := cmd.Flags().GetString("google-project")
 		if err != nil {
-			progress.Error(err.Error())
 			return cliFlags, fmt.Errorf("failed to get google-project flag: %w", err)
 		}
 
 		cliFlags.GoogleProject = googleProject
-	}
 
-	if cloudProvider == CloudProviderK3s {
+	case CloudProviderK3s:
 		k3sServersPrivateIps, err := cmd.Flags().GetStringSlice("servers-private-ips")
 		if err != nil {
 			progress.Error(err.Error())
@@ -238,33 +179,43 @@ func GetFlags(cmd *cobra.Command, cloudProvider cloudProvider) (types.CliFlags, 
 		cliFlags.K3sServersArgs = K3sServersArgsFlags
 	}
 
-	cliFlags.AlertsEmail = alertsEmailFlag
-	cliFlags.CloudRegion = cloudRegionFlag
-	cliFlags.ClusterName = clusterNameFlag
-	cliFlags.DNSProvider = dnsProviderFlag
-	cliFlags.SubDomainName = subdomainFlag
-	cliFlags.DomainName = domainNameFlag
-	cliFlags.GitProtocol = gitProtocolFlag
-	cliFlags.GitProvider = gitProviderFlag
-	cliFlags.GithubOrg = githubOrgFlag
-	cliFlags.GitlabGroup = gitlabGroupFlag
-	cliFlags.GitopsTemplateBranch = gitopsTemplateBranchFlag
-	cliFlags.GitopsTemplateURL = gitopsTemplateURLFlag
-	cliFlags.UseTelemetry = useTelemetryFlag
-	cliFlags.CloudProvider = cloudProvider.String()
-	cliFlags.NodeType = nodeTypeFlag
-	cliFlags.NodeCount = nodeCountFlag
-	cliFlags.InstallCatalogApps = installCatalogAppsFlag
-	cliFlags.InstallKubefirstPro = installKubefirstProFlag
+	// Assign collected values to cliFlags
+	cliFlags = types.CliFlags{
+		AlertsEmail:          alertsEmailFlag,
+		CloudRegion:          cloudRegionFlag,
+		ClusterName:          cliFlags.ClusterName,
+		DNSProvider:          dnsProviderFlag,
+		SubDomainName:        subdomainFlag,
+		DomainName:           domainNameFlag,
+		GitProtocol:          gitProtocolFlag,
+		GitProvider:          gitProviderFlag,
+		GithubOrg:            githubOrgFlag,
+		GitlabGroup:          gitlabGroupFlag,
+		GitopsTemplateBranch: gitopsTemplateBranchFlag,
+		GitopsTemplateURL:    gitopsTemplateURLFlag,
+		UseTelemetry:         cliFlags.UseTelemetry,
+		CloudProvider:        cloudProvider.String(),
+		NodeType:             nodeTypeFlag,
+		NodeCount:            nodeCountFlag,
+		InstallCatalogApps:   installCatalogAppsFlag,
+		InstallKubefirstPro:  installKubefirstProFlag,
+	}
 
-	viper.Set("flags.alerts-email", cliFlags.AlertsEmail)
-	viper.Set("flags.cluster-name", cliFlags.ClusterName)
-	viper.Set("flags.dns-provider", cliFlags.DNSProvider)
-	viper.Set("flags.domain-name", cliFlags.DomainName)
-	viper.Set("flags.git-provider", cliFlags.GitProvider)
-	viper.Set("flags.git-protocol", cliFlags.GitProtocol)
-	viper.Set("flags.cloud-region", cliFlags.CloudRegion)
-	viper.Set("kubefirst.cloud-provider", cloudProvider)
+	// Set Viper configurations
+	viperConfigs := map[string]interface{}{
+		"flags.alerts-email":       cliFlags.AlertsEmail,
+		"flags.cluster-name":       cliFlags.ClusterName,
+		"flags.dns-provider":       cliFlags.DNSProvider,
+		"flags.domain-name":        cliFlags.DomainName,
+		"flags.git-provider":       cliFlags.GitProvider,
+		"flags.git-protocol":       cliFlags.GitProtocol,
+		"flags.cloud-region":       cliFlags.CloudRegion,
+		"kubefirst.cloud-provider": cloudProvider,
+	}
+
+	for key, value := range viperConfigs {
+		viper.Set(key, value)
+	}
 
 	if cloudProvider == CloudProviderK3s {
 		viper.Set("flags.servers-private-ips", cliFlags.K3sServersPrivateIPs)
