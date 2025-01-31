@@ -9,8 +9,8 @@ package k3s
 import (
 	"fmt"
 
-	"github.com/docker/docker/daemon/cluster"
 	"github.com/konstructio/kubefirst/internal/catalog"
+	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/common"
 	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/step"

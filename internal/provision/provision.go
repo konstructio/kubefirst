@@ -77,8 +77,7 @@ func (p *Provisioner) ProvisionManagementCluster(ctx context.Context, cliFlags *
 
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
-		err := fmt.Errorf("this cluster install process has already completed successfully")
-		p.stepper.FailCurrentStep(err)
+		p.stepper.InfoStep(step.EmojiCheck, "Cluster already successfully provisioned")
 		return nil
 	}
 
@@ -88,7 +87,6 @@ func (p *Provisioner) ProvisionManagementCluster(ctx context.Context, cliFlags *
 
 	gitAuth, err := gitShim.ValidateGitCredentials(cliFlags.GitProvider, cliFlags.GithubOrg, cliFlags.GitlabGroup)
 	if err != nil {
-		p.stepper.FailCurrentStep(err)
 		return fmt.Errorf("failed to validate git credentials: %w", err)
 	}
 
@@ -108,16 +106,12 @@ func (p *Provisioner) ProvisionManagementCluster(ctx context.Context, cliFlags *
 
 		err = gitShim.InitializeGitProvider(&initGitParameters)
 		if err != nil {
-			wrerr := fmt.Errorf("failed to initialize Git provider: %w", err)
-			p.stepper.FailCurrentStep(wrerr)
-			return wrerr
+			return fmt.Errorf("failed to initialize Git provider: %w", err)
 		}
 	}
 	viper.Set(fmt.Sprintf("kubefirst-checks.%s-credentials", cliFlags.GitProvider), true)
 	if err = viper.WriteConfig(); err != nil {
-		wrerr := fmt.Errorf("failed to write viper config: %w", err)
-		p.stepper.FailCurrentStep(wrerr)
-		return wrerr
+		return fmt.Errorf("failed to write viper config: %w", err)
 	}
 
 	p.stepper.NewProgressStep("Setup k3d Cluster")
@@ -127,25 +121,19 @@ func (p *Provisioner) ProvisionManagementCluster(ctx context.Context, cliFlags *
 
 	if !k3dClusterCreationComplete && !isK1Debug {
 		if err := launch.Up(ctx, nil, true, cliFlags.UseTelemetry); err != nil {
-			wrerr := fmt.Errorf("failed to launch k3d cluster: %w", err)
-			p.stepper.FailCurrentStep(wrerr)
-			return wrerr
+			return fmt.Errorf("failed to launch k3d cluster: %w", err)
 		}
 	}
 
 	err = utils.IsAppAvailable(fmt.Sprintf("%s/api/proxyHealth", cluster.GetConsoleIngressURL()), "kubefirst api")
 	if err != nil {
-		wrerr := fmt.Errorf("API availability check failed: %w", err)
-		p.stepper.FailCurrentStep(wrerr)
-		return wrerr
+		return fmt.Errorf("API availability check failed: %w", err)
 	}
 
 	p.stepper.NewProgressStep("Create Management Cluster")
 
 	if err := CreateMgmtClusterRequest(gitAuth, *cliFlags, catalogApps); err != nil {
-		wrerr := fmt.Errorf("failed to create management cluster: %w", err)
-		p.stepper.FailCurrentStep(wrerr)
-		return wrerr
+		return fmt.Errorf("failed to request management cluster creation: %w", err)
 	}
 
 	p.stepper.NewProgressStep(p.watcher.GetCurrentStep())
@@ -153,9 +141,7 @@ func (p *Provisioner) ProvisionManagementCluster(ctx context.Context, cliFlags *
 	for !p.watcher.IsComplete() {
 		p.stepper.NewProgressStep(p.watcher.GetCurrentStep())
 		if err := p.watcher.UpdateProvisionProgress(); err != nil {
-			wrerr := fmt.Errorf("failed to provision: %w", err)
-			p.stepper.FailCurrentStep(wrerr)
-			return wrerr
+			return fmt.Errorf("failed to provision management cluster: %w", err)
 		}
 
 		time.Sleep(5 * time.Second)

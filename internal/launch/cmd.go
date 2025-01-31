@@ -21,7 +21,6 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/downloadManager"
 	"github.com/konstructio/kubefirst-api/pkg/k3d"
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
-	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/helm"
 	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
@@ -517,18 +516,6 @@ func Down(inCluster bool) error {
 	viper.Set("launch", "")
 
 	viper.WriteConfig()
-
-	return nil
-}
-
-// ListClusters makes a request to the console API to list created clusters
-func ListClusters() error {
-	clusters, err := cluster.GetClusters()
-	if err != nil {
-		return fmt.Errorf("error getting clusters: %w", err)
-	}
-
-	displayFormattedClusterInfo(clusters)
 
 	return nil
 }

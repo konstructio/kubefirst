@@ -21,7 +21,6 @@ import (
 	"github.com/konstructio/kubefirst/cmd/k3s"
 	"github.com/konstructio/kubefirst/cmd/vultr"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -41,7 +40,6 @@ func Execute() {
 		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about kubefirst, run:")
 			fmt.Println("  kubefirst help")
-			progress.Progress.Quit()
 		},
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -78,6 +76,5 @@ func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(output, "If a detailed error message was available, please make the necessary corrections before retrying.")
 		fmt.Fprintln(output, "You can re-run the last command to try the operation again.")
-		progress.Progress.Quit()
 	}
 }

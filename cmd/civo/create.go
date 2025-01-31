@@ -11,7 +11,6 @@ import (
 	"os"
 
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 )
 
@@ -42,8 +41,6 @@ func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
 		}
 		log.Info().Msgf("gitlab.com %q", key.Type())
 	}
-
-	progress.CompleteStep("Validate provided flags")
 
 	return nil
 }

@@ -11,12 +11,10 @@ import (
 	"os"
 
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 )
 
 func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
-	progress.AddStep("Validate provided flags")
 
 	if os.Getenv("LINODE_TOKEN") == "" {
 		return fmt.Errorf("your LINODE_TOKEN is not set - please set and re-run your last command")
@@ -42,8 +40,6 @@ func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
 		}
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
-
-	progress.CompleteStep("Validate provided flags")
 
 	return nil
 }

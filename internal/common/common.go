@@ -187,8 +187,6 @@ func Destroy(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	progress.CompleteStep("Cleaning up environment")
-
 	successMessage := `
 ###
 #### :tada: Success` + "`Your k3d kubefirst platform has been destroyed.`" + `

@@ -14,7 +14,6 @@ import (
 	"github.com/konstructio/kubefirst/internal/catalog"
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
 	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/konstructio/kubefirst/internal/utilities"
@@ -38,15 +37,10 @@ func NewCommand() *cobra.Command {
 		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about azure in kubefirst, run:")
 			fmt.Println("  kubefirst azure --help")
-
-			if progress.Progress != nil {
-				progress.Progress.Quit()
-			}
 		},
+		SilenceErrors: true,
+		SilenceUsage:  true,
 	}
-
-	// on error, doesnt show helper/usage
-	azureCmd.SilenceUsage = true
 
 	// wire up new commands
 	azureCmd.AddCommand(Create(), Destroy(), RootCredentials())

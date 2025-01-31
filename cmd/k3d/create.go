@@ -92,6 +92,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 	case "github":
 		key, err := internalssh.GetHostKey("github.com")
 		if err != nil {
+
 			return fmt.Errorf("known_hosts file does not exist - please run `ssh-keyscan github.com >> ~/.ssh/known_hosts` to remedy: %w", err)
 		}
 		log.Info().Msgf("Host key for github.com: %q", key.Type())

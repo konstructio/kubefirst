@@ -17,7 +17,6 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/handlers"
 	"github.com/konstructio/kubefirst-api/pkg/services"
 	"github.com/konstructio/kubefirst-api/pkg/types"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
@@ -32,8 +31,6 @@ type GitInitParameters struct {
 
 // InitializeGitProvider
 func InitializeGitProvider(p *GitInitParameters) error {
-	cloudProvider := viper.Get("kubefirst.cloud-provider")
-	showProgress := cloudProvider != "k3d"
 
 	switch p.GitProvider {
 	case "github":
@@ -193,8 +190,6 @@ func ValidateGitCredentials(gitProviderFlag, githubOrgFlag, gitlabGroupFlag stri
 		log.Printf("invalid git provider option: %q", gitProviderFlag)
 		return gitAuth, fmt.Errorf("invalid git provider: %q", gitProviderFlag)
 	}
-
-	progress.CompleteStep("Validate git credentials")
 
 	return gitAuth, nil
 }

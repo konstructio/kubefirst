@@ -17,12 +17,10 @@ import (
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 )
 
 func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, amiType, nodeType string) error {
-	progress.AddStep("Validate provided flags")
 
 	// Validate required environment variables for dns provider
 	if dnsProviderFlag == "cloudflare" {
@@ -53,8 +51,6 @@ func ValidateProvidedFlags(ctx context.Context, cfg aws.Config, gitProvider, ami
 	if err := validateAMIType(ctx, amiType, nodeType, ssmClient, ec2Client, paginator); err != nil {
 		return fmt.Errorf("failed to validate ami type for node group: %w", err)
 	}
-
-	progress.CompleteStep("Validate provided flags")
 
 	return nil
 }

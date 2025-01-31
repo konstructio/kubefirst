@@ -10,7 +10,6 @@ import (
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/vault"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/spf13/cobra"
 )
@@ -52,8 +51,8 @@ func terraformSetEnv() *cobra.Command {
 			err := v.IterSecrets(vaultURLFlag, vaultTokenFlag, outputFileFlag)
 			if err != nil {
 				wrerr := fmt.Errorf("error during vault read: %w", err)
-				stepper.FailCurrentStep(wrerr)
-				return
+				stepper.InfoStep(step.EmojiError, wrerr.Error())
+				return wrerr
 			}
 
 			message := `
@@ -63,7 +62,7 @@ func terraformSetEnv() *cobra.Command {
 :bulb: Run` + fmt.Sprintf("`source %s`", outputFileFlag) + ` to set environment variables
 
 `
-			progress.Success(message)
+			stepper.InfoStepString(message)
 
 			return nil
 		},

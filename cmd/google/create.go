@@ -11,13 +11,11 @@ import (
 	"os"
 
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // required for authentication
 )
 
 func ValidateProvidedFlags(gitProvider string) error {
-	progress.AddStep("Validate provided flags")
 
 	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
 		return fmt.Errorf("your GOOGLE_APPLICATION_CREDENTIALS is not set - please set and re-run your last command")
@@ -42,8 +40,6 @@ func ValidateProvidedFlags(gitProvider string) error {
 		}
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
-
-	progress.CompleteStep("Validate provided flags")
 
 	return nil
 }

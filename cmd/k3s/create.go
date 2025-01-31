@@ -12,12 +12,10 @@ import (
 	"github.com/rs/zerolog/log"
 
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
-	"github.com/konstructio/kubefirst/internal/progress"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // required for k8s authentication
 )
 
 func ValidateProvidedFlags(gitProvider string) error {
-	progress.AddStep("Validate provided flags")
 
 	switch gitProvider {
 	case "github":
@@ -33,8 +31,6 @@ func ValidateProvidedFlags(gitProvider string) error {
 		}
 		log.Info().Msgf("%q %s", "gitlab.com", key.Type())
 	}
-
-	progress.CompleteStep("Validate provided flags")
 
 	return nil
 }
