@@ -80,6 +80,9 @@ func ResetCommand() *cobra.Command {
 				stepper.InfoStep(step.EmojiError, wrerr.Error())
 				return wrerr
 			}
+
+			stepper.InfoStep(step.EmojiTada, "Successfully reset kubefirst platform")
+
 			return nil
 		},
 	}
