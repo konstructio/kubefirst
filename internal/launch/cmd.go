@@ -34,7 +34,6 @@ var consoleClusterName = "kubefirst-console"
 
 // Up
 func Up(ctx context.Context, additionalHelmFlags []string, inCluster, useTelemetry bool) error {
-
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("error getting user's home directory: %w", err)
@@ -461,8 +460,7 @@ func Up(ctx context.Context, additionalHelmFlags []string, inCluster, useTelemet
 }
 
 // Down destroys a k3d cluster for Kubefirst console and API
-func Down(inCluster bool) error {
-
+func Down(_ bool) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("error getting user's home directory: %w", err)

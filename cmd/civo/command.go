@@ -90,7 +90,7 @@ func Create() *cobra.Command {
 				return wrerr
 			}
 
-			clusterClient := cluster.ClusterClient{}
+			clusterClient := cluster.Client{}
 
 			provisioner := provision.NewProvisioner(
 				provision.NewProvisionWatcher(cliFlags.ClusterName, &clusterClient),

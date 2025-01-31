@@ -29,22 +29,19 @@ func GetConsoleIngressURL() string {
 	return "https://console.kubefirst.dev"
 }
 
-type ClusterClient struct{}
+type Client struct{}
 
-func (c *ClusterClient) GetCluster(clusterName string) (*apiTypes.Cluster, error) {
+func (c *Client) GetCluster(clusterName string) (*apiTypes.Cluster, error) {
 	cluster, err := GetCluster(clusterName)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cluster: %w", err)
 	}
 
 	return &cluster, nil
-
 }
 
-func (c *ClusterClient) CreateCluster(cluster apiTypes.ClusterDefinition) error {
+func (c *Client) CreateCluster(cluster apiTypes.ClusterDefinition) error {
 	err := CreateCluster(cluster)
-
 	if err != nil {
 		return fmt.Errorf("failed to create cluster: %w", err)
 	}
@@ -52,9 +49,8 @@ func (c *ClusterClient) CreateCluster(cluster apiTypes.ClusterDefinition) error 
 	return nil
 }
 
-func (c *ClusterClient) ResetClusterProgress(clusterName string) error {
+func (c *Client) ResetClusterProgress(clusterName string) error {
 	err := ResetClusterProgress(clusterName)
-
 	if err != nil {
 		return fmt.Errorf("failed to reset cluster progress: %w", err)
 	}

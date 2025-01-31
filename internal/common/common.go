@@ -116,7 +116,6 @@ func GetRootCredentials(_ *cobra.Command, _ []string) error {
 }
 
 func Destroy(cmd *cobra.Command, _ []string) error {
-
 	stepper := step.NewStepFactory(cmd.ErrOrStderr())
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")

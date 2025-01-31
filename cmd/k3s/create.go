@@ -16,7 +16,6 @@ import (
 )
 
 func ValidateProvidedFlags(gitProvider string) error {
-
 	switch gitProvider {
 	case "github":
 		key, err := internalssh.GetHostKey("github.com")

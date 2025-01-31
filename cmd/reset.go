@@ -107,7 +107,6 @@ func parseConfigEntryKubefirstChecks(checks map[string]interface{}) (map[string]
 
 // runReset carries out the reset function
 func runReset(homePath string) error {
-
 	log.Info().Msg("removing previous platform content")
 
 	k1Dir := fmt.Sprintf("%s/.k1", homePath)

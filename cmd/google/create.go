@@ -16,7 +16,6 @@ import (
 )
 
 func ValidateProvidedFlags(gitProvider string) error {
-
 	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
 		return fmt.Errorf("your GOOGLE_APPLICATION_CREDENTIALS is not set - please set and re-run your last command")
 	}

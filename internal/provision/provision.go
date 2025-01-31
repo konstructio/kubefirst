@@ -32,7 +32,6 @@ func CreateMgmtClusterRequest(gitAuth apiTypes.GitAuth, cliFlags types.CliFlags,
 		cliFlags,
 		catalogApps,
 	)
-
 	if err != nil {
 		return fmt.Errorf("error creating cluster definition record: %w", err)
 	}
@@ -60,11 +59,11 @@ func CreateMgmtClusterRequest(gitAuth apiTypes.GitAuth, cliFlags types.CliFlags,
 }
 
 type Provisioner struct {
-	watcher *ProvisionWatcher
+	watcher *Watcher
 	stepper step.Stepper
 }
 
-func NewProvisioner(watcher *ProvisionWatcher, stepper step.Stepper) *Provisioner {
+func NewProvisioner(watcher *Watcher, stepper step.Stepper) *Provisioner {
 	return &Provisioner{
 		watcher: watcher,
 		stepper: stepper,
@@ -72,7 +71,6 @@ func NewProvisioner(watcher *ProvisionWatcher, stepper step.Stepper) *Provisione
 }
 
 func (p *Provisioner) ProvisionManagementCluster(ctx context.Context, cliFlags *types.CliFlags, catalogApps []apiTypes.GitopsCatalogApp) error {
-
 	p.stepper.NewProgressStep("Initialize Configuration")
 
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")

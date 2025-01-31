@@ -41,7 +41,6 @@ func terraformSetEnv() *cobra.Command {
 		Short:            "retrieve data from a target vault secret and format it for use in the local shell via environment variables",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-
 			stepper := step.NewStepFactory(cmd.ErrOrStderr())
 
 			v := vault.Configuration{

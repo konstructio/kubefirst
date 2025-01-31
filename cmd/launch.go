@@ -40,7 +40,6 @@ func launchUp() *cobra.Command {
 		Short:            "launch new console and api instance",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-
 			stepper := step.NewStepFactory(cmd.ErrOrStderr())
 
 			stepper.NewProgressStep("Launching Console and API")
@@ -70,7 +69,6 @@ func launchDown() *cobra.Command {
 		Short:            "remove console and api instance",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-
 			stepper := step.NewStepFactory(cmd.ErrOrStderr())
 
 			stepper.NewProgressStep("Destroying Console and API")
@@ -158,7 +156,7 @@ func launchDeleteCluster() *cobra.Command {
 
 			stepper.NewProgressStep("Deleting Cluster")
 
-			if len := len(args); len != 1 {
+			if len(args) != 1 {
 				wrerr := fmt.Errorf("expected 1 argument (cluster name), got %d", len)
 				stepper.FailCurrentStep(wrerr)
 				return wrerr

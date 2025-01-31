@@ -32,7 +32,7 @@ type ClusterClient interface {
 	ResetClusterProgress(clusterName string) error
 }
 
-type ProvisionWatcher struct {
+type Watcher struct {
 	clusterName  string
 	installSteps []installStep
 	client       ClusterClient
@@ -42,8 +42,9 @@ type installStep struct {
 	StepName string
 }
 
-func NewProvisionWatcher(clusterName string, client ClusterClient) *ProvisionWatcher {
-	return &ProvisionWatcher{clusterName: clusterName,
+func NewProvisionWatcher(clusterName string, client ClusterClient) *Watcher {
+	return &Watcher{
+		clusterName: clusterName,
 		installSteps: []installStep{
 			{StepName: InstallToolsCheck},
 			{StepName: DomainLivenessCheck},
@@ -64,23 +65,23 @@ func NewProvisionWatcher(clusterName string, client ClusterClient) *ProvisionWat
 	}
 }
 
-func (c *ProvisionWatcher) GetClusterName() string {
+func (c *Watcher) GetClusterName() string {
 	return c.clusterName
 }
 
-func (c *ProvisionWatcher) SetClusterName(clusterName string) {
+func (c *Watcher) SetClusterName(clusterName string) {
 	c.clusterName = clusterName
 }
 
-func (c *ProvisionWatcher) IsComplete() bool {
+func (c *Watcher) IsComplete() bool {
 	return len(c.installSteps) == 0
 }
 
-func (c *ProvisionWatcher) GetCurrentStep() string {
+func (c *Watcher) GetCurrentStep() string {
 	return c.installSteps[0].StepName
 }
 
-func (c *ProvisionWatcher) popStep() string {
+func (c *Watcher) popStep() string {
 	if len(c.installSteps) == 0 {
 		return ProvisionComplete
 	}
@@ -90,7 +91,7 @@ func (c *ProvisionWatcher) popStep() string {
 	return step.StepName
 }
 
-func (c *ProvisionWatcher) UpdateProvisionProgress() error {
+func (c *Watcher) UpdateProvisionProgress() error {
 	provisionedCluster, err := c.client.GetCluster(c.clusterName)
 	if err != nil {
 		if errors.Is(err, cluster.ErrNotFound) {
@@ -113,7 +114,7 @@ func (c *ProvisionWatcher) UpdateProvisionProgress() error {
 	return nil
 }
 
-func (*ProvisionWatcher) mapClusterStepStatus(provisionedCluster *apiTypes.Cluster) map[string]bool {
+func (*Watcher) mapClusterStepStatus(provisionedCluster *apiTypes.Cluster) map[string]bool {
 	clusterStepStatus := map[string]bool{
 		InstallToolsCheck:          provisionedCluster.InstallToolsCheck,
 		DomainLivenessCheck:        provisionedCluster.DomainLivenessCheck,

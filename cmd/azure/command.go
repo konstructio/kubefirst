@@ -85,7 +85,7 @@ func Create() *cobra.Command {
 
 			stepper.CompleteCurrentStep()
 
-			clusterClient := cluster.ClusterClient{}
+			clusterClient := cluster.Client{}
 			provision := provision.NewProvisioner(provision.NewProvisionWatcher(cliFlags.ClusterName, &clusterClient), stepper)
 
 			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {

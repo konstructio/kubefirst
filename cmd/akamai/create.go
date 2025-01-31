@@ -15,7 +15,6 @@ import (
 )
 
 func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
-
 	if os.Getenv("LINODE_TOKEN") == "" {
 		return fmt.Errorf("your LINODE_TOKEN is not set - please set and re-run your last command")
 	}

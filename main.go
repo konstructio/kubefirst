@@ -29,7 +29,6 @@ func main() {
 	needsBubbleTea := false
 
 	for _, arg := range argsWithProg {
-
 		if slices.Contains(bubbleTeaAllowlist, arg) {
 			needsBubbleTea = true
 		}

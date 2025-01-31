@@ -14,7 +14,6 @@ type MockClusterClient struct {
 }
 
 func (m *MockClusterClient) GetCluster(clusterName string) (*apiTypes.Cluster, error) {
-
 	foundCluster, exists := m.clusters[clusterName]
 	if !exists {
 		return nil, cluster.ErrNotFound

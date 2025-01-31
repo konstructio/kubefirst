@@ -38,7 +38,6 @@ func TestStepFactory_NewStep(t *testing.T) {
 
 		assert.Eventually(t, func() bool { return assert.Contains(t, buf.String(), stepName) }, 1*time.Second, 100*time.Millisecond)
 		assert.Eventually(t, func() bool { return assert.Contains(t, buf.String(), newStepName) }, 1*time.Second, 100*time.Millisecond)
-
 	})
 
 	t.Run("should not change current step if provided same name", func(t *testing.T) {

@@ -15,7 +15,6 @@ import (
 )
 
 func ValidateProvidedFlags(gitProvider, dnsProvider string) error {
-
 	if os.Getenv("VULTR_API_KEY") == "" {
 		return fmt.Errorf("your VULTR_API_KEY variable is unset - please set it before continuing")
 	}

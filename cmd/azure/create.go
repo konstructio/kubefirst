@@ -26,7 +26,6 @@ var envvarSecrets = []string{
 }
 
 func ValidateProvidedFlags(gitProvider string) error {
-
 	for _, env := range envvarSecrets {
 		if os.Getenv(env) == "" {
 			return fmt.Errorf("your %s is not set - please set and re-run your last command", env)
