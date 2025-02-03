@@ -58,7 +58,7 @@ func Create() *cobra.Command {
 
 			stepper.NewProgressStep("Validate Configuration")
 
-			cliFlags, err := utilities.GetFlags(cmd, "k3s")
+			cliFlags, err := utilities.GetFlags(cmd, cloudProvider)
 			if err != nil {
 				wrerr := fmt.Errorf("failed to get flags: %w", err)
 				stepper.FailCurrentStep(wrerr)

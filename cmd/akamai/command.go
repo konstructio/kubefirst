@@ -52,9 +52,10 @@ func Create() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 			cloudProvider := "akamai"
+			estimatedTimeMin := 25
 			stepper := step.NewStepFactory(cmd.ErrOrStderr())
 
-			stepper.DisplayLogHints(cloudProvider, 25)
+			stepper.DisplayLogHints(cloudProvider, estimatedTimeMin)
 
 			stepper.NewProgressStep("Validate Configuration")
 
