@@ -42,7 +42,7 @@ func launchUp() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			stepper := step.NewStepFactory(cmd.ErrOrStderr())
 
-			stepper.DisplayLogHints("k3d", 20)
+			stepper.DisplayLogHints("", 5)
 
 			stepper.NewProgressStep("Launching Console and API")
 
