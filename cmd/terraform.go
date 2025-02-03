@@ -55,8 +55,7 @@ func terraformSetEnv() *cobra.Command {
 			}
 
 			message := `
-##
-### Generated env file at` + fmt.Sprintf("`%s`", outputFileFlag) + `
+Generated env file at` + fmt.Sprintf("`%s`", outputFileFlag) + `
 
 :bulb: Run` + fmt.Sprintf("`source %s`", outputFileFlag) + ` to set environment variables
 

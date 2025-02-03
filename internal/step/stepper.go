@@ -76,12 +76,9 @@ func (s *Factory) DisplayLogHints(cloudProvider string, estimatedTime int) {
 		documentationLink += cloudProvider + `/quick-start/install/cli`
 	}
 
-	header := `
-##
-# Welcome to Kubefirst
-`
+	header := "\n Welcome to Kubefirst \n\n"
 
-	verboseLogs := fmt.Sprintf("### %s To view verbose logs run below command in new terminal: \"kubefirst logs\"\n%s Documentation: %s\n\n", EmojiBulb, EmojiBook, documentationLink)
+	verboseLogs := fmt.Sprintf("%s To view verbose logs run below command in new terminal: \"kubefirst logs\"\n%s Documentation: %s\n\n", EmojiBulb, EmojiBook, documentationLink)
 
 	estimatedTimeMsg := fmt.Sprintf("%s Estimated time: %d minutes\n\n", EmojiAlarm, estimatedTime)
 
