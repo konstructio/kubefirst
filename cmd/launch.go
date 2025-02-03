@@ -174,10 +174,9 @@ func launchDeleteCluster() *cobra.Command {
 			}
 
 			deleteMessage := `
-##
-### Submitted request to delete cluster` + fmt.Sprintf("`%s`", managedClusterName) + `
-### Follow progress with ` + fmt.Sprintf("`%s`", "kubefirst launch cluster list") + `
-`
+				Submitted request to delete cluster` + fmt.Sprintf("`%s`", managedClusterName) + `
+				Follow progress with ` + fmt.Sprintf("`%s`", "kubefirst launch cluster list") + `
+			`
 			stepper.InfoStepString(deleteMessage)
 
 			return nil

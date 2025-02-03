@@ -35,8 +35,8 @@ func InfoCommand() *cobra.Command {
 
 			tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', tabwriter.Debug)
 
-			fmt.Fprintln(&buf, "##")
-			fmt.Fprintln(&buf, "# Info summary")
+			fmt.Fprintln(&buf, "")
+			fmt.Fprintln(&buf, "Info summary")
 			fmt.Fprintln(&buf, "")
 
 			fmt.Fprintf(tw, "Name\tValue\n")
@@ -47,6 +47,7 @@ func InfoCommand() *cobra.Command {
 			fmt.Fprintf(tw, "Kubefirst config file\t%s\n", config.KubefirstConfigFilePath)
 			fmt.Fprintf(tw, "Kubefirst config folder\t%s\n", config.K1FolderPath)
 			fmt.Fprintf(tw, "Kubefirst Version\t%s\n", configs.K1Version)
+			tw.Flush()
 
 			stepper.InfoStepString(buf.String())
 			return nil

@@ -19,9 +19,7 @@ func VersionCommand() *cobra.Command {
 		Long:  `All software has versions. This is kubefirst's`,
 		Run: func(cmd *cobra.Command, _ []string) {
 			stepper := step.NewStepFactory(cmd.ErrOrStderr())
-			versionMsg := `
-	##
-	### kubefirst-cli golang utility version: ` + configs.K1Version
+			versionMsg := "\n kubefirst-cli golang utility version: " + configs.K1Version
 
 			stepper.InfoStepString(versionMsg)
 		},
