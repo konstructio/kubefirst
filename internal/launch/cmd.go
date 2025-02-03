@@ -21,9 +21,7 @@ import (
 	"github.com/konstructio/kubefirst-api/pkg/downloadManager"
 	"github.com/konstructio/kubefirst-api/pkg/k3d"
 	"github.com/konstructio/kubefirst-api/pkg/k8s"
-	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/helm"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -36,18 +34,6 @@ var consoleClusterName = "kubefirst-console"
 
 // Up
 func Up(ctx context.Context, additionalHelmFlags []string, inCluster, useTelemetry bool) error {
-	if viper.GetBool("launch.deployed") {
-		message := `##
-Kubefirst console has already been deployed. To start over, run` + "`" + `kubefirst launch down` + "`" + `to completely remove the existing console.`
-
-		progress.Success(message)
-		return nil
-	}
-
-	if !inCluster {
-		progress.DisplayLogHints(10)
-	}
-
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("error getting user's home directory: %w", err)
@@ -69,9 +55,6 @@ Kubefirst console has already been deployed. To start over, run` + "`" + `kubefi
 	}
 
 	log.Info().Msgf("%s/%s", k3d.LocalhostOS, k3d.LocalhostARCH)
-
-	progress.AddStep("Download k3d")
-
 	// Download k3d
 	k3dClient := fmt.Sprintf("%s/k3d", toolsDir)
 	_, err = os.Stat(k3dClient)
@@ -94,7 +77,6 @@ Kubefirst console has already been deployed. To start over, run` + "`" + `kubefi
 	} else {
 		log.Info().Msg("k3d is already installed, continuing")
 	}
-	progress.CompleteStep("Download k3d")
 
 	// Download helm
 	helmClient := fmt.Sprintf("%s/helm", toolsDir)
@@ -155,8 +137,6 @@ Kubefirst console has already been deployed. To start over, run` + "`" + `kubefi
 		log.Info().Msg("mkcert is already installed, continuing")
 	}
 
-	progress.AddStep("Create k3d cluster")
-
 	// Create k3d cluster
 	kubeconfigPath := fmt.Sprintf("%s/.k1/%s/kubeconfig", homeDir, consoleClusterName)
 	_, _, err = shell.ExecShellReturnStrings(
@@ -202,8 +182,6 @@ Kubefirst console has already been deployed. To start over, run` + "`" + `kubefi
 			return fmt.Errorf("error waiting for traefik: %w", err)
 		}
 	}
-
-	progress.CompleteStep("Create k3d cluster")
 
 	if _, err := os.Stat(kubeconfigPath); os.IsNotExist(err) {
 		_, _, err := shell.ExecShellReturnStrings(
@@ -309,8 +287,6 @@ Kubefirst console has already been deployed. To start over, run` + "`" + `kubefi
 	kubefirstTeam := os.Getenv("KUBEFIRST_TEAM")
 	kubefirstTeamInfo := os.Getenv("KUBEFIRST_TEAM_INFO")
 
-	progress.AddStep("Installing Kubefirst")
-
 	if !chartInstalled {
 		installFlags := []string{
 			"install",
@@ -374,10 +350,6 @@ Kubefirst console has already been deployed. To start over, run` + "`" + `kubefi
 	} else {
 		log.Info().Msg("Kubefirst console helm chart already installed")
 	}
-
-	progress.CompleteStep("Installing Kubefirst")
-
-	progress.AddStep("Waiting for kubefirst Deployment")
 
 	// Wait for API Deployment Pods to transition to Running
 	log.Info().Msg("Waiting for Kubefirst API Deployment...")
@@ -464,8 +436,6 @@ Kubefirst console has already been deployed. To start over, run` + "`" + `kubefi
 		log.Info().Msg("Created Kubernetes Secret for certificate")
 	}
 
-	progress.CompleteStep("Waiting for kubefirst Deployment")
-
 	if !inCluster {
 		log.Info().Msg(fmt.Sprintf("Kubefirst Console is now available! %q", consoleURL))
 
@@ -486,41 +456,28 @@ Kubefirst console has already been deployed. To start over, run` + "`" + `kubefi
 	viper.Set("launch.deployed", true)
 	viper.WriteConfig()
 
-	if !inCluster {
-		progress.Success(`
-###
-#### :tada: Success` + "`Your kubefirst platform provisioner is ready`")
-	}
-
 	return nil
 }
 
 // Down destroys a k3d cluster for Kubefirst console and API
-func Down(inCluster bool) {
-	if !inCluster {
-		progress.DisplayLogHints(1)
-	}
-
+func Down(_ bool) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		progress.Error(fmt.Sprintf("something went wrong getting home path: %s", err))
-		return
+		return fmt.Errorf("error getting user's home directory: %w", err)
 	}
 
 	log.Info().Msg("Deleting k3d cluster for Kubefirst console and API")
 
 	dir := fmt.Sprintf("%s/.k1/%s", homeDir, consoleClusterName)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		progress.Error(fmt.Sprintf("cluster %q directory does not exist", dir))
-		return
+		return fmt.Errorf("cluster %q directory does not exist", dir)
 	}
 	toolsDir := fmt.Sprintf("%s/tools", dir)
 	k3dClient := fmt.Sprintf("%s/k3d", toolsDir)
 
 	_, _, err = shell.ExecShellReturnStrings(k3dClient, "cluster", "delete", consoleClusterName)
 	if err != nil {
-		progress.Error(fmt.Sprintf("error deleting k3d cluster: %s", err))
-		return
+		return fmt.Errorf("error deleting k3d cluster: %w", err)
 	}
 
 	log.Info().Msg("k3d cluster for Kubefirst console and API deleted successfully")
@@ -528,7 +485,7 @@ func Down(inCluster bool) {
 	log.Info().Msg(fmt.Sprintf("Deleting cluster directory at %q", dir))
 	err = os.RemoveAll(dir)
 	if err != nil {
-		log.Warn().Msgf("unable to remove directory at %q", dir)
+		return fmt.Errorf("error removing directory at %q: %w", dir, err)
 	}
 
 	viper.Set("kubefirst", "")
@@ -537,37 +494,5 @@ func Down(inCluster bool) {
 
 	viper.WriteConfig()
 
-	if !inCluster {
-		successMsg := `
-###
-#### :tada: Success` + "`Your kubefirst platform provisioner has been destroyed.`"
-		progress.Success(successMsg)
-	}
-}
-
-// ListClusters makes a request to the console API to list created clusters
-func ListClusters() {
-	clusters, err := cluster.GetClusters()
-	if err != nil {
-		progress.Error(fmt.Sprintf("error getting clusters: %s", err))
-		return
-	}
-
-	displayFormattedClusterInfo(clusters)
-}
-
-// DeleteCluster makes a request to the console API to delete a single cluster
-func DeleteCluster(managedClusterName string) {
-	err := cluster.DeleteCluster(managedClusterName)
-	if err != nil {
-		progress.Error(fmt.Sprintf("error: cluster %q not found", managedClusterName))
-		return
-	}
-
-	deleteMessage := `
-##
-### Submitted request to delete cluster` + fmt.Sprintf("`%s`", managedClusterName) + `
-### :bulb: - follow progress with ` + fmt.Sprintf("`%s`", "kubefirst launch cluster list") + `
-`
-	progress.Success(deleteMessage)
+	return nil
 }

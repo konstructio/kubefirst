@@ -8,7 +8,7 @@ package cmd
 
 import (
 	"github.com/konstructio/kubefirst-api/pkg/configs"
-	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/spf13/cobra"
 )
 
@@ -17,12 +17,13 @@ func VersionCommand() *cobra.Command {
 		Use:   "version",
 		Short: "print the version number for kubefirst-cli",
 		Long:  `All software has versions. This is kubefirst's`,
-		Run: func(_ *cobra.Command, _ []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
 			versionMsg := `
 	##
 	### kubefirst-cli golang utility version: ` + configs.K1Version
 
-			progress.Success(versionMsg)
+			stepper.InfoStepString(versionMsg)
 		},
 	}
 	return versionCmd

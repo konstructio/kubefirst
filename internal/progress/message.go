@@ -146,32 +146,6 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 	}
 }
 
-func DisplayCredentials(cluster types.Cluster) {
-	header := `
-##
-# Root Credentials
-
-### :bulb: Keep this data secure. These passwords can be used to access the following applications in your platform
-
-## ArgoCD Admin Password
-##### ` + cluster.ArgoCDPassword + `
-
-## KBot User Password
-##### ` + cluster.VaultAuth.KbotPassword + `
-
-## Vault Root Token
-##### ` + cluster.VaultAuth.RootToken + `
-`
-
-	headerMessage := renderMessage(header)
-
-	Progress.Send(headerMsg{
-		message: headerMessage,
-	})
-
-	Progress.Quit()
-}
-
 func AddStep(message string) {
 	renderedMessage := createStep(fmt.Sprintf("%s %s", ":dizzy:", message))
 	Progress.Send(renderedMessage)

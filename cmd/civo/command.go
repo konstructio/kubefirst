@@ -11,9 +11,10 @@ import (
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/catalog"
+	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
@@ -34,10 +35,6 @@ func NewCommand() *cobra.Command {
 		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about Civo in Kubefirst, run:")
 			fmt.Println("  kubefirst civo --help")
-
-			if progress.Progress != nil {
-				progress.Progress.Quit()
-			}
 		},
 	}
 
@@ -65,34 +62,48 @@ func Create() *cobra.Command {
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
-			cliFlags, err := utilities.GetFlags(cmd, "civo")
+			cloudProvider := "civo"
+			estimatedTimeMinutes := 15
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
+			stepper.DisplayLogHints(cloudProvider, estimatedTimeMinutes)
+			cliFlags, err := utilities.GetFlags(cmd, cloudProvider)
 			if err != nil {
-				progress.Error(err.Error())
 				return fmt.Errorf("failed to get CLI flags: %w", err)
 			}
 
-			progress.DisplayLogHints(15)
+			stepper.NewProgressStep("Validate Configuration")
 
 			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
 			if !isValid {
-				return fmt.Errorf("catalog apps validation failed: %w", err)
+				wrerr := fmt.Errorf("catalog validation failed: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
+
+			stepper.NewProgressStep("Validate Provided Flags")
 
 			err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
 			if err != nil {
-				progress.Error(err.Error())
-				return fmt.Errorf("failed to validate provided flags: %w", err)
+				wrerr := fmt.Errorf("error during flag validation: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
-			provision := provision.Provisioner{}
+			clusterClient := cluster.Client{}
 
-			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
+			provisioner := provision.NewProvisioner(
+				provision.NewProvisionWatcher(cliFlags.ClusterName, &clusterClient),
+				stepper,
+			)
+
+			if err := provisioner.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
+				stepper.FailCurrentStep(err)
 				return fmt.Errorf("failed to create Civo management cluster: %w", err)
 			}
 
 			return nil
 		},
-		// PreRun:           common.CheckDocker,
 	}
 
 	civoDefaults := constants.GetCloudDefaults().Civo
@@ -129,7 +140,6 @@ func Destroy() *cobra.Command {
 		Short: "Destroy the Kubefirst platform",
 		Long:  "Destroy the Kubefirst platform running in Civo and remove all resources",
 		RunE:  common.Destroy,
-		// PreRun: common.CheckDocker,
 	}
 
 	return destroyCmd

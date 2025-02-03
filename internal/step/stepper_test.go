@@ -2,35 +2,86 @@ package step
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestStepFactory_NewStep(t *testing.T) {
-	tests := []struct {
-		name     string
-		stepName string
-	}{
-		{
-			name:     "creates new step with name",
-			stepName: "test step",
-		},
-	}
+	t.Run("creates new step with name", func(t *testing.T) {
+		stepName := "test step"
+		buf := &bytes.Buffer{}
+		sf := NewStepFactory(buf)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			buf := &bytes.Buffer{}
-			sf := &Factory{writer: buf}
+		sf.NewProgressStep(stepName)
 
-			step := sf.NewProgressStep(tt.stepName)
+		assert.Equal(t, stepName, sf.GetCurrentStep())
+	})
 
-			assert.NotNil(t, step)
-			assert.Equal(t, tt.stepName, step.GetName())
-		})
-	}
+	t.Run("should create new step if provided step name", func(t *testing.T) {
+		stepName := "test step"
+		buf := &bytes.Buffer{}
+		sf := NewStepFactory(buf)
+
+		sf.NewProgressStep(stepName)
+
+		assert.Equal(t, stepName, sf.GetCurrentStep())
+
+		newStepName := "another step"
+		sf.NewProgressStep(newStepName)
+
+		assert.Equal(t, newStepName, sf.GetCurrentStep())
+
+		assert.Eventually(t, func() bool { return assert.Contains(t, buf.String(), stepName) }, 1*time.Second, 100*time.Millisecond)
+		assert.Eventually(t, func() bool { return assert.Contains(t, buf.String(), newStepName) }, 1*time.Second, 100*time.Millisecond)
+	})
+
+	t.Run("should not change current step if provided same name", func(t *testing.T) {
+		stepName := "test step"
+		buf := &bytes.Buffer{}
+		sf := NewStepFactory(buf)
+
+		sf.NewProgressStep(stepName)
+
+		assert.Equal(t, stepName, sf.GetCurrentStep())
+
+		sf.NewProgressStep(stepName)
+
+		assert.Equal(t, stepName, sf.GetCurrentStep())
+	})
+}
+
+func TestStepFactory_FailCurrentStep(t *testing.T) {
+	t.Run("should fail current step", func(t *testing.T) {
+		stepName := "test step"
+		errorMessage := "test error"
+		buf := &bytes.Buffer{}
+		sf := NewStepFactory(buf)
+
+		sf.NewProgressStep(stepName)
+
+		sf.FailCurrentStep(fmt.Errorf("%s", errorMessage))
+
+		assert.Contains(t, buf.String(), errorMessage)
+	})
+}
+
+func TestStepFactory_CompleteCurrentStep(t *testing.T) {
+	t.Run("should complete current step", func(t *testing.T) {
+		stepName := "test step"
+		buf := &bytes.Buffer{}
+		sf := NewStepFactory(buf)
+
+		sf.NewProgressStep(stepName)
+
+		sf.CompleteCurrentStep()
+
+		assert.Eventually(t, func() bool { return assert.Contains(t, buf.String(), EmojiCheck) }, 1*time.Second, 100*time.Millisecond)
+	})
 }
 
 func TestStepFactory_DisplayLogHints(t *testing.T) {

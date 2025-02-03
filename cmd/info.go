@@ -13,7 +13,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/konstructio/kubefirst-api/pkg/configs"
-	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/spf13/cobra"
 )
 
@@ -22,10 +22,13 @@ func InfoCommand() *cobra.Command {
 		Use:   "info",
 		Short: "provides general Kubefirst setup data",
 		Long:  `Provides machine data, files and folders paths`,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
 			config, err := configs.ReadConfig()
 			if err != nil {
-				return fmt.Errorf("failed to read config: %w", err)
+				wrerr := fmt.Errorf("failed to read config: %w", err)
+				stepper.InfoStep(step.EmojiError, wrerr.Error())
+				return wrerr
 			}
 
 			var buf bytes.Buffer
@@ -45,7 +48,7 @@ func InfoCommand() *cobra.Command {
 			fmt.Fprintf(tw, "Kubefirst config folder\t%s\n", config.K1FolderPath)
 			fmt.Fprintf(tw, "Kubefirst Version\t%s\n", configs.K1Version)
 
-			progress.Success(buf.String())
+			stepper.InfoStepString(buf.String())
 			return nil
 		},
 	}

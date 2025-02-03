@@ -20,6 +20,7 @@ import (
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/launch"
 	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -101,21 +102,47 @@ func versionCheck() (*CheckResponse, bool) {
 	}, false
 }
 
-func GetRootCredentials(_ *cobra.Command, _ []string) error {
+func GetRootCredentials(cmd *cobra.Command, _ []string) error {
+	stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
+	stepper.NewProgressStep("Fetching Credentials")
+
 	clusterName := viper.GetString("flags.cluster-name")
 
 	cluster, err := cluster.GetCluster(clusterName)
 	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to get cluster: %w", err)
+		wrerr := fmt.Errorf("failed to get cluster: %w", err)
+		stepper.FailCurrentStep(wrerr)
+		return wrerr
 	}
 
-	progress.DisplayCredentials(cluster)
+	stepper.CompleteCurrentStep()
+
+	header := `
+##
+# Root Credentials
+
+### ` + fmt.Sprintf("%s Keep this data secure. These passwords can be used to access the following applications in your platform.", step.EmojiBulb)
+	argoMsg := `
+## ArgoCD Admin Password
+##### ` + cluster.ArgoCDPassword
+	kbotMsg := `
+## KBot User Password
+##### ` + cluster.VaultAuth.KbotPassword
+	vaultMsg := `
+## Vault Root Token
+##### ` + cluster.VaultAuth.RootToken
+
+	stepper.InfoStepString(header)
+	stepper.InfoStepString(argoMsg)
+	stepper.InfoStepString(kbotMsg)
+	stepper.InfoStepString(vaultMsg)
 
 	return nil
 }
 
-func Destroy(_ *cobra.Command, _ []string) error {
+func Destroy(cmd *cobra.Command, _ []string) error {
+	stepper := step.NewStepFactory(cmd.ErrOrStderr())
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
 	gitProtocol := viper.GetString("flags.git-protocol")
@@ -134,7 +161,6 @@ func Destroy(_ *cobra.Command, _ []string) error {
 	case "gitlab":
 		cGitOwner = viper.GetString("flags.gitlab-owner")
 	default:
-		progress.Error("invalid git provider option")
 		return fmt.Errorf("invalid git provider: %q", gitProvider)
 	}
 
@@ -149,16 +175,18 @@ func Destroy(_ *cobra.Command, _ []string) error {
 		os.Getenv("CF_ORIGIN_CA_ISSUER_API_TOKEN"),
 	)
 	if err != nil {
-		progress.Error(fmt.Sprintf("failed to get config: %s", err))
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	progress.AddStep("Destroying k3d")
+	stepper.NewProgressStep("Destroying k3d")
 
-	launch.Down(true)
+	if err := launch.Down(true); err != nil {
+		wrerr := fmt.Errorf("failed to destroy k3d: %w", err)
+		stepper.FailCurrentStep(wrerr)
+		return wrerr
+	}
 
-	progress.CompleteStep("Destroying k3d")
-	progress.AddStep("Cleaning up environment")
+	stepper.NewProgressStep("Cleaning up environment")
 
 	log.Info().Msg("resetting `$HOME/.kubefirst` config")
 	viper.Set("argocd", "")
@@ -171,17 +199,18 @@ func Destroy(_ *cobra.Command, _ []string) error {
 	viper.Set("flags", "")
 	viper.Set("k1-paths", "")
 	if err := viper.WriteConfig(); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
+		wrerr := fmt.Errorf("failed to write viper config: %w", err)
+		stepper.FailCurrentStep(wrerr)
+		return wrerr
 	}
 
 	if _, err := os.Stat(config.K1Dir + "/kubeconfig"); !os.IsNotExist(err) {
 		if err := os.Remove(config.K1Dir + "/kubeconfig"); err != nil {
-			progress.Error(fmt.Sprintf("unable to delete %q folder, error: %s", config.K1Dir+"/kubeconfig", err))
-			return fmt.Errorf("unable to delete kubeconfig: %w", err)
+			wrerr := fmt.Errorf("failed to delete kubeconfig: %w", err)
+			stepper.FailCurrentStep(wrerr)
+			return wrerr
 		}
 	}
-
-	progress.CompleteStep("Cleaning up environment")
 
 	successMessage := `
 ###

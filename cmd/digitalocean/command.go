@@ -7,14 +7,14 @@ See the LICENSE file for more details.
 package digitalocean
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
 	"github.com/konstructio/kubefirst/internal/catalog"
+	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
@@ -35,10 +35,6 @@ func NewCommand() *cobra.Command {
 		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about DigitalOcean in Kubefirst, run:")
 			fmt.Println("  kubefirst digitalocean --help")
-
-			if progress.Progress != nil {
-				progress.Progress.Quit()
-			}
 		},
 	}
 
@@ -57,31 +53,40 @@ func Create() *cobra.Command {
 		Short:            "create the Kubefirst platform running on DigitalOcean Kubernetes",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			cloudProvider := "digitalocean"
+			estimatedTimeMin := 20
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
 			ctx := cmd.Context()
+
+			stepper.DisplayLogHints(cloudProvider, estimatedTimeMin)
+
+			stepper.NewProgressStep("Validate Configuration")
+
 			cliFlags, err := utilities.GetFlags(cmd, "digitalocean")
 			if err != nil {
-				progress.Error(err.Error())
-				return fmt.Errorf("failed to get flags: %w", err)
+				wrerr := fmt.Errorf("failed to get flags: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
-			progress.DisplayLogHints(20)
-
-			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
+			_, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
 			if err != nil {
-				return fmt.Errorf("catalog validation error: %w", err)
-			}
-
-			if !isValid {
-				return errors.New("catalog did not pass a validation check")
+				wrerr := fmt.Errorf("failed to validate catalog apps: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
 			err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
 			if err != nil {
-				progress.Error(err.Error())
-				return fmt.Errorf("failed to validate provided flags: %w", err)
+				wrerr := fmt.Errorf("failed to validate provided flags: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
-			provision := provision.Provisioner{}
+			stepper.CompleteCurrentStep()
+			clusterClient := cluster.Client{}
+
+			provision := provision.NewProvisioner(provision.NewProvisionWatcher(cliFlags.ClusterName, &clusterClient), stepper)
 
 			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
 				return fmt.Errorf("failed to create DigitalOcean management cluster: %w", err)

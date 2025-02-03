@@ -11,7 +11,6 @@ import (
 	"os"
 
 	internalssh "github.com/konstructio/kubefirst-api/pkg/ssh"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/rs/zerolog/log"
 )
 
@@ -27,8 +26,6 @@ var envvarSecrets = []string{
 }
 
 func ValidateProvidedFlags(gitProvider string) error {
-	progress.AddStep("Validate provided flags")
-
 	for _, env := range envvarSecrets {
 		if os.Getenv(env) == "" {
 			return fmt.Errorf("your %s is not set - please set and re-run your last command", env)
@@ -51,8 +48,6 @@ func ValidateProvidedFlags(gitProvider string) error {
 			log.Info().Msgf("%s %s\n", "gitlab.com", key.Type())
 		}
 	}
-
-	progress.CompleteStep("Validate provided flags")
 
 	return nil
 }

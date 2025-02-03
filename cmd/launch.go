@@ -7,10 +7,13 @@ See the LICENSE file for more details.
 package cmd
 
 import (
+	"bytes"
 	"fmt"
+	"text/tabwriter"
 
+	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/launch"
-	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/spf13/cobra"
 )
 
@@ -37,10 +40,20 @@ func launchUp() *cobra.Command {
 		Short:            "launch new console and api instance",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
+			stepper.DisplayLogHints("", 5)
+
+			stepper.NewProgressStep("Launching Console and API")
+
 			if err := launch.Up(cmd.Context(), additionalHelmFlags, false, true); err != nil {
-				progress.Error(err.Error())
+				stepper.FailCurrentStep(err)
 				return fmt.Errorf("failed to launch console and api: %w", err)
 			}
+
+			stepper.CompleteCurrentStep()
+
+			stepper.InfoStep(step.EmojiTada, "Your kubefirst platform provisioner has been created.")
 
 			return nil
 		},
@@ -57,8 +70,22 @@ func launchDown() *cobra.Command {
 		Use:              "down",
 		Short:            "remove console and api instance",
 		TraverseChildren: true,
-		Run: func(_ *cobra.Command, _ []string) {
-			launch.Down(false)
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
+			stepper.NewProgressStep("Destroying Console and API")
+
+			if err := launch.Down(false); err != nil {
+				wrerr := fmt.Errorf("failed to remove console and api: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
+			}
+
+			stepper.CompleteCurrentStep()
+
+			stepper.InfoStep(step.EmojiTada, "Your kubefirst platform provisioner has been destroyed.")
+
+			return nil
 		},
 	}
 
@@ -84,8 +111,30 @@ func launchListClusters() *cobra.Command {
 		Use:              "list",
 		Short:            "list clusters created by the Kubefirst console",
 		TraverseChildren: true,
-		Run: func(_ *cobra.Command, _ []string) {
-			launch.ListClusters()
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
+			clusters, err := cluster.GetClusters()
+			if err != nil {
+				return fmt.Errorf("error getting clusters: %w", err)
+			}
+
+			var buf bytes.Buffer
+			tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', tabwriter.Debug)
+
+			fmt.Fprint(tw, "NAME\tCREATED AT\tSTATUS\tTYPE\tPROVIDER\n")
+			for _, cluster := range clusters {
+				fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
+					cluster.ClusterName,
+					cluster.CreationTimestamp,
+					cluster.Status,
+					cluster.ClusterType,
+					cluster.CloudProvider)
+			}
+
+			stepper.InfoStepString(buf.String())
+
+			return nil
 		},
 	}
 
@@ -104,8 +153,34 @@ func launchDeleteCluster() *cobra.Command {
 			}
 			return nil
 		},
-		Run: func(_ *cobra.Command, args []string) {
-			launch.DeleteCluster(args[0])
+		RunE: func(cmd *cobra.Command, args []string) error {
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
+			stepper.NewProgressStep("Deleting Cluster")
+
+			if len(args) != 1 {
+				wrerr := fmt.Errorf("expected 1 argument (cluster name)")
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
+			}
+
+			managedClusterName := args[0]
+
+			err := cluster.DeleteCluster(managedClusterName)
+			if err != nil {
+				wrerr := fmt.Errorf("failed to delete cluster: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
+			}
+
+			deleteMessage := `
+##
+### Submitted request to delete cluster` + fmt.Sprintf("`%s`", managedClusterName) + `
+### Follow progress with ` + fmt.Sprintf("`%s`", "kubefirst launch cluster list") + `
+`
+			stepper.InfoStepString(deleteMessage)
+
+			return nil
 		},
 	}
 

@@ -8,9 +8,9 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/konstructio/kubefirst-api/pkg/configs"
-	"github.com/konstructio/kubefirst-api/pkg/progressPrinter"
 	"github.com/konstructio/kubefirst/cmd/akamai"
 	"github.com/konstructio/kubefirst/cmd/aws"
 	"github.com/konstructio/kubefirst/cmd/azure"
@@ -21,7 +21,6 @@ import (
 	"github.com/konstructio/kubefirst/cmd/k3s"
 	"github.com/konstructio/kubefirst/cmd/vultr"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -41,7 +40,6 @@ func Execute() {
 		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about kubefirst, run:")
 			fmt.Println("  kubefirst help")
-			progress.Progress.Quit()
 		},
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -74,10 +72,9 @@ func Execute() {
 	// Refers: https://github.com/konstructio/runtime/issues/525
 	// Before removing next line, please read ticket above.
 	common.CheckForVersionUpdate()
-	progressPrinter.GetInstance()
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(output, "If a detailed error message was available, please make the necessary corrections before retrying.")
 		fmt.Fprintln(output, "You can re-run the last command to try the operation again.")
-		progress.Progress.Quit()
+		os.Exit(1)
 	}
 }

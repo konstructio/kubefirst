@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -102,35 +101,30 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 	case "k3s":
 		k3sServersPrivateIps, err := cmd.Flags().GetStringSlice("servers-private-ips")
 		if err != nil {
-			progress.Error(err.Error())
 			return cliFlags, fmt.Errorf("failed to get servers-private-ips flag: %w", err)
 		}
 		cliFlags.K3sServersPrivateIPs = k3sServersPrivateIps
 
 		k3sServersPublicIps, err := cmd.Flags().GetStringSlice("servers-public-ips")
 		if err != nil {
-			progress.Error(err.Error())
 			return cliFlags, fmt.Errorf("failed to get servers-public-ips flag: %w", err)
 		}
 		cliFlags.K3sServersPublicIPs = k3sServersPublicIps
 
 		k3sSSHUserFlag, err := cmd.Flags().GetString("ssh-user")
 		if err != nil {
-			progress.Error(err.Error())
 			return cliFlags, fmt.Errorf("failed to get ssh-user flag: %w", err)
 		}
 		cliFlags.K3sSSHUser = k3sSSHUserFlag
 
 		k3sSSHPrivateKeyFlag, err := cmd.Flags().GetString("ssh-privatekey")
 		if err != nil {
-			progress.Error(err.Error())
 			return cliFlags, fmt.Errorf("failed to get ssh-privatekey flag: %w", err)
 		}
 		cliFlags.K3sSSHPrivateKey = k3sSSHPrivateKeyFlag
 
 		K3sServersArgsFlags, err := cmd.Flags().GetStringSlice("servers-args")
 		if err != nil {
-			progress.Error(err.Error())
 			return cliFlags, fmt.Errorf("failed to get servers-args flag: %w", err)
 		}
 		cliFlags.K3sServersArgs = K3sServersArgsFlags

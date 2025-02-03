@@ -7,13 +7,13 @@ See the LICENSE file for more details.
 package k3s
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/konstructio/kubefirst/internal/catalog"
+	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/provision"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
@@ -49,30 +49,40 @@ func Create() *cobra.Command {
 		Short:            "create the kubefirst platform running on premise",
 		TraverseChildren: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			cloudProvider := "k3s"
+			estimatedTimeMin := 20
 			ctx := cmd.Context()
-			cliFlags, err := utilities.GetFlags(cmd, "k3s")
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
+			stepper.DisplayLogHints(cloudProvider, estimatedTimeMin)
+
+			stepper.NewProgressStep("Validate Configuration")
+
+			cliFlags, err := utilities.GetFlags(cmd, cloudProvider)
 			if err != nil {
-				return fmt.Errorf("failed to get flags: %w", err)
+				wrerr := fmt.Errorf("failed to get flags: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
-			progress.DisplayLogHints(20)
-
-			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
+			_, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
 			if err != nil {
-				return fmt.Errorf("validation of catalog apps failed: %w", err)
-			}
-
-			if !isValid {
-				return errors.New("catalog validation failed")
+				wrerr := fmt.Errorf("validation of catalog apps failed: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
 			err = ValidateProvidedFlags(cliFlags.GitProvider)
 			if err != nil {
-				progress.Error(err.Error())
-				return fmt.Errorf("provided flags validation failed: %w", err)
+				wrerr := fmt.Errorf("provided flags validation failed: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
-			provision := provision.Provisioner{}
+			stepper.CompleteCurrentStep()
+			clusterClient := cluster.Client{}
+
+			provision := provision.NewProvisioner(provision.NewProvisionWatcher(cliFlags.ClusterName, &clusterClient), stepper)
 
 			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
 				return fmt.Errorf("failed to create k3s management cluster: %w", err)

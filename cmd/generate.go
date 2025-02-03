@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 
 	"github.com/konstructio/kubefirst/internal/generate"
-	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/spf13/cobra"
 )
 
@@ -36,13 +36,21 @@ func generateApp() *cobra.Command {
 		Use:              "app-scaffold",
 		Short:            "scaffold the gitops application repo",
 		TraverseChildren: true,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
+
+			stepper.NewProgressStep("Create App Scaffold")
+
 			if err := generate.AppScaffold(name, environments, outputPath); err != nil {
-				progress.Error(err.Error())
-				return fmt.Errorf("error scaffolding app: %w", err)
+				wrerr := fmt.Errorf("error scaffolding app: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
 			}
 
-			progress.Success(fmt.Sprintf("App successfully scaffolded: %s", name))
+			stepper.CompleteCurrentStep()
+
+			stepper.InfoStepString(fmt.Sprintf("App successfully scaffolded: %s", name))
+
 			return nil
 		},
 	}
