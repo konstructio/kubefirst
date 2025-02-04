@@ -150,6 +150,7 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		NodeCount:            nodeCountFlag,
 		InstallCatalogApps:   installCatalogAppsFlag,
 		InstallKubefirstPro:  installKubefirstProFlag,
+		AMIType:              cliFlags.AMIType,
 	}
 
 	// Set Viper configurations

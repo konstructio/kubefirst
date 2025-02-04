@@ -50,12 +50,12 @@ var (
 	supportedGitProviders        = []string{"github", "gitlab"}
 	supportedGitProtocolOverride = []string{"https", "ssh"}
 	supportedAMITypes            = map[string]string{
-		"AL2_x86_64":                 "/aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id",
-		"AL2_ARM_64":                 "/aws/service/eks/optimized-ami/1.29/amazon-linux-2-arm64/recommended/image_id",
-		"BOTTLEROCKET_ARM_64":        "/aws/service/bottlerocket/aws-k8s-1.29/arm64/latest/image_id",
-		"BOTTLEROCKET_x86_64":        "/aws/service/bottlerocket/aws-k8s-1.29/x86_64/latest/image_id",
-		"BOTTLEROCKET_ARM_64_NVIDIA": "/aws/service/bottlerocket/aws-k8s-1.29-nvidia/arm64/latest/image_id",
-		"BOTTLEROCKET_x86_64_NVIDIA": "/aws/service/bottlerocket/aws-k8s-1.29-nvidia/x86_64/latest/image_id",
+		"AL2_x86_64":                 "/aws/service/eks/optimized-ami/1.31/amazon-linux-2/recommended/image_id",
+		"AL2_ARM_64":                 "/aws/service/eks/optimized-ami/1.31/amazon-linux-2-arm64/recommended/image_id",
+		"BOTTLEROCKET_ARM_64":        "/aws/service/bottlerocket/aws-k8s-1.31/arm64/latest/image_id",
+		"BOTTLEROCKET_x86_64":        "/aws/service/bottlerocket/aws-k8s-1.31/x86_64/latest/image_id",
+		"BOTTLEROCKET_ARM_64_NVIDIA": "/aws/service/bottlerocket/aws-k8s-1.31-nvidia/arm64/latest/image_id",
+		"BOTTLEROCKET_x86_64_NVIDIA": "/aws/service/bottlerocket/aws-k8s-1.31-nvidia/x86_64/latest/image_id",
 	}
 )
 
