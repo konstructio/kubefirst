@@ -14,28 +14,6 @@ import (
 )
 
 var (
-	// Create
-	applicationNameFlag      string
-	applicationNamespaceFlag string
-	ciFlag                   bool
-	cloudRegionFlag          string
-	clusterNameFlag          string
-	clusterTypeFlag          string
-	githubUserFlag           string
-	githubOrgFlag            string
-	gitlabGroupFlag          string
-	gitProviderFlag          string
-	gitProtocolFlag          string
-	gitopsTemplateURLFlag    string
-	gitopsTemplateBranchFlag string
-	useTelemetryFlag         bool
-	installCatalogApps       string
-
-	// RootCredentials
-	copyArgoCDPasswordToClipboardFlag bool
-	copyKbotPasswordToClipboardFlag   bool
-	copyVaultPasswordToClipboardFlag  bool
-
 	// Supported git providers
 	supportedGitProviders = []string{"github", "gitlab"}
 
@@ -86,18 +64,17 @@ func Create() *cobra.Command {
 	}
 
 	// todo review defaults and update descriptions
-	createCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
-	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
-	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
-	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %q", supportedGitProviders))
-	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %q", supportedGitProtocolOverride))
-	createCmd.Flags().StringVar(&githubUserFlag, "github-user", "", "the GitHub user for the new gitops and metaphor repositories - this cannot be used with --github-org")
-	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - this cannot be used with --github-user")
-	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
-	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "", "the branch to clone for the gitops-template repository")
-	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/konstructio/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
-	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma separated values of catalog apps to install after provision")
-	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
+	createCmd.Flags().Bool("ci", false, "if running kubefirst in ci, set this flag to disable interactive features")
+	createCmd.Flags().String("cluster-name", "kubefirst", "the name of the cluster to create")
+	createCmd.Flags().String("cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
+	createCmd.Flags().String("git-provider", "github", fmt.Sprintf("the git provider - one of: %q", supportedGitProviders))
+	createCmd.Flags().String("git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %q", supportedGitProtocolOverride))
+	createCmd.Flags().String("github-org", "", "the GitHub organization for the new gitops and metaphor repositories")
+	createCmd.Flags().String("gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using gitlab")
+	createCmd.Flags().String("gitops-template-branch", "", "the branch to clone for the gitops-template repository")
+	createCmd.Flags().String("gitops-template-url", "https://github.com/konstructio/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
+	createCmd.Flags().String("install-catalog-apps", "", "comma separated values of catalog apps to install after provision")
+	createCmd.Flags().Bool("use-telemetry", true, "whether to emit telemetry")
 
 	return createCmd
 }
@@ -121,9 +98,9 @@ func MkCert() *cobra.Command {
 		RunE:  mkCert,
 	}
 
-	mkCertCmd.Flags().StringVar(&applicationNameFlag, "application", "", "the name of the application (required)")
+	mkCertCmd.Flags().String("application", "", "the name of the application (required)")
 	mkCertCmd.MarkFlagRequired("application")
-	mkCertCmd.Flags().StringVar(&applicationNamespaceFlag, "namespace", "", "the application namespace (required)")
+	mkCertCmd.Flags().String("namespace", "", "the application namespace (required)")
 	mkCertCmd.MarkFlagRequired("namespace")
 
 	return mkCertCmd
@@ -137,9 +114,9 @@ func RootCredentials() *cobra.Command {
 		RunE:  getK3dRootCredentials,
 	}
 
-	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the ArgoCD password to the clipboard (optional)")
-	authCmd.Flags().BoolVar(&copyKbotPasswordToClipboardFlag, "kbot", false, "copy the kbot password to the clipboard (optional)")
-	authCmd.Flags().BoolVar(&copyVaultPasswordToClipboardFlag, "vault", false, "copy the vault password to the clipboard (optional)")
+	authCmd.Flags().Bool("argocd", false, "copy the ArgoCD password to the clipboard (optional)")
+	authCmd.Flags().Bool("kbot", false, "copy the kbot password to the clipboard (optional)")
+	authCmd.Flags().Bool("vault", false, "copy the vault password to the clipboard (optional)")
 
 	return authCmd
 }

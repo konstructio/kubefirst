@@ -19,6 +19,7 @@ require (
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/google/go-github/v52 v52.0.0
 	github.com/hashicorp/vault/api v1.15.0
+	github.com/konstructio/cli-utils v0.0.0-20250121163216-a915a9d11340
 	github.com/konstructio/kubefirst-api v0.122.0
 	github.com/kubefirst/metrics-client v0.3.0
 	github.com/minio/minio-go/v7 v7.0.81
@@ -36,6 +37,8 @@ require (
 	k8s.io/apimachinery v0.31.3
 	k8s.io/client-go v11.0.1-0.20190816222228-6d55c1b1f1ca+incompatible
 )
+
+require github.com/tj/go-spin v1.1.0 // indirect
 
 require (
 	cel.dev/expr v0.16.1 // indirect

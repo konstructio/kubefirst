@@ -10,38 +10,16 @@ import (
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/constants"
+	"github.com/konstructio/kubefirst/internal/catalog"
+	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/common"
-	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/provision"
+	"github.com/konstructio/kubefirst/internal/step"
+	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
 )
 
 var (
-	// Create
-	alertsEmailFlag          string
-	ciFlag                   bool
-	cloudRegionFlag          string
-	clusterNameFlag          string
-	clusterTypeFlag          string
-	dnsProviderFlag          string
-	domainNameFlag           string
-	subdomainNameFlag        string
-	githubOrgFlag            string
-	gitlabGroupFlag          string
-	gitProviderFlag          string
-	gitProtocolFlag          string
-	gitopsTemplateURLFlag    string
-	gitopsTemplateBranchFlag string
-	useTelemetryFlag         bool
-	nodeTypeFlag             string
-	nodeCountFlag            string
-	installCatalogApps       string
-	installKubefirstProFlag  bool
-
-	// RootCredentials
-	copyArgoCDPasswordToClipboardFlag bool
-	copyKbotPasswordToClipboardFlag   bool
-	copyVaultPasswordToClipboardFlag  bool
-
 	// Supported providers
 	supportedDNSProviders = []string{"digitalocean", "cloudflare"}
 	supportedGitProviders = []string{"github", "gitlab"}
@@ -57,10 +35,6 @@ func NewCommand() *cobra.Command {
 		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("To learn more about DigitalOcean in Kubefirst, run:")
 			fmt.Println("  kubefirst digitalocean --help")
-
-			if progress.Progress != nil {
-				progress.Progress.Quit()
-			}
 		},
 	}
 
@@ -78,34 +52,75 @@ func Create() *cobra.Command {
 		Use:              "create",
 		Short:            "create the Kubefirst platform running on DigitalOcean Kubernetes",
 		TraverseChildren: true,
-		RunE:             createDigitalocean,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			cloudProvider := "digitalocean"
+			estimatedTimeMin := 20
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
+			ctx := cmd.Context()
+
+			stepper.DisplayLogHints(cloudProvider, estimatedTimeMin)
+
+			stepper.NewProgressStep("Validate Configuration")
+
+			cliFlags, err := utilities.GetFlags(cmd, "digitalocean")
+			if err != nil {
+				wrerr := fmt.Errorf("failed to get flags: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
+			}
+
+			catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
+			if err != nil {
+				wrerr := fmt.Errorf("failed to validate catalog apps: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
+			}
+
+			err = ValidateProvidedFlags(cliFlags.GitProvider, cliFlags.DNSProvider)
+			if err != nil {
+				wrerr := fmt.Errorf("failed to validate provided flags: %w", err)
+				stepper.FailCurrentStep(wrerr)
+				return wrerr
+			}
+
+			stepper.CompleteCurrentStep()
+			clusterClient := cluster.Client{}
+
+			provision := provision.NewProvisioner(provision.NewProvisionWatcher(cliFlags.ClusterName, &clusterClient), stepper)
+
+			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
+				return fmt.Errorf("failed to create DigitalOcean management cluster: %w", err)
+			}
+
+			return nil
+		},
 		// PreRun:           common.CheckDocker,
 	}
 
 	doDefaults := constants.GetCloudDefaults().DigitalOcean
 
 	// todo review defaults and update descriptions
-	createCmd.Flags().StringVar(&alertsEmailFlag, "alerts-email", "", "email address for let's encrypt certificate notifications (required)")
+	createCmd.Flags().String("alerts-email", "", "email address for let's encrypt certificate notifications (required)")
 	createCmd.MarkFlagRequired("alerts-email")
-	createCmd.Flags().BoolVar(&ciFlag, "ci", false, "if running Kubefirst in CI, set this flag to disable interactive features")
-	createCmd.Flags().StringVar(&cloudRegionFlag, "cloud-region", "nyc3", "the DigitalOcean region to provision infrastructure in")
-	createCmd.Flags().StringVar(&clusterNameFlag, "cluster-name", "kubefirst", "the name of the cluster to create")
-	createCmd.Flags().StringVar(&clusterTypeFlag, "cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
-	createCmd.Flags().StringVar(&nodeCountFlag, "node-count", doDefaults.NodeCount, "the node count for the cluster")
-	createCmd.Flags().StringVar(&nodeTypeFlag, "node-type", doDefaults.InstanceSize, "the instance size of the cluster to create")
-	createCmd.Flags().StringVar(&dnsProviderFlag, "dns-provider", "digitalocean", fmt.Sprintf("the dns provider - one of: %q", supportedDNSProviders))
-	createCmd.Flags().StringVar(&subdomainNameFlag, "subdomain", "", "the subdomain to use for DNS records (Cloudflare)")
-	createCmd.Flags().StringVar(&domainNameFlag, "domain-name", "", "the DigitalOcean DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
+	createCmd.Flags().Bool("ci", false, "if running Kubefirst in CI, set this flag to disable interactive features")
+	createCmd.Flags().String("cloud-region", "nyc3", "the DigitalOcean region to provision infrastructure in")
+	createCmd.Flags().String("cluster-name", "kubefirst", "the name of the cluster to create")
+	createCmd.Flags().String("cluster-type", "mgmt", "the type of cluster to create (i.e. mgmt|workload)")
+	createCmd.Flags().String("node-count", doDefaults.NodeCount, "the node count for the cluster")
+	createCmd.Flags().String("node-type", doDefaults.InstanceSize, "the instance size of the cluster to create")
+	createCmd.Flags().String("dns-provider", "digitalocean", fmt.Sprintf("the dns provider - one of: %q", supportedDNSProviders))
+	createCmd.Flags().String("subdomain", "", "the subdomain to use for DNS records (Cloudflare)")
+	createCmd.Flags().String("domain-name", "", "the DigitalOcean DNS Name to use for DNS records (i.e. your-domain.com|subdomain.your-domain.com) (required)")
 	createCmd.MarkFlagRequired("domain-name")
-	createCmd.Flags().StringVar(&gitProviderFlag, "git-provider", "github", fmt.Sprintf("the git provider - one of: %q", supportedGitProviders))
-	createCmd.Flags().StringVar(&gitProtocolFlag, "git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %q", supportedGitProtocolOverride))
-	createCmd.Flags().StringVar(&githubOrgFlag, "github-org", "", "the GitHub organization for the new gitops and metaphor repositories - required if using GitHub")
-	createCmd.Flags().StringVar(&gitlabGroupFlag, "gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using GitLab")
-	createCmd.Flags().StringVar(&gitopsTemplateBranchFlag, "gitops-template-branch", "", "the branch to clone for the gitops-template repository")
-	createCmd.Flags().StringVar(&gitopsTemplateURLFlag, "gitops-template-url", "https://github.com/konstructio/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
-	createCmd.Flags().StringVar(&installCatalogApps, "install-catalog-apps", "", "comma separated values to install after provision")
-	createCmd.Flags().BoolVar(&useTelemetryFlag, "use-telemetry", true, "whether to emit telemetry")
-	createCmd.Flags().BoolVar(&installKubefirstProFlag, "install-kubefirst-pro", true, "whether or not to install Kubefirst Pro")
+	createCmd.Flags().String("git-provider", "github", fmt.Sprintf("the git provider - one of: %q", supportedGitProviders))
+	createCmd.Flags().String("git-protocol", "ssh", fmt.Sprintf("the git protocol - one of: %q", supportedGitProtocolOverride))
+	createCmd.Flags().String("github-org", "", "the GitHub organization for the new gitops and metaphor repositories - required if using GitHub")
+	createCmd.Flags().String("gitlab-group", "", "the GitLab group for the new gitops and metaphor projects - required if using GitLab")
+	createCmd.Flags().String("gitops-template-branch", "", "the branch to clone for the gitops-template repository")
+	createCmd.Flags().String("gitops-template-url", "https://github.com/konstructio/gitops-template.git", "the fully qualified url to the gitops-template repository to clone")
+	createCmd.Flags().String("install-catalog-apps", "", "comma separated values to install after provision")
+	createCmd.Flags().Bool("use-telemetry", true, "whether to emit telemetry")
+	createCmd.Flags().Bool("install-kubefirst-pro", true, "whether or not to install Kubefirst Pro")
 
 	return createCmd
 }
@@ -130,9 +145,9 @@ func RootCredentials() *cobra.Command {
 		RunE:  common.GetRootCredentials,
 	}
 
-	authCmd.Flags().BoolVar(&copyArgoCDPasswordToClipboardFlag, "argocd", false, "copy the ArgoCD password to the clipboard (optional)")
-	authCmd.Flags().BoolVar(&copyKbotPasswordToClipboardFlag, "kbot", false, "copy the kbot password to the clipboard (optional)")
-	authCmd.Flags().BoolVar(&copyVaultPasswordToClipboardFlag, "vault", false, "copy the vault password to the clipboard (optional)")
+	authCmd.Flags().Bool("argocd", false, "copy the ArgoCD password to the clipboard (optional)")
+	authCmd.Flags().Bool("kbot", false, "copy the kbot password to the clipboard (optional)")
+	authCmd.Flags().Bool("vault", false, "copy the vault password to the clipboard (optional)")
 
 	return authCmd
 }

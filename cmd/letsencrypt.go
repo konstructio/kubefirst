@@ -10,7 +10,7 @@ import (
 	"fmt"
 
 	"github.com/konstructio/kubefirst-api/pkg/certificates"
-	"github.com/konstructio/kubefirst/internal/progress"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/spf13/cobra"
 )
 
@@ -35,11 +35,15 @@ func status() *cobra.Command {
 		Use:              "status",
 		Short:            "check the usage statistics for a LetsEncrypt certificate",
 		TraverseChildren: true,
-		Run: func(_ *cobra.Command, _ []string) {
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			stepper := step.NewStepFactory(cmd.ErrOrStderr())
 			if err := certificates.CheckCertificateUsage(domainNameFlag); err != nil {
-				fmt.Printf("failed to check certificate usage for domain %q: %s\n", domainNameFlag, err)
+				wrerr := fmt.Errorf("failed to check certificate usage for domain %q: %w", domainNameFlag, err)
+				stepper.InfoStep(step.EmojiError, wrerr.Error())
+				return wrerr
 			}
-			progress.Progress.Quit()
+
+			return nil
 		},
 	}
 
