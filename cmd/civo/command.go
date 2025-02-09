@@ -97,7 +97,7 @@ func Create() *cobra.Command {
 				stepper,
 			)
 
-			if err := provisioner.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
+			if err := provisioner.ProvisionManagementCluster(ctx, cliFlags, catalogApps); err != nil {
 				stepper.FailCurrentStep(err)
 				return fmt.Errorf("failed to create Civo management cluster: %w", err)
 			}

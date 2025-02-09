@@ -8,7 +8,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/konstructio/kubefirst-api/pkg/configs"
 	"github.com/konstructio/kubefirst/cmd/akamai"
@@ -21,6 +20,7 @@ import (
 	"github.com/konstructio/kubefirst/cmd/k3s"
 	"github.com/konstructio/kubefirst/cmd/vultr"
 	"github.com/konstructio/kubefirst/internal/common"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -75,6 +75,6 @@ func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(output, "If a detailed error message was available, please make the necessary corrections before retrying.")
 		fmt.Fprintln(output, "You can re-run the last command to try the operation again.")
-		os.Exit(1)
+		progress.Progress.Quit()
 	}
 }

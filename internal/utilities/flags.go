@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) {
+func GetFlags(cmd *cobra.Command, cloudProvider string) (*types.CliFlags, error) {
 	cliFlags := types.CliFlags{}
 	var err error
 
@@ -39,7 +39,7 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 
 	for flag, target := range flags {
 		if *target, err = cmd.Flags().GetString(flag); err != nil {
-			return cliFlags, fmt.Errorf("failed to get %s flag: %w", flag, err)
+			return &cliFlags, fmt.Errorf("failed to get %s flag: %w", flag, err)
 		}
 	}
 
@@ -59,75 +59,13 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 
 		for flag, target := range cloudSpecificFlags {
 			if *target, err = cmd.Flags().GetString(flag); err != nil {
-				return cliFlags, fmt.Errorf("failed to get %s flag: %w", flag, err)
+				return &cliFlags, fmt.Errorf("failed to get %s flag: %w", flag, err)
 			}
 		}
 
 		if installKubefirstProFlag, err = cmd.Flags().GetBool("install-kubefirst-pro"); err != nil {
-			return cliFlags, fmt.Errorf("failed to get install-kubefirst-pro flag: %w", err)
+			return &cliFlags, fmt.Errorf("failed to get install-kubefirst-pro flag: %w", err)
 		}
-	}
-
-	switch cloudProvider {
-	case "aws":
-		ecrFlag, err := cmd.Flags().GetBool("ecr")
-		if err != nil {
-			return cliFlags, fmt.Errorf("failed to get ecr flag: %w", err)
-		}
-
-		cliFlags.ECR = ecrFlag
-
-		amiType, err := cmd.Flags().GetString("ami-type")
-		if err != nil {
-			return cliFlags, fmt.Errorf("failed to get ami type: %w", err)
-		}
-		cliFlags.AMIType = amiType
-
-	case "azure":
-		dnsAzureResourceGroup, err := cmd.Flags().GetString("dns-azure-resource-group")
-		if err != nil {
-			return cliFlags, fmt.Errorf("failed to get dns-azure-resource-group flag: %w", err)
-		}
-		cliFlags.DNSAzureRG = dnsAzureResourceGroup
-
-	case "google":
-		googleProject, err := cmd.Flags().GetString("google-project")
-		if err != nil {
-			return cliFlags, fmt.Errorf("failed to get google-project flag: %w", err)
-		}
-
-		cliFlags.GoogleProject = googleProject
-
-	case "k3s":
-		k3sServersPrivateIps, err := cmd.Flags().GetStringSlice("servers-private-ips")
-		if err != nil {
-			return cliFlags, fmt.Errorf("failed to get servers-private-ips flag: %w", err)
-		}
-		cliFlags.K3sServersPrivateIPs = k3sServersPrivateIps
-
-		k3sServersPublicIps, err := cmd.Flags().GetStringSlice("servers-public-ips")
-		if err != nil {
-			return cliFlags, fmt.Errorf("failed to get servers-public-ips flag: %w", err)
-		}
-		cliFlags.K3sServersPublicIPs = k3sServersPublicIps
-
-		k3sSSHUserFlag, err := cmd.Flags().GetString("ssh-user")
-		if err != nil {
-			return cliFlags, fmt.Errorf("failed to get ssh-user flag: %w", err)
-		}
-		cliFlags.K3sSSHUser = k3sSSHUserFlag
-
-		k3sSSHPrivateKeyFlag, err := cmd.Flags().GetString("ssh-privatekey")
-		if err != nil {
-			return cliFlags, fmt.Errorf("failed to get ssh-privatekey flag: %w", err)
-		}
-		cliFlags.K3sSSHPrivateKey = k3sSSHPrivateKeyFlag
-
-		K3sServersArgsFlags, err := cmd.Flags().GetStringSlice("servers-args")
-		if err != nil {
-			return cliFlags, fmt.Errorf("failed to get servers-args flag: %w", err)
-		}
-		cliFlags.K3sServersArgs = K3sServersArgsFlags
 	}
 
 	// Assign collected values to cliFlags
@@ -151,6 +89,82 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 		InstallCatalogApps:   installCatalogAppsFlag,
 		InstallKubefirstPro:  installKubefirstProFlag,
 		AMIType:              cliFlags.AMIType,
+	}
+
+	switch cloudProvider {
+	case "k3d":
+		ciFlag, err := cmd.Flags().GetBool("ci")
+		if err != nil {
+			return &cliFlags, fmt.Errorf("failed to get ci flag: %w", err)
+		}
+
+		cliFlags.Ci = ciFlag
+
+		clusterTypeFlag, err := cmd.Flags().GetString("cluster-type")
+		if err != nil {
+			return &cliFlags, fmt.Errorf("failed to get 'cluster-type' flag: %w", err)
+		}
+		cliFlags.ClusterType = clusterTypeFlag
+
+	case "aws":
+		ecrFlag, err := cmd.Flags().GetBool("ecr")
+		if err != nil {
+			return &cliFlags, fmt.Errorf("failed to get ecr flag: %w", err)
+		}
+
+		cliFlags.ECR = ecrFlag
+
+		amiType, err := cmd.Flags().GetString("ami-type")
+		if err != nil {
+			return &cliFlags, fmt.Errorf("failed to get ami type: %w", err)
+		}
+		cliFlags.AMIType = amiType
+
+	case "azure":
+		dnsAzureResourceGroup, err := cmd.Flags().GetString("dns-azure-resource-group")
+		if err != nil {
+			return &cliFlags, fmt.Errorf("failed to get dns-azure-resource-group flag: %w", err)
+		}
+		cliFlags.DNSAzureRG = dnsAzureResourceGroup
+
+	case "google":
+		googleProject, err := cmd.Flags().GetString("google-project")
+		if err != nil {
+			return &cliFlags, fmt.Errorf("failed to get google-project flag: %w", err)
+		}
+
+		cliFlags.GoogleProject = googleProject
+
+	case "k3s":
+		k3sServersPrivateIps, err := cmd.Flags().GetStringSlice("servers-private-ips")
+		if err != nil {
+			return &cliFlags, fmt.Errorf("failed to get servers-private-ips flag: %w", err)
+		}
+		cliFlags.K3sServersPrivateIPs = k3sServersPrivateIps
+
+		k3sServersPublicIps, err := cmd.Flags().GetStringSlice("servers-public-ips")
+		if err != nil {
+			return &cliFlags, fmt.Errorf("failed to get servers-public-ips flag: %w", err)
+		}
+		cliFlags.K3sServersPublicIPs = k3sServersPublicIps
+
+		k3sSSHUserFlag, err := cmd.Flags().GetString("ssh-user")
+		if err != nil {
+			return &cliFlags, fmt.Errorf("failed to get ssh-user flag: %w", err)
+		}
+		cliFlags.K3sSSHUser = k3sSSHUserFlag
+
+		k3sSSHPrivateKeyFlag, err := cmd.Flags().GetString("ssh-privatekey")
+		if err != nil {
+			return &cliFlags, fmt.Errorf("failed to get ssh-privatekey flag: %w", err)
+		}
+		cliFlags.K3sSSHPrivateKey = k3sSSHPrivateKeyFlag
+
+		K3sServersArgsFlags, err := cmd.Flags().GetStringSlice("servers-args")
+		if err != nil {
+			return &cliFlags, fmt.Errorf("failed to get servers-args flag: %w", err)
+		}
+		cliFlags.K3sServersArgs = K3sServersArgsFlags
 	}
 
 	// Set Viper configurations
@@ -178,8 +192,8 @@ func GetFlags(cmd *cobra.Command, cloudProvider string) (types.CliFlags, error) 
 	}
 
 	if err := viper.WriteConfig(); err != nil {
-		return cliFlags, fmt.Errorf("failed to write configuration: %w", err)
+		return &cliFlags, fmt.Errorf("failed to write configuration: %w", err)
 	}
 
-	return cliFlags, nil
+	return &cliFlags, nil
 }

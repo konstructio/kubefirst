@@ -89,7 +89,7 @@ func Create() *cobra.Command {
 
 			provision := provision.NewProvisioner(provision.NewProvisionWatcher(cliFlags.ClusterName, &clusterClient), stepper)
 
-			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
+			if err := provision.ProvisionManagementCluster(ctx, cliFlags, catalogApps); err != nil {
 				return fmt.Errorf("failed to create google management cluster: %w", err)
 			}
 

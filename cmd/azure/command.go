@@ -88,7 +88,7 @@ func Create() *cobra.Command {
 			clusterClient := cluster.Client{}
 			provision := provision.NewProvisioner(provision.NewProvisionWatcher(cliFlags.ClusterName, &clusterClient), stepper)
 
-			if err := provision.ProvisionManagementCluster(ctx, &cliFlags, catalogApps); err != nil {
+			if err := provision.ProvisionManagementCluster(ctx, cliFlags, catalogApps); err != nil {
 				return fmt.Errorf("failed to create Azure management cluster: %w", err)
 			}
 
