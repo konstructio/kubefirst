@@ -58,7 +58,6 @@ import (
 
 //nolint:gocyclo // this function is complex and needs to be refactored
 func runK3d(cmd *cobra.Command, _ []string) error {
-
 	cliFlags, err := utilities.GetFlags(cmd, "k3d")
 	if err != nil {
 		progress.Error(err.Error())
