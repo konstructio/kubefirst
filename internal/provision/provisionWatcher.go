@@ -23,6 +23,7 @@ const (
 	VaultInitializedCheck      = "Vault Initialized"
 	VaultTerraformApplyCheck   = "Vault Terraform Apply"
 	UsersTerraformApplyCheck   = "Users Terraform Apply"
+	FinalCheck                 = "Final Check"
 	ProvisionComplete          = "Provision Complete"
 )
 
@@ -60,6 +61,7 @@ func NewProvisionWatcher(clusterName string, client ClusterClient) *Watcher {
 			{StepName: VaultInitializedCheck},
 			{StepName: VaultTerraformApplyCheck},
 			{StepName: UsersTerraformApplyCheck},
+			{StepName: FinalCheck},
 		},
 		client: client,
 	}
@@ -130,6 +132,7 @@ func (*Watcher) mapClusterStepStatus(provisionedCluster *apiTypes.Cluster) map[s
 		VaultInitializedCheck:      provisionedCluster.VaultInitializedCheck,
 		VaultTerraformApplyCheck:   provisionedCluster.VaultTerraformApplyCheck,
 		UsersTerraformApplyCheck:   provisionedCluster.UsersTerraformApplyCheck,
+		FinalCheck:                 provisionedCluster.FinalCheck,
 	}
 	return clusterStepStatus
 }
