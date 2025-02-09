@@ -58,18 +58,13 @@ import (
 
 //nolint:gocyclo // this function is complex and needs to be refactored
 func runK3d(cmd *cobra.Command, _ []string) error {
-	ciFlag, err := cmd.Flags().GetBool("ci")
-	if err != nil {
-		progress.Error(err.Error())
-		return fmt.Errorf("failed to get ci flag: %w", err)
-	}
-
 	cliFlags, err := utilities.GetFlags(cmd, "k3d")
 	if err != nil {
 		progress.Error(err.Error())
 		return fmt.Errorf("failed to get flags: %w", err)
 	}
 
+	log.Info().Msgf("type is %s", cliFlags.ClusterType)
 	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
 	utils.DisplayLogHints()
 
@@ -851,7 +846,7 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 			log.Error().Err(err).Msg("failed to copy ArgoCD password to clipboard")
 		}
 
-		if os.Getenv("SKIP_ARGOCD_LAUNCH") != "true" || !ciFlag {
+		if os.Getenv("SKIP_ARGOCD_LAUNCH") != "true" || !cliFlags.Ci {
 			err = utils.OpenBrowser(constants.ArgoCDLocalURLTLS)
 			if err != nil {
 				log.Error().Err(err).Msg("failed to open ArgoCD URL in browser")
@@ -1223,9 +1218,9 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 	log.Info().Msg("welcome to your new Kubefirst platform running in K3D")
 	time.Sleep(1 * time.Second)
 
-	reports.LocalHandoffScreenV2(cliFlags.ClusterName, gitDestDescriptor, cGitOwner, config, ciFlag)
+	reports.LocalHandoffScreenV2(cliFlags.ClusterName, gitDestDescriptor, cGitOwner, config, cliFlags.Ci)
 
-	if ciFlag {
+	if cliFlags.Ci {
 		progress.Progress.Quit()
 	}
 
