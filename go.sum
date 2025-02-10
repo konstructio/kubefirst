@@ -531,8 +531,8 @@ github.com/klauspost/cpuid/v2 v2.2.8/go.mod h1:Lcz8mBdAVJIBVzewtcLocK12l3Y+JytZY
 github.com/konsorten/go-windows-terminal-sequences v1.0.3/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/konstructio/cli-utils v0.0.0-20250121163216-a915a9d11340 h1:r+tlg96rsCbXB9nWn8d2txRkkBUdL0jRuwP1on34FAQ=
 github.com/konstructio/cli-utils v0.0.0-20250121163216-a915a9d11340/go.mod h1:kD11ekLtaYxEMK73t7jrzg8116dEOD5dYZlFfJ5SQ/o=
-github.com/konstructio/kubefirst-api v0.128.0 h1:ewA/Ta2Vhm7Ppd0rmcSo+Yt9kVuoGHcJTTl4XThM9Os=
-github.com/konstructio/kubefirst-api v0.128.0/go.mod h1:iwyRPrwlVwA49XEvHfvTlvbldmDQR0NGDcPZVyIeDT4=
+github.com/konstructio/kubefirst-api v0.129.0 h1:Jir3g8QL+NKOU5BAJCFBtf4Gcb86Fp1RWNjiBTu1ywQ=
+github.com/konstructio/kubefirst-api v0.129.0/go.mod h1:iwyRPrwlVwA49XEvHfvTlvbldmDQR0NGDcPZVyIeDT4=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.2.1/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
 github.com/kr/pretty v0.3.0/go.mod h1:640gp4NfQd8pI5XOwp5fnNeVWj67G7CFk/SaSQn7NBk=
