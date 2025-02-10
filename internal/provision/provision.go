@@ -19,6 +19,7 @@ import (
 	"github.com/konstructio/kubefirst/internal/cluster"
 	"github.com/konstructio/kubefirst/internal/gitShim"
 	"github.com/konstructio/kubefirst/internal/launch"
+	"github.com/konstructio/kubefirst/internal/progress"
 	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/konstructio/kubefirst/internal/types"
 	"github.com/konstructio/kubefirst/internal/utilities"
@@ -76,6 +77,7 @@ func (p *Provisioner) ProvisionManagementCluster(ctx context.Context, cliFlags *
 	clusterSetupComplete := viper.GetBool("kubefirst-checks.cluster-install-complete")
 	if clusterSetupComplete {
 		p.stepper.InfoStep(step.EmojiCheck, "Cluster already successfully provisioned")
+
 		return nil
 	}
 
@@ -148,6 +150,12 @@ func (p *Provisioner) ProvisionManagementCluster(ctx context.Context, cliFlags *
 	p.stepper.CompleteCurrentStep()
 
 	p.stepper.InfoStep(step.EmojiTada, "Your kubefirst platform has been provisioned!")
+
+	clusterInfo, err := cluster.GetCluster(cliFlags.ClusterName)
+	if err != nil {
+		return fmt.Errorf("failed to get management cluster: %w", err)
+	}
+	p.stepper.InfoStep(step.EmojiMagic, progress.RenderMessage(progress.DisplaySuccessMessage(clusterInfo)))
 
 	return nil
 }

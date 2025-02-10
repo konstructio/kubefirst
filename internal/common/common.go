@@ -119,23 +119,21 @@ func GetRootCredentials(cmd *cobra.Command, _ []string) error {
 	stepper.CompleteCurrentStep()
 
 	header := `
-Root Credentials
+##
+# Root Credentials
 
-` + fmt.Sprintf("%s Keep this data secure. These passwords can be used to access the following applications in your platform.", step.EmojiBulb)
-	argoMsg := `
-ArgoCD Admin Password
-` + cluster.ArgoCDPassword
-	kbotMsg := `
-KBot User Password
-` + cluster.VaultAuth.KbotPassword
-	vaultMsg := `
-Vault Root Token
-` + cluster.VaultAuth.RootToken
+### :bulb: Keep this data secure. These passwords can be used to access the following applications in your platform
 
-	stepper.InfoStepString(header)
-	stepper.InfoStepString(argoMsg)
-	stepper.InfoStepString(kbotMsg)
-	stepper.InfoStepString(vaultMsg)
+## ArgoCD Admin Password
+##### ` + cluster.ArgoCDPassword + `
+
+## KBot User Password
+##### ` + cluster.VaultAuth.KbotPassword + `
+
+## Vault Root Token
+##### ` + cluster.VaultAuth.RootToken + `
+`
+	stepper.InfoStep(step.EmojiBulb, progress.RenderMessage(header))
 
 	return nil
 }

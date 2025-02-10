@@ -19,7 +19,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func renderMessage(message string) string {
+func RenderMessage(message string) string {
 	r, _ := glamour.NewTermRenderer(
 		glamour.WithStyles(StyleConfig),
 		glamour.WithEmoji(),
@@ -34,7 +34,7 @@ func renderMessage(message string) string {
 }
 
 func createStep(message string) addStep {
-	out := renderMessage(message)
+	out := RenderMessage(message)
 
 	return addStep{
 		message: out,
@@ -42,7 +42,7 @@ func createStep(message string) addStep {
 }
 
 func createErrorLog(message string) errorMsg {
-	out := renderMessage(fmt.Sprintf("##### :no_entry_sign: Error: %s", message))
+	out := RenderMessage(fmt.Sprintf("##### :no_entry_sign: Error: %s", message))
 
 	return errorMsg{
 		message: out,
@@ -69,7 +69,7 @@ func DisplayLogHints(estimatedTime int) {
 
 ### :alarm_clock: Estimated time:` + fmt.Sprintf("`%s minutes` \n\n", strconv.Itoa(estimatedTime))
 
-	headerMessage := renderMessage(header)
+	headerMessage := RenderMessage(header)
 
 	Progress.Send(headerMsg{
 		message: headerMessage,
@@ -77,7 +77,7 @@ func DisplayLogHints(estimatedTime int) {
 }
 
 //nolint:revive // will be fixed in the future
-func DisplaySuccessMessage(cluster types.Cluster) successMsg {
+func DisplaySuccessMessage(cluster types.Cluster) string {
 	cloudCliKubeconfig := ""
 
 	gitProviderLabel := "GitHub"
@@ -139,11 +139,7 @@ func DisplaySuccessMessage(cluster types.Cluster) successMsg {
 ##### kubectl get pods -A
 `
 
-	successMessage := renderMessage(success)
-
-	return successMsg{
-		message: successMessage,
-	}
+	return success
 }
 
 func AddStep(message string) {
@@ -158,7 +154,7 @@ func CompleteStep(message string) {
 }
 
 func Success(success string) {
-	successMessage := renderMessage(success)
+	successMessage := RenderMessage(success)
 
 	Progress.Send(
 		successMsg{
