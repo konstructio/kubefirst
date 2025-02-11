@@ -189,7 +189,7 @@ func Up(ctx context.Context, additionalHelmFlags []string, inCluster, useTelemet
 			"kubeconfig",
 			"get",
 			consoleClusterName,
-			"--output",
+			"-o",
 			kubeconfigPath,
 		)
 		if err != nil {
