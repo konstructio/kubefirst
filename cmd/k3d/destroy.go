@@ -86,16 +86,18 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 		)
 	}
 
+	minioStopChannel := make(chan struct{}, 1)
 	if viper.GetBool("kubefirst-checks.post-detokenize") {
 		if err := k3d.ResolveMinioLocal(fmt.Sprintf("%s/terraform", config.GitopsDir)); err != nil {
 			return fmt.Errorf("unable to preload files for terraform destroy: %w", err)
 		}
-		minioStopChannel := make(chan struct{}, 1)
 		defer func() {
 			close(minioStopChannel)
 		}()
 
-		k8s.OpenPortForwardPodWrapper(kcfg.Clientset, kcfg.RestConfig, "minio", "minio", 9000, 9000, minioStopChannel)
+		if err := k8s.OpenPortForwardPodWrapper(kcfg.Clientset, kcfg.RestConfig, "minio", "minio", 9000, 9000, minioStopChannel); err != nil {
+			return fmt.Errorf("unable to open port-forward for minio: %w", err)
+		}
 	}
 
 	progressPrinter.IncrementTracker("preflight-checks")
@@ -183,6 +185,8 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 	if viper.GetBool("kubefirst-checks.create-k3d-cluster") || viper.GetBool("kubefirst-checks.create-k3d-cluster-failed") {
 		log.Info().Msg("destroying k3d resources with terraform")
 
+		// close minio port-forward
+		minioStopChannel <- struct{}{}
 		if err := k3d.DeleteK3dCluster(clusterName, config.K1Dir, config.K3dClient); err != nil {
 			return fmt.Errorf("unable to delete k3d cluster %q: %w", clusterName, err)
 		}
@@ -227,7 +231,7 @@ func destroyK3d(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("unable to delete %q: %w", config.K1Dir, err)
 	}
 	time.Sleep(200 * time.Millisecond)
-	fmt.Printf("Your kubefirst platform running in %q has been destroyed.", k3d.CloudProvider)
+	progress.Success(fmt.Sprintf("Your kubefirst platform running in %q has been destroyed.", k3d.CloudProvider))
 	progress.Progress.Quit()
 
 	return nil
