@@ -18,7 +18,6 @@ import (
 	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/konstructio/kubefirst/internal/utilities"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -112,25 +111,9 @@ func Create() *cobra.Command {
 				return wrerr
 			}
 
-			err = ValidateProvidedFlags(ctx, cfg, cliFlags.GitProvider, cliFlags.AMIType, cliFlags.NodeType)
+			err = ValidateProvidedFlags(ctx, cfg, cliFlags)
 			if err != nil {
 				wrerr := fmt.Errorf("failed to validate provided flags: %w", err)
-				stepper.FailCurrentStep(wrerr)
-				return wrerr
-			}
-
-			creds, err := getSessionCredentials(ctx, cfg.Credentials)
-			if err != nil {
-				wrerr := fmt.Errorf("failed to get session credentials: %w", err)
-				stepper.FailCurrentStep(wrerr)
-				return wrerr
-			}
-
-			viper.Set("kubefirst.state-store-creds.access-key-id", creds.AccessKeyID)
-			viper.Set("kubefirst.state-store-creds.secret-access-key-id", creds.SecretAccessKey)
-			viper.Set("kubefirst.state-store-creds.token", creds.SessionToken)
-			if err := viper.WriteConfig(); err != nil {
-				wrerr := fmt.Errorf("failed to write config: %w", err)
 				stepper.FailCurrentStep(wrerr)
 				return wrerr
 			}
