@@ -187,9 +187,9 @@ func Up(ctx context.Context, additionalHelmFlags []string, inCluster, useTelemet
 		_, _, err := shell.ExecShellReturnStrings(
 			k3dClient,
 			"kubeconfig",
-			"get",
+			"write",
 			consoleClusterName,
-			"--output",
+			"-o",
 			kubeconfigPath,
 		)
 		if err != nil {

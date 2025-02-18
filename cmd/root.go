@@ -21,6 +21,7 @@ import (
 	"github.com/konstructio/kubefirst/cmd/k3s"
 	"github.com/konstructio/kubefirst/cmd/vultr"
 	"github.com/konstructio/kubefirst/internal/common"
+	"github.com/konstructio/kubefirst/internal/step"
 	"github.com/spf13/cobra"
 )
 
@@ -73,6 +74,8 @@ func Execute() {
 	// Before removing next line, please read ticket above.
 	common.CheckForVersionUpdate()
 	if err := rootCmd.Execute(); err != nil {
+		fmt.Println()
+		fmt.Fprintln(output, step.EmojiError, "Error:", err)
 		fmt.Fprintln(output, "If a detailed error message was available, please make the necessary corrections before retrying.")
 		fmt.Fprintln(output, "You can re-run the last command to try the operation again.")
 		os.Exit(0)
