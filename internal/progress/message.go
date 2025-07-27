@@ -54,9 +54,9 @@ func DisplayLogHints(estimatedTime int) {
 	logFile := viper.GetString("k1-paths.log-file")
 	cloudProvider := viper.GetString("kubefirst.cloud-provider")
 
-	documentationLink := "https://kubefirst.konstruct.io/docs/"
+	documentationLink := "https://kubefirst-pro.konstruct.io/docs/install/"
 	if cloudProvider != "" {
-		documentationLink += cloudProvider + `/quick-start/install/cli`
+		documentationLink += cloudProvider
 	}
 
 	header := `
