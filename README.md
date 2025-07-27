@@ -6,14 +6,14 @@
   </picture>
 </p>
 <p align="center">
-  GitOps Infrastructure & Application Delivery Platform
+  Cluster Management Platform with Application Delivery
 </p>
 
 <p align="center">
-  <a href="https://kubefirst.konstruct.io/docs/">Install</a>&nbsp;|&nbsp;
-  <a href="https://twitter.com/kubefirst">Twitter</a>&nbsp;|&nbsp;
-  <a href="https://www.linkedin.com/company/kubefirst">LinkedIn</a>&nbsp;|&nbsp;
-  <a href="https://join.slack.com/t/kubefirst/shared_invite/zt-r0r9cfts-OVnH0ooELDLm9n9p2aU7fw">Slack</a>&nbsp;|&nbsp;
+  <a href="https://kubefirst-pro.konstruct.io/docs/">Install</a>&nbsp;|&nbsp;
+  <a href="https://twitter.com/konstructio">Twitter</a>&nbsp;|&nbsp;
+  <a href="https://www.linkedin.com/company/konstruct">LinkedIn</a>&nbsp;|&nbsp;
+  <a href="https://k1.social/slack">Slack</a>&nbsp;|&nbsp;
   <a href="https://blog.konstruct.io">Blog</a>
 </p>
 
@@ -31,32 +31,28 @@ The Kubefirst CLI creates instant GitOps platforms that integrate some of the be
 
 Each of our platforms have install guides that detail the prerequesites, commands, and resulting platform that you'll receive.
 
-- [k3d (local)](https://kubefirst.konstruct.io/docs/k3d/overview)
-- [Akamai](https://docs.kubefirst.io/akamai/overview)
-- [AWS](https://kubefirst.konstruct.io/docs/aws/overview)
-- [Azure](https://docs.kubefirst.io/azure/overview)
-- [Civo](https://kubefirst.konstruct.io/docs/civo/overview)
-- [DigitalOcean](https://kubefirst.konstruct.io/docs/do/overview)
-- [Google Cloud](https://kubefirst.konstruct.io/docs/gcp/overview)
-- [Vultr](https://kubefirst.konstruct.io/docs/vultr/overview)
-- [K3s](https://kubefirst.konstruct.io/docs/k3s/overview)
+- [Akamai](https://kubefirst-pro.konstruct.io/docs/install/akamai/)
+- [AWS](https://kubefirst-pro.konstruct.io/docs/install/aws/)
+- [Azure](https://kubefirst-pro.konstruct.io/docs/install/azure/cli/)
+- [Civo](https://kubefirst-pro.konstruct.io/docs/install/civo/)
+- [DigitalOcean](https://kubefirst-pro.konstruct.io/docs/install/digoc/)
+- [Google Cloud](https://kubefirst-pro.konstruct.io/docs/install/google/)
+- [Vultr](https://kubefirst-pro.konstruct.io/docs/install/vultr/)
+- [K3s](https://kubefirst-pro.konstruct.io/docs/install/k3s/)
+- [k3d (local)](https://kubefirst-pro.konstruct.io/docs/install/k3d/)
 
 ## Overview
 
-<https://kubefirst.konstruct.io/docs/>
+<https://kubefirst-pro.konstruct.io/docs/>
 
-![kubefirst architecture diagram](images/kubefirst-arch.png)
+![kubefirst architecture diagram](images/kubefirst-oss-arch.svg)
+
+## Kubefirst Pro
+
+Our commercial [Kubefirst Pro](https://kubefirst-pro.konstruct.io/docs/) platform management UI will be installed to your new OSS platform by default for the best experience.
 
 ## Feed K-Ray
 
-Feed K-Ray a GitHub star ⭐ above to bookmark our project and keep K-Ray happy!!
+Feed K-Ray a GitHub star ⭐ above to bookmark our project and keep K-Ray well fed!!
 
 [![Star History Chart](https://api.star-history.com/svg?repos=kubefirst/kubefirst&type=Date)](https://star-history.com/#kubefirst/kubefirst&Date)
-
-## Contributions
-
-We want to thank all of our contributors who created a pull request to fix a bug, add a new feature or update the [documentation](https://github.com/konstructio/kubefirst-docs/). We also value a lot contributions in the form of bug reporting or feature requests: it helps us continuously make kubefirst better. Lastly, helping the users in our Slack community, or helping us share the love on social media are also ways in which you support us tremendously. We know your time is valuable, and we can't thank you enough for everything you do: we wouldn't be where we are without you!
-
-A special thanks to [DrummyFloyd](https://github.com/DrummyFloyd) who, in addition to adding support for k3s, is a champion all around within our community and the kubefirst project 🫶
-
-If you want to help in any capacity, check [CONTRIBUTING.md](CONTRIBUTING.md).
