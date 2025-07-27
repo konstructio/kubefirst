@@ -143,7 +143,6 @@ func Destroy(cmd *cobra.Command, _ []string) error {
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
 	gitProtocol := viper.GetString("flags.git-protocol")
-	cloudProvider := viper.GetString("kubefirst.cloud-provider")
 
 	log.Info().Msg("destroying kubefirst platform")
 
