@@ -70,10 +70,10 @@ func (s *Factory) InfoStepString(message string) {
 }
 
 func (s *Factory) DisplayLogHints(cloudProvider string, estimatedTime int) {
-	documentationLink := "https://kubefirst.konstruct.io/docs/"
+	documentationLink := "https://kubefirst-pro.konstruct.io/docs/"
 
 	if cloudProvider != "" {
-		documentationLink += cloudProvider + `/quick-start/install/cli`
+		documentationLink += cloudProvider
 	}
 
 	header := "\n Welcome to Kubefirst \n\n"
