@@ -33,7 +33,7 @@ func Execute() {
 		Short: "kubefirst management cluster installer base command",
 		Long: `kubefirst management cluster installer provisions an
 		open source application delivery platform in under an hour.
-		checkout the docs at https://kubefirst.konstruct.io/docs/.`,
+		checkout the docs at https://kubefirst-pro.konstruct.io/docs/.`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// wire viper config for flags for all commands
 			return configs.InitializeViperConfig(cmd)

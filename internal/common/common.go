@@ -143,7 +143,6 @@ func Destroy(cmd *cobra.Command, _ []string) error {
 	// Determine if there are active installs
 	gitProvider := viper.GetString("flags.git-provider")
 	gitProtocol := viper.GetString("flags.git-protocol")
-	cloudProvider := viper.GetString("kubefirst.cloud-provider")
 
 	log.Info().Msg("destroying kubefirst platform")
 
@@ -214,7 +213,7 @@ func Destroy(cmd *cobra.Command, _ []string) error {
 #### :tada: Success` + "`Your k3d kubefirst platform has been destroyed.`" + `
 
 ### :blue_book: To delete a management cluster please see documentation:
-https://kubefirst.konstruct.io/docs/` + cloudProvider + `/deprovision
+https://kubefirst-pro.konstruct.io/docs/admin/deprovision/
 `
 
 	progress.Success(successMessage)
