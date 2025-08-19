@@ -66,8 +66,8 @@ func Create() *cobra.Command {
 				return wrerr
 			}
 
-			isValid, catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
-			if !isValid {
+			catalogApps, err := catalog.ValidateCatalogApps(ctx, cliFlags.InstallCatalogApps)
+			if err != nil {
 				wrerr := fmt.Errorf("catalog validation failed: %w", err)
 				stepper.FailCurrentStep(wrerr)
 				return wrerr
