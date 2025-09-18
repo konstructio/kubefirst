@@ -68,13 +68,9 @@ func runK3d(cmd *cobra.Command, _ []string) error {
 	utilities.CreateK1ClusterDirectory(cliFlags.ClusterName)
 	utils.DisplayLogHints()
 
-	isValid, catalogApps, err := catalog.ValidateCatalogApps(cmd.Context(), cliFlags.InstallCatalogApps)
+	catalogApps, err := catalog.ValidateCatalogApps(cmd.Context(), cliFlags.InstallCatalogApps)
 	if err != nil {
 		return fmt.Errorf("failed to validate catalog apps: %w", err)
-	}
-
-	if !isValid {
-		return errors.New("catalog apps validation failed")
 	}
 
 	switch cliFlags.GitProvider {
